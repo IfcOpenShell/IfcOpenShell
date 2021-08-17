@@ -127,7 +127,7 @@ class CreateDrawing(bpy.types.Operator):
         self.profile_code("Generate annotation")
         svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
         self.profile_code("Combine SVG layers")
-        open_with_user_command(bpy.context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
+        open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
         print("Total Time: {:.2f}".format(time.time() - start))
         return {"FINISHED"}
 
@@ -185,8 +185,8 @@ class CreateDrawing(bpy.types.Operator):
         if not self.props.has_underlay:
             return
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-underlay.svg")
-        bpy.context.scene.render.filepath = svg_path[0:-4] + ".png"
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles[
+        context.scene.render.filepath = svg_path[0:-4] + ".png"
+        drawing_style = context.scene.DocProperties.drawing_styles[
             self.camera.data.BIMCameraProperties.active_drawing_style_index
         ]
 
@@ -197,7 +197,7 @@ class CreateDrawing(bpy.types.Operator):
             for obj in self.camera.users_collection[0].objects:
                 previous_visibility[obj.name] = obj.hide_get()
                 obj.hide_set(True)
-            for obj in bpy.context.visible_objects:
+            for obj in context.visible_objects:
                 if (
                     (not obj.data and not obj.instance_collection)
                     or isinstance(obj.data, bpy.types.Camera)
@@ -208,14 +208,14 @@ class CreateDrawing(bpy.types.Operator):
                     previous_visibility[obj.name] = obj.hide_get()
                     obj.hide_set(True)
 
-            space = self.get_view_3d()
+            space = self.get_view_3d(context.screen.areas)
             previous_shading = space.shading.type
-            previous_format = bpy.context.scene.render.image_settings.file_format
+            previous_format = context.scene.render.image_settings.file_format
             space.shading.type = "RENDERED"
-            bpy.context.scene.render.image_settings.file_format = "PNG"
+            context.scene.render.image_settings.file_format = "PNG"
             bpy.ops.render.opengl(write_still=True)
             space.shading.type = previous_shading
-            bpy.context.scene.render.image_settings.file_format = previous_format
+            context.scene.render.image_settings.file_format = previous_format
 
             for name, value in previous_visibility.items():
                 bpy.data.objects[name].hide_set(value)
@@ -229,7 +229,7 @@ class CreateDrawing(bpy.types.Operator):
             svg_writer.human_scale = "NTS"
         else:
             svg_writer.human_scale = human_scale
-        render = bpy.context.scene.render
+        render = context.scene.render
         if self.is_landscape():
             width = self.camera.data.ortho_scale
             height = width / render.resolution_x * render.resolution_y
@@ -237,13 +237,13 @@ class CreateDrawing(bpy.types.Operator):
             height = self.camera.data.ortho_scale
             width = height / render.resolution_y * render.resolution_x
         svg_writer.output = svg_path
-        svg_writer.data_dir = bpy.context.scene.BIMProperties.data_dir
+        svg_writer.data_dir = context.scene.BIMProperties.data_dir
         svg_writer.vector_style = drawing_style.vector_style
         svg_writer.camera = self.camera
         svg_writer.camera_width = width
         svg_writer.camera_height = height
         svg_writer.camera_projection = tuple(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
-        svg_writer.background_image = bpy.context.scene.render.filepath
+        svg_writer.background_image = context.scene.render.filepath
         svg_writer.write("underlay")
         return svg_path
 
@@ -332,12 +332,12 @@ class CreateDrawing(bpy.types.Operator):
         else:
             svg_writer.human_scale = human_scale
 
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles[
+        drawing_style = context.scene.DocProperties.drawing_styles[
             camera.data.BIMCameraProperties.active_drawing_style_index
         ]
 
-        render = bpy.context.scene.render
-        if self.is_landscape():
+        render = context.scene.render
+        if self.is_landscape(render):
             width = camera.data.ortho_scale
             height = width / render.resolution_x * render.resolution_y
         else:
@@ -346,7 +346,7 @@ class CreateDrawing(bpy.types.Operator):
 
         svg_writer.scale = float(numerator) / float(denominator)
         svg_writer.output = svg_path
-        svg_writer.data_dir = bpy.context.scene.BIMProperties.data_dir
+        svg_writer.data_dir = context.scene.BIMProperties.data_dir
         svg_writer.vector_style = drawing_style.vector_style
         svg_writer.camera = camera
         svg_writer.camera_width = width
@@ -391,11 +391,11 @@ class CreateDrawing(bpy.types.Operator):
         svg_writer.write("annotation")
         return svg_writer.output
 
-    def is_landscape(self):
-        return bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y
+    def is_landscape(self, render):
+        return render.resolution_x > render.resolution_y
 
-    def get_view_3d(self):
-        for area in bpy.context.screen.areas:
+    def get_view_3d(self, areas):
+        for area in areas:
             if area.type != "VIEW_3D":
                 continue
             for space in area.spaces:
@@ -512,7 +512,7 @@ class AddAnnotation(bpy.types.Operator):
             bpy.ops.bim.update_representation(obj=obj.name)
 
         bpy.ops.object.select_all(action="DESELECT")
-        bpy.context.view_layer.objects.active = obj
+        context.view_layer.objects.active = obj
         obj.select_set(True)
         bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
@@ -525,11 +525,12 @@ class AddSheet(bpy.types.Operator):
     # TODO: check undo redo
 
     def execute(self, context):
-        new = bpy.context.scene.DocProperties.sheets.add()
-        new.name = "{} - SHEET".format(len(bpy.context.scene.DocProperties.sheets))
+        scene = context.scene
+        new = scene.DocProperties.sheets.add()
+        new.name = "{} - SHEET".format(len(scene.DocProperties.sheets))
         sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_builder.create(new.name, bpy.context.scene.DocProperties.titleblock)
+        sheet_builder.data_dir = scene.BIMProperties.data_dir
+        sheet_builder.create(new.name, scene.DocProperties.titleblock)
         return {"FINISHED"}
 
 
@@ -538,11 +539,11 @@ class OpenSheet(bpy.types.Operator):
     bl_label = "Open Sheet"
 
     def execute(self, context):
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
         open_with_user_command(
-            bpy.context.preferences.addons["blenderbim"].preferences.svg_command,
+            context.preferences.addons["blenderbim"].preferences.svg_command,
             os.path.join(
-                bpy.context.scene.BIMProperties.data_dir, "sheets", props.sheets[props.active_sheet_index].name + ".svg"
+                context.scene.BIMProperties.data_dir, "sheets", props.sheets[props.active_sheet_index].name + ".svg"
             ),
         )
         return {"FINISHED"}
@@ -555,9 +556,9 @@ class AddDrawingToSheet(bpy.types.Operator):
     # TODO: check undo redo
 
     def execute(self, context):
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
         sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
+        sheet_builder.data_dir = context.scene.BIMProperties.data_dir
         try:
             sheet_builder.add_drawing(
                 props.drawings[props.active_drawing_index].name, props.sheets[props.active_sheet_index].name
@@ -573,17 +574,18 @@ class CreateSheets(bpy.types.Operator):
     # TODO: check undo redo
 
     def execute(self, context):
-        props = bpy.context.scene.DocProperties
+        scene = context.scene
+        props = scene.DocProperties
         name = props.sheets[props.active_sheet_index].name
         sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
+        sheet_builder.data_dir = scene.BIMProperties.data_dir
         sheet_builder.build(name)
 
-        svg2pdf_command = bpy.context.preferences.addons["blenderbim"].preferences.svg2pdf_command
-        svg2dxf_command = bpy.context.preferences.addons["blenderbim"].preferences.svg2dxf_command
+        svg2pdf_command = context.preferences.addons["blenderbim"].preferences.svg2pdf_command
+        svg2dxf_command = context.preferences.addons["blenderbim"].preferences.svg2dxf_command
 
         if svg2pdf_command:
-            path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "build", name)
+            path = os.path.join(scene.BIMProperties.data_dir, "build", name)
             svg = os.path.join(path, name + ".svg")
             pdf = os.path.join(path, name + ".pdf")
             # With great power comes great responsibility. Example:
@@ -593,7 +595,7 @@ class CreateSheets(bpy.types.Operator):
                 subprocess.run(command)
 
         if svg2dxf_command:
-            path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "build", name)
+            path = os.path.join(scene.BIMProperties.data_dir, "build", name)
             svg = os.path.join(path, name + ".svg")
             eps = os.path.join(path, name + ".eps")
             dxf = os.path.join(path, name + ".dxf")
@@ -605,11 +607,11 @@ class CreateSheets(bpy.types.Operator):
                 subprocess.run(command)
 
         if svg2pdf_command:
-            open_with_user_command(bpy.context.preferences.addons["blenderbim"].preferences.pdf_command, pdf)
+            open_with_user_command(context.preferences.addons["blenderbim"].preferences.pdf_command, pdf)
         else:
             open_with_user_command(
-                bpy.context.preferences.addons["blenderbim"].preferences.svg_command,
-                os.path.join(bpy.context.scene.BIMProperties.data_dir, "build", name, name + ".svg"),
+                context.preferences.addons["blenderbim"].preferences.svg_command,
+                os.path.join(scene.BIMProperties.data_dir, "build", name, name + ".svg"),
             )
         return {"FINISHED"}
 
@@ -621,8 +623,8 @@ class OpenView(bpy.types.Operator):
 
     def execute(self, context):
         open_with_user_command(
-            bpy.context.preferences.addons["blenderbim"].preferences.svg_command,
-            os.path.join(bpy.context.scene.BIMProperties.data_dir, "diagrams", self.view + ".svg"),
+            context.preferences.addons["blenderbim"].preferences.svg_command,
+            os.path.join(context.scene.BIMProperties.data_dir, "diagrams", self.view + ".svg"),
         )
         return {"FINISHED"}
 
@@ -634,13 +636,13 @@ class OpenViewCamera(bpy.types.Operator):
     view_name: bpy.props.StringProperty()
 
     def execute(self, context):
-        new_drawing_index = bpy.context.scene.DocProperties.drawings.find(self.view_name)
-        bpy.context.scene.DocProperties.active_drawing_index = new_drawing_index
-        drawing = bpy.context.scene.DocProperties.drawings[new_drawing_index]
-        bpy.context.view_layer.objects.active = drawing.camera
+        new_drawing_index = context.scene.DocProperties.drawings.find(self.view_name)
+        context.scene.DocProperties.active_drawing_index = new_drawing_index
+        drawing = context.scene.DocProperties.drawings[new_drawing_index]
+        context.view_layer.objects.active = drawing.camera
         bpy.ops.object.select_all(action="DESELECT")
         drawing.camera.select_set(True)
-        for area in bpy.context.screen.areas:
+        for area in context.screen.areas:
             if area.ui_type == "PROPERTIES":
                 for space in area.spaces:
                     space.context = "DATA"
@@ -654,22 +656,22 @@ class ActivateView(bpy.types.Operator):
     drawing_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        camera = bpy.context.scene.DocProperties.drawings[self.drawing_index].camera
+        camera = context.scene.DocProperties.drawings[self.drawing_index].camera
         if not camera:
             return {"FINISHED"}
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         is_local_view = area.spaces[0].local_view is not None
         if is_local_view:
             bpy.ops.view3d.localview()
-            bpy.context.scene.camera = camera
+            context.scene.camera = camera
             bpy.ops.view3d.localview()
         else:
-            bpy.context.scene.camera = camera
+            context.scene.camera = camera
         area.spaces[0].region_3d.view_perspective = "CAMERA"
         views_collection = bpy.data.collections.get("Views")
         for collection in views_collection.children:
             # We assume the project collection is at the top level
-            for project_collection in bpy.context.view_layer.layer_collection.children:
+            for project_collection in context.view_layer.layer_collection.children:
                 # We assume a convention that the 'Views' collection is directly
                 # in the project collection
                 if (
@@ -678,7 +680,7 @@ class ActivateView(bpy.types.Operator):
                 ):
                     project_collection.children["Views"].children[collection.name].hide_viewport = True
                     bpy.data.collections.get(collection.name).hide_render = True
-        bpy.context.view_layer.layer_collection.children["Views"].children[
+        context.view_layer.layer_collection.children["Views"].children[
             camera.users_collection[0].name
         ].hide_viewport = False
         bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
@@ -694,7 +696,7 @@ class SelectDocIfcFile(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.scene.DocProperties.ifc_files[self.index].name = self.filepath
+        context.scene.DocProperties.ifc_files[self.index].name = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -708,7 +710,7 @@ class GenerateReferences(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        self.camera = bpy.context.scene.camera
+        self.camera = context.scene.camera
         self.filter_potential_references()
         if self.camera.data.BIMCameraProperties.target_view == "PLAN_VIEW":
             self.generate_grids()
@@ -777,7 +779,7 @@ class ResizeText(bpy.types.Operator):
     # TODO: check undo redo
 
     def execute(self, context):
-        for obj in bpy.context.scene.camera.users_collection[0].objects:
+        for obj in context.scene.camera.users_collection[0].objects:
             if isinstance(obj.data, bpy.types.TextCurve):
                 annotation.Annotator.resize_text(obj)
         return {"FINISHED"}
@@ -789,7 +791,7 @@ class AddVariable(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bpy.context.active_object.data.BIMTextProperties.variables.add()
+        context.active_object.data.BIMTextProperties.variables.add()
         return {"FINISHED"}
 
 
@@ -800,7 +802,7 @@ class RemoveVariable(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.active_object.data.BIMTextProperties.variables.remove(self.index)
+        context.active_object.data.BIMTextProperties.variables.remove(self.index)
         return {"FINISHED"}
 
 
@@ -810,8 +812,8 @@ class PropagateTextData(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        source = bpy.context.active_object
-        for obj in bpy.context.selected_objects:
+        source = context.active_object
+        for obj in context.selected_objects:
             if obj == source:
                 continue
             obj.data.body = source.data.body
@@ -834,7 +836,7 @@ class RemoveDrawing(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
         camera = props.drawings[self.index].camera
         collection = camera.users_collection[0]
         for obj in collection.objects:
@@ -850,7 +852,7 @@ class AddDrawingStyle(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        new = bpy.context.scene.DocProperties.drawing_styles.add()
+        new = context.scene.DocProperties.drawing_styles.add()
         new.name = "New Drawing Style"
         return {"FINISHED"}
 
@@ -862,7 +864,7 @@ class RemoveDrawingStyle(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.scene.DocProperties.drawing_styles.remove(self.index)
+        context.scene.DocProperties.drawing_styles.remove(self.index)
         return {"FINISHED"}
 
 
@@ -924,11 +926,12 @@ class ActivateDrawingStyle(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        if context.scene.camera.data.BIMCameraProperties.active_drawing_style_index < len(
-            bpy.context.scene.DocProperties.drawing_styles
+        scene = context.scene
+        if scene.camera.data.BIMCameraProperties.active_drawing_style_index < len(
+            scene.DocProperties.drawing_styles
         ):
-            self.drawing_style = bpy.context.scene.DocProperties.drawing_styles[
-                context.scene.camera.data.BIMCameraProperties.active_drawing_style_index
+            self.drawing_style = scene.DocProperties.drawing_styles[
+                scene.camera.data.BIMCameraProperties.active_drawing_style_index
             ]
             self.set_raster_style()
             self.set_query()
@@ -1039,7 +1042,7 @@ class RemoveSheet(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
         props.sheets.remove(self.index)
         return {"FINISHED"}
 
@@ -1050,8 +1053,8 @@ class AddSchedule(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        new = bpy.context.scene.DocProperties.schedules.add()
-        new.name = "SCHEDULE {}".format(len(bpy.context.scene.DocProperties.schedules))
+        new = context.scene.DocProperties.schedules.add()
+        new.name = "SCHEDULE {}".format(len(context.scene.DocProperties.schedules))
         return {"FINISHED"}
 
 
@@ -1062,7 +1065,7 @@ class RemoveSchedule(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
         props.schedules.remove(self.index)
         return {"FINISHED"}
 
@@ -1076,7 +1079,7 @@ class SelectScheduleFile(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
         props.schedules[props.active_schedule_index].file = self.filepath
         return {"FINISHED"}
 
@@ -1090,12 +1093,12 @@ class BuildSchedule(bpy.types.Operator):
     bl_label = "Build Schedule"
 
     def execute(self, context):
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
         schedule = props.schedules[props.active_schedule_index]
         schedule_creator = scheduler.Scheduler()
-        outfile = os.path.join(bpy.context.scene.BIMProperties.data_dir, "schedules", schedule.name + ".svg")
+        outfile = os.path.join(context.scene.BIMProperties.data_dir, "schedules", schedule.name + ".svg")
         schedule_creator.schedule(schedule.file, outfile)
-        open_with_user_command(bpy.context.preferences.addons["blenderbim"].preferences.svg_command, outfile)
+        open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, outfile)
         return {"FINISHED"}
 
 
@@ -1106,9 +1109,9 @@ class AddScheduleToSheet(bpy.types.Operator):
     # TODO: check undo redo
 
     def execute(self, context):
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
         sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
+        sheet_builder.data_dir = context.scene.BIMProperties.data_dir
         sheet_builder.add_schedule(
             props.schedules[props.active_schedule_index].name, props.sheets[props.active_sheet_index].name
         )
@@ -1121,7 +1124,7 @@ class AddDrawingStyleAttribute(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = bpy.context.scene.camera.data.BIMCameraProperties
+        props = context.scene.camera.data.BIMCameraProperties
         context.scene.DocProperties.drawing_styles[props.active_drawing_style_index].attributes.add()
         return {"FINISHED"}
 
@@ -1133,7 +1136,7 @@ class RemoveDrawingStyleAttribute(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = bpy.context.scene.camera.data.BIMCameraProperties
+        props = context.scene.camera.data.BIMCameraProperties
         context.scene.DocProperties.drawing_styles[props.active_drawing_style_index].attributes.remove(self.index)
         return {"FINISHED"}
 
@@ -1161,9 +1164,9 @@ class CleanWireframes(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        objects = bpy.data.objects
-        if bpy.context.selected_objects:
-            objects = bpy.context.selected_objects
+        objects = context.scene.objects
+        if context.selected_objects:
+            objects = context.selected_objects
         for obj in objects:
             if not isinstance(obj.data, bpy.types.Mesh):
                 continue

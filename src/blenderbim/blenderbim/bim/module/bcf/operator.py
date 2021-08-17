@@ -766,7 +766,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         cam_width = context.scene.render.resolution_x
         cam_height = context.scene.render.resolution_y
         cam_aspect = cam_width / cam_height
-
+        
         if viewpoint.snapshot:
             obj.data.show_background_images = True
             obj.data.background_images.clear()
@@ -787,7 +787,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         area.spaces[0].region_3d.view_perspective = "CAMERA"
 
         if self.file:
-            self.set_viewpoint_components(viewpoint)
+            self.set_viewpoint_components(viewpoint, context)
 
         gp = bpy.data.grease_pencils.get("BCF")
         if gp:
@@ -803,10 +803,10 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         if viewpoint.bitmaps:
             self.create_bitmaps(bcfxml, viewpoint, topic)
 
-        self.setup_camera(viewpoint, obj, cam_aspect)
+        self.setup_camera(viewpoint, obj, cam_aspect, context)
         return {"FINISHED"}
 
-    def setup_camera(self, viewpoint, obj, cam_aspect):
+    def setup_camera(self, viewpoint, obj, cam_aspect, context):
         if viewpoint.orthogonal_camera:
             camera = viewpoint.orthogonal_camera
             obj.data.type = "ORTHO"
@@ -831,7 +831,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             [x_axis[2], y_axis[2], z_axis[2], camera.camera_view_point.z],
             [0, 0, 0, 1],
         ))
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
             matrix = ifcopenshell.util.geolocation.global2local(
@@ -844,7 +844,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             )
         obj.matrix_world = Matrix(matrix.tolist())
 
-    def set_viewpoint_components(self, viewpoint):
+    def set_viewpoint_components(self, viewpoint, context):
         if not viewpoint.components:
             return
 
@@ -854,10 +854,10 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         exception_global_ids = [v.ifc_guid for v in viewpoint.components.visibility.exceptions]
 
         if viewpoint.components.visibility.default_visibility:
-            old = bpy.context.area.type
-            bpy.context.area.type = "VIEW_3D"
+            old = context.area.type
+            context.area.type = "VIEW_3D"
             bpy.ops.object.hide_view_clear()
-            bpy.context.area.type = old
+            context.area.type = old
             for global_id in exception_global_ids:
                 obj = IfcStore.get_element(global_id)
                 if obj:
@@ -869,35 +869,35 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 if obj:
                     objs.append(obj)
             if objs:
-                old = bpy.context.area.type
-                bpy.context.area.type = "VIEW_3D"
+                old = context.area.type
+                context.area.type = "VIEW_3D"
                 context_override = {}
                 context_override["object"] = context_override["active_object"] = objs[0]
                 context_override["selected_objects"] = context_override["selected_editable_objects"] = objs
                 bpy.ops.object.hide_view_set(context_override, unselected=True)
-                bpy.context.area.type = old
+                context.area.type = old
 
         if viewpoint.components.view_setup_hints:
             if not viewpoint.components.view_setup_hints.spaces_visible:
-                self.hide_spaces()
+                self.hide_spaces(context)
             if viewpoint.components.view_setup_hints.openings_visible is not None:
-                self.set_openings_visibility(viewpoint.components.view_setup_hints.openings_visible)
+                self.set_openings_visibility(viewpoint.components.view_setup_hints.openings_visible, context)
         else:
-            self.hide_spaces()
-            self.set_openings_visibility(False)
+            self.hide_spaces(context)
+            self.set_openings_visibility(False, context)
 
         self.set_selection(viewpoint)
         self.set_colours(viewpoint)
 
-    def hide_spaces(self):
-        old = bpy.context.area.type
-        bpy.context.area.type = "VIEW_3D"
+    def hide_spaces(self, context):
+        old = context.area.type
+        context.area.type = "VIEW_3D"
         bpy.ops.object.select_pattern(pattern="IfcSpace/*")
         bpy.ops.object.hide_view_set({})
-        bpy.context.area.type = old
+        context.area.type = old
 
-    def set_openings_visibility(self, is_visible):
-        for collection in self.get_opening_collections():
+    def set_openings_visibility(self, is_visible, context):
+        for collection in self.get_opening_collections(context):
             collection.hide_viewport = not is_visible
 
     def set_selection(self, viewpoint):
@@ -918,9 +918,9 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             if obj:
                 obj.color = self.hex_to_rgb(color)
 
-    def get_opening_collections(self):
+    def get_opening_collections(self, context):
         collections = []
-        for collection in bpy.context.view_layer.layer_collection.children:
+        for collection in context.view_layer.layer_collection.children:
             opening_collection = collection.children.get("IfcOpeningElements")
             if opening_collection:
                 collections.append(opening_collection)

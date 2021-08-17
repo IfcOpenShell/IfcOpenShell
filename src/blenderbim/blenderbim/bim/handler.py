@@ -166,8 +166,8 @@ def undo_pre(scene):
 
 @persistent
 def undo_post(scene):
-    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
-        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
+    if IfcStore.last_transaction != scene.BIMProperties.last_transaction:
+        IfcStore.last_transaction = scene.BIMProperties.last_transaction
         IfcStore.undo()
         purge_module_data()
     IfcStore.update_undo_redo_stack_objects()
@@ -181,8 +181,8 @@ def redo_pre(scene):
 
 @persistent
 def redo_post(scene):
-    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
-        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
+    if IfcStore.last_transaction != scene.BIMProperties.last_transaction:
+        IfcStore.last_transaction = scene.BIMProperties.last_transaction
         IfcStore.redo()
         purge_module_data()
     IfcStore.update_undo_redo_stack_objects()
@@ -191,7 +191,7 @@ def redo_post(scene):
 
 @persistent
 def ensureIfcExported(scene):
-    if IfcStore.get_file() and not bpy.context.scene.BIMProperties.ifc_file:
+    if IfcStore.get_file() and not scene.BIMProperties.ifc_file:
         bpy.ops.export_ifc.bim("INVOKE_DEFAULT")
 
 
@@ -230,18 +230,18 @@ def setDefaultProperties(scene):
         key=active_object_key, owner=global_subscription_owner, args=(), notify=active_object_callback
     )
     ifcopenshell.api.owner.settings.get_person = (
-        lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
-        if getPersons(None, bpy.context) and bpy.context.scene.BIMOwnerProperties.user_person
+        lambda ifc: ifc.by_id(int(scene.BIMOwnerProperties.user_person))
+        if getPersons(None, None) and scene.BIMOwnerProperties.user_person
         else None
     )
     ifcopenshell.api.owner.settings.get_organisation = (
-        lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_organisation))
-        if getOrganisations(None, bpy.context) and bpy.context.scene.BIMOwnerProperties.user_organisation
+        lambda ifc: ifc.by_id(int(scene.BIMOwnerProperties.user_organisation))
+        if getOrganisations(None, None) and scene.BIMOwnerProperties.user_organisation
         else None
     )
     ifcopenshell.api.owner.settings.get_application = get_application
-    if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
+    if len(scene.DocProperties.drawing_styles) == 0:
+        drawing_style = scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Technical"
         drawing_style.render_type = "VIEWPORT"
         drawing_style.raster_style = json.dumps(
@@ -272,7 +272,7 @@ def setDefaultProperties(scene):
                 "space.overlay.show_relationship_lines": False,
             }
         )
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
+        drawing_style = scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Shaded"
         drawing_style.render_type = "VIEWPORT"
         drawing_style.raster_style = json.dumps(
@@ -303,7 +303,7 @@ def setDefaultProperties(scene):
                 "space.overlay.show_relationship_lines": False,
             }
         )
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
+        drawing_style = scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Blender Default"
         drawing_style.render_type = "DEFAULT"
         bpy.ops.bim.save_drawing_style(index="2")
