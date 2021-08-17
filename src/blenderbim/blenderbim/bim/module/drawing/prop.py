@@ -57,10 +57,10 @@ def getDiagramScales(self, context):
     global diagram_scales_enum
     if (
         len(diagram_scales_enum) < 1
-        or (bpy.context.scene.unit_settings.system == "IMPERIAL" and len(diagram_scales_enum) == 13)
-        or (bpy.context.scene.unit_settings.system == "METRIC" and len(diagram_scales_enum) == 31)
+        or (context.scene.unit_settings.system == "IMPERIAL" and len(diagram_scales_enum) == 13)
+        or (context.scene.unit_settings.system == "METRIC" and len(diagram_scales_enum) == 31)
     ):
-        if bpy.context.scene.unit_settings.system == "IMPERIAL":
+        if context.scene.unit_settings.system == "IMPERIAL":
             diagram_scales_enum = [
                 ("CUSTOM", "Custom", ""),
                 ("1'=1'-0\"|1/1", "1'=1'-0\"", ""),

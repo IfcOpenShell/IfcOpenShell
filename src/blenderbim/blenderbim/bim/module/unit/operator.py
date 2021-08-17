@@ -234,13 +234,17 @@ class EnableEditingUnit(bpy.types.Operator):
         props = context.scene.BIMUnitProperties
         props.unit_attributes.clear()
         data = Data.units[self.unit]
-        blenderbim.bim.helper.import_attributes(data["type"], props.unit_attributes, data, self.import_attributes)
+        blenderbim.bim.helper.import_attributes(
+            data["type"],
+            props.unit_attributes, 
+            data, 
+            lambda name, prop, data: self.import_attributes(name, prop, data, context))
         props.active_unit_id = self.unit
         return {"FINISHED"}
 
-    def import_attributes(self, name, prop, data):
+    def import_attributes(self, name, prop, data, context):
         if name == "Dimensions":
-            new = bpy.context.scene.BIMUnitProperties.unit_attributes.add()
+            new = context.scene.BIMUnitProperties.unit_attributes.add()
             new.name = name
             new.is_null = data[name] is None
             new.is_optional = False

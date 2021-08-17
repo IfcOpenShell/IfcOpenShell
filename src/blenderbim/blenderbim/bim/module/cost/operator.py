@@ -438,7 +438,7 @@ class UnassignCostItemQuantity(bpy.types.Operator):
         else:
             products = [
                 self.file.by_id(o.BIMObjectProperties.ifc_definition_id)
-                for o in bpy.context.selected_objects
+                for o in context.selected_objects
                 if o.BIMObjectProperties.ifc_definition_id
             ]
         ifcopenshell.api.run(
@@ -637,11 +637,14 @@ class EnableEditingCostItemValue(bpy.types.Operator):
         data = Data.cost_values[self.cost_value]
 
         blenderbim.bim.helper.import_attributes(
-            data["type"], self.props.cost_value_attributes, data, self.import_attributes
+            data["type"], 
+            self.props.cost_value_attributes, 
+            data, 
+            lambda name, prop, data: self.import_attributes(name, prop, data, context)
         )
         return {"FINISHED"}
 
-    def import_attributes(self, name, prop, data):
+    def import_attributes(self, name, prop, data, context):
         if name == "AppliedValue":
             # TODO: for now, only support simple values
             prop.data_type = "float"
@@ -649,7 +652,7 @@ class EnableEditingCostItemValue(bpy.types.Operator):
             return True
         if (
             name == "UnitBasis"
-            and Data.cost_schedules[bpy.context.scene.BIMCostProperties.active_cost_schedule_id]["PredefinedType"]
+            and Data.cost_schedules[context.scene.BIMCostProperties.active_cost_schedule_id]["PredefinedType"]
             == "SCHEDULEOFRATES"
         ):
             prop = self.props.cost_value_attributes.add()
@@ -711,7 +714,9 @@ class EditCostValue(bpy.types.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMCostProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.cost_value_attributes, self.export_attributes)
+        attributes = blenderbim.bim.helper.export_attributes(
+            props.cost_value_attributes, 
+            lambda attributes, prop: self.export_attributes(attributes, prop, context))
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "cost.edit_cost_value",
@@ -722,7 +727,7 @@ class EditCostValue(bpy.types.Operator):
         bpy.ops.bim.disable_editing_cost_item_value()
         return {"FINISHED"}
 
-    def export_attributes(self, attributes, prop):
+    def export_attributes(self, attributes, prop, context):
         if prop.name == "UnitBasisValue":
             if prop.is_null:
                 attributes["UnitBasis"] = None
@@ -730,7 +735,7 @@ class EditCostValue(bpy.types.Operator):
             attributes["UnitBasis"] = {
                 "ValueComponent": prop.float_value or 1,
                 "UnitComponent": IfcStore.get_file().by_id(
-                    int(bpy.context.scene.BIMCostProperties.cost_value_attributes.get("UnitBasisUnit").enum_value)
+                    int(context.scene.BIMCostProperties.cost_value_attributes.get("UnitBasisUnit").enum_value)
                 ),
             }
             return True
