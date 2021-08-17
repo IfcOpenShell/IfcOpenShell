@@ -31,8 +31,7 @@ class LoadProfiles(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMProfileProperties
-        while len(props.profiles) > 0:
-            props.profiles.remove(0)
+        props.profiles.clear()
 
         for ifc_definition_id, profile in Data.profiles.items():
             new = props.profiles.add()
@@ -80,8 +79,7 @@ class EnableEditingProfile(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMProfileProperties
-        while len(props.profile_attributes) > 0:
-            props.profile_attributes.remove(0)
+        props.profile_attributes.clear()
 
         data = Data.profiles[self.profile]
 

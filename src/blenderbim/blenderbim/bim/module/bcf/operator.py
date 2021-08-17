@@ -166,8 +166,7 @@ class LoadBcfComments(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         bcfxml.get_comments(self.topic_guid)
         blender_topic = context.scene.BCFProperties.topics.get(self.topic_guid)
-        while len(blender_topic.comments) > 0:
-            blender_topic.comments.remove(0)
+        blender_topic.comments.clear()
         for comment in bcfxml.topics[self.topic_guid].comments.values():
             new = blender_topic.comments.add()
             data_map = {
@@ -770,8 +769,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
 
         if viewpoint.snapshot:
             obj.data.show_background_images = True
-            while len(obj.data.background_images) > 0:
-                obj.data.background_images.remove(obj.data.background_images[0])
+            obj.data.background_images.clear()
             background = obj.data.background_images.new()
             background.image = bpy.data.images.load(
                 os.path.join(bcfxml.filepath, topic.guid, viewpoint.snapshot)

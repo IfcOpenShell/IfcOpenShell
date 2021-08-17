@@ -31,8 +31,7 @@ class LoadSystems(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMSystemProperties
-        while len(props.systems) > 0:
-            props.systems.remove(0)
+        props.systems.clear()
         for ifc_definition_id, system in Data.systems.items():
             new = props.systems.add()
             new.ifc_definition_id = ifc_definition_id
@@ -119,8 +118,7 @@ class EnableEditingSystem(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMSystemProperties
-        while len(props.system_attributes) > 0:
-            props.system_attributes.remove(0)
+        props.system_attributes.clear()
 
         data = Data.systems[self.system]
 

@@ -37,8 +37,7 @@ class LoadResources(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMResourceProperties
         self.tprops = context.scene.BIMResourceTreeProperties
-        while len(self.tprops.resources) > 0:
-            self.tprops.resources.remove(0)
+        self.tprops.resources.clear()
 
         self.contracted_resources = json.loads(self.props.contracted_resources)
         for resource_id, data in Data.resources.items():
@@ -72,8 +71,7 @@ class EnableEditingResource(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMResourceProperties
         self.props.active_resource_id = self.resource
-        while len(self.props.resource_attributes) > 0:
-            self.props.resource_attributes.remove(0)
+        self.props.resource_attributes.clear()
         self.props.editing_resource_type = "ATTRIBUTES"
         self.enable_editing_resource()
         return {"FINISHED"}
@@ -299,8 +297,7 @@ class EnableEditingResourceTime(bpy.types.Operator):
         props = context.scene.BIMResourceProperties
         self.file = IfcStore.get_file()
         resource_time_id = Data.resources[self.resource]["Usage"] or self.add_resource_time().id()
-        while len(props.resource_time_attributes) > 0:
-            props.resource_time_attributes.remove(0)
+        props.resource_time_attributes.clear()
 
         data = Data.resource_times[resource_time_id]
 

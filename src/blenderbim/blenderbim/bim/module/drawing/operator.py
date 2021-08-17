@@ -819,8 +819,7 @@ class PropagateTextData(bpy.types.Operator):
             obj.data.align_y = source.data.align_y
             obj.data.BIMTextProperties.font_size = source.data.BIMTextProperties.font_size
             obj.data.BIMTextProperties.symbol = source.data.BIMTextProperties.symbol
-            while len(obj.data.BIMTextProperties.variables) > 0:
-                obj.data.BIMTextProperties.variables.remove(0)
+            obj.data.BIMTextProperties.variables.clear()
             for variable in source.data.BIMTextProperties.variables:
                 new_variable = obj.data.BIMTextProperties.variables.add()
                 new_variable.name = variable.name
@@ -1144,13 +1143,13 @@ class RefreshDrawingList(bpy.types.Operator):
     bl_label = "Refresh Drawing List"
 
     def execute(self, context):
-        while len(bpy.context.scene.DocProperties.drawings) > 0:
-            bpy.context.scene.DocProperties.drawings.remove(0)
-        for obj in bpy.context.scene.objects:
+        doc_props = context.scene.DocProperties.drawings
+        doc_props.drawings.clear()
+        for obj in context.scene.objects:
             if not isinstance(obj.data, bpy.types.Camera):
                 continue
             if "IfcAnnotation/" in obj.name:
-                new = bpy.context.scene.DocProperties.drawings.add()
+                new = doc_props.drawings.add()
                 new.name = "/".join(obj.name.split("/")[1:])
                 new.camera = obj
         return {"FINISHED"}

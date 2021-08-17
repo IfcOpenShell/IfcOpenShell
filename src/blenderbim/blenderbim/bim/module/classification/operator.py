@@ -69,8 +69,7 @@ class EnableEditingClassification(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMClassificationProperties
-        while len(props.classification_attributes) > 0:
-            props.classification_attributes.remove(0)
+        props.classification_attributes.clear()
         classification_data = Data.classifications[self.classification]
         for attribute in IfcStore.get_schema().declaration_by_name("IfcClassification").all_attributes():
             new = props.classification_attributes.add()
@@ -154,8 +153,7 @@ class EnableEditingClassificationReference(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         props = obj.BIMClassificationReferenceProperties
-        while len(props.reference_attributes) > 0:
-            props.reference_attributes.remove(0)
+        props.reference_attributes.clear()
         reference_data = Data.references[self.reference]
         for attribute in IfcStore.get_schema().declaration_by_name("IfcClassificationReference").all_attributes():
             if attribute.name() == "ReferencedSource":

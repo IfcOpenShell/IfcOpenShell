@@ -98,8 +98,7 @@ class LoadUnits(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMUnitProperties
-        while len(props.units) > 0:
-            props.units.remove(0)
+        props.units.clear()
 
         for ifc_definition_id, unit in Data.units.items():
             name = unit.get("Name", "")
@@ -233,8 +232,7 @@ class EnableEditingUnit(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMUnitProperties
-        while len(props.unit_attributes) > 0:
-            props.unit_attributes.remove(0)
+        props.unit_attributes.clear()
         data = Data.units[self.unit]
         blenderbim.bim.helper.import_attributes(data["type"], props.unit_attributes, data, self.import_attributes)
         props.active_unit_id = self.unit

@@ -33,8 +33,7 @@ class LoadInformation(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMDocumentProperties
-        while len(props.documents) > 0:
-            props.documents.remove(0)
+        props.documents.clear()
         for information_id, information in Data.information.items():
             new = props.documents.add()
             new.name = information["Name"] or "Unnamed"
@@ -56,8 +55,7 @@ class LoadDocumentReferences(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMDocumentProperties
-        while len(props.documents) > 0:
-            props.documents.remove(0)
+        props.documents.clear()
         for reference_id, reference in Data.references.items():
             new = props.documents.add()
             new.name = reference["Name"] or "Unnamed"
@@ -90,8 +88,7 @@ class EnableEditingDocument(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMDocumentProperties
-        while len(props.document_attributes) > 0:
-            props.document_attributes.remove(0)
+        props.document_attributes.clear()
 
         if props.is_editing == "information":
             data = Data.information[self.document]

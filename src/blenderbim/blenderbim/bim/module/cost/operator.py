@@ -94,8 +94,7 @@ class EnableEditingCostSchedule(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMCostProperties
         self.props.active_cost_schedule_id = self.cost_schedule
-        while len(self.props.cost_schedule_attributes) > 0:
-            self.props.cost_schedule_attributes.remove(0)
+        self.props.cost_schedule_attributes.clear()
         self.enable_editing_cost_schedule()
         self.props.is_editing = "COST_SCHEDULE"
         return {"FINISHED"}
@@ -276,8 +275,7 @@ class EnableEditingCostItem(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMCostProperties
-        while len(props.cost_item_attributes) > 0:
-            props.cost_item_attributes.remove(0)
+        props.cost_item_attributes.clear()
 
         data = Data.cost_items[self.cost_item]
         blenderbim.bim.helper.import_attributes("IfcCostItem", props.cost_item_attributes, data)
@@ -538,8 +536,7 @@ class EnableEditingCostItemQuantity(bpy.types.Operator):
 
     def execute(self, context):
         self.props = context.scene.BIMCostProperties
-        while len(self.props.quantity_attributes) > 0:
-            self.props.quantity_attributes.remove(0)
+        self.props.quantity_attributes.clear()
         self.props.active_cost_item_quantity_id = self.physical_quantity
         data = Data.physical_quantities[self.physical_quantity]
         blenderbim.bim.helper.import_attributes(data["type"], self.props.quantity_attributes, data)
@@ -635,8 +632,7 @@ class EnableEditingCostItemValue(bpy.types.Operator):
 
     def execute(self, context):
         self.props = context.scene.BIMCostProperties
-        while len(self.props.cost_value_attributes) > 0:
-            self.props.cost_value_attributes.remove(0)
+        self.props.cost_value_attributes.clear()
         self.props.active_cost_item_value_id = self.cost_value
         data = Data.cost_values[self.cost_value]
 
@@ -868,12 +864,9 @@ class LoadCostItemQuantities(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
-        while len(self.props.cost_item_products) > 0:
-            self.props.cost_item_products.remove(0)
-        while len(self.props.cost_item_processes) > 0:
-            self.props.cost_item_processes.remove(0)
-        while len(self.props.cost_item_resources) > 0:
-            self.props.cost_item_resources.remove(0)
+        self.props.cost_item_products.clear()
+        self.props.cost_item_processes.clear()
+        self.props.cost_item_resources.clear()
         ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
         for control_id, quantity_ids in Data.cost_items[ifc_definition_id]["Controls"].items():
             related_object = self.file.by_id(control_id)
@@ -900,13 +893,10 @@ class LoadCostItemTypes(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
-        while len(self.props.cost_item_type_products) > 0:
-            self.props.cost_item_type_products.remove(0)
+        self.props.cost_item_type_products.clear()
         # TODO implement process and resource types
-        # while len(self.props.cost_item_processes) > 0:
-        #    self.props.cost_item_processes.remove(0)
-        # while len(self.props.cost_item_resources) > 0:
-        #    self.props.cost_item_resources.remove(0)
+        # self.props.cost_item_processes.clear()
+        # self.props.cost_item_resources.clear()
         ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
         for control_id, quantity_ids in Data.cost_items[ifc_definition_id]["Controls"].items():
             related_object = self.file.by_id(control_id)

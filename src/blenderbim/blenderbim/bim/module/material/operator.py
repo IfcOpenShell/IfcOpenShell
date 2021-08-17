@@ -420,16 +420,14 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
         else:
             material_set_data = {}
 
-        while len(props.material_set_usage_attributes) > 0:
-            props.material_set_usage_attributes.remove(0)
+        props.material_set_usage_attributes.clear()
 
         if "Usage" in product_data["type"]:
             blenderbim.bim.helper.import_attributes(
                 product_data["type"], props.material_set_usage_attributes, material_set_usage, self.import_attributes
             )
 
-        while len(props.material_set_attributes) > 0:
-            props.material_set_attributes.remove(0)
+        props.material_set_attributes.clear()
 
         for attribute in IfcStore.get_schema().declaration_by_name(material_set_class).all_attributes():
             if "<string>" not in str(attribute.type_of_attribute):
@@ -584,8 +582,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
         return {"FINISHED"}
 
     def load_set_item_attributes(self, material_set_item, material_set_item_data):
-        while len(self.props.material_set_item_attributes) > 0:
-            self.props.material_set_item_attributes.remove(0)
+        self.props.material_set_item_attributes.clear()
 
         for attribute in IfcStore.get_schema().declaration_by_name(material_set_item.is_a()).all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
@@ -606,8 +603,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
                     new.bool_value = False if new.is_null else material_set_item_data[attribute.name()]
 
     def load_profile_attributes(self, material_set_item, material_set_item_data):
-        while len(self.props.material_set_item_profile_attributes) > 0:
-            self.props.material_set_item_profile_attributes.remove(0)
+        self.props.material_set_item_profile_attributes.clear()
 
         if not material_set_item_data["Profile"]:
             return

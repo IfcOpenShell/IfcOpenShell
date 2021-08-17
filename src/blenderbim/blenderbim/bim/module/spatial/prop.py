@@ -38,8 +38,7 @@ def getSpatialContainers(self, context, parent_id=None):
     Data.load(IfcStore.get_file())
     self.file = IfcStore.get_file()
     props = context.scene.BIMSpatialProperties
-    while len(props.spatial_elements) > 0:
-        props.spatial_elements.remove(0)
+    props.spatial_elements.clear()
 
     if parent_id:
         props.active_decomposes_id = parent_id

@@ -153,8 +153,7 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
     def execute(self, context):
         obj = context.active_object
         props = obj.BIMStructuralProperties
-        while len(props.boundary_condition_attributes) > 0:
-            props.boundary_condition_attributes.remove(0)
+        props.boundary_condition_attributes.clear()
 
         data = Data.boundary_conditions[self.boundary_condition]
 
@@ -240,8 +239,7 @@ class LoadStructuralAnalysisModels(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMStructuralProperties
-        while len(props.structural_analysis_models) > 0:
-            props.structural_analysis_models.remove(0)
+        props.structural_analysis_models.clear()
         for ifc_definition_id, structural_analysis_model in Data.structural_analysis_models.items():
             new = props.structural_analysis_models.add()
             new.ifc_definition_id = ifc_definition_id
@@ -343,8 +341,7 @@ class EnableEditingStructuralAnalysisModel(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMStructuralProperties
-        while len(props.structural_analysis_model_attributes) > 0:
-            props.structural_analysis_model_attributes.remove(0)
+        props.structural_analysis_model_attributes.clear()
 
         data = Data.structural_analysis_models[self.structural_analysis_model]
 
@@ -697,8 +694,7 @@ class EnableEditingStructuralLoadCase(bpy.types.Operator):
         self.props = context.scene.BIMStructuralProperties
         self.props.active_load_case_id = self.load_case
         self.props.load_case_editing_type = "ATTRIBUTES"
-        while len(self.props.load_case_attributes) > 0:
-            self.props.load_case_attributes.remove(0)
+        self.props.load_case_attributes.clear()
         data = Data.load_cases[self.load_case]
         blenderbim.bim.helper.import_attributes(
             "IfcStructuralLoadCase", self.props.load_case_attributes, data, self.import_attributes
@@ -784,8 +780,7 @@ class EnableEditingStructuralLoadGroupActivities(bpy.types.Operator):
         return {"FINISHED"}
 
     def load_structural_activities(self):
-        while len(self.props.load_group_activities) > 0:
-            self.props.load_group_activities.remove(0)
+        self.props.load_group_activities.clear()
         for activity_id in Data.load_groups[self.load_group]["IsGroupedBy"]:
             activity = Data.structural_activities[activity_id]
             new = self.props.load_group_activities.add()
@@ -856,8 +851,7 @@ class LoadStructuralLoads(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMStructuralProperties
-        while len(props.structural_loads) > 0:
-            props.structural_loads.remove(0)
+        props.structural_loads.clear()
         if props.filtered_structural_loads:
             names = [structural_load["Name"] or "Unnamed" for _, structural_load in Data.structural_loads.items()]
             for ifc_definition_id, structural_load in Data.structural_loads.items():
@@ -919,8 +913,7 @@ class EnableEditingStructuralLoad(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMStructuralProperties
-        while len(props.structural_load_attributes) > 0:
-            props.structural_load_attributes.remove(0)
+        props.structural_load_attributes.clear()
 
         data = Data.structural_loads[self.structural_load]
         blenderbim.bim.helper.import_attributes(data["type"], props.structural_load_attributes, data)
@@ -1002,8 +995,7 @@ class LoadBoundaryConditions(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMStructuralProperties
-        while len(props.boundary_conditions) > 0:
-            props.boundary_conditions.remove(0)
+        props.boundary_conditions.clear()
         if props.filtered_boundary_conditions:
             names = [
                 boundary_condition["Name"] or "Unnamed" for _, boundary_condition in Data.boundary_conditions.items()
@@ -1082,8 +1074,7 @@ class EnableEditingBoundaryCondition(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMStructuralProperties
-        while len(props.boundary_condition_attributes) > 0:
-            props.boundary_condition_attributes.remove(0)
+        props.boundary_condition_attributes.clear()
 
         data = Data.boundary_conditions[self.boundary_condition]
         # blenderbim.bim.helper.import_attributes(data["type"], props.boundary_condition_attributes, data)
