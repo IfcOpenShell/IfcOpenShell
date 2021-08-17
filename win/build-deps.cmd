@@ -86,9 +86,7 @@ IF NOT EXIST "%INSTALL_DIR%". mkdir "%INSTALL_DIR%"
 IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
 :: User-configurable build options
-IF NOT DEFINED IFCOS_USE_OCCT set IFCOS_USE_OCCT=TRUE
 IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
-IF NOT DEFINED IFCOS_USE_PYTHON2 set IFCOS_USE_PYTHON2=FALSE
 IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
 
 :: For subroutines
@@ -143,14 +141,9 @@ IF %BUILD_CFG%==MinSizeRel call cecho.cmd 0 14 "     WARNING: MinSizeRel build c
 call cecho.cmd 0 13 "* Build Type`t`t= %BUILD_TYPE%"
 echo   - The used build type for the dependencies (Build, Rebuild, Clean).
 echo     Defaults to Build if not specified. Rebuild/Clean also uninstalls Python (if it was installed by this script).
-call cecho.cmd 0 13 "* IFCOS_USE_OCCT`t= %IFCOS_USE_OCCT%"
-echo   - Use the official Open CASCADE instead of the community edition.
 call cecho.cmd 0 13 "* IFCOS_INSTALL_PYTHON`t= %IFCOS_INSTALL_PYTHON%"
 echo   - Download and install Python.
 echo     Set to something other than TRUE if you wish to use an already installed version of Python.
-call cecho.cmd 0 13 "* IFCOS_USE_PYTHON2`t= %IFCOS_USE_PYTHON2%"
-echo   - Use Python 2 instead of 3.
-echo     Set to TRUE if you wish to use Python 2 instead of 3. Has no effect if IFCOS_INSTALL_PYTHON is not TRUE.
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo   - How many MSBuild.exe processes may be run in parallel.
 echo     Defaults to NUMBER_OF_PROCESSORS. Used also by other IfcOpenShell build scripts.
@@ -166,9 +159,6 @@ call cecho.cmd black cyan "If you are not ready with the above: type `'n`' in th
 set /p do_continue="> "
 if "%do_continue%"=="n" goto :Finish
 
-:: Cache last used CMake generator for other scripts to use
-if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-
 echo.
 set START_TIME=%TIME%
 echo Build started at %START_TIME%.
@@ -177,9 +167,34 @@ echo.
 
 cd "%DEPS_DIR%"
 
-:HDF5
+:: VERSIONS
 set HDF5_VERSION=1.8.22
 set HDF5_VERSION_MAJOR=1.8
+set OCCT_VERSION=7.5.3
+:: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
+:: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
+set PYTHON_VERSION=3.4.3
+
+:: VERSION DERIVATIONS
+set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+set PY_VER_MAJOR_MINOR=%PYTHON_VERSION:~0,3%
+set PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR:.=%
+set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+
+:: Cache last used CMake generator and configurable depedency dirs for other scripts to use
+:: This is consolidated at the beginning of the script so that the script can be partially
+:: executed by jumping (using goto) to different labels.
+if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo HDF5_VERSION=%HDF5_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
+    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+    echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+)
+
+:HDF5
 set HDF5_CMAKE_ZIP=CMake-hdf5-%HDF5_VERSION%.zip
 set HDF5_INSTALL_ZIP_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
 if "%ARCH_BITS%"=="64" set ARCH_BITS_64=64
@@ -190,7 +205,6 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
 ctest -S HDF5config.cmake,BUILD_GENERATOR=VS%VS_VER%%ARCH_BITS_64% -C %BUILD_CFG% -V -O hdf5.log
 call :ExtractArchive %HDF5_INSTALL_ZIP_NAME%.zip "%INSTALL_DIR%" "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%"
-echo HDF5_VERSION=%HDF5_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 popd
 
 :: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
@@ -265,15 +279,8 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-if %IFCOS_USE_OCCT%==FALSE goto :OCE
 :OCCT
-set OCCT_VERSION=7.5.3
 SET OCCT_VER=V%OCCT_VERSION:.=_%
-
-set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
@@ -344,54 +351,18 @@ rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\data"
 rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\samples"
 del "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\*.bat"
 
-goto :Python
-
-:OCE
-set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-
-set DEPENDENCY_NAME=Open CASCADE Community Edition
-set DEPENDENCY_DIR=%DEPS_DIR%\oce
-set OCE_VERSION=OCE-0.18
-call :GitCloneAndCheckoutRevision https://github.com/tpaviot/oce.git "%DEPENDENCY_DIR%" %OCE_VERSION%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-:: Use the oce-win-bundle for OCE's dependencies
-call :GitCloneOrPullRepository https://github.com/QbProg/oce-win-bundle.git "%DEPENDENCY_DIR%\oce-win-bundle"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
-cd "%DEPENDENCY_DIR%"
-:: NOTE Specify OCE_NO_LIBRARY_VERSION as rc.exe can fail due to long filenames and huge command-line parameter
-:: input (more than 32,000 characters). Could maybe try using subst for the build dir to overcome this.
-call :RunCMake  -DOCE_BUILD_SHARED_LIB=0 -DOCE_INSTALL_PREFIX="%INSTALL_DIR%\oce" -DOCE_TESTING=0 ^
-                -DOCE_NO_LIBRARY_VERSION=1 -DOCE_USE_STATIC_MSVC_RUNTIME=0
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCE.sln" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
+goto :Successful
 
 :Python
-:: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
-:: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
-set PYTHON_VERSION=3.4.3
-IF "%IFCOS_USE_PYTHON2%"=="TRUE" set PYTHON_VERSION=2.7.10
-set PY_VER_MAJOR_MINOR=%PYTHON_VERSION:~0,3%
-set PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR:.=%
-set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
-
-set DEPENDENCY_NAME=Python %PYTHON_VERSION%
-set DEPENDENCY_DIR=N/A
-set PYTHON_AMD64_POSTFIX=.amd64
-:: NOTE/TODO Beginning from 3.5.0: set PYTHON_AMD64_POSTFIX=-amd64
-IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
-set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
-:: NOTE/TODO 3.5.0 doesn't use MSI any longer, but exe: set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
-    REM Store Python versions to BuildDepsCache.txt for run-cmake.bat
-    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-    echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+    set DEPENDENCY_NAME=Python %PYTHON_VERSION%
+    set DEPENDENCY_DIR=N/A
+
+    set PYTHON_AMD64_POSTFIX=.amd64
+    :: NOTE/TODO Beginning from 3.5.0: set PYTHON_AMD64_POSTFIX=-amd64
+    IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
+    :: NOTE/TODO 3.5.0 doesn't use MSI any longer, but exe: set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
+    set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
 
     cd "%DEPS_DIR%"
     call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
@@ -593,6 +564,7 @@ if not exist "%~2". (
 pushd "%2"
 call git fetch
 call cecho.cmd 0 13 "Checking out %DEPENDENCY_NAME% revision %3."
+call git reset --hard
 call git checkout %3
 set RET=%ERRORLEVEL%
 popd
