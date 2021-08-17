@@ -36,6 +36,7 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
+from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from mathutils import Vector, Matrix, Euler, geometry
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.group.data import Data as GroupData
@@ -876,42 +877,26 @@ class SaveDrawingStyle(bpy.types.Operator):
     # TODO: check undo redo
 
     def execute(self, context):
-        space = self.get_view_3d()
-        style = {
-            "bpy.data.worlds[0].color": tuple(bpy.data.worlds[0].color),
-            "bpy.context.scene.render.engine": bpy.context.scene.render.engine,
-            "bpy.context.scene.render.film_transparent": bpy.context.scene.render.film_transparent,
-            "bpy.context.scene.display.shading.show_object_outline": bpy.context.scene.display.shading.show_object_outline,
-            "bpy.context.scene.display.shading.show_cavity": bpy.context.scene.display.shading.show_cavity,
-            "bpy.context.scene.display.shading.cavity_type": bpy.context.scene.display.shading.cavity_type,
-            "bpy.context.scene.display.shading.curvature_ridge_factor": bpy.context.scene.display.shading.curvature_ridge_factor,
-            "bpy.context.scene.display.shading.curvature_valley_factor": bpy.context.scene.display.shading.curvature_valley_factor,
-            "bpy.context.scene.view_settings.view_transform": bpy.context.scene.view_settings.view_transform,
-            "bpy.context.scene.display.shading.light": bpy.context.scene.display.shading.light,
-            "bpy.context.scene.display.shading.color_type": bpy.context.scene.display.shading.color_type,
-            "bpy.context.scene.display.shading.single_color": tuple(bpy.context.scene.display.shading.single_color),
-            "bpy.context.scene.display.shading.show_shadows": bpy.context.scene.display.shading.show_shadows,
-            "bpy.context.scene.display.shading.shadow_intensity": bpy.context.scene.display.shading.shadow_intensity,
-            "bpy.context.scene.display.light_direction": tuple(bpy.context.scene.display.light_direction),
-            "bpy.context.scene.view_settings.use_curve_mapping": bpy.context.scene.view_settings.use_curve_mapping,
-            "space.overlay.show_wireframes": space.overlay.show_wireframes,
-            "space.overlay.wireframe_threshold": space.overlay.wireframe_threshold,
-            "space.overlay.show_floor": space.overlay.show_floor,
-            "space.overlay.show_axis_x": space.overlay.show_axis_x,
-            "space.overlay.show_axis_y": space.overlay.show_axis_y,
-            "space.overlay.show_axis_z": space.overlay.show_axis_z,
-            "space.overlay.show_object_origins": space.overlay.show_object_origins,
-            "space.overlay.show_relationship_lines": space.overlay.show_relationship_lines,
-        }
+        space = self.get_view_3d(context)  # Do not remove. It is used later in eval
+        scene = context.scene
+        style = {}
+        for prop in RasterStyleProperty:
+            value = eval(prop.value)
+            if not isinstance(value, str):
+                try:
+                    value = tuple(value)
+                except TypeError:
+                    pass
+            style[prop.value] = value
         if self.index:
             index = int(self.index)
         else:
-            index = bpy.context.active_object.data.BIMCameraProperties.active_drawing_style_index
-        bpy.context.scene.DocProperties.drawing_styles[index].raster_style = json.dumps(style)
+            index = context.active_object.data.BIMCameraProperties.active_drawing_style_index
+        scene.DocProperties.drawing_styles[index].raster_style = json.dumps(style)
         return {"FINISHED"}
 
-    def get_view_3d(self):
-        for area in bpy.context.screen.areas:
+    def get_view_3d(self, context):
+        for area in context.screen.areas:
             if area.type != "VIEW_3D":
                 continue
             for space in area.spaces:
@@ -933,50 +918,25 @@ class ActivateDrawingStyle(bpy.types.Operator):
             self.drawing_style = scene.DocProperties.drawing_styles[
                 scene.camera.data.BIMCameraProperties.active_drawing_style_index
             ]
-            self.set_raster_style()
-            self.set_query()
+            self.set_raster_style(context)
+            self.set_query(context)
         return {"FINISHED"}
 
-    def set_raster_style(self):
-        space = self.get_view_3d()
+    def set_raster_style(self, context):
+        scene = context.scene  # Do not remove. It is used in exec later
+        space = self.get_view_3d(context)  # Do not remove. It is used in exec later
         style = json.loads(self.drawing_style.raster_style)
-        bpy.data.worlds[0].color = style["bpy.data.worlds[0].color"]
-        bpy.context.scene.render.engine = style["bpy.context.scene.render.engine"]
-        bpy.context.scene.render.film_transparent = style["bpy.context.scene.render.film_transparent"]
-        bpy.context.scene.display.shading.show_object_outline = style[
-            "bpy.context.scene.display.shading.show_object_outline"
-        ]
-        bpy.context.scene.display.shading.show_cavity = style["bpy.context.scene.display.shading.show_cavity"]
-        bpy.context.scene.display.shading.cavity_type = style["bpy.context.scene.display.shading.cavity_type"]
-        bpy.context.scene.display.shading.curvature_ridge_factor = style[
-            "bpy.context.scene.display.shading.curvature_ridge_factor"
-        ]
-        bpy.context.scene.display.shading.curvature_valley_factor = style[
-            "bpy.context.scene.display.shading.curvature_valley_factor"
-        ]
-        bpy.context.scene.view_settings.view_transform = style["bpy.context.scene.view_settings.view_transform"]
-        bpy.context.scene.display.shading.light = style["bpy.context.scene.display.shading.light"]
-        bpy.context.scene.display.shading.color_type = style["bpy.context.scene.display.shading.color_type"]
-        bpy.context.scene.display.shading.single_color = style["bpy.context.scene.display.shading.single_color"]
-        bpy.context.scene.display.shading.show_shadows = style["bpy.context.scene.display.shading.show_shadows"]
-        bpy.context.scene.display.shading.shadow_intensity = style["bpy.context.scene.display.shading.shadow_intensity"]
-        bpy.context.scene.display.light_direction = style["bpy.context.scene.display.light_direction"]
+        for path, value in style.items():
+            if isinstance(value, str):
+                exec(f"{path} = '{value}'")
+            else:
+                exec(f"{path} = {value}")
 
-        bpy.context.scene.view_settings.use_curve_mapping = style["bpy.context.scene.view_settings.use_curve_mapping"]
-        space.overlay.show_wireframes = style["space.overlay.show_wireframes"]
-        space.overlay.wireframe_threshold = style["space.overlay.wireframe_threshold"]
-        space.overlay.show_floor = style["space.overlay.show_floor"]
-        space.overlay.show_axis_x = style["space.overlay.show_axis_x"]
-        space.overlay.show_axis_y = style["space.overlay.show_axis_y"]
-        space.overlay.show_axis_z = style["space.overlay.show_axis_z"]
-        space.overlay.show_object_origins = style["space.overlay.show_object_origins"]
-        space.overlay.show_relationship_lines = style["space.overlay.show_relationship_lines"]
-
-    def set_query(self):
+    def set_query(self, context):
         self.selector = ifcopenshell.util.selector.Selector()
         self.include_global_ids = []
         self.exclude_global_ids = []
-        for ifc_file in bpy.context.scene.DocProperties.ifc_files:
+        for ifc_file in context.scene.DocProperties.ifc_files:
             try:
                 ifc = ifcopenshell.open(ifc_file.name)
             except:
@@ -988,15 +948,15 @@ class ActivateDrawingStyle(bpy.types.Operator):
                 results = self.selector.parse(ifc, self.drawing_style.exclude_query)
                 self.exclude_global_ids.extend([e.GlobalId for e in results])
         if self.drawing_style.include_query:
-            self.parse_filter_query("INCLUDE")
+            self.parse_filter_query("INCLUDE", context)
         if self.drawing_style.exclude_query:
-            self.parse_filter_query("EXCLUDE")
+            self.parse_filter_query("EXCLUDE", context)
 
-    def parse_filter_query(self, mode):
+    def parse_filter_query(self, mode, context):
         if mode == "INCLUDE":
-            objects = bpy.context.scene.objects
+            objects = context.scene.objects
         elif mode == "EXCLUDE":
-            objects = bpy.context.visible_objects
+            objects = context.visible_objects
         for obj in objects:
             if mode == "INCLUDE":
                 obj.hide_viewport = False  # Note: this breaks alt-H
@@ -1011,8 +971,8 @@ class ActivateDrawingStyle(bpy.types.Operator):
                 if global_id in self.exclude_global_ids:
                     obj.hide_viewport = True  # Note: this breaks alt-H
 
-    def get_view_3d(self):
-        for area in bpy.context.screen.areas:
+    def get_view_3d(self, context):
+        for area in context.screen.areas:
             if area.type != "VIEW_3D":
                 continue
             for space in area.spaces:
