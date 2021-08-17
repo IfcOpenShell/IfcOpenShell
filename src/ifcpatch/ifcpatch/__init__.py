@@ -37,10 +37,9 @@ def execute(args, is_library=None):
     print("# Loading patch recipe ...")
     recipes = getattr(__import__("ifcpatch.recipes.{}".format(args["recipe"])), "recipes")
     recipe = getattr(recipes, args["recipe"])
-    try:
-        # We unpack the arguments if the Patcher has been type-hinted and docstringed
+    if recipe.Patcher.__init__.__doc__ is not None:
         patcher = recipe.Patcher(args["input"], ifc_file, logger, *args["arguments"])
-    except TypeError:
+    else:
         patcher = recipe.Patcher(args["input"], ifc_file, logger, args["arguments"])
     print("# Patching ...")
     patcher.patch()
