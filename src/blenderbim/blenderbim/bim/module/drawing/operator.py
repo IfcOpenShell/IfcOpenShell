@@ -877,7 +877,7 @@ class SaveDrawingStyle(bpy.types.Operator):
     # TODO: check undo redo
 
     def execute(self, context):
-        space = self.get_view_3d(context) # Do not remove. It is used later in eval
+        space = self.get_view_3d(context)  # Do not remove. It is used later in eval
         scene = context.scene
         style = {}
         for prop in RasterStyleProperty:
@@ -971,7 +971,7 @@ class ActivateDrawingStyle(bpy.types.Operator):
                 if global_id in self.exclude_global_ids:
                     obj.hide_viewport = True  # Note: this breaks alt-H
 
-    def get_view_3d(selfn, context):
+    def get_view_3d(self, context):
         for area in context.screen.areas:
             if area.type != "VIEW_3D":
                 continue
