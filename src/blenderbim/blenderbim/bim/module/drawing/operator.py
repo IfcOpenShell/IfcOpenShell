@@ -932,7 +932,6 @@ class ActivateDrawingStyle(bpy.types.Operator):
             else:
                 exec(f"{path} = {value}")
 
-
     def set_query(self, context):
         self.selector = ifcopenshell.util.selector.Selector()
         self.include_global_ids = []
@@ -951,7 +950,7 @@ class ActivateDrawingStyle(bpy.types.Operator):
         if self.drawing_style.include_query:
             self.parse_filter_query("INCLUDE", context)
         if self.drawing_style.exclude_query:
-            self.parse_filter_query("EXCLUDE")
+            self.parse_filter_query("EXCLUDE", context)
 
     def parse_filter_query(self, mode, context):
         if mode == "INCLUDE":
