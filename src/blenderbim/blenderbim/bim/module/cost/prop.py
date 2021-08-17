@@ -160,7 +160,10 @@ def getResourceQuantityNames(self, context):
 
 
 def update_cost_item_index(self, context):
-    bpy.ops.bim.load_cost_item_quantities()
+    if Data.cost_schedules[self.active_cost_schedule_id]["PredefinedType"] == "SCHEDULEOFRATES":
+        bpy.ops.bim.load_cost_item_types()
+    else:
+        bpy.ops.bim.load_cost_item_quantities()
 
 
 def updateCostItemIdentification(self, context):

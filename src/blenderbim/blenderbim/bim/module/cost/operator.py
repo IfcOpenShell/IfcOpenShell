@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -610,6 +609,7 @@ class RemoveCostItemValue(bpy.types.Operator):
     bl_idname = "bim.remove_cost_item_value"
     bl_label = "Add Cost Item Value"
     bl_options = {"REGISTER", "UNDO"}
+    parent: bpy.props.IntProperty()
     cost_value: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -617,7 +617,12 @@ class RemoveCostItemValue(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run("cost.remove_cost_item_value", self.file, cost_value=self.file.by_id(self.cost_value))
+        ifcopenshell.api.run(
+            "cost.remove_cost_item_value",
+            self.file,
+            parent=self.file.by_id(self.parent),
+            cost_value=self.file.by_id(self.cost_value),
+        )
         Data.load(self.file)
         return {"FINISHED"}
 
@@ -660,6 +665,7 @@ class EnableEditingCostItemValue(bpy.types.Operator):
                 prop.float_value = data["UnitBasis"]["ValueComponent"] or 0
             else:
                 prop.float_value = 0
+
             prop = self.props.cost_value_attributes.add()
             prop.name = "UnitBasisUnit"
             prop.data_type = "enum"
@@ -897,9 +903,9 @@ class LoadCostItemTypes(bpy.types.Operator):
         while len(self.props.cost_item_type_products) > 0:
             self.props.cost_item_type_products.remove(0)
         # TODO implement process and resource types
-        #while len(self.props.cost_item_processes) > 0:
+        # while len(self.props.cost_item_processes) > 0:
         #    self.props.cost_item_processes.remove(0)
-        #while len(self.props.cost_item_resources) > 0:
+        # while len(self.props.cost_item_resources) > 0:
         #    self.props.cost_item_resources.remove(0)
         ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
         for control_id, quantity_ids in Data.cost_items[ifc_definition_id]["Controls"].items():
@@ -907,9 +913,9 @@ class LoadCostItemTypes(bpy.types.Operator):
             if related_object.is_a("IfcTypeProduct"):
                 new = self.props.cost_item_type_products.add()
             # TODO implement process and resource types
-            #elif related_object.is_a("IfcProcess"):
+            # elif related_object.is_a("IfcProcess"):
             #    new = self.props.cost_item_processes.add()
-            #elif related_object.is_a("IfcResource"):
+            # elif related_object.is_a("IfcResource"):
             #    new = self.props.cost_item_resources.add()
             new.ifc_definition_id = control_id
             new.name = related_object.Name or "Unnamed"
@@ -920,11 +926,21 @@ class AssignCostValue(bpy.types.Operator):
     bl_idname = "bim.assign_cost_value"
     bl_label = "Assign Cost Value"
     bl_options = {"REGISTER", "UNDO"}
+    cost_item: bpy.props.IntProperty()
+    cost_rate: bpy.props.IntProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.assign_cost_value",
+            self.file,
+            cost_item=self.file.by_id(self.cost_item),
+            cost_rate=self.file.by_id(self.cost_rate),
+        )
+        Data.load(self.file)
         return {"FINISHED"}
 
 
