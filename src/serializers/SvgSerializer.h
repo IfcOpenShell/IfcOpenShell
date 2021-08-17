@@ -193,6 +193,7 @@ public:
 		, with_section_heights_from_storey_(false)
 		, print_space_names_(false)
 		, print_space_areas_(false)
+		, storey_height_display_(SH_NONE)
 		, draw_door_arcs_(false)
 		, is_floor_plan_(true)
 		, auto_section_(false)
