@@ -47,8 +47,14 @@ class draw_settings:
     width: float = 297.0
     height: float = 420.0
     scale: float = 1.0 / 100.0
-    auto_elevation: bool = True
-    auto_section: bool = True
+    auto_elevation: bool = False
+    auto_section: bool = False
+    auto_floorplan: bool = True
+    space_names: bool = False
+    space_areas: bool = False
+    door_arcs: bool = False
+    css: bool = True
+    storey_heights: str = "none"
     include_entities: str = ""
     exclude_entities: str = "IfcOpeningElement"
 
@@ -80,8 +86,9 @@ def main(settings, files, progress_function=DO_NOTHING):
     buffer = ifcopenshell.geom.serializers.buffer()
     sr = ifcopenshell.geom.serializers.svg(buffer, SETTINGS)
 
-    # sr.setFile(files[0])
-    # sr.setSectionHeightsFromStoreys()
+    sr.setFile(files[0])
+    if settings.auto_floorplan:
+        sr.setSectionHeightsFromStoreys()
 
     # required for svgfill
     sr.setPolygonal(True)
@@ -94,13 +101,23 @@ def main(settings, files, progress_function=DO_NOTHING):
     sr.setScale(settings.scale)
     sr.setAutoElevation(settings.auto_elevation)
     sr.setAutoSection(settings.auto_section)
-
+    sr.setPrintSpaceNames(settings.space_names)
+    sr.setPrintSpaceAreas(settings.space_areas)
+    sr.setDrawDoorArcs(settings.door_arcs)
+    sr.setNoCSS(not settings.css)
+    
+    try:
+        sh = ['none', 'full', 'left'].index(settings.storey_heights)
+        sr.setDrawStoreyHeights(sh)
+    except:
+        raise ValueError("storey_heights should be one of {'none', 'full', 'left'}")
+    
     """
     # It is also possible to add drawing planes manually
     sr.addDrawing(
-        obj.matrix_world().transposed()[3][0:3],
-        -obj.matrix_world().transposed()[2][0:3],
-        -obj.matrix_world().transposed()[0][0:3],
+        obj.matrix_world.transposed()[3][0:3],
+        -obj.matrix_world.transposed()[2][0:3],
+        -obj.matrix_world.transposed()[0][0:3],
         "Test", # drawing name
         True    # include projection
     )
@@ -273,14 +290,15 @@ if __name__ == "__main__":
     for field in fields(draw_settings):
         if field.type == bool:
             parser.add_argument(
-                "--" + field.name, dest=field.name, action="store_true"
+                "--" + field.name.replace("_", "-"), dest=field.name, action="store_true"
             )
             parser.add_argument(
-                "--no-" + field.name, dest=field.name, action="store_false"
+                "--no-" + field.name.replace("_", "-"), dest=field.name, action="store_false"
             )
+            parser.set_defaults(**{field.name: field.default})
         else:
             parser.add_argument(
-                "--" + field.name, type=field.type, default=field.default
+                "--" + field.name.replace("_", "-"), dest=field.name, type=field.type, default=field.default
             )
 
     args = vars(parser.parse_args(sys.argv))
@@ -291,4 +309,5 @@ if __name__ == "__main__":
     settings = draw_settings(**args)
 
     files = list(map(ifcopenshell.open, files))
-    open(output, "wb").write(main(settings, files, progress_function=print))
+    open(output, "wb").write(main(settings, files, progress_function=lambda *args: print("\r", *args, " "*10, end="", flush=True)))
+    print("\r Done!")
