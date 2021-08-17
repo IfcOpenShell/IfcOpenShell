@@ -59,6 +59,10 @@ classes = (
     operator.ImportCostScheduleCsv,
     operator.LoadCostItemQuantities,
     operator.LoadCostItemTypes,
+    operator.AssignCostValue,
+    operator.LoadScheduleOfRates,
+    operator.ExpandCostItemRate,
+    operator.ContractCostItemRate,
     prop.CostItem,
     prop.CostItemQuantity,
     prop.CostItemType,
@@ -66,10 +70,12 @@ classes = (
     ui.BIM_PT_cost_schedules,
     ui.BIM_PT_cost_item_quantities,
     ui.BIM_PT_cost_item_types,
+    ui.BIM_PT_cost_item_rates,
     ui.BIM_UL_cost_items,
     ui.BIM_UL_cost_columns,
     ui.BIM_UL_cost_item_quantities,
     ui.BIM_UL_cost_item_types,
+    ui.BIM_UL_cost_item_rates,
 )
 
 
