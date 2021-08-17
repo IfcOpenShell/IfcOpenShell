@@ -1840,28 +1840,28 @@ void SvgSerializer::finalize() {
 	if (auto_elevation_) {
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt(0., -(ymin - 10.), 0.),
+				gp_Pnt(0., -(ymin - 0.1), 0.),
 				gp_Dir(0, 1, 0),
 				gp_Dir(-1, 0, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation South", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt(xmax + 10., 0., 0.),
+				gp_Pnt(xmax + 0.1, 0., 0.),
 				gp_Dir(1, 0, 0),
 				gp_Dir(0, 1, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation East", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt(0., -(ymax + 10.), 0.),
+				gp_Pnt(0., -(ymax + 0.1), 0.),
 				gp_Dir(0, -1, 0),
 				gp_Dir(1, 0, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation North", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt(xmin - 10., 0., 0.),
+				gp_Pnt(xmin - 0.1, 0., 0.),
 				gp_Dir(-1, 0, 0),
 				gp_Dir(0, -1, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation West", true });
@@ -1926,6 +1926,16 @@ void SvgSerializer::finalize() {
 
 							double x0, y0, z0, x1, y1, z1;
 							bnd_.Get(x0, y0, z0, x1, y1, z1);
+
+							// @todo this is a hack in order to get the auto elevations (which are 0.1 offset from
+							// the global bounding box) to include the storey height symbols.
+							x0 -= 0.2;
+							y0 -= 0.2;
+							z0 -= 0.2;
+
+							x1 += 0.2;
+							y1 += 0.2;
+							z1 += 0.2;
 
 							const double shll = storey_height_line_length_.get_value_or(2.);
 
