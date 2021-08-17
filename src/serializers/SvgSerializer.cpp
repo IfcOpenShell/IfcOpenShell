@@ -671,7 +671,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	// @todo is it correct to call nameElement() here with a single storey (what if this element spans multiple?)
 	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
 
-	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_ || elevation_ref_guid_) {
+	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_ || elevation_ref_guid_ || deferred_section_data_) {
 		element_buffer_.push_back(data);
 	}
 
