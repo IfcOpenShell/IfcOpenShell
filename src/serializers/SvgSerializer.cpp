@@ -1832,7 +1832,7 @@ void SvgSerializer::finalize() {
 			gp_Pln pln(gp_Ax3(
 				gp_Pnt((xmin + xmax) / 2., (ymin + ymax) / -2., 0.),
 				gp_Dir(0, -1, 0),
-				gp_Dir(-1, 0, 0)));
+				gp_Dir(1, 0, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Section East West", true });
 		}
 	}
