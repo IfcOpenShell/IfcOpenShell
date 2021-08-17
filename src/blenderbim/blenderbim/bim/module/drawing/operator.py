@@ -36,7 +36,7 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
-from blenderbim.bim.module.drawing.prop import DrawingStyleProp
+from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from mathutils import Vector, Matrix, Euler, geometry
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.group.data import Data as GroupData
@@ -880,7 +880,7 @@ class SaveDrawingStyle(bpy.types.Operator):
         space = self.get_view_3d(context) # Do not remove. It is used later in eval
         scene = context.scene
         style = {}
-        for prop in DrawingStyleProp:
+        for prop in RasterStyleProperty:
             value = eval(prop.value)
             if not isinstance(value, str):
                 try:

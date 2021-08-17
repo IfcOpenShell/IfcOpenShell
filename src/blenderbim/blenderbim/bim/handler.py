@@ -21,7 +21,7 @@ import bpy
 import json
 import addon_utils
 import ifcopenshell.api.owner.settings
-from blenderbim.bim.module.drawing.prop import DrawingStyleProp
+from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.owner.prop import getPersons, getOrganisations
@@ -247,30 +247,30 @@ def setDefaultProperties(scene):
         drawing_style.render_type = "VIEWPORT"
         drawing_style.raster_style = json.dumps(
             {
-                DrawingStyleProp.WORLD_COLOR.value: (1, 1, 1),
-                DrawingStyleProp.RENDER_ENGINE.value: "BLENDER_WORKBENCH",
-                DrawingStyleProp.RENDER_TRANSPARENT.value: False,
-                DrawingStyleProp.SHADING_SHOW_OBJECT_OUTLINE.value: True,
-                DrawingStyleProp.SHADING_SHOW_CAVITY.value: False,
-                DrawingStyleProp.SHADING_CAVITY_TYPE.value: "BOTH",
-                DrawingStyleProp.SHADING_CURVATURE_RIDGE_FACTOR.value: 1,
-                DrawingStyleProp.SHADING_CURVATURE_VALLEY_FACTOR.value: 1,
-                DrawingStyleProp.VIEW_TRANSFORM.value: "Standard",
-                DrawingStyleProp.SHADING_LIGHT.value: "FLAT",
-                DrawingStyleProp.SHADING_COLOR_TYPE.value: "SINGLE",
-                DrawingStyleProp.SHADING_SINGLE_COLOR.value: (1, 1, 1),
-                DrawingStyleProp.SHADING_SHOW_SHADOWS.value: False,
-                DrawingStyleProp.SHADING_SHADOW_INTENSITY.value: 0.5,
-                DrawingStyleProp.DISPLAY_LIGHT_DIRECTION.value: (0.5, 0.5, 0.5),
-                DrawingStyleProp.VIEW_USE_CURVE_MAPPING.value: False,
-                DrawingStyleProp.OVERLAY_SHOW_WIREFRAMES.value: True,
-                DrawingStyleProp.OVERLAY_WIREFRAME_THRESHOLD.value: 0,
-                DrawingStyleProp.OVERLAY_SHOW_FLOOR.value: False,
-                DrawingStyleProp.OVERLAY_SHOW_AXIS_X.value: False,
-                DrawingStyleProp.OVERLAY_SHOW_AXIS_Y.value: False,
-                DrawingStyleProp.OVERLAY_SHOW_AXIS_Z.value: False,
-                DrawingStyleProp.OVERLAY_SHOW_OBJECT_ORIGINS.value: False,
-                DrawingStyleProp.OVERLAY_SHOW_RELATIONSHIP_LINES.value: False,
+                RasterStyleProperty.WORLD_COLOR.value: (1, 1, 1),
+                RasterStyleProperty.RENDER_ENGINE.value: "BLENDER_WORKBENCH",
+                RasterStyleProperty.RENDER_TRANSPARENT.value: False,
+                RasterStyleProperty.SHADING_SHOW_OBJECT_OUTLINE.value: True,
+                RasterStyleProperty.SHADING_SHOW_CAVITY.value: False,
+                RasterStyleProperty.SHADING_CAVITY_TYPE.value: "BOTH",
+                RasterStyleProperty.SHADING_CURVATURE_RIDGE_FACTOR.value: 1,
+                RasterStyleProperty.SHADING_CURVATURE_VALLEY_FACTOR.value: 1,
+                RasterStyleProperty.VIEW_TRANSFORM.value: "Standard",
+                RasterStyleProperty.SHADING_LIGHT.value: "FLAT",
+                RasterStyleProperty.SHADING_COLOR_TYPE.value: "SINGLE",
+                RasterStyleProperty.SHADING_SINGLE_COLOR.value: (1, 1, 1),
+                RasterStyleProperty.SHADING_SHOW_SHADOWS.value: False,
+                RasterStyleProperty.SHADING_SHADOW_INTENSITY.value: 0.5,
+                RasterStyleProperty.DISPLAY_LIGHT_DIRECTION.value: (0.5, 0.5, 0.5),
+                RasterStyleProperty.VIEW_USE_CURVE_MAPPING.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_WIREFRAMES.value: True,
+                RasterStyleProperty.OVERLAY_WIREFRAME_THRESHOLD.value: 0,
+                RasterStyleProperty.OVERLAY_SHOW_FLOOR.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_AXIS_X.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_AXIS_Y.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_AXIS_Z.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_OBJECT_ORIGINS.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_RELATIONSHIP_LINES.value: False,
             }
         )
         drawing_style = scene.DocProperties.drawing_styles.add()
@@ -278,30 +278,30 @@ def setDefaultProperties(scene):
         drawing_style.render_type = "VIEWPORT"
         drawing_style.raster_style = json.dumps(
             {
-                DrawingStyleProp.WORLD_COLOR.value: (1, 1, 1),
-                DrawingStyleProp.RENDER_ENGINE.value: "BLENDER_WORKBENCH",
-                DrawingStyleProp.RENDER_TRANSPARENT.value: False,
-                DrawingStyleProp.SHADING_SHOW_OBJECT_OUTLINE.value: True,
-                DrawingStyleProp.SHADING_SHOW_CAVITY.value: True,
-                DrawingStyleProp.SHADING_CAVITY_TYPE.value: "BOTH",
-                DrawingStyleProp.SHADING_CURVATURE_RIDGE_FACTOR.value: 1,
-                DrawingStyleProp.SHADING_CURVATURE_VALLEY_FACTOR.value: 1,
-                DrawingStyleProp.VIEW_TRANSFORM.value: "Standard",
-                DrawingStyleProp.SHADING_LIGHT.value: "STUDIO",
-                DrawingStyleProp.SHADING_COLOR_TYPE.value: "MATERIAL",
-                DrawingStyleProp.SHADING_SINGLE_COLOR.value: (1, 1, 1),
-                DrawingStyleProp.SHADING_SHOW_SHADOWS.value: True,
-                DrawingStyleProp.SHADING_SHADOW_INTENSITY.value: 0.5,
-                DrawingStyleProp.DISPLAY_LIGHT_DIRECTION.value: (0.5, 0.5, 0.5),
-                DrawingStyleProp.VIEW_USE_CURVE_MAPPING.value: False,
-                DrawingStyleProp.OVERLAY_SHOW_WIREFRAMES.value: True,
-                DrawingStyleProp.OVERLAY_WIREFRAME_THRESHOLD.value: 0,
-                DrawingStyleProp.OVERLAY_SHOW_FLOOR.value: False,
-                DrawingStyleProp.OVERLAY_SHOW_AXIS_X.value: False,
-                DrawingStyleProp.OVERLAY_SHOW_AXIS_Y.value: False,
-                DrawingStyleProp.OVERLAY_SHOW_AXIS_Z.value: False,
-                DrawingStyleProp.OVERLAY_SHOW_OBJECT_ORIGINS.value: False,
-                DrawingStyleProp.OVERLAY_SHOW_RELATIONSHIP_LINES.value: False,
+                RasterStyleProperty.WORLD_COLOR.value: (1, 1, 1),
+                RasterStyleProperty.RENDER_ENGINE.value: "BLENDER_WORKBENCH",
+                RasterStyleProperty.RENDER_TRANSPARENT.value: False,
+                RasterStyleProperty.SHADING_SHOW_OBJECT_OUTLINE.value: True,
+                RasterStyleProperty.SHADING_SHOW_CAVITY.value: True,
+                RasterStyleProperty.SHADING_CAVITY_TYPE.value: "BOTH",
+                RasterStyleProperty.SHADING_CURVATURE_RIDGE_FACTOR.value: 1,
+                RasterStyleProperty.SHADING_CURVATURE_VALLEY_FACTOR.value: 1,
+                RasterStyleProperty.VIEW_TRANSFORM.value: "Standard",
+                RasterStyleProperty.SHADING_LIGHT.value: "STUDIO",
+                RasterStyleProperty.SHADING_COLOR_TYPE.value: "MATERIAL",
+                RasterStyleProperty.SHADING_SINGLE_COLOR.value: (1, 1, 1),
+                RasterStyleProperty.SHADING_SHOW_SHADOWS.value: True,
+                RasterStyleProperty.SHADING_SHADOW_INTENSITY.value: 0.5,
+                RasterStyleProperty.DISPLAY_LIGHT_DIRECTION.value: (0.5, 0.5, 0.5),
+                RasterStyleProperty.VIEW_USE_CURVE_MAPPING.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_WIREFRAMES.value: True,
+                RasterStyleProperty.OVERLAY_WIREFRAME_THRESHOLD.value: 0,
+                RasterStyleProperty.OVERLAY_SHOW_FLOOR.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_AXIS_X.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_AXIS_Y.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_AXIS_Z.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_OBJECT_ORIGINS.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_RELATIONSHIP_LINES.value: False,
             }
         )
         drawing_style = scene.DocProperties.drawing_styles.add()

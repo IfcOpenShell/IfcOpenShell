@@ -219,7 +219,7 @@ class DrawingStyle(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=StrProperty)
 
 
-class DrawingStyleProp(enum.Enum):
+class RasterStyleProperty(enum.Enum):
     WORLD_COLOR = "bpy.data.worlds[0].color"
     RENDER_ENGINE = "scene.render.engine"
     RENDER_TRANSPARENT = "scene.render.film_transparent"
