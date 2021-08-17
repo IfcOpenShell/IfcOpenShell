@@ -39,7 +39,7 @@ from lxml import etree as ElementTree
 from xmlschema.validators import facets
 from xmlschema.validators import identities
 
-ids_schema = XMLSchema("http://standards.buildingsmart.org/IDS/ids_04.xsd")
+ids_schema = XMLSchema("ifcopenshell/ids.xsd") # source: "http://standards.buildingsmart.org/IDS/ids_04.xsd"
 
 
 def error(msg):
@@ -489,7 +489,7 @@ class restriction:
     @staticmethod
     def create(options, type="", base="string"):
         """
-        type:       enumeration/pattern/bounds
+        type:       One of "enumeration"|"pattern"|"bounds"
         base:       string/boolean/decimal/integer
         options:    list if enumeration
                     regex string if pattern
@@ -698,9 +698,9 @@ class ids:
         if copyright: self.info['copyright'] = copyright
         if version: self.info['version'] = version
         if creation_date:
-            if re.match('\d\d\d\d-\d\d-\d\d', creation_date): 
+            if re.match(r'\d\d\d\d-\d\d-\d\d', creation_date): 
                 self.info['date'] = creation_date  # date.fromisoformat(creation_date).isoformat()
-        if 'date' in self.info: self.info['date'] = date.today().isoformat()
+        if 'date' not in self.info: self.info['date'] = date.today().isoformat()
         if purpose: self.info['purpose'] = purpose
         if milestone: self.info['milestone'] = milestone
          
@@ -934,7 +934,7 @@ if __name__ == "__main__":
     logging.basicConfig(filename=filename, level=logging.INFO, format="%(message)s")
     logging.FileHandler(filename, mode='w')
 
-    ids_file = ids.parse(sys.argv[1])
+    ids_file = ids.open(sys.argv[1])
     ifc_file = ifcopenshell.open(sys.argv[2])
 
     ids_file.validate(ifc_file, logger)
