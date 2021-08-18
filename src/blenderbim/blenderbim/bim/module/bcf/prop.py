@@ -84,6 +84,7 @@ def refreshBcfTopic(self, context):
     bcfxml = bcfstore.BcfStore.get_bcfxml()
     topic = props.topics[props.active_topic_index]
     header = bcfxml.get_header(topic.name)
+    props.clear_input_fields()
     getBcfViewpoints(self, context)
 
 
@@ -177,3 +178,18 @@ class BCFProperties(PropertyGroup):
     related_topic: StringProperty(default="", name="Related Topic")
     comment: StringProperty(default="", name="Comment")
     has_related_viewpoint: BoolProperty(name="Has Related Viewpoint", default=False)
+
+    def clear_input_fields(self):
+        self.file_reference = ""
+        self.file_ifc_project = ""
+        self.file_ifc_spatial_structure_element = ""
+        self.reference_link = ""
+        self.label = ""
+        self.bim_snippet_reference = ""
+        self.bim_snippet_type = ""
+        self.bim_snippet_schema = ""
+        self.document_reference = ""
+        self.document_reference_description = ""
+        self.related_topic = ""
+        self.comment = ""
+        self.has_related_viewpoint = ""
