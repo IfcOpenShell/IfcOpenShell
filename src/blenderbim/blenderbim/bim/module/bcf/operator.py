@@ -735,6 +735,7 @@ class AddBcfComment(bpy.types.Operator):
         bcfxml.add_comment(topic, comment)
         bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)
         props.comment = ""
+        props.has_related_viewpoint = False
         return {"FINISHED"}
 
 

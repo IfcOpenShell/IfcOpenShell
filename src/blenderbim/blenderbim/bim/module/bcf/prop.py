@@ -192,4 +192,4 @@ class BCFProperties(PropertyGroup):
         self.document_reference_description = ""
         self.related_topic = ""
         self.comment = ""
-        self.has_related_viewpoint = ""
+        self.has_related_viewpoint = False
