@@ -34,11 +34,14 @@ from bpy.props import (
 
 
 bcfviewpoints_enum = None
+related_topic_enum = []
 
 
 def purge():
     global bcfviewpoints_enum
+    global related_topic_enum
     bcfviewpoints_enum = None
+    related_topic_enum.clear()
 
 
 def updateBcfReferenceLink(self, context):
@@ -76,6 +79,20 @@ def updateBcfCommentIsEditable(self, context):
         bpy.ops.bim.edit_bcf_comment(comment_guid = self.name)
 
 
+def get_related_topics(self, context):
+    global related_topic
+    related_topic_enum.clear()
+    props = context.scene.BCFProperties
+    current_topic = props.topics[props.active_topic_index]
+    for topic in props.topics:
+        if topic == current_topic:
+            continue
+        if topic.name in current_topic.related_topics:
+            continue
+        related_topic_enum.append((topic.name, topic.title, topic.description))
+    return related_topic_enum
+
+
 def refreshBcfTopic(self, context):
     global bcfviewpoints_enum
     bcfviewpoints_enum = None
@@ -84,6 +101,7 @@ def refreshBcfTopic(self, context):
     bcfxml = bcfstore.BcfStore.get_bcfxml()
     topic = props.topics[props.active_topic_index]
     header = bcfxml.get_header(topic.name)
+    props.clear_input_fields()
     getBcfViewpoints(self, context)
 
 
@@ -148,26 +166,13 @@ class BcfTopic(PropertyGroup):
     description: StringProperty(default="", name="Description")
     viewpoints: EnumProperty(items=getBcfViewpoints, name="BCF Viewpoints")
     files: CollectionProperty(name="Files", type=StrProperty)
-    file_reference: StringProperty(default="", name="Reference")
-    file_ifc_project: StringProperty(default="", name="IFC Project")
-    file_ifc_spatial_structure_element: StringProperty(default="", name="IFC Spatial Structure Element")
     reference_links: CollectionProperty(name="Reference Links", type=BcfReferenceLink)
-    reference_link: StringProperty(default="", name="Reference Link")
     labels: CollectionProperty(name="Labels", type=BcfLabel)
-    label: StringProperty(default="", name="Label")
     bim_snippet: PointerProperty(type=BcfBimSnippet)
-    bim_snippet_type: StringProperty(default="", name="Type")
-    bim_snippet_reference: StringProperty(default="", name="Reference")
-    bim_snippet_schema: StringProperty(default="", name="Schema")
     document_references: CollectionProperty(name="Document References", type=BcfDocumentReference)
-    document_reference: StringProperty(default="", name="Referenced Document")
-    document_reference_description: StringProperty(default="", name="Description")
     related_topics: CollectionProperty(name="Related Topics", type=StrProperty)
-    related_topic: StringProperty(default="", name="Related Topic")
     comments: CollectionProperty(name="Comments", type=BcfComment)
     is_editable: BoolProperty(name="Is Editable", default=False, update=updateBcfTopicIsEditable)
-    comment: StringProperty(default="", name="Comment")
-    has_related_viewpoint: BoolProperty(name="Has Related Viewpoint", default=False)
 
 
 class BCFProperties(PropertyGroup):
@@ -177,3 +182,30 @@ class BCFProperties(PropertyGroup):
     author: StringProperty(default="john@doe.com", name="Author Email", update=updateBcfAuthor)
     topics: CollectionProperty(name="BCF Topics", type=BcfTopic)
     active_topic_index: IntProperty(name="Active BCF Topic Index", update=refreshBcfTopic)
+    file_reference: StringProperty(default="", name="Reference")
+    file_ifc_project: StringProperty(default="", name="IFC Project")
+    file_ifc_spatial_structure_element: StringProperty(default="", name="IFC Spatial Structure Element")
+    reference_link: StringProperty(default="", name="Reference Link")
+    label: StringProperty(default="", name="Label")
+    bim_snippet_reference: StringProperty(default="", name="Reference")
+    bim_snippet_type: StringProperty(default="", name="Type")
+    bim_snippet_schema: StringProperty(default="", name="Schema")
+    document_reference: StringProperty(default="", name="Referenced Document")
+    document_reference_description: StringProperty(default="", name="Description")
+    related_topic: EnumProperty(name="Related Topic", items=get_related_topics)
+    comment: StringProperty(default="", name="Comment")
+    has_related_viewpoint: BoolProperty(name="Has Related Viewpoint", default=False)
+
+    def clear_input_fields(self):
+        self.file_reference = ""
+        self.file_ifc_project = ""
+        self.file_ifc_spatial_structure_element = ""
+        self.reference_link = ""
+        self.label = ""
+        self.bim_snippet_reference = ""
+        self.bim_snippet_type = ""
+        self.bim_snippet_schema = ""
+        self.document_reference = ""
+        self.document_reference_description = ""
+        self.comment = ""
+        self.has_related_viewpoint = False
