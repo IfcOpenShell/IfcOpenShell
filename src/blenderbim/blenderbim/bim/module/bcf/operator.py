@@ -26,7 +26,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.util.unit
 from . import bcfstore
-from blenderbim.bim.module.bcf.prop import getBcfViewpoints
+import blenderbim.bim.module.bcf.prop as bcf_prop
 from blenderbim.bim.ifc import IfcStore
 from math import radians, degrees, atan, tan, cos, sin
 from mathutils import Vector, Matrix, Euler, geometry
@@ -454,7 +454,7 @@ class RemoveBcfViewpoint(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return getBcfViewpoints(None, context)
+        return bcf_prop.getBcfViewpoints(None, context)
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -718,7 +718,7 @@ class AddBcfComment(bpy.types.Operator):
         props = context.scene.BCFProperties
         if not props.comment:
             return False
-        if props.has_related_viewpoint and not getBcfViewpoints(None, context):
+        if props.has_related_viewpoint and not bcf_prop.getBcfViewpoints(None, context):
             return False
         return True
 
