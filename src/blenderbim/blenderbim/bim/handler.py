@@ -182,6 +182,8 @@ def redo_pre(scene):
 
 @persistent
 def redo_post(scene):
+    if scene is None:
+        scene = bpy.context.scene
     if IfcStore.last_transaction != scene.BIMProperties.last_transaction:
         IfcStore.last_transaction = scene.BIMProperties.last_transaction
         IfcStore.redo()
@@ -192,6 +194,8 @@ def redo_post(scene):
 
 @persistent
 def ensureIfcExported(scene):
+    if scene is None:
+        scene = bpy.context.scene
     if IfcStore.get_file() and not scene.BIMProperties.ifc_file:
         bpy.ops.export_ifc.bim("INVOKE_DEFAULT")
 
@@ -225,6 +229,8 @@ def get_application_version():
 
 @persistent
 def setDefaultProperties(scene):
+    if scene is None:
+        scene = bpy.context.scene
     global global_subscription_owner
     active_object_key = bpy.types.LayerObjects, "active"
     bpy.msgbus.subscribe_rna(
