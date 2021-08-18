@@ -316,38 +316,18 @@ class AddBcfRelatedTopic(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        props = context.scene.BCFProperties
-        blender_topic = props.topics[props.active_topic_index]
-        if not props.related_topic:
-            return False
-        if props.related_topic == blender_topic.title:
-            # Prevent adding self as related topic
-            return False
-        related_topic = None
-        for topic in bcfxml.topics.values():
-            if topic.title == props.related_topic:
-                related_topic = bcf.v2.data.RelatedTopic()
-                related_topic.guid = topic.guid
-                break
-        if not related_topic:
-            return False
-        if str(related_topic.guid) in [t.name for t in blender_topic.related_topics]:
-            # Prevent adding the same related topic more than once
-            return False
-        return True
+        return bcf_prop.get_related_topics(None, context)
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         props = context.scene.BCFProperties
         blender_topic = props.topics[props.active_topic_index]
         related_topic = bcf.v2.data.RelatedTopic()
-        related_topic.guid = next((t for t in bcfxml.topics.values() if t.title == props.related_topic)).guid
+        related_topic.guid = props.related_topic
         topic = bcfxml.topics[blender_topic.name]
         topic.related_topics.append(related_topic)
         bcfxml.edit_topic(topic)
         bpy.ops.bim.load_bcf_topic(topic_guid = topic.guid, topic_index = props.active_topic_index)
-        props.related_topic = ""
         return {"FINISHED"}
 
 
