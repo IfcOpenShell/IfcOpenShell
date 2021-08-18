@@ -26,7 +26,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.util.unit
 from . import bcfstore
-from blenderbim.bim.module.bcf.prop import getBcfViewpoints
+import blenderbim.bim.module.bcf.prop as bcf_prop
 from blenderbim.bim.ifc import IfcStore
 from math import radians, degrees, atan, tan, cos, sin
 from mathutils import Vector, Matrix, Euler, geometry
@@ -252,6 +252,7 @@ class SaveBcfProject(bpy.types.Operator):
     bl_label = "Save BCF Project"
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.bcf;*.bcfzip", options={"HIDDEN"})
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -286,8 +287,7 @@ class AddBcfBimSnippet(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BCFProperties
-        return all((getattr(props.topics[props.active_topic_index], attr, False) for attr in (
+        return all((getattr(context.scene.BCFProperties, attr, False) for attr in (
             "bim_snippet_reference",
             "bim_snippet_schema",
             "bim_snippet_type"
@@ -299,11 +299,14 @@ class AddBcfBimSnippet(bpy.types.Operator):
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
         bim_snippet = bcf.v2.data.BimSnippet()
-        bim_snippet.reference = blender_topic.bim_snippet_reference
-        bim_snippet.reference_schema = blender_topic.bim_snippet_schema
-        bim_snippet.snippet_type = blender_topic.bim_snippet_type
+        bim_snippet.reference = props.bim_snippet_reference
+        bim_snippet.reference_schema = props.bim_snippet_schema
+        bim_snippet.snippet_type = props.bim_snippet_type
         bcfxml.add_bim_snippet(topic, bim_snippet)
         bpy.ops.bim.load_bcf_topic(topic_guid = topic.guid, topic_index = props.active_topic_index)
+        bim_snippet.reference = ""
+        bim_snippet.reference_schema = ""
+        bim_snippet.snippet_type = ""
         return {"FINISHED"}
 
 
@@ -314,33 +317,14 @@ class AddBcfRelatedTopic(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        props = context.scene.BCFProperties
-        blender_topic = props.topics[props.active_topic_index]
-        if not blender_topic.related_topic:
-            return False
-        if blender_topic.related_topic == blender_topic.title:
-            # Prevent adding self as related topic
-            return False
-        related_topic = None
-        for topic in bcfxml.topics.values():
-            if topic.title == blender_topic.related_topic:
-                related_topic = bcf.v2.data.RelatedTopic()
-                related_topic.guid = topic.guid
-                break
-        if not related_topic:
-            return False
-        if str(related_topic.guid) in [t.name for t in blender_topic.related_topics]:
-            # Prevent adding the same related topic more than once
-            return False
-        return True
+        return bcf_prop.get_related_topics(None, context)
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         props = context.scene.BCFProperties
         blender_topic = props.topics[props.active_topic_index]
         related_topic = bcf.v2.data.RelatedTopic()
-        related_topic.guid = next((t for t in bcfxml.topics.values() if t.title == blender_topic.related_topic)).guid
+        related_topic.guid = props.related_topic
         topic = bcfxml.topics[blender_topic.name]
         topic.related_topics.append(related_topic)
         bcfxml.edit_topic(topic)
@@ -355,8 +339,7 @@ class AddBcfHeaderFile(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BCFProperties
-        return props.topics[props.active_topic_index].file_reference
+        return context.scene.BCFProperties.file_reference
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -364,15 +347,18 @@ class AddBcfHeaderFile(bpy.types.Operator):
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
         header_file = bcf.v2.data.HeaderFile()
-        header_file.reference = blender_topic.file_reference
+        header_file.reference = props.file_reference
         if not os.path.exists(header_file.reference):
             header_file.filename = header_file.reference
-        if len(blender_topic.file_ifc_project) == 22:
-            header_file.ifc_project = blender_topic.file_ifc_project
-        if len(blender_topic.file_ifc_spatial_structure_element) == 22:
-            header_file.ifc_spatial_structure_element = blender_topic.file_ifc_spatial_structure_element
+        if len(props.file_ifc_project) == 22:
+            header_file.ifc_project = props.file_ifc_project
+        if len(props.file_ifc_spatial_structure_element) == 22:
+            header_file.ifc_spatial_structure_element = props.file_ifc_spatial_structure_element
         bcfxml.add_file(topic, header_file)
         props.active_topic_index = props.active_topic_index # refreshes the BCF Topic
+        props.file_reference = ""
+        props.file_ifc_project = ""
+        props.file_ifc_spatial_structure_element = ""
         return {"FINISHED"}
 
 
@@ -386,6 +372,7 @@ class ViewBcfTopic(bpy.types.Operator):
         for index, topic in enumerate(context.scene.BCFProperties.topics):
             if topic.name.lower() == self.topic_guid.lower():
                 context.scene.BCFProperties.active_topic_index = index
+                break
         return {"FINISHED"}
 
 
@@ -448,7 +435,7 @@ class RemoveBcfViewpoint(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return getBcfViewpoints(None, context)
+        return bcf_prop.getBcfViewpoints(None, context)
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -484,18 +471,17 @@ class AddBcfReferenceLink(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BCFProperties
-        return props.topics[props.active_topic_index].reference_link
+        return context.scene.BCFProperties.reference_link
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         props = context.scene.BCFProperties
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
-        topic.reference_links.append(blender_topic.reference_link)
+        topic.reference_links.append(props.reference_link)
         bcfxml.edit_topic(topic)
         bpy.ops.bim.load_bcf_topic(topic_guid = topic.guid, topic_index = props.active_topic_index)
-        blender_topic.reference_link = ""
+        props.reference_link = ""
         return {"FINISHED"}
 
 
@@ -506,8 +492,7 @@ class AddBcfDocumentReference(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BCFProperties
-        return props.topics[props.active_topic_index].document_reference
+        return context.scene.BCFProperties.document_reference
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -515,12 +500,12 @@ class AddBcfDocumentReference(bpy.types.Operator):
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
         document_reference = bcf.v2.data.DocumentReference()
-        document_reference.referenced_document = blender_topic.document_reference
-        document_reference.description = blender_topic.document_reference_description or None
+        document_reference.referenced_document = props.document_reference
+        document_reference.description = props.document_reference_description or None
         bcfxml.add_document_reference(topic, document_reference)
         bpy.ops.bim.load_bcf_topic(topic_guid = topic.guid, topic_index = props.active_topic_index)
-        blender_topic.document_reference = ""
-        blender_topic.document_reference_description = ""
+        props.document_reference = ""
+        props.document_reference_description = ""
         return {"FINISHED"}
 
 
@@ -531,8 +516,7 @@ class AddBcfLabel(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BCFProperties
-        return props.topics[props.active_topic_index].label
+        return context.scene.BCFProperties.label
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -540,10 +524,10 @@ class AddBcfLabel(bpy.types.Operator):
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
         new = blender_topic.labels.add()
-        new.name = blender_topic.label
-        topic.labels.append(blender_topic.label)
+        new.name = props.label
+        topic.labels.append(props.label)
         bcfxml.edit_topic(topic)
-        blender_topic.label = ""
+        props.label = ""
         return {"FINISHED"}
 
 
@@ -713,10 +697,9 @@ class AddBcfComment(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.BCFProperties
-        topic = props.topics[props.active_topic_index]
-        if not topic.comment:
+        if not props.comment:
             return False
-        if topic.has_related_viewpoint and not getBcfViewpoints(None, context):
+        if props.has_related_viewpoint and not bcf_prop.getBcfViewpoints(None, context):
             return False
         return True
 
@@ -726,12 +709,14 @@ class AddBcfComment(bpy.types.Operator):
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
         comment = bcf.v2.data.Comment()
-        comment.comment = blender_topic.comment
-        if blender_topic.has_related_viewpoint:
+        comment.comment = props.comment
+        if props.has_related_viewpoint:
             comment.viewpoint = bcf.v2.data.Viewpoint()
             comment.viewpoint.guid = blender_topic.viewpoints
         bcfxml.add_comment(topic, comment)
         bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)
+        props.comment = ""
+        props.has_related_viewpoint = False
         return {"FINISHED"}
 
 
@@ -1022,9 +1007,7 @@ class SelectBcfHeaderFile(bpy.types.Operator):
 
     def execute(self, context):
         if self.filepath:
-            props = context.scene.BCFProperties
-            topic = props.topics[props.active_topic_index]
-            topic.file_reference = self.filepath
+            context.scene.BCFProperties.file_reference = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1040,9 +1023,7 @@ class SelectBcfBimSnippetReference(bpy.types.Operator):
 
     def execute(self, context):
         if self.filepath:
-            props = context.scene.BCFProperties
-            topic = props.topics[props.active_topic_index]
-            topic.bim_snippet_reference = self.filepath
+            context.scene.BCFProperties.bim_snippet_reference = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1058,9 +1039,7 @@ class SelectBcfDocumentReference(bpy.types.Operator):
 
     def execute(self, context):
         if self.filepath:
-            props = context.scene.BCFProperties
-            topic = props.topics[props.active_topic_index]
-            topic.document_reference = self.filepath
+            context.scene.BCFProperties.document_reference = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
