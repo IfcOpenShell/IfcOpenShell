@@ -252,6 +252,7 @@ class SaveBcfProject(bpy.types.Operator):
     bl_label = "Save BCF Project"
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.bcf;*.bcfzip", options={"HIDDEN"})
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
