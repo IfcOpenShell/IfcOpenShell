@@ -107,14 +107,25 @@ class Data:
     @classmethod
     def load_cost_item_values(cls, cost_item, data):
         data["CostValues"] = []
-        data["TotalCostValue"] = 0.0
-        data["TotalAppliedValue"] = 0.0
         data["CategoryValues"] = {}
+        data["UnitBasisValueComponent"] = None
+        data["UnitBasisUnitSymbol"] = None
+        data["TotalAppliedValue"] = 0.0
+        data["TotalCost"] = 0.0
         for cost_value in cost_item.CostValues or []:
             cls.load_cost_item_value(cost_item, data, cost_value)
             data["CostValues"].append(cost_value.id())
             data["TotalAppliedValue"] += cls.cost_values[cost_value.id()]["AppliedValue"]
-        data["TotalCostValue"] = data["TotalCostQuantity"] * data["TotalAppliedValue"]
+            if cost_value.UnitBasis:
+                cost_value_data = cls.cost_values[cost_value.id()]
+                data["UnitBasisValueComponent"] = cost_value_data["UnitBasis"]["ValueComponent"]
+                data["UnitBasisUnitSymbol"] = cost_value_data["UnitBasis"]["UnitSymbol"]
+        if data["UnitBasisValueComponent"]:
+            data["TotalCost"] = (
+                data["TotalCostQuantity"] / data["UnitBasisValueComponent"] * data["TotalAppliedValue"]
+            )
+        else:
+            data["TotalCost"] = data["TotalCostQuantity"] * data["TotalAppliedValue"]
 
     @classmethod
     def load_cost_item_value(cls, cost_item, cost_item_data, cost_value):
@@ -187,7 +198,11 @@ class Data:
                         continue
                     child_applied_value = cls.calculate_applied_value(child_cost_item, child_cost_value)
                     child_quantity = cls.get_total_quantity(child_cost_item)
-                    result += child_applied_value * child_quantity
+                    if child_cost_value.UnitBasis:
+                        value_component = child_cost_value.UnitBasis.ValueComponent.wrappedValue
+                        result += child_quantity / value_component * child_applied_value
+                    else:
+                        result += child_quantity * child_applied_value
         return result
 
     @classmethod
