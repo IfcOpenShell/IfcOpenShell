@@ -1181,26 +1181,26 @@ bounds = {
 }
 
 if __name__ == "__main__":
-    import time
-
-    start_time = time.time()
     import sys, os
     import ifcopenshell
-    from datetime import date
-
-    # filename = os.path.join(os.getcwd(), 'IDS results/'+str(date.today())+"_ids_result.txt")
-    filename = (
-        "C:/Users/arturbt/Desktop/OneDrive - NTNU/Code/Ifc_sandbox/ifc_experiments/"
-        + "IDS results/"
-        + str(date.today())
-        + "_ids_result.txt"
-    )
-
-    logger = logging.getLogger("IDS")
-    logging.basicConfig(filename=filename, level=logging.INFO, format="%(message)s")
-    logging.FileHandler(filename, mode='w')
 
     ids_file = ids.open(sys.argv[1])
     ifc_file = ifcopenshell.open(sys.argv[2])
+    filepath = sys.argv[3]
+
+    logger = logging.getLogger("IDS_Logger")
+    logging.basicConfig(filename=filepath, level=logging.INFO, format="%(message)s")
+    logging.FileHandler(filepath+r"\report.txt", mode="w")
+
+    bcf_handler = BcfHandler(
+        project_name="Default IDS Project",
+        author="your@email.com",
+        filepath=filepath + r"\report.bcfzip",
+    )
+    logger.addHandler(bcf_handler)
+
+    report = SimpleHandler()
+    logger.addHandler(report)
+
 
     ids_file.validate(ifc_file, logger)
