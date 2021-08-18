@@ -327,7 +327,6 @@ class TestIdsReporting(unittest.TestCase):
         my_bcfxml = bcfxml.load(fn)
         topics = my_bcfxml.get_topics()
         self.assertEqual(len(topics), 5)
-        os.remove(fn)  # BUG not removing
 
 
 if __name__ == "__main__":
