@@ -451,7 +451,7 @@ class facet(metaclass=meta_facet):
             if "simpleValue" in list(v):
                 return v["simpleValue"]
             elif "restriction" in list(v):
-                return restriction(v["restriction"][0])
+                return restriction.parse(v["restriction"][0])
                 # TODO handle more than one restriction: return [restriction(r) for r in v["restriction"]]
             else:
                 raise Exception("Unknown value declaration.")
@@ -877,34 +877,42 @@ class restriction:
     The value restriction from XSD implemented as a list of values and a containment test
     """
 
-    def __init__(self, node=None):
-
+    def __init__(self):
+        """Create a restriction that can be used instead of value of a parameter."""
         self.type = ""
         self.options = []
 
-        if node:
+    @staticmethod
+    def parse(ids_dict):
+        """Parse xml restriction to python object.
+
+        :param ids_dict:
+        :type ids_dict: dict
+        """
+        r = restriction()
+        if ids_dict:
             # TODO 'base' missing in some IDS?!
-            self.base = node["@base"][3:]
-            for n in node:
+            r.base = ids_dict["@base"][3:]
+            for n in ids_dict:
                 if n == "enumeration":
-                    self.type = "enumeration"
-                    for x in node[n]:
-                        self.options.append(x["@value"])
+                    r.type = "enumeration"
+                    for x in ids_dict[n]:
+                        r.options.append(x["@value"])
                 elif n[-7:] == "clusive":
-                    self.type = "bounds"
-                    self.options.append({n: node[n]["@value"]})
+                    r.type = "bounds"
+                    r.options.append({n: ids_dict[n]["@value"]})
                 elif n[-5:] == "ength":
-                    self.type = "length"
+                    r.type = "length"
                     if n[3:6] == "min":
-                        self.options.append(">=")
+                        r.options.append(">=")
                     elif n[3:6] == "max":
-                        self.options.append("<=")
+                        r.options.append("<=")
                     else:
                         self.options.append("==")
-                    self.options[-1] += str(node[n]["@value"])
+                    r.options[-1] += str(ids_dict[n]["@value"])
                 elif n == "pattern":
-                    self.type = "pattern"
-                    self.options.append(node[n]["@value"])
+                    r.type = "pattern"
+                    r.options.append(ids_dict[n]["@value"])
                 # TODO add fractionDigits
                 # TODO add totalDigits
                 # TODO add whiteSpace
@@ -912,6 +920,7 @@ class restriction:
                     pass
                 else:
                     print("Error! Restriction not implemented")
+        return r
 
     def asdict(self):
         """Converts object to a dictionary, adding required attributes.
