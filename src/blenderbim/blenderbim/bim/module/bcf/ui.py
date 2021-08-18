@@ -151,12 +151,12 @@ class BIM_PT_bcf_metadata(Panel):
                     row.label(text=f.ifc_spatial_structure_element)
 
         row = layout.row(align=True)
-        row.prop(topic, "file_reference")
+        row.prop(props, "file_reference")
         row.operator("bim.select_bcf_header_file", icon="FILE_FOLDER", text="")
         row = layout.row()
-        row.prop(topic, "file_ifc_project")
+        row.prop(props, "file_ifc_project")
         row = layout.row()
-        row.prop(topic, "file_ifc_spatial_structure_element")
+        row.prop(props, "file_ifc_spatial_structure_element")
 
         row = layout.row()
         row.operator("bim.add_bcf_header_file")
@@ -168,7 +168,7 @@ class BIM_PT_bcf_metadata(Panel):
             row.operator("bim.open_uri", icon="URL", text="").uri = link.name
             row.operator("bim.remove_bcf_reference_link", icon="X", text="").index = index
         row = layout.row()
-        row.prop(topic, "reference_link")
+        row.prop(props, "reference_link")
         row = layout.row()
         row.operator("bim.add_bcf_reference_link")
 
@@ -178,7 +178,7 @@ class BIM_PT_bcf_metadata(Panel):
             row.prop(label, "name", text="")
             row.operator("bim.remove_bcf_label", icon="X", text="").index = index
         row = layout.row()
-        row.prop(topic, "label")
+        row.prop(props, "label")
         row = layout.row()
         row.operator("bim.add_bcf_label")
 
@@ -199,12 +199,12 @@ class BIM_PT_bcf_metadata(Panel):
             row.operator("bim.remove_bcf_bim_snippet", icon="X", text="")
         else:
             row = layout.row(align=True)
-            row.prop(topic, "bim_snippet_reference")
+            row.prop(props, "bim_snippet_reference")
             row.operator("bim.select_bcf_bim_snippet_reference", icon="FILE_FOLDER", text="")
             row = layout.row()
-            row.prop(topic, "bim_snippet_type")
+            row.prop(props, "bim_snippet_type")
             row = layout.row()
-            row.prop(topic, "bim_snippet_schema")
+            row.prop(props, "bim_snippet_schema")
             row = layout.row()
             row.operator("bim.add_bcf_bim_snippet")
 
@@ -222,10 +222,10 @@ class BIM_PT_bcf_metadata(Panel):
             row = box.row(align=True)
             row.prop(doc, "description")
         row = layout.row(align=True)
-        row.prop(topic, "document_reference")
+        row.prop(props, "document_reference")
         row.operator("bim.select_bcf_document_reference", icon="FILE_FOLDER", text="")
         row = layout.row()
-        row.prop(topic, "document_reference_description")
+        row.prop(props, "document_reference_description")
         row = layout.row()
         row.operator("bim.add_bcf_document_reference")
 
@@ -235,7 +235,7 @@ class BIM_PT_bcf_metadata(Panel):
             row.operator("bim.view_bcf_topic", text=bcfxml.topics[related_topic.name.lower()].title).topic_guid = related_topic.name
             row.operator("bim.remove_bcf_related_topic", icon="X", text="").index = index
         row = layout.row()
-        row.prop(topic, "related_topic")
+        row.prop(props, "related_topic")
         row = layout.row()
         row.operator("bim.add_bcf_related_topic")
 
@@ -295,8 +295,8 @@ class BIM_PT_bcf_comments(Panel):
                     col.label(text=" ".join(line_words))
 
         row = layout.row()
-        row.prop(topic, "comment")
+        row.prop(props, "comment")
         row = layout.row()
-        row.prop(topic, "has_related_viewpoint")
+        row.prop(props, "has_related_viewpoint")
         row = layout.row()
         row.operator("bim.add_bcf_comment")
