@@ -29,7 +29,7 @@ import ifcopenshell.util.placement
 
 from bcf.v2.bcfxml import BcfXml
 from bcf.v2 import data as bcf
-# .data import Topic, Viewpoint, PerspectiveCamera
+
 from bcf import bcfxml
 
 from xmlschema import XMLSchema
@@ -39,17 +39,366 @@ from lxml import etree as ElementTree
 from xmlschema.validators import facets
 from xmlschema.validators import identities
 
-ids_schema = XMLSchema("ifcopenshell/ids.xsd") # source: "http://standards.buildingsmart.org/IDS/ids_04.xsd"
+ids_schema = XMLSchema("ifcopenshell/ids.xsd")  # source: "http://standards.buildingsmart.org/IDS/ids_04.xsd"
 
 
 def error(msg):
     raise Exception(msg)
 
 
+class ids:
+    """Represents the XML root <ids> node and its <specification> childNodes."""
+
+    def __init__(
+        self,
+        ifcversion=None,
+        description=None,
+        author=None,
+        copyright=None,
+        version=None,
+        creation_date=None,
+        purpose=None,
+        milestone=None,
+    ):
+        """Create an IDS object.
+
+        :param ifcversion: IFC schema version. If None, then schema independent. Options: '2.3.0.1'|'4.0.2.1'|'4.3.0.0'|None, defaults to None
+        :type ifcversion: str, optional
+        :param description:, defaults to None
+        :type description: str, optional
+        :param author: Email of the IDS author, defaults to None
+        :type author: str, optional
+        :param copyright:, defaults to None
+        :type copyright: str, optional
+        :param version: IDS file version, defaults to None
+        :type version: float, optional
+        :param creation_date: Date in 'yyyy-mm-dd' format, defaults to current date
+        :type creation_date: str, optional
+        :param purpose:, defaults to None
+        :type purpose: str, optional
+        :param milestone:, defaults to None
+        :type milestone: str, optional
+        """
+        self.specifications = []
+        self.info = {}
+        if ifcversion:
+            if ifcversion in ["2.3.0.1", "4.0.2.1", "4.3.0.0"]:
+                self.info["ifcversion"] = ifcversion
+        if author:
+            if "@" in author:
+                self.info["author"] = author
+        if description:
+            self.info["description"] = description
+        if copyright:
+            self.info["copyright"] = copyright
+        if version:
+            self.info["version"] = version
+        if creation_date:
+            if re.match(r"\d\d\d\d-\d\d-\d\d", creation_date):
+                self.info["date"] = creation_date  # date.fromisoformat(creation_date).isoformat()
+        if "date" not in self.info:
+            self.info["date"] = date.today().isoformat()
+        if purpose:
+            self.info["purpose"] = purpose
+        if milestone:
+            self.info["milestone"] = milestone
+
+    def asdict(self):
+        """Converts object to a dictionary, adding required attributes.
+
+        :return: Xmlschema compliant dictionary.
+        :rtype: dict
+        """
+        ids_dict = {
+            "@xmlns": "http://standards.buildingsmart.org/IDS",
+            "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
+            "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_04.xsd",
+            "specification": [],
+            "info": self.info,
+        }
+        for spec in self.specifications:
+            ids_dict["specification"].append(spec.asdict())
+        return ids_dict
+
+    def to_xml(self, filepath="./", ids_schema=ids_schema):
+        """Save IDS object as .xml file.
+
+        :param filepath: Path for the new file, defaults to "./"
+        :type filepath: str, optional
+        :param ids_schema: XML Schema for an IDS file, defaults to ids_schema object from buildingSMART
+        :type ids_schema: XMLschema, optional
+        :return: Result of the newly created file validation against the schema.
+        :rtype: bool
+        """
+
+        if filepath.endswith("/"):
+            filepath = filepath + "IDS"
+        if not filepath.endswith(".xml"):
+            filepath = filepath + ".xml"
+
+        ids_dict = self.asdict()
+
+        ids_xml = ids_schema.encode(
+            ids_dict,
+            namespaces={
+                "": "http://standards.buildingsmart.org/IDS",
+                "xs": "http://www.w3.org/2001/XMLSchema",
+                "xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                "xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_04.xsd",
+            },
+        )  # validation='skip',
+
+        ids_str = etree_tostring(
+            ids_xml,
+            namespaces={
+                "": "http://standards.buildingsmart.org/IDS",
+                # 'xs': 'http://www.w3.org/2001/XMLSchema',
+                # 'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+                # 'xsi:schemaLocation': "http://standards.buildingsmart.org/IDS/ids_04.xsd"
+            },
+        )
+
+        with open(filepath, "w") as f:
+            f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+            f.write("<!-- IDS (INFORMATION DELIVERY SPECIFICATION) CREATED USING IFCOPENSHELL -->\n")
+            f.write(ids_str)
+            f.close()
+
+        # ids_schema.validate(filepath)
+        return ids_schema.is_valid(filepath)
+
+    @staticmethod
+    def open(filepath, ids_schema=ids_schema):
+        """Use to open ids.xml files
+
+        :param filepath: ids file path
+        :type filepath: str
+        :param ids_schema: XML Schema for an IDS file, defaults to ids_schema object from buildingSMART
+        :type ids_schema: XMLschema, optional
+        :return: IDS file as a python object
+        :rtype: ids object
+        """
+
+        ids_schema.validate(filepath)
+        ids_content = ids_schema.decode(
+            filepath, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
+        )
+        ids_file = ids()
+        ids_file.specifications = [specification.parse(s) for s in ids_content["specification"]]
+        return ids_file
+
+    def validate(self, ifc_file, logger=None):
+        """Use to validate IFC model against IDS specifications.
+
+        :param ifc_file: path to ifc file
+        :type ifc_file: str
+        :param logger: Logging object with handlers, defaults to None
+        :type logger: logging, optional
+        """
+        if not isinstance(logger, logging.Logger):
+            logger = logging.getLogger("IDS_Logger")
+            logging.basicConfig(level=logging.INFO, format="%(message)s")
+            logger.setLevel(logging.INFO)
+
+        if "ifcversion" in self.info.keys():
+            if self.info["ifcversion"] in ["2.3.0.1", "4.0.2.1", "4.3.0.0"]:
+                if self.info["ifcversion"][0:3] == "2.3":
+                    if not ifc_file.schema.startswith("IFC2x3"):
+                        logger.error("IFC file is of %s not of %s schema." % (ifc_file.schema, self.info["ifcversion"]))
+                elif self.info["ifcversion"][0:3] == "4.0":
+                    if not ifc_file.schema == "IFC4":
+                        logger.error("IFC file is of %s not of %s schema." % (ifc_file.schema, self.info["ifcversion"]))
+                elif self.info["ifcversion"][0:3] == "4.3":
+                    if not ifc_file.schema.startswith("IFC4x3"):
+                        logger.error("IFC file is of %s not of %s schema." % (ifc_file.schema, self.info["ifcversion"]))
+                else:
+                    logger.error("IFC version not recognized")
+
+        # Consider other way around: for elem, for spec so we can see if an element pass all IDSes?
+        for spec in self.specifications:
+            self.ifc_applicable = 0
+            self.ifc_passed = 0
+            for elem in ifc_file.by_type("IfcObject"):
+                apply, comply = spec(elem, logger)
+                if apply:
+                    self.ifc_applicable += 1
+                if comply:
+                    self.ifc_passed += 1
+            if self.ifc_applicable == 0:
+                if spec.necessity == "required":
+                    logger.error("No applicable elements found. Minimum 1 applicable element required.")
+                else:
+                    logger.debug("No applicable elements found. None required.")
+
+            logger.debug(
+                "Out of %s IFC elements, %s were applicable and %s of them passed (%s)."
+                % (
+                    len(ifc_file.by_type("IfcProduct")),
+                    self.ifc_applicable,
+                    self.ifc_passed,
+                    str(self.ifc_passed / self.ifc_applicable * 100) + "%",
+                )
+            )
+        for h in logger.handlers:
+            h.flush()
+
+
+class specification:
+    """Represents the XML <specification> node and its two children <applicability> and <requirements>"""
+
+    def __init__(self, name="Specification", necessity="required"):
+        """Create a specification to be added in ids.
+
+        :param name:, defaults to "Specification"
+        :type name: str, optional
+        :param necessity: 'required'|'optional', defaults to "required"
+        :type necessity: str, optional
+        """
+        self.name = name
+        self.applicability = None
+        self.requirements = None
+        self.necessity = necessity
+
+    def asdict(self):
+        """Converts object to a dictionary, adding required attributes.
+
+        :return: Xmlschema compliant dictionary.
+        :rtype: dict
+        """
+        # if older python collections.OrderedDict()
+        spec_dict = {
+            "@name": self.name,
+            "@necessity": self.necessity,
+            "applicability": {},
+            "requirements": {},
+        }
+        for x in ["applicability", "requirements"]:
+            for fac in (getattr(self, x)).terms:
+                fclass = type(fac).__name__
+                if fclass in spec_dict[x]:
+                    spec_dict[x][fclass].append(fac.asdict())
+                else:
+                    spec_dict[x][fclass] = [fac.asdict()]
+        return spec_dict
+
+    @staticmethod
+    def parse(ids_dict):
+        """Parse xml specification to python object.
+
+        :param ids_dict:
+        :type ids_dict: dict
+        """
+
+        def parse_rules(dict):
+            facet_names = list(dict.keys())
+            facet_properties = [v[0] if isinstance(v, list) else v for v in list(dict.values())]
+            classes = [meta_facet.facets.__getitem__(f) for f in facet_names]
+            facets = [cls(n) for cls, n in zip(classes, facet_properties)]
+            return facets
+
+        spec = specification()
+        spec.name = ids_dict["@name"]
+        spec.necessity = ids_dict["@necessity"]
+        spec.applicability = boolean_and(parse_rules(ids_dict["applicability"]))
+        spec.requirements = boolean_and(parse_rules(ids_dict["requirements"]))
+        return spec
+
+    def add_applicability(self, facet):
+        """Applicability specifies what conditions must be meet for an IFC object to be used for validation. Note, that at least one entity facet is required.
+
+        :param facet: any of entity|classification|property|material
+        :type facet: facet
+
+        Example::
+            i = ids.ids()
+            i.specifications.append(ids.specification(name="Test_Specification"))
+            e = ids.entity.create(name="Test_Name", predefinedtype="Test_PredefinedType")
+            i.specifications[0].add_applicability(e)
+        """
+        if self.applicability:
+            self.applicability = boolean_and(self.applicability.terms + [facet])
+        else:
+            self.applicability = boolean_and([facet])
+
+    def add_requirement(self, facet):
+        """Requirement is validated on all applicable IFC elements. Note, that at least one facet of any type is required.
+
+        :param facet: any of entity|classification|property|material
+        :type facet: facet
+        """
+        if self.requirements:
+            self.requirements = boolean_and(self.requirements.terms + [facet])
+        else:
+            self.requirements = boolean_and([facet])
+
+    def __call__(self, inst, logger):
+        """When specification is called on an ifc instance, it validates against applicability and requirements.
+
+        :param inst: IFC entity element
+        :type inst: IFC entity
+        :param logger: Logging object
+        :type logger: logging
+        :return: results of validation on applicability and requirements
+        :rtype: [bool,bool]
+        """
+        if self.applicability(inst, logger):
+
+            valid = self.requirements(inst, logger)
+
+            if valid:
+                logger.info(
+                    {
+                        "guid": inst.GlobalId,
+                        "result": valid.success,
+                        "sentence": str(self)
+                        + ".\n"
+                        + inst.is_a()
+                        + " '"
+                        + str(inst.Name)
+                        + "' (#"
+                        + str(inst.id())
+                        + ") has "
+                        + str(valid)
+                        + " so is compliant",
+                        "ifc_element": inst,
+                    }
+                )
+                return True, True
+            else:
+                # BUG "has does not have"
+                logger.error(
+                    {
+                        "guid": inst.GlobalId,
+                        "result": valid.success,
+                        "sentence": str(self)
+                        + ".\n"
+                        + inst.is_a()
+                        + " '"
+                        + str(inst.Name)
+                        + "' (#"
+                        + str(inst.id())
+                        + ") has "
+                        + str(valid)
+                        + " so is not compliant",
+                        "ifc_element": inst,
+                    }
+                )
+                return True, False
+        else:
+            return False, False
+
+    def __str__(self):
+        """Represent the specification in human readible sentence.
+
+        :return: sentence
+        :rtype: str
+        """
+        return "Given an instance with %(applicability)s\nWe expect %(requirements)s" % self.__dict__
+
+
 class facet_evaluation:
-    """
-    The evaluation of a facet with data from IFC. Converts to bool and has a human readable string format.
-    """
+    """The evaluation of a facet with data from IFC. Converts to bool and has a human readable string format."""
 
     def __init__(self, success, str):
         self.success = success
@@ -63,9 +412,7 @@ class facet_evaluation:
 
 
 class meta_facet(type):
-    """
-    A metaclass for automatically registering facets in a map to be instantiated based on XML tagnames.
-    """
+    """A metaclass for automatically registering facets in a map to be instantiated based on XML tagnames."""
 
     facets = {}
 
@@ -80,6 +427,7 @@ class facet(metaclass=meta_facet):
     The base class for IDS facets. IDS facets are functors constructed from
     XML nodes that return True or False. A getattr method is provided for
     conveniently extracting XML child node text content.
+    Use child classes instead: entity, classification, property and material.
     """
 
     def __init__(self, node=None, location=None):
@@ -97,7 +445,7 @@ class facet(metaclass=meta_facet):
     def __getattr__(self, k):
         if k in self.node:
             v = self.node[k]
-            #TODO rare case with list of dictionaries should not happen
+            # BUG list of dictionaries should not happen
             if isinstance(v, list):
                 v = v[0]
             if "simpleValue" in list(v):
@@ -123,26 +471,49 @@ class facet(metaclass=meta_facet):
 
 
 class entity(facet):
-    """
-    The IDS entity facet currently *with* inheritance
-    """
+    """The IDS entity facet currently *with* inheritance"""
 
     parameters = ["name", "predefinedtype"]
 
     @staticmethod
     def create(name=None, predefinedtype=None):
+        """Create an entity facet that can be added to applicability or requirements of IDS specification.
+
+        :param name: IFC entity name that is required. e.g. IfcWall, defaults to None
+        :type name: str, optional
+        :param predefinedtype: name of the predefined type, defaults to None
+        :type predefinedtype: str, optional
+        :return: entity object
+        :rtype: entity
+        """
+
         inst = entity()
         inst.name = name
         inst.predefinedtype = predefinedtype
         return inst
 
     def asdict(self):
+        """Converts object to a dictionary, adding required attributes.
+
+        :return: Xmlschema compliant dictionary.
+        :rtype: dict
+        """
         fac_dict = {"name": parameter_asdict(self.name)}
         if "predefinedtype" in self:
             fac_dict["predefinedtype"] = parameter_asdict(self.predefinedtype)
         return fac_dict
 
     def __call__(self, inst, logger):
+        """Validate an ifc instance against that entity facet.
+
+        :param inst: IFC entity element
+        :type inst: IFC entity
+        :param logger: Logging object
+        :type logger: logging
+        :return: result of the validation as bool and message
+        :rtype: facet_evaluation(bool, str)
+        """
+
         # @nb with inheritance
         if self.predefinedtype and hasattr(inst, "PredefinedType"):
             self.message = "an entity name '%(name)s' of predefined type '%(predefinedtype)s'"
@@ -165,6 +536,18 @@ class classification(facet):
 
     @staticmethod
     def create(location="any", value=None, system=None):
+        """Create a classification facet that can be added to applicability or requirements of IDS specification.
+
+        :param location: Define where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
+        :type location: str, optional
+        :param value: Value that is required. Could be alphanumeric or restriction object, defaults to None
+        :type value: restriction|alphanumeric, optional
+        :param system: System that is required. Could be alphanumeric or restriction object, defaults to None
+        :type system: restriction|alphanumeric, optional
+        :return: classification object
+        :rtype: classification
+        """
+
         inst = classification()
         inst.location = location
         inst.value = value
@@ -172,6 +555,11 @@ class classification(facet):
         return inst
 
     def asdict(self):
+        """Converts object to a dictionary, adding required attributes.
+
+        :return: Xmlschema compliant dictionary.
+        :rtype: dict
+        """
         fac_dict = {
             "value": parameter_asdict(self.value),
             "system": parameter_asdict(self.system),
@@ -181,6 +569,15 @@ class classification(facet):
         return fac_dict
 
     def __call__(self, inst, logger):
+        """Validate an ifc instance against that classification facet.
+
+        :param inst: IFC entity element
+        :type inst: IFC entity
+        :param logger: Logging object
+        :type logger: logging
+        :return: result of the validation as bool and message
+        :rtype: facet_evaluation(bool, str)
+        """
 
         instance_classiciations = inst.HasAssociations
         if ifcopenshell.util.element.get_type(inst):
@@ -232,6 +629,19 @@ class property(facet):
 
     @staticmethod
     def create(location="any", propertyset=None, name=None, value=None):
+        """Create a property facet that can be added to applicability or requirements of IDS specification.
+
+        :param location: Define where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
+        :type location: str, optional
+        :param propertyset: Propertyset that is required. Could be alphanumeric or restriction object, defaults to None
+        :type propertyset: restriction|alphanumeric, optional
+        :param name: Name that is required. Could be alphanumeric or restriction object, defaults to None
+        :type name: restriction|alphanumeric, optional
+        :param value: Value that is required. Could be alphanumeric or restriction object, defaults to None
+        :type value: restriction|alphanumeric, optional
+        :return: property object
+        :rtype: property
+        """
         inst = property()
         inst.location = location
         inst.propertyset = propertyset
@@ -243,6 +653,11 @@ class property(facet):
         return inst
 
     def asdict(self):
+        """Converts object to a dictionary, adding required attributes.
+
+        :return: Xmlschema compliant dictionary.
+        :rtype: dict
+        """
         fac_dict = {
             "@location": self.location,
             "propertyset": parameter_asdict(self.propertyset),
@@ -254,6 +669,15 @@ class property(facet):
         return fac_dict
 
     def __call__(self, inst, logger):
+        """Validate an ifc instance against that property facet.
+
+        :param inst: IFC entity element
+        :type inst: IFC entity
+        :param logger: Logging object
+        :type logger: logging
+        :return: result of the validation as bool and message
+        :rtype: facet_evaluation(bool, str)
+        """
 
         self.location = self.node["@location"]
 
@@ -303,15 +727,22 @@ class property(facet):
 
 
 class material(facet):
-    """
-    The IDS material facet used to traverse the HasAssociations inverse attribute.
-    """
+    """The IDS material facet used to traverse the HasAssociations inverse attribute."""
 
     parameters = ["value", "location"]
     message = "%(location)smaterial '%(value)s'"
 
     @staticmethod
     def create(location="any", value=None):
+        """Create a material facet that can be added to applicability or requirements of IDS specification.
+
+        :param location: Define where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
+        :type location: str, optional
+        :param value: Value that is required. Could be alphanumeric or restriction object, defaults to None
+        :type value: restriction|alphanumeric, optional
+        :return: material object
+        :rtype: material
+        """
         inst = material()
         inst.location = location
         inst.value = value
@@ -321,6 +752,11 @@ class material(facet):
         return inst
 
     def asdict(self):
+        """Converts object to a dictionary, adding required attributes.
+
+        :return: Xmlschema compliant dictionary.
+        :rtype: dict
+        """
         fac_dict = {
             "value": parameter_asdict(self.value),
             "@location": self.location,
@@ -331,6 +767,15 @@ class material(facet):
         return fac_dict
 
     def __call__(self, inst, logger):
+        """Validate an ifc instance against that material facet.
+
+        :param inst: IFC entity element
+        :type inst: IFC entity
+        :param logger: Logging object
+        :type logger: logging
+        :return: result of the validation as bool and message
+        :rtype: facet_evaluation(bool, str)
+        """
 
         self.location = self.node["@location"]
 
@@ -386,23 +831,26 @@ class material(facet):
 
 
 def parameter_asdict(parameter):
+    """Converts parameter to an IDS compliant dictionary, handling both value and restrictions.
+
+    :return: Xmlschema compliant dictionary.
+    :rtype: dict
+    """
     if isinstance(parameter, str):
         parameter_dict = {"simpleValue": parameter}
     elif isinstance(parameter, restriction):
         parameter_dict = {"xs:restriction": [parameter.asdict()]}
     elif isinstance(parameter, list):
-        restrictions = {'@base':'xs:'+parameter[0].base}
+        restrictions = {"@base": "xs:" + parameter[0].base}
         for p in parameter:
             x = p.asdict()
             restrictions[list(x)[1]] = x[list(x)[1]]
-        parameter_dict = {'xs:restriction': [restrictions]}
+        parameter_dict = {"xs:restriction": [restrictions]}
     return parameter_dict
 
 
 class boolean_logic:
-    """
-    Boolean conjunction over a collection of functions
-    """
+    """Boolean conjunction over a collection of functions"""
 
     def __init__(self, terms):
         self.terms = terms
@@ -466,41 +914,57 @@ class restriction:
                     print("Error! Restriction not implemented")
 
     def asdict(self):
-        rest_dict = {'@base': 'xs:'+self.base}
-        if self.type == 'enumeration':
+        """Converts object to a dictionary, adding required attributes.
+
+        :return: Xmlschema compliant dictionary.
+        :rtype: dict
+        """
+        rest_dict = {"@base": "xs:" + self.base}
+        if self.type == "enumeration":
             for option in self.options:
-                if 'xs:enumeration' not in rest_dict:
-                    rest_dict['xs:enumeration'] = [{'@value': option}]
+                if "xs:enumeration" not in rest_dict:
+                    rest_dict["xs:enumeration"] = [{"@value": option}]
                 else:
-                    rest_dict['xs:enumeration'].append({'@value': option})
-        elif self.type == 'bounds':
+                    rest_dict["xs:enumeration"].append({"@value": option})
+        elif self.type == "bounds":
             for option in self.options:
-                if 'xs:option' not in rest_dict:
-                    rest_dict['xs:'+option] = [{'@value': option}]
+                if "xs:option" not in rest_dict:
+                    rest_dict["xs:" + option] = [{"@value": option}]
                 else:
-                    rest_dict['xs:'+option].append({'@value': self.options[option], '@fixed': False})
-        elif self.type == 'pattern':
-            if 'xs:pattern' not in rest_dict:
-                rest_dict['xs:pattern'] = [{'@value': self.options}]
+                    rest_dict["xs:" + option].append({"@value": self.options[option], "@fixed": False})
+        elif self.type == "pattern":
+            if "xs:pattern" not in rest_dict:
+                rest_dict["xs:pattern"] = [{"@value": self.options}]
             else:
-                rest_dict['xs:pattern'].append({'@value': self.options})
+                rest_dict["xs:pattern"].append({"@value": self.options})
         return rest_dict
 
     @staticmethod
-    def create(options, type="", base="string"):
-        """
-        type:       One of "enumeration"|"pattern"|"bounds"
-        base:       string/boolean/decimal/integer
-        options:    list if enumeration
-                    regex string if pattern
-                    if bounds dict with possible keys: minInclusive, maxInclusive, minExclusive, maxExclusive
+    def create(options, type="pattern", base="string"):
+        """[summary]
+
+        :param type: One of "enumeration"|"pattern"|"bounds", defaults to "pattern"
+        :type type: str, optional
+        :param options: if enumeration: list of possible values
+                        if pattern: xml regular expression string
+                        if bounds: dictionary with possible keys: 'minInclusive', 'maxInclusive', 'minExclusive', 'maxExclusive'
+        :type options: list|str|dict
+        :param base: One of "string"|"boolean"|"decimal"|"integer", defaults to "string"
+        :type base: str, optional
+        :raises Exception: If not properly defined restriction.
+        :return: restriction object
+        :rtype: restriction
         """
         rest = restriction()
         if type in ["enumeration", "pattern", "bounds"]:
             rest.type = type
             rest.base = base
             rest.options = options
-            if (type == "enumeration" and isinstance(options, list)) or (type == "bounds" and isinstance(options, dict)) or (type == "pattern" and isinstance(options, str)):
+            if (
+                (type == "enumeration" and isinstance(options, list))
+                or (type == "bounds" and isinstance(options, dict))
+                or (type == "pattern" and isinstance(options, str))
+            ):
                 rest.options = options
             else:
                 Exception("Options were not properly defined.")
@@ -511,6 +975,13 @@ class restriction:
             )
 
     def __eq__(self, other):
+        """Evaluate the restriction using equality sign.
+
+        :param other: value to compare with the restriction.
+        :type other: str|float|int
+        :return: True if 'other' match the restriction, False if not.
+        :rtype: bool
+        """
         result = False
         # TODO implement data type comparison
         if self and (other or other == 0):
@@ -545,11 +1016,16 @@ class restriction:
         return result
 
     def __repr__(self):
+        """Represent the restriction in human readible sentence.
+
+        :return: sentence
+        :rtype: str
+        """
         msg = "of type '%s', " % (self.base)
         if self.type == "enumeration":
             msg = msg + "of value: '%s'" % "' or '".join(self.options)
         elif self.type == "bounds":
-            msg = msg + "of value %s" % ", and ".join( [bounds[x] + str(self.options[x]) for x in self.options] )
+            msg = msg + "of value %s" % ", and ".join([bounds[x] + str(self.options[x]) for x in self.options])
         elif self.type == "length":
             msg = msg + "with %s letters" % " and ".join(self.options)
         elif self.type == "pattern":
@@ -560,270 +1036,15 @@ class restriction:
         return msg
 
 
-class specification:
-    """
-    Represents the XML <specification> node and its two children <applicability> and <requirements>
-    """
-
-    def __init__(self, name="Specification", necessity="required"):
-        self.name = name
-        self.applicability = None
-        self.requirements = None
-        self.necessity = necessity
-
-    def asdict(self):
-        # if older python collections.OrderedDict()
-        spec_dict = {
-            "@name": self.name,
-            "@necessity": self.necessity,
-            "applicability": {},
-            "requirements": {},
-        }
-        for x in ["applicability", "requirements"]:
-            for fac in (getattr(self, x)).terms:
-                fclass = type(fac).__name__
-                if fclass in spec_dict[x]:
-                    spec_dict[x][fclass].append(fac.asdict())
-                else:
-                    spec_dict[x][fclass] = [fac.asdict()]
-        return spec_dict
-
-    @staticmethod
-    def parse(ids_dict):
-        def parse_rules(dict):
-            facet_names = list(dict.keys())
-            facet_properties = [v[0] if isinstance(v, list) else v for v in list(dict.values())]
-            classes = [meta_facet.facets.__getitem__(f) for f in facet_names]
-            facets = [cls(n) for cls, n in zip(classes, facet_properties)]
-            return facets
-
-        spec = specification()
-        spec.name = ids_dict["@name"]
-        spec.necessity = ids_dict["@necessity"]
-        spec.applicability = boolean_and(parse_rules(ids_dict["applicability"]))
-        spec.requirements = boolean_and(parse_rules(ids_dict["requirements"]))
-        return spec
-
-    def add_applicability(self, facet):
-        """
-        Applicability specifies what conditions must be meet for an IFC object to be used for validation.
-        Takes: entity, classification, property or material objects as an input (at least one entity is required).
-        """
-        if self.applicability:
-            self.applicability = boolean_and(self.applicability.terms + [facet])
-        else:
-            self.applicability = boolean_and([facet])
-
-    def add_requirement(self, facet):
-        """
-        Requirement is validated on all applicable IFC elements.
-        Takes: entity, classification, property or material objects as an input (at least one of them is required).
-        """
-        if self.requirements:
-            self.requirements = boolean_and(self.requirements.terms + [facet])
-        else:
-            self.requirements = boolean_and([facet])
-
-    def __call__(self, inst, logger):
-        if self.applicability(inst, logger):
-
-            valid = self.requirements(inst, logger)
-
-            if valid:
-                logger.info(
-                    {
-                        "guid": inst.GlobalId,
-                        "result": valid.success,
-                        "sentence": str(self)
-                        + ".\n"
-                        + inst.is_a()
-                        + " '"
-                        + str(inst.Name)
-                        + "' (#"
-                        + str(inst.id())
-                        + ") has "
-                        + str(valid)
-                        + " so is compliant",
-                        "ifc_element": inst,
-                    }
-                )
-                return True, True
-            else:
-                # BUG "has does not have"
-                logger.error(
-                    {
-                        "guid": inst.GlobalId,
-                        "result": valid.success,
-                        "sentence": str(self)
-                        + ".\n"
-                        + inst.is_a()
-                        + " '"
-                        + str(inst.Name)
-                        + "' (#"
-                        + str(inst.id())
-                        + ") has "
-                        + str(valid)
-                        + " so is not compliant",
-                        "ifc_element": inst,
-                    }
-                )
-                return True, False
-        else:
-            return False, False
-
-    def __str__(self):
-        return "Given an instance with %(applicability)s\nWe expect %(requirements)s" % self.__dict__
-
-
-class ids:
-    """
-    Represents the XML root <ids> node and its <specification> childNodes.
-    """
-
-    def __init__(self, ifcversion=None, description=None, author=None, copyright=None, version=None, creation_date=None, purpose=None, milestone=None):
-        """
-        Create an IDS file.
-        ifcversion - '2.3.0.1', '4.0.2.1', or '4.3.0.0'
-        author - email address
-        """
-        
-        self.specifications = []
-        self.info = {}
-        if ifcversion:
-            if ifcversion in ['2.3.0.1', '4.0.2.1', '4.3.0.0']:
-                self.info['ifcversion'] = ifcversion
-        if author: 
-            if '@' in author: self.info['author'] = author
-        if description: self.info['description'] = description
-        if copyright: self.info['copyright'] = copyright
-        if version: self.info['version'] = version
-        if creation_date:
-            if re.match(r'\d\d\d\d-\d\d-\d\d', creation_date): 
-                self.info['date'] = creation_date  # date.fromisoformat(creation_date).isoformat()
-        if 'date' not in self.info: self.info['date'] = date.today().isoformat()
-        if purpose: self.info['purpose'] = purpose
-        if milestone: self.info['milestone'] = milestone
-         
-    def asdict(self):
-        ids_dict = {
-            "@xmlns": "http://standards.buildingsmart.org/IDS",
-            "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
-            "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_04.xsd",
-            "specification": [],
-            "info": self.info,
-        }
-        for spec in self.specifications:
-            ids_dict["specification"].append(spec.asdict())
-        return ids_dict
-
-    def to_xml(self, fn="./", ids_schema=ids_schema):
-        """
-        Save IDS as .xml file
-        fn          - path for the new file 
-        ids_schema  - schema address, by default buildingSMART's standards website
-        """
-        if fn.endswith("/"):
-            fn = fn + "IDS"
-        if not fn.endswith(".xml"):
-            fn = fn + ".xml"
-
-        ids_dict = self.asdict()
-
-        ids_xml = ids_schema.encode(
-            ids_dict,
-            namespaces={
-                "": "http://standards.buildingsmart.org/IDS",
-                "xs": "http://www.w3.org/2001/XMLSchema",
-                "xsi": "http://www.w3.org/2001/XMLSchema-instance",
-                "xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_04.xsd",
-            },
-        )  # validation='skip',
-
-        ids_str = etree_tostring(
-            ids_xml,
-            namespaces={
-                "": "http://standards.buildingsmart.org/IDS",
-                # 'xs': 'http://www.w3.org/2001/XMLSchema',
-                # 'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-                # 'xsi:schemaLocation': "http://standards.buildingsmart.org/IDS/ids_04.xsd"
-            },
-        )
-
-        with open(fn, "w") as f:
-            f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-            f.write("<!-- IDS (INFORMATION DELIVERY SPECIFICATION) CREATED USING IFCOPENSHELL -->\n")
-            f.write(ids_str)
-            f.close()
-
-        # ids_schema.validate(fn)
-        return ids_schema.is_valid(fn)
-
-    @staticmethod
-    def open(fn, ids_schema=ids_schema):
-        """
-        Use to open ids.xml files
-        fn          - ids file path
-        ids_schema  - schema address, by default buildingSMART's standards website
-        """
-        ids_schema.validate(fn)
-        ids_content = ids_schema.decode(
-            fn, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
-        )
-        new_ids = ids()
-        new_ids.specifications = [specification.parse(s) for s in ids_content["specification"]]
-        return new_ids
-
-    def validate(self, ifc_file, logger=None):
-        """
-        Use to validate IFC model against IDS specifications.
-        ifc_file    - path to ifc mode.
-        logger      - logger object with handlers (BcfHandler, CsvHandler, etc.) 
-        """
-        if not isinstance(logger, logging.Logger):
-            logger = logging.getLogger("IDS_Logger")
-            logging.basicConfig(level=logging.INFO, format="%(message)s")
-            logger.setLevel(logging.INFO)
-
-        if 'ifcversion' in self.info.keys():
-            if self.info['ifcversion'] in ['2.3.0.1', '4.0.2.1', '4.3.0.0']:
-                if self.info['ifcversion'][0:3] == '2.3':
-                    if not ifc_file.schema.startswith('IFC2x3'):
-                        logger.error('IFC file is of %s not of %s schema.' % (ifc_file.schema, self.info['ifcversion']))
-                elif self.info['ifcversion'][0:3] == '4.0':
-                    if not ifc_file.schema == 'IFC4':
-                        logger.error('IFC file is of %s not of %s schema.' % (ifc_file.schema, self.info['ifcversion']))
-                elif self.info['ifcversion'][0:3] == '4.3':
-                    if not ifc_file.schema.startswith('IFC4x3'):
-                        logger.error('IFC file is of %s not of %s schema.' % (ifc_file.schema, self.info['ifcversion']))
-                else:
-                    logger.error('IFC version not recognized')
-
-        # TODO consider other way around: for elem, for spec so we can see if an element pass all IDSes?
-        for spec in self.specifications:
-            self.ifc_applicable = 0
-            self.ifc_passed = 0
-            for elem in ifc_file.by_type("IfcObject"):
-                apply, comply = spec(elem, logger)
-                if apply:
-                    self.ifc_applicable += 1
-                if comply:
-                    self.ifc_passed += 1
-            if self.ifc_applicable == 0:            
-                logger.error('No applicable elements')
-            logger.debug(
-                "Out of %s IFC elements, %s were applicable and %s of them passed (%s)." % (
-                    len(ifc_file.by_type("IfcProduct")),
-                    self.ifc_applicable,
-                    self.ifc_passed,
-                    str(self.ifc_passed / self.ifc_applicable * 100) + "%"
-                ))
-        for h in logger.handlers:
-            h.flush()
-
-
 class SimpleHandler(logging.StreamHandler):
+    """Logging handler listing all cases in python list."""
+
     def __init__(self, report_valid=False):
+        """Logging handler listing all cases in python list.
+
+        :param report_valid: True if you want to list all the compliant cases as well, defaults to False
+        :type report_valid: bool, optional
+        """
         logging.StreamHandler.__init__(self)
         self.statements = []
         if report_valid:
@@ -832,11 +1053,40 @@ class SimpleHandler(logging.StreamHandler):
             self.setLevel(logging.ERROR)
 
     def emit(self, mymsg):
+        """Triggered on each use of logging with the Simple handler enabled.
+
+        :param log_content: default logger message
+        :type log_content: string|dict
+        """
         self.statements.append(mymsg.msg)
 
 
 class BcfHandler(logging.StreamHandler):
-    def __init__(self, project_name="Default IDS Project", author="your@email.com", filepath=None, report_valid=False):
+    """Logging handler for creation of BCF report files."""
+
+    def __init__(self, project_name="IDS Project", author="your@email.com", filepath=None, report_valid=False):
+        """Logging handler for creation of BCF report files.
+
+        :param project_name:, defaults to "IDS Project"
+        :type project_name: str, optional
+        :param author: Email of the person creating the BCF report, defaults to "your@email.com"
+        :type author: str, optional
+        :param filepath: Path to save the BCF report, defaults to None
+        :type filepath: str, optional
+        :param report_valid: True if you want to list all the compliant cases as well, defaults to False
+        :type report_valid: bool, optional
+
+        Example::
+            bcf_handler = BcfHandler(
+                project_name="Default IDS Project",
+                author="your@email.com",
+                filepath=r".\test.bcfzip",
+            )
+            logger = logging.getLogger("IDS_Logger")
+            logging.basicConfig(filename=".\", level=logging.INFO, format="%(message)s")
+            logging.FileHandler(filename, mode="w")
+            logger.addHandler(bcf_handler)
+        """
         logging.StreamHandler.__init__(self)
         if report_valid:
             self.setLevel(logging.INFO)
@@ -850,17 +1100,22 @@ class BcfHandler(logging.StreamHandler):
         self.bcf.edit_project()
 
     def emit(self, log_content):
+        """Triggered on each use of logging with the BCF handler enabled.
+
+        :param log_content: default logger message
+        :type log_content: string|dict
+        """
         topic = bcf.Topic()
         topic.title = log_content.msg["sentence"].split(".\n")[1]
         topic.description = log_content.msg["sentence"].split(".\n")[0]
         self.bcf.add_topic(topic)
-        try:    # Add viewpoint and link to ifc object
+        try:  # Add viewpoint and link to ifc object
             viewpoint = bcf.Viewpoint()
             viewpoint.perspective_camera = bcf.PerspectiveCamera()
-            ifc_elem = log_content.msg['ifc_element']
+            ifc_elem = log_content.msg["ifc_element"]
             # ifc_elem = ifc_file.by_guid(log_content.msg["guid"])
-            target_position = np.array(ifcopenshell.util.placement.get_local_placement(ifc_elem.ObjectPlacement)) 
-            target_position = target_position[:,3][0:3]
+            target_position = np.array(ifcopenshell.util.placement.get_local_placement(ifc_elem.ObjectPlacement))
+            target_position = target_position[:, 3][0:3]
             camera_position = target_position + np.array((5, 5, 5))
             viewpoint.perspective_camera.camera_view_point.x = camera_position[0]
             viewpoint.perspective_camera.camera_view_point.y = camera_position[1]
@@ -898,6 +1153,7 @@ class BcfHandler(logging.StreamHandler):
             pass
 
     def flush(self):
+        """Saves the BCF report to file. Triggered at the end of the validation process."""
         if not self.filepath:
             self.filepath = os.getcwd() + r"\IDS_report.bcfzip"
         if not (self.filepath.endswith(".bcf") or self.filepath.endswith(".bcfzip")):
@@ -907,6 +1163,7 @@ class BcfHandler(logging.StreamHandler):
 
 
 location = {"instance": "an instance ", "type": "a type ", "any": "a "}
+
 bounds = {
     "minInclusive": "larger or equal ",
     "maxInclusive": "smaller or equal ",
