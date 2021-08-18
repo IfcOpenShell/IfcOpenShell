@@ -10,6 +10,8 @@ import logging
 import ifcopenshell
 from bcf import bcfxml
 
+import tempfile
+
 
 def read_web_file(URL):
     return requests.get(URL).text
@@ -318,12 +320,10 @@ class TestIdsReporting(unittest.TestCase):
 
     def test_bcf_report(self):
         ids_file = ids.ids.open(read_web_file(self.IDS_URL))
-        fn = self.TEST_PATH + r"\bcf_test.bcfzip"
+        fn = tempfile.gettempdir() + r"\bcf_test.bcfzip"
         bcf_handler = ids.BcfHandler(project_name="Default IDS Project", author="your@email.com", filepath=fn)
         self.logger.addHandler(bcf_handler)
-
         ids_file.validate(self.ifc_file, self.logger)
-
         my_bcfxml = bcfxml.load(fn)
         topics = my_bcfxml.get_topics()
         self.assertEqual(len(topics), 5)
