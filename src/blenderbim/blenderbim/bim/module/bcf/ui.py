@@ -58,6 +58,7 @@ class BIM_PT_bcf(Panel):
         row.template_list("BIM_UL_topics", "", props, "topics", props, "active_topic_index")
         col = row.column(align=True)
         col.operator("bim.add_bcf_topic", icon="ADD", text="")
+        col.operator("bim.remove_bcf_topic", icon="REMOVE", text="")
         if props.active_topic_index < len(props.topics):
             topic = props.active_topic
             col.prop(topic, "is_editable", icon="CHECKMARK" if topic.is_editable else "GREASEPENCIL", icon_only=True)

@@ -461,6 +461,22 @@ class RemoveBcfFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class RemoveBcfTopic(bpy.types.Operator):
+    bl_idname = "bim.remove_bcf_topic"
+    bl_label = "Remove BCF Topic"
+    bl_options = {"REGISTER", "UNDO"}
+    guid: bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.BCFProperties.topics
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = context.scene.BCFProperties
+        blender_topic = props.active_topic
+        bcfxml.delete_topic(blender_topic.name)
+        bpy.ops.bim.load_bcf_topics()
         return {"FINISHED"}
 
 
