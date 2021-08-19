@@ -1,0 +1,26 @@
+{
+    "title": "file_PUT",
+    "type": "object",
+    "properties": {
+        "ifc_project": {
+            "type": ["string",
+            "null"]
+        },
+        "ifc_spatial_structure_element": {
+            "type": ["string",
+            "null"]
+        },
+        "filename": {
+            "type": ["string",
+            "null"]
+        },
+        "date": {
+            "type": ["string",
+            "null"]
+        },
+        "reference": {
+            "type": ["string",
+            "null"]
+        }
+    }
+}

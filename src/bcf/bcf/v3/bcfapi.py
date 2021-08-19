@@ -7,6 +7,8 @@ import webbrowser
 import http.server
 import base64
 
+from werkzeug.datastructures import HeaderSet
+
 
 client_id, client_secret = "", ""
 
@@ -142,51 +144,66 @@ class BcfClient:
         # TODO: handle error http status codes and raise exception. Follow error.json standard.
         headers = {"Authorization": "Bearer " + self.foundation_client.get_access_token()}
         response = requests.get(f"{self.baseurl}{endpoint}", headers=headers, params=params or None)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            raise Exception(f"{response.status_code},   {response.text}")
+        try:
+            response = requests.get(f"{self.baseurl}{endpoint}", headers=headers, params=params or None)
+            if response.status_code == 200:
+                return response.json()
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            print(f"message: {response.reason}'   '{response.status_code}'   '{ e }")
 
     def post(self, endpoint, data=None, params=None):
         headers = {
             "Authorization": "Bearer " + self.foundation_client.get_access_token(),
             "Content-type": "application/json",
         }
-        response = requests.post(
-            f"{self.baseurl}{endpoint}",
-            headers=headers,
-            params=params or None,
-            data=data or None,
-        )
-        if response.status_code == 201:
-            return response.status_code, response.text
-        else:
-            raise Exception(f"{response.status_code},   {response.text}")
+        try:
+            response = requests.post(
+                f"{self.baseurl}{endpoint}",
+                headers=headers,
+                params=params or None,
+                data=data or None,
+            )
+            if response.status_code == 201:
+                return response.status_code, response.text
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as errh:
+            print(f"message: {response.reason}'  '{response.status_code}, {errh}")
 
     def put(self, endpoint, data=None, params=None):
         headers = {
             "Authorization": "Bearer " + self.foundation_client.get_access_token(),
             "Content-type": "application/json",
         }
-        response = requests.put(
-            f"{self.baseurl}{endpoint}",
-            headers=headers,
-            params=params or None,
-            data=data or None,
-        )
-        if response.status_code == 200:
-            return response.status_code, response.text
-        else:
-            raise Exception(f"{response.status_code},   {response.text}")
+        try:
+            response = requests.put(
+                f"{self.baseurl}{endpoint}",
+                headers=headers,
+                params=params or None,
+                data=data or None,
+            )
+            if response.status_code == 200:
+                return response.status_code, response.text
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as errh:
+            print(f"message: {response.reason}'  '{response.status_code}, {errh}")
 
     def delete(self, endpoint, params=None):
-        headers = {"Authorization": "Bearer " + self.foundation_client.get_access_token()}
-        resp = requests.put(
-            f"{self.baseurl}{endpoint}",
-            headers=headers,
-            params=params or None,
-        )
-        return resp.status_code
+        headers = {
+            "Authorization": "Bearer " + self.foundation_client.get_access_token(),
+            "Content-type": "application/json",
+        }
+        try:
+            response = requests.delete(
+                f"{self.baseurl}{endpoint}",
+                headers=headers,
+                params=params or None,
+            )
+            if response.status_code == 200:
+                return response.status_code, response.text
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as errh:
+            print(f"message: {response.reason}'  '{response.status_code}, {errh}")
 
     def get_projects(self) -> list:
         return self.get(
@@ -256,16 +273,27 @@ class BcfClient:
         return self.delete(f"/projects/{project_id}/topics/{topic_id}")
 
     def get_snippet(self, project_id="", topic_id="") -> str:
-        return self.get(
-            f"/projects/{project_id}/topics/{topic_id}/snippet",
-            {
-                "project_id": project_id,
-                "topic_id": topic_id,
-            },
+        headers = {
+            "Authorization": "Bearer " + self.foundation_client.get_access_token(),
+            "Content-type": "application/octet-stream",
+        }
+        response = requests.get(
+            f"{self.baseurl}/projects/{project_id}/topics/{topic_id}/snippet",
+            headers=headers,
         )
+        return response.status_code, response.content
 
-    def update_snippet(self, project_id="", topic_id="", data=None):
-        return self.put(f"/projects/{project_id}/topics", data=data)
+    def update_snippet(self, project_id="", topic_id="", files=None, data=None):
+        headers = {
+            "Authorization": "Bearer " + self.foundation_client.get_access_token(),
+            "Content-type": "application/octet-stream",
+        }
+        response = requests.put(
+            f"{self.baseurl}/projects/{project_id}/topics/{topic_id}/snippet",
+            headers=headers,
+            files=files,
+        )
+        return response.status_code
 
     def get_files_information(self, project_id="") -> list:
         return self.get(
@@ -488,6 +516,7 @@ class BcfClient:
         project_id="",
         topic_id="",
         guid=None,
+        files=None,
         data=None,
     ):
         headers = {
@@ -498,8 +527,10 @@ class BcfClient:
             f"/projects/{project_id}/topics/{topic_id}/documents",
             data=data,
             params={guid},
+            files=files,
             headers=headers,
         )
+        return response.status_code
 
     def get_document(self, project_id="", topic_id="", document_id="") -> str:
         return self.get(

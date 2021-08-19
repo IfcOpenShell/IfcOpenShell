@@ -1,0 +1,10 @@
+{
+    "title": "comment_actions",
+    "required": false,
+    "type": "array",
+    "items": {
+        "type": "string",
+        "enum": ["update",
+            "delete"]
+    }
+}

@@ -1,0 +1,52 @@
+{
+    "title": "viewpoint_GET",
+    "type": "object",
+    "properties": {
+        "index": {
+            "type": [
+                "integer",
+                "null"
+            ]
+        },
+        "guid": {
+            "required": true,
+            "type": "string"
+        },
+        "orthogonal_camera": {
+            "$ref": "orthogonal_camera.json"
+        },
+        "perspective_camera": {
+            "$ref": "perspective_camera.json"
+        },
+        "lines": {
+            "type": ["array", "null"],
+            "items": {
+                "$ref": "line.json"
+            }
+        },
+        "clipping_planes": {
+            "type": ["array", "null"],
+            "items": {
+                "$ref": "clipping_plane.json"
+            }
+        },
+        "bitmaps": {
+            "type": ["array", "null"],
+            "items": {
+                "$ref": "bitmap_GET.json"
+            }
+        },
+        "snapshot": {
+            "$ref": "snapshot_GET.json"
+        },
+        "authorization": {
+            "type": "object",
+            "required": false,
+            "properties": {
+                "viewpoint_actions": {
+                    "$ref": "../Action/viewpoint_actions.json"
+                }
+            }
+        }
+    }
+}
