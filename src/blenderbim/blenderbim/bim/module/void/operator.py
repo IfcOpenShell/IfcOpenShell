@@ -35,8 +35,10 @@ class AddOpening(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        opening = bpy.data.objects.get(self.opening)
+        obj = context.scene.objects.get(self.obj, context.active_object) 
+        opening = context.scene.objects.get(self.opening)
+        if opening is None:
+            return {"FINISHED"}
         opening.display_type = "WIRE"
         if not opening.BIMObjectProperties.ifc_definition_id:
             body_context_id = None
