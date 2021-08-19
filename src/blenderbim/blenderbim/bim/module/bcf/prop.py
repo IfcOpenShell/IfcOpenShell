@@ -34,14 +34,11 @@ from bpy.props import (
 
 
 bcfviewpoints_enum = None
-related_topic_enum = []
 
 
 def purge():
     global bcfviewpoints_enum
-    global related_topic_enum
     bcfviewpoints_enum = None
-    related_topic_enum.clear()
 
 
 def updateBcfReferenceLink(self, context):
@@ -77,19 +74,6 @@ def updateBcfTopicIsEditable(self, context):
 def updateBcfCommentIsEditable(self, context):
     if context.scene.BCFProperties.is_loaded and not self.is_editable:
         bpy.ops.bim.edit_bcf_comment(comment_guid = self.name)
-
-
-def get_related_topics(self, context):
-    global related_topic
-    related_topic_enum.clear()
-    current_topic = self.active_topic
-    for topic in self.topics:
-        if topic == current_topic:
-            continue
-        if topic.name in current_topic.related_topics:
-            continue
-        related_topic_enum.append((topic.name, topic.title, topic.description))
-    return related_topic_enum
 
 
 def refreshBcfTopic(self, context):
@@ -184,7 +168,7 @@ class BCFProperties(PropertyGroup):
     bim_snippet_schema: StringProperty(default="", name="Schema")
     document_reference: StringProperty(default="", name="Referenced Document")
     document_reference_description: StringProperty(default="", name="Description")
-    related_topic: EnumProperty(name="Related Topic", items=get_related_topics)
+    related_topic: StringProperty(name="Related Topic", items=get_related_topics)
     comment: StringProperty(default="", name="Comment")
     has_related_viewpoint: BoolProperty(name="Has Related Viewpoint", default=False)
 
@@ -199,6 +183,7 @@ class BCFProperties(PropertyGroup):
         self.bim_snippet_schema = ""
         self.document_reference = ""
         self.document_reference_description = ""
+        self.related_topic = ""
         self.comment = ""
         self.has_related_viewpoint = False
 
