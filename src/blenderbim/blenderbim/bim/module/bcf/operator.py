@@ -356,9 +356,6 @@ class AddBcfHeaderFile(bpy.types.Operator):
             header_file.ifc_spatial_structure_element = props.file_ifc_spatial_structure_element
         bcfxml.add_file(topic, header_file)
         props.refresh_topic(context)
-        props.file_reference = ""
-        props.file_ifc_project = ""
-        props.file_ifc_spatial_structure_element = ""
         return {"FINISHED"}
 
 

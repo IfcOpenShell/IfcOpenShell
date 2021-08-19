@@ -93,15 +93,8 @@ def get_related_topics(self, context):
 
 
 def refreshBcfTopic(self, context):
-    global bcfviewpoints_enum
-    bcfviewpoints_enum = None
-
-    props = context.scene.BCFProperties
-    bcfxml = bcfstore.BcfStore.get_bcfxml()
-    topic = props.topics[props.active_topic_index]
-    header = bcfxml.get_header(topic.name)
-    props.clear_input_fields()
-    getBcfViewpoints(self, context)
+    self.clear_input_fields()
+    getBcfViewpoints(None, context, force_update=True)
 
 
 class BcfReferenceLink(PropertyGroup):
@@ -112,9 +105,9 @@ class BcfLabel(PropertyGroup):
     name: StringProperty(name="Name", update=updateBcfLabel)
 
 
-def getBcfViewpoints(self, context):
+def getBcfViewpoints(self, context, force_update=False):
     global bcfviewpoints_enum
-    if bcfviewpoints_enum is None:
+    if bcfviewpoints_enum is None or force_update: # Retrieving Viewpoints is slow. Make sure we only do when needed
         bcfviewpoints_enum = []
         props = context.scene.BCFProperties
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -163,7 +156,7 @@ class BcfTopic(PropertyGroup):
     assigned_to: StringProperty(default="", name="Assigned To")
     due_date: StringProperty(default="", name="Due Date")
     description: StringProperty(default="", name="Description")
-    viewpoints: EnumProperty(items=getBcfViewpoints, name="BCF Viewpoints")
+    viewpoints: EnumProperty(items=lambda _, context: getBcfViewpoints(_, context), name="BCF Viewpoints")
     files: CollectionProperty(name="Files", type=StrProperty)
     reference_links: CollectionProperty(name="Reference Links", type=BcfReferenceLink)
     labels: CollectionProperty(name="Labels", type=BcfLabel)
