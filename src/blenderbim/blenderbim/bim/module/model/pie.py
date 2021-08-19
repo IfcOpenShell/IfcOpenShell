@@ -47,8 +47,8 @@ class PieAddOpening(bpy.types.Operator):
                 elif len(obj.children) == 1 and not obj.children[0].BIMObjectProperties.ifc_definition_id:
                     opening_name = obj.children[0].name
                 else:
-                    opj_name = obj.name
-            bpy.ops.bim.add_opening(obj=opj_name, opening=opening_name)
+                    obj_name = obj.name
+            bpy.ops.bim.add_opening(obj=obj_name, opening=opening_name)
         return {"FINISHED"}
 
 
