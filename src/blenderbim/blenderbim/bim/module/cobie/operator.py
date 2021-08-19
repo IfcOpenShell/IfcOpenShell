@@ -62,14 +62,19 @@ class ExecuteIfcCobie(bpy.types.Operator):
     bl_label = "Execute IFCCOBie"
     file_format: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.COBieProperties
+        return props.should_load_from_memory or props.cobie_ifc_file
+
     def execute(self, context):
         from cobie import IfcCobieParser
         props = context.scene.COBieProperties
-        
-        output_dir = os.path.dirname(props.cobie_ifc_file)
-        
+
         if props.should_load_from_memory:
             output_dir = tempfile.gettempdir()
+        else:
+            output_dir = os.path.dirname(props.cobie_ifc_file)  
         
         output = os.path.join(output_dir, "output")
         logger = logging.getLogger("IFCtoCOBie")
