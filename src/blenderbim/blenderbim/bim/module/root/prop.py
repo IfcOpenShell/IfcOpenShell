@@ -72,7 +72,8 @@ def refreshPredefinedTypes(self, context):
     global types_enum
     types_enum.clear()
     enum = getIfcPredefinedTypes(self, context)
-    context.scene.BIMRootProperties.ifc_predefined_type = enum[0][0]
+    if enum:
+        context.scene.BIMRootProperties.ifc_predefined_type = enum[0][0]
 
 
 def getIfcProducts(self, context):
