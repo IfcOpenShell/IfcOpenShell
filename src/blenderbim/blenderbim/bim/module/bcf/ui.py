@@ -59,11 +59,11 @@ class BIM_PT_bcf(Panel):
         col = row.column(align=True)
         col.operator("bim.add_bcf_topic", icon="ADD", text="")
         if props.active_topic_index < len(props.topics):
-            topic = props.topics[props.active_topic_index]
+            topic = props.active_topic
             col.prop(topic, "is_editable", icon="CHECKMARK" if topic.is_editable else "GREASEPENCIL", icon_only=True)
 
         if props.active_topic_index < len(props.topics):
-            topic = props.topics[props.active_topic_index]
+            topic = props.active_topic
             row = layout.row()
             row.enabled = topic.is_editable
             row.prop(topic, "description", text="")
@@ -118,7 +118,7 @@ class BIM_PT_bcf_metadata(Panel):
             layout.label(text="No BCF project is loaded")
             return
 
-        topic = props.topics[props.active_topic_index]
+        topic = props.active_topic
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         bcf_topic = bcfxml.topics[topic.name]
 
@@ -265,7 +265,7 @@ class BIM_PT_bcf_comments(Panel):
         row = layout.row()
         row.prop(props, "comment_text_width")
 
-        topic = props.topics[props.active_topic_index]
+        topic = props.active_topic
         for comment in topic.comments:
             box = self.layout.box()
 

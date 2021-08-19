@@ -119,7 +119,7 @@ def getBcfViewpoints(self, context):
         bcfviewpoints_enum = []
         props = context.scene.BCFProperties
         bcfxml = bcfstore.BcfStore.get_bcfxml()
-        topic = props.topics[props.active_topic_index]
+        topic = props.active_topic
         viewpoints = bcfxml.get_viewpoints(topic.name)
         bcfviewpoints_enum.extend([(v, f"Viewpoint {i+1}", "") for i, v in enumerate(viewpoints.keys())])
     return bcfviewpoints_enum
@@ -209,3 +209,13 @@ class BCFProperties(PropertyGroup):
         self.document_reference_description = ""
         self.comment = ""
         self.has_related_viewpoint = False
+
+    @property
+    def active_topic(self):
+        if len(self.topics) == 0:
+            return None
+        if self.active_topic_index < 0:
+            self.active_topic_index = 0
+        if self.active_topic_index >= len(self.topics):
+            self.active_topic_index = len(self.topics) - 1
+        return self.topics[self.active_topic_index]
