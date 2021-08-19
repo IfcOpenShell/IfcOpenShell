@@ -134,7 +134,7 @@ class RemoveContainer(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        obj = bpy.data.objects.get(self.obj, context.active_object) 
         oprops = obj.BIMObjectProperties
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -152,6 +152,7 @@ class RemoveContainer(bpy.types.Operator):
             for collection in obj.users_collection:
                 collection.objects.unlink(obj)
             context.scene.collection.objects.link(obj)
+        context.view_layer.objects.active = obj
         return {"FINISHED"}
 
     def remove_collection(self, parent, child):
@@ -162,6 +163,11 @@ class RemoveContainer(bpy.types.Operator):
 
 
 class CopyToContainer(bpy.types.Operator):
+    """
+    Copies selected objects to selected containers
+    Check the mark next to a container in the container list to select it
+    Several containers can be selected at a time
+    """
     bl_idname = "bim.copy_to_container"
     bl_label = "Copy To Container"
     bl_options = {"REGISTER", "UNDO"}
@@ -172,7 +178,7 @@ class CopyToContainer(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        objects = list(bpy.data.objects.get(self.obj, context.selected_objects))
         sprops = context.scene.BIMSpatialProperties
         container_ids = [c.ifc_definition_id for c in sprops.spatial_elements if c.is_selected]
         for obj in objects:

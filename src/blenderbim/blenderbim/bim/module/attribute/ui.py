@@ -110,6 +110,8 @@ class BIM_PT_material_attributes(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not IfcStore.get_file():
+            return False
         try:
             return bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id)
         except:

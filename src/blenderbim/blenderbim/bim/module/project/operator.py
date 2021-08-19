@@ -43,6 +43,7 @@ class CreateProject(bpy.types.Operator):
         return result
 
     def _execute(self, context):
+        active_object = context.view_layer.objects.active
         self.file = IfcStore.get_file()
         if self.file:
             return {"FINISHED"}
@@ -79,6 +80,7 @@ class CreateProject(bpy.types.Operator):
         bpy.ops.bim.assign_object(related_object=building.name, relating_object=site.name)
         bpy.ops.bim.assign_object(related_object=building_storey.name, relating_object=building.name)
 
+        context.view_layer.objects.active = active_object
         return {"FINISHED"}
 
     def get_name(self, ifc_class, name):
