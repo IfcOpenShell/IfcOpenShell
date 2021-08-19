@@ -218,3 +218,6 @@ class BCFProperties(PropertyGroup):
         if self.active_topic_index >= len(self.topics):
             self.active_topic_index = len(self.topics) - 1
         return self.topics[self.active_topic_index]
+
+    def refresh_topic(self, context):
+        refreshBcfTopic(self, context)

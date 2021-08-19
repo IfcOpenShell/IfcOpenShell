@@ -243,7 +243,7 @@ class EditBcfTopic(bpy.types.Operator):
         topic.topic_type = blender_topic.type or None
 
         bcfxml.edit_topic(topic)
-        props.active_topic_index = props.active_topic_index # Refreshes the BCF Topic
+        props.refresh_topic(context)
         return {"FINISHED"}
 
 
@@ -317,7 +317,7 @@ class AddBcfRelatedTopic(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return bcf_prop.get_related_topics(None, context)
+        return bcf_prop.get_related_topics(context.scene.BCFProperties, context)
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -355,7 +355,7 @@ class AddBcfHeaderFile(bpy.types.Operator):
         if len(props.file_ifc_spatial_structure_element) == 22:
             header_file.ifc_spatial_structure_element = props.file_ifc_spatial_structure_element
         bcfxml.add_file(topic, header_file)
-        props.active_topic_index = props.active_topic_index # refreshes the BCF Topic
+        props.refresh_topic(context)
         props.file_reference = ""
         props.file_ifc_project = ""
         props.file_ifc_spatial_structure_element = ""
@@ -424,7 +424,7 @@ class AddBcfViewpoint(bpy.types.Operator):
         bcfxml.add_viewpoint(topic, viewpoint)
         blender_render.filepath = old_filepath
         blender_render.image_settings.file_format = old_file_format
-        props.active_topic_index = props.active_topic_index # refreshes the BCF Topic
+        props.refresh_topic(context)
         return {"FINISHED"}
 
 
@@ -444,7 +444,7 @@ class RemoveBcfViewpoint(bpy.types.Operator):
         viewpoint_guid = blender_topic.viewpoints
         topic = bcfxml.topics[blender_topic.name]
         bcfxml.delete_viewpoint(viewpoint_guid, topic)
-        props.active_topic_index = props.active_topic_index # Refreshes the BCF Topic
+        props.refresh_topic(context)
         return {"FINISHED"}
 
 
@@ -460,7 +460,10 @@ class RemoveBcfFile(bpy.types.Operator):
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
         bcfxml.delete_file(topic, self.index)
-        props.active_topic_index = props.active_topic_index # Refreshes the BCF Topic
+        props.refresh_topic(context)
+        return {"FINISHED"}
+
+
         return {"FINISHED"}
 
 
