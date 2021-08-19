@@ -34,14 +34,11 @@ from bpy.props import (
 
 
 bcfviewpoints_enum = None
-related_topic_enum = []
 
 
 def purge():
     global bcfviewpoints_enum
-    global related_topic_enum
     bcfviewpoints_enum = None
-    related_topic_enum.clear()
 
 
 def updateBcfReferenceLink(self, context):
@@ -55,12 +52,12 @@ def updateBcfLabel(self, context):
 
 
 def updateBcfProjectName(self, context):
-    if context.scene.BCFProperties.is_loaded:
+    if self.is_loaded:
         bpy.ops.bim.edit_bcf_project_name()
 
 
 def updateBcfAuthor(self, context):
-    if context.scene.BCFProperties.is_loaded:
+    if self.is_loaded:
         bpy.ops.bim.edit_bcf_author()
 
 
@@ -79,30 +76,9 @@ def updateBcfCommentIsEditable(self, context):
         bpy.ops.bim.edit_bcf_comment(comment_guid = self.name)
 
 
-def get_related_topics(self, context):
-    global related_topic
-    related_topic_enum.clear()
-    props = context.scene.BCFProperties
-    current_topic = props.topics[props.active_topic_index]
-    for topic in props.topics:
-        if topic == current_topic:
-            continue
-        if topic.name in current_topic.related_topics:
-            continue
-        related_topic_enum.append((topic.name, topic.title, topic.description))
-    return related_topic_enum
-
-
 def refreshBcfTopic(self, context):
-    global bcfviewpoints_enum
-    bcfviewpoints_enum = None
-
-    props = context.scene.BCFProperties
-    bcfxml = bcfstore.BcfStore.get_bcfxml()
-    topic = props.topics[props.active_topic_index]
-    header = bcfxml.get_header(topic.name)
-    props.clear_input_fields()
-    getBcfViewpoints(self, context)
+    self.clear_input_fields()
+    getBcfViewpoints(None, context, force_update=True)
 
 
 class BcfReferenceLink(PropertyGroup):
@@ -113,13 +89,13 @@ class BcfLabel(PropertyGroup):
     name: StringProperty(name="Name", update=updateBcfLabel)
 
 
-def getBcfViewpoints(self, context):
+def getBcfViewpoints(self, context, force_update=False):
     global bcfviewpoints_enum
-    if bcfviewpoints_enum is None:
+    if bcfviewpoints_enum is None or force_update: # Retrieving Viewpoints is slow. Make sure we only do when needed
         bcfviewpoints_enum = []
         props = context.scene.BCFProperties
         bcfxml = bcfstore.BcfStore.get_bcfxml()
-        topic = props.topics[props.active_topic_index]
+        topic = props.active_topic
         viewpoints = bcfxml.get_viewpoints(topic.name)
         bcfviewpoints_enum.extend([(v, f"Viewpoint {i+1}", "") for i, v in enumerate(viewpoints.keys())])
     return bcfviewpoints_enum
@@ -164,7 +140,7 @@ class BcfTopic(PropertyGroup):
     assigned_to: StringProperty(default="", name="Assigned To")
     due_date: StringProperty(default="", name="Due Date")
     description: StringProperty(default="", name="Description")
-    viewpoints: EnumProperty(items=getBcfViewpoints, name="BCF Viewpoints")
+    viewpoints: EnumProperty(items=lambda _, context: getBcfViewpoints(_, context), name="BCF Viewpoints")
     files: CollectionProperty(name="Files", type=StrProperty)
     reference_links: CollectionProperty(name="Reference Links", type=BcfReferenceLink)
     labels: CollectionProperty(name="Labels", type=BcfLabel)
@@ -192,7 +168,7 @@ class BCFProperties(PropertyGroup):
     bim_snippet_schema: StringProperty(default="", name="Schema")
     document_reference: StringProperty(default="", name="Referenced Document")
     document_reference_description: StringProperty(default="", name="Description")
-    related_topic: EnumProperty(name="Related Topic", items=get_related_topics)
+    related_topic: StringProperty(name="Related Topic")
     comment: StringProperty(default="", name="Comment")
     has_related_viewpoint: BoolProperty(name="Has Related Viewpoint", default=False)
 
@@ -207,5 +183,19 @@ class BCFProperties(PropertyGroup):
         self.bim_snippet_schema = ""
         self.document_reference = ""
         self.document_reference_description = ""
+        self.related_topic = ""
         self.comment = ""
         self.has_related_viewpoint = False
+
+    @property
+    def active_topic(self):
+        if len(self.topics) == 0:
+            return None
+        if self.active_topic_index < 0:
+            self.active_topic_index = 0
+        if self.active_topic_index >= len(self.topics):
+            self.active_topic_index = len(self.topics) - 1
+        return self.topics[self.active_topic_index]
+
+    def refresh_topic(self, context):
+        refreshBcfTopic(self, context)
