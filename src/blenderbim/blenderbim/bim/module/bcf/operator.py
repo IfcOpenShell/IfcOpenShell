@@ -494,8 +494,8 @@ class RemoveBcfTopic(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         props = context.scene.BCFProperties
-        blender_topic = props.active_topic
-        bcfxml.delete_topic(blender_topic.name)
+        topic_to_delete = props.active_topic
+        bcfxml.delete_topic(topic_to_delete.name)
         bpy.ops.bim.load_bcf_topics()
         return {"FINISHED"}
 

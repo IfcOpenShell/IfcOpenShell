@@ -168,7 +168,7 @@ class BCFProperties(PropertyGroup):
     bim_snippet_schema: StringProperty(default="", name="Schema")
     document_reference: StringProperty(default="", name="Referenced Document")
     document_reference_description: StringProperty(default="", name="Description")
-    related_topic: StringProperty(name="Related Topic", items=get_related_topics)
+    related_topic: StringProperty(name="Related Topic")
     comment: StringProperty(default="", name="Comment")
     has_related_viewpoint: BoolProperty(name="Has Related Viewpoint", default=False)
 
