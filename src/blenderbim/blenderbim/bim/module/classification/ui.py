@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blenderbim.bim.module.classification.prop as classification_prop
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.classification.data import Data
@@ -104,7 +105,7 @@ class BIM_PT_classification_references(Panel):
         if self.oprops.ifc_definition_id not in Data.products:
             Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
 
-        self.draw_add_ui()
+        self.draw_add_ui(context)
 
         reference_ids = Data.products[self.oprops.ifc_definition_id]
         if not reference_ids:
@@ -118,8 +119,8 @@ class BIM_PT_classification_references(Panel):
             else:
                 self.draw_ui(reference_id, reference)
 
-    def draw_add_ui(self):
-        if not self.sprops.available_classifications:
+    def draw_add_ui(self, context):
+        if not classification_prop.getClassifications(self.sprops, context):
             return
 
         name = Data.library_classifications[int(self.sprops.available_classifications)]
