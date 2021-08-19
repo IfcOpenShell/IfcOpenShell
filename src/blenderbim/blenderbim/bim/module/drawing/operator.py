@@ -31,6 +31,7 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
+import blenderbim.bim.schema
 import blenderbim.bim.module.drawing.svgwriter as svgwriter
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
@@ -92,14 +93,24 @@ class AddDrawing(bpy.types.Operator):
         group = self.file.by_id(sorted(GroupData.groups.keys())[-1])
         ifcopenshell.api.run("group.edit_group", self.file, **{"group": group, "attributes": {"Name": new.name}})
         bpy.ops.bim.assign_group(product=camera.name, group=group.id())
-        bpy.ops.bim.add_pset(obj=camera.name, obj_type="Object", pset_name="EPset_Drawing")
-        pset_id = sorted(PsetData.products[camera.BIMObjectProperties.ifc_definition_id]["psets"])[-1]
-        bpy.ops.bim.edit_pset(
-            obj=camera.name,
-            obj_type="Object",
-            pset_id=pset_id,
-            properties=json.dumps({"TargetView": "PLAN_VIEW", "Scale": "1/100"}),
+        pset = ifcopenshell.api.run(
+            "pset.add_pset",
+            self.file,
+            **{
+                "product": self.file.by_id(camera.BIMObjectProperties.ifc_definition_id),
+                "name": "EPset_Drawing",
+            },
         )
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            self.file,
+            **{
+                "pset": pset,
+                "properties": {"TargetView": "PLAN_VIEW", "Scale": "1/100"},
+                "pset_template": blenderbim.bim.schema.ifc.psetqto.get_by_name("EPset_Drawing"),
+            },
+        )
+        PsetData.load(IfcStore.get_file(), camera.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -1106,7 +1117,7 @@ class RefreshDrawingList(bpy.types.Operator):
     bl_label = "Refresh Drawing List"
 
     def execute(self, context):
-        doc_props = context.scene.DocProperties.drawings
+        doc_props = context.scene.DocProperties
         doc_props.drawings.clear()
         for obj in context.scene.objects:
             if not isinstance(obj.data, bpy.types.Camera):
