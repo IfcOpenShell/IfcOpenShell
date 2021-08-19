@@ -118,8 +118,10 @@ class AddFilling(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        opening = bpy.data.objects.get(self.opening) if self.opening else context.scene.VoidProperties.desired_opening
+        obj = context.scene.objects.get(self.obj, context.active_object) 
+        opening = context.scene.objects.get(self.opening, context.scene.VoidProperties.desired_opening)
+        if opening is None:
+            return {'FINISHED'}
         self.file = IfcStore.get_file()
         element_id = obj.BIMObjectProperties.ifc_definition_id
         ifcopenshell.api.run(
