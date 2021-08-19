@@ -3,10 +3,12 @@ def get_primitive_type(attribute_or_data_type):
         data_type = str(attribute_or_data_type.type_of_attribute())
     else:
         data_type = str(attribute_or_data_type)
-    if "<select" in data_type:
-        return "select"
-    elif "<list" in data_type:
-        return ("list", get_primitive_type(data_type.replace("<list", "")))
+    if data_type.find("<list") == 0:
+        return ("list", get_primitive_type(data_type[data_type[1:].find("<")+1:]))
+    elif data_type.find("<set") == 0:
+        return ("set", get_primitive_type(data_type[data_type[1:].find("<")+1:]))
+    elif data_type.find("<select") == 0:
+        return ("select", get_primitive_type(data_type[data_type[1:].find("<")+1:]))
     elif "<entity" in data_type:
         return "entity"
     elif "<string>" in data_type:
