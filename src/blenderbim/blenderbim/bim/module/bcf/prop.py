@@ -55,12 +55,12 @@ def updateBcfLabel(self, context):
 
 
 def updateBcfProjectName(self, context):
-    if context.scene.BCFProperties.is_loaded:
+    if self.is_loaded:
         bpy.ops.bim.edit_bcf_project_name()
 
 
 def updateBcfAuthor(self, context):
-    if context.scene.BCFProperties.is_loaded:
+    if self.is_loaded:
         bpy.ops.bim.edit_bcf_author()
 
 
@@ -82,9 +82,8 @@ def updateBcfCommentIsEditable(self, context):
 def get_related_topics(self, context):
     global related_topic
     related_topic_enum.clear()
-    props = context.scene.BCFProperties
-    current_topic = props.topics[props.active_topic_index]
-    for topic in props.topics:
+    current_topic = self.active_topic
+    for topic in self.topics:
         if topic == current_topic:
             continue
         if topic.name in current_topic.related_topics:
