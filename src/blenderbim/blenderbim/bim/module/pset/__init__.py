@@ -34,12 +34,14 @@ classes = (
     prop.TaskPsetProperties,
     prop.ResourcePsetProperties,
     prop.ProfilePsetProperties,
+    prop.WorkSchedulePsetProperties,
     ui.BIM_PT_object_psets,
     ui.BIM_PT_object_qtos,
     ui.BIM_PT_material_psets,
     ui.BIM_PT_task_qtos,
     ui.BIM_PT_resource_qtos,
     ui.BIM_PT_profile_psets,
+    ui.BIM_PT_work_schedule_psets,
 )
 
 
@@ -49,6 +51,7 @@ def register():
     bpy.types.Scene.TaskPsetProperties = bpy.props.PointerProperty(type=prop.TaskPsetProperties)
     bpy.types.Scene.ResourcePsetProperties = bpy.props.PointerProperty(type=prop.ResourcePsetProperties)
     bpy.types.Scene.ProfilePsetProperties = bpy.props.PointerProperty(type=prop.ProfilePsetProperties)
+    bpy.types.Scene.WorkSchedulePsetProperties = bpy.props.PointerProperty(type=prop.WorkSchedulePsetProperties)
 
 
 def unregister():
@@ -57,3 +60,4 @@ def unregister():
     del bpy.types.Scene.TaskPsetProperties
     del bpy.types.Scene.ResourcePsetProperties
     del bpy.types.Scene.ProfilePsetProperties
+    del bpy.types.Scene.WorkSchedulePsetProperties

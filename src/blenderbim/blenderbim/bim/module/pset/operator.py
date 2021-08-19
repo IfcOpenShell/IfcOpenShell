@@ -43,6 +43,8 @@ def get_pset_props(context, obj, obj_type):
         return context.scene.ResourcePsetProperties
     elif obj_type == "Profile":
         return context.scene.ProfilePsetProperties
+    elif obj_type == "WorkSchedule":
+        return context.scene.WorkSchedulePsetProperties
 
 
 def get_pset_obj_ifc_definition_id(context, obj, obj_type):
@@ -64,7 +66,8 @@ def get_pset_obj_ifc_definition_id(context, obj, obj_type):
         return context.scene.BIMProfileProperties.profiles[
             context.scene.BIMProfileProperties.active_profile_index
         ].ifc_definition_id
-
+    elif obj_type == "WorkSchedule":
+        return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
 
 
 class TogglePsetExpansion(bpy.types.Operator):

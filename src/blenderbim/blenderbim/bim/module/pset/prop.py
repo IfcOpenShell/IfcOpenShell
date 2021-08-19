@@ -101,6 +101,15 @@ def getProfilePsetNames(self, context):
     return psetnames[ifc_class]
 
 
+def getWorkSchedulePsetNames(self, context):
+    global psetnames
+    ifc_class = "IfcWorkSchedule"
+    if ifc_class not in psetnames:
+        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
+    return psetnames[ifc_class]
+
+
 def getQtoNames(self, context):
     global qtonames
     if "/" in context.active_object.name:
@@ -146,3 +155,10 @@ class ProfilePsetProperties(PropertyGroup):
     active_pset_name: StringProperty(name="Pset Name")
     properties: CollectionProperty(name="Properties", type=Attribute)
     pset_name: EnumProperty(items=getProfilePsetNames, name="Pset Name")
+
+
+class WorkSchedulePsetProperties(PropertyGroup):
+    active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_name: StringProperty(name="Pset Name")
+    properties: CollectionProperty(name="Properties", type=Attribute)
+    pset_name: EnumProperty(items=getWorkSchedulePsetNames, name="Pset Name")
