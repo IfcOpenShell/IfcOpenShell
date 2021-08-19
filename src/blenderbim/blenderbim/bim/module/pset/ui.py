@@ -207,7 +207,8 @@ class BIM_PT_material_psets(Panel):
         props = context.active_object.active_material.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
-        if IfcStore.get_file().schema == "IFC2X3":
+        file = IfcStore.get_file()
+        if not file or file.schema == "IFC2X3":
             return False  # We don't support material psets in IFC2X3 because they suck
         if props.ifc_definition_id not in Data.products:
             Data.load(IfcStore.get_file(), props.ifc_definition_id)
