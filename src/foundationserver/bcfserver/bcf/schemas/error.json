@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json-schema.org/draft-03/schema#",
+    "title": "Error",
+    "description": "Schema for error, BCF REST API.",
+    "type": "object",
+    "properties": {
+        "message": {
+            "type": "string",
+            "required": true
+        }
+    }
+}

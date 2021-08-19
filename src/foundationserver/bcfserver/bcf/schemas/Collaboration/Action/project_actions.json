@@ -1,0 +1,11 @@
+{
+    "title": "project_actions",
+    "required": false,
+    "type": "array",
+    "items": {
+        "type": "string",
+        "enum": ["update",
+        "createTopic",
+        "createDocument"]
+    }
+}

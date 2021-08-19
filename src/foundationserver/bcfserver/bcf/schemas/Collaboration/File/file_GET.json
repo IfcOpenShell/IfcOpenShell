@@ -1,0 +1,28 @@
+{
+    "$schema": "http://json-schema.org/draft-03/schema#",
+    "title": "file_GET",
+    "description": "Schema for a single file GET, BCF REST API.",
+    "type": "object",
+    "properties": {
+        "ifc_project": {
+            "type": ["string",
+            "null"]
+        },
+        "ifc_spatial_structure_element": {
+            "type": ["string",
+            "null"]
+        },
+        "filename": {
+            "type": ["string",
+            "null"]
+        },
+        "date": {
+            "type": ["string",
+            "null"]
+        },
+        "reference": {
+            "type": ["string",
+            "null"]
+        }
+    }
+}
