@@ -170,7 +170,7 @@ class BIM_PT_drawings(Panel):
         if props.drawings:
             if props.active_drawing_index < len(props.drawings):
                 op = row.operator("bim.open_view", icon="URL", text="")
-                op.view = props.drawings[props.active_drawing_index].name
+                op.view = props.active_drawing.name
                 row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
             layout.template_list("BIM_UL_generic", "", props, "drawings", props, "active_drawing_index")
 
@@ -206,7 +206,7 @@ class BIM_PT_schedules(Panel):
             layout.template_list("BIM_UL_generic", "", props, "schedules", props, "active_schedule_index")
 
             row = layout.row()
-            row.prop(props.schedules[props.active_schedule_index], "file")
+            row.prop(props.active_schedule, "file")
             row.operator("bim.select_schedule_file", icon="FILE_FOLDER", text="")
 
 
@@ -343,7 +343,7 @@ class BIM_PT_annotation_utilities(Panel):
         if props.drawings:
             if props.active_drawing_index < len(props.drawings):
                 op = row.operator("bim.open_view", icon="URL", text="")
-                op.view = props.drawings[props.active_drawing_index].name
+                op.view = props.active_drawing.name
                 row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
             layout.template_list("BIM_UL_drawinglist", "", props, "drawings", props, "active_drawing_index")
 

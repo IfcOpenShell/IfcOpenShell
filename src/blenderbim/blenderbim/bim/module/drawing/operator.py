@@ -569,7 +569,7 @@ class OpenSheet(bpy.types.Operator):
         open_with_user_command(
             context.preferences.addons["blenderbim"].preferences.svg_command,
             os.path.join(
-                context.scene.BIMProperties.data_dir, "sheets", props.sheets[props.active_sheet_index].name + ".svg"
+                context.scene.BIMProperties.data_dir, "sheets", props.active_sheet.name + ".svg"
             ),
         )
         return {"FINISHED"}
@@ -587,7 +587,7 @@ class AddDrawingToSheet(bpy.types.Operator):
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
         try:
             sheet_builder.add_drawing(
-                props.drawings[props.active_drawing_index].name, props.sheets[props.active_sheet_index].name
+                props.drawings.active_drawing.name, props.active_sheet.name
             )
         except:
             self.report({"ERROR"}, "Drawings need to be created before being added to a sheet")
@@ -602,7 +602,7 @@ class CreateSheets(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         props = scene.DocProperties
-        name = props.sheets[props.active_sheet_index].name
+        name = props.active_sheet.name
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = scene.BIMProperties.data_dir
         sheet_builder.build(name)
@@ -666,10 +666,7 @@ class OpenViewCamera(bpy.types.Operator):
         return bpy.context.object.mode == "OBJECT"
 
     def execute(self, context):
-        new_drawing_index = context.scene.DocProperties.drawings.find(self.view_name)
-        context.scene.DocProperties.active_drawing_index = new_drawing_index
-        drawing = context.scene.DocProperties.drawings[new_drawing_index]
-        context.view_layer.objects.active = drawing.camera
+        drawing = doc_props.active_drawing
         bpy.ops.object.select_all(action="DESELECT")
         drawing.camera.select_set(True)
         for area in context.screen.areas:
@@ -1087,7 +1084,7 @@ class BuildSchedule(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.DocProperties
-        schedule = props.schedules[props.active_schedule_index]
+        schedule = props.active_schedule
         schedule_creator = scheduler.Scheduler()
         outfile = os.path.join(context.scene.BIMProperties.data_dir, "schedules", schedule.name + ".svg")
         schedule_creator.schedule(schedule.file, outfile)
@@ -1106,7 +1103,7 @@ class AddScheduleToSheet(bpy.types.Operator):
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
         sheet_builder.add_schedule(
-            props.schedules[props.active_schedule_index].name, props.sheets[props.active_sheet_index].name
+            props.active_schedule.name, props.active_sheet.name
         )
         return {"FINISHED"}
 

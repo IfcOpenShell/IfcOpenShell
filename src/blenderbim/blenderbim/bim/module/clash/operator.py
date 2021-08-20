@@ -125,7 +125,7 @@ class AddClashSource(bpy.types.Operator):
     group: bpy.props.StringProperty()
 
     def execute(self, context):
-        clash_set = context.scene.BIMClashProperties.clash_sets[context.scene.BIMClashProperties.active_clash_set_index]
+        clash_set = context.scene.BIMClashProperties.active_clash_set
         source = getattr(clash_set, self.group).add()
         return {"FINISHED"}
 
@@ -138,7 +138,7 @@ class RemoveClashSource(bpy.types.Operator):
     group: bpy.props.StringProperty()
 
     def execute(self, context):
-        clash_set = context.scene.BIMClashProperties.clash_sets[context.scene.BIMClashProperties.active_clash_set_index]
+        clash_set = context.scene.BIMClashProperties.active_clash_set
         getattr(clash_set, self.group).remove(self.index)
         return {"FINISHED"}
 
@@ -153,7 +153,7 @@ class SelectClashSource(bpy.types.Operator):
     group: bpy.props.StringProperty()
 
     def execute(self, context):
-        clash_set = context.scene.BIMClashProperties.clash_sets[context.scene.BIMClashProperties.active_clash_set_index]
+        clash_set = context.scene.BIMClashProperties.active_clash_set
         getattr(clash_set, self.group)[self.index].name = self.filepath
         return {"FINISHED"}
 
@@ -277,9 +277,7 @@ class SelectIfcClashResults(bpy.types.Operator):
         self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
         with open(self.filepath) as f:
             clash_sets = json.load(f)
-        clash_set_name = context.scene.BIMClashProperties.clash_sets[
-            context.scene.BIMClashProperties.active_clash_set_index
-        ].name
+        clash_set_name = context.scene.BIMClashProperties.active_clash_set.name
         global_ids = []
         for clash_set in clash_sets:
             if clash_set["name"] != clash_set_name:
@@ -331,9 +329,7 @@ class SmartClashGroup(bpy.types.Operator):
         with open(save_path, "w") as f:
             f.write(json.dumps(smart_grouped_clashes))
 
-        clash_set_name = context.scene.BIMClashProperties.clash_sets[
-            context.scene.BIMClashProperties.active_clash_set_index
-        ].name
+        clash_set_name = context.scene.BIMClashProperties.active_clash_set.name
 
         # Reset the list of smart_clash_groups for the UI
         context.scene.BIMClashProperties.smart_clash_groups.clear()
@@ -367,9 +363,7 @@ class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
     def execute(self, context):
         smart_groups_path = bpy.path.ensure_ext(context.scene.BIMClashProperties.smart_grouped_clashes_path, ".json")
 
-        clash_set_name = context.scene.BIMClashProperties.clash_sets[
-            context.scene.BIMClashProperties.active_clash_set_index
-        ].name
+        clash_set_name = context.scene.BIMClashProperties.active_clash_set.name
 
         with open(smart_groups_path) as f:
             smart_grouped_clashes = json.load(f)
@@ -404,9 +398,7 @@ class SelectSmartGroup(bpy.types.Operator):
 
     def execute(self, context):
         # Select smart group in view
-        selected_smart_group = context.scene.BIMClashProperties.smart_clash_groups[
-            context.scene.BIMCLashProperties.active_smart_group_index
-        ]
+        selected_smart_group = context.scene.BIMClashProperties.active_smart_group
         # print(selected_smart_group.number)
 
         for obj in context.visible_objects:
