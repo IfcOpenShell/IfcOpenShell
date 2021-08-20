@@ -107,5 +107,3 @@ class BIMTypeObjectProperties(PropertyGroup):
     is_editing_type: BoolProperty(name="Is Editing Type", update=updateTypeDropdowns)
     relating_type_class: EnumProperty(items=getApplicableTypes, name="Relating Type Class")
     relating_type: EnumProperty(items=getRelatingTypes, name="Relating Type")
-    # This is purely a UX thing
-    blank_relating_type: EnumProperty(items=[("None", "No Types Found", "")], name="Relating Type")
