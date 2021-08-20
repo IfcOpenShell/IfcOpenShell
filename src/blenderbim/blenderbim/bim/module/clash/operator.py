@@ -397,6 +397,7 @@ class SelectSmartGroup(bpy.types.Operator):
         return IfcStore.get_file() and context.visible_objects and context.scene.BIMClashProperties.active_smart_group
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         # Select smart group in view
         selected_smart_group = context.scene.BIMClashProperties.active_smart_group
         # print(selected_smart_group.number)

@@ -38,7 +38,7 @@ class CalculateEdgeLengths(bpy.types.Operator):
     def execute(self, context):
         result = 0
         for obj in context.selected_objects:
-            if not obj.data or not obj.data.edges:
+            if obj.type != "MESH":
                 continue
             for edge in obj.data.edges:
                 if edge.select:
@@ -59,7 +59,7 @@ class CalculateFaceAreas(bpy.types.Operator):
     def execute(self, context):
         result = 0
         for obj in context.selected_objects:
-            if not obj.data or not obj.data.polygons:
+            if obj.type != "MESH":
                 continue
             for polygon in obj.data.polygons:
                 if polygon.select:
@@ -80,7 +80,7 @@ class CalculateObjectVolumes(bpy.types.Operator):
     def execute(self, context):
         result = 0
         for obj in context.selected_objects:
-            if not obj.data or not isinstance(obj.data, bpy.types.Mesh):
+            if obj.type != "MESH":
                 continue
             bm = bmesh.new()
             bm.from_mesh(obj.data)

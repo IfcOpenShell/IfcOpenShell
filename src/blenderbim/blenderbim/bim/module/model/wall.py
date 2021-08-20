@@ -166,7 +166,7 @@ class SplitWall(bpy.types.Operator):
     def execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
         for obj in selected_objs:
-            DumbWallSplitter(obj, bpy.context.scene.cursor.location).split()
+            DumbWallSplitter(obj, context.scene.cursor.location).split()
             IfcStore.edited_objs.add(obj)
         return {"FINISHED"}
 

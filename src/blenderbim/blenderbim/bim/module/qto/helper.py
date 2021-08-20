@@ -49,10 +49,11 @@ def calculate_formwork_area(objs, context):
         context.collection.objects.link(new_obj)
         copied_objs.append(new_obj)
 
-    context_override = {}
-    context_override["object"] = context_override["active_object"] = copied_objs[0]
-    context_override["selected_objects"] = context_override["selected_editable_objects"] = copied_objs
-    bpy.ops.object.join(context_override)
+    if len(objs) > 1:
+        context_override = {}
+        context_override["object"] = context_override["active_object"] = copied_objs[0]
+        context_override["selected_objects"] = context_override["selected_editable_objects"] = copied_objs
+        bpy.ops.object.join(context_override)
 
     copied_objs[0].name = "Formwork"
     copied_objs[0].BIMObjectProperties.ifc_definition_id = 0

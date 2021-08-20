@@ -84,7 +84,7 @@ class BimTool(WorkSpaceTool):
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="Split", icon="EVENT_S")
 
-        if props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
+            if props.ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
             row = layout.row()
             row.label(text="Join")
             row = layout.row(align=True)

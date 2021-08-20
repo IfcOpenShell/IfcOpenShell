@@ -76,9 +76,8 @@ class BIM_PT_misc_utilities(Panel):
         layout = self.layout
         props = context.scene.BIMProperties
 
-        row = layout.row()
+        row = layout.split(factor=0.2, align=True)
         row.prop(props, "override_colour", text="")
-        row = layout.row(align=True)
         row.operator("bim.set_override_colour")
         row = layout.row(align=True)
         row.operator("bim.set_viewport_shadow_from_sun")

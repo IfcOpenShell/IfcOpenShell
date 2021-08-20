@@ -172,7 +172,7 @@ class BIM_PT_drawings(Panel):
                 op = row.operator("bim.open_view", icon="URL", text="")
                 op.view = props.active_drawing.name
                 row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
-            layout.template_list("BIM_UL_generic", "", props, "drawings", props, "active_drawing_index")
+            layout.template_list("BIM_UL_drawinglist", "", props, "drawings", props, "active_drawing_index")
 
         row = layout.row()
         row.operator("bim.add_ifc_file")

@@ -129,6 +129,10 @@ class AddTypeInstance(bpy.types.Operator):
         else:
             if collection_obj and collection_obj.BIMObjectProperties.ifc_definition_id:
                 obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])
+
+        bpy.ops.object.select_all(action='DESELECT')
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
         return {"FINISHED"}
 
     def generate_layered_element(self, ifc_class, relating_type):

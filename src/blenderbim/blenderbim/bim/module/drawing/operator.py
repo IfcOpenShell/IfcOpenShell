@@ -589,7 +589,7 @@ class AddDrawingToSheet(bpy.types.Operator):
             sheet_builder.add_drawing(
                 props.drawings.active_drawing.name, props.active_sheet.name
             )
-        except:
+        except FileNotFoundError:
             self.report({"ERROR"}, "Drawings need to be created before being added to a sheet")
         return {"FINISHED"}
 
@@ -656,6 +656,7 @@ class OpenView(bpy.types.Operator):
 
 
 class OpenViewCamera(bpy.types.Operator):
+    """Select this drawing's camera object and expand its drawing properties"""
     bl_idname = "bim.open_view_camera"
     bl_label = "Open View Camera"
     bl_options = {"REGISTER", "UNDO"}
@@ -666,9 +667,12 @@ class OpenViewCamera(bpy.types.Operator):
         return bpy.context.object.mode == "OBJECT"
 
     def execute(self, context):
+        doc_props = context.scene.DocProperties
+        doc_props.active_drawing_index = doc_props.drawings.find(self.view_name)
         drawing = doc_props.active_drawing
         bpy.ops.object.select_all(action="DESELECT")
         drawing.camera.select_set(True)
+        context.view_layer.objects.active = drawing.camera
         for area in context.screen.areas:
             if area.ui_type == "PROPERTIES":
                 for space in area.spaces:
@@ -719,6 +723,7 @@ class SelectDocIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_doc_ifc_file"
     bl_label = "Select Documentation IFC File"
     bl_options = {"REGISTER", "UNDO"}
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     index: bpy.props.IntProperty()
 
@@ -1066,7 +1071,7 @@ class SelectScheduleFile(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.DocProperties
-        props.schedules[props.active_schedule_index].file = self.filepath
+        props.active_schedule.file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1154,13 +1159,12 @@ class CleanWireframes(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        objects = context.scene.objects
         if context.selected_objects:
             objects = context.selected_objects
-        for obj in objects:
-            if not isinstance(obj.data, bpy.types.Mesh):
-                continue
-            if "EDGE_SPLIT" not in [m.type for m in obj.modifiers]:
+        else:
+            objects = context.scene.objects
+        for obj in (o for o in objects if o.type == "MESH"):
+            if "EDGE_SPLIT" not in (m.type for m in obj.modifiers):
                 obj.modifiers.new("EdgeSplit", "EDGE_SPLIT")
         return {"FINISHED"}
 
@@ -1261,10 +1265,7 @@ class AddSectionsAnnotations(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         view_coll, camera = helper.get_active_drawing(scene)
-        is_ortho = camera.data.type == "ORTHO"
-        if not is_ortho:
-            return {"CANCELLED"}
-        bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
+        bounds = helper.ortho_view_frame(camera.data)
 
         drawings = [
             d

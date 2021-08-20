@@ -504,7 +504,6 @@ class SetOverrideColour(bpy.types.Operator):
         return context.selected_objects
 
     def execute(self, context):
-        result = 0
         for obj in context.selected_objects:
             obj.color = context.scene.BIMProperties.override_colour
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
@@ -570,14 +569,13 @@ class SnapSpacesTogether(bpy.types.Operator):
     def execute(self, context):
         threshold = 0.5
         processed_polygons = set()
-        for obj in context.selected_objects:
-            if obj.type != "MESH":
-                continue
+        selected_mesh_objects = [o for o in context.selected_objects if o.type == "MESH"]
+        for obj in selected_mesh_objects:
             for polygon in obj.data.polygons:
                 center = obj.matrix_world @ polygon.center
                 distance = None
-                for obj2 in context.selected_objects:
-                    if obj2 == obj or obj.type != "MESH":
+                for obj2 in selected_mesh_objects:
+                    if obj2 == obj:
                         continue
                     result = obj2.ray_cast(obj2.matrix_world.inverted() @ center, polygon.normal, distance=threshold)
                     if not result[0]:
