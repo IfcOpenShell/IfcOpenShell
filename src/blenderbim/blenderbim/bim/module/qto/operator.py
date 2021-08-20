@@ -31,6 +31,10 @@ class CalculateEdgeLengths(bpy.types.Operator):
     bl_label = "Calculate Edge Lengths"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
     def execute(self, context):
         result = 0
         for obj in context.selected_objects:
@@ -47,6 +51,10 @@ class CalculateFaceAreas(bpy.types.Operator):
     bl_idname = "bim.calculate_face_areas"
     bl_label = "Calculate Face Areas"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
 
     def execute(self, context):
         result = 0
@@ -65,6 +73,10 @@ class CalculateObjectVolumes(bpy.types.Operator):
     bl_label = "Calculate Object Volumes"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
     def execute(self, context):
         result = 0
         for obj in context.selected_objects:
@@ -82,6 +94,10 @@ class ExecuteQtoMethod(bpy.types.Operator):
     bl_idname = "bim.execute_qto_method"
     bl_label = "Execute Qto Method"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
 
     def execute(self, context):
         props = context.scene.BIMQtoProperties
@@ -102,6 +118,10 @@ class QuantifyObjects(bpy.types.Operator):
     bl_idname = "bim.quantify_objects"
     bl_label = "Quantify Objects"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file() and context.selected_objects
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)

@@ -124,6 +124,10 @@ class Hotkey(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     hotkey: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 

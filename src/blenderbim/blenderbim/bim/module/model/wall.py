@@ -74,12 +74,14 @@ class JoinWall(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     join_type: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
     def execute(self, context):
-        selected_objs = context.selected_objects
+        selected_objs = [o for o in context.selected_objects if o.BIMObjectProperties.ifc_definition_id]
         for obj in selected_objs:
             bpy.ops.bim.dynamically_void_product(obj=obj.name)
-        if len(selected_objs) == 0:
-            return {"FINISHED"}
         if not self.join_type:
             for obj in selected_objs:
                 DumbWallJoiner(obj, obj).unjoin()
@@ -114,11 +116,14 @@ class AlignWall(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     align_type: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        selected_valid_objects = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
+        return context.active_object and len(selected_valid_objects) > 1
+
     def execute(self, context):
-        selected_objs = context.selected_objects
-        if len(selected_objs) < 2 or not context.active_object:
-            return {"FINISHED"}
-        for obj in selected_objs:
+        selected_objects = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
+        for obj in selected_objects:
             if obj == context.active_object:
                 continue
             aligner = DumbWallAligner(obj, context.active_object)
@@ -137,10 +142,12 @@ class FlipWall(bpy.types.Operator):
     bl_label = "Flip Wall"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
     def execute(self, context):
-        selected_objs = context.selected_objects
-        if len(selected_objs) == 0:
-            return {"FINISHED"}
+        selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
         for obj in selected_objs:
             DumbWallFlipper(obj).flip()
             IfcStore.edited_objs.add(obj)
@@ -152,10 +159,12 @@ class SplitWall(bpy.types.Operator):
     bl_label = "Split Wall"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
     def execute(self, context):
-        selected_objs = context.selected_objects
-        if len(selected_objs) == 0:
-            return {"FINISHED"}
+        selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
         for obj in selected_objs:
             DumbWallSplitter(obj, bpy.context.scene.cursor.location).split()
             IfcStore.edited_objs.add(obj)

@@ -25,6 +25,7 @@ import logging
 import numpy as np
 from mathutils import Matrix
 from math import radians
+from blenderbim.bim.ifc import IfcStore
 
 
 class ExportClashSets(bpy.types.Operator):
@@ -303,6 +304,10 @@ class SmartClashGroup(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
+    @classmethod
+    def poll(cls, context):
+        return context.scene.BIMClashProperties.clash_results_path
+
     def execute(self, context):
         import ifcclash
 
@@ -355,6 +360,10 @@ class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
     bl_label = "Load Smart Groups for Active Clash Set"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.scene.BIMClashProperties.active_clash_set
+
     def execute(self, context):
         smart_groups_path = bpy.path.ensure_ext(context.scene.BIMClashProperties.smart_grouped_clashes_path, ".json")
 
@@ -388,6 +397,10 @@ class SelectSmartGroup(bpy.types.Operator):
     bl_idname = "bim.select_smart_group"
     bl_label = "Select Smart Group"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file() and context.visible_objects and context.scene.BIMClashProperties.active_smart_group
 
     def execute(self, context):
         # Select smart group in view

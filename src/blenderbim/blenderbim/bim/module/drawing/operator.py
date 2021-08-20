@@ -60,6 +60,10 @@ class AddDrawing(bpy.types.Operator):
     bl_label = "Add Drawing"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
@@ -502,12 +506,14 @@ class AddAnnotation(bpy.types.Operator):
     obj_name: bpy.props.StringProperty()
     data_type: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file() and context.scene.camera
+
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        if not context.scene.camera:
-            return {"FINISHED"}
         subcontext = ifcopenshell.util.representation.get_context(
             IfcStore.get_file(), "Plan", "Annotation", context.scene.camera.data.BIMCameraProperties.target_view
         )
@@ -654,6 +660,10 @@ class OpenViewCamera(bpy.types.Operator):
     bl_label = "Open View Camera"
     bl_options = {"REGISTER", "UNDO"}
     view_name: bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return bpy.context.object.mode == "OBJECT"
 
     def execute(self, context):
         new_drawing_index = context.scene.DocProperties.drawings.find(self.view_name)
@@ -1071,6 +1081,10 @@ class BuildSchedule(bpy.types.Operator):
     bl_idname = "bim.build_schedule"
     bl_label = "Build Schedule"
 
+    @classmethod
+    def poll(cls, context):
+        return context.scene.DocProperties.active_schedule.file
+
     def execute(self, context):
         props = context.scene.DocProperties
         schedule = props.schedules[props.active_schedule_index]
@@ -1159,11 +1173,13 @@ class CopyGrid(bpy.types.Operator):
     bl_label = "Add Grid"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return helper.get_active_drawing(context.scene)[0] is not None
+
     def execute(self, context):
         proj_coll = helper.get_project_collection(context.scene)
         view_coll, camera = helper.get_active_drawing(context.scene)
-        if view_coll is None:
-            return {"CANCELLED"}
         is_ortho = camera.data.type == "ORTHO"
         bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
         clipping = is_ortho and camera.data.BIMCameraProperties.target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
@@ -1239,6 +1255,11 @@ class AddSectionsAnnotations(bpy.types.Operator):
     bl_idname = "bim.add_sections_annotations"
     bl_label = "Add Sections"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):        
+        camera = helper.get_active_drawing(context.scene)[1]
+        return camera and camera.data.type == "ORTHO"
 
     def execute(self, context):
         scene = context.scene

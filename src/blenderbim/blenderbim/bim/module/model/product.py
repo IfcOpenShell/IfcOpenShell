@@ -205,8 +205,14 @@ class DynamicallyVoidProduct(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj)
+        if obj is None:
+            return {"FINISHED"}
         product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
         if not product.HasOpenings:
             return {"FINISHED"}

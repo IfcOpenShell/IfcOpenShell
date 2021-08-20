@@ -411,11 +411,13 @@ class RemoveSectionPlane(bpy.types.Operator):
     bl_label = "Remove Temporary Section Cutaway"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.active_object and bpy.data.node_groups.get("Section Override")
+
     def execute(self, context):
         name = context.active_object.name
         section_override = bpy.data.node_groups.get("Section Override")
-        if not section_override:
-            return {"FINISHED"}
         for node in section_override.nodes:
             if node.type != "TEX_COORD" or node.object.name != name:
                 continue
@@ -497,6 +499,10 @@ class SetOverrideColour(bpy.types.Operator):
     bl_label = "Set Override Colour"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
     def execute(self, context):
         result = 0
         for obj in context.selected_objects:
@@ -510,6 +516,10 @@ class SetViewportShadowFromSun(bpy.types.Operator):
     bl_idname = "bim.set_viewport_shadow_from_sun"
     bl_label = "Set Viewport Shadow from Sun"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object
 
     def execute(self, context):
         # The vector used for the light direction is a bit funny
@@ -552,6 +562,10 @@ class SnapSpacesTogether(bpy.types.Operator):
     bl_idname = "bim.snap_spaces_together"
     bl_label = "Snap Spaces Together"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
 
     def execute(self, context):
         threshold = 0.5

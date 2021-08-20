@@ -237,6 +237,12 @@ class ConvertLocalToGlobal(bpy.types.Operator):
     bl_label = "Convert Local To Global"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        file = IfcStore.get_file()
+        props = context.scene.BIMGeoreferenceProperties
+        return file and props.coordinate_input.count(",") == 2
+
     def execute(self, context):
         if not Data.is_loaded:
             Data.load(IfcStore.get_file())
@@ -284,6 +290,13 @@ class ConvertGlobalToLocal(bpy.types.Operator):
     bl_label = "Convert Global To Local"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        file = IfcStore.get_file()
+        props = context.scene.BIMGeoreferenceProperties
+        return file and file.by_type("IfcUnitAssignment") \
+            and props.coordinate_input.count(",") == 2
+
     def execute(self, context):
         if not Data.is_loaded:
             Data.load(IfcStore.get_file())
@@ -330,6 +343,11 @@ class GetCursorLocation(bpy.types.Operator):
     bl_label = "Get Cursor Location"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        file = IfcStore.get_file()
+        return file and file.by_type("IfcUnitAssignment")
+
     def execute(self, context):
         props = context.scene.BIMGeoreferenceProperties
         scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
@@ -342,6 +360,12 @@ class SetCursorLocation(bpy.types.Operator):
     bl_idname = "bim.set_cursor_location"
     bl_label = "Set Cursor Location"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        file = IfcStore.get_file()
+        props = context.scene.BIMGeoreferenceProperties
+        return file and file.by_type("IfcUnitAssignment") and props.coordinate_output.count(",") == 2
 
     def execute(self, context):
         props = context.scene.BIMGeoreferenceProperties
