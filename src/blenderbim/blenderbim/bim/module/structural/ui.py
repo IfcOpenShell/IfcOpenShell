@@ -40,7 +40,7 @@ def draw_boundary_condition_ui(layout, boundary_condition_id, connection_id, pro
     if props.active_boundary_condition and props.active_boundary_condition == boundary_condition_id:
         row.label(text=data["type"], icon="CON_TRACKTO")
         row.operator("bim.edit_structural_boundary_condition", text="", icon="CHECKMARK").connection = connection_id
-        row.operator("bim.disable_editing_structural_boundary_condition", text="", icon="X")
+        row.operator("bim.disable_editing_structural_boundary_condition", text="", icon="CANCEL")
     elif props.active_boundary_condition and props.active_boundary_condition != boundary_condition_id:
         row.label(text=data["type"], icon="CON_TRACKTO")
         row.operator("bim.remove_structural_boundary_condition", text="", icon="X").connection = connection_id
@@ -338,7 +338,7 @@ class BIM_UL_structural_analysis_models(UIList):
 
             if context.scene.BIMStructuralProperties.active_structural_analysis_model_id == item.ifc_definition_id:
                 row.operator("bim.edit_structural_analysis_model", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_structural_analysis_model", text="", icon="X")
+                row.operator("bim.disable_editing_structural_analysis_model", text="", icon="CANCEL")
             elif context.scene.BIMStructuralProperties.active_structural_analysis_model_id:
                 op = row.operator("bim.remove_structural_analysis_model", text="", icon="X")
                 op.structural_analysis_model = item.ifc_definition_id

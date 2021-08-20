@@ -147,7 +147,7 @@ class BIM_PT_classification_references(Panel):
         row = self.layout.row(align=True)
         row.prop(self.props.reference_attributes.get("Name"), "string_value", text="", icon="ASSET_MANAGER")
         row.operator("bim.edit_classification_reference", text="", icon="CHECKMARK")
-        row.operator("bim.disable_editing_classification_reference", text="", icon="X")
+        row.operator("bim.disable_editing_classification_reference", text="", icon="CANCEL")
 
         for attribute in self.props.reference_attributes:
             if attribute.name == "Name":

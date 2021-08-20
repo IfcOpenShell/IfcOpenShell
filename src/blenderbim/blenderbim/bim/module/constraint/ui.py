@@ -115,7 +115,7 @@ class BIM_PT_object_constraints(Panel):
             row = self.layout.row(align=True)
             icon = "LIGHT" if self.props.is_adding == "IfcObjective" else "FILE_HIDDEN"
             row.label(text="Adding {}".format(self.props.is_adding), icon=icon)
-            row.operator("bim.disable_assigning_constraint", text="", icon="X")
+            row.operator("bim.disable_assigning_constraint", text="", icon="CANCEL")
             self.layout.template_list(
                 "BIM_UL_object_constraints",
                 "",
@@ -138,7 +138,7 @@ class BIM_UL_constraints(UIList):
             if context.scene.BIMConstraintProperties.active_constraint_id == item.ifc_definition_id:
                 if context.scene.BIMConstraintProperties.is_editing == "IfcObjective":
                     row.operator("bim.edit_objective", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_constraint", text="", icon="X")
+                row.operator("bim.disable_editing_constraint", text="", icon="CANCEL")
             elif context.scene.BIMConstraintProperties.active_constraint_id:
                 row.operator("bim.remove_constraint", text="", icon="X").constraint = item.ifc_definition_id
             else:

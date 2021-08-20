@@ -57,7 +57,7 @@ class BIM_PT_aggregate(Panel):
             row.prop(props, "relating_object", text="")
             if props.relating_object:
                 row.operator("bim.assign_object", icon="CHECKMARK", text="").relating_object = props.relating_object.name
-            row.operator("bim.disable_editing_aggregate", icon="X", text="")
+            row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
         else:
             row = self.layout.row(align=True)
             name = "{}/{}".format(

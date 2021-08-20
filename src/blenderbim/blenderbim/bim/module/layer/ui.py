@@ -44,7 +44,7 @@ class BIM_PT_layers(Panel):
         row.label(text="{} Layers Found".format(len(Data.layers.keys())))
         if self.props.is_editing:
             row.operator("bim.add_presentation_layer", text="", icon="ADD")
-            row.operator("bim.disable_layer_editing_ui", text="", icon="X")
+            row.operator("bim.disable_layer_editing_ui", text="", icon="CANCEL")
         else:
             row.operator("bim.load_layers", text="", icon="GREASEPENCIL")
 
@@ -92,7 +92,7 @@ class BIM_UL_layers(UIList):
 
             if context.scene.BIMLayerProperties.active_layer_id == item.ifc_definition_id:
                 row.operator("bim.edit_presentation_layer", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_layer", text="", icon="X")
+                row.operator("bim.disable_editing_layer", text="", icon="CANCEL")
             elif context.scene.BIMLayerProperties.active_layer_id:
                 row.operator("bim.remove_presentation_layer", text="", icon="X").layer = item.ifc_definition_id
             else:

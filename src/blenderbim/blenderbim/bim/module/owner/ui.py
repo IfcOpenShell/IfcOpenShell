@@ -64,7 +64,7 @@ def draw_roles_ui(box, assigned_object_id, roles, context):
             box2 = box.box()
             row = draw_prop_on_new_row(box2, blender_role, "name", align=True, icon="MOD_CLOTH", text="")
             row.operator("bim.edit_role", icon="CHECKMARK", text="")
-            row.operator("bim.disable_editing_role", icon="X", text="")
+            row.operator("bim.disable_editing_role", icon="CANCEL", text="")
             if blender_role.name == "USERDEFINED":
                 draw_prop_on_new_row(box2, blender_role, "user_defined_role")
             draw_prop_on_new_row(box2, blender_role, "description")
@@ -92,7 +92,7 @@ def draw_addresses_ui(box, assigned_object_id, addresses, file, context):
             box2 = box.box()
             row = draw_prop_on_new_row(box2, blender_address, "purpose", align=True, icon="MOD_CLOTH", text="")
             row.operator("bim.edit_address", icon="CHECKMARK", text="")
-            row.operator("bim.disable_editing_address", icon="X", text="")
+            row.operator("bim.disable_editing_address", icon="CANCEL", text="")
             if blender_address.purpose == "USERDEFINED":
                 draw_prop_on_new_row(box2, blender_address, "user_defined_purpose")
             draw_prop_on_new_row(box2, blender_address, "description")
@@ -150,7 +150,7 @@ class BIM_PT_people(Panel):
                 box = self.layout.box()
                 row = draw_prop_on_new_row(box, blender_person, "name", align=True, icon="USER", text="")
                 row.operator("bim.edit_person", icon="CHECKMARK", text="")
-                row.operator("bim.disable_editing_person", icon="X", text="")
+                row.operator("bim.disable_editing_person", icon="CANCEL", text="")
                 draw_prop_on_new_row(box, blender_person, "family_name")                
                 draw_prop_on_new_row(box, blender_person, "given_name")
                 draw_string_collection(box, blender_person, "middle_names")
@@ -204,7 +204,7 @@ class BIM_PT_organisations(Panel):
                 row = box.row(align=True)
                 row.prop(blender_organisation, "name", icon="USER", text="")
                 row.operator("bim.edit_organisation", icon="CHECKMARK", text="")
-                row.operator("bim.disable_editing_organisation", icon="X", text="")                
+                row.operator("bim.disable_editing_organisation", icon="CANCEL", text="")                
                 draw_prop_on_new_row(box, blender_organisation, "identification")           
                 draw_prop_on_new_row(box, blender_organisation, "description")
 

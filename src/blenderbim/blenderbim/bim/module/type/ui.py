@@ -72,8 +72,7 @@ class BIM_PT_type(Panel):
                 row.prop(props, "relating_type", text="")
                 row.operator("bim.assign_type", icon="CHECKMARK", text="")
             else:
-                row.prop(props, "blank_relating_type", text="")
-            row.operator("bim.disable_editing_type", icon="X", text="")
+            row.operator("bim.disable_editing_type", icon="CANCEL", text="")
         else:
             row = self.layout.row(align=True)
             name = "{}/{}".format(

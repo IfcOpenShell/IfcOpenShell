@@ -46,7 +46,7 @@ class BIM_PT_documents(Panel):
             row.label(text="{} Documents Found".format(len(Data.information)), icon="FILE")
             if self.props.is_editing == "information":
                 row.operator("bim.add_information", text="", icon="ADD")
-                row.operator("bim.disable_document_editing_ui", text="", icon="X")
+                row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
             else:
                 row.operator("bim.load_information", text="", icon="IMPORT")
 
@@ -55,7 +55,7 @@ class BIM_PT_documents(Panel):
             row.label(text="{} References Found".format(len(Data.references)), icon="FILE_HIDDEN")
             if self.props.is_editing == "reference":
                 row.operator("bim.add_document_reference", text="", icon="ADD")
-                row.operator("bim.disable_document_editing_ui", text="", icon="X")
+                row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
             else:
                 row.operator("bim.load_document_references", text="", icon="IMPORT")
 
@@ -129,7 +129,7 @@ class BIM_PT_object_documents(Panel):
             row = self.layout.row(align=True)
             icon = "FILE" if self.props.is_adding == "IfcDocumentInformation" else "FILE_HIDDEN"
             row.label(text="Adding {}".format(self.props.is_adding), icon=icon)
-            row.operator("bim.disable_assigning_document", text="", icon="X")
+            row.operator("bim.disable_assigning_document", text="", icon="CANCEL")
             self.layout.template_list(
                 "BIM_UL_object_documents",
                 "",
@@ -155,7 +155,7 @@ class BIM_UL_documents(UIList):
                     row.operator("bim.edit_information", text="", icon="CHECKMARK")
                 elif context.scene.BIMDocumentProperties.is_editing == "reference":
                     row.operator("bim.edit_document_reference", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_document", text="", icon="X")
+                row.operator("bim.disable_editing_document", text="", icon="CANCEL")
             elif context.scene.BIMDocumentProperties.active_document_id:
                 row.operator("bim.remove_document", text="", icon="X").document = item.ifc_definition_id
             else:
