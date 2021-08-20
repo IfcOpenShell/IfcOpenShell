@@ -115,22 +115,30 @@ class AddDrawing(bpy.types.Operator):
 
 
 class CreateDrawing(bpy.types.Operator):
+    """Creates a svg drawing
+
+    Only available if :
+    - IFC file is created
+    - Camera is in Orthographic mode
+    """
     bl_idname = "bim.create_drawing"
     bl_label = "Create Drawing"
 
+    @classmethod
+    def poll(cls, context):
+        camera = context.scene.camera
+        return IfcStore.get_file() \
+            and camera.type == "CAMERA" and camera.data.type == "ORTHO" \
+            and camera.BIMObjectProperties.ifc_definition_id
+
     def execute(self, context):
         self.camera = context.scene.camera
-        if (
-            not (self.camera.type == "CAMERA" and self.camera.data.type == "ORTHO")
-            or not self.camera.BIMObjectProperties.ifc_definition_id
-        ):
-            return
         self.file = IfcStore.get_file()
         self.time = None
         start = time.time()
         self.profile_code("Start drawing generation process")
         self.props = context.scene.DocProperties
-        self.drawing_name = IfcStore.get_file().by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
+        self.drawing_name = self.file.by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
         underlay_svg = self.generate_underlay(context)
         self.profile_code("Generate underlay")
         linework_svg = self.generate_linework(context)
