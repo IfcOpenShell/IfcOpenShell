@@ -52,7 +52,7 @@ class BIM_PT_gis(Panel):
         row = self.layout.row(align=True)
         row.label(text="Projected CRS", icon="WORLD")
         row.operator("bim.edit_georeferencing", icon="CHECKMARK", text="")
-        row.operator("bim.disable_editing_georeferencing", icon="X", text="")
+        row.operator("bim.disable_editing_georeferencing", icon="CANCEL", text="")
 
         draw_attributes(props.projected_crs, self.layout)
 

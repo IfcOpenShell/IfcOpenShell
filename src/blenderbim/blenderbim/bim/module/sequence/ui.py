@@ -282,12 +282,12 @@ class BIM_PT_work_schedules(Panel):
         if self.props.active_sequence_id == sequence["id"]:
             if self.props.editing_sequence_type == "ATTRIBUTES":
                 row.operator("bim.edit_sequence_attributes", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_sequence", text="", icon="X")
+                row.operator("bim.disable_editing_sequence", text="", icon="CANCEL")
                 self.draw_editable_sequence_attributes_ui()
             elif self.props.editing_sequence_type == "TIME_LAG":
                 op = row.operator("bim.edit_sequence_time_lag", text="", icon="CHECKMARK")
                 op.lag_time = sequence["TimeLag"]
-                row.operator("bim.disable_editing_sequence", text="", icon="X")
+                row.operator("bim.disable_editing_sequence", text="", icon="CANCEL")
                 self.draw_editable_sequence_time_lag_ui()
         else:
             if sequence["TimeLag"]:
