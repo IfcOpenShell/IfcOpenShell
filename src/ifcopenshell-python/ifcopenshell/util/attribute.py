@@ -3,7 +3,9 @@ def get_primitive_type(attribute_or_data_type):
         data_type = str(attribute_or_data_type.type_of_attribute())
     else:
         data_type = str(attribute_or_data_type)
-    if data_type.find("<list") == 0:
+    if data_type.find("<type") == 0:
+        return get_primitive_type(data_type[data_type[1:].find("<")+1:])
+    elif data_type.find("<list") == 0:
         return ("list", get_primitive_type(data_type[data_type[1:].find("<")+1:]))
     elif data_type.find("<set") == 0:
         return ("set", get_primitive_type(data_type[data_type[1:].find("<")+1:]))
