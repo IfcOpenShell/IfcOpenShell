@@ -214,8 +214,6 @@ class IfcImporter:
         self.profile_code("Purge diffs")
         self.load_file()
         self.profile_code("Loading file")
-        self.set_ifc_file()
-        self.profile_code("Setting file")
         self.calculate_unit_scale()
         self.profile_code("Calculate unit scale")
         self.calculate_model_offset()
@@ -973,25 +971,8 @@ class IfcImporter:
 
     def load_file(self):
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)
-        extension = self.ifc_import_settings.input_file.split(".")[-1]
-        if extension.lower() == "ifczip":
-            with tempfile.TemporaryDirectory() as unzipped_path:
-                with zipfile.ZipFile(self.ifc_import_settings.input_file, "r") as zip_ref:
-                    zip_ref.extractall(unzipped_path)
-                for filename in Path(unzipped_path).glob("**/*.ifc"):
-                    self.file = ifcopenshell.open(filename)
-                    break
-        elif extension.lower() == "ifcxml":
-            self.file = ifcopenshell.file(
-                ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(self.ifc_import_settings.input_file)
-            )
-        elif extension.lower() == "ifc":
-            self.file = ifcopenshell.open(self.ifc_import_settings.input_file)
-        IfcStore.file = self.file
-
-    def set_ifc_file(self):
         bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
-        IfcStore.path = self.ifc_import_settings.input_file
+        self.file = IfcStore.get_file()
 
     def calculate_unit_scale(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
