@@ -153,8 +153,7 @@ def purge_module_data():
 def loadIfcStore(scene):
     IfcStore.purge()
     purge_module_data()
-    ifc_file = IfcStore.get_file()
-    if not ifc_file:
+    if not IfcStore.get_file():
         return
     IfcStore.get_schema()
     IfcStore.reload_linked_elements()
