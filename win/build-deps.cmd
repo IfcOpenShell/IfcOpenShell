@@ -351,8 +351,6 @@ rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\data"
 rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\samples"
 del "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\*.bat"
 
-goto :Successful
-
 :Python
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     set DEPENDENCY_NAME=Python %PYTHON_VERSION%
