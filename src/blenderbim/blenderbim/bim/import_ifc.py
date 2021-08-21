@@ -641,8 +641,9 @@ class IfcImporter:
     def create_empty_and_2d_elements(self):
         curve_products = []
 
-        unadded_data = set([e.id() for e in self.elements]) - set(self.added_data)
-        for element in unadded_data:
+        unadded_element_ids = set([e.id() for e in self.elements]) - set(self.added_data.keys())
+        for element_id in unadded_element_ids:
+            element = self.file.by_id(element_id)
             if element.is_a("IfcPort"):
                 continue
             if not element.Representation:
