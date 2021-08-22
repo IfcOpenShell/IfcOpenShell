@@ -146,8 +146,17 @@ class StrProperty(PropertyGroup):
 
 
 def updateAttributeValue(self, context):
-    if getattr(self, str(self.get_value_name()), None):  # Do not use get_value since it returns None if is_null is True
-        self.is_null = False
+    value_name = self.get_value_name()
+    if value_name:
+        value_names = [value_name]
+    else:
+        # We may not have a value name in <select> data types, so let's check everything
+        value_names = ["string_value", "bool_value", "int_value", "float_value", "enum_value"]
+    for name in value_names:
+        if name == "enum_value" and not self.enum_items:
+            continue
+        if getattr(self, name, None):
+            self.is_null = False
 
 
 class Attribute(PropertyGroup):
