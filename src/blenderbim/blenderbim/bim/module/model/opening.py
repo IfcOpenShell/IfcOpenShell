@@ -113,6 +113,8 @@ class AddElementOpening(bpy.types.Operator):
             opening.name = "Opening"
 
         bpy.ops.bim.add_opening(opening=opening.name, obj=voided_obj.name)
+        if filling_obj:
+            bpy.ops.bim.add_filling(opening=opening.name, obj=filling_obj.name)
         return {"FINISHED"}
 
     def get_voided_building_element(self, context):
