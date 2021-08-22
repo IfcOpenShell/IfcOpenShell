@@ -190,7 +190,7 @@ class RefreshLibrary(bpy.types.Operator):
         self.props.active_library_element = ""
 
         types = IfcStore.library_file.wrapped_data.types_with_super()
-        for importable_type in ["IfcTypeProduct", "IfcMaterial", "IfcCostSchedule", "IfcProfileDef"]:
+        for importable_type in sorted(["IfcTypeProduct", "IfcMaterial", "IfcCostSchedule", "IfcProfileDef"]):
             if importable_type in types:
                 new = self.props.library_elements.add()
                 new.name = importable_type
@@ -213,12 +213,9 @@ class ChangeLibraryElement(bpy.types.Operator):
         [ifc_classes.add(e.is_a()) for e in elements]
         self.props.library_elements.clear()
         if len(ifc_classes) == 1 and list(ifc_classes)[0] == self.element_name:
-            for element in elements:
+            for name, element in sorted([(self.get_name(e), e) for e in elements]):
                 new = self.props.library_elements.add()
-                if element.is_a("IfcProfileDef"):
-                    new.name = element.ProfileName or "Unnamed"
-                else:
-                    new.name = element.Name or "Unnamed"
+                new.name = name
                 new.ifc_definition_id = element.id()
                 if IfcStore.library_file.schema == "IFC2X3" or not IfcStore.library_file.by_type("IfcProjectLibrary"):
                     new.is_declared = False
@@ -227,10 +224,15 @@ class ChangeLibraryElement(bpy.types.Operator):
                 ):
                     new.is_declared = True
         else:
-            for ifc_class in ifc_classes:
+            for ifc_class in sorted(ifc_classes):
                 new = self.props.library_elements.add()
                 new.name = ifc_class
         return {"FINISHED"}
+
+    def get_name(self, element):
+        if element.is_a("IfcProfileDef"):
+            return element.ProfileName or "Unnamed"
+        return element.Name or "Unnamed"
 
 
 class RewindLibrary(bpy.types.Operator):
