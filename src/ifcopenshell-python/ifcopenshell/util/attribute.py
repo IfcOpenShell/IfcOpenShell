@@ -10,7 +10,9 @@ def get_primitive_type(attribute_or_data_type):
     elif data_type.find("<set") == 0:
         return ("set", get_primitive_type(data_type[data_type[1:].find("<")+1:]))
     elif data_type.find("<select") == 0:
-        return ("select", get_primitive_type(data_type[data_type[1:].find("<")+1:]))
+        select_definition = data_type[data_type.find("(")+1:data_type.find(")")].split("|")
+        select_types = [get_primitive_type(d.strip()) for d in select_definition]
+        return ("select", tuple(select_types))
     elif "<entity" in data_type:
         return "entity"
     elif "<string>" in data_type:
