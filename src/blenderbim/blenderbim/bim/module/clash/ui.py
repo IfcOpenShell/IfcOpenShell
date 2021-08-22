@@ -57,7 +57,7 @@ class BIM_PT_ifcclash(Panel):
         layout.template_list("BIM_UL_clash_sets", "", props, "clash_sets", props, "active_clash_set_index")
 
         if props.active_clash_set_index < len(props.clash_sets):
-            clash_set = props.clash_sets[props.active_clash_set_index]
+            clash_set = props.active_clash_set
 
             row = layout.row(align=True)
             row.prop(clash_set, "name")

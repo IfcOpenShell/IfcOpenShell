@@ -39,6 +39,11 @@ class ExecuteBIMTester(bpy.types.Operator):
     bl_idname = "bim.execute_bim_tester"
     bl_label = "Execute BIMTester"
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BimTesterProperties
+        return props.ifc_file and props.feature
+
     def execute(self, context):
         props = context.scene.BimTesterProperties
 
