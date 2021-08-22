@@ -379,9 +379,10 @@ class AppendLibraryElement(bpy.types.Operator):
         type_collection = bpy.data.collections.get("Types")
         if not type_collection:
             type_collection = bpy.data.collections.new("Types")
-            for collection in bpy.data.collections:
+            for collection in bpy.context.view_layer.layer_collection.children:
                 if "IfcProject/" in collection.name:
-                    collection.children.link(type_collection)
+                    collection.collection.children.link(type_collection)
+                    collection.children["Types"].hide_viewport = True
                     break
 
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
