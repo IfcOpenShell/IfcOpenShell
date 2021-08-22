@@ -63,8 +63,7 @@ def extract_docs(
     method_name: str="__init__",
     boilerplate_args : typing.Iterable[str]=None):
     """Extract class docstrings and method arguments
-    
-    :param module: Parent module from which to extract the submodule class
+
     :param submodule_name: Submodule from which to extract the class
     :param cls_name: Class from which to extract the docstring and method arguments
     :param method_name: Class Method name from which to extract arguments

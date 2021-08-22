@@ -269,6 +269,17 @@ class DocProperties(PropertyGroup):
         name="Decorations Colour", subtype="COLOR", default=(1, 0, 0, 1), min=0.0, max=1.0, size=4
     )
 
+    @property
+    def active_schedule(self):
+        return self.schedules[self.active_schedule_index]   
+    
+    @property
+    def active_drawing(self):
+        return self.drawings[self.active_drawing_index]    
+        
+    @property
+    def active_sheet(self):
+        return self.sheets[self.active_sheet_index]
 
 class BIMCameraProperties(PropertyGroup):
     view_name: StringProperty(name="View Name")

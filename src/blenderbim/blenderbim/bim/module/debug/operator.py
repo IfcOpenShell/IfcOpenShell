@@ -165,7 +165,7 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
 
     def execute(self, context):
         [o.select_set(True) for o in context.view_layer.objects
-            if o.type == 'MESH'
+            if o.type == "MESH"
             and len(o.data.polygons) > context.scene.BIMDebugProperties.number_of_polygons]
         return {"FINISHED"}
 

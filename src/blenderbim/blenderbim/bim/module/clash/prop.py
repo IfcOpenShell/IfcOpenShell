@@ -69,3 +69,15 @@ class BIMClashProperties(PropertyGroup):
     smart_clash_grouping_max_distance: IntProperty(
         name="Smart Clash Grouping Max Distance", default=3, soft_min=1, soft_max=10
     )
+
+    @property
+    def active_clash_set(self):
+        if not self.clash_sets:
+            return None
+        return self.clash_sets[self.active_clash_set_index]
+
+    @property
+    def active_smart_group(self):
+        if not self.smart_clash_groups:
+            return None
+        return self.smart_clash_groups[self.active_smart_group_index]
