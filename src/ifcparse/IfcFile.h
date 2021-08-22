@@ -74,7 +74,9 @@ public:
 	typedef std::map<const IfcParse::declaration*, aggregate_of_instance::ptr> entities_by_type_t;
 	typedef boost::unordered_map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
 	typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_by_guid_t;
-	typedef std::map<unsigned int, std::vector<unsigned int> > entities_by_ref_t;
+	typedef std::tuple<int, int, int> inverse_attr_record;
+	enum INVERSE_ATTR { INSTANCE_ID, INSTANCE_TYPE, ATTRIBUTE_INDEX };
+	typedef std::map<inverse_attr_record, std::vector<int> > entities_by_ref_t;
 	typedef std::map<unsigned int, aggregate_of_instance::ptr> ref_map_t;
 	typedef entity_by_id_t::const_iterator const_iterator;
 
@@ -239,6 +241,18 @@ public:
 
 	aggregate_of_instance::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
 
+	template <class T>
+	typename T::list::ptr getInverse(int instance_id, int attribute_index) {
+		aggregate_of_instance::ptr return_value(new aggregate_of_instance);
+		auto it = byref.find({ instance_id, T::Class().index_in_schema(), attribute_index });
+		if (it != byref.end()) {
+			for (auto& i : it->second) {
+				return_value->push((T*)instance_by_id(i));
+			}
+		}
+		return return_value;
+	}
+
 	/// Marks entity as modified so that potential cache for it is invalidated.
 	/// @todo Currently the whole cache is invalidated. Implement more fine-grained invalidation.
 	void mark_entity_as_modified(int id);
@@ -269,13 +283,13 @@ public:
 
 	std::string createTimestamp() const;
 
-	size_t load(unsigned entity_instance_name, Argument**& attributes, size_t num_attributes);
+	size_t load(unsigned entity_instance_name, const IfcParse::entity* entity, Argument**& attributes, size_t num_attributes);
 	void seek_to(const IfcEntityInstanceData& data);
 	void try_read_semicolon();
 
-	void register_inverse(unsigned, Token);
-	void register_inverse(unsigned, IfcUtil::IfcBaseClass*);
-	void unregister_inverse(unsigned, IfcUtil::IfcBaseClass*);
+	void register_inverse(unsigned, const IfcParse::entity* from_entity, Token, int attribute_index);
+	void register_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
+	void unregister_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
     
 	const IfcParse::schema_definition* schema() const { return schema_; }
 
