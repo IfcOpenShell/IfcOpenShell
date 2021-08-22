@@ -164,7 +164,7 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
             new.name = attribute.name()
             new.is_null = value is None
             new.is_optional = attribute.optional()
-            if data_type == "select":
+            if isinstance(data_type, tuple) and data_type[0] == "select":
                 enum_items = [s.name() for s in ifcopenshell.util.attribute.get_select_items(attribute)]
                 new.enum_items = json.dumps(enum_items)
             if isinstance(value, bool):
