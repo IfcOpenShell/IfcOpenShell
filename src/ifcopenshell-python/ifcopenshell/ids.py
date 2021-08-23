@@ -39,7 +39,9 @@ from lxml import etree as ElementTree
 from xmlschema.validators import facets
 from xmlschema.validators import identities
 
-ids_schema = XMLSchema("ifcopenshell/ids.xsd")  # source: "http://standards.buildingsmart.org/IDS/ids_04.xsd"
+
+cwd = os.path.dirname(os.path.realpath(__file__))
+ids_schema = XMLSchema(os.path.join(cwd, "ids.xsd"))  # source: "http://standards.buildingsmart.org/IDS/ids_04.xsd"
 
 
 def error(msg):
@@ -311,6 +313,7 @@ class specification:
         :type facet: facet
 
         Example::
+
             i = ids.ids()
             i.specifications.append(ids.specification(name="Test_Specification"))
             e = ids.entity.create(name="Test_Name", predefinedtype="Test_PredefinedType")
@@ -950,7 +953,7 @@ class restriction:
 
     @staticmethod
     def create(options, type="pattern", base="string"):
-        """[summary]
+        """Create restriction instead of simpleValue
 
         :param type: One of "enumeration"|"pattern"|"bounds", defaults to "pattern"
         :type type: str, optional
@@ -1071,31 +1074,31 @@ class SimpleHandler(logging.StreamHandler):
 
 
 class BcfHandler(logging.StreamHandler):
-    """Logging handler for creation of BCF report files."""
+    """Logging handler for creation of BCF report files.
+
+    :param project_name: defaults to "IDS Project"
+    :type project_name: str, optional
+    :param author: Email of the person creating the BCF report, defaults to "your@email.com"
+    :type author: str, optional
+    :param filepath: Path to save the BCF report, defaults to None
+    :type filepath: str, optional
+    :param report_valid: True if you want to list all the compliant cases as well, defaults to False
+    :type report_valid: bool, optional
+
+    Example::
+
+        bcf_handler = BcfHandler(
+            project_name="Default IDS Project",
+            author="your@email.com",
+            filepath=r".\example.bcfzip",
+        )
+        logger = logging.getLogger("IDS_Logger")
+        logging.basicConfig(level=logging.INFO, format="%(message)s")
+        logger.addHandler(bcf_handler)
+    """
 
     def __init__(self, project_name="IDS Project", author="your@email.com", filepath=None, report_valid=False):
-        """Logging handler for creation of BCF report files.
 
-        :param project_name:, defaults to "IDS Project"
-        :type project_name: str, optional
-        :param author: Email of the person creating the BCF report, defaults to "your@email.com"
-        :type author: str, optional
-        :param filepath: Path to save the BCF report, defaults to None
-        :type filepath: str, optional
-        :param report_valid: True if you want to list all the compliant cases as well, defaults to False
-        :type report_valid: bool, optional
-
-        Example::
-            bcf_handler = BcfHandler(
-                project_name="Default IDS Project",
-                author="your@email.com",
-                filepath=r".\test.bcfzip",
-            )
-            logger = logging.getLogger("IDS_Logger")
-            logging.basicConfig(filename=".\", level=logging.INFO, format="%(message)s")
-            logging.FileHandler(filename, mode="w")
-            logger.addHandler(bcf_handler)
-        """
         logging.StreamHandler.__init__(self)
         if report_valid:
             self.setLevel(logging.INFO)
@@ -1190,7 +1193,7 @@ if __name__ == "__main__":
 
     logger = logging.getLogger("IDS_Logger")
     logging.basicConfig(filename=filepath, level=logging.INFO, format="%(message)s")
-    logging.FileHandler(filepath+r"\report.txt", mode="w")
+    logging.FileHandler(filepath + r"\report.txt", mode="w")
 
     bcf_handler = BcfHandler(
         project_name="Default IDS Project",
