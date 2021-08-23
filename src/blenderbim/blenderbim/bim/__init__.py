@@ -63,6 +63,7 @@ if bpy is not None:
         "document": None,
         "pset_template": None,
         "clash": None,
+        "lca": None,
         "csv": None,
         "bimtester": None,
         "diff": None,

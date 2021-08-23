@@ -52,8 +52,8 @@ class BIMGeoreferenceProperties(PropertyGroup):
         default="foot",
     )
     is_map_unit_null: BoolProperty(name="Is Map Unit Null")
-    coordinate_input: StringProperty(name="Coordinate Input")
-    coordinate_output: StringProperty(name="Coordinate Output")
+    coordinate_input: StringProperty(name="Coordinate Input", description="Formatted \"x,y,z\" (without quotes)")
+    coordinate_output: StringProperty(name="Coordinate Output", description="Formatted \"x,y,z\" (without quotes)")
     has_blender_offset: BoolProperty(name="Has Blender Offset")
     blender_eastings: StringProperty(name="Blender Eastings", default="0")
     blender_northings: StringProperty(name="Blender Northings", default="0")

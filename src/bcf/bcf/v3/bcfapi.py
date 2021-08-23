@@ -7,6 +7,8 @@ import webbrowser
 import http.server
 import base64
 
+from werkzeug.datastructures import HeaderSet
+
 
 client_id, client_secret = "", ""
 
@@ -279,6 +281,7 @@ class BcfClient:
             f"{self.baseurl}/projects/{project_id}/topics/{topic_id}/snippet",
             headers=headers,
         )
+        # TODO: write to tmpdir
         with open(f"{project_id}_{topic_id}_snippet.txt", "w") as f:
             f.write(response.content.decode("utf-8"))
         return response.status_code, response.content

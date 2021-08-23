@@ -59,6 +59,8 @@ class BIM_PT_style_attributes(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not IfcStore.get_file():
+            return False
         try:
             return bool(context.active_object.active_material.BIMMaterialProperties.ifc_style_id)
         except:

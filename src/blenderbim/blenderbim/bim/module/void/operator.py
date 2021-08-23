@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -19,6 +18,7 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.util.representation
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.void.data import Data
 from ifcopenshell.api.context.data import Data as ContextData
@@ -35,21 +35,16 @@ class AddOpening(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        obj = context.scene.objects.get(self.obj, context.active_object)
         opening = bpy.data.objects.get(self.opening)
+        if opening is None:
+            return {"FINISHED"}
         opening.display_type = "WIRE"
         if not opening.BIMObjectProperties.ifc_definition_id:
-            body_context_id = None
-            if not ContextData.is_loaded:
-                ContextData.load(IfcStore.get_file())
-            for context in ContextData.contexts.values():
-                for subcontext_id, subcontext in context["HasSubContexts"].items():
-                    if subcontext["ContextType"] == "Model" and subcontext["ContextIdentifier"] == "Body":
-                        body_context_id = subcontext_id
-                        break
-            if not body_context_id:
+            body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
+            if not body_context:
                 return {"FINISHED"}
-            bpy.ops.bim.assign_class(obj=opening.name, ifc_class="IfcOpeningElement", context_id=body_context_id)
+            bpy.ops.bim.assign_class(obj=opening.name, ifc_class="IfcOpeningElement", context_id=body_context.id())
 
         self.file = IfcStore.get_file()
         element_id = obj.BIMObjectProperties.ifc_definition_id
@@ -118,8 +113,10 @@ class AddFilling(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        opening = bpy.data.objects.get(self.opening) if self.opening else context.scene.VoidProperties.desired_opening
+        obj = context.scene.objects.get(self.obj, context.active_object)
+        opening = context.scene.objects.get(self.opening, context.scene.VoidProperties.desired_opening)
+        if opening is None:
+            return {"FINISHED"}
         self.file = IfcStore.get_file()
         element_id = obj.BIMObjectProperties.ifc_definition_id
         ifcopenshell.api.run(
@@ -199,15 +196,18 @@ class ToggleDecompositionParenting(bpy.types.Operator):
     def load_decompositions(self, parent_obj):
         element = self.file.by_id(parent_obj.BIMObjectProperties.ifc_definition_id)
         for rel in self.file.get_inverse(element):
-            if not (rel.is_a("IfcRelDecomposes") or rel.is_a("IfcRelFillsElement")):
-                continue
-            if rel[4] != element:
-                continue
-            if isinstance(rel[5], tuple):
-                for related_object in rel[5]:
-                    self.add_decomposition(parent_obj, related_object)
-            else:
-                self.add_decomposition(parent_obj, rel[5])
+            if rel.is_a("IfcRelDecomposes"):
+                if rel[4] != element:
+                    continue
+                if isinstance(rel[5], tuple):
+                    for related_object in rel[5]:
+                        self.add_decomposition(parent_obj, related_object)
+                else:
+                    self.add_decomposition(parent_obj, rel[5])
+            elif rel.is_a("IfcRelFillsElement"):
+                if rel.RelatingOpeningElement != element:
+                    continue
+                self.add_decomposition(parent_obj, rel.RelatedBuildingElement)
 
     def add_decomposition(self, parent_obj, child_element):
         child_obj = IfcStore.get_element(child_element.id())

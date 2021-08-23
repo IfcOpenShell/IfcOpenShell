@@ -60,10 +60,25 @@ class IfcStore:
             IfcStore.path = bpy.context.scene.BIMProperties.ifc_file
             if IfcStore.path:
                 try:
-                    IfcStore.file = ifcopenshell.open(IfcStore.path)
+                    IfcStore.load_file(IfcStore.path)
                 except:
-                    IfcStore.file
+                    pass
         return IfcStore.file
+
+    @staticmethod
+    def load_file(path):
+        extension = path.split(".")[-1]
+        if extension.lower() == "ifczip":
+            with tempfile.TemporaryDirectory() as unzipped_path:
+                with zipfile.ZipFile(path, "r") as zip_ref:
+                    zip_ref.extractall(unzipped_path)
+                for filename in Path(unzipped_path).glob("**/*.ifc"):
+                    IfcStore.file = ifcopenshell.open(filename)
+                    return
+        elif extension.lower() == "ifcxml":
+            IfcStore.file = ifcopenshell.file(ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(path))
+        elif extension.lower() == "ifc":
+            IfcStore.file = ifcopenshell.open(path)
 
     @staticmethod
     def get_schema():

@@ -63,7 +63,7 @@ class Usecase:
     def get_styled_representation(self, definition_representation):
         representations = [
             r
-            for r in definition_representation.Representations is r.is_a("IfcStyledRepresentation")
+            for r in definition_representation.Representations if r.is_a("IfcStyledRepresentation")
             and r.ContextOfItems == self.settings["context"]
         ]
         if representations:

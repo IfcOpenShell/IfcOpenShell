@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.type.data import Data
@@ -67,12 +68,12 @@ class BIM_PT_type(Panel):
             row = self.layout.row(align=True)
 
             row.prop(props, "relating_type_class", text="")
-            if props.relating_type:
+            if type_prop.getRelatingTypes(None, context):
                 row.prop(props, "relating_type", text="")
                 row.operator("bim.assign_type", icon="CHECKMARK", text="")
             else:
-                row.prop(props, "blank_relating_type", text="")
-            row.operator("bim.disable_editing_type", icon="X", text="")
+                row.label(text="No Types Found")
+            row.operator("bim.disable_editing_type", icon="CANCEL", text="")
         else:
             row = self.layout.row(align=True)
             name = "{}/{}".format(
