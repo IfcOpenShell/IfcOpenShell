@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import logging
 import ifcopenshell
@@ -146,7 +165,7 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
 
     def execute(self, context):
         [o.select_set(True) for o in context.view_layer.objects
-            if o.type == 'MESH'
+            if o.type == "MESH"
             and len(o.data.polygons) > context.scene.BIMDebugProperties.number_of_polygons]
         return {"FINISHED"}
 
@@ -178,18 +197,16 @@ class InspectFromStepId(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        context.scene.BIMDebugProperties.active_step_id = self.step_id
+        debug_props = context.scene.BIMDebugProperties
+        debug_props.active_step_id = self.step_id
         crumb = context.scene.BIMDebugProperties.step_id_breadcrumb.add()
         crumb.name = str(self.step_id)
         element = self.file.by_id(self.step_id)
-        while len(context.scene.BIMDebugProperties.attributes) > 0:
-            context.scene.BIMDebugProperties.attributes.remove(0)
-        while len(context.scene.BIMDebugProperties.inverse_attributes) > 0:
-            context.scene.BIMDebugProperties.inverse_attributes.remove(0)
-        while len(context.scene.BIMDebugProperties.inverse_references) > 0:
-            context.scene.BIMDebugProperties.inverse_references.remove(0)
+        debug_props.attributes.clear()
+        debug_props.inverse_attributes.clear()
+        debug_props.inverse_references.clear()
         for key, value in element.get_info().items():
-            self.add_attribute(context.scene.BIMDebugProperties.attributes, key, value)
+            self.add_attribute(debug_props.attributes, key, value)
         for key in dir(element):
             if (
                 not key[0].isalpha()
@@ -198,9 +215,9 @@ class InspectFromStepId(bpy.types.Operator):
                 or not getattr(element, key)
             ):
                 continue
-            self.add_attribute(context.scene.BIMDebugProperties.inverse_attributes, key, getattr(element, key))
+            self.add_attribute(debug_props.inverse_attributes, key, getattr(element, key))
         for inverse in self.file.get_inverse(element):
-            new = context.scene.BIMDebugProperties.inverse_references.add()
+            new = debug_props.inverse_references.add()
             new.string_value = str(inverse)
             new.int_value = inverse.id()
         return {"FINISHED"}

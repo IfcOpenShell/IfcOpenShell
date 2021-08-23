@@ -1,4 +1,24 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
+import json
 import ifcopenshell.api
 import ifcopenshell.util.unit
 import blenderbim.bim.helper
@@ -78,8 +98,7 @@ class LoadUnits(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMUnitProperties
-        while len(props.units) > 0:
-            props.units.remove(0)
+        props.units.clear()
 
         for ifc_definition_id, unit in Data.units.items():
             name = unit.get("Name", "")
@@ -174,7 +193,7 @@ class AddSIUnit(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMUnitProperties
         self.file = IfcStore.get_file()
-        unit = ifcopenshell.api.run(
+        ifcopenshell.api.run(
             "unit.add_si_unit",
             self.file,
             unit_type=props.named_unit_types,
@@ -185,6 +204,26 @@ class AddSIUnit(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddContextDependentUnit(bpy.types.Operator):
+    bl_idname = "bim.add_context_dependent_unit"
+    bl_label = "Add Context Dependent Unit"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        props = context.scene.BIMUnitProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "unit.add_context_dependent_unit", self.file, unit_type=props.named_unit_types, name="THINGAMAJIG"
+        )
+        Data.load(self.file)
+        bpy.ops.bim.load_units()
+        return {"FINISHED"}
+
+
+
 class EnableEditingUnit(bpy.types.Operator):
     bl_idname = "bim.enable_editing_unit"
     bl_label = "Enable Editing Unit"
@@ -193,14 +232,25 @@ class EnableEditingUnit(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMUnitProperties
-        while len(props.unit_attributes) > 0:
-            props.unit_attributes.remove(0)
-
+        props.unit_attributes.clear()
         data = Data.units[self.unit]
-
-        blenderbim.bim.helper.import_attributes(data["type"], props.unit_attributes, data)
+        blenderbim.bim.helper.import_attributes(
+            data["type"],
+            props.unit_attributes, 
+            data, 
+            lambda name, prop, data: self.import_attributes(name, prop, data, context))
         props.active_unit_id = self.unit
         return {"FINISHED"}
+
+    def import_attributes(self, name, prop, data, context):
+        if name == "Dimensions":
+            new = context.scene.BIMUnitProperties.unit_attributes.add()
+            new.name = name
+            new.is_null = data[name] is None
+            new.is_optional = False
+            new.data_type = "string"
+            new.string_value = json.dumps([e for e in IfcStore.get_file().by_id(data["id"]).Dimensions])
+            return True
 
 
 class DisableEditingUnit(bpy.types.Operator):
@@ -223,7 +273,7 @@ class EditUnit(bpy.types.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMUnitProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.unit_attributes)
+        attributes = blenderbim.bim.helper.export_attributes(props.unit_attributes, self.export_attributes)
         self.file = IfcStore.get_file()
         unit = self.file.by_id(props.active_unit_id)
         if unit.is_a("IfcMonetaryUnit"):
@@ -235,3 +285,11 @@ class EditUnit(bpy.types.Operator):
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_units()
         return {"FINISHED"}
+
+    def export_attributes(self, attributes, prop):
+        if prop.name == "Dimensions":
+            try:
+                attributes[prop.name] = json.loads(prop.get_value())
+            except:
+                attributes[prop.name] = (0, 0, 0, 0, 0, 0, 0)
+            return True

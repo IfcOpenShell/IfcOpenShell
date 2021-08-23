@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import bpy
 import json
@@ -126,42 +145,74 @@ class StrProperty(PropertyGroup):
     pass
 
 
-def updateAttributeStringValue(self, context):
-    updateAttributeValue(self, self.string_value)
-
-
-def updateAttributeBoolValue(self, context):
-    updateAttributeValue(self, self.bool_value)
-
-
-def updateAttributeIntValue(self, context):
-    updateAttributeValue(self, self.int_value)
-
-
-def updateAttributeFloatValue(self, context):
-    updateAttributeValue(self, self.float_value)
-
-
-def updateAttributeEnumValue(self, context):
-    updateAttributeValue(self, self.enum_value)
-
-
-def updateAttributeValue(self, value):
-    if value:
-        self.is_null = False
+def updateAttributeValue(self, context):
+    value_name = self.get_value_name()
+    if value_name:
+        value_names = [value_name]
+    else:
+        # We may not have a value name in <select> data types, so let's check everything
+        value_names = ["string_value", "bool_value", "int_value", "float_value", "enum_value"]
+    for name in value_names:
+        if name == "enum_value" and not self.enum_items:
+            continue
+        if getattr(self, name, None):
+            self.is_null = False
 
 
 class Attribute(PropertyGroup):
     name: StringProperty(name="Name")
     data_type: StringProperty(name="Data Type")
-    string_value: StringProperty(name="Value", update=updateAttributeStringValue)
-    bool_value: BoolProperty(name="Value", update=updateAttributeBoolValue)
-    int_value: IntProperty(name="Value", update=updateAttributeIntValue)
-    float_value: FloatProperty(name="Value", update=updateAttributeFloatValue)
+    string_value: StringProperty(name="Value", update=updateAttributeValue)
+    bool_value: BoolProperty(name="Value", update=updateAttributeValue)
+    int_value: IntProperty(name="Value", update=updateAttributeValue)
+    float_value: FloatProperty(name="Value", update=updateAttributeValue)
     is_null: BoolProperty(name="Is Null")
     is_optional: BoolProperty(name="Is Optional")
     enum_items: StringProperty(name="Value")
-    enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeEnumValue)
+    enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeValue)
+
+    def get_value(self):
+        if self.is_null:
+            return None
+        return getattr(self, str(self.get_value_name()), None)
+
+    def get_value_default(self):
+        if self.data_type == "string":
+            return ""
+        elif self.data_type == "integer":
+            return 0
+        elif self.data_type == "float":
+            return 0.0
+        elif self.data_type == "boolean":
+            return False
+        elif self.data_type == "enum":
+            return "0"
+
+    def get_value_name(self):
+        if self.data_type == "string":
+            return "string_value"
+        elif self.data_type == "boolean":
+            return "bool_value"
+        elif self.data_type == "integer":
+            return "int_value"
+        elif self.data_type == "float":
+            return "float_value"
+        elif self.data_type == "enum":
+            return "enum_value"
+
+    def set_value(self, value):
+        if isinstance(value, str):
+            self.data_type = "string"
+        elif isinstance(value, float):
+            self.data_type = "float"
+        elif isinstance(value, bool):  # Make sure this is evaluated BEFORE integer
+            self.data_type = "boolean"
+        elif isinstance(value, int):
+            self.data_type = "integer"
+        else:
+            self.data_type = "string"
+            value = str(value)
+        setattr(self, self.get_value_name(), value)
 
 
 class BIMProperties(PropertyGroup):

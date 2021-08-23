@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import bpy
 import time
@@ -45,8 +64,8 @@ class ExportIFC(bpy.types.Operator):
     def _execute(self, context):
         start = time.time()
         logger = logging.getLogger("ExportIFC")
-        path_log = os.path.join(bpy.context.scene.BIMProperties.data_dir, "process.log")
-        if not os.access(bpy.context.scene.BIMProperties.data_dir, os.W_OK):
+        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
+        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
             path_log = os.path.join(tempfile.mkdtemp(), "process.log")
         logging.basicConfig(
             filename=path_log,
@@ -392,11 +411,13 @@ class RemoveSectionPlane(bpy.types.Operator):
     bl_label = "Remove Temporary Section Cutaway"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.active_object and bpy.data.node_groups.get("Section Override")
+
     def execute(self, context):
         name = context.active_object.name
         section_override = bpy.data.node_groups.get("Section Override")
-        if not section_override:
-            return {"FINISHED"}
         for node in section_override.nodes:
             if node.type != "TEX_COORD" or node.object.name != name:
                 continue
@@ -478,8 +499,11 @@ class SetOverrideColour(bpy.types.Operator):
     bl_label = "Set Override Colour"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
     def execute(self, context):
-        result = 0
         for obj in context.selected_objects:
             obj.color = context.scene.BIMProperties.override_colour
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
@@ -491,6 +515,10 @@ class SetViewportShadowFromSun(bpy.types.Operator):
     bl_idname = "bim.set_viewport_shadow_from_sun"
     bl_label = "Set Viewport Shadow from Sun"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object
 
     def execute(self, context):
         # The vector used for the light direction is a bit funny
@@ -534,17 +562,20 @@ class SnapSpacesTogether(bpy.types.Operator):
     bl_label = "Snap Spaces Together"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
     def execute(self, context):
         threshold = 0.5
         processed_polygons = set()
-        for obj in context.selected_objects:
-            if obj.type != "MESH":
-                continue
+        selected_mesh_objects = [o for o in context.selected_objects if o.type == "MESH"]
+        for obj in selected_mesh_objects:
             for polygon in obj.data.polygons:
                 center = obj.matrix_world @ polygon.center
                 distance = None
-                for obj2 in context.selected_objects:
-                    if obj2 == obj or obj.type != "MESH":
+                for obj2 in selected_mesh_objects:
+                    if obj2 == obj:
                         continue
                     result = obj2.ray_cast(obj2.matrix_world.inverted() @ center, polygon.normal, distance=threshold)
                     if not result[0]:

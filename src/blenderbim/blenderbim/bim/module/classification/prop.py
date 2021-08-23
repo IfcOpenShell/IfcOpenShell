@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
 from ifcopenshell.api.classification.data import Data
@@ -37,8 +56,7 @@ def updateClassification(self, context):
 
 def getReferences(self, context, parent_id=None):
     props = context.scene.BIMClassificationProperties
-    while len(props.available_library_references) > 0:
-        props.available_library_references.remove(0)
+    props.available_library_references.clear()
     for reference in Data.library_file.by_id(parent_id).HasReferences:
         new = props.available_library_references.add()
         new.identification = reference.Identification or ""

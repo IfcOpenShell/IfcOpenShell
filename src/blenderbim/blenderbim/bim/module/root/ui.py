@@ -1,4 +1,24 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
+import blenderbim.bim.module.root.prop as root_prop
 from bpy.types import Panel
 from ifcopenshell.api.root.data import Data
 from blenderbim.bim.ifc import IfcStore
@@ -30,7 +50,9 @@ class BIM_PT_class(Panel):
                 row = self.layout.row(align=True)
                 row.operator("bim.reassign_class", icon="CHECKMARK")
                 row.operator("bim.disable_reassign_class", icon="CANCEL", text="")
-                self.draw_class_dropdowns(context)
+                self.draw_class_dropdowns(
+                    context,
+                    root_prop.getIfcPredefinedTypes(context.scene.BIMRootProperties, context))
             else:
                 data = Data.products[props.ifc_definition_id]
                 name = data["type"]
@@ -53,23 +75,24 @@ class BIM_PT_class(Panel):
                 else:
                     row.operator("bim.unassign_class", icon="X", text="").obj = context.active_object.name
         else:
-            self.draw_class_dropdowns(context)
+            ifc_predefined_types = root_prop.getIfcPredefinedTypes(context.scene.BIMRootProperties, context)
+            self.draw_class_dropdowns(context, ifc_predefined_types)
             row = self.layout.row(align=True)
             op = row.operator("bim.assign_class")
             op.ifc_class = context.scene.BIMRootProperties.ifc_class
-            op.predefined_type = context.scene.BIMRootProperties.ifc_predefined_type
+            op.predefined_type = context.scene.BIMRootProperties.ifc_predefined_type if ifc_predefined_types else ""
             op.userdefined_type = context.scene.BIMRootProperties.ifc_userdefined_type
 
-    def draw_class_dropdowns(self, context):
+    def draw_class_dropdowns(self, context, ifc_predefined_types):
         props = context.scene.BIMRootProperties
         row = self.layout.row()
         row.prop(props, "ifc_product")
         row = self.layout.row()
         row.prop(props, "ifc_class")
-        if props.ifc_predefined_type:
+        if ifc_predefined_types:
             row = self.layout.row()
             row.prop(props, "ifc_predefined_type")
-        if props.ifc_predefined_type == "USERDEFINED":
+        if ifc_predefined_types == "USERDEFINED":
             row = self.layout.row()
             row.prop(props, "ifc_userdefined_type")
         row = self.layout.row()

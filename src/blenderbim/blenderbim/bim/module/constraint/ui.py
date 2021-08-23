@@ -1,5 +1,25 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import draw_attributes
 from ifcopenshell.api.constraint.data import Data
 
 
@@ -44,14 +64,7 @@ class BIM_PT_constraints(Panel):
             self.draw_editable_ui(context)
 
     def draw_editable_ui(self, context):
-        for attribute in self.props.constraint_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(self.props.constraint_attributes, self.layout)
 
 
 class BIM_PT_object_constraints(Panel):
@@ -102,7 +115,7 @@ class BIM_PT_object_constraints(Panel):
             row = self.layout.row(align=True)
             icon = "LIGHT" if self.props.is_adding == "IfcObjective" else "FILE_HIDDEN"
             row.label(text="Adding {}".format(self.props.is_adding), icon=icon)
-            row.operator("bim.disable_assigning_constraint", text="", icon="X")
+            row.operator("bim.disable_assigning_constraint", text="", icon="CANCEL")
             self.layout.template_list(
                 "BIM_UL_object_constraints",
                 "",
@@ -125,7 +138,7 @@ class BIM_UL_constraints(UIList):
             if context.scene.BIMConstraintProperties.active_constraint_id == item.ifc_definition_id:
                 if context.scene.BIMConstraintProperties.is_editing == "IfcObjective":
                     row.operator("bim.edit_objective", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_constraint", text="", icon="X")
+                row.operator("bim.disable_editing_constraint", text="", icon="CANCEL")
             elif context.scene.BIMConstraintProperties.active_constraint_id:
                 row.operator("bim.remove_constraint", text="", icon="X").constraint = item.ifc_definition_id
             else:

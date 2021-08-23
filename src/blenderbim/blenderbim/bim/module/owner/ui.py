@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 from bpy.types import Panel
 from ifcopenshell.api.owner.data import Data
@@ -45,7 +64,7 @@ def draw_roles_ui(box, assigned_object_id, roles, context):
             box2 = box.box()
             row = draw_prop_on_new_row(box2, blender_role, "name", align=True, icon="MOD_CLOTH", text="")
             row.operator("bim.edit_role", icon="CHECKMARK", text="")
-            row.operator("bim.disable_editing_role", icon="X", text="")
+            row.operator("bim.disable_editing_role", icon="CANCEL", text="")
             if blender_role.name == "USERDEFINED":
                 draw_prop_on_new_row(box2, blender_role, "user_defined_role")
             draw_prop_on_new_row(box2, blender_role, "description")
@@ -73,7 +92,7 @@ def draw_addresses_ui(box, assigned_object_id, addresses, file, context):
             box2 = box.box()
             row = draw_prop_on_new_row(box2, blender_address, "purpose", align=True, icon="MOD_CLOTH", text="")
             row.operator("bim.edit_address", icon="CHECKMARK", text="")
-            row.operator("bim.disable_editing_address", icon="X", text="")
+            row.operator("bim.disable_editing_address", icon="CANCEL", text="")
             if blender_address.purpose == "USERDEFINED":
                 draw_prop_on_new_row(box2, blender_address, "user_defined_purpose")
             draw_prop_on_new_row(box2, blender_address, "description")
@@ -131,7 +150,7 @@ class BIM_PT_people(Panel):
                 box = self.layout.box()
                 row = draw_prop_on_new_row(box, blender_person, "name", align=True, icon="USER", text="")
                 row.operator("bim.edit_person", icon="CHECKMARK", text="")
-                row.operator("bim.disable_editing_person", icon="X", text="")
+                row.operator("bim.disable_editing_person", icon="CANCEL", text="")
                 draw_prop_on_new_row(box, blender_person, "family_name")                
                 draw_prop_on_new_row(box, blender_person, "given_name")
                 draw_string_collection(box, blender_person, "middle_names")
@@ -185,7 +204,7 @@ class BIM_PT_organisations(Panel):
                 row = box.row(align=True)
                 row.prop(blender_organisation, "name", icon="USER", text="")
                 row.operator("bim.edit_organisation", icon="CHECKMARK", text="")
-                row.operator("bim.disable_editing_organisation", icon="X", text="")                
+                row.operator("bim.disable_editing_organisation", icon="CANCEL", text="")                
                 draw_prop_on_new_row(box, blender_organisation, "identification")           
                 draw_prop_on_new_row(box, blender_organisation, "description")
 

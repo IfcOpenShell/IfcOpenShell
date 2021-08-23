@@ -1,0 +1,12 @@
+{
+    "title": "coloring",
+    "type": "object",
+    "properties": {
+        "color": {
+            "type": "string"
+        },
+        "components": {
+            "$ref": "component_list.json"
+        }
+    }
+}

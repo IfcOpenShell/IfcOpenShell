@@ -22,7 +22,7 @@
       "geometry": [
         {
           "type": "MultiLineString",
-          "lod": 1,
+          "lod": 2.3,
           "boundaries": [
             [
               2,
@@ -84,7 +84,7 @@
       "geometry": [
         {
           "type": "CompositeSurface",
-          "lod": 1,
+          "lod": 1.2,
           "boundaries": [
             [
               [

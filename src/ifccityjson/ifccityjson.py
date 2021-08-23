@@ -16,7 +16,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with ifccityjson.  If not, see <http://www.gnu.org/licenses/>.
-
 import argparse
 from cjio import cityjson
 from cityjson2ifc import Cityjson2ifc
@@ -30,6 +29,11 @@ if __name__ == '__main__':
     parser.add_argument("-i", "--input", type=str, help="input CityJSON file", required=True)
     parser.add_argument("-o", "--output", type=str, help="output IFC file. Standard is output.ifc")
     parser.add_argument("-n", "--name", type=str, help="Attribute containing the name")
+    parser.add_argument('--split-lod', dest='split', action='store_true',
+                        help="Split the file in multiple LoDs")
+    parser.add_argument('--no-split-lod', dest='split', action='store_false',
+                        help="Do not split the file in multiple LoDs")
+    parser.set_defaults(split=True)
     args = parser.parse_args()
 
     city_model = cityjson.load(args.input)
@@ -38,6 +42,7 @@ if __name__ == '__main__':
         data["name_attribute"] = args.name
     if args.output:
         data["file_destination"] = args.output
+    data["split"] = args.split
 
     converter = Cityjson2ifc()
     converter.configuration(**data)

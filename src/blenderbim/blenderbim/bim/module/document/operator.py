@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import json
 import ifcopenshell.api
@@ -14,8 +33,7 @@ class LoadInformation(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMDocumentProperties
-        while len(props.documents) > 0:
-            props.documents.remove(0)
+        props.documents.clear()
         for information_id, information in Data.information.items():
             new = props.documents.add()
             new.name = information["Name"] or "Unnamed"
@@ -37,8 +55,7 @@ class LoadDocumentReferences(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMDocumentProperties
-        while len(props.documents) > 0:
-            props.documents.remove(0)
+        props.documents.clear()
         for reference_id, reference in Data.references.items():
             new = props.documents.add()
             new.name = reference["Name"] or "Unnamed"
@@ -71,8 +88,7 @@ class EnableEditingDocument(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMDocumentProperties
-        while len(props.document_attributes) > 0:
-            props.document_attributes.remove(0)
+        props.document_attributes.clear()
 
         if props.is_editing == "information":
             data = Data.information[self.document]

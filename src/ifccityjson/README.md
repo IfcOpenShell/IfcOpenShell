@@ -35,4 +35,4 @@ The example file that could be used is example/3D_BAG_example.json
 - [x] Do not use template IFC for new IFC file, but make IFC file from scratch
 - [x] Create mapping to IFC for all CityJSON object types & semantic surfaces
 - [ ] Implement conversion of all CitYJSON geometries
-- [ ] Implement conversion of all LODs instead of only the most detailed
+- [x] Implement conversion of all LODs instead of only the most detailed

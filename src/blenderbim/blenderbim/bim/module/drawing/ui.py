@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import bpy
 from bpy.types import Panel
@@ -151,9 +170,9 @@ class BIM_PT_drawings(Panel):
         if props.drawings:
             if props.active_drawing_index < len(props.drawings):
                 op = row.operator("bim.open_view", icon="URL", text="")
-                op.view = props.drawings[props.active_drawing_index].name
+                op.view = props.active_drawing.name
                 row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
-            layout.template_list("BIM_UL_generic", "", props, "drawings", props, "active_drawing_index")
+            layout.template_list("BIM_UL_drawinglist", "", props, "drawings", props, "active_drawing_index")
 
         row = layout.row()
         row.operator("bim.add_ifc_file")
@@ -187,7 +206,7 @@ class BIM_PT_schedules(Panel):
             layout.template_list("BIM_UL_generic", "", props, "schedules", props, "active_schedule_index")
 
             row = layout.row()
-            row.prop(props.schedules[props.active_schedule_index], "file")
+            row.prop(props.active_schedule, "file")
             row.operator("bim.select_schedule_file", icon="FILE_FOLDER", text="")
 
 
@@ -324,7 +343,7 @@ class BIM_PT_annotation_utilities(Panel):
         if props.drawings:
             if props.active_drawing_index < len(props.drawings):
                 op = row.operator("bim.open_view", icon="URL", text="")
-                op.view = props.drawings[props.active_drawing_index].name
+                op.view = props.active_drawing.name
                 row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
             layout.template_list("BIM_UL_drawinglist", "", props, "drawings", props, "active_drawing_index")
 

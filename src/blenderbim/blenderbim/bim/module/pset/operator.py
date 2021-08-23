@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import json
 import ifcopenshell.api
@@ -24,6 +43,8 @@ def get_pset_props(context, obj, obj_type):
         return context.scene.ResourcePsetProperties
     elif obj_type == "Profile":
         return context.scene.ProfilePsetProperties
+    elif obj_type == "WorkSchedule":
+        return context.scene.WorkSchedulePsetProperties
 
 
 def get_pset_obj_ifc_definition_id(context, obj, obj_type):
@@ -45,7 +66,8 @@ def get_pset_obj_ifc_definition_id(context, obj, obj_type):
         return context.scene.BIMProfileProperties.profiles[
             context.scene.BIMProfileProperties.active_profile_index
         ].ifc_definition_id
-
+    elif obj_type == "WorkSchedule":
+        return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
 
 
 class TogglePsetExpansion(bpy.types.Operator):
@@ -71,8 +93,7 @@ class EnablePsetEditing(bpy.types.Operator):
     def execute(self, context):
         self.props = get_pset_props(context, self.obj, self.obj_type)
 
-        while len(self.props.properties) > 0:
-            self.props.properties.remove(0)
+        self.props.properties.clear()
 
         data = Data.psets if self.pset_id in Data.psets else Data.qtos
         pset_data = data[self.pset_id]
@@ -100,8 +121,9 @@ class EnablePsetEditing(bpy.types.Operator):
                         IfcStore.get_schema().declaration_by_name(prop_template.PrimaryMeasureType or "IfcLabel")
                     )
                 except:
-                    # TODO: Occurs if the data type is something that exists in IFC4 and not in IFC2X3. To fully fix
-                    # this we need to generate the IFC2X3 pset template definitions.
+                    # TODO: Occurs if the data type is something that exists in
+                    # IFC4 and not in IFC2X3. To fully fix this we need to
+                    # generate the IFC2X3 pset template definitions.
                     continue
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
                 data_type = "enum"
@@ -116,6 +138,7 @@ class EnablePsetEditing(bpy.types.Operator):
             new = self.props.properties.add()
             new.name = prop_template.Name
             new.is_null = data.get(prop_template.Name, None) is None
+            new.is_optional = True
             new.data_type = data_type
 
             if data_type == "string":
@@ -136,31 +159,12 @@ class EnablePsetEditing(bpy.types.Operator):
             prop = Data.properties[prop_id]
 
             value = prop["NominalValue"]
-            if isinstance(value, str):
-                data_type = "string"
-            elif isinstance(value, float):
-                data_type = "float"
-            elif isinstance(value, bool):
-                data_type = "boolean"
-            elif isinstance(value, int):
-                data_type = "integer"
-            else:
-                data_type = "string"
-                value = str(value)
-
             new = self.props.properties.add()
+            new.set_value(value)
             new.name = prop["Name"]
-            new.is_null = prop["NominalValue"] is None
-            new.data_type = data_type
-
-            if data_type == "string":
-                new.string_value = "" if new.is_null else value
-            elif data_type == "integer":
-                new.int_value = 0 if new.is_null else value
-            elif data_type == "float":
-                new.float_value = 0.0 if new.is_null else value
-            elif data_type == "boolean":
-                new.bool_value = False if new.is_null else value
+            new.is_null = value is None
+            new.is_optional = True
+            new.set_value(new.get_value_default() if new.is_null else value)
 
 
 class DisablePsetEditing(bpy.types.Operator):
@@ -200,18 +204,7 @@ class EditPset(bpy.types.Operator):
         else:
             data = Data.psets if pset_id in Data.psets else Data.qtos
             for prop in props.properties:
-                if prop.is_null:
-                    properties[prop.name] = None
-                elif prop.data_type == "string":
-                    properties[prop.name] = prop.string_value
-                elif prop.data_type == "boolean":
-                    properties[prop.name] = prop.bool_value
-                elif prop.data_type == "integer":
-                    properties[prop.name] = prop.int_value
-                elif prop.data_type == "float":
-                    properties[prop.name] = prop.float_value
-                elif prop.data_type == "enum":
-                    properties[prop.name] = prop.enum_value
+                properties[prop.name] = prop.get_value()
 
         if pset_id in Data.psets:
             ifcopenshell.api.run(

@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import math
 import bmesh
@@ -55,12 +74,14 @@ class JoinWall(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     join_type: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
     def execute(self, context):
-        selected_objs = context.selected_objects
+        selected_objs = [o for o in context.selected_objects if o.BIMObjectProperties.ifc_definition_id]
         for obj in selected_objs:
             bpy.ops.bim.dynamically_void_product(obj=obj.name)
-        if len(selected_objs) == 0:
-            return {"FINISHED"}
         if not self.join_type:
             for obj in selected_objs:
                 DumbWallJoiner(obj, obj).unjoin()
@@ -95,11 +116,14 @@ class AlignWall(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     align_type: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        selected_valid_objects = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
+        return context.active_object and len(selected_valid_objects) > 1
+
     def execute(self, context):
-        selected_objs = context.selected_objects
-        if len(selected_objs) < 2 or not context.active_object:
-            return {"FINISHED"}
-        for obj in selected_objs:
+        selected_objects = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
+        for obj in selected_objects:
             if obj == context.active_object:
                 continue
             aligner = DumbWallAligner(obj, context.active_object)
@@ -118,10 +142,12 @@ class FlipWall(bpy.types.Operator):
     bl_label = "Flip Wall"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
     def execute(self, context):
-        selected_objs = context.selected_objects
-        if len(selected_objs) == 0:
-            return {"FINISHED"}
+        selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
         for obj in selected_objs:
             DumbWallFlipper(obj).flip()
             IfcStore.edited_objs.add(obj)
@@ -133,12 +159,14 @@ class SplitWall(bpy.types.Operator):
     bl_label = "Split Wall"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
     def execute(self, context):
-        selected_objs = context.selected_objects
-        if len(selected_objs) == 0:
-            return {"FINISHED"}
+        selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
         for obj in selected_objs:
-            DumbWallSplitter(obj, bpy.context.scene.cursor.location).split()
+            DumbWallSplitter(obj, context.scene.cursor.location).split()
             IfcStore.edited_objs.add(obj)
         return {"FINISHED"}
 
@@ -938,11 +966,11 @@ class DumbWallPlaner:
             for edge in vert.link_edges:
                 other_vert = edge.verts[1] if edge.verts[0] == vert else edge.verts[0]
                 if delta_thickness > 0:
-                    potential_slide_vector = vert.co - other_vert.co
+                    potential_slide_vector = (vert.co - other_vert.co).normalized()
                     if potential_slide_vector.y < 0:
                         continue
                 else:
-                    potential_slide_vector = other_vert.co - vert.co
+                    potential_slide_vector = (other_vert.co - vert.co).normalized()
                     if potential_slide_vector.y > 0:
                         continue
                 if abs(potential_slide_vector.x) > 0.9 or abs(potential_slide_vector.z) > 0.9:

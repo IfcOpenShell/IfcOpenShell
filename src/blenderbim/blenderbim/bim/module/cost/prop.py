@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
@@ -24,6 +42,7 @@ processquantitynames_enum = []
 processquantitynames_id = 0
 resourcequantitynames_enum = []
 resourcequantitynames_id = 0
+scheduleofrates_enum = []
 
 
 def purge():
@@ -34,6 +53,7 @@ def purge():
     global processquantitynames_id
     global resourcequantitynames_enum
     global resourcequantitynames_id
+    global scheduleofrates_enum
     quantitytypes_enum = []
     productquantitynames_enum = []
     productquantitynames_count = []
@@ -41,12 +61,27 @@ def purge():
     processquantitynames_id = 0
     resourcequantitynames_enum = []
     resourcequantitynames_id = 0
+    scheduleofrates_enum = []
+
+
+def get_schedule_of_rates(self, context):
+    global scheduleofrates_enum
+    if len(scheduleofrates_enum) == 0:
+        scheduleofrates_enum.extend(
+            (str(ifc_definition_id), schedule["Name"] or "Unnamed", "")
+            for ifc_definition_id, schedule in Data.cost_schedules.items()
+            if schedule["PredefinedType"] == "SCHEDULEOFRATES"
+        )
+    return scheduleofrates_enum
+
+
+def update_schedule_of_rates(self, context):
+    bpy.ops.bim.load_schedule_of_rates(cost_schedule=int(self.schedule_of_rates))
 
 
 def getQuantityTypes(self, context):
     global quantitytypes_enum
     if len(quantitytypes_enum) == 0 and IfcStore.get_schema():
-        quantitytypes_enum = []
         quantitytypes_enum.extend(
             [
                 (t.name(), t.name(), "")
@@ -125,7 +160,10 @@ def getResourceQuantityNames(self, context):
 
 
 def update_cost_item_index(self, context):
-    bpy.ops.bim.load_cost_item_quantities()
+    if Data.cost_schedules[self.active_cost_schedule_id]["PredefinedType"] == "SCHEDULEOFRATES":
+        bpy.ops.bim.load_cost_item_types()
+    else:
+        bpy.ops.bim.load_cost_item_quantities()
 
 
 def updateCostItemIdentification(self, context):
@@ -175,6 +213,11 @@ class CostItemQuantity(PropertyGroup):
     total_quantity: FloatProperty(name="Total Quantity")
 
 
+class CostItemType(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
 class BIMCostProperties(PropertyGroup):
     is_cost_update_enabled: BoolProperty(name="Is Cost Update Enabled", default=True)
     cost_schedule_attributes: CollectionProperty(name="Cost Schedule Attributes", type=Attribute)
@@ -213,3 +256,11 @@ class BIMCostProperties(PropertyGroup):
     active_cost_item_process_index: IntProperty(name="Active Cost Item Process Index")
     cost_item_resources: CollectionProperty(name="Cost Item Resources", type=CostItemQuantity)
     active_cost_item_resource_index: IntProperty(name="Active Cost Item Resource Index")
+    cost_item_type_products: CollectionProperty(name="Cost Item Type Products", type=CostItemType)
+    active_cost_item_type_product_index: IntProperty(name="Active Cost Item Type Product Index")
+    schedule_of_rates: EnumProperty(
+        items=get_schedule_of_rates, name="Schedule Of Rates", update=update_schedule_of_rates
+    )
+    cost_item_rates: CollectionProperty(name="Cost Item Rates", type=CostItem)
+    active_cost_item_rate_index: IntProperty(name="Active Cost Rate Index")
+    contracted_cost_item_rates: StringProperty(name="Contracted Cost Item Rates", default="[]")
