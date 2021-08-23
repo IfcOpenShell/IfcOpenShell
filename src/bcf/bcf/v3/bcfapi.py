@@ -281,6 +281,9 @@ class BcfClient:
             f"{self.baseurl}/projects/{project_id}/topics/{topic_id}/snippet",
             headers=headers,
         )
+        # TODO: write to tmpdir
+        with open(f"{project_id}_{topic_id}_snippet.txt", "w") as f:
+            f.write(response.content.decode("utf-8"))
         return response.status_code, response.content
 
     def update_snippet(self, project_id="", topic_id="", files=None, data=None):
@@ -533,14 +536,17 @@ class BcfClient:
         return response.status_code
 
     def get_document(self, project_id="", topic_id="", document_id="") -> str:
-        return self.get(
-            f"/projects/{project_id}/topics/{topic_id}/documents/{document_id}",
-            {
-                "project_id": project_id,
-                "topic_id": topic_id,
-                "document_id": document_id,
-            },
+        headers = {
+            "Authorization": "Bearer " + self.foundation_client.get_access_token(),
+            "Content-type": "application/octet-stream",
+        }
+        response = requests.get(
+            f"{self.baseurl}/projects/{project_id}/topics/documents/{document_id}",
+            headers=headers,
         )
+        with open(f"{project_id}_{topic_id}_{document_id}_document.txt", "w") as f:
+            f.write(response.content.decode("utf-8"))
+        return response.status_code, response.content
 
     def get_topics_events(self, project_id="") -> list:
         return self.get(
