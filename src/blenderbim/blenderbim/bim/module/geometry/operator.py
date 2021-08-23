@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import numpy as np
 import ifcopenshell
@@ -228,6 +247,8 @@ class SwitchRepresentation(bpy.types.Operator):
                 modifier = self.element_obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
                 modifier.operation = "DIFFERENCE"
                 modifier.object = opening
+                modifier.solver = "EXACT"
+                modifier.use_self = True
         else:
             for modifier in self.element_obj.modifiers:
                 if modifier.type == "BOOLEAN" and "IfcOpeningElement" in modifier.name:

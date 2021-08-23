@@ -7,4 +7,12 @@ class Usecase:
 
     def execute(self):
         for name, value in self.settings["attributes"].items():
+            if name == "Dimensions":
+                dimensions = self.settings["unit"].Dimensions
+                if len(self.file.get_inverse(dimensions)) > 1:
+                    self.settings["unit"].Dimensions = self.file.createIfcDimensionalExponents(*value)
+                else:
+                    for i, exponent in enumerate(value):
+                        dimensions[i] = exponent
+                continue
             setattr(self.settings["unit"], name, value)

@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
@@ -24,7 +43,7 @@ class BIM_PT_units(Panel):
         self.props = context.scene.BIMUnitProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Units Found".format(len(Data.unit_assignment)), icon="SNAP_GRID")
+        row.label(text="{} Units Found".format(len(Data.units)), icon="SNAP_GRID")
         if self.props.is_editing:
             row.operator("bim.disable_unit_editing_ui", text="", icon="CANCEL")
         else:
@@ -43,8 +62,9 @@ class BIM_PT_units(Panel):
         elif self.props.unit_classes == "IfcSIUnit":
             row.prop(self.props, "named_unit_types", text="")
             row.operator("bim.add_si_unit", text="", icon="ADD")
-        else:
+        elif self.props.unit_classes == "IfcContextDependentUnit":
             row.prop(self.props, "named_unit_types", text="")
+            row.operator("bim.add_context_dependent_unit", text="", icon="ADD")
 
         self.layout.template_list(
             "BIM_UL_units",

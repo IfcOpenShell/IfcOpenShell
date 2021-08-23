@@ -1,8 +1,28 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import blenderbim.bim.helper
 from bpy.types import Panel
 from ifcopenshell.api.material.data import Data
 from ifcopenshell.api.profile.data import Data as ProfileData
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import draw_attributes
 
 
 class BIM_PT_material(Panel):
@@ -181,17 +201,7 @@ class BIM_PT_object_material(Panel):
         op.material_set_item = set_item_id
         row.operator("bim.disable_editing_material_set_item", icon="CANCEL", text="")
 
-        for attribute in self.props.material_set_item_attributes:
-            row = box.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "float":
-                row.prop(attribute, "float_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(self.props.material_set_item_attributes, self.layout)
 
         if self.set_item_name == "profile":
             self.draw_assign_profile_ui(box, item)
@@ -213,20 +223,7 @@ class BIM_PT_object_material(Panel):
             row.operator("bim.disable_editing_material_set_item", icon="CANCEL", text="")
 
     def draw_editable_profile_ui(self, layout, item):
-        for attribute in self.props.material_set_item_profile_attributes:
-            row = layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "float":
-                row.prop(attribute, "float_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(self.props.material_set_item_profile_attributes, self.layout)
 
     def draw_read_only_set_item_ui(self, set_item_id, index, is_first=False, is_last=False):
         if self.product_data["type"] == "IfcMaterialList":

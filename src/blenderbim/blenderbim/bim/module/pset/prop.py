@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import blenderbim.bim.schema
 from blenderbim.bim.prop import Attribute
@@ -82,6 +101,15 @@ def getProfilePsetNames(self, context):
     return psetnames[ifc_class]
 
 
+def getWorkSchedulePsetNames(self, context):
+    global psetnames
+    ifc_class = "IfcWorkSchedule"
+    if ifc_class not in psetnames:
+        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
+    return psetnames[ifc_class]
+
+
 def getQtoNames(self, context):
     global qtonames
     if "/" in context.active_object.name:
@@ -127,3 +155,10 @@ class ProfilePsetProperties(PropertyGroup):
     active_pset_name: StringProperty(name="Pset Name")
     properties: CollectionProperty(name="Properties", type=Attribute)
     pset_name: EnumProperty(items=getProfilePsetNames, name="Pset Name")
+
+
+class WorkSchedulePsetProperties(PropertyGroup):
+    active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_name: StringProperty(name="Pset Name")
+    properties: CollectionProperty(name="Properties", type=Attribute)
+    pset_name: EnumProperty(items=getWorkSchedulePsetNames, name="Pset Name")

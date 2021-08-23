@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -115,7 +134,7 @@ class RemoveContainer(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        obj = bpy.data.objects.get(self.obj, context.active_object) 
         oprops = obj.BIMObjectProperties
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -133,6 +152,7 @@ class RemoveContainer(bpy.types.Operator):
             for collection in obj.users_collection:
                 collection.objects.unlink(obj)
             context.scene.collection.objects.link(obj)
+        context.view_layer.objects.active = obj
         return {"FINISHED"}
 
     def remove_collection(self, parent, child):
@@ -143,6 +163,11 @@ class RemoveContainer(bpy.types.Operator):
 
 
 class CopyToContainer(bpy.types.Operator):
+    """
+    Copies selected objects to selected containers
+    Check the mark next to a container in the container list to select it
+    Several containers can be selected at a time
+    """
     bl_idname = "bim.copy_to_container"
     bl_label = "Copy To Container"
     bl_options = {"REGISTER", "UNDO"}
@@ -153,7 +178,7 @@ class CopyToContainer(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        objects = list(bpy.data.objects.get(self.obj, context.selected_objects))
         sprops = context.scene.BIMSpatialProperties
         container_ids = [c.ifc_definition_id for c in sprops.spatial_elements if c.is_selected]
         for obj in objects:

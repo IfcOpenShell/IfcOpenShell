@@ -1,0 +1,78 @@
+{
+    "title": "extensions_GET",
+    "type": "object",
+    "properties": {
+        "topic_type": {
+            "required": true,
+            "type": ["array",
+            "null"],
+            "items": {
+                "type": ["string",
+                "null"]
+            }
+        },
+        "topic_status": {
+            "required": true,
+            "type": ["array",
+            "null"],
+            "items": {
+                "type": ["string",
+                "null"]
+            }
+        },
+        "topic_label": {
+            "required": true,
+            "type": ["array",
+            "null"],
+            "items": {
+                "type": ["string",
+                "null"]
+            }
+        },
+        "snippet_type": {
+            "required": true,
+            "type": ["array",
+            "null"],
+            "items": {
+                "type": ["string",
+                "null"]
+            }
+        },
+        "priority": {
+            "required": true,
+            "type": ["array",
+            "null"],
+            "items": {
+                "type": ["string",
+                "null"]
+            }
+        },
+        "users": {
+            "required": true,
+            "type": ["array",
+            "null"],
+            "items": {
+                "type": ["string",
+                "null"]
+            }
+        },
+        "stage": {
+            "required": true,
+            "type": ["array",
+            "null"],
+            "items": {
+                "type": ["string",
+                "null"]
+            }
+        },
+        "project_actions": {
+            "$ref": "../Collaboration/Action/project_actions.json"
+        },
+        "topic_actions": {
+            "$ref": "../Collaboration/Action/topic_actions.json"
+        },
+        "comment_actions": {
+            "$ref": "../Collaboration/Action/comment_actions.json"
+        }
+    }
+}

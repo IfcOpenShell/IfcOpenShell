@@ -284,8 +284,8 @@ SET OCCT_VER=V%OCCT_VERSION:.=_%
 
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
-set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.6.5
-set FREETYPE_ZIP=ft265.zip
+set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.7.1
+set FREETYPE_ZIP=ft271.zip
 cd "%DEPS_DIR%"
 call :DownloadFile http://download.savannah.gnu.org/releases/freetype/%FREETYPE_ZIP% "%DEPS_DIR%" %FREETYPE_ZIP%
 if not %ERRORLEVEL%==0 goto :Error

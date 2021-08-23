@@ -6,3 +6,4 @@ Flask-SQLAlchemy==2.5.1
 Flask-WTF==0.15.1
 Flask-Bcrypt==0.7.1
 bcrypt==3.2.0
+flask-expects-json==1.6.0

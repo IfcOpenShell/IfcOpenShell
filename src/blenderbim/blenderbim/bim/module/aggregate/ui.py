@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 from bpy.types import Panel
 from ifcopenshell.api.aggregate.data import Data
 from blenderbim.bim.ifc import IfcStore
@@ -38,7 +57,7 @@ class BIM_PT_aggregate(Panel):
             row.prop(props, "relating_object", text="")
             if props.relating_object:
                 row.operator("bim.assign_object", icon="CHECKMARK", text="").relating_object = props.relating_object.name
-            row.operator("bim.disable_editing_aggregate", icon="X", text="")
+            row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
         else:
             row = self.layout.row(align=True)
             name = "{}/{}".format(

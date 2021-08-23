@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import json
 import ifcopenshell.api
@@ -18,8 +37,7 @@ class LoadResources(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMResourceProperties
         self.tprops = context.scene.BIMResourceTreeProperties
-        while len(self.tprops.resources) > 0:
-            self.tprops.resources.remove(0)
+        self.tprops.resources.clear()
 
         self.contracted_resources = json.loads(self.props.contracted_resources)
         for resource_id, data in Data.resources.items():
@@ -53,8 +71,7 @@ class EnableEditingResource(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMResourceProperties
         self.props.active_resource_id = self.resource
-        while len(self.props.resource_attributes) > 0:
-            self.props.resource_attributes.remove(0)
+        self.props.resource_attributes.clear()
         self.props.editing_resource_type = "ATTRIBUTES"
         self.enable_editing_resource()
         return {"FINISHED"}
@@ -280,8 +297,7 @@ class EnableEditingResourceTime(bpy.types.Operator):
         props = context.scene.BIMResourceProperties
         self.file = IfcStore.get_file()
         resource_time_id = Data.resources[self.resource]["Usage"] or self.add_resource_time().id()
-        while len(props.resource_time_attributes) > 0:
-            props.resource_time_attributes.remove(0)
+        props.resource_time_attributes.clear()
 
         data = Data.resource_times[resource_time_id]
 

@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import bpy
 import json
@@ -6,6 +25,7 @@ import logging
 import numpy as np
 from mathutils import Matrix
 from math import radians
+from blenderbim.bim.ifc import IfcStore
 
 
 class ExportClashSets(bpy.types.Operator):
@@ -105,7 +125,7 @@ class AddClashSource(bpy.types.Operator):
     group: bpy.props.StringProperty()
 
     def execute(self, context):
-        clash_set = context.scene.BIMClashProperties.clash_sets[context.scene.BIMClashProperties.active_clash_set_index]
+        clash_set = context.scene.BIMClashProperties.active_clash_set
         source = getattr(clash_set, self.group).add()
         return {"FINISHED"}
 
@@ -118,7 +138,7 @@ class RemoveClashSource(bpy.types.Operator):
     group: bpy.props.StringProperty()
 
     def execute(self, context):
-        clash_set = context.scene.BIMClashProperties.clash_sets[context.scene.BIMClashProperties.active_clash_set_index]
+        clash_set = context.scene.BIMClashProperties.active_clash_set
         getattr(clash_set, self.group).remove(self.index)
         return {"FINISHED"}
 
@@ -133,7 +153,7 @@ class SelectClashSource(bpy.types.Operator):
     group: bpy.props.StringProperty()
 
     def execute(self, context):
-        clash_set = context.scene.BIMClashProperties.clash_sets[context.scene.BIMClashProperties.active_clash_set_index]
+        clash_set = context.scene.BIMClashProperties.active_clash_set
         getattr(clash_set, self.group)[self.index].name = self.filepath
         return {"FINISHED"}
 
@@ -257,9 +277,7 @@ class SelectIfcClashResults(bpy.types.Operator):
         self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
         with open(self.filepath) as f:
             clash_sets = json.load(f)
-        clash_set_name = context.scene.BIMClashProperties.clash_sets[
-            context.scene.BIMClashProperties.active_clash_set_index
-        ].name
+        clash_set_name = context.scene.BIMClashProperties.active_clash_set.name
         global_ids = []
         for clash_set in clash_sets:
             if clash_set["name"] != clash_set_name:
@@ -284,6 +302,10 @@ class SmartClashGroup(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
+    @classmethod
+    def poll(cls, context):
+        return context.scene.BIMClashProperties.clash_results_path
+
     def execute(self, context):
         import ifcclash
 
@@ -307,9 +329,7 @@ class SmartClashGroup(bpy.types.Operator):
         with open(save_path, "w") as f:
             f.write(json.dumps(smart_grouped_clashes))
 
-        clash_set_name = context.scene.BIMClashProperties.clash_sets[
-            context.scene.BIMClashProperties.active_clash_set_index
-        ].name
+        clash_set_name = context.scene.BIMClashProperties.active_clash_set.name
 
         # Reset the list of smart_clash_groups for the UI
         context.scene.BIMClashProperties.smart_clash_groups.clear()
@@ -336,12 +356,14 @@ class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
     bl_label = "Load Smart Groups for Active Clash Set"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.scene.BIMClashProperties.active_clash_set
+
     def execute(self, context):
         smart_groups_path = bpy.path.ensure_ext(context.scene.BIMClashProperties.smart_grouped_clashes_path, ".json")
 
-        clash_set_name = context.scene.BIMClashProperties.clash_sets[
-            context.scene.BIMClashProperties.active_clash_set_index
-        ].name
+        clash_set_name = context.scene.BIMClashProperties.active_clash_set.name
 
         with open(smart_groups_path) as f:
             smart_grouped_clashes = json.load(f)
@@ -370,11 +392,14 @@ class SelectSmartGroup(bpy.types.Operator):
     bl_label = "Select Smart Group"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file() and context.visible_objects and context.scene.BIMClashProperties.active_smart_group
+
     def execute(self, context):
+        self.file = IfcStore.get_file()
         # Select smart group in view
-        selected_smart_group = context.scene.BIMClashProperties.smart_clash_groups[
-            context.scene.BIMCLashProperties.active_smart_group_index
-        ]
+        selected_smart_group = context.scene.BIMClashProperties.active_smart_group
         # print(selected_smart_group.number)
 
         for obj in context.visible_objects:
@@ -440,8 +465,7 @@ class SetBlenderClashSetA(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        while len(context.scene.BIMClashProperties.blender_clash_set_a) > 0:
-            context.scene.BIMClashProperties.blender_clash_set_a.remove(0)
+        context.scene.BIMClashProperties.blender_clash_set_a.clear()
         for obj in context.selected_objects:
             new = context.scene.BIMClashProperties.blender_clash_set_a.add()
             new.name = obj.name
@@ -454,8 +478,7 @@ class SetBlenderClashSetB(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        while len(context.scene.BIMClashProperties.blender_clash_set_b) > 0:
-            context.scene.BIMClashProperties.blender_clash_set_b.remove(0)
+        context.scene.BIMClashProperties.blender_clash_set_b.clear()
         for obj in context.selected_objects:
             new = context.scene.BIMClashProperties.blender_clash_set_b.add()
             new.name = obj.name

@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import json
 import ifcopenshell.util.attribute
@@ -14,8 +33,7 @@ class LoadLayers(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMLayerProperties
-        while len(props.layers) > 0:
-            props.layers.remove(0)
+        props.layers.clear()
         for layer_id, layer in Data.layers.items():
             new = props.layers.add()
             new.name = layer["Name"] or "Unnamed"
@@ -43,8 +61,7 @@ class EnableEditingLayer(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMLayerProperties
-        while len(props.layer_attributes) > 0:
-            props.layer_attributes.remove(0)
+        props.layer_attributes.clear()
 
         data = Data.layers[self.layer]
 

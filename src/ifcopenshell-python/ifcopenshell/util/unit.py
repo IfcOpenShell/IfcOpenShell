@@ -119,33 +119,34 @@ si_type_names = {
     "VOLUMEUNIT": "CUBIC_METRE",
 }
 
-# Are you good at physics? Want to help fill these in? :)
+# See IfcDimensionalExponents:
+# (Length, Mass, Time, ElectricCurrent, ThermodynamicTemperature, AmountOfSubstance, LuminousIntensity)
 named_dimensions = {
-    # "ABSORBEDDOSEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    "ABSORBEDDOSEUNIT": (2, 0, -2, 0, 0, 0, 0),
     "AMOUNTOFSUBSTANCEUNIT": (0, 0, 0, 0, 0, 1, 0),
     "AREAUNIT": (2, 0, 0, 0, 0, 0, 0),
-    # "DOSEEQUIVALENTUNIT": (0, 0, 0, 0, 0, 0, 0),
-    # "ELECTRICCAPACITANCEUNIT": (0, 0, 0, 0, 0, 0, 0),
-    # "ELECTRICCHARGEUNIT": (0, 0, 0, 0, 0, 0, 0),
-    # "ELECTRICCONDUCTANCEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    "DOSEEQUIVALENTUNIT": (2, 0, -2, 0, 0, 0, 0),
+    "ELECTRICCAPACITANCEUNIT": (-2, -1, 4, 2, 0, 0, 0),
+    "ELECTRICCHARGEUNIT": (0, 0, 1, 1, 0, 0, 0),
+    "ELECTRICCONDUCTANCEUNIT": (-2, -1, 3, 2, 0, 0, 0),
     "ELECTRICCURRENTUNIT": (0, 0, 0, 1, 0, 0, 0),
-    # "ELECTRICRESISTANCEUNIT": (0, 0, 0, 0, 0, 0, 0),
-    # "ELECTRICVOLTAGEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    "ELECTRICRESISTANCEUNIT": (2, 1, -3, -2, 0, 0, 0),
+    "ELECTRICVOLTAGEUNIT": (2, 1, -3, -1, 0, 0, 0),
     "ENERGYUNIT": (2, 1, -2, 0, 0, 0, 0),
     "FORCEUNIT": (1, 1, -2, 0, 0, 0, 0),
     "FREQUENCYUNIT": (0, 0, -1, 0, 0, 0, 0),
-    # "ILLUMINANCEUNIT": (0, 0, 0, 0, 0, 0, 0),
-    # "INDUCTANCEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    "ILLUMINANCEUNIT": (-2, 0, 0, 0, 0, 1, 1),
+    "INDUCTANCEUNIT": (2, 1, -2, -2, 0, 0, 0),
     "LENGTHUNIT": (1, 0, 0, 0, 0, 0, 0),
-    # "LUMINOUSFLUXUNIT": (0, 0, 0, 0, 0, 0, 0),
+    "LUMINOUSFLUXUNIT": (0, 0, 0, 0, 0, 1, 1),
     "LUMINOUSINTENSITYUNIT": (0, 0, 0, 0, 0, 0, 1),
-    # "MAGNETICFLUXDENSITYUNIT": (0, 0, 0, 0, 0, 0, 0),
-    # "MAGNETICFLUXUNIT": (0, 0, 0, 0, 0, 0, 0),
+    "MAGNETICFLUXDENSITYUNIT": (0, 1, -2, -1, 0, 0, 0),
+    "MAGNETICFLUXUNIT": (2, 1, -2, -1, 0, 0, 0),
     "MASSUNIT": (0, 1, 0, 0, 0, 0, 0),
     "PLANEANGLEUNIT": (0, 0, 0, 0, 0, 0, 0),
     "POWERUNIT": (2, 1, -3, 0, 0, 0, 0),
     "PRESSUREUNIT": (-1, 1, -2, 0, 0, 0, 0),
-    # "RADIOACTIVITYUNIT": (0, 0, 0, 0, 0, 0, 0),
+    "RADIOACTIVITYUNIT": (0, 0, -1, 0, 0, 0, 0),
     "SOLIDANGLEUNIT": (0, 0, 0, 0, 0, 0, 0),
     "THERMODYNAMICTEMPERATUREUNIT": (0, 0, 0, 0, 1, 0, 0),
     "TIMEUNIT": (0, 0, 1, 0, 0, 0, 0),
@@ -246,28 +247,62 @@ def get_named_dimensions(name):
     return named_dimensions.get(name, (0, 0, 0, 0, 0, 0, 0))
 
 
+def get_unit_assignment(ifc_file):
+    unit_assignments = ifc_file.by_type("IfcUnitAssignment")
+    if unit_assignments:
+        return unit_assignments[0]
+
+
 def get_property_unit(prop, ifc_file):
     unit = getattr(prop, "Unit", None)
     if unit:
         return unit
-    unit_assignment = ifc_file.by_type("IfcUnitAssignment")
+    unit_assignment = get_unit_assignment(ifc_file)
     if not unit_assignment:
         return
     entity = prop.wrapped_data.declaration().as_entity()
     if prop.is_a("IfcPhysicalSimpleQuantity"):
-        measure_type = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
+        measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
     elif prop.is_a("IfcPropertySingleValue") and prop.NominalValue:
-        measure_type = prop.NominalValue.is_a()
-    for text in ("Ifc", "Measure", "Non", "Positive", "Negative"):
-        measure_type = measure_type.replace(text, "")
-    measure_type = measure_type.upper() + "UNIT"
-    units = [u for u in unit_assignment[0].Units if getattr(u, "UnitType", None) == measure_type]
+        measure_class = prop.NominalValue.is_a()
+    unit_type = get_measure_unit_type(measure_class)
+    units = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == unit_type]
     if units:
         return units[0]
 
 
-def get_unit_measure_type(unit_type):
+def get_unit_measure_class(unit_type):
+    if unit_type == "USERDEFINED":
+        # See https://github.com/buildingSMART/IFC4.3.x-development/issues/71
+        return "IfcNumericMeasure"
     return "Ifc" + unit_type[0:-4].lower().capitalize() + "Measure"
+
+
+def get_measure_unit_type(measure_class):
+    if measure_class == "IfcNumericMeasure":
+        # See https://github.com/buildingSMART/IFC4.3.x-development/issues/71
+        return "USERDEFINED"
+    for text in ("Ifc", "Measure", "Non", "Positive", "Negative"):
+        measure_class = measure_class.replace(text, "")
+    return measure_class.upper() + "UNIT"
+
+
+def get_symbol_measure_class(symbol):
+    # Dumb, but everybody gets it, unlike regex golf
+    if not symbol:
+        return "IfcNumericMeasure"
+    symbol = symbol.lower()
+    if symbol in ["km", "m", "cm", "mm", "ly", "lf", "lin", "yd", "ft", "in"]:
+        return "IfcLengthMeasure"
+    elif symbol in ["km2", "m2", "cm2", "mm2", "sqy", "sqft", "sqin"]:
+        return "IfcAreaMeasure"
+    elif symbol in ["km3", "m3", "cm3", "mm3", "cy", "cft", "cin"]:
+        return "IfcVolumeMeasure"
+    elif symbol in ["kg", "g", "mt", "kt", "t"]:
+        return "IfcMassMeasure"
+    elif symbol in ["day", "d", "hour", "hr", "h", "minute", "min", "m", "second", "sec", "s"]:
+        return "IfcTimeMeasure"
+    return "IfcNumericMeasure"
 
 
 def get_symbol_quantity_class(symbol):
@@ -275,16 +310,16 @@ def get_symbol_quantity_class(symbol):
     if not symbol:
         return "IfcQuantityCount"
     symbol = symbol.lower()
-    if symbol in ["kg", "g", "mt", "kt", "t"]:
+    if symbol in ["km", "m", "cm", "mm", "ly", "lf", "lin", "yd", "ft", "in"]:
+        return "IfcQuantityLength"
+    elif symbol in ["km2", "m2", "cm2", "mm2", "sqy", "sqft", "sqin"]:
+        return "IfcQuantityArea"
+    elif symbol in ["km3", "m3", "cm3", "mm3", "cy", "cft", "cin"]:
+        return "IfcQuantityVolume"
+    elif symbol in ["kg", "g", "mt", "kt", "t"]:
         return "IfcQuantityWeight"
     elif symbol in ["day", "d", "hour", "hr", "h", "minute", "min", "m", "second", "sec", "s"]:
         return "IfcQuantityTime"
-    elif symbol in ["km3", "m3", "cm3", "mm3", "cy", "cft", "cin"]:
-        return "IfcQuantityVolume"
-    elif symbol in ["km2", "m2", "cm2", "mm2", "sqy", "sqft", "sqin"]:
-        return "IfcQuantityArea"
-    elif symbol in ["km", "m", "cm", "mm", "ly", "lf", "lin", "yd", "ft", "in"]:
-        return "IfcQuantityLength"
     return "IfcQuantityCount"
 
 

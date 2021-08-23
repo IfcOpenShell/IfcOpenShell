@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import ifcopenshell.util.attribute
 import ifcopenshell.api
@@ -12,8 +31,7 @@ class LoadGroups(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMGroupProperties
-        while len(props.groups) > 0:
-            props.groups.remove(0)
+        props.groups.clear()
         for ifc_definition_id, group in Data.groups.items():
             new = props.groups.add()
             new.ifc_definition_id = ifc_definition_id
@@ -100,8 +118,7 @@ class EnableEditingGroup(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMGroupProperties
-        while len(props.group_attributes) > 0:
-            props.group_attributes.remove(0)
+        props.group_attributes.clear()
 
         data = Data.groups[self.group]
 

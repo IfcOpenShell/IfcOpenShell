@@ -1,5 +1,25 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import bpy
+import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.ifc import IfcStore
 
@@ -17,7 +37,7 @@ class BimTool(WorkSpaceTool):
     bl_keymap = (
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
-        ("bim.add_type_instance", {"type": "A", "value": "PRESS", "shift": True}, {"properties": []}),
+        ("bim.hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.join_wall", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("join_type", "L")]}),
         ("bim.join_wall", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": [("join_type", "V")]}),
@@ -33,9 +53,20 @@ class BimTool(WorkSpaceTool):
 
     def draw_settings(context, layout, tool):
         row = layout.row(align=True)
+        if not IfcStore.get_file():
+            row.label(text="No IFC Project", icon="ERROR")
+            return
         props = context.scene.BIMTypeProperties
-        row.prop(props, "ifc_class", text="")
-        row.prop(props, "relating_type", text="")
+        ifc_classes_is_empty = not bool(type_prop.getIfcTypes(props, context))
+        if ifc_classes_is_empty:
+            row.label(text="No IFC Class")
+        else:
+            row.prop(props, "ifc_class", text="")
+        if type_prop.getAvailableTypes(props, context):
+            row.prop(props, "relating_type", text="")
+        else:
+            row.label(text="No Relating Type")
+
 
         row.label(text="", icon="BLANK1")
 
@@ -43,34 +74,35 @@ class BimTool(WorkSpaceTool):
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="Add Type Instance", icon="EVENT_A")
 
-        if props.ifc_class == "IfcWallType":
-            row = layout.row()
-            row.label(text="Join")
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="Extend", icon="EVENT_E")
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="Butt", icon="EVENT_T")
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="Mitre", icon="EVENT_Y")
+        if not ifc_classes_is_empty:
+            if props.ifc_class == "IfcWallType":
+                row = layout.row()
+                row.label(text="Join")
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="Extend", icon="EVENT_E")
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="Butt", icon="EVENT_T")
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="Mitre", icon="EVENT_Y")
 
-            row = layout.row()
-            row.label(text="Wall Tools")
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="Flip", icon="EVENT_F")
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="Split", icon="EVENT_S")
+                row = layout.row()
+                row.label(text="Wall Tools")
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="Flip", icon="EVENT_F")
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="Split", icon="EVENT_S")
 
-        if props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
-            row = layout.row()
-            row.label(text="Join")
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="Extend", icon="EVENT_E")
+            if props.ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
+                row = layout.row()
+                row.label(text="Join")
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="Extend", icon="EVENT_E")
 
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
@@ -105,40 +137,51 @@ class Hotkey(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     hotkey: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.props = context.scene.BIMTypeProperties
+        self.ifc_classes_is_empty = not bool(type_prop.getIfcTypes(self.props, context))
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
 
+    def hotkey_S_A(self):
+        bpy.ops.bim.add_type_instance()
+
     def hotkey_S_C(self):
-        if self.props.ifc_class == "IfcWallType":
+        if not self.ifc_classes_is_empty and self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.align_wall(align_type="CENTERLINE")
         else:
             bpy.ops.bim.align_product(align_type="CENTERLINE")
 
     def hotkey_S_E(self):
+        if self.ifc_classes_is_empty:
+            return
         if self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.join_wall(join_type="T")
         elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
             bpy.ops.bim.extend_profile()
 
     def hotkey_S_V(self):
-        if self.props.ifc_class == "IfcWallType":
+        if not self.ifc_classes_is_empty and self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.align_wall(align_type="INTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="POSITIVE")
 
     def hotkey_S_X(self):
-        if self.props.ifc_class == "IfcWallType":
-            bpy.ops.bim.align_wall(align_type="EXTERIOR")
+        if not self.ifc_classes_is_empty and self.props.ifc_class == "IfcWallType":
+            if bpy.ops.bim.align_wall.poll():
+                bpy.ops.bim.align_wall(align_type="EXTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="NEGATIVE")
 
     def hotkey_S_O(self):
-        bpy.ops.bim.add_element_opening()
+        bpy.ops.bim.add_element_opening(voided_building_element="", filling_building_element="")
 
     def hotkey_A_D(self):
         bpy.ops.bim.toggle_decomposition_parenting()

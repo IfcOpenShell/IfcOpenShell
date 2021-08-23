@@ -1,3 +1,23 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
+import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
 
@@ -16,9 +36,21 @@ class BIM_PT_authoring(Panel):
     def draw(self, context):
         tprops = context.scene.BIMTypeProperties
         col = self.layout.column(align=True)
-        col.prop(tprops, "ifc_class", text="", icon="FILE_VOLUME")
-        col.prop(tprops, "relating_type", text="", icon="FILE_3D")
-        col.operator("bim.add_type_instance", icon="ADD")
+        enabled = True
+        
+        if type_prop.getIfcTypes(tprops, context):
+            col.prop(tprops, "ifc_class", text="", icon="FILE_VOLUME")
+        else:
+            col.label(text="No IFC Class", icon="FILE_VOLUME")
+            enabled = False
+        if type_prop.getAvailableTypes(tprops, context):
+            col.prop(tprops, "relating_type", text="", icon="FILE_3D")
+        else:
+            col.label(text="No Relating Type", icon="FILE_3D")
+            enabled = False
+        row = col.row()
+        row.operator("bim.add_type_instance", icon="ADD")
+        row.enabled = enabled
 
 
 class BIM_PT_authoring_architectural(Panel):
@@ -57,9 +89,8 @@ class BIM_PT_misc_utilities(Panel):
         layout = self.layout
         props = context.scene.BIMProperties
 
-        row = layout.row()
+        row = layout.split(factor=0.2, align=True)
         row.prop(props, "override_colour", text="")
-        row = layout.row(align=True)
         row.operator("bim.set_override_colour")
         row = layout.row(align=True)
         row.operator("bim.set_viewport_shadow_from_sun")

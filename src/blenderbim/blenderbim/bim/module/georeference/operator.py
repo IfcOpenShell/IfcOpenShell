@@ -1,9 +1,29 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import json
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.attribute
 import ifcopenshell.api
+import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.georeference.data import Data
 from math import radians, degrees, atan, tan, cos, sin
@@ -18,8 +38,7 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
         self.file = IfcStore.get_file()
         props = context.scene.BIMGeoreferenceProperties
 
-        while len(props.projected_crs) > 0:
-            props.projected_crs.remove(0)
+        props.projected_crs.clear()
 
         for attribute in IfcStore.get_schema().declaration_by_name("IfcProjectedCRS").all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
@@ -49,8 +68,7 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
             elif props.map_unit_type == "IfcConversionBasedUnit":
                 props.map_unit_imperial = Data.projected_crs["MapUnit"]["Name"]
 
-        while len(props.map_conversion) > 0:
-            props.map_conversion.remove(0)
+        props.map_conversion.clear()
 
         for attribute in IfcStore.get_schema().declaration_by_name("IfcMapConversion").all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
@@ -96,38 +114,13 @@ class EditGeoreferencing(bpy.types.Operator):
         self.file = IfcStore.get_file()
         props = context.scene.BIMGeoreferenceProperties
 
-        projected_crs = {}
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcProjectedCRS").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            blender_attribute = props.projected_crs.get(attribute.name())
-            if blender_attribute.is_null:
-                projected_crs[attribute.name()] = None
-            elif blender_attribute.data_type == "string":
-                projected_crs[attribute.name()] = blender_attribute.string_value
-            elif blender_attribute.data_type == "float":
-                projected_crs[attribute.name()] = blender_attribute.float_value
-            elif blender_attribute.data_type == "integer":
-                projected_crs[attribute.name()] = blender_attribute.int_value
-            elif blender_attribute.data_type == "boolean":
-                projected_crs[attribute.name()] = blender_attribute.bool_value
+        projected_crs = blenderbim.bim.helper.export_attributes(props.projected_crs)
 
         map_unit = ""
         if not props.is_map_unit_null:
             map_unit = props.map_unit_si if props.map_unit_type == "IfcSIUnit" else props.map_unit_imperial
 
-        map_conversion = {}
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcMapConversion").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity" or data_type == "select":
-                continue
-            blender_attribute = props.map_conversion.get(attribute.name())
-            if blender_attribute.is_null:
-                map_conversion[attribute.name()] = None
-            elif blender_attribute.data_type == "string":
-                # We store our floats as string to prevent single precision data loss
-                map_conversion[attribute.name()] = float(blender_attribute.string_value)
+        map_conversion = blenderbim.bim.helper.export_attributes(props.map_conversion, self.export_attributes)
 
         true_north = None
         if props.has_true_north:
@@ -149,6 +142,12 @@ class EditGeoreferencing(bpy.types.Operator):
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_georeferencing()
         return {"FINISHED"}
+
+    def export_attributes(self, attributes, prop):
+        if not prop.is_null and prop.data_type == "string":
+            # We store our floats as string to prevent single precision data loss
+            attributes[prop.name] = float(prop.string_value)
+            return True
 
 
 class SetBlenderGridNorth(bpy.types.Operator):
@@ -238,6 +237,12 @@ class ConvertLocalToGlobal(bpy.types.Operator):
     bl_label = "Convert Local To Global"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        file = IfcStore.get_file()
+        props = context.scene.BIMGeoreferenceProperties
+        return file and props.coordinate_input.count(",") == 2
+
     def execute(self, context):
         if not Data.is_loaded:
             Data.load(IfcStore.get_file())
@@ -285,6 +290,13 @@ class ConvertGlobalToLocal(bpy.types.Operator):
     bl_label = "Convert Global To Local"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        file = IfcStore.get_file()
+        props = context.scene.BIMGeoreferenceProperties
+        return file and file.by_type("IfcUnitAssignment") \
+            and props.coordinate_input.count(",") == 2
+
     def execute(self, context):
         if not Data.is_loaded:
             Data.load(IfcStore.get_file())
@@ -331,6 +343,11 @@ class GetCursorLocation(bpy.types.Operator):
     bl_label = "Get Cursor Location"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        file = IfcStore.get_file()
+        return file and file.by_type("IfcUnitAssignment")
+
     def execute(self, context):
         props = context.scene.BIMGeoreferenceProperties
         scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
@@ -343,6 +360,12 @@ class SetCursorLocation(bpy.types.Operator):
     bl_idname = "bim.set_cursor_location"
     bl_label = "Set Cursor Location"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        file = IfcStore.get_file()
+        props = context.scene.BIMGeoreferenceProperties
+        return file and file.by_type("IfcUnitAssignment") and props.coordinate_output.count(",") == 2
 
     def execute(self, context):
         props = context.scene.BIMGeoreferenceProperties

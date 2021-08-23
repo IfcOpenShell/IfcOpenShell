@@ -1,0 +1,7 @@
+{
+    "required": false,
+    "type": "array",
+    "items": {
+        "enum": ["delete"]
+    }
+}

@@ -1,3 +1,22 @@
+
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import json
 import ifcopenshell.api
@@ -401,16 +420,14 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
         else:
             material_set_data = {}
 
-        while len(props.material_set_usage_attributes) > 0:
-            props.material_set_usage_attributes.remove(0)
+        props.material_set_usage_attributes.clear()
 
         if "Usage" in product_data["type"]:
             blenderbim.bim.helper.import_attributes(
                 product_data["type"], props.material_set_usage_attributes, material_set_usage, self.import_attributes
             )
 
-        while len(props.material_set_attributes) > 0:
-            props.material_set_attributes.remove(0)
+        props.material_set_attributes.clear()
 
         for attribute in IfcStore.get_schema().declaration_by_name(material_set_class).all_attributes():
             if "<string>" not in str(attribute.type_of_attribute):
@@ -565,8 +582,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
         return {"FINISHED"}
 
     def load_set_item_attributes(self, material_set_item, material_set_item_data):
-        while len(self.props.material_set_item_attributes) > 0:
-            self.props.material_set_item_attributes.remove(0)
+        self.props.material_set_item_attributes.clear()
 
         for attribute in IfcStore.get_schema().declaration_by_name(material_set_item.is_a()).all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
@@ -587,8 +603,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
                     new.bool_value = False if new.is_null else material_set_item_data[attribute.name()]
 
     def load_profile_attributes(self, material_set_item, material_set_item_data):
-        while len(self.props.material_set_item_profile_attributes) > 0:
-            self.props.material_set_item_profile_attributes.remove(0)
+        self.props.material_set_item_profile_attributes.clear()
 
         if not material_set_item_data["Profile"]:
             return
@@ -655,17 +670,7 @@ class EditMaterialSetItem(bpy.types.Operator):
         props = obj.BIMObjectMaterialProperties
         product_data = Data.products[obj.BIMObjectProperties.ifc_definition_id]
 
-        attributes = {}
-        for attribute in props.material_set_item_attributes:
-            if attribute.data_type == "string":
-                value = attribute.string_value
-            elif attribute.data_type == "float":
-                value = attribute.float_value
-            elif attribute.data_type == "integer":
-                value = attribute.int_value
-            elif attribute.data_type == "boolean":
-                value = attribute.bool_value
-            attributes[attribute.name] = None if attribute.is_null else value
+        attributes = blenderbim.bim.helper.export_attributes(props.material_set_item_attributes)
 
         if product_data["type"] == "IfcMaterialConstituentSet":
             ifcopenshell.api.run(
@@ -690,19 +695,7 @@ class EditMaterialSetItem(bpy.types.Operator):
             )
             Data.load_layers()
         elif product_data["type"] == "IfcMaterialProfileSet" or product_data["type"] == "IfcMaterialProfileSetUsage":
-            profile_attributes = {}
-            for attribute in props.material_set_item_profile_attributes:
-                if attribute.data_type == "string":
-                    value = attribute.string_value
-                elif attribute.data_type == "float":
-                    value = attribute.float_value
-                elif attribute.data_type == "integer":
-                    value = attribute.int_value
-                elif attribute.data_type == "boolean":
-                    value = attribute.bool_value
-                elif attribute.data_type == "enum":
-                    value = attribute.enum_value
-                profile_attributes[attribute.name] = None if attribute.is_null else value
+            profile_attributes = blenderbim.bim.helper.export_attributes(props.material_set_item_profile_attributes)
             ifcopenshell.api.run(
                 "material.edit_profile",
                 self.file,
