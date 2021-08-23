@@ -75,17 +75,10 @@ class BIM_UL_systems(UIList):
             row = layout.row(align=True)
             row.label(text=item.name)
 
-            if context.active_object:
-                oprops = context.active_object.BIMObjectProperties
-                if (
-                    oprops.ifc_definition_id in Data.products
-                    and item.ifc_definition_id in Data.products[oprops.ifc_definition_id]
-                ):
-                    op = row.operator("bim.unassign_system", text="", icon="KEYFRAME_HLT", emboss=False)
-                    op.system = item.ifc_definition_id
-                else:
-                    op = row.operator("bim.assign_system", text="", icon="KEYFRAME", emboss=False)
-                    op.system = item.ifc_definition_id
+            op = row.operator("bim.assign_system_to_many", text="", icon="ADD", emboss=False)
+            op.system = item.ifc_definition_id
+            op = row.operator("bim.unassign_system_from_many", text="", icon="REMOVE", emboss=False)
+            op.system = item.ifc_definition_id
 
             if context.scene.BIMSystemProperties.active_system_id == item.ifc_definition_id:
                 op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
