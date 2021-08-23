@@ -213,10 +213,11 @@ class ChangeLibraryElement(bpy.types.Operator):
         [ifc_classes.add(e.is_a()) for e in elements]
         self.props.library_elements.clear()
         if len(ifc_classes) == 1 and list(ifc_classes)[0] == self.element_name:
-            for name, element in sorted([(self.get_name(e), e) for e in elements]):
+            for name, ifc_definition_id in sorted([(self.get_name(e), e.id()) for e in elements]):
                 new = self.props.library_elements.add()
                 new.name = name
-                new.ifc_definition_id = element.id()
+                new.ifc_definition_id = ifc_definition_id
+                element = IfcStore.library_file.by_id(ifc_definition_id)
                 if IfcStore.library_file.schema == "IFC2X3" or not IfcStore.library_file.by_type("IfcProjectLibrary"):
                     new.is_declared = False
                 elif getattr(element, "HasContext", None) and element.HasContext[0].RelatingContext.is_a(
