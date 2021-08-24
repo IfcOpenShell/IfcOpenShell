@@ -159,7 +159,7 @@ def getResourceQuantityNames(self, context):
     return resourcequantitynames_enum
 
 
-def update_cost_item_index(self, context):
+def update_active_cost_item_index(self, context):
     if Data.cost_schedules[self.active_cost_schedule_id]["PredefinedType"] == "SCHEDULEOFRATES":
         bpy.ops.bim.load_cost_item_types()
     else:
@@ -226,7 +226,7 @@ class BIMCostProperties(PropertyGroup):
     cost_items: CollectionProperty(name="Cost Items", type=CostItem)
     active_cost_item_id: IntProperty(name="Active Cost Id")
     cost_item_editing_type: StringProperty(name="Cost Item Editing Type")
-    active_cost_item_index: IntProperty(name="Active Cost Item Index", update=update_cost_item_index)
+    active_cost_item_index: IntProperty(name="Active Cost Item Index", update=update_active_cost_item_index)
     cost_item_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     contracted_cost_items: StringProperty(name="Contracted Cost Items", default="[]")
     quantity_types: EnumProperty(items=getQuantityTypes, name="Quantity Types")
