@@ -411,11 +411,13 @@ class RemoveSectionPlane(bpy.types.Operator):
     bl_label = "Remove Temporary Section Cutaway"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.active_object and bpy.data.node_groups.get("Section Override")
+
     def execute(self, context):
         name = context.active_object.name
         section_override = bpy.data.node_groups.get("Section Override")
-        if not section_override:
-            return {"FINISHED"}
         for node in section_override.nodes:
             if node.type != "TEX_COORD" or node.object.name != name:
                 continue
@@ -497,8 +499,11 @@ class SetOverrideColour(bpy.types.Operator):
     bl_label = "Set Override Colour"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
     def execute(self, context):
-        result = 0
         for obj in context.selected_objects:
             obj.color = context.scene.BIMProperties.override_colour
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
@@ -510,6 +515,10 @@ class SetViewportShadowFromSun(bpy.types.Operator):
     bl_idname = "bim.set_viewport_shadow_from_sun"
     bl_label = "Set Viewport Shadow from Sun"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object
 
     def execute(self, context):
         # The vector used for the light direction is a bit funny
@@ -553,17 +562,20 @@ class SnapSpacesTogether(bpy.types.Operator):
     bl_label = "Snap Spaces Together"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
     def execute(self, context):
         threshold = 0.5
         processed_polygons = set()
-        for obj in context.selected_objects:
-            if obj.type != "MESH":
-                continue
+        selected_mesh_objects = [o for o in context.selected_objects if o.type == "MESH"]
+        for obj in selected_mesh_objects:
             for polygon in obj.data.polygons:
                 center = obj.matrix_world @ polygon.center
                 distance = None
-                for obj2 in context.selected_objects:
-                    if obj2 == obj or obj.type != "MESH":
+                for obj2 in selected_mesh_objects:
+                    if obj2 == obj:
                         continue
                     result = obj2.ray_cast(obj2.matrix_world.inverted() @ center, polygon.normal, distance=threshold)
                     if not result[0]:

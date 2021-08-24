@@ -85,6 +85,12 @@ def getWorkCalendars(self, context):
     return [(str(k), v["Name"], "") for k, v in Data.work_calendars.items()]
 
 
+def update_active_task_index(self, context):
+    bpy.ops.bim.load_task_inputs()
+    bpy.ops.bim.load_task_resources()
+    bpy.ops.bim.load_task_outputs()
+
+
 def updateTaskName(self, context):
     props = context.scene.BIMWorkScheduleProperties
     if not props.is_task_update_enabled or self.name == "Unnamed":
@@ -227,13 +233,6 @@ def updateVisualisationStartFinish(self, context, startfinish):
         setattr(self, startfinish, canonical_value)
 
 
-def getResources(self, context):
-    self.file = IfcStore.get_file()
-    return [(str(k), v["Name"], "") for k, v in ResourceData.resources.items()
-    if self.file.by_id(k).Nests and self.file.by_id(k).Nests[0].RelatingObject.HasContext
-    ]
-
-
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
     identification: StringProperty(name="Identification", update=updateTaskIdentification)
@@ -259,6 +258,16 @@ class WorkPlan(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
+class TaskResource(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
+class TaskProduct(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
 class BIMWorkPlanProperties(PropertyGroup):
     work_plan_attributes: CollectionProperty(name="Work Plan Attributes", type=Attribute)
     editing_type: StringProperty(name="Editing Type")
@@ -275,7 +284,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     editing_task_type: StringProperty(name="Editing Task Type")
     active_work_schedule_index: IntProperty(name="Active Work Schedules Index")
     active_work_schedule_id: IntProperty(name="Active Work Schedules Id")
-    active_task_index: IntProperty(name="Active Task Index")
+    active_task_index: IntProperty(name="Active Task Index", update=update_active_task_index)
     active_task_id: IntProperty(name="Active Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     should_show_visualisation_ui: BoolProperty(name="Should Show Visualisation UI", default=False)
@@ -323,7 +332,12 @@ class BIMWorkScheduleProperties(PropertyGroup):
         name="Speed Type",
         default="FRAME_SPEED",
     )
-    resources: EnumProperty(items=getResources, name="Resources")
+    task_resources: CollectionProperty(name="Task Resources", type=TaskResource)
+    active_task_resource_index: IntProperty(name="Active Task Resource Index")
+    task_inputs: CollectionProperty(name="Task Inputs", type=TaskProduct)
+    active_task_input_index: IntProperty(name="Active Task Input Index")
+    task_outputs: CollectionProperty(name="Task Outputs", type=TaskProduct)
+    active_task_output_index: IntProperty(name="Active Task Output Index")
 
 
 class BIMTaskTreeProperties(PropertyGroup):

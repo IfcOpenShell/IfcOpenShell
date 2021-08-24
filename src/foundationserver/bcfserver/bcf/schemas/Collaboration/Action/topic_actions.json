@@ -1,0 +1,16 @@
+{
+    "title": "topic_actions",
+    "required": false,
+    "type": "array",
+    "items": {
+        "type": "string",
+        "enum": ["update",
+        "updateBimSnippet",
+        "updateRelatedTopics",
+        "updateDocumentReferences",
+        "updateFiles",
+        "createComment",
+        "createViewpoint",
+        "delete"]
+    }
+}

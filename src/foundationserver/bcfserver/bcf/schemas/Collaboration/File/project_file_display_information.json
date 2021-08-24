@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-03/schema#",
+  "title": "project_file_display_information",
+  "description": "Schema for the display information of a project file, BCF REST API.",
+  "type": "object",
+  "properties": {
+    "field_display_name": {
+      "required": true,
+      "type": "string"
+    },
+    "field_value": {
+      "required": true,
+      "type": "string"
+    }
+  }
+}

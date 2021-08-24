@@ -21,6 +21,7 @@ import bpy
 import json
 import addon_utils
 import ifcopenshell.api.owner.settings
+from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.owner.prop import getPersons, getOrganisations
@@ -152,8 +153,7 @@ def purge_module_data():
 def loadIfcStore(scene):
     IfcStore.purge()
     purge_module_data()
-    ifc_file = IfcStore.get_file()
-    if not ifc_file:
+    if not IfcStore.get_file():
         return
     IfcStore.get_schema()
     IfcStore.reload_linked_elements()
@@ -166,8 +166,8 @@ def undo_pre(scene):
 
 @persistent
 def undo_post(scene):
-    if IfcStore.last_transaction != scene.BIMProperties.last_transaction:
-        IfcStore.last_transaction = scene.BIMProperties.last_transaction
+    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
+        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
         IfcStore.undo()
         purge_module_data()
     IfcStore.update_undo_redo_stack_objects()
@@ -181,8 +181,8 @@ def redo_pre(scene):
 
 @persistent
 def redo_post(scene):
-    if IfcStore.last_transaction != scene.BIMProperties.last_transaction:
-        IfcStore.last_transaction = scene.BIMProperties.last_transaction
+    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
+        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
         IfcStore.redo()
         purge_module_data()
     IfcStore.update_undo_redo_stack_objects()
@@ -191,7 +191,7 @@ def redo_post(scene):
 
 @persistent
 def ensureIfcExported(scene):
-    if IfcStore.get_file() and not scene.BIMProperties.ifc_file:
+    if IfcStore.get_file() and not bpy.context.scene.BIMProperties.ifc_file:
         bpy.ops.export_ifc.bim("INVOKE_DEFAULT")
 
 
@@ -230,80 +230,80 @@ def setDefaultProperties(scene):
         key=active_object_key, owner=global_subscription_owner, args=(), notify=active_object_callback
     )
     ifcopenshell.api.owner.settings.get_person = (
-        lambda ifc: ifc.by_id(int(scene.BIMOwnerProperties.user_person))
-        if getPersons(None, None) and scene.BIMOwnerProperties.user_person
+        lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
+        if getPersons(None, None) and bpy.context.scene.BIMOwnerProperties.user_person
         else None
     )
     ifcopenshell.api.owner.settings.get_organisation = (
-        lambda ifc: ifc.by_id(int(scene.BIMOwnerProperties.user_organisation))
-        if getOrganisations(None, None) and scene.BIMOwnerProperties.user_organisation
+        lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_organisation))
+        if getOrganisations(None, None) and bpy.context.scene.BIMOwnerProperties.user_organisation
         else None
     )
     ifcopenshell.api.owner.settings.get_application = get_application
-    if len(scene.DocProperties.drawing_styles) == 0:
-        drawing_style = scene.DocProperties.drawing_styles.add()
+    if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Technical"
         drawing_style.render_type = "VIEWPORT"
         drawing_style.raster_style = json.dumps(
             {
-                "bpy.data.worlds[0].color": (1, 1, 1),
-                "bpy.context.scene.render.engine": "BLENDER_WORKBENCH",
-                "bpy.context.scene.render.film_transparent": False,
-                "bpy.context.scene.display.shading.show_object_outline": True,
-                "bpy.context.scene.display.shading.show_cavity": False,
-                "bpy.context.scene.display.shading.cavity_type": "BOTH",
-                "bpy.context.scene.display.shading.curvature_ridge_factor": 1,
-                "bpy.context.scene.display.shading.curvature_valley_factor": 1,
-                "bpy.context.scene.view_settings.view_transform": "Standard",
-                "bpy.context.scene.display.shading.light": "FLAT",
-                "bpy.context.scene.display.shading.color_type": "SINGLE",
-                "bpy.context.scene.display.shading.single_color": (1, 1, 1),
-                "bpy.context.scene.display.shading.show_shadows": False,
-                "bpy.context.scene.display.shading.shadow_intensity": 0.5,
-                "bpy.context.scene.display.light_direction": (0.5, 0.5, 0.5),
-                "bpy.context.scene.view_settings.use_curve_mapping": False,
-                "space.overlay.show_wireframes": True,
-                "space.overlay.wireframe_threshold": 0,
-                "space.overlay.show_floor": False,
-                "space.overlay.show_axis_x": False,
-                "space.overlay.show_axis_y": False,
-                "space.overlay.show_axis_z": False,
-                "space.overlay.show_object_origins": False,
-                "space.overlay.show_relationship_lines": False,
+                RasterStyleProperty.WORLD_COLOR.value: (1, 1, 1),
+                RasterStyleProperty.RENDER_ENGINE.value: "BLENDER_WORKBENCH",
+                RasterStyleProperty.RENDER_TRANSPARENT.value: False,
+                RasterStyleProperty.SHADING_SHOW_OBJECT_OUTLINE.value: True,
+                RasterStyleProperty.SHADING_SHOW_CAVITY.value: False,
+                RasterStyleProperty.SHADING_CAVITY_TYPE.value: "BOTH",
+                RasterStyleProperty.SHADING_CURVATURE_RIDGE_FACTOR.value: 1,
+                RasterStyleProperty.SHADING_CURVATURE_VALLEY_FACTOR.value: 1,
+                RasterStyleProperty.VIEW_TRANSFORM.value: "Standard",
+                RasterStyleProperty.SHADING_LIGHT.value: "FLAT",
+                RasterStyleProperty.SHADING_COLOR_TYPE.value: "SINGLE",
+                RasterStyleProperty.SHADING_SINGLE_COLOR.value: (1, 1, 1),
+                RasterStyleProperty.SHADING_SHOW_SHADOWS.value: False,
+                RasterStyleProperty.SHADING_SHADOW_INTENSITY.value: 0.5,
+                RasterStyleProperty.DISPLAY_LIGHT_DIRECTION.value: (0.5, 0.5, 0.5),
+                RasterStyleProperty.VIEW_USE_CURVE_MAPPING.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_WIREFRAMES.value: True,
+                RasterStyleProperty.OVERLAY_WIREFRAME_THRESHOLD.value: 0,
+                RasterStyleProperty.OVERLAY_SHOW_FLOOR.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_AXIS_X.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_AXIS_Y.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_AXIS_Z.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_OBJECT_ORIGINS.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_RELATIONSHIP_LINES.value: False,
             }
         )
-        drawing_style = scene.DocProperties.drawing_styles.add()
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Shaded"
         drawing_style.render_type = "VIEWPORT"
         drawing_style.raster_style = json.dumps(
             {
-                "bpy.data.worlds[0].color": (1, 1, 1),
-                "bpy.context.scene.render.engine": "BLENDER_WORKBENCH",
-                "bpy.context.scene.render.film_transparent": False,
-                "bpy.context.scene.display.shading.show_object_outline": True,
-                "bpy.context.scene.display.shading.show_cavity": True,
-                "bpy.context.scene.display.shading.cavity_type": "BOTH",
-                "bpy.context.scene.display.shading.curvature_ridge_factor": 1,
-                "bpy.context.scene.display.shading.curvature_valley_factor": 1,
-                "bpy.context.scene.view_settings.view_transform": "Standard",
-                "bpy.context.scene.display.shading.light": "STUDIO",
-                "bpy.context.scene.display.shading.color_type": "MATERIAL",
-                "bpy.context.scene.display.shading.single_color": (1, 1, 1),
-                "bpy.context.scene.display.shading.show_shadows": True,
-                "bpy.context.scene.display.shading.shadow_intensity": 0.5,
-                "bpy.context.scene.display.light_direction": (0.5, 0.5, 0.5),
-                "bpy.context.scene.view_settings.use_curve_mapping": False,
-                "space.overlay.show_wireframes": True,
-                "space.overlay.wireframe_threshold": 0,
-                "space.overlay.show_floor": False,
-                "space.overlay.show_axis_x": False,
-                "space.overlay.show_axis_y": False,
-                "space.overlay.show_axis_z": False,
-                "space.overlay.show_object_origins": False,
-                "space.overlay.show_relationship_lines": False,
+                RasterStyleProperty.WORLD_COLOR.value: (1, 1, 1),
+                RasterStyleProperty.RENDER_ENGINE.value: "BLENDER_WORKBENCH",
+                RasterStyleProperty.RENDER_TRANSPARENT.value: False,
+                RasterStyleProperty.SHADING_SHOW_OBJECT_OUTLINE.value: True,
+                RasterStyleProperty.SHADING_SHOW_CAVITY.value: True,
+                RasterStyleProperty.SHADING_CAVITY_TYPE.value: "BOTH",
+                RasterStyleProperty.SHADING_CURVATURE_RIDGE_FACTOR.value: 1,
+                RasterStyleProperty.SHADING_CURVATURE_VALLEY_FACTOR.value: 1,
+                RasterStyleProperty.VIEW_TRANSFORM.value: "Standard",
+                RasterStyleProperty.SHADING_LIGHT.value: "STUDIO",
+                RasterStyleProperty.SHADING_COLOR_TYPE.value: "MATERIAL",
+                RasterStyleProperty.SHADING_SINGLE_COLOR.value: (1, 1, 1),
+                RasterStyleProperty.SHADING_SHOW_SHADOWS.value: True,
+                RasterStyleProperty.SHADING_SHADOW_INTENSITY.value: 0.5,
+                RasterStyleProperty.DISPLAY_LIGHT_DIRECTION.value: (0.5, 0.5, 0.5),
+                RasterStyleProperty.VIEW_USE_CURVE_MAPPING.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_WIREFRAMES.value: True,
+                RasterStyleProperty.OVERLAY_WIREFRAME_THRESHOLD.value: 0,
+                RasterStyleProperty.OVERLAY_SHOW_FLOOR.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_AXIS_X.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_AXIS_Y.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_AXIS_Z.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_OBJECT_ORIGINS.value: False,
+                RasterStyleProperty.OVERLAY_SHOW_RELATIONSHIP_LINES.value: False,
             }
         )
-        drawing_style = scene.DocProperties.drawing_styles.add()
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Blender Default"
         drawing_style.render_type = "DEFAULT"
         bpy.ops.bim.save_drawing_style(index="2")

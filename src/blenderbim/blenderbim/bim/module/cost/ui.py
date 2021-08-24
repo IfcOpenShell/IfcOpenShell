@@ -474,9 +474,10 @@ class BIM_PT_cost_item_rates(Panel):
         cost_item = self.props.cost_items[self.props.active_cost_item_index]
         row = self.layout.row(align=True)
         row.prop(self.props, "schedule_of_rates", text="")
-        op = row.operator("bim.assign_cost_value", text="", icon="COPYDOWN")
-        op.cost_item = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
-        op.cost_rate = self.props.cost_item_rates[self.props.active_cost_item_rate_index].ifc_definition_id
+        if self.props.active_cost_item_rate_index < len(self.props.cost_item_rates):
+            op = row.operator("bim.assign_cost_value", text="", icon="COPYDOWN")
+            op.cost_item = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
+            op.cost_rate = self.props.cost_item_rates[self.props.active_cost_item_rate_index].ifc_definition_id
         self.layout.template_list(
             "BIM_UL_cost_item_rates",
             "",
@@ -487,7 +488,7 @@ class BIM_PT_cost_item_rates(Panel):
         )
 
 
-class BIM_UL_cost_items_trait():
+class BIM_UL_cost_items_trait:
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             self.props = context.scene.BIMCostProperties
@@ -503,13 +504,12 @@ class BIM_UL_cost_items_trait():
             split2.prop(item, "name", emboss=False, text="")
 
             self.draw_quantity_column(split2, cost_item)
-
-            split2.label(text="{0:.2f}".format(cost_item["TotalAppliedValue"]))
+            self.draw_value_column(split2, cost_item)
 
             for column in self.props.columns:
                 split2.label(text=str(cost_item["CategoryValues"].get(column.name, "-")))
 
-            split2.label(text="{0:.2f}".format(cost_item["TotalCostValue"]))
+            self.draw_total_cost_column(split2, cost_item)
             # TODO: reimplement "bim.copy_cost_item_values" somewhere with better UX
 
     def draw_hierarchy(self, row, item):
@@ -524,22 +524,26 @@ class BIM_UL_cost_items_trait():
         else:
             row.label(text="", icon="DOT")
 
+    def draw_total_cost_column(self, layout, cost_item):
+        layout.label(text="{0:.2f}".format(cost_item["TotalCost"]))
+
     def draw_quantity_column(self, layout, cost_item):
         if Data.cost_schedules[self.props.active_cost_schedule_id]["PredefinedType"] == "SCHEDULEOFRATES":
             self.draw_uom_column(layout, cost_item)
         else:
             self.draw_total_quantity_column(layout, cost_item)
 
-    def draw_uom_column(self, layout, cost_item):
-        text = "-"
-        if cost_item["CostValues"]:
-            unit_basis = Data.cost_values[cost_item["CostValues"][0]]["UnitBasis"]
-            if unit_basis:
-                text = "{0:.2f}".format(unit_basis["ValueComponent"]) + f" ({unit_basis['UnitSymbol'] or '?'})"
+    def draw_value_column(self, layout, cost_item):
+        text = "{0:.2f}".format(cost_item["TotalAppliedValue"])
+        if cost_item["UnitBasisValueComponent"] not in [None, 1]:
+            text += " / {}".format(round(cost_item["UnitBasisValueComponent"], 2))
         layout.label(text=text)
 
+    def draw_uom_column(self, layout, cost_item):
+        layout.label(text=cost_item["UnitBasisUnitSymbol"] or "?" if cost_item["UnitBasisValueComponent"] else "-")
+
     def draw_total_quantity_column(self, layout, cost_item):
-        layout.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" ({cost_item['UnitSymbol'] or '?'})")
+        layout.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '?'}")
 
 
 class BIM_UL_cost_items(BIM_UL_cost_items_trait, UIList):
@@ -558,6 +562,9 @@ class BIM_UL_cost_item_rates(BIM_UL_cost_items_trait, UIList):
 
     def draw_quantity_column(self, layout, cost_item):
         self.draw_uom_column(layout, cost_item)
+
+    def draw_total_cost_column(self, layout, cost_item):
+        pass  # No such thing as a total cost in a schedule of rates
 
 
 class BIM_UL_cost_columns(UIList):

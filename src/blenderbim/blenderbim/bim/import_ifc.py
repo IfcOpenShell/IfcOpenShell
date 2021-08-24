@@ -214,8 +214,6 @@ class IfcImporter:
         self.profile_code("Purge diffs")
         self.load_file()
         self.profile_code("Loading file")
-        self.set_ifc_file()
-        self.profile_code("Setting file")
         self.calculate_unit_scale()
         self.profile_code("Calculate unit scale")
         self.calculate_model_offset()
@@ -226,6 +224,8 @@ class IfcImporter:
         self.profile_code("Create project")
         self.create_spatial_hierarchy()
         self.profile_code("Create spatial hierarchy")
+        self.process_element_filter()
+        self.profile_code("Process element filter")
         self.create_aggregates()
         self.profile_code("Create aggregates")
         self.create_aggregate_tree()
@@ -236,8 +236,6 @@ class IfcImporter:
         self.profile_code("Create materials")
         self.create_styles()
         self.profile_code("Create styles")
-        self.process_element_filter()
-        self.profile_code("Process element filter")
         self.parse_native_elements()
         self.profile_code("Parsing native elements")
         self.create_grids()
@@ -292,16 +290,20 @@ class IfcImporter:
         return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
 
     def process_element_filter(self):
-        if not self.ifc_import_settings.ifc_selector:
+        if self.ifc_import_settings.ifc_import_filter == "NONE" or not self.ifc_import_settings.ifc_selector:
+            self.elements = self.file.by_type("IfcElement")
             return
+
         selector = ifcopenshell.util.selector.Selector()
         elements = selector.parse(self.file, self.ifc_import_settings.ifc_selector)
         if self.ifc_import_settings.ifc_import_filter == "WHITELIST":
             self.filter_mode = "WHITELIST"
             self.include_elements = set(elements)
+            self.elements = self.include_elements
         elif self.ifc_import_settings.ifc_import_filter == "BLACKLIST":
-            self.exclude_elements = set(elements)
             self.filter_mode = "BLACKLIST"
+            self.exclude_elements = set(elements)
+            self.elements = [e for e in self.file.by_type("IfcElement") if e not in self.exclude_elements]
 
     def parse_native_elements(self):
         if self.filter_mode == "WHITELIST":
@@ -639,16 +641,9 @@ class IfcImporter:
     def create_empty_and_2d_elements(self):
         curve_products = []
 
-        if self.filter_mode == "WHITELIST":
-            self.elements = self.include_elements
-        elif self.filter_mode == "BLACKLIST":
-            self.elements = [e for e in self.file.by_type("IfcElement") if e not in self.exclude_elements]
-        else:
-            self.elements = self.file.by_type("IfcElement")
-
-        for element in self.elements:
-            if element.id() in self.added_data:
-                continue
+        unadded_element_ids = set([e.id() for e in self.elements]) - set(self.added_data.keys())
+        for element_id in unadded_element_ids:
+            element = self.file.by_id(element_id)
             if element.is_a("IfcPort"):
                 continue
             if not element.Representation:
@@ -973,25 +968,8 @@ class IfcImporter:
 
     def load_file(self):
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)
-        extension = self.ifc_import_settings.input_file.split(".")[-1]
-        if extension.lower() == "ifczip":
-            with tempfile.TemporaryDirectory() as unzipped_path:
-                with zipfile.ZipFile(self.ifc_import_settings.input_file, "r") as zip_ref:
-                    zip_ref.extractall(unzipped_path)
-                for filename in Path(unzipped_path).glob("**/*.ifc"):
-                    self.file = ifcopenshell.open(filename)
-                    break
-        elif extension.lower() == "ifcxml":
-            self.file = ifcopenshell.file(
-                ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(self.ifc_import_settings.input_file)
-            )
-        elif extension.lower() == "ifc":
-            self.file = ifcopenshell.open(self.ifc_import_settings.input_file)
-        IfcStore.file = self.file
-
-    def set_ifc_file(self):
         bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
-        IfcStore.path = self.ifc_import_settings.input_file
+        self.file = IfcStore.get_file()
 
     def calculate_unit_scale(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
@@ -1057,9 +1035,17 @@ class IfcImporter:
                     self.add_related_objects(collection, rel_aggregate.RelatedObjects)
 
     def create_aggregates(self):
-        rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
-        for rel_aggregate in rel_aggregates:
-            self.create_aggregate(rel_aggregate)
+        if self.filter_mode in ["WHITELIST", "BLACKLIST"]:
+            rel_aggregates = [e.IsDecomposedBy[0].RelatingObject for e in self.elements if e.IsDecomposedBy]
+        else:
+            rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
+        if len(rel_aggregates) > 10000:
+            # More than 10,000 collections makes Blender unhappy
+            print("Falling back to SPATIAL_DECOMPOSITION collection mode")
+            self.ifc_import_settings.collection_mode = "SPATIAL_DECOMPOSITION"
+        else:
+            for rel_aggregate in rel_aggregates:
+                self.create_aggregate(rel_aggregate)
 
     def create_aggregate_tree(self):
         for aggregate in self.aggregates.values():
@@ -1210,8 +1196,15 @@ class IfcImporter:
                     ):
                         bpy.data.objects.remove(self.spatial_structure_elements[global_id]["blender_obj"])
                     collection = self.spatial_structure_elements[global_id]["blender"]
+            elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
+                # TODO: refactor this to a more holistic collection mode feature
+                return self.place_object_in_spatial_tree(element.Decomposes[0].RelatingObject, obj)
             else:
-                collection = self.aggregates[element.Decomposes[0].RelatingObject.GlobalId]["blender"]
+                aggregate = element.Decomposes[0].RelatingObject
+                aggregate_data = self.aggregates.get(aggregate.GlobalId)
+                if not aggregate_data:
+                    return self.place_object_in_spatial_tree(aggregate, obj)
+                collection = aggregate_data["blender"]
             if collection:
                 collection.objects.link(obj)
             else:
@@ -1491,6 +1484,7 @@ class IfcImportSettings:
         self.model_offset_coordinates = (0, 0, 0)
         self.ifc_import_filter = "NONE"
         self.ifc_selector = ""
+        self.collection_mode = "DECOMPOSITION"
 
     @staticmethod
     def factory(context, input_file, logger):

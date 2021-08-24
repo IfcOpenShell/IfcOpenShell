@@ -124,11 +124,11 @@ class Selector:
 
     def get_class_selector(self, class_selector):
         if class_selector.children[0] == "COBie":
-            ifcopenshell.util.fm.get_cobie_components(self.file)
+            elements = ifcopenshell.util.fm.get_cobie_components(self.file)
         elif class_selector.children[0] == "COBieType":
-            ifcopenshell.util.fm.get_cobie_types(self.file)
+            elements = ifcopenshell.util.fm.get_cobie_types(self.file)
         elif class_selector.children[0] == "FMHEM":
-            ifcopenshell.util.fm.get_fmhem_types(self.file)
+            elements = ifcopenshell.util.fm.get_fmhem_types(self.file)
         else:
             elements = self.file.by_type(class_selector.children[0])
         if len(class_selector.children) > 1 and class_selector.children[1].data == "filter":

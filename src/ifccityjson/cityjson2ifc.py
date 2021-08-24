@@ -20,6 +20,7 @@ import ifcopenshell
 import ifcopenshell.api
 from geometry import GeometryIO
 from datetime import datetime
+import os
 
 JSON_TO_IFC = {
     "Building": ["IfcBuilding"],
@@ -75,7 +76,7 @@ class Cityjson2ifc:
         self.configuration()
 
     def configuration(self, file_destination="output.ifc", name_attribute=None, split=True):
-        self.properties["file_destination"] = file_destination
+        self.properties["file_destination"], self.properties["file_extension"] = os.path.splitext(file_destination)
         self.properties["name_attribute"] = name_attribute
         self.properties["split"] = split
 
@@ -88,7 +89,10 @@ class Cityjson2ifc:
                                      scale=self.properties["local_scale"])
         # self.build_vertices()
         self.create_IFC_classes()
-        self.write_file()
+        if self.properties["split"]:
+            self.write_files()
+        else:
+            self.write_file()
 
     def create_metadata(self):
         # Georeferencing
@@ -107,13 +111,13 @@ class Cityjson2ifc:
         if epsg:
             # Meter is assumed as unit for now
             unit = self.IFC_model.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")
-            crs = self.IFC_model.create_entity("IfcProjectedCrs", Name=f"epsg:{epsg}")
-            self.IFC_model.create_entity("IfcMapConversion", self.IFC_representation_context,
-                                         **self.properties["local_translation"])
+            self.properties["local_translation"]["TargetCRS"] = self.IFC_model.create_entity("IfcProjectedCrs", Name=f"epsg:{epsg}")
+            self.properties["local_translation"]["SourceCRS"] = self.IFC_representation_context
+            self.IFC_model.create_entity("IfcMapConversion", **self.properties["local_translation"])
 
     def create_new_file(self):
         self.IFC_model = ifcopenshell.api.run("project.create_file")
-        self.IFC_project = ifcopenshell.api.run("root.create_entity", self.IFC_model, **{"ifc_class": "IfcProject"})
+        self.IFC_project = ifcopenshell.api.run("root.create_entity", self.IFC_model, **{"ifc_class": "IfcProject", "name": "My Project"})
         ifcopenshell.api.run("unit.assign_unit", self.IFC_model, length={"is_metric": True, "raw": "METERS"})
         self.properties["owner_history"] = self.create_owner_history()
         self.IFC_representation_context = ifcopenshell.api.run("context.add_context", self.IFC_model,
@@ -139,6 +143,10 @@ class Cityjson2ifc:
         self.IFC_site = ifcopenshell.api.run("root.create_entity", self.IFC_model,
                                              **{"ifc_class": "IfcSite",
                                                 "name": "My Site"})
+        self.IFC_model.create_entity("IfcRelAggregates",
+                                     **{"GlobalId": ifcopenshell.guid.new(),
+                                        "RelatedObjects": [self.IFC_site],
+                                        "RelatingObject": self.IFC_project})
 
     def create_owner_history(self):
         actor = self.IFC_model.createIfcActorRole("ENGINEER", None, None)
@@ -157,7 +165,31 @@ class Cityjson2ifc:
         return ownerHistory
 
     def write_file(self):
-        self.IFC_model.write(self.properties["file_destination"])
+        file = self.properties["file_destination"] + self.properties["file_extension"]
+        self.IFC_model.write(file)
+
+    def write_files(self):
+        for lod, IFC_representation_sub_context in self.IFC_representation_sub_contexts.items():
+            sub_context_id = IFC_representation_sub_context.id()
+
+            # TODO this method makes a copy of the IFC_model by writing it and importing it,
+            # TODO but maybe there is a better method.
+            file = self.properties["file_destination"] + lod + self.properties["file_extension"]
+            self.IFC_model.write(file)
+            IFC_copied_model = ifcopenshell.open(file)
+
+            IFC_copied_model_sub_contexts = IFC_copied_model.by_type('IfcGeometricRepresentationSubContext')
+            for sub_context in IFC_copied_model_sub_contexts:
+                if sub_context.id() == sub_context_id:
+                    continue
+                else:
+                    elements = IFC_copied_model.get_inverse(sub_context)
+                    for element in elements:
+                        IFC_copied_model.remove(element)
+                    IFC_copied_model.remove(sub_context)
+
+            IFC_copied_model.write(file)
+            del IFC_copied_model
 
     def create_IFC_classes(self):
         parents_children_relations = {"IfcSite": {'Parent': self.IFC_site, 'Children': []}}
@@ -223,14 +255,21 @@ class Cityjson2ifc:
                 parents_children_relations[obj_id]['Parent'] = IFC_object
 
             if IFC_semantic_surface_children:
-                self.IFC_model.create_entity("IfcRelAggregates",
+                self.IFC_model.create_entity("IfcRelContainedInSpatialStructure",
                                              **{"GlobalId": ifcopenshell.guid.new(),
-                                                "RelatedObjects": IFC_semantic_surface_children,
-                                                "RelatingObject": IFC_object})
+                                                "RelatedElements": IFC_semantic_surface_children,
+                                                "RelatingStructure": IFC_object})
 
             self.create_property_set(obj.attributes, IFC_object)
 
-        for parent_children in parents_children_relations.values():
+        for parent, parent_children in parents_children_relations.items():
+            if parent == "IfcSite":
+                self.IFC_model.create_entity("IfcRelAggregates",
+                                             **{"GlobalId": ifcopenshell.guid.new(),
+                                                "RelatedObjects": parent_children['Children'],
+                                                "RelatingObject": parent_children['Parent']})
+                continue
+
             self.IFC_model.create_entity("IfcRelContainedInSpatialStructure",
                                          **{"GlobalId": ifcopenshell.guid.new(),
                                             "RelatedElements": parent_children['Children'],
@@ -248,8 +287,11 @@ class Cityjson2ifc:
             # CREATE ENTITY
             surface_geometry = self.geometry.create_IFC_surface(self.IFC_model, geometry, surface_id)
             if surface_geometry:
-                child_data["Representation"] = self.create_IFC_shape_representation(surface_geometry, 'brep', lod)
+                IFC_shape_representation =self.create_IFC_shape_representation(surface_geometry, 'brep', lod)
+                child_data["Representation"] = self.IFC_model.create_entity("IfcProductDefinitionShape",
+                                             Representations=[IFC_shape_representation])
             IFC_semantic_surface_children.append(self.IFC_model.create_entity(IFC_child_class, **child_data))
+
         return IFC_semantic_surface_children
 
     def create_IFC_shape_representation(self, IFC_geometry, shape_representation_type, lod):

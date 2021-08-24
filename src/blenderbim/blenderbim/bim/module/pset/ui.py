@@ -207,7 +207,8 @@ class BIM_PT_material_psets(Panel):
         props = context.active_object.active_material.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
-        if IfcStore.get_file().schema == "IFC2X3":
+        file = IfcStore.get_file()
+        if not file or file.schema == "IFC2X3":
             return False  # We don't support material psets in IFC2X3 because they suck
         if props.ifc_definition_id not in Data.products:
             Data.load(IfcStore.get_file(), props.ifc_definition_id)
@@ -236,6 +237,7 @@ class BIM_PT_material_psets(Panel):
 class BIM_PT_task_qtos(Panel):
     bl_label = "IFC Task Quantity Sets"
     bl_idname = "BIM_PT_task_qtos"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -244,6 +246,8 @@ class BIM_PT_task_qtos(Panel):
     @classmethod
     def poll(cls, context):
         props = context.scene.BIMWorkScheduleProperties
+        if not props.active_work_schedule_id:
+            return False
         total_tasks = len(context.scene.BIMTaskTreeProperties.tasks)
         if total_tasks > 0 and props.active_task_index < total_tasks:
             return True
@@ -269,6 +273,7 @@ class BIM_PT_task_qtos(Panel):
 class BIM_PT_resource_qtos(Panel):
     bl_label = "IFC Resource Quantity Sets"
     bl_idname = "BIM_PT_resource_qtos"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -302,6 +307,7 @@ class BIM_PT_resource_qtos(Panel):
 class BIM_PT_profile_psets(Panel):
     bl_label = "IFC Profile Property Sets"
     bl_idname = "BIM_PT_profile_psets"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -331,3 +337,33 @@ class BIM_PT_profile_psets(Panel):
         psets = [(pset_id, Data.psets[pset_id]) for pset_id in Data.products[ifc_definition_id]["psets"]]
         for pset_id, pset in sorted(psets, key=lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, pset_id, pset, props, self.layout, "Profile")
+
+
+class BIM_PT_work_schedule_psets(Panel):
+    bl_label = "IFC Work Schedule Property Sets"
+    bl_idname = "BIM_PT_work_schedule_psets"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_work_schedules"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
+            return False
+        return True
+
+    def draw(self, context):
+        props = context.scene.WorkSchedulePsetProperties
+        ifc_definition_id = context.scene.BIMWorkScheduleProperties.active_work_schedule_id
+        if ifc_definition_id not in Data.products:
+            Data.load(IfcStore.get_file(), ifc_definition_id)
+        row = self.layout.row(align=True)
+        row.prop(props, "pset_name", text="")
+        op = row.operator("bim.add_pset", icon="ADD", text="")
+        op.obj_type = "WorkSchedule"
+
+        psets = [(pset_id, Data.psets[pset_id]) for pset_id in Data.products[ifc_definition_id]["psets"]]
+        for pset_id, pset in sorted(psets, key=lambda v: v[1]["Name"]):
+            draw_psetqto_ui(context, pset_id, pset, props, self.layout, "WorkSchedule")

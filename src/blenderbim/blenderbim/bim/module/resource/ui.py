@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -21,6 +20,7 @@ from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.resource.data import Data
 import blenderbim.bim.helper
+
 
 class BIM_PT_resources(Panel):
     bl_label = "IFC Resources"
@@ -61,6 +61,7 @@ class BIM_PT_resources(Panel):
         op.resource = 0
 
         icon_map = {
+            "IfcSubContractResource": "TEXT",
             "IfcConstructionEquipmentResource": "TOOL_SETTINGS",
             "IfcLaborResource": "OUTLINER_OB_ARMATURE",
             "IfcConstructionMaterialResource": "MATERIAL",
@@ -68,7 +69,12 @@ class BIM_PT_resources(Panel):
         }
 
         total_resources = len(self.tprops.resources)
-        if total_resources and self.props.active_resource_index < total_resources:
+        if (
+            total_resources
+            and self.props.active_resource_index < total_resources
+            and Data.resources[self.tprops.resources[self.props.active_resource_index].ifc_definition_id]["type"]
+            != "IfcSubContractResource"
+        ):
             row = self.layout.row(align=True)
             for ifc_class, icon in icon_map.items():
                 label = ifc_class.replace("Ifc", "").replace("Construction", "").replace("Resource", "")

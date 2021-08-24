@@ -43,6 +43,7 @@ class CreateProject(bpy.types.Operator):
         return result
 
     def _execute(self, context):
+        active_object = context.view_layer.objects.active
         self.file = IfcStore.get_file()
         if self.file:
             return {"FINISHED"}
@@ -79,6 +80,7 @@ class CreateProject(bpy.types.Operator):
         bpy.ops.bim.assign_object(related_object=building.name, relating_object=site.name)
         bpy.ops.bim.assign_object(related_object=building_storey.name, relating_object=building.name)
 
+        context.view_layer.objects.active = active_object
         return {"FINISHED"}
 
     def get_name(self, ifc_class, name):
@@ -188,7 +190,7 @@ class RefreshLibrary(bpy.types.Operator):
         self.props.active_library_element = ""
 
         types = IfcStore.library_file.wrapped_data.types_with_super()
-        for importable_type in ["IfcTypeProduct", "IfcMaterial", "IfcCostSchedule", "IfcProfileDef"]:
+        for importable_type in sorted(["IfcTypeProduct", "IfcMaterial", "IfcCostSchedule", "IfcProfileDef"]):
             if importable_type in types:
                 new = self.props.library_elements.add()
                 new.name = importable_type
@@ -211,13 +213,11 @@ class ChangeLibraryElement(bpy.types.Operator):
         [ifc_classes.add(e.is_a()) for e in elements]
         self.props.library_elements.clear()
         if len(ifc_classes) == 1 and list(ifc_classes)[0] == self.element_name:
-            for element in elements:
+            for name, ifc_definition_id in sorted([(self.get_name(e), e.id()) for e in elements]):
                 new = self.props.library_elements.add()
-                if element.is_a("IfcProfileDef"):
-                    new.name = element.ProfileName or "Unnamed"
-                else:
-                    new.name = element.Name or "Unnamed"
-                new.ifc_definition_id = element.id()
+                new.name = name
+                new.ifc_definition_id = ifc_definition_id
+                element = IfcStore.library_file.by_id(ifc_definition_id)
                 if IfcStore.library_file.schema == "IFC2X3" or not IfcStore.library_file.by_type("IfcProjectLibrary"):
                     new.is_declared = False
                 elif getattr(element, "HasContext", None) and element.HasContext[0].RelatingContext.is_a(
@@ -225,10 +225,15 @@ class ChangeLibraryElement(bpy.types.Operator):
                 ):
                     new.is_declared = True
         else:
-            for ifc_class in ifc_classes:
+            for ifc_class in sorted(ifc_classes):
                 new = self.props.library_elements.add()
                 new.name = ifc_class
         return {"FINISHED"}
+
+    def get_name(self, element):
+        if element.is_a("IfcProfileDef"):
+            return element.ProfileName or "Unnamed"
+        return element.Name or "Unnamed"
 
 
 class RewindLibrary(bpy.types.Operator):
@@ -377,9 +382,10 @@ class AppendLibraryElement(bpy.types.Operator):
         type_collection = bpy.data.collections.get("Types")
         if not type_collection:
             type_collection = bpy.data.collections.new("Types")
-            for collection in bpy.data.collections:
+            for collection in bpy.context.view_layer.layer_collection.children:
                 if "IfcProject/" in collection.name:
-                    collection.children.link(type_collection)
+                    collection.collection.children.link(type_collection)
+                    collection.children["Types"].hide_viewport = True
                     break
 
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)

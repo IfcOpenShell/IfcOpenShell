@@ -39,6 +39,7 @@ classes = (
     operator.AddBcfLabel,
     operator.AddBcfRelatedTopic,
     operator.ViewBcfTopic,
+    operator.RemoveBcfTopic,
     operator.RemoveBcfComment,
     operator.RemoveBcfBimSnippet,
     operator.RemoveBcfReferenceLink,
