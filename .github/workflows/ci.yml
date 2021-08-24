@@ -71,7 +71,7 @@ jobs:
       - name: install xmlschema
         run: |
           sudo /usr/bin/python -m pip install -U pip
-          sudo /usr/bin/python -m pip install xmlschema
+          sudo /usr/bin/python -m pip install xmlschema numpy
 
       - name: Test
         run: |
