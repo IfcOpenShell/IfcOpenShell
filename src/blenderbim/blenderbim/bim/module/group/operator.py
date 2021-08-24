@@ -48,6 +48,7 @@ class DisableGroupEditingUI(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMGroupProperties.is_editing = False
+        context.scene.BIMGroupProperties.active_group_id = 0
         return {"FINISHED"}
 
 
@@ -145,6 +146,16 @@ class DisableEditingGroup(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ToggleAssigningGroup(bpy.types.Operator):
+    bl_idname = "bim.toggle_assigning_group"
+    bl_label = "Toggle Assigning Group"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        context.scene.BIMGroupProperties.is_adding = not context.scene.BIMGroupProperties.is_adding
+        return {"FINISHED"}
+
+
 class AssignGroup(bpy.types.Operator):
     bl_idname = "bim.assign_group"
     bl_label = "Assign Group"
@@ -156,17 +167,20 @@ class AssignGroup(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        product = bpy.data.objects.get(self.product) if self.product else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "group.assign_group",
-            self.file,
-            **{
-                "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
-                "group": self.file.by_id(self.group),
-            }
-        )
-        Data.load(IfcStore.get_file())
+        products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
+        for product in products:
+            if not product.BIMObjectProperties.ifc_definition_id:
+                continue
+            ifcopenshell.api.run(
+                "group.assign_group",
+                self.file,
+                **{
+                    "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
+                    "group": self.file.by_id(self.group),
+                }
+            )
+        Data.load(self.file)
         return {"FINISHED"}
 
 
@@ -181,16 +195,19 @@ class UnassignGroup(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        product = bpy.data.objects.get(self.product) if self.product else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "group.unassign_group",
-            self.file,
-            **{
-                "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
-                "group": self.file.by_id(self.group),
-            }
-        )
+        products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
+        for product in products:
+            if not product.BIMObjectProperties.ifc_definition_id:
+                continue
+            ifcopenshell.api.run(
+                "group.unassign_group",
+                self.file,
+                **{
+                    "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
+                    "group": self.file.by_id(self.group),
+                }
+            )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
