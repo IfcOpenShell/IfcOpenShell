@@ -124,21 +124,24 @@ class AssignMaterial(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        material_type = self.material_type or obj.BIMObjectMaterialProperties.material_type
         self.file = IfcStore.get_file()
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        ifcopenshell.api.run(
-            "material.assign_material",
-            self.file,
-            **{
-                "product": element,
-                "type": material_type,
-                "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
-            },
-        )
-        Data.load(IfcStore.get_file())
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:            
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            material_type = self.material_type or obj.BIMObjectMaterialProperties.material_type
+            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            ifcopenshell.api.run(
+                "material.assign_material",
+                self.file,
+                **{
+                    "product": element,
+                    "type": material_type,
+                    "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
+                },
+            )
+            Data.load(IfcStore.get_file())
+            Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -152,13 +155,16 @@ class UnassignMaterial(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "material.unassign_material",
-            self.file,
-            **{"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)},
-        )
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:                       
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            ifcopenshell.api.run(
+                "material.unassign_material",
+                self.file,
+                **{"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)},
+            )
         Data.purge()
         return {"FINISHED"}
 
