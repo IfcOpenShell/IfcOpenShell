@@ -48,6 +48,7 @@ class DisableGroupEditingUI(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMGroupProperties.is_editing = False
+        context.scene.BIMGroupProperties.active_group_id = 0
         return {"FINISHED"}
 
 

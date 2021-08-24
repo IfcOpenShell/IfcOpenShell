@@ -48,6 +48,7 @@ class DisableSystemEditingUI(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMSystemProperties.is_editing = False
+        context.scene.BIMSystemProperties.active_system_id = 0
         return {"FINISHED"}
 
 
