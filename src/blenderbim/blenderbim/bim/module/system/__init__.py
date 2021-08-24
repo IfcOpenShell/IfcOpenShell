@@ -26,6 +26,7 @@ classes = (
     operator.AddSystem,
     operator.EditSystem,
     operator.RemoveSystem,
+    operator.ToggleAssigningSystem,
     operator.AssignSystemToMany,
     operator.AssignSystem,
     operator.UnassignSystemFromMany,
@@ -36,7 +37,9 @@ classes = (
     prop.System,
     prop.BIMSystemProperties,
     ui.BIM_PT_systems,
+    ui.BIM_PT_object_systems,
     ui.BIM_UL_systems,
+    ui.BIM_UL_object_systems,
 )
 
 

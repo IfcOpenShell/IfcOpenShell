@@ -145,6 +145,16 @@ class DisableEditingSystem(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ToggleAssigningSystem(bpy.types.Operator):
+    bl_idname = "bim.toggle_assigning_system"
+    bl_label = "Toggle Assigning System"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        context.scene.BIMSystemProperties.is_adding = not context.scene.BIMSystemProperties.is_adding
+        return {"FINISHED"}
+
+
 class AssignSystemToMany(bpy.types.Operator):
     bl_idname = "bim.assign_system_to_many"
     bl_label = "Assign System to Selected Objects"
