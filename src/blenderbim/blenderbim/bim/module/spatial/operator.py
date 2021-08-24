@@ -48,7 +48,9 @@ class AssignContainer(bpy.types.Operator):
             self.relating_structure or sprops.spatial_elements[sprops.active_spatial_element_index].ifc_definition_id
         )
         for related_element in related_elements:
-            oprops = related_element.BIMObjectProperties
+            oprops = related_element.BIMObjectProperties            
+            if not oprops.ifc_definition_id:
+                continue
             props = related_element.BIMObjectSpatialProperties
 
             ifcopenshell.api.run(
@@ -137,6 +139,8 @@ class RemoveContainer(bpy.types.Operator):
         active_object = context.active_object
         for obj in [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects:
             oprops = obj.BIMObjectProperties
+            if not oprops.ifc_definition_id:
+                continue
             self.file = IfcStore.get_file()
             ifcopenshell.api.run(
                 "spatial.remove_container", self.file, **{"product": self.file.by_id(oprops.ifc_definition_id)}
