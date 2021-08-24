@@ -1,0 +1,232 @@
+<!-- edited with XMLSpy v2021 rel. 3 (x64)  -->
+<!-- Version 0.4.1- July 26, 2021 - DRAFT  -->
+<!-- Most recent version available at: http://standards.buildingsmart.org/IDS  -->
+<xs:schema xmlns:ids="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ns1="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://standards.buildingsmart.org/IDS" elementFormDefault="qualified" attributeFormDefault="unqualified" version="0.4.1">
+	<xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/xml.xsd"/>
+	<xs:import namespace="http://www.w3.org/2001/XMLSchema" schemaLocation="https://www.w3.org/2001/XMLSchema.xsd"/>
+	<xs:import namespace="http://www.w3.org/2001/XMLSchema-instance" schemaLocation="http://www.w3.org/2001/XMLSchema-instance"/>
+	<xs:element name="ids">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="ids:idsType">
+					<xs:sequence>
+						<xs:element name="info">
+							<xs:complexType>
+								<xs:choice maxOccurs="unbounded">
+									<xs:element name="ifcversion">
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:enumeration value="2.3.0.1"/>
+												<xs:enumeration value="4.0.2.1"/>
+												<xs:enumeration value="4.3.0.0"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="description" type="xs:string" minOccurs="0"/>
+									<xs:element name="author" minOccurs="0">
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:pattern value="[^@]+@[^\.]+\..+"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="copyright" type="xs:string"/>
+									<xs:element name="version" type="xs:decimal"/>
+									<xs:element name="date" type="xs:date"/>
+									<xs:element name="purpose" type="xs:string" minOccurs="0"/>
+									<xs:element name="milestone" type="xs:string" minOccurs="0"/>
+								</xs:choice>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+	<xs:complexType name="entityType">
+		<xs:sequence>
+			<xs:element name="name" type="ids:idsValue"/>
+			<xs:element name="predefinedtype" type="ids:idsValue" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="idsValue">
+		<xs:choice minOccurs="1">
+			<!-- place for potential additional rules for idsValue -->
+			<xs:element name="simpleValue" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element ref="xs:restriction" minOccurs="1" maxOccurs="unbounded"/>
+		</xs:choice>
+	</xs:complexType>
+	<xs:complexType name="classificationType">
+		<xs:sequence maxOccurs="2">
+			<xs:element name="value" type="ids:idsValue"/>
+			<xs:element name="system" type="ids:idsValue" minOccurs="0"/>
+		</xs:sequence>
+		<xs:attribute name="location" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="type"/>
+					<xs:enumeration value="instance"/>
+					<xs:enumeration value="any"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="applicabilityType">
+		<xs:sequence>
+			<xs:element name="entity" type="ids:entityType"/>
+			<xs:element name="classification" type="ids:classificationType" minOccurs="0"/>
+			<xs:element name="property" minOccurs="0" maxOccurs="unbounded">
+				<xs:complexType>
+					<xs:complexContent>
+						<xs:extension base="ids:propertyType"/>
+					</xs:complexContent>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="material" minOccurs="0">
+				<xs:complexType>
+					<xs:complexContent>
+						<xs:extension base="ids:materialType"/>
+					</xs:complexContent>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="systemType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="href" type="xs:anyURI" use="optional"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="propertyType">
+		<xs:sequence>
+			<xs:element name="propertyset" type="ids:idsValue"/>
+			<xs:element name="name" type="ids:idsValue"/>
+			<xs:element name="value" type="ids:idsValue"/>
+		</xs:sequence>
+		<xs:attribute name="location" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="type"/>
+					<xs:enumeration value="instance"/>
+					<xs:enumeration value="any"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="materialType">
+		<xs:sequence>
+			<xs:element name="value" type="ids:idsValue"/>
+		</xs:sequence>
+		<xs:attribute name="location" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="type"/>
+					<xs:enumeration value="instance"/>
+					<xs:enumeration value="any"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="requirementsType">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="entity" type="ids:entityType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Make sure 'Name' value of requirements entity is the same as the 'applicability' node, or a wildcard (inclusive pattern).</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="classification" minOccurs="0">
+				<xs:complexType>
+					<xs:complexContent>
+						<xs:extension base="ids:classificationType">
+							<xs:sequence>
+								<xs:element name="instructions" type="xs:string" minOccurs="0">
+									<xs:annotation>
+										<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
+									</xs:annotation>
+								</xs:element>
+							</xs:sequence>
+							<xs:attribute name="uri" type="xs:anyURI" use="optional"/>
+							<xs:attribute name="use" use="optional">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="required"/>
+										<xs:enumeration value="optional"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:attribute>
+						</xs:extension>
+					</xs:complexContent>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="property" minOccurs="0" maxOccurs="unbounded">
+				<xs:complexType>
+					<xs:complexContent>
+						<xs:extension base="ids:propertyType">
+							<xs:sequence>
+								<xs:element name="instructions" type="xs:string" minOccurs="0">
+									<xs:annotation>
+										<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
+									</xs:annotation>
+								</xs:element>
+							</xs:sequence>
+							<xs:attribute name="uri" type="xs:anyURI" use="optional"/>
+							<xs:attribute name="use" use="optional">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="required"/>
+										<xs:enumeration value="optional"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:attribute>
+						</xs:extension>
+					</xs:complexContent>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="material" minOccurs="0">
+				<xs:complexType>
+					<xs:complexContent>
+						<xs:extension base="ids:materialType">
+							<xs:sequence>
+								<xs:element name="instructions" type="xs:string" minOccurs="0">
+									<xs:annotation>
+										<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
+									</xs:annotation>
+								</xs:element>
+							</xs:sequence>
+							<xs:attribute name="uri" type="xs:anyURI" use="optional"/>
+							<xs:attribute name="use" use="optional">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="required"/>
+										<xs:enumeration value="optional"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:attribute>
+						</xs:extension>
+					</xs:complexContent>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="specificationType">
+		<xs:sequence>
+			<xs:element name="applicability" type="ids:applicabilityType"/>
+			<xs:element name="requirements" type="ids:requirementsType"/>
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="optional"/>
+		<xs:attribute name="necessity" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="required"/>
+					<xs:enumeration value="optional"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="idsType">
+		<xs:sequence>
+			<xs:element name="specification" type="ids:specificationType" minOccurs="1" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>
