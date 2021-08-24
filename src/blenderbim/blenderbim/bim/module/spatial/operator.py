@@ -134,25 +134,26 @@ class RemoveContainer(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj, context.active_object) 
-        oprops = obj.BIMObjectProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "spatial.remove_container", self.file, **{"product": self.file.by_id(oprops.ifc_definition_id)}
-        )
-        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
+        active_object = context.active_object
+        for obj in [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects:
+            oprops = obj.BIMObjectProperties
+            self.file = IfcStore.get_file()
+            ifcopenshell.api.run(
+                "spatial.remove_container", self.file, **{"product": self.file.by_id(oprops.ifc_definition_id)}
+            )
+            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
 
-        aggregate_collection = bpy.data.collections.get(obj.name)
-        if aggregate_collection:
-            self.remove_collection(context.scene.collection, aggregate_collection)
-            for collection in bpy.data.collections:
-                self.remove_collection(collection, spatial_collection)
-            context.scene.collection.children.link(aggregate_collection)
-        else:
-            for collection in obj.users_collection:
-                collection.objects.unlink(obj)
-            context.scene.collection.objects.link(obj)
-        context.view_layer.objects.active = obj
+            aggregate_collection = bpy.data.collections.get(obj.name)
+            if aggregate_collection:
+                self.remove_collection(context.scene.collection, aggregate_collection)
+                for collection in bpy.data.collections:
+                    self.remove_collection(collection, spatial_collection)
+                context.scene.collection.children.link(aggregate_collection)
+            else:
+                for collection in obj.users_collection:
+                    collection.objects.unlink(obj)
+                context.scene.collection.objects.link(obj)
+        context.view_layer.objects.active = active_object
         return {"FINISHED"}
 
     def remove_collection(self, parent, child):
