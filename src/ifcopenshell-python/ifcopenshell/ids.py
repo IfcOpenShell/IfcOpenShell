@@ -504,8 +504,8 @@ class entity(facet):
         fac_dict = {"name": parameter_asdict(self.name)}
         try:
             fac_dict["predefinedtype"] = parameter_asdict(self.predefinedtype)
-        except RecursionError:
-            pass
+        except (RecursionError, UnboundLocalError) as e:
+            logger.error(e)
         return fac_dict
 
     def __call__(self, inst, logger):
