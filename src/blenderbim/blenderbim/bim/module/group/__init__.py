@@ -26,6 +26,7 @@ classes = (
     operator.AddGroup,
     operator.EditGroup,
     operator.RemoveGroup,
+    operator.ToggleAssigningGroup,
     operator.AssignGroup,
     operator.AssignGroupToMany,
     operator.UnassignGroup,
@@ -36,7 +37,9 @@ classes = (
     prop.Group,
     prop.BIMGroupProperties,
     ui.BIM_PT_groups,
+    ui.BIM_PT_object_groups,
     ui.BIM_UL_groups,
+    ui.BIM_UL_object_groups,
 )
 
 

@@ -145,6 +145,16 @@ class DisableEditingGroup(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ToggleAssigningGroup(bpy.types.Operator):
+    bl_idname = "bim.toggle_assigning_group"
+    bl_label = "Toggle Assigning Group"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        context.scene.BIMGroupProperties.is_adding = not context.scene.BIMGroupProperties.is_adding
+        return {"FINISHED"}
+
+
 class AssignGroupToMany(bpy.types.Operator):
     bl_idname = "bim.assign_group_to_many"
     bl_label = "Assign Group to Selected Objects"
