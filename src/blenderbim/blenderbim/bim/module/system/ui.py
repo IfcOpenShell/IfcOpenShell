@@ -68,37 +68,78 @@ class BIM_PT_systems(Panel):
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
 
+class BIM_PT_object_systems(Panel):
+    bl_label = "IFC Systems"
+    bl_idname = "BIM_PT_object_systems"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file() and context.active_object.BIMObjectProperties.ifc_definition_id
+
+    def draw(self, context):
+        if not Data.is_loaded:
+            Data.load(IfcStore.get_file())
+        self.props = context.scene.BIMSystemProperties
+        row = self.layout.row(align=True)
+        if self.props.is_adding:
+            row.label(text="Adding Systems", icon="OUTLINER")
+            row.operator("bim.toggle_assigning_system", text="", icon="CANCEL")
+            self.layout.template_list(
+                "BIM_UL_object_systems",
+                "",
+                self.props,
+                "systems",
+                self.props,
+                "active_system_index",
+            )
+        else:
+            row.label(text=f"{len(Data.systems)} Systems in IFC Project", icon="OUTLINER")
+            row.operator("bim.toggle_assigning_system", text="", icon="ADD")
+
+        systems_object = Data.products.get(context.active_object.BIMObjectProperties.ifc_definition_id, [])
+        for system_id in systems_object:
+            row = self.layout.row(align=True)
+            row.label(text=Data.systems[system_id].get("Name", "Unnamed"))
+            op = row.operator("bim.unassign_system", text="", icon="X")
+            op.system = system_id
+
+        if not systems_object:
+            self.layout.label(text="No System associated with Active Object")
+
 
 class BIM_UL_systems(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)
-
-            if context.active_object:
-                oprops = context.active_object.BIMObjectProperties
-                if (
-                    oprops.ifc_definition_id in Data.products
-                    and item.ifc_definition_id in Data.products[oprops.ifc_definition_id]
-                ):
-                    op = row.operator("bim.unassign_system", text="", icon="KEYFRAME_HLT", emboss=False)
-                    op.system = item.ifc_definition_id
-                else:
-                    op = row.operator("bim.assign_system", text="", icon="KEYFRAME", emboss=False)
-                    op.system = item.ifc_definition_id
-
-            if context.scene.BIMSystemProperties.active_system_id == item.ifc_definition_id:
+            system_id = item.ifc_definition_id
+            if context.scene.BIMSystemProperties.active_system_id == system_id:
                 op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.system = item.ifc_definition_id
+                op.system = system_id
                 row.operator("bim.edit_system", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_system", text="", icon="CANCEL")
             elif context.scene.BIMSystemProperties.active_system_id:
                 op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.system = item.ifc_definition_id
-                row.operator("bim.remove_system", text="", icon="X").system = item.ifc_definition_id
+                op.system = system_id
+                op = row.operator("bim.remove_system", text="", icon="X")
+                op.system = system_id
             else:
                 op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.system = item.ifc_definition_id
+                op.system = system_id
                 op = row.operator("bim.enable_editing_system", text="", icon="GREASEPENCIL")
-                op.system = item.ifc_definition_id
-                row.operator("bim.remove_system", text="", icon="X").system = item.ifc_definition_id
+                op.system = system_id
+                op = row.operator("bim.remove_system", text="", icon="X")
+                op.system = system_id
+
+
+class BIM_UL_object_systems(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
+            op = row.operator("bim.assign_system", text="", icon="ADD")
+            op.system = item.ifc_definition_id
