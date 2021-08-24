@@ -104,7 +104,7 @@ class BIM_PT_object_groups(Panel):
         for group_id in groups_object:
             row = self.layout.row(align=True)
             row.label(text=Data.groups[group_id].get("Name", "Unnamed"))
-            op = row.operator("bim.unassign_group_from_many", text="", icon="X")
+            op = row.operator("bim.unassign_group", text="", icon="X")
             op.group = group_id
 
         if not groups_object:
@@ -141,5 +141,5 @@ class BIM_UL_object_groups(UIList):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)
-            op = row.operator("bim.assign_group_to_many", text="", icon="ADD")
+            op = row.operator("bim.assign_group", text="", icon="ADD")
             op.group = item.ifc_definition_id

@@ -104,7 +104,7 @@ class BIM_PT_object_systems(Panel):
         for system_id in systems_object:
             row = self.layout.row(align=True)
             row.label(text=Data.systems[system_id].get("Name", "Unnamed"))
-            op = row.operator("bim.unassign_system_from_many", text="", icon="X")
+            op = row.operator("bim.unassign_system", text="", icon="X")
             op.system = system_id
 
         if not systems_object:
@@ -141,5 +141,5 @@ class BIM_UL_object_systems(UIList):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)
-            op = row.operator("bim.assign_system_to_many", text="", icon="ADD")
+            op = row.operator("bim.assign_system", text="", icon="ADD")
             op.system = item.ifc_definition_id
