@@ -774,28 +774,40 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 %inline %{
 	PyObject* get_info_cpp(IfcUtil::IfcBaseClass* v) {
 		PyObject *d = PyDict_New();
-		const std::vector<const IfcParse::attribute*> attrs = v->declaration().as_entity()->all_attributes();
-		std::vector<const IfcParse::attribute*>::const_iterator it = attrs.begin();
-		for (; it != attrs.end(); ++it) {
-			const std::string& name_cpp = (*it)->name();
+
+		if (v->declaration().as_entity()) {
+			const std::vector<const IfcParse::attribute*> attrs = v->declaration().as_entity()->all_attributes();
+			std::vector<const IfcParse::attribute*>::const_iterator it = attrs.begin();
+			auto dit = v->declaration().as_entity()->derived().begin();
+			for (; it != attrs.end(); ++it, ++dit) {
+				const std::string& name_cpp = (*it)->name();
+				auto name_py = pythonize(name_cpp);
+				auto attr_type = *dit
+					? IfcUtil::Argument_DERIVED
+					: IfcUtil::from_parameter_type((*it)->type_of_attribute());
+				auto value_cpp = v->data().getArgument(std::distance(attrs.begin(), it));
+				auto value_py = convert_cpp_attribute_to_python(attr_type, *value_cpp);
+				PyDict_SetItem(d, name_py, value_py);
+			}
+
+			const std::string& id_cpp = "id";
+			auto id_py = pythonize(id_cpp);
+			auto id_v_py = pythonize(v->data().id());
+			PyDict_SetItem(d, id_py, id_v_py);
+		} else {
+			const std::string& name_cpp = "wrappedValue";
 			auto name_py = pythonize(name_cpp);
-			auto attr_type = IfcUtil::from_parameter_type((*it)->type_of_attribute());
-			auto value_cpp = v->data().getArgument(std::distance(attrs.begin(), it));
-			auto value_py = convert_cpp_attribute_to_python(attr_type, *value_cpp);
+			auto value_cpp = v->data().getArgument(0);
+			auto value_py = convert_cpp_attribute_to_python(value_cpp->type(), *value_cpp);
 			PyDict_SetItem(d, name_py, value_py);
 		}
-		
+
 		// @todo type and id can be static?
 		const std::string& type_cpp = "type";
 		auto type_py = pythonize(type_cpp);
 		const std::string& type_v_cpp = v->declaration().name();
 		auto type_v_py = pythonize(type_v_cpp);
 		PyDict_SetItem(d, type_py, type_v_py);
-
-		const std::string& id_cpp = "id";
-		auto id_py = pythonize(id_cpp);
-		auto id_v_py = pythonize(v->data().id());
-		PyDict_SetItem(d, id_py, id_v_py);
 
 		return d;
 	}
