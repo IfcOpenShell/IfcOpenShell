@@ -95,7 +95,7 @@ class AddRepresentation(bpy.types.Operator):
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             bpy.ops.bim.edit_object_placement(obj=obj.name)
-            if not obj.data:
+            if not obj.data or not hasattr(obj.data, "polygons"):
                 continue
 
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
