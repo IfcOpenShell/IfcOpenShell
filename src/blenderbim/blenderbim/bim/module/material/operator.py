@@ -600,15 +600,35 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
 
         profile = self.file.by_id(material_set_item_data["Profile"])
         profile_data = ProfileData.profiles[material_set_item_data["Profile"]]
-        props = self.props.material_set_item_profile_attributes
 
-        blenderbim.bim.helper.import_attributes(profile.is_a(), props, profile_data)
-        for prop in props:
-            # Force null to be false if the attribute is mandatory because when we first assign a profile, all of
-            # its fields are null (which is illegal).
-            # TODO: find a better solution.
-            if not prop.is_optional:
-                prop.is_null = False
+        for attribute in IfcStore.get_schema().declaration_by_name(profile.is_a()).all_attributes():
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
+                continue
+            if attribute.name() in profile_data:
+                new = self.props.material_set_item_profile_attributes.add()
+                new.name = attribute.name()
+                new.is_null = profile_data[attribute.name()] is None
+                new.is_optional = attribute.optional()
+                new.data_type = data_type
+                if data_type == "string":
+                    new.string_value = "" if new.is_null else profile_data[attribute.name()]
+                elif data_type == "float":
+                    new.float_value = 0.0 if new.is_null else profile_data[attribute.name()]
+                elif data_type == "integer":
+                    new.int_value = 0 if new.is_null else profile_data[attribute.name()]
+                elif data_type == "boolean":
+                    new.bool_value = False if new.is_null else profile_data[attribute.name()]
+                elif data_type == "enum":
+                    new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
+                    if profile_data[attribute.name()]:
+                        new.enum_value = profile_data[attribute.name()]
+
+                # Force null to be false if the attribute is mandatory because when we first assign a profile, all of
+                # its fields are null (which is illegal).
+                # TODO: find a better solution.
+                if not new.is_optional:
+                    new.is_null = False
 
 
 class DisableEditingMaterialSetItem(bpy.types.Operator):
