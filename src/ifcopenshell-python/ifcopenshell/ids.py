@@ -502,8 +502,10 @@ class entity(facet):
         :rtype: dict
         """
         fac_dict = {"name": parameter_asdict(self.name)}
-        if "predefinedtype" in self:
+        try:
             fac_dict["predefinedtype"] = parameter_asdict(self.predefinedtype)
+        except (RecursionError, UnboundLocalError) as e:
+            print(e)
         return fac_dict
 
     def __call__(self, inst, logger):
