@@ -53,7 +53,7 @@ def draw_attribute(attribute, layout, copy_operator=None):
 def import_attributes(ifc_class, props, data, callback=None):
     for attribute in IfcStore.get_schema().declaration_by_name(ifc_class).all_attributes():
         data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-        if isinstance(data_type, tuple) or data_type == "entity":
+        if isinstance(data_type, tuple) or data_type in ("entity", "select"):
             callback(attribute.name(), None, data) if callback else None
             continue
         new = props.add()
