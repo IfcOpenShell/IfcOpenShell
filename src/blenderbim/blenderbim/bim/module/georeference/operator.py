@@ -39,24 +39,7 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
         props = context.scene.BIMGeoreferenceProperties
 
         props.projected_crs.clear()
-
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcProjectedCRS").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = props.projected_crs.add()
-            new.name = attribute.name()
-            new.is_null = Data.projected_crs[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else Data.projected_crs[attribute.name()]
-            elif data_type == "float":
-                new.float_value = 0.0 if new.is_null else Data.projected_crs[attribute.name()]
-            elif data_type == "integer":
-                new.int_value = 0 if new.is_null else Data.projected_crs[attribute.name()]
-            elif data_type == "boolean":
-                new.bool_value = False if new.is_null else Data.projected_crs[attribute.name()]
+        blenderbim.bim.helper.import_attributes("IfcProjectedCRS", props.projected_crs, Data.projected_crs)
 
         props.is_map_unit_null = Data.projected_crs["MapUnit"] is None
         if not props.is_map_unit_null:
@@ -69,18 +52,9 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
                 props.map_unit_imperial = Data.projected_crs["MapUnit"]["Name"]
 
         props.map_conversion.clear()
-
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcMapConversion").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity" or data_type == "select":
-                continue
-            new = props.map_conversion.add()
-            new.name = attribute.name()
-            new.is_null = Data.map_conversion[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            # Enforce a string data type to prevent data loss in single-precision Blender props
-            new.data_type = "string"
-            new.string_value = "" if new.is_null else str(Data.map_conversion[attribute.name()])
+        blenderbim.bim.helper.import_attributes(
+            "IfcMapConversion", props.map_conversion, Data.map_conversion, self.import_map_conversion_attributes
+        )
 
         props.has_true_north = bool(Data.true_north)
         if Data.true_north:
@@ -90,6 +64,12 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
         props.is_editing = True
         return {"FINISHED"}
 
+    def import_map_conversion_attributes(self, name, prop, data):
+        if prop is not None:            
+            # Enforce a string data type to prevent data loss in single-precision Blender props
+            prop.data_type = "string"
+            prop.string_value = "" if prop.is_null else str(data[name])
+            return True
 
 class DisableEditingGeoreferencing(bpy.types.Operator):
     bl_idname = "bim.disable_editing_georeferencing"
