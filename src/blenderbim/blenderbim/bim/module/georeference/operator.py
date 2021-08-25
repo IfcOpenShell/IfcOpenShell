@@ -49,14 +49,7 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
             new.is_null = Data.projected_crs[attribute.name()] is None
             new.is_optional = attribute.optional()
             new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else Data.projected_crs[attribute.name()]
-            elif data_type == "float":
-                new.float_value = 0.0 if new.is_null else Data.projected_crs[attribute.name()]
-            elif data_type == "integer":
-                new.int_value = 0 if new.is_null else Data.projected_crs[attribute.name()]
-            elif data_type == "boolean":
-                new.bool_value = False if new.is_null else Data.projected_crs[attribute.name()]
+            new.set_value(new.get_value_default() if new.is_null else Data.projected_crs[attribute.name()])
 
         props.is_map_unit_null = Data.projected_crs["MapUnit"] is None
         if not props.is_map_unit_null:
@@ -79,8 +72,7 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
             new.is_null = Data.map_conversion[attribute.name()] is None
             new.is_optional = attribute.optional()
             # Enforce a string data type to prevent data loss in single-precision Blender props
-            new.data_type = "string"
-            new.string_value = "" if new.is_null else str(Data.map_conversion[attribute.name()])
+            new.set_value("" if new.is_null else str(Data.map_conversion[attribute.name()]))
 
         props.has_true_north = bool(Data.true_north)
         if Data.true_north:

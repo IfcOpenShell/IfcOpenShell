@@ -47,6 +47,10 @@ class AddClassification(bpy.types.Operator):
     bl_label = "Add Classification"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return getClassifications(context.scene.BIMClassificationProperties, context)
+
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
@@ -77,9 +81,9 @@ class EnableEditingClassification(bpy.types.Operator):
             new.is_null = classification_data[attribute.name()] is None
             new.is_optional = attribute.optional()
             if attribute.name() == "ReferenceTokens":
-                new.string_value = "" if new.is_null else json.dumps(classification_data[attribute.name()])
+                new.set_value("" if new.is_null else json.dumps(classification_data[attribute.name()]))
             else:
-                new.string_value = "" if new.is_null else classification_data[attribute.name()]
+                new.set_value("" if new.is_null else classification_data[attribute.name()])
         props.active_classification_id = self.classification
         return {"FINISHED"}
 
@@ -162,7 +166,7 @@ class EnableEditingClassificationReference(bpy.types.Operator):
             new.name = attribute.name()
             new.is_null = reference_data[attribute.name()] is None
             new.is_optional = attribute.optional()
-            new.string_value = "" if new.is_null else reference_data[attribute.name()]
+            new.set_value("" if new.is_null else reference_data[attribute.name()])
         props.active_reference_id = self.reference
         return {"FINISHED"}
 

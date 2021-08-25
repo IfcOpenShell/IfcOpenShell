@@ -130,7 +130,7 @@ class EnableEditingSystem(bpy.types.Operator):
             new.name = attribute.name()
             new.is_null = data[attribute.name()] is None
             new.is_optional = attribute.optional()
-            new.string_value = "" if new.is_null else data[attribute.name()]
+            new.set_value("" if new.is_null else data[attribute.name()])
         props.active_system_id = self.system
         return {"FINISHED"}
 

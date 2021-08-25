@@ -248,8 +248,7 @@ class EnableEditingUnit(bpy.types.Operator):
             new.name = name
             new.is_null = data[name] is None
             new.is_optional = False
-            new.data_type = "string"
-            new.string_value = json.dumps([e for e in IfcStore.get_file().by_id(data["id"]).Dimensions])
+            new.set_value(json.dumps([e for e in IfcStore.get_file().by_id(data["id"]).Dimensions]))
             return True
 
 
