@@ -71,7 +71,7 @@ jobs:
       - name: install dependencies
         run: |
           sudo /usr/bin/python -m pip install -U pip
-          sudo /usr/bin/python -m pip install xmlschema numpy
+          sudo /usr/bin/python -m pip install xmlschema numpy lxml
           sudo /usr/bin/python -m pip install src/bcf
 
       - name: Test
