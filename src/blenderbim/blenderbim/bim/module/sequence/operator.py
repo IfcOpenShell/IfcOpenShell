@@ -797,6 +797,7 @@ class AssignProduct(bpy.types.Operator):
                 related_object=self.file.by_id(self.task),
             )
         Data.load(self.file)
+        bpy.ops.bim.load_task_outputs()
         return {"FINISHED"}
 
 
@@ -825,6 +826,7 @@ class UnassignProduct(bpy.types.Operator):
                 related_object=self.file.by_id(self.task),
             )
         Data.load(self.file)
+        bpy.ops.bim.load_task_outputs()
         return {"FINISHED"}
 
 
@@ -2106,9 +2108,9 @@ class LoadTaskOutputs(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class DeriveTaskDuration(bpy.types.Operator):
-    bl_idname = "bim.derive_task_duration"
-    bl_label = "Derive Task Duration"
+class CalculateTaskDuration(bpy.types.Operator):
+    bl_idname = "bim.calculate_task_duration"
+    bl_label = "Calculate Task Duration"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 

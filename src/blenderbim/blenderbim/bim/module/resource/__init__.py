@@ -36,6 +36,7 @@ classes = (
     operator.EnableEditingResourceTime,
     operator.EditResourceTime,
     operator.DisableEditingResourceTime,
+    operator.CalculateResourceWork,
     prop.Resource,
     prop.BIMResourceProperties,
     prop.BIMResourceTreeProperties,
