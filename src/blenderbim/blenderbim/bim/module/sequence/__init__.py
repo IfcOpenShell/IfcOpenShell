@@ -98,6 +98,7 @@ classes = (
     operator.LoadTaskInputs,
     operator.LoadTaskResources,
     operator.LoadTaskOutputs,
+    operator.DeriveTaskDuration,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
