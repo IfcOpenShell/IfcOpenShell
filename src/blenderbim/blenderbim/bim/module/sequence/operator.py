@@ -443,7 +443,7 @@ class AddTask(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run("sequence.add_task", self.file, **{"parent_task": self.file.by_id(self.task)})
+        ifcopenshell.api.run("sequence.add_task", self.file, parent_task=self.file.by_id(self.task))
         Data.load(self.file)
         bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
         return {"FINISHED"}
@@ -461,7 +461,7 @@ class AddSummaryTask(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run("sequence.add_task", self.file, **{"work_schedule": self.file.by_id(self.work_schedule)})
+        ifcopenshell.api.run("sequence.add_task", self.file, work_schedule=self.file.by_id(self.work_schedule))
         Data.load(self.file)
         bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
         return {"FINISHED"}
@@ -2098,9 +2098,24 @@ class LoadTaskOutputs(bpy.types.Operator):
         self.tprops = context.scene.BIMTaskTreeProperties
         ifc_definition_id = self.tprops.tasks[self.props.active_task_index].ifc_definition_id
         self.props.task_outputs.clear()
-        for output_id in Data.tasks[ifc_definition_id]["outputs"]:
+        for output_id in Data.tasks[ifc_definition_id]["Outputs"]:
             product = self.file.by_id(output_id)
             new = self.props.task_outputs.add()
             new.ifc_definition_id = output_id
             new.name = product.Name or "Unnamed"
+        return {"FINISHED"}
+
+
+class DeriveTaskDuration(bpy.types.Operator):
+    bl_idname = "bim.derive_task_duration"
+    bl_label = "Derive Task Duration"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run("sequence.calculate_task_duration", self.file, task=self.file.by_id(self.task))
+        Data.load(self.file)
+        bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
         return {"FINISHED"}

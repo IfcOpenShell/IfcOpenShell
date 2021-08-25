@@ -363,9 +363,7 @@ class BIM_PT_task_icom(Panel):
             op.related_object = ""
 
         row2 = col.row()
-        row2.template_list(
-            "BIM_UL_task_inputs", "", self.props, "task_inputs", self.props, "active_task_input_index"
-        )
+        row2.template_list("BIM_UL_task_inputs", "", self.props, "task_inputs", self.props, "active_task_input_index")
 
         # Column2
         col = grid.column()
@@ -373,17 +371,24 @@ class BIM_PT_task_icom(Panel):
         row2 = col.row(align=True)
         row2.label(text="Resources")
 
+        op = row2.operator("bim.derive_task_duration", text="", icon="TIME")
+        op.task = task.ifc_definition_id
+
         total_resources = len(context.scene.BIMResourceTreeProperties.resources)
         if total_resources and context.scene.BIMResourceProperties.active_resource_index < total_resources:
-            resource_id = context.scene.BIMResourceTreeProperties.resources[context.scene.BIMResourceProperties.active_resource_index].ifc_definition_id
             op = row2.operator("bim.assign_process", icon="ADD", text="")
             op.task = task.ifc_definition_id
             op.related_object_type = "RESOURCE"
-            op.resource = resource_id
+            op.resource = context.scene.BIMResourceTreeProperties.resources[
+                context.scene.BIMResourceProperties.active_resource_index
+            ].ifc_definition_id
+
+        total_task_resources = len(self.props.task_resources)
+        if total_task_resources and self.props.active_task_resource_index < total_task_resources:
             op = row2.operator("bim.unassign_process", icon="REMOVE", text="")
             op.task = task.ifc_definition_id
             op.related_object_type = "RESOURCE"
-            op.resource = resource_id
+            op.resource = self.props.task_resources[self.props.active_task_resource_index].ifc_definition_id
 
         row2 = col.row()
         row2.template_list(
@@ -430,7 +435,7 @@ class BIM_UL_task_inputs(UIList):
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
-            #row.operator("bim.remove_task_column", text="", icon="X").name = item.name
+            # row.operator("bim.remove_task_column", text="", icon="X").name = item.name
 
 
 class BIM_UL_task_resources(UIList):
