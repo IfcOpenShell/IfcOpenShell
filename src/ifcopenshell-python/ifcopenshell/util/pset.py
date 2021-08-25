@@ -1,10 +1,10 @@
-import pathlib
 import re
+import pathlib
+import ifcopenshell
+import ifcopenshell.util.schema
+from ifcopenshell.entity_instance import entity_instance
 from functools import lru_cache
 from typing import List, Generator, Optional
-
-import ifcopenshell
-from ifcopenshell.entity_instance import entity_instance
 
 templates = {}
 
@@ -71,10 +71,8 @@ class PsetQto:
                 continue
 
             applicable_class = match.group(1)
-            if entity.name() == applicable_class:
+            if ifcopenshell.util.schema.is_a(entity, applicable_class):
                 return True
-            if entity.supertype():
-                return self.is_applicable(entity.supertype(), applicable_class)
         return False
 
     @lru_cache()
