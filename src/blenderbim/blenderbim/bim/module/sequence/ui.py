@@ -371,7 +371,7 @@ class BIM_PT_task_icom(Panel):
         row2 = col.row(align=True)
         row2.label(text="Resources")
 
-        op = row2.operator("bim.derive_task_duration", text="", icon="TIME")
+        op = row2.operator("bim.calculate_task_duration", text="", icon="TEMP")
         op.task = task.ifc_definition_id
 
         total_resources = len(context.scene.BIMResourceTreeProperties.resources)

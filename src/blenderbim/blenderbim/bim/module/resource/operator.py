@@ -371,3 +371,17 @@ class EditResourceTime(bpy.types.Operator):
                 return True
             attributes[prop.name] = helper.parse_duration(prop.string_value)
             return True
+
+
+class CalculateResourceWork(bpy.types.Operator):
+    bl_idname = "bim.calculate_resource_work"
+    bl_label = "Calculate Resource Work"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run("resource.calculate_resource_work", self.file, resource=self.file.by_id(self.resource))
+        Data.load(self.file)
+        bpy.ops.bim.load_resources()
+        return {"FINISHED"}

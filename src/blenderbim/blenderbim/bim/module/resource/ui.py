@@ -75,12 +75,20 @@ class BIM_PT_resources(Panel):
             and Data.resources[self.tprops.resources[self.props.active_resource_index].ifc_definition_id]["type"]
             != "IfcSubContractResource"
         ):
+            ifc_definition_id = self.tprops.resources[self.props.active_resource_index].ifc_definition_id
+
             row = self.layout.row(align=True)
             for ifc_class, icon in icon_map.items():
                 label = ifc_class.replace("Ifc", "").replace("Construction", "").replace("Resource", "")
                 op = row.operator("bim.add_resource", text=label, icon=icon)
-                op.resource = self.tprops.resources[self.props.active_resource_index].ifc_definition_id
+                op.resource = ifc_definition_id
                 op.ifc_class = ifc_class
+
+            row = self.layout.row(align=True)
+            row.alignment = "RIGHT"
+
+            op = row.operator("bim.calculate_resource_work", text="", icon="TEMP")
+            op.resource = ifc_definition_id
 
         self.layout.template_list(
             "BIM_UL_resources",
