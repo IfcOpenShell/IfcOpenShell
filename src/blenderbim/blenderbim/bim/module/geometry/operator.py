@@ -92,13 +92,14 @@ class AddRepresentation(bpy.types.Operator):
         gprop = context.scene.BIMGeoreferenceProperties
         objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         for obj in objs:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            obj_id = obj.BIMObjectProperties.ifc_definition_id
+            if not obj_id:
                 continue
             bpy.ops.bim.edit_object_placement(obj=obj.name)
             if not obj.data or not hasattr(obj.data, "polygons"):
                 continue
 
-            product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            product = self.file.by_id(obj_id)
 
             context_id = self.context_id or int(context.scene.BIMProperties.contexts)
             context_of_items = self.file.by_id(context_id)
@@ -158,7 +159,7 @@ class AddRepresentation(bpy.types.Operator):
             mesh.name = "{}/{}".format(context_id, result.id())
             mesh.BIMMeshProperties.ifc_definition_id = int(result.id())
             obj.data = mesh
-            Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+            Data.load(self.file, obj_id)
 
             if product.is_a("IfcTypeProduct"):
                 if self.file.schema == "IFC2X3":
@@ -167,7 +168,7 @@ class AddRepresentation(bpy.types.Operator):
                     types = product.Types
                 if types:
                     for element in types[0].RelatedObjects:
-                        Data.load(IfcStore.get_file(), element.id())
+                        Data.load(self.file, element.id())
         return {"FINISHED"}
 
 

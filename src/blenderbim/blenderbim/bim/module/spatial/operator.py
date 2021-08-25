@@ -137,15 +137,20 @@ class RemoveContainer(bpy.types.Operator):
 
     def _execute(self, context):
         active_object = context.active_object
-        for obj in [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects:
-            oprops = obj.BIMObjectProperties
-            if not oprops.ifc_definition_id:
+        self.file = IfcStore.get_file()
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:
+            obj_id = obj.BIMObjectProperties.ifc_definition_id
+            if not obj_id:
                 continue
-            self.file = IfcStore.get_file()
             ifcopenshell.api.run(
-                "spatial.remove_container", self.file, **{"product": self.file.by_id(oprops.ifc_definition_id)}
+                "spatial.remove_container", 
+                self.file, 
+                **{
+                    "product": self.file.by_id(obj_id)
+                }
             )
-            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
+            Data.load(self.file, obj_id)
 
             aggregate_collection = bpy.data.collections.get(obj.name)
             if aggregate_collection:
