@@ -40,6 +40,7 @@ classes = (
     ui.BIM_PT_material_psets,
     ui.BIM_PT_task_qtos,
     ui.BIM_PT_resource_qtos,
+    ui.BIM_PT_resource_psets,
     ui.BIM_PT_profile_psets,
     ui.BIM_PT_work_schedule_psets,
 )
