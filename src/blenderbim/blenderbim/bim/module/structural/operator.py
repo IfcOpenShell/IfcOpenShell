@@ -176,7 +176,8 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
                 new.data_type = "float"
                 new.enum_value = [i for i in enum_items if i != "IfcBoolean"][0]
             elif data_type == "string":
-                new.set_value("" if new.is_null else data[attribute.name()])
+                new.string_value = "" if new.is_null else data[attribute.name()]
+                new.data_type = "string"
 
         props.active_boundary_condition = self.boundary_condition
         return {"FINISHED"}
@@ -358,7 +359,8 @@ class EnableEditingStructuralAnalysisModel(bpy.types.Operator):
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
             else:
-                new.set_value("" if new.is_null else data[attribute.name()])
+                new.string_value = "" if new.is_null else data[attribute.name()]
+                new.data_type = "string"
         props.active_structural_analysis_model_id = self.structural_analysis_model
         return {"FINISHED"}
 
@@ -1095,7 +1097,8 @@ class EnableEditingBoundaryCondition(bpy.types.Operator):
                 new.data_type = "float"
                 new.enum_value = [i for i in enum_items if i != "IfcBoolean"][0]
             elif data_type == "string":
-                new.set_value("" if new.is_null else data[attribute.name()])
+                new.string_value = "" if new.is_null else data[attribute.name()]
+                new.data_type = "string"
         props.active_boundary_condition_id = self.boundary_condition
         return {"FINISHED"}
 

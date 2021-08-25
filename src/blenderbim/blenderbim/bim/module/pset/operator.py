@@ -141,12 +141,18 @@ class EnablePsetEditing(bpy.types.Operator):
             new.is_optional = True
             new.data_type = data_type
 
-            if data_type == "enum":
+            if data_type == "string":
+                new.string_value = "" if new.is_null else data[prop_template.Name]
+            elif data_type == "integer":
+                new.int_value = 0 if new.is_null else data[prop_template.Name]
+            elif data_type == "float":
+                new.float_value = 0.0 if new.is_null else data[prop_template.Name]
+            elif data_type == "boolean":
+                new.bool_value = False if new.is_null else data[prop_template.Name]
+            elif data_type == "enum":
                 new.enum_items = json.dumps(enum_items)
                 if data.get(prop_template.Name):
                     new.enum_value = data[prop_template.Name]
-            else:
-                new.set_value(new.get_value_default() if new.is_null else data[prop_template.Name])
 
     def load_from_pset_data(self, pset_data):
         for prop_id in pset_data["Properties"]:
