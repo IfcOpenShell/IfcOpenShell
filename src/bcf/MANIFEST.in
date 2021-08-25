@@ -1,0 +1,2 @@
+include src/bcf/v2/xsd/*.xsd
+include src/bcf/v3/xsd/*.xsd
