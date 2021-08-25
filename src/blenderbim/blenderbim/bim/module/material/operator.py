@@ -365,6 +365,7 @@ class RemoveListItem(bpy.types.Operator):
     obj: bpy.props.StringProperty()
     list_item_set: bpy.props.IntProperty()
     list_item: bpy.props.IntProperty()
+    list_item_index: bpy.props.IntProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
@@ -377,7 +378,7 @@ class RemoveListItem(bpy.types.Operator):
             self.file,
             **{
                 "material_list": self.file.by_id(self.list_item_set),
-                "material": self.file.by_id(self.list_item),
+                "material_index": self.list_item_index,
             },
         )
         Data.load_lists()
