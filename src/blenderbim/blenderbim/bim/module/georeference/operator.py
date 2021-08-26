@@ -65,7 +65,7 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
         return {"FINISHED"}
 
     def import_map_conversion_attributes(self, name, prop, data):
-        if prop is not None:            
+        if name not in ["SourceCRS", "TargetCRS"]:            
             # Enforce a string data type to prevent data loss in single-precision Blender props
             prop.data_type = "string"
             prop.string_value = "" if prop.is_null else str(data[name])
