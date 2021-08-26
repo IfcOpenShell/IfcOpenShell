@@ -99,7 +99,7 @@ endif
 	cp dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/entity_instance.py dist/blenderbim/libs/site/packages/ifcopenshell/
 	cp dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/file.py dist/blenderbim/libs/site/packages/ifcopenshell/
 	# Provides bcf functionality
-	cp -r dist/working/IfcOpenShell-0.6.0/src/bcf/bcf dist/blenderbim/libs/site/packages/
+	cp -r dist/working/IfcOpenShell-0.6.0/src/bcf/src/bcf dist/blenderbim/libs/site/packages/
 	# Provides IFCClash functionality
 	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcclash/ifcclash dist/blenderbim/libs/site/packages/
 	# Provides BIMTester functionality
