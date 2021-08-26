@@ -79,7 +79,7 @@ def update_schedule_of_rates(self, context):
     bpy.ops.bim.load_schedule_of_rates(cost_schedule=int(self.schedule_of_rates))
 
 
-def getQuantityTypes(self, context):
+def get_quantity_types(self, context):
     global quantitytypes_enum
     if len(quantitytypes_enum) == 0 and IfcStore.get_schema():
         quantitytypes_enum.extend(
@@ -91,7 +91,7 @@ def getQuantityTypes(self, context):
     return quantitytypes_enum
 
 
-def getProductQuantityNames(self, context):
+def get_product_quantity_names(self, context):
     global productquantitynames_enum
     global productquantitynames_count
     ifc_file = IfcStore.get_file()
@@ -115,7 +115,7 @@ def getProductQuantityNames(self, context):
     return productquantitynames_enum
 
 
-def getProcessQuantityNames(self, context):
+def get_process_quantity_names(self, context):
     global processquantitynames_enum
     global processquantitynames_id
     ifc_file = IfcStore.get_file()
@@ -137,7 +137,7 @@ def getProcessQuantityNames(self, context):
     return processquantitynames_enum
 
 
-def getResourceQuantityNames(self, context):
+def get_resource_quantity_names(self, context):
     global resourcequantitynames_enum
     global resourcequantitynames_id
     ifc_file = IfcStore.get_file()
@@ -166,7 +166,7 @@ def update_active_cost_item_index(self, context):
         bpy.ops.bim.load_cost_item_quantities()
 
 
-def updateCostItemIdentification(self, context):
+def update_cost_item_identification(self, context):
     props = context.scene.BIMCostProperties
     if not props.is_cost_update_enabled or self.identification == "XXX":
         return
@@ -182,7 +182,7 @@ def updateCostItemIdentification(self, context):
         attribute.string_value = self.identification
 
 
-def updateCostItemName(self, context):
+def update_cost_item_name(self, context):
     props = context.scene.BIMCostProperties
     if not props.is_cost_update_enabled or self.name == "Unnamed":
         return
@@ -199,8 +199,8 @@ def updateCostItemName(self, context):
 
 
 class CostItem(PropertyGroup):
-    name: StringProperty(name="Name", update=updateCostItemName)
-    identification: StringProperty(name="Identification", update=updateCostItemIdentification)
+    name: StringProperty(name="Name", update=update_cost_item_name)
+    identification: StringProperty(name="Identification", update=update_cost_item_identification)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
@@ -229,10 +229,10 @@ class BIMCostProperties(PropertyGroup):
     active_cost_item_index: IntProperty(name="Active Cost Item Index", update=update_active_cost_item_index)
     cost_item_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     contracted_cost_items: StringProperty(name="Contracted Cost Items", default="[]")
-    quantity_types: EnumProperty(items=getQuantityTypes, name="Quantity Types")
-    product_quantity_names: EnumProperty(items=getProductQuantityNames, name="Product Quantity Names")
-    process_quantity_names: EnumProperty(items=getProcessQuantityNames, name="Process Quantity Names")
-    resource_quantity_names: EnumProperty(items=getResourceQuantityNames, name="Resource Quantity Names")
+    quantity_types: EnumProperty(items=get_quantity_types, name="Quantity Types")
+    product_quantity_names: EnumProperty(items=get_product_quantity_names, name="Product Quantity Names")
+    process_quantity_names: EnumProperty(items=get_process_quantity_names, name="Process Quantity Names")
+    resource_quantity_names: EnumProperty(items=get_resource_quantity_names, name="Resource Quantity Names")
     active_cost_item_quantity_id: IntProperty(name="Active Cost Item Quantity Id")
     quantity_attributes: CollectionProperty(name="Quantity Attributes", type=Attribute)
     cost_types: EnumProperty(

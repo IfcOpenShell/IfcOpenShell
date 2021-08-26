@@ -19,7 +19,6 @@ class Usecase:
                         if related_object in self.settings["products"]:
                             self.quantities.remove(quantity)
         self.settings["cost_item"].CostQuantities = list(self.quantities)
-
         for product in self.settings["products"]:
             ifcopenshell.api.run(
                 "control.unassign_control",
@@ -27,3 +26,15 @@ class Usecase:
                 related_object=product,
                 relating_control=self.settings["cost_item"],
             )
+        self.update_cost_item_count()
+
+    def update_cost_item_count(self):
+        # This is a bold assumption
+        # https://forums.buildingsmart.org/t/how-does-a-cost-item-know-that-it-is-counting-a-controlled-product/3564
+        if len(self.settings["cost_item"].CostQuantities) == 1:
+            quantity = self.settings["cost_item"].CostQuantities[0]
+            if quantity.is_a("IfcQuantityCount"):
+                count = 0
+                for rel in self.settings["cost_item"].Controls:
+                    count += len(rel.RelatedObjects)
+                quantity[3] = count

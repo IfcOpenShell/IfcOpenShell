@@ -637,10 +637,10 @@ class EnableEditingCostItemValue(bpy.types.Operator):
         data = Data.cost_values[self.cost_value]
 
         blenderbim.bim.helper.import_attributes(
-            data["type"], 
-            self.props.cost_value_attributes, 
-            data, 
-            lambda name, prop, data: self.import_attributes(name, prop, data, context)
+            data["type"],
+            self.props.cost_value_attributes,
+            data,
+            lambda name, prop, data: self.import_attributes(name, prop, data, context),
         )
         return {"FINISHED"}
 
@@ -715,8 +715,8 @@ class EditCostValue(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMCostProperties
         attributes = blenderbim.bim.helper.export_attributes(
-            props.cost_value_attributes, 
-            lambda attributes, prop: self.export_attributes(attributes, prop, context))
+            props.cost_value_attributes, lambda attributes, prop: self.export_attributes(attributes, prop, context)
+        )
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "cost.edit_cost_value",
