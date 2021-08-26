@@ -106,16 +106,15 @@ class EditGeoreferencing(bpy.types.Operator):
         self.file = IfcStore.get_file()
         props = context.scene.BIMGeoreferenceProperties
 
-        projected_crs = blenderbim.bim.helper.export_attributes(props.projected_crs)
-
-        map_conversion = blenderbim.bim.helper.export_attributes(props.map_conversion, self.export_attributes)
+        projected_crs = blenderbim.bim.helper.export_attributes(props.projected_crs, self.export_crs_attributes)
+        map_conversion = blenderbim.bim.helper.export_attributes(props.map_conversion, self.export_map_attributes)
 
         true_north = None
         if props.has_true_north:
             try:
                 true_north = [float(props.true_north_abscissa), float(props.true_north_ordinate)]
-            except:
-                pass
+            except ValueError:
+                self.report({'ERROR'}, 'True North Abscissa and Ordinate expect a number')
 
         ifcopenshell.api.run(
             "georeference.edit_georeferencing",
@@ -126,14 +125,19 @@ class EditGeoreferencing(bpy.types.Operator):
                 "true_north": true_north,
             }
         )
-        Data.load(IfcStore.get_file())
+        Data.load(self.file)
         bpy.ops.bim.disable_editing_georeferencing()
         return {"FINISHED"}
 
-    def export_attributes(self, attributes, prop):
+    def export_map_attributes(self, attributes, prop):
         if not prop.is_null and prop.data_type == "string":
             # We store our floats as string to prevent single precision data loss
             attributes[prop.name] = float(prop.string_value)
+            return True
+
+    def export_crs_attributes(self, attributes, prop):
+        if not prop.is_null and prop.name == "MapUnit":
+            attributes[prop.name] = self.file.by_id(prop.enum_value)
             return True
 
 
