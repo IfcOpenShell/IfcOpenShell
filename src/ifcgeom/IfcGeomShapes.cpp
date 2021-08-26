@@ -1368,7 +1368,7 @@ namespace {
 
 		// @todo this probably still does not work on a closed wire consisting of one (circular) edge.
 		
-		while (sorted_edges.size() < num_edges && 
+		while ((int) sorted_edges.size() < num_edges && 
 			(!v0.IsSame(v1) || ignore_first_equality_because_closed)) 
 		{
 			ignore_first_equality_because_closed = false;
