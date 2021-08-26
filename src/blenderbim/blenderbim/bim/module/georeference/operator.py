@@ -110,10 +110,6 @@ class EditGeoreferencing(bpy.types.Operator):
 
         projected_crs = blenderbim.bim.helper.export_attributes(props.projected_crs)
 
-        map_unit = ""
-        if not props.is_map_unit_null:
-            map_unit = props.map_unit_si if props.map_unit_type == "IfcSIUnit" else props.map_unit_imperial
-
         map_conversion = blenderbim.bim.helper.export_attributes(props.map_conversion, self.export_attributes)
 
         true_north = None
@@ -129,7 +125,6 @@ class EditGeoreferencing(bpy.types.Operator):
             **{
                 "map_conversion": map_conversion,
                 "projected_crs": projected_crs,
-                "map_unit": map_unit,
                 "true_north": true_north,
             }
         )

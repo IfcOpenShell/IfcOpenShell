@@ -51,7 +51,6 @@ class BIMGeoreferenceProperties(PropertyGroup):
         name="Map Unit SI",
         default="foot",
     )
-    is_map_unit_null: BoolProperty(name="Is Map Unit Null")
     coordinate_input: StringProperty(name="Coordinate Input", description="Formatted \"x,y,z\" (without quotes)")
     coordinate_output: StringProperty(name="Coordinate Output", description="Formatted \"x,y,z\" (without quotes)")
     has_blender_offset: BoolProperty(name="Has Blender Offset")
