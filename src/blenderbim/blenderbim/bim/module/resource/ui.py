@@ -52,44 +52,7 @@ class BIM_PT_resources(Panel):
         if not self.props.is_editing:
             return
 
-        row = self.layout.row(align=True)
-        op = row.operator("bim.add_resource", text="Add SubContract", icon="TEXT")
-        op.ifc_class = "IfcSubContractResource"
-        op.resource = 0
-        op = row.operator("bim.add_resource", text="Add Crew", icon="COMMUNITY")
-        op.ifc_class = "IfcCrewResource"
-        op.resource = 0
-
-        icon_map = {
-            "IfcSubContractResource": "TEXT",
-            "IfcConstructionEquipmentResource": "TOOL_SETTINGS",
-            "IfcLaborResource": "OUTLINER_OB_ARMATURE",
-            "IfcConstructionMaterialResource": "MATERIAL",
-            "IfcConstructionProductResource": "PACKAGE",
-        }
-
-        total_resources = len(self.tprops.resources)
-        if (
-            total_resources
-            and self.props.active_resource_index < total_resources
-            and Data.resources[self.tprops.resources[self.props.active_resource_index].ifc_definition_id]["type"]
-            != "IfcSubContractResource"
-        ):
-            ifc_definition_id = self.tprops.resources[self.props.active_resource_index].ifc_definition_id
-
-            row = self.layout.row(align=True)
-            for ifc_class, icon in icon_map.items():
-                label = ifc_class.replace("Ifc", "").replace("Construction", "").replace("Resource", "")
-                op = row.operator("bim.add_resource", text=label, icon=icon)
-                op.resource = ifc_definition_id
-                op.ifc_class = ifc_class
-
-            row = self.layout.row(align=True)
-            row.alignment = "RIGHT"
-
-            op = row.operator("bim.calculate_resource_work", text="", icon="TEMP")
-            op.resource = ifc_definition_id
-
+        self.draw_resource_operators()
         self.layout.template_list(
             "BIM_UL_resources",
             "",
@@ -103,6 +66,57 @@ class BIM_PT_resources(Panel):
 
         elif self.props.active_resource_id and self.props.editing_resource_type == "USAGE":
             self.draw_editable_resource_time_attributes_ui()
+
+    def draw_resource_operators(self):
+        row = self.layout.row(align=True)
+        op = row.operator("bim.add_resource", text="Add SubContract", icon="TEXT")
+        op.ifc_class = "IfcSubContractResource"
+        op.resource = 0
+        op = row.operator("bim.add_resource", text="Add Crew", icon="COMMUNITY")
+        op.ifc_class = "IfcCrewResource"
+        op.resource = 0
+
+        total_resources = len(self.tprops.resources)
+        if not total_resources or self.props.active_resource_index >= total_resources:
+            return
+
+        ifc_definition_id = self.tprops.resources[self.props.active_resource_index].ifc_definition_id
+        resource = Data.resources[ifc_definition_id]
+
+        if resource["type"] != "IfcSubContractResource":
+            icon_map = {
+                "IfcSubContractResource": "TEXT",
+                "IfcConstructionEquipmentResource": "TOOL_SETTINGS",
+                "IfcLaborResource": "OUTLINER_OB_ARMATURE",
+                "IfcConstructionMaterialResource": "MATERIAL",
+                "IfcConstructionProductResource": "PACKAGE",
+            }
+            row = self.layout.row(align=True)
+            for ifc_class, icon in icon_map.items():
+                label = ifc_class.replace("Ifc", "").replace("Construction", "").replace("Resource", "")
+                op = row.operator("bim.add_resource", text=label, icon=icon)
+                op.resource = ifc_definition_id
+                op.ifc_class = ifc_class
+
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+
+        if self.props.active_resource_id == ifc_definition_id and self.props.editing_resource_type == "ATTRIBUTES":
+            row.operator("bim.edit_resource", text="", icon="CHECKMARK")
+            row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
+        elif self.props.active_resource_id == ifc_definition_id and self.props.editing_resource_type == "USAGE":
+            row.operator("bim.edit_resource_time", text="", icon="CHECKMARK")
+            row.operator("bim.disable_editing_resource_time", text="", icon="CANCEL")
+        elif self.props.active_resource_id:
+            row.operator("bim.add_resource", text="", icon="ADD").resource = ifc_definition_id
+            row.operator("bim.remove_resource", text="", icon="X").resource = ifc_definition_id
+        else:
+            if resource["type"] in ["IfcLaborResource", "IfcConstructionEquipmentResource"]:
+                op = row.operator("bim.calculate_resource_work", text="", icon="TEMP")
+                op.resource = ifc_definition_id
+                row.operator("bim.enable_editing_resource_time", text="", icon="TIME").resource = ifc_definition_id
+            row.operator("bim.enable_editing_resource", text="", icon="GREASEPENCIL").resource = ifc_definition_id
+            row.operator("bim.remove_resource", text="", icon="X").resource = ifc_definition_id
 
     def draw_editable_resource_attributes_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.resource_attributes, self.layout)
@@ -149,19 +163,3 @@ class BIM_UL_resources(UIList):
                 else:
                     op = row.operator("bim.assign_resource", text="", icon="KEYFRAME", emboss=False)
                     op.resource = item.ifc_definition_id
-
-            if props.active_resource_id == item.ifc_definition_id and props.editing_resource_type == "ATTRIBUTES":
-                row.operator("bim.edit_resource", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
-            elif props.active_resource_id == item.ifc_definition_id and props.editing_resource_type == "USAGE":
-                row.operator("bim.edit_resource_time", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_resource_time", text="", icon="CANCEL")
-            elif props.active_resource_id:
-                row.operator("bim.add_resource", text="", icon="ADD").resource = item.ifc_definition_id
-                row.operator("bim.remove_resource", text="", icon="X").resource = item.ifc_definition_id
-            else:
-                row.operator(
-                    "bim.enable_editing_resource", text="", icon="GREASEPENCIL"
-                ).resource = item.ifc_definition_id
-                row.operator("bim.enable_editing_resource_time", text="", icon="TIME").resource = item.ifc_definition_id
-                row.operator("bim.remove_resource", text="", icon="X").resource = item.ifc_definition_id
