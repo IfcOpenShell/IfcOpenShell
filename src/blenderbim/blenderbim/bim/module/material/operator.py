@@ -430,14 +430,7 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
 
         props.material_set_attributes.clear()
 
-        for attribute in IfcStore.get_schema().declaration_by_name(material_set_class).all_attributes():
-            if "<string>" not in str(attribute.type_of_attribute):
-                continue
-            if attribute.name() in material_set_data:
-                new = props.material_set_attributes.add()
-                new.name = attribute.name()
-                new.is_null = material_set_data[attribute.name()] is None
-                new.string_value = "" if new.is_null else material_set_data[attribute.name()]
+        blenderbim.bim.helper.import_attributes(material_set_class, props.material_set_attributes, material_set_data)
         return {"FINISHED"}
 
     def import_attributes(self, name, prop, data):
@@ -509,10 +502,7 @@ class EditAssignedMaterial(bpy.types.Operator):
             return {"FINISHED"}
 
         material_set = self.file.by_id(self.material_set)
-
-        attributes = {}
-        for attribute in props.material_set_attributes:
-            attributes[attribute.name] = None if attribute.is_null else attribute.string_value
+        attributes = blenderbim.bim.helper.export_attributes(props.material_set_attributes)
         ifcopenshell.api.run(
             "material.edit_assigned_material",
             self.file,

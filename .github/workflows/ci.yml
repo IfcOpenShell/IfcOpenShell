@@ -1,107 +1,81 @@
-name: CI
+name: ci
 
-on: 
+on:
   push:
-
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'conda/**'
+      - 'cmake/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
 
 jobs:
-
   activate:
     runs-on: ubuntu-latest
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell' &&
-      !startsWith(github.event.head_commit.message, 'Release ') &&
-      !contains(github.event.head_commit.message, 'ci skip')
+      !contains(github.event.head_commit.message, 'skip ci')
     steps:
-    - run: echo ok go
+      - run: echo ok go
 
   build:
     runs-on: ubuntu-20.04
     needs: activate
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        with:
+            submodules: recursive
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install --no-install-recommends \
+          git cmake gcc g++ \
+          libboost-date-time-dev \
+          libboost-filesystem-dev \
+          libboost-iostreams-dev \
+          libboost-program-options-dev \
+          libboost-regex-dev \
+          libboost-system-dev \
+          libboost-thread-dev \
+          python3-all-dev python3-pip \
+          swig libpcre3-dev libxml2-dev \
+          libtbb-dev nlohmann-json3-dev \
+          liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1
 
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt-get install --no-install-recommends \
-        git cmake gcc g++ libboost1.67-all-dev python3-all-dev swig libpcre3-dev libxml2-dev \
-        liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev
+      - name: Build ifcopenshell
+        run: |
+          mkdir build && cd build
+          cmake \
+               -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+               -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+               -DCMAKE_INSTALL_PREFIX=$PWD/install/ \
+               -DCMAKE_BUILD_TYPE=Release \
+               -DCMAKE_PREFIX_PATH=/usr \
+               -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
+               -DOCC_INCLUDE_DIR=/usr/include/oce \
+               -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
+               -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
+               -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \
+               -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.8.so \
+               -DCOLLADA_SUPPORT=Off \
+               "-DSCHEMA_VERSIONS=2x3;4" \
+               -DGLTF_SUPPORT=On \
+               -DJSON_INCLUDE_DIR=/usr/include \
+             ../cmake
+          sudo make -j $(nproc)
+          sudo make install
 
-    -
-      name: ccache
-      uses: hendrikmuhs/ccache-action@v1
+      - name: install dependencies
+        run: |
+          sudo /usr/bin/python -m pip install -U pip
+          sudo /usr/bin/python -m pip install xmlschema numpy lxml
+          sudo /usr/bin/python -m pip install src/bcf
 
-    - 
-      name: Build ifcopenshell
-      run: |
-        mkdir build && cd build
-        cmake \
-         -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-         -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-         -DCMAKE_INSTALL_PREFIX=$PWD/install/ \
-         -DCMAKE_BUILD_TYPE=Release \
-         -DCMAKE_PREFIX_PATH=/usr \
-         -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
-         -DBUILD_PACKAGE=On \
-         -DOCC_INCLUDE_DIR=/usr/include/oce \
-         -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
-         -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
-         -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \
-         -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.8.so \
-         -DCOLLADA_SUPPORT=Off \
-         -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2 \
-         -DLIBXML2_LIBRARIES=/usr/lib/x86_64-linux-gnu/libxml2.so \
-         ../cmake
-        make -j $(nproc)
-        make install
-    - 
-      name: Package
-      run: |
-        make package
-      working-directory: build
-    - name: Upload 
-      uses: actions/upload-artifact@v2
-      with:
-        # Artifact name
-        name: ifcos-artifacts
-        # Directory containing files to upload
-        path: build/assets/Ifc*
-
-  deliver:
-    runs-on: ubuntu-20.04
-    needs: build
-    name: Docker Build, Tag, Push
-
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        lfs: true
-    
-    - name: Download 
-      uses: actions/download-artifact@v2
-      with:
-        # Artifact name
-        name: ifcos-artifacts
-        path: artifacts/
-    -
-      name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
-    -
-      name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1        
-    - 
-      name: Login to Dockerhub
-      uses: docker/login-action@v1 
-      with:
-        username: aecgeeks
-        password: ${{ secrets.DOCKER_HUB_TOKEN }}
-    - 
-      name: Build container image
-      uses: docker/build-push-action@v2
-      with: 
-        context: artifacts
-        repository: aecgeeks/ifcopenshell
-        tags: aecgeeks/ifcopenshell:latest
-        file: ./Dockerfile
-        push: true
+      - name: Test
+        run: |
+          cd test
+          sudo /usr/bin/python tests.py
+          sudo /usr/bin/python ../src/ifcopenshell-python/ifcopenshell/test_ids.py

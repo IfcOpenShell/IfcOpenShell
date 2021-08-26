@@ -1,5 +1,6 @@
 import ifcopenshell.util.date
 import ifcopenshell.util.unit
+import ifcopenshell.util.cost
 
 
 class Data:
@@ -147,6 +148,8 @@ class Data:
         if cost_value.Category not in [None, "*"]:
             cost_item_data["CategoryValues"].setdefault(cost_value.Category, 0)
             cost_item_data["CategoryValues"][cost_value.Category] += value_data["AppliedValue"]
+
+        value_data["Formula"] = ifcopenshell.util.cost.serialise_cost_value(cost_value)
 
         cls.cost_values[cost_value.id()] = value_data
         for component in cost_value.Components or []:

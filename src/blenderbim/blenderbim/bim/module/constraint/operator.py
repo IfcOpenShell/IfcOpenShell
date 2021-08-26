@@ -187,17 +187,21 @@ class AssignConstraint(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "constraint.assign_constraint",
-            self.file,
-            **{
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "constraint": self.file.by_id(self.constraint),
-            }
-        )
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:
+            obj_id = obj.BIMObjectProperties.ifc_definition_id
+            if not obj_id:
+                continue
+            ifcopenshell.api.run(
+                "constraint.assign_constraint",
+                self.file,
+                **{
+                    "product": self.file.by_id(obj_id),
+                    "constraint": self.file.by_id(self.constraint),
+                }
+            )
+            Data.load(self.file, obj_id)
         return {"FINISHED"}
 
 
@@ -212,15 +216,19 @@ class UnassignConstraint(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "constraint.unassign_constraint",
-            self.file,
-            **{
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "constraint": self.file.by_id(self.constraint),
-            }
-        )
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:
+            obj_id = obj.BIMObjectProperties.ifc_definition_id
+            if not obj_id:
+                continue
+            ifcopenshell.api.run(
+                "constraint.unassign_constraint",
+                self.file,
+                **{
+                    "product": self.file.by_id(obj_id),
+                    "constraint": self.file.by_id(self.constraint),
+                }
+            )
+            Data.load(self.file, obj_id)
         return {"FINISHED"}
