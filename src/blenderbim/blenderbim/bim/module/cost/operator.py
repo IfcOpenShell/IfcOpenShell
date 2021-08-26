@@ -592,12 +592,15 @@ class AddCostValue(bpy.types.Operator):
         self.file = IfcStore.get_file()
         if self.cost_type == "FIXED":
             category = None
+            attributes = {"AppliedValue": 0.0}
         elif self.cost_type == "SUM":
             category = "*"
+            attributes = {"Category": category}
         elif self.cost_type == "CATEGORY":
             category = self.cost_category
+            attributes = {"Category": category}
         value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=self.file.by_id(self.parent))
-        ifcopenshell.api.run("cost.edit_cost_value", self.file, cost_value=value, attributes={"Category": category})
+        ifcopenshell.api.run("cost.edit_cost_value", self.file, cost_value=value, attributes=attributes)
         Data.load(self.file)
         return {"FINISHED"}
 
@@ -646,8 +649,11 @@ class EnableEditingCostItemValue(bpy.types.Operator):
 
     def import_attributes(self, name, prop, data, context):
         if name == "AppliedValue":
-            # TODO: for now, only support simple values
+            # TODO: for now, only support simple IfcValues (which are effectively IfcMonetaryMeasure)
+            prop = self.props.cost_value_attributes.add()
             prop.data_type = "float"
+            prop.name = "AppliedValue"
+            prop.is_optional = True
             prop.float_value = 0.0 if prop.is_null else data[name]
             return True
         if (

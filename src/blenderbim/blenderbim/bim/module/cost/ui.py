@@ -190,6 +190,7 @@ class BIM_PT_cost_schedules(Panel):
 
         for cost_value_id in Data.cost_items[self.props.active_cost_item_id]["CostValues"]:
             row = self.layout.row(align=True)
+            row.label(text=Data.cost_values[cost_value_id]["Formula"])
             self.draw_readonly_cost_value_ui(row, cost_value_id)
 
         if self.props.active_cost_item_value_id:
