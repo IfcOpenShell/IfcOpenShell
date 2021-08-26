@@ -276,17 +276,21 @@ class AssignDocument(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "document.assign_document",
-            self.file,
-            **{
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "document": self.file.by_id(self.document),
-            }
-        )
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:
+            obj_id = obj.BIMObjectProperties.ifc_definition_id
+            if not obj_id:
+                continue
+            ifcopenshell.api.run(
+                "document.assign_document",
+                self.file,
+                **{
+                    "product": self.file.by_id(obj_id),
+                    "document": self.file.by_id(self.document),
+                }
+            )
+            Data.load(self.file, obj_id)
         return {"FINISHED"}
 
 
@@ -301,15 +305,19 @@ class UnassignDocument(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "document.unassign_document",
-            self.file,
-            **{
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "document": self.file.by_id(self.document),
-            }
-        )
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:
+            obj_id = obj.BIMObjectProperties.ifc_definition_id
+            if not obj_id:
+                continue
+            ifcopenshell.api.run(
+                "document.unassign_document",
+                self.file,
+                **{
+                    "product": self.file.by_id(obj_id),
+                    "document": self.file.by_id(self.document),
+                }
+            )
+            Data.load(self.file, obj_id)
         return {"FINISHED"}

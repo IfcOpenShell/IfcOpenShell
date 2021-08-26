@@ -21,6 +21,7 @@ import bpy
 import json
 import ifcopenshell.util.attribute
 import ifcopenshell.api
+import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.layer.data import Data
 
@@ -63,17 +64,10 @@ class EnableEditingLayer(bpy.types.Operator):
         props = context.scene.BIMLayerProperties
         props.layer_attributes.clear()
 
-        data = Data.layers[self.layer]
+        blenderbim.bim.helper.import_attributes(
+            "IfcPresentationLayerAssignment", props.layer_attributes, Data.layers[self.layer]
+        )
 
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcPresentationLayerAssignment").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity" or data_type == "select":
-                continue
-            new = props.layer_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.string_value = "" if new.is_null else data[attribute.name()]
         props.active_layer_id = self.layer
         return {"FINISHED"}
 

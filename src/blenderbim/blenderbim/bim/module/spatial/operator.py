@@ -48,7 +48,9 @@ class AssignContainer(bpy.types.Operator):
             self.relating_structure or sprops.spatial_elements[sprops.active_spatial_element_index].ifc_definition_id
         )
         for related_element in related_elements:
-            oprops = related_element.BIMObjectProperties
+            oprops = related_element.BIMObjectProperties            
+            if not oprops.ifc_definition_id:
+                continue
             props = related_element.BIMObjectSpatialProperties
 
             ifcopenshell.api.run(
@@ -134,25 +136,33 @@ class RemoveContainer(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj, context.active_object) 
-        oprops = obj.BIMObjectProperties
+        active_object = context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "spatial.remove_container", self.file, **{"product": self.file.by_id(oprops.ifc_definition_id)}
-        )
-        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:
+            obj_id = obj.BIMObjectProperties.ifc_definition_id
+            if not obj_id:
+                continue
+            ifcopenshell.api.run(
+                "spatial.remove_container", 
+                self.file, 
+                **{
+                    "product": self.file.by_id(obj_id)
+                }
+            )
+            Data.load(self.file, obj_id)
 
-        aggregate_collection = bpy.data.collections.get(obj.name)
-        if aggregate_collection:
-            self.remove_collection(context.scene.collection, aggregate_collection)
-            for collection in bpy.data.collections:
-                self.remove_collection(collection, spatial_collection)
-            context.scene.collection.children.link(aggregate_collection)
-        else:
-            for collection in obj.users_collection:
-                collection.objects.unlink(obj)
-            context.scene.collection.objects.link(obj)
-        context.view_layer.objects.active = obj
+            aggregate_collection = bpy.data.collections.get(obj.name)
+            if aggregate_collection:
+                self.remove_collection(context.scene.collection, aggregate_collection)
+                for collection in bpy.data.collections:
+                    self.remove_collection(collection, spatial_collection)
+                context.scene.collection.children.link(aggregate_collection)
+            else:
+                for collection in obj.users_collection:
+                    collection.objects.unlink(obj)
+                context.scene.collection.objects.link(obj)
+        context.view_layer.objects.active = active_object
         return {"FINISHED"}
 
     def remove_collection(self, parent, child):

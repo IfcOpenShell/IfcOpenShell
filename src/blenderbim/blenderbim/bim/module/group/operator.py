@@ -20,6 +20,7 @@
 import bpy
 import ifcopenshell.util.attribute
 import ifcopenshell.api
+import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.group.data import Data
 
@@ -121,17 +122,8 @@ class EnableEditingGroup(bpy.types.Operator):
         props = context.scene.BIMGroupProperties
         props.group_attributes.clear()
 
-        data = Data.groups[self.group]
+        blenderbim.bim.helper.import_attributes("IfcGroup", props.group_attributes, Data.groups[self.group])
 
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcGroup").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = props.group_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.string_value = "" if new.is_null else data[attribute.name()]
         props.active_group_id = self.group
         return {"FINISHED"}
 

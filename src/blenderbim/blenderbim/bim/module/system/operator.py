@@ -20,6 +20,7 @@
 import bpy
 import ifcopenshell.util.attribute
 import ifcopenshell.api
+import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.system.data import Data
 
@@ -121,17 +122,7 @@ class EnableEditingSystem(bpy.types.Operator):
         props = context.scene.BIMSystemProperties
         props.system_attributes.clear()
 
-        data = Data.systems[self.system]
-
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcSystem").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = props.system_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.string_value = "" if new.is_null else data[attribute.name()]
+        blenderbim.bim.helper.import_attributes("IfcSystem", props.system_attributes, Data.systems[self.system])
         props.active_system_id = self.system
         return {"FINISHED"}
 
