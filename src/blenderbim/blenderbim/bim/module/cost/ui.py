@@ -373,10 +373,28 @@ class BIM_PT_cost_item_quantities(Panel):
         # Column1
         col = grid.column()
 
+        has_quantity_names = CostProp.get_product_quantity_names(self, context)
+
         row2 = col.row(align=True)
         row2.label(text="Elements")
         op = row2.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
         op.cost_item = cost_item.ifc_definition_id
+
+        if context.selected_objects:
+            if has_quantity_names:
+                op = row2.operator("bim.assign_cost_item_quantity", text="", icon="PROPERTIES")
+                op.related_object_type = "PRODUCT"
+                op.cost_item = cost_item.ifc_definition_id
+                op.prop_name = self.props.product_quantity_names
+
+            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
+            op.related_object_type = "PRODUCT"
+            op.cost_item = cost_item.ifc_definition_id
+            op.prop_name = ""
+
+            op = row2.operator("bim.unassign_cost_item_quantity", text="", icon="REMOVE")
+            op.cost_item = cost_item.ifc_definition_id
+            op.related_object = 0
 
         row2 = col.row()
         row2.template_list(
@@ -388,22 +406,31 @@ class BIM_PT_cost_item_quantities(Panel):
             "active_cost_item_product_index",
         )
 
-        row2 = col.row(align=True)
-        row2.prop(self.props, "product_quantity_names", text="")
-        op = row2.operator("bim.unassign_cost_item_quantity", text="", icon="REMOVE")
-        op.cost_item = cost_item.ifc_definition_id
-        op.related_object = 0
-        if CostProp.productquantitynames_enum:
-            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
-            op.related_object_type = "PRODUCT"
-            op.cost_item = cost_item.ifc_definition_id
-            op.prop_name = self.props.product_quantity_names
+        if has_quantity_names:
+            row2 = col.row()
+            row2.prop(self.props, "product_quantity_names", text="")
 
         # Column2
         col = grid.column()
 
+        has_quantity_names = CostProp.get_process_quantity_names(self, context)
+
         row2 = col.row(align=True)
         row2.label(text="Tasks")
+
+        tprops = context.scene.BIMTaskTreeProperties
+        wprops = context.scene.BIMWorkScheduleProperties
+        if tprops.tasks and wprops.active_task_index < len(tprops.tasks):
+            if has_quantity_names:
+                op = row2.operator("bim.assign_cost_item_quantity", text="", icon="PROPERTIES")
+                op.related_object_type = "PROCESS"
+                op.cost_item = cost_item.ifc_definition_id
+                op.prop_name = self.props.process_quantity_names
+
+            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
+            op.related_object_type = "PROCESS"
+            op.cost_item = cost_item.ifc_definition_id
+            op.prop_name = ""
 
         row2 = col.row()
         row2.template_list(
@@ -415,19 +442,31 @@ class BIM_PT_cost_item_quantities(Panel):
             "active_cost_item_process_index",
         )
 
-        row2 = col.row(align=True)
-        row2.prop(self.props, "process_quantity_names", text="")
-        if CostProp.processquantitynames_enum:
-            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
-            op.related_object_type = "PROCESS"
-            op.cost_item = cost_item.ifc_definition_id
-            op.prop_name = self.props.process_quantity_names
+        if has_quantity_names:
+            row2 = col.row()
+            row2.prop(self.props, "process_quantity_names", text="")
 
         # Column3
         col = grid.column()
 
+        has_quantity_names = CostProp.get_resource_quantity_names(self, context)
+
         row2 = col.row(align=True)
         row2.label(text="Resources")
+
+        rtprops = context.scene.BIMResourceTreeProperties
+        rprops = context.scene.BIMResourceProperties
+        if rtprops.resources and rprops.active_resource_index < len(rtprops.resources):
+            if has_quantity_names:
+                op = row2.operator("bim.assign_cost_item_quantity", text="", icon="PROPERTIES")
+                op.related_object_type = "RESOURCE"
+                op.cost_item = cost_item.ifc_definition_id
+                op.prop_name = self.props.resource_quantity_names
+
+            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
+            op.related_object_type = "RESOURCE"
+            op.cost_item = cost_item.ifc_definition_id
+            op.prop_name = ""
 
         row2 = col.row()
         row2.template_list(
@@ -439,14 +478,9 @@ class BIM_PT_cost_item_quantities(Panel):
             "active_cost_item_resource_index",
         )
 
-        row2 = col.row(align=True)
-        row2.prop(self.props, "resource_quantity_names", text="")
-        if CostProp.resourcequantitynames_enum:
-            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
-            op.related_object_type = "RESOURCE"
-            op.cost_item = cost_item.ifc_definition_id
-            op.prop_name = self.props.resource_quantity_names
-
+        if has_quantity_names:
+            row2 = col.row()
+            row2.prop(self.props, "resource_quantity_names", text="")
 
 class BIM_PT_cost_item_rates(Panel):
     bl_label = "IFC Cost Item Rates"

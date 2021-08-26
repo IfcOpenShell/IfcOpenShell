@@ -183,7 +183,7 @@ class IfcStore:
     def commit_link_element(data):
         obj = bpy.data.objects.get(data["obj"])
         IfcStore.id_map[data["id"]] = obj
-        if data["guid"]:
+        if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
         blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
         blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
