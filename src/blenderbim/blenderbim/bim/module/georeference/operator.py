@@ -39,7 +39,24 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
         props = context.scene.BIMGeoreferenceProperties
 
         props.projected_crs.clear()
-        blenderbim.bim.helper.import_attributes("IfcProjectedCRS", props.projected_crs, Data.projected_crs)
+        
+        for attribute in IfcStore.get_schema().declaration_by_name("IfcProjectedCRS").all_attributes():
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
+                continue
+            new = props.projected_crs.add()
+            new.name = attribute.name()
+            new.is_null = Data.projected_crs[attribute.name()] is None
+            new.is_optional = attribute.optional()
+            new.data_type = data_type
+            if data_type == "string":
+                new.string_value = "" if new.is_null else Data.projected_crs[attribute.name()]
+            elif data_type == "float":
+                new.float_value = 0.0 if new.is_null else Data.projected_crs[attribute.name()]
+            elif data_type == "integer":
+                new.int_value = 0 if new.is_null else Data.projected_crs[attribute.name()]
+            elif data_type == "boolean":
+                new.bool_value = False if new.is_null else Data.projected_crs[attribute.name()]
 
         props.is_map_unit_null = Data.projected_crs["MapUnit"] is None
         if not props.is_map_unit_null:
