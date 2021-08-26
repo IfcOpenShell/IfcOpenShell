@@ -80,7 +80,7 @@ class EnableEditingClassification(bpy.types.Operator):
             if attribute.name() == "ReferenceTokens":
                 new.string_value = "" if new.is_null else json.dumps(classification_data[attribute.name()])
             else:
-                new.string_value = "" if new.is_null else classification_data[attribute.name()]            
+                new.string_value = "" if new.is_null else classification_data[attribute.name()]
         props.active_classification_id = self.classification
         return {"FINISHED"}
 
