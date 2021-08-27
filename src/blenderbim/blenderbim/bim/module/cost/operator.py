@@ -637,6 +637,7 @@ class EnableEditingCostItemValue(bpy.types.Operator):
         self.props = context.scene.BIMCostProperties
         self.props.cost_value_attributes.clear()
         self.props.active_cost_item_value_id = self.cost_value
+        self.props.cost_value_editing_type = "ATTRIBUTES"
         data = Data.cost_values[self.cost_value]
 
         blenderbim.bim.helper.import_attributes(
@@ -706,12 +707,50 @@ class DisableEditingCostItemValue(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMCostProperties
         props.active_cost_item_value_id = 0
+        props.cost_value_editing_type = ""
+        return {"FINISHED"}
+
+
+class EnableEditingCostItemValueFormula(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_cost_item_value_formula"
+    bl_label = "Enable Editing Cost Item Value Formula"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_value: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMCostProperties
+        self.props.cost_value_attributes.clear()
+        self.props.active_cost_item_value_id = self.cost_value
+        self.props.cost_value_editing_type = "FORMULA"
+        self.props.cost_value_formula = Data.cost_values[self.cost_value]["Formula"]
+        return {"FINISHED"}
+
+
+class EditCostValueFormula(bpy.types.Operator):
+    bl_idname = "bim.edit_cost_value_formula"
+    bl_label = "Edit Cost Value Formula"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_value: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        props = context.scene.BIMCostProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.edit_cost_value_formula",
+            self.file,
+            **{"cost_value": self.file.by_id(self.cost_value), "formula": props.cost_value_formula},
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.disable_editing_cost_item_value()
         return {"FINISHED"}
 
 
 class EditCostValue(bpy.types.Operator):
     bl_idname = "bim.edit_cost_value"
-    bl_label = "Edit Cost Item Value"
+    bl_label = "Edit Cost Value"
     bl_options = {"REGISTER", "UNDO"}
     cost_value: bpy.props.IntProperty()
 
