@@ -13,6 +13,10 @@ class Usecase:
             values = list(self.settings["parent"].CostValues)
             values.remove(self.settings["cost_value"])
             self.settings["parent"].CostValues = values if values else None
+        elif self.settings["parent"].is_a("IfcConstructionResource"):
+            values = list(self.settings["parent"].BaseCosts)
+            values.remove(self.settings["cost_value"])
+            self.settings["parent"].BaseCosts = values if values else None
         elif self.settings["parent"].is_a("IfcCostValue"):
             components = list(self.settings["parent"].Components)
             components.remove(self.settings["cost_value"])

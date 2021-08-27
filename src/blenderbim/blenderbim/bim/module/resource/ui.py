@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.resource.data import Data
-import blenderbim.bim.helper
 
 
 class BIM_PT_resources(Panel):
@@ -61,9 +61,11 @@ class BIM_PT_resources(Panel):
             self.props,
             "active_resource_index",
         )
+
         if self.props.active_resource_id and self.props.editing_resource_type == "ATTRIBUTES":
             self.draw_editable_resource_attributes_ui()
-
+        elif self.props.active_resource_id and self.props.editing_resource_type == "COSTS":
+            self.draw_editable_resource_costs_ui()
         elif self.props.active_resource_id and self.props.editing_resource_type == "USAGE":
             self.draw_editable_resource_time_attributes_ui()
 
@@ -107,6 +109,8 @@ class BIM_PT_resources(Panel):
         elif self.props.active_resource_id == ifc_definition_id and self.props.editing_resource_type == "USAGE":
             row.operator("bim.edit_resource_time", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_resource_time", text="", icon="CANCEL")
+        elif self.props.active_resource_id == ifc_definition_id and self.props.editing_resource_type == "COSTS":
+            row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
         elif self.props.active_resource_id:
             row.operator("bim.add_resource", text="", icon="ADD").resource = ifc_definition_id
             row.operator("bim.remove_resource", text="", icon="X").resource = ifc_definition_id
@@ -115,6 +119,8 @@ class BIM_PT_resources(Panel):
                 op = row.operator("bim.calculate_resource_work", text="", icon="TEMP")
                 op.resource = ifc_definition_id
                 row.operator("bim.enable_editing_resource_time", text="", icon="TIME").resource = ifc_definition_id
+            op = row.operator("bim.enable_editing_resource_costs", text="", icon="DISC")
+            op.resource = ifc_definition_id
             row.operator("bim.enable_editing_resource", text="", icon="GREASEPENCIL").resource = ifc_definition_id
             row.operator("bim.remove_resource", text="", icon="X").resource = ifc_definition_id
 
@@ -123,6 +129,62 @@ class BIM_PT_resources(Panel):
 
     def draw_editable_resource_time_attributes_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.resource_time_attributes, self.layout)
+
+    def draw_editable_resource_costs_ui(self):
+        row = self.layout.row(align=True)
+        row.prop(self.props, "cost_types", text="")
+        if self.props.cost_types == "CATEGORY":
+            row.prop(self.props, "cost_category", text="")
+        op = row.operator("bim.add_cost_value", text="", icon="ADD")
+        op.parent = self.props.active_resource_id
+        op.cost_type = self.props.cost_types
+        if self.props.cost_types == "CATEGORY":
+            op.cost_category = self.props.cost_category
+
+        for cost_value_id in Data.resources[self.props.active_resource_id]["BaseCosts"] or []:
+            row = self.layout.row(align=True)
+            self.draw_readonly_cost_value_ui(row, cost_value_id)
+
+        if self.props.cost_value_editing_type == "ATTRIBUTES":
+            box = self.layout.box()
+            self.draw_editable_cost_value_ui(box, Data.cost_values[self.props.active_cost_value_id])
+
+    def draw_readonly_cost_value_ui(self, layout, cost_value_id):
+        cost_value = Data.cost_values[cost_value_id]
+
+        if self.props.active_cost_value_id == cost_value_id and self.props.cost_value_editing_type == "FORMULA":
+            layout.prop(self.props, "cost_value_formula", text="")
+        else:
+            cost_value_label = "{0:.2f}".format(cost_value["AppliedValue"])
+            cost_value_label += " = " + cost_value["Formula"]
+            layout.label(text=cost_value_label, icon="DISC")
+
+        self.draw_cost_value_operator_ui(layout, cost_value_id, self.props.active_resource_id)
+
+    def draw_cost_value_operator_ui(self, layout, cost_value_id, parent_id):
+        if self.props.active_cost_value_id and self.props.active_cost_value_id == cost_value_id:
+            if self.props.cost_value_editing_type == "ATTRIBUTES":
+                op = layout.operator("bim.edit_resource_cost_value", text="", icon="CHECKMARK")
+                op.cost_value = cost_value_id
+            elif self.props.cost_value_editing_type == "FORMULA":
+                op = layout.operator("bim.edit_resource_cost_value_formula", text="", icon="CHECKMARK")
+                op.cost_value = cost_value_id
+            layout.operator("bim.disable_editing_resource_cost_value", text="", icon="CANCEL")
+        elif self.props.active_cost_value_id:
+            op = layout.operator("bim.remove_cost_value", text="", icon="X")
+            op.parent = parent_id
+            op.cost_value = cost_value_id
+        else:
+            op = layout.operator("bim.enable_editing_resource_cost_value_formula", text="", icon="CON_TRANSLIKE")
+            op.cost_value = cost_value_id
+            op = layout.operator("bim.enable_editing_resource_cost_value", text="", icon="GREASEPENCIL")
+            op.cost_value = cost_value_id
+            op = layout.operator("bim.remove_cost_value", text="", icon="X")
+            op.parent = parent_id
+            op.cost_value = cost_value_id
+
+    def draw_editable_cost_value_ui(self, layout, cost_value):
+        blenderbim.bim.helper.draw_attributes(self.props.cost_value_attributes, layout)
 
 
 class BIM_UL_resources(UIList):

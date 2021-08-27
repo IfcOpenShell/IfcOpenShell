@@ -74,3 +74,16 @@ class BIMResourceProperties(PropertyGroup):
     active_resource_time_id: IntProperty(name="Active Resource Usage Id")
     resource_time_attributes: CollectionProperty(name="Resource Usage Attributes", type=Attribute)
     editing_resource_type: StringProperty(name="Editing Resource Type")
+    cost_types: EnumProperty(
+        items=[
+            ("FIXED", "Fixed", "The cost value is a fixed number"),
+            ("SUM", "Sum", "The cost value is automatically derived from the sum of all nested cost items"),
+            ("CATEGORY", "Category", "The cost value represents a single category"),
+        ],
+        name="Cost Types",
+    )
+    cost_category: StringProperty(name="Cost Category")
+    active_cost_value_id: IntProperty(name="Active Resource Cost Value Id")
+    cost_value_editing_type: StringProperty(name="Cost Value Editing Type")
+    cost_value_attributes: CollectionProperty(name="Cost Value Attributes", type=Attribute)
+    cost_value_formula: StringProperty(name="Cost Value Formula")

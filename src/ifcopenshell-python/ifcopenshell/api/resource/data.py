@@ -1,17 +1,20 @@
 import ifcopenshell
 import ifcopenshell.util.date
+from ifcopenshell.api.cost.data import CostValueTrait
 
 
-class Data:
+class Data(CostValueTrait):
     is_loaded = False
     resources = {}
     resource_times = {}
+    cost_values = {}
 
     @classmethod
     def purge(cls):
         cls.is_loaded = False
         cls.resources = {}
         cls.resource_times = {}
+        cls.cost_values = {}
 
     @classmethod
     def load(cls, file):
@@ -25,6 +28,7 @@ class Data:
     @classmethod
     def load_resources(cls):
         cls.resources = {}
+        cls.cost_values = {}
         for resource in cls._file.by_type("IfcResource"):
             data = resource.get_info()
             del data["OwnerHistory"]
@@ -40,6 +44,12 @@ class Data:
             data["HasContext"] = resource.HasContext[0].RelatingContext.id() if resource.HasContext else None
             if resource.Usage:
                 data["Usage"] = data["Usage"].id()
+            data["TotalCostQuantity"] = cls.get_total_quantity(resource)
+            if resource.BaseQuantity:
+                data["BaseQuantity"] = resource.BaseQuantity.id()
+            if resource.BaseCosts:
+                data["BaseCosts"] = [e.id() for e in resource.BaseCosts]
+                cls.load_cost_values(resource, data)
             cls.resources[resource.id()] = data
 
     @classmethod

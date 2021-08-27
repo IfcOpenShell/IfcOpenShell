@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blenderbim.bim.helper
 import blenderbim.bim.module.cost.prop as CostProp
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import draw_attributes
 from ifcopenshell.api.cost.data import Data
 from ifcopenshell.api.unit.data import Data as UnitData
 
@@ -94,7 +94,7 @@ class BIM_PT_cost_schedules(Panel):
         self.layout.template_list("BIM_UL_cost_columns", "", self.props, "columns", self.props, "active_column_index")
 
     def draw_editable_cost_schedule_ui(self):
-        draw_attributes(self.props.cost_schedule_attributes, self.layout)
+        blenderbim.bim.helper.draw_attributes(self.props.cost_schedule_attributes, self.layout)
 
     def draw_editable_cost_item_ui(self, cost_schedule_id):
         row = self.layout.row(align=True)
@@ -140,7 +140,7 @@ class BIM_PT_cost_schedules(Panel):
                 self.draw_editable_cost_item_values_ui()
 
     def draw_editable_cost_item_attributes_ui(self):
-        draw_attributes(self.props.cost_item_attributes, self.layout)
+        blenderbim.bim.helper.draw_attributes(self.props.cost_item_attributes, self.layout)
 
     def draw_editable_cost_item_quantities_ui(self):
         row = self.layout.row(align=True)
@@ -175,7 +175,7 @@ class BIM_PT_cost_schedules(Panel):
                 self.draw_editable_cost_item_quantity_ui(box)
 
     def draw_editable_cost_item_quantity_ui(self, layout):
-        draw_attributes(self.props.quantity_attributes, self.layout)
+        blenderbim.bim.helper.draw_attributes(self.props.quantity_attributes, self.layout)
 
     def draw_editable_cost_item_values_ui(self):
         row = self.layout.row(align=True)
@@ -194,12 +194,12 @@ class BIM_PT_cost_schedules(Panel):
 
         if self.props.cost_value_editing_type == "ATTRIBUTES":
             box = self.layout.box()
-            self.draw_editable_cost_value_ui(box, Data.cost_values[self.props.active_cost_item_value_id])
+            self.draw_editable_cost_value_ui(box, Data.cost_values[self.props.active_cost_value_id])
 
     def draw_readonly_cost_value_ui(self, layout, cost_value_id):
         cost_value = Data.cost_values[cost_value_id]
 
-        if self.props.active_cost_item_value_id == cost_value_id and self.props.cost_value_editing_type == "FORMULA":
+        if self.props.active_cost_value_id == cost_value_id and self.props.cost_value_editing_type == "FORMULA":
             layout.prop(self.props, "cost_value_formula", text="")
         else:
             cost_value_label = "{0:.2f}".format(cost_value["AppliedValue"])
@@ -209,16 +209,16 @@ class BIM_PT_cost_schedules(Panel):
         self.draw_cost_value_operator_ui(layout, cost_value_id, self.props.active_cost_item_id)
 
     def draw_cost_value_operator_ui(self, layout, cost_value_id, parent_id):
-        if self.props.active_cost_item_value_id and self.props.active_cost_item_value_id == cost_value_id:
+        if self.props.active_cost_value_id and self.props.active_cost_value_id == cost_value_id:
             if self.props.cost_value_editing_type == "ATTRIBUTES":
-                op = layout.operator("bim.edit_cost_value", text="", icon="CHECKMARK")
+                op = layout.operator("bim.edit_cost_item_value", text="", icon="CHECKMARK")
                 op.cost_value = cost_value_id
             elif self.props.cost_value_editing_type == "FORMULA":
-                op = layout.operator("bim.edit_cost_value_formula", text="", icon="CHECKMARK")
+                op = layout.operator("bim.edit_cost_item_value_formula", text="", icon="CHECKMARK")
                 op.cost_value = cost_value_id
             layout.operator("bim.disable_editing_cost_item_value", text="", icon="CANCEL")
-        elif self.props.active_cost_item_value_id:
-            op = layout.operator("bim.remove_cost_item_value", text="", icon="X")
+        elif self.props.active_cost_value_id:
+            op = layout.operator("bim.remove_cost_value", text="", icon="X")
             op.parent = parent_id
             op.cost_value = cost_value_id
         else:
@@ -226,12 +226,12 @@ class BIM_PT_cost_schedules(Panel):
             op.cost_value = cost_value_id
             op = layout.operator("bim.enable_editing_cost_item_value", text="", icon="GREASEPENCIL")
             op.cost_value = cost_value_id
-            op = layout.operator("bim.remove_cost_item_value", text="", icon="X")
+            op = layout.operator("bim.remove_cost_value", text="", icon="X")
             op.parent = parent_id
             op.cost_value = cost_value_id
 
     def draw_editable_cost_value_ui(self, layout, cost_value):
-        draw_attributes(self.props.cost_value_attributes, layout)
+        blenderbim.bim.helper.draw_attributes(self.props.cost_value_attributes, layout)
 
 
 class BIM_PT_cost_item_types(Panel):
