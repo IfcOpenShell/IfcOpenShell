@@ -52,7 +52,7 @@ def unserialise_cost_value(formula, cost_value):
         result["ifc"] = element
         for i, component in enumerate(result.get("Components", [])):
             if element.Components and i < len(element.Components):
-                map_element_to_formula(element.Components[i], result["Components"][i])
+                map_element_to_result(element.Components[i], result["Components"][i])
     map_element_to_result(cost_value, result)
     return result
 
@@ -116,11 +116,14 @@ class CostValueUnserialiser:
     def get_operand(self, operand):
         child = operand.children[0]
         if child.data == "value":
-            return {"AppliedValue": self.get_value(child)}
+            value = self.get_value(child)
+            return {"AppliedValue": float(value) if value else None}
         elif child.data == "category":
             data = {}
             category = self.get_category(child)
             if category:
+                if category.lower() == "sum":
+                    category = "*"
                 data["Category"] = category
             formula = self.get_formula(operand.children[1])
             if formula.get("Components"):

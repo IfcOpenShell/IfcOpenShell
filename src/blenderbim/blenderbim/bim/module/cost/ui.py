@@ -190,65 +190,42 @@ class BIM_PT_cost_schedules(Panel):
 
         for cost_value_id in Data.cost_items[self.props.active_cost_item_id]["CostValues"]:
             row = self.layout.row(align=True)
-            row.label(text=Data.cost_values[cost_value_id]["Formula"])
             self.draw_readonly_cost_value_ui(row, cost_value_id)
 
-        if self.props.active_cost_item_value_id:
+        if self.props.cost_value_editing_type == "ATTRIBUTES":
             box = self.layout.box()
             self.draw_editable_cost_value_ui(box, Data.cost_values[self.props.active_cost_item_value_id])
 
     def draw_readonly_cost_value_ui(self, layout, cost_value_id):
-        # This UI is really poor. Delete and start again.
         cost_value = Data.cost_values[cost_value_id]
-        cost_value_label = "{0:.2f}".format(cost_value["AppliedValue"])
-        if cost_value["Category"]:
-            cost_value_label += " ({})".format(cost_value["Category"])
-        layout.label(text="", icon="DISC")
+
+        if self.props.active_cost_item_value_id == cost_value_id and self.props.cost_value_editing_type == "FORMULA":
+            layout.prop(self.props, "cost_value_formula", text="")
+        else:
+            cost_value_label = "{0:.2f}".format(cost_value["AppliedValue"])
+            cost_value_label += " = " + cost_value["Formula"]
+            layout.label(text=cost_value_label, icon="DISC")
+
         self.draw_cost_value_operator_ui(layout, cost_value_id, self.props.active_cost_item_id)
-        layout.label(text=cost_value_label)
-
-        for component_id in cost_value["Components"] or []:
-            self.draw_readonly_component_cost_value_ui(layout, component_id, cost_value["id"])
-
-    def draw_readonly_component_cost_value_ui(self, layout, cost_value_id, parent_id, level=1):
-        self.draw_cost_value_operator_ui(layout, cost_value_id, parent_id)
-        cost_value = Data.cost_values[cost_value_id]
-        cost_value_label = ">" * level
-        cost_value_label += "{0:.2f}".format(cost_value["AppliedValue"])
-        if cost_value["Category"]:
-            cost_value_label += " ({})".format(cost_value["Category"])
-        layout.label(text=cost_value_label)
-
-        for component_id in cost_value["Components"] or []:
-            self.draw_readonly_component_cost_value_ui(layout, component_id, cost_value["id"], level + 1)
 
     def draw_cost_value_operator_ui(self, layout, cost_value_id, parent_id):
         if self.props.active_cost_item_value_id and self.props.active_cost_item_value_id == cost_value_id:
-            op = layout.operator("bim.edit_cost_value", text="", icon="CHECKMARK")
-            op.cost_value = cost_value_id
-            op = layout.operator("bim.add_cost_value", text="", icon="ADD")
-            op.parent = cost_value_id
-            op.cost_type = self.props.cost_types
-            if self.props.cost_types == "CATEGORY":
-                op.cost_category = self.props.cost_category
+            if self.props.cost_value_editing_type == "ATTRIBUTES":
+                op = layout.operator("bim.edit_cost_value", text="", icon="CHECKMARK")
+                op.cost_value = cost_value_id
+            elif self.props.cost_value_editing_type == "FORMULA":
+                op = layout.operator("bim.edit_cost_value_formula", text="", icon="CHECKMARK")
+                op.cost_value = cost_value_id
             layout.operator("bim.disable_editing_cost_item_value", text="", icon="CANCEL")
         elif self.props.active_cost_item_value_id:
-            op = layout.operator("bim.add_cost_value", text="", icon="ADD")
-            op.parent = cost_value_id
-            op.cost_type = self.props.cost_types
-            if self.props.cost_types == "CATEGORY":
-                op.cost_category = self.props.cost_category
             op = layout.operator("bim.remove_cost_item_value", text="", icon="X")
             op.parent = parent_id
             op.cost_value = cost_value_id
         else:
+            op = layout.operator("bim.enable_editing_cost_item_value_formula", text="", icon="CON_TRANSLIKE")
+            op.cost_value = cost_value_id
             op = layout.operator("bim.enable_editing_cost_item_value", text="", icon="GREASEPENCIL")
             op.cost_value = cost_value_id
-            op = layout.operator("bim.add_cost_value", text="", icon="ADD")
-            op.parent = cost_value_id
-            op.cost_type = self.props.cost_types
-            if self.props.cost_types == "CATEGORY":
-                op.cost_category = self.props.cost_category
             op = layout.operator("bim.remove_cost_item_value", text="", icon="X")
             op.parent = parent_id
             op.cost_value = cost_value_id
