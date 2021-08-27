@@ -22,6 +22,7 @@ jobs:
           python-version: '3.x'
       - name: Build package
         run: |
+          cd src/bcf
           pip install build
           python -m build
       - name: Publish package
@@ -29,6 +30,7 @@ jobs:
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
+          packages_dir: src/bcf/dist
 
 
 
