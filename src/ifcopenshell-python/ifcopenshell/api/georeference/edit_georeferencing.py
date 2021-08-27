@@ -1,4 +1,3 @@
-import ifcopenshell.util.unit
 
 
 class Usecase:
@@ -8,7 +7,6 @@ class Usecase:
             "map_conversion": {},
             "projected_crs": {},
             "true_north": [],
-            "map_unit": "",
         }
         for key, value in settings.items():
             self.settings[key] = value
