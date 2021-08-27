@@ -26,6 +26,7 @@ import ifcopenshell.api
 import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.georeference.data import Data
+from ifcopenshell.api.unit.data import Data as UnitData
 from math import radians, degrees, atan, tan, cos, sin
 
 
@@ -37,36 +38,15 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMGeoreferenceProperties
+        self.props = props
 
         props.projected_crs.clear()
-        
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcProjectedCRS").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = props.projected_crs.add()
-            new.name = attribute.name()
-            new.is_null = Data.projected_crs[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else Data.projected_crs[attribute.name()]
-            elif data_type == "float":
-                new.float_value = 0.0 if new.is_null else Data.projected_crs[attribute.name()]
-            elif data_type == "integer":
-                new.int_value = 0 if new.is_null else Data.projected_crs[attribute.name()]
-            elif data_type == "boolean":
-                new.bool_value = False if new.is_null else Data.projected_crs[attribute.name()]
 
-        props.is_map_unit_null = Data.projected_crs["MapUnit"] is None
-        if not props.is_map_unit_null:
-            props.map_unit_type = Data.projected_crs["MapUnit"]["type"]
-            if props.map_unit_type == "IfcSIUnit":
-                prefix = ifcopenshell.util.unit.get_prefix(Data.projected_crs["MapUnit"]["Prefix"]) or ""
-                name = ifcopenshell.util.unit.get_unit_name(Data.projected_crs["MapUnit"]["Name"])
-                props.map_unit_si = prefix + name
-            elif props.map_unit_type == "IfcConversionBasedUnit":
-                props.map_unit_imperial = Data.projected_crs["MapUnit"]["Name"]
+        blenderbim.bim.helper.import_attributes(
+            "IfcProjectedCRS", 
+            props.projected_crs, 
+            Data.projected_crs,
+            self.import_projected_crs_attributes)
 
         props.map_conversion.clear()
         blenderbim.bim.helper.import_attributes(
@@ -81,12 +61,27 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
         props.is_editing = True
         return {"FINISHED"}
 
+    def import_projected_crs_attributes(self, name, prop, data):
+        if name == "MapUnit":
+            new = self.props.projected_crs.add()
+            new.name = name
+            new.data_type = "enum"
+            new.is_null = data[name] is None
+            new.is_optional = True
+            new.enum_items = json.dumps({
+                u["id"]: u["Name"]
+                for u in UnitData.units.values() 
+                if u["UnitType"] == "LENGTHUNIT"
+            })
+            return True
+
     def import_map_conversion_attributes(self, name, prop, data):
         if name not in ["SourceCRS", "TargetCRS"]:            
             # Enforce a string data type to prevent data loss in single-precision Blender props
             prop.data_type = "string"
             prop.string_value = "" if prop.is_null else str(data[name])
             return True
+
 
 class DisableEditingGeoreferencing(bpy.types.Operator):
     bl_idname = "bim.disable_editing_georeferencing"
@@ -111,20 +106,15 @@ class EditGeoreferencing(bpy.types.Operator):
         self.file = IfcStore.get_file()
         props = context.scene.BIMGeoreferenceProperties
 
-        projected_crs = blenderbim.bim.helper.export_attributes(props.projected_crs)
-
-        map_unit = ""
-        if not props.is_map_unit_null:
-            map_unit = props.map_unit_si if props.map_unit_type == "IfcSIUnit" else props.map_unit_imperial
-
-        map_conversion = blenderbim.bim.helper.export_attributes(props.map_conversion, self.export_attributes)
+        projected_crs = blenderbim.bim.helper.export_attributes(props.projected_crs, self.export_crs_attributes)
+        map_conversion = blenderbim.bim.helper.export_attributes(props.map_conversion, self.export_map_attributes)
 
         true_north = None
         if props.has_true_north:
             try:
                 true_north = [float(props.true_north_abscissa), float(props.true_north_ordinate)]
-            except:
-                pass
+            except ValueError:
+                self.report({"ERROR"}, "True North Abscissa and Ordinate expect a number")
 
         ifcopenshell.api.run(
             "georeference.edit_georeferencing",
@@ -132,18 +122,22 @@ class EditGeoreferencing(bpy.types.Operator):
             **{
                 "map_conversion": map_conversion,
                 "projected_crs": projected_crs,
-                "map_unit": map_unit,
                 "true_north": true_north,
             }
         )
-        Data.load(IfcStore.get_file())
+        Data.load(self.file)
         bpy.ops.bim.disable_editing_georeferencing()
         return {"FINISHED"}
 
-    def export_attributes(self, attributes, prop):
+    def export_map_attributes(self, attributes, prop):
         if not prop.is_null and prop.data_type == "string":
             # We store our floats as string to prevent single precision data loss
             attributes[prop.name] = float(prop.string_value)
+            return True
+
+    def export_crs_attributes(self, attributes, prop):
+        if not prop.is_null and prop.name == "MapUnit":
+            attributes[prop.name] = self.file.by_id(int(prop.enum_value))
             return True
 
 
