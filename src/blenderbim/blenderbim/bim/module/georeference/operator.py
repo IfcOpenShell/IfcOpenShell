@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -43,10 +42,8 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
         props.projected_crs.clear()
 
         blenderbim.bim.helper.import_attributes(
-            "IfcProjectedCRS", 
-            props.projected_crs, 
-            Data.projected_crs,
-            self.import_projected_crs_attributes)
+            "IfcProjectedCRS", props.projected_crs, Data.projected_crs, self.import_projected_crs_attributes
+        )
 
         props.map_conversion.clear()
         blenderbim.bim.helper.import_attributes(
@@ -68,15 +65,15 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
             new.data_type = "enum"
             new.is_null = data[name] is None
             new.is_optional = True
-            new.enum_items = json.dumps({
-                u["id"]: u["Name"]
-                for u in UnitData.units.values() 
-                if u["UnitType"] == "LENGTHUNIT"
-            })
+            new.enum_items = json.dumps(
+                {u["id"]: u["Name"] for u in UnitData.units.values() if u["UnitType"] == "LENGTHUNIT"}
+            )
+            if data["MapUnit"]:
+                new.enum_value = str(data["MapUnit"]["id"])
             return True
 
     def import_map_conversion_attributes(self, name, prop, data):
-        if name not in ["SourceCRS", "TargetCRS"]:            
+        if name not in ["SourceCRS", "TargetCRS"]:
             # Enforce a string data type to prevent data loss in single-precision Blender props
             prop.data_type = "string"
             prop.string_value = "" if prop.is_null else str(data[name])
@@ -285,8 +282,7 @@ class ConvertGlobalToLocal(bpy.types.Operator):
     def poll(cls, context):
         file = IfcStore.get_file()
         props = context.scene.BIMGeoreferenceProperties
-        return file and file.by_type("IfcUnitAssignment") \
-            and props.coordinate_input.count(",") == 2
+        return file and file.by_type("IfcUnitAssignment") and props.coordinate_input.count(",") == 2
 
     def execute(self, context):
         if not Data.is_loaded:
