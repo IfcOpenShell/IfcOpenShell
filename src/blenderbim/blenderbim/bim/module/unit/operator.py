@@ -243,7 +243,7 @@ class EnableEditingUnit(bpy.types.Operator):
         return {"FINISHED"}
 
     def import_attributes(self, name, prop, data, context):
-        if name == "Dimensions":
+        if name == "Dimensions" and data["type"] != "IfcSIUnit":
             new = context.scene.BIMUnitProperties.unit_attributes.add()
             new.name = name
             new.is_null = data[name] is None
