@@ -114,7 +114,7 @@ class EditGeoreferencing(bpy.types.Operator):
             try:
                 true_north = [float(props.true_north_abscissa), float(props.true_north_ordinate)]
             except ValueError:
-                self.report({'ERROR'}, 'True North Abscissa and Ordinate expect a number')
+                self.report({"ERROR"}, "True North Abscissa and Ordinate expect a number")
 
         ifcopenshell.api.run(
             "georeference.edit_georeferencing",
@@ -137,7 +137,7 @@ class EditGeoreferencing(bpy.types.Operator):
 
     def export_crs_attributes(self, attributes, prop):
         if not prop.is_null and prop.name == "MapUnit":
-            attributes[prop.name] = self.file.by_id(prop.enum_value)
+            attributes[prop.name] = self.file.by_id(int(prop.enum_value))
             return True
 
 
