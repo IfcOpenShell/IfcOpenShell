@@ -65,6 +65,7 @@ classes = (
     operator.LoadScheduleOfRates,
     operator.ExpandCostItemRate,
     operator.ContractCostItemRate,
+    operator.CalculateCostItemResourceValue,
     prop.CostItem,
     prop.CostItemQuantity,
     prop.CostItemType,
