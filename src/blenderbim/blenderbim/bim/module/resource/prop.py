@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -35,6 +34,14 @@ from bpy.props import (
 )
 
 
+quantitytypes_enum = []
+
+
+def purge():
+    global quantitytypes_enum
+    quantitytypes_enum = []
+
+
 def updateResourceName(self, context):
     props = context.scene.BIMResourceProperties
     if not props.is_resource_update_enabled or self.name == "Unnamed":
@@ -49,6 +56,18 @@ def updateResourceName(self, context):
     if props.active_resource_id == self.ifc_definition_id:
         attribute = props.resource_attributes.get("Name")
         attribute.string_value = self.name
+
+
+def get_quantity_types(self, context):
+    global quantitytypes_enum
+    if len(quantitytypes_enum) == 0 and IfcStore.get_schema():
+        quantitytypes_enum.extend(
+            [
+                (t.name(), t.name(), "")
+                for t in IfcStore.get_schema().declaration_by_name("IfcPhysicalSimpleQuantity").subtypes()
+            ]
+        )
+    return quantitytypes_enum
 
 
 class Resource(PropertyGroup):
@@ -87,3 +106,6 @@ class BIMResourceProperties(PropertyGroup):
     cost_value_editing_type: StringProperty(name="Cost Value Editing Type")
     cost_value_attributes: CollectionProperty(name="Cost Value Attributes", type=Attribute)
     cost_value_formula: StringProperty(name="Cost Value Formula")
+    quantity_types: EnumProperty(items=get_quantity_types, name="Quantity Types")
+    is_editing_quantity: BoolProperty(name="Is Editing Quantity")
+    quantity_attributes: CollectionProperty(name="Quantity Attributes", type=Attribute)
