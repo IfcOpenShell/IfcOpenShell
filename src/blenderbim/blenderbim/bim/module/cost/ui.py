@@ -432,6 +432,9 @@ class BIM_PT_cost_item_quantities(Panel):
         row2 = col.row(align=True)
         row2.label(text="Resources")
 
+        op = row2.operator("bim.calculate_cost_item_resource_value", text="", icon="DISC")
+        op.cost_item = cost_item.ifc_definition_id
+
         rtprops = context.scene.BIMResourceTreeProperties
         rprops = context.scene.BIMResourceProperties
         if rtprops.resources and rprops.active_resource_index < len(rtprops.resources):

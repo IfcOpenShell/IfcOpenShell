@@ -1054,3 +1054,21 @@ class ContractCostItemRate(bpy.types.Operator):
         props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
         bpy.ops.bim.load_schedule_of_rates(cost_schedule=int(props.schedule_of_rates))
         return {"FINISHED"}
+
+
+class CalculateCostItemResourceValue(bpy.types.Operator):
+    bl_idname = "bim.calculate_cost_item_resource_value"
+    bl_label = "Calculate Cost Item Resource Value"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_item: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.calculate_cost_item_resource_value", self.file, cost_item=self.file.by_id(self.cost_item)
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
