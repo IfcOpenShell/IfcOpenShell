@@ -64,6 +64,8 @@ class BIM_PT_resources(Panel):
 
         if self.props.active_resource_id and self.props.editing_resource_type == "ATTRIBUTES":
             self.draw_editable_resource_attributes_ui()
+        elif self.props.active_resource_id and self.props.editing_resource_type == "QUANTITY":
+            self.draw_editable_resource_quantity_ui()
         elif self.props.active_resource_id and self.props.editing_resource_type == "COSTS":
             self.draw_editable_resource_costs_ui()
         elif self.props.active_resource_id and self.props.editing_resource_type == "USAGE":
@@ -111,6 +113,8 @@ class BIM_PT_resources(Panel):
             row.operator("bim.disable_editing_resource_time", text="", icon="CANCEL")
         elif self.props.active_resource_id == ifc_definition_id and self.props.editing_resource_type == "COSTS":
             row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
+        elif self.props.active_resource_id == ifc_definition_id and self.props.editing_resource_type == "QUANTITY":
+            row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
         elif self.props.active_resource_id:
             row.operator("bim.add_resource", text="", icon="ADD").resource = ifc_definition_id
             row.operator("bim.remove_resource", text="", icon="X").resource = ifc_definition_id
@@ -119,6 +123,8 @@ class BIM_PT_resources(Panel):
                 op = row.operator("bim.calculate_resource_work", text="", icon="TEMP")
                 op.resource = ifc_definition_id
                 row.operator("bim.enable_editing_resource_time", text="", icon="TIME").resource = ifc_definition_id
+            op = row.operator("bim.enable_editing_resource_base_quantity", text="", icon="PROPERTIES")
+            op.resource = ifc_definition_id
             op = row.operator("bim.enable_editing_resource_costs", text="", icon="DISC")
             op.resource = ifc_definition_id
             row.operator("bim.enable_editing_resource", text="", icon="GREASEPENCIL").resource = ifc_definition_id
@@ -129,6 +135,36 @@ class BIM_PT_resources(Panel):
 
     def draw_editable_resource_time_attributes_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.resource_time_attributes, self.layout)
+
+    def draw_editable_resource_quantity_ui(self):
+        resource = Data.resources[self.props.active_resource_id]
+
+        if resource["BaseQuantity"]:
+            quantity = resource["BaseQuantity"]
+            value = quantity[[k for k in quantity.keys() if "Value" in k][0]]
+            row = self.layout.row(align=True)
+            row.label(text=quantity["Name"])
+            row.label(text="{0:.2f}".format(value))
+            if self.props.is_editing_quantity:
+                op = row.operator("bim.edit_resource_quantity", text="", icon="CHECKMARK")
+                op.physical_quantity = quantity["id"]
+                row.operator("bim.disable_editing_resource_quantity", text="", icon="CANCEL")
+            else:
+                op = row.operator("bim.enable_editing_resource_quantity", text="", icon="GREASEPENCIL")
+                op.resource = self.props.active_resource_id
+                op = row.operator("bim.remove_resource_quantity", text="", icon="X")
+                op.resource = self.props.active_resource_id
+
+            if self.props.is_editing_quantity:
+                box = self.layout.box()
+                blenderbim.bim.helper.draw_attributes(self.props.quantity_attributes, box)
+        else:
+            row = self.layout.row(align=True)
+            row.prop(self.props, "quantity_types", text="")
+            op = row.operator("bim.add_resource_quantity", text="", icon="ADD")
+            op.resource = self.props.active_resource_id
+            op.ifc_class = self.props.quantity_types
+
 
     def draw_editable_resource_costs_ui(self):
         row = self.layout.row(align=True)

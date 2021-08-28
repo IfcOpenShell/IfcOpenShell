@@ -46,7 +46,8 @@ class Data(CostValueTrait):
                 data["Usage"] = data["Usage"].id()
             data["TotalCostQuantity"] = cls.get_total_quantity(resource)
             if resource.BaseQuantity:
-                data["BaseQuantity"] = resource.BaseQuantity.id()
+                data["BaseQuantity"] = resource.BaseQuantity.get_info()
+                del data["BaseQuantity"]["Unit"]
             if resource.BaseCosts:
                 data["BaseCosts"] = [e.id() for e in resource.BaseCosts]
                 cls.load_cost_values(resource, data)
