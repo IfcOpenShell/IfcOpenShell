@@ -113,6 +113,7 @@ class LibraryGenerator:
 
         self.create_type("IfcWindowType", "DEMO1", {"body": "Window"})
         self.create_type("IfcDoorType", "DEMO1", {"body": "Door"})
+        self.create_type("IfcFurnitureType", "BUNNY", {"body": "Bunny"})
 
         self.file.write("blenderbim-demo-library.ifc")
 
