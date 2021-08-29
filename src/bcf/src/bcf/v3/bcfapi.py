@@ -6,9 +6,8 @@ import requests
 import webbrowser
 import http.server
 import base64
-
-from werkzeug.datastructures import HeaderSet
-
+import tempfile
+import os
 
 client_id, client_secret = "", ""
 
@@ -135,6 +134,7 @@ class BcfClient:
         self.foundation_client = foundation_client
         self.version_id = None
         self.baseurl = None
+        self.filepath = tempfile.mkdtemp()
 
     def set_version(self, version):
         self.version_id = version["version_id"]
@@ -282,7 +282,7 @@ class BcfClient:
             headers=headers,
         )
         # TODO: write to tmpdir
-        with open(f"{project_id}_{topic_id}_snippet.txt", "w") as f:
+        with open(os.path.join(self.filepath, f"{project_id}_{topic_id}_snippet.txt"), "wb") as f:
             f.write(response.content.decode("utf-8"))
         return response.status_code, response.content
 
@@ -544,7 +544,7 @@ class BcfClient:
             f"{self.baseurl}/projects/{project_id}/topics/documents/{document_id}",
             headers=headers,
         )
-        with open(f"{project_id}_{topic_id}_{document_id}_document.txt", "w") as f:
+        with open(os.path.join(self.filepath, f"{project_id}_{topic_id}_{document_id}_document.txt"), "wb") as f:
             f.write(response.content.decode("utf-8"))
         return response.status_code, response.content
 
