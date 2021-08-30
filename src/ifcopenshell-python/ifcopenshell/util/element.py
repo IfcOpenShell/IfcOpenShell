@@ -97,7 +97,9 @@ def replace_attribute(element, old, new):
 def has_element_reference(value, element):
     if isinstance(value, (tuple, list)):
         for v in value:
-            return has_element_reference(v, element)
+            if has_element_reference(v, element):
+                return True
+        return False
     return value == element
 
 
