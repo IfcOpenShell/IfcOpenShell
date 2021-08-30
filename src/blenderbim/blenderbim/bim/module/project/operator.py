@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -214,26 +213,32 @@ class ChangeLibraryElement(bpy.types.Operator):
         self.props.library_elements.clear()
         if len(ifc_classes) == 1 and list(ifc_classes)[0] == self.element_name:
             for name, ifc_definition_id in sorted([(self.get_name(e), e.id()) for e in elements]):
-                new = self.props.library_elements.add()
-                new.name = name
-                new.ifc_definition_id = ifc_definition_id
-                element = IfcStore.library_file.by_id(ifc_definition_id)
-                if IfcStore.library_file.schema == "IFC2X3" or not IfcStore.library_file.by_type("IfcProjectLibrary"):
-                    new.is_declared = False
-                elif getattr(element, "HasContext", None) and element.HasContext[0].RelatingContext.is_a(
-                    "IfcProjectLibrary"
-                ):
-                    new.is_declared = True
+                self.add_library_asset(name, ifc_definition_id)
         else:
             for ifc_class in sorted(ifc_classes):
+                if ifc_class == self.element_name:
+                    continue
                 new = self.props.library_elements.add()
                 new.name = ifc_class
+            for name, ifc_definition_id, ifc_class in sorted([(self.get_name(e), e.id(), e.is_a()) for e in elements]):
+                if ifc_class == self.element_name:
+                    self.add_library_asset(name, ifc_definition_id)
         return {"FINISHED"}
 
     def get_name(self, element):
         if element.is_a("IfcProfileDef"):
             return element.ProfileName or "Unnamed"
         return element.Name or "Unnamed"
+
+    def add_library_asset(self, name, ifc_definition_id):
+        new = self.props.library_elements.add()
+        new.name = name
+        new.ifc_definition_id = ifc_definition_id
+        element = IfcStore.library_file.by_id(ifc_definition_id)
+        if IfcStore.library_file.schema == "IFC2X3" or not IfcStore.library_file.by_type("IfcProjectLibrary"):
+            new.is_declared = False
+        elif getattr(element, "HasContext", None) and element.HasContext[0].RelatingContext.is_a("IfcProjectLibrary"):
+            new.is_declared = True
 
 
 class RewindLibrary(bpy.types.Operator):
