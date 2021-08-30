@@ -29,7 +29,7 @@ class Usecase:
             new_items = []
             removed_items = []
             for item in items:
-                if not i.is_a("IfcStyledItem"):
+                if not item.is_a("IfcStyledItem"):
                     continue
                 if self.has_proposed_style(item):
                     return
