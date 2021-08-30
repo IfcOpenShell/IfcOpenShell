@@ -159,7 +159,7 @@ class AddRepresentation(bpy.types.Operator):
         mesh.name = "{}/{}".format(context_id, result.id())
         mesh.BIMMeshProperties.ifc_definition_id = int(result.id())
         obj.data = mesh
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        Data.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
 
         if product.is_a("IfcTypeProduct"):
             if self.file.schema == "IFC2X3":
@@ -168,7 +168,7 @@ class AddRepresentation(bpy.types.Operator):
                 types = product.Types
             if types:
                 for element in types[0].RelatedObjects:
-                    Data.load(IfcStore.get_file(), element.id())
+                    Data.load(self.file, element.id())
         return {"FINISHED"}
 
 
@@ -239,7 +239,7 @@ class SwitchRepresentation(bpy.types.Operator):
 
         if self.disable_opening_subtractions and self.context_of_items.ContextIdentifier == "Body":
             if self.oprops.ifc_definition_id not in VoidData.products:
-                VoidData.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
+                VoidData.load(self.file, self.oprops.ifc_definition_id)
             for opening_id in VoidData.products[self.oprops.ifc_definition_id]:
                 opening = IfcStore.get_element(opening_id)
                 if not opening:
@@ -291,7 +291,7 @@ class RemoveRepresentation(bpy.types.Operator):
             "geometry.unassign_representation", self.file, **{"product": product, "representation": representation}
         )
         ifcopenshell.api.run("geometry.remove_representation", self.file, **{"representation": representation})
-        Data.load(IfcStore.get_file(), product.id())
+        Data.load(self.file, product.id())
         return {"FINISHED"}
 
 
@@ -385,7 +385,7 @@ class UpdateRepresentation(bpy.types.Operator):
         obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
         obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
         bpy.ops.bim.remove_representation(representation_id=old_representation.id(), obj=obj.name)
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        Data.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
 
 
 class UpdateParametricRepresentation(bpy.types.Operator):
@@ -403,7 +403,7 @@ class UpdateParametricRepresentation(bpy.types.Operator):
         obj = context.active_object
         props = obj.data.BIMMeshProperties
         parameter = props.ifc_parameters[self.index]
-        element = IfcStore.get_file().by_id(parameter.step_id)[parameter.index] = parameter.value
+        self.file.by_id(parameter.step_id)[parameter.index] = parameter.value
         bpy.ops.bim.switch_representation(
             ifc_definition_id=props.ifc_definition_id, should_reload=True, should_switch_all_meshes=True
         )
@@ -419,7 +419,7 @@ class GetRepresentationIfcParameters(bpy.types.Operator):
         self.file = IfcStore.get_file()
         obj = context.active_object
         props = obj.data.BIMMeshProperties
-        elements = IfcStore.get_file().traverse(IfcStore.get_file().by_id(props.ifc_definition_id))
+        elements = self.file.traverse(self.file.by_id(props.ifc_definition_id))
         for element in elements:
             if element.is_a("IfcRepresentationItem") or element.is_a("IfcParameterizedProfileDef"):
                 for i in range(0, len(element)):
