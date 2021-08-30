@@ -302,6 +302,10 @@ class UpdateRepresentation(bpy.types.Operator):
     obj: bpy.props.StringProperty()
     ifc_representation_class: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        return context.active_object.mode == "OBJECT"
+
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
@@ -389,6 +393,10 @@ class UpdateParametricRepresentation(bpy.types.Operator):
     bl_label = "Update Parametric Representation"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object.mode == "OBJECT"
 
     def execute(self, context):
         self.file = IfcStore.get_file()
