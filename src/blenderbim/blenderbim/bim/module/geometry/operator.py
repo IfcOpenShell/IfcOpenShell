@@ -425,6 +425,7 @@ class GetRepresentationIfcParameters(bpy.types.Operator):
         obj = context.active_object
         props = obj.data.BIMMeshProperties
         elements = self.file.traverse(self.file.by_id(props.ifc_definition_id))
+        props.ifc_parameters.clear()
         for element in elements:
             if element.is_a("IfcRepresentationItem") or element.is_a("IfcParameterizedProfileDef"):
                 for i in range(0, len(element)):
