@@ -386,6 +386,8 @@ class UpdateRepresentation(bpy.types.Operator):
         obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
         bpy.ops.bim.remove_representation(representation_id=old_representation.id(), obj=obj.name)
         Data.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
+        if obj.data.BIMMeshProperties.ifc_parameters:
+            bpy.ops.bim.get_representation_ifc_parameters()
 
 
 class UpdateParametricRepresentation(bpy.types.Operator):
@@ -404,9 +406,12 @@ class UpdateParametricRepresentation(bpy.types.Operator):
         props = obj.data.BIMMeshProperties
         parameter = props.ifc_parameters[self.index]
         self.file.by_id(parameter.step_id)[parameter.index] = parameter.value
+        show_representation_parameters = bool(props.ifc_parameters)
         bpy.ops.bim.switch_representation(
             ifc_definition_id=props.ifc_definition_id, should_reload=True, should_switch_all_meshes=True
         )
+        if show_representation_parameters:
+            bpy.ops.bim.get_representation_ifc_parameters()
         return {"FINISHED"}
 
 
