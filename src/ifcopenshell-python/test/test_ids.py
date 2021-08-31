@@ -1,5 +1,5 @@
 import unittest
-import ids
+from ifcopenshell import ids
 
 # from ids import ids
 import requests
