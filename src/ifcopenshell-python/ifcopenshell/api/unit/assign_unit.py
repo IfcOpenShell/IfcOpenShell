@@ -83,6 +83,10 @@ class Usecase:
             name = "{}inch".format(name_prefix + " " if name_prefix else "")
         elif data["raw"] == "FEET":
             name = "{}foot".format(name_prefix + " " if name_prefix else "")
+        elif data["raw"] == "MILES":
+            name = "{}mile".format(name_prefix + " " if name_prefix else "")
+        elif data["raw"] == "THOU":
+            name = "{}thousandth of an inch".format(name_prefix + " " if name_prefix else "")
         value_component = self.file.create_entity(
             "IfcReal", **{"wrappedValue": ifcopenshell.util.unit.si_conversions[name]}
         )
