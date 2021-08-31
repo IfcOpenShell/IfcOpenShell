@@ -178,5 +178,9 @@ class BIM_UL_library(UIList):
                     op = row.operator("bim.assign_library_declaration", text="", icon="KEYFRAME", emboss=False)
                     op.definition = item.ifc_definition_id
             if item.ifc_definition_id:
-                op = row.operator("bim.append_library_element", text="", icon="APPEND_BLEND")
-                op.definition = item.ifc_definition_id
+                if item.is_appended:
+                    row.label(text="", icon="CHECKMARK")
+                else:
+                    op = row.operator("bim.append_library_element", text="", icon="APPEND_BLEND")
+                    op.definition = item.ifc_definition_id
+                    op.prop_index = data.get_library_element_index(item)
