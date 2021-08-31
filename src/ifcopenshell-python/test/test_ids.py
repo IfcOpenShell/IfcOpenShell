@@ -1,16 +1,11 @@
-import unittest
-from ifcopenshell import ids
-
-# from ids import ids
-import requests
 import os
 import logging
-
-# from xmlschema.validators.exceptions import XMLSchemaChildrenValidationError
+import unittest
+import tempfile
+import requests
 import ifcopenshell
 from bcf import bcfxml
-
-import tempfile
+from ifcopenshell import ids
 
 
 def read_web_file(URL):
@@ -320,7 +315,7 @@ class TestIdsReporting(unittest.TestCase):
 
     def test_bcf_report(self):
         ids_file = ids.ids.open(read_web_file(self.IDS_URL))
-        fn = tempfile.gettempdir() + r"\bcf_test.bcfzip"
+        fn = os.path.join(tempfile.gettempdir(), "test.bcf")
         bcf_handler = ids.BcfHandler(project_name="Default IDS Project", author="your@email.com", filepath=fn)
         self.logger.addHandler(bcf_handler)
         ids_file.validate(self.ifc_file, self.logger)
