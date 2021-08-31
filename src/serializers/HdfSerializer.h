@@ -20,6 +20,8 @@
 #ifndef HdfSERIALIZER_H
 #define HdfSERIALIZER_H
 
+#ifdef WITH_HDF5
+
 #include <set>
 #include <string>
 #include <fstream>
@@ -53,5 +55,7 @@ public:
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(IfcParse::IfcFile*) {}
 };
+
+#endif
 
 #endif
