@@ -1,10 +1,11 @@
 import pytest
-import test.bootstrap
+import bootstrap
+import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class TestTransaction(test.bootstrap.IFC4):
+class TestTransaction(bootstrap.IFC4):
     def test_that_nothing_happens_without_a_transaction(self):
         wall = self.file.createIfcWall()
         self.file.undo()
@@ -133,7 +134,7 @@ class TestTransaction(test.bootstrap.IFC4):
         assert len(list(self.file)) == 2
 
 
-class TestFile(test.bootstrap.IFC4):
+class TestFile(bootstrap.IFC4):
     def test_creating_a_new_file(self):
         f = ifcopenshell.file(schema="IFC4")
         assert f.schema == "IFC4"
