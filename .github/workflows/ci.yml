@@ -78,4 +78,6 @@ jobs:
         run: |
           cd test
           sudo /usr/bin/python tests.py
-          sudo /usr/bin/python ../src/ifcopenshell-python/ifcopenshell/test_ids.py
+          cd ../src/ifcopenshell-python
+          sudo /usr/bin/python -m pip install pytest
+          make test
