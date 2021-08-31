@@ -437,7 +437,7 @@ if(HDF5_SUPPORT)
         	set(lib_ext a)
         endif()
         
-	SET(HDF5_LIBRARIES 
+        SET(HDF5_LIBRARIES 
             "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
             "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
             "${HDF5_LIBRARY_DIR}/libz${zlib_post}.${lib_ext}"
@@ -449,14 +449,16 @@ if(HDF5_SUPPORT)
     if (NOT HDF5_LIBRARIES)
     	# debian default
     	
-	SET(HDF5_LIBRARIES
-	        /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.a
-		/usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.a
-		/usr/lib/x86_64-linux-gnu/libsz.a
-		/usr/lib/x86_64-linux-gnu/libaec.a
-		z dl
-	)
+        SET(HDF5_LIBRARIES
+            /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.a
+            /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.a
+            /usr/lib/x86_64-linux-gnu/libsz.a
+            /usr/lib/x86_64-linux-gnu/libaec.a
+            z dl
+        )
     endif()
+    
+    add_definitions(-DWITH_HDF5)
 endif()
 
 IF(NOT CMAKE_BUILD_TYPE)

@@ -105,7 +105,9 @@ void print_usage(bool suggest_help = true)
         << "  .igs   IGES           Initial Graphics Exchange Specification\n"
         << "  .xml   XML            Property definitions and decomposition tree\n"
         << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
+#ifdef WITH_HDF5
 		<< "  .h5    HDF            Hierarchical Data Format storing positions, normals and indices\n"
+#endif
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
 		<< "\n"
         << "If no output filename given, <input>" << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
@@ -834,10 +836,12 @@ int main(int argc, char** argv) {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 	}
+#ifdef WITH_HDF5
 	else if (output_extension == HDF) {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 	}
+#endif
 	
 	else {
         cerr_ << "[Error] Unknown output filename extension '" << output_extension << "'\n";

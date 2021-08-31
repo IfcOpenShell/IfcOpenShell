@@ -17,6 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef WITH_HDF5
 
 #include "HdfSerializer.h"
 
@@ -125,3 +126,5 @@ void HdfSerializer::write(const IfcGeom::BRepElement* o) {
 	
 	}
 }
+
+#endif
