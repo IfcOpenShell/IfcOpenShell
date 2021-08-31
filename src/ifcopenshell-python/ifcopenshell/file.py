@@ -126,7 +126,7 @@ class Transaction:
         for operation in self.operations[::-1]:
             if operation["action"] == "create":
                 element = self.file.by_id(operation["value"]["id"])
-                if hasattr(element, "GlobalId"):
+                if hasattr(element, "GlobalId") and element.GlobalId is None:
                     # hack, otherwise ifcopenshell gets upset
                     element.GlobalId = "x"
                 self.file.remove(element)
@@ -340,8 +340,15 @@ class file(object):
         """Adds an entity including any dependent entities to an IFC file.
 
         If the entity already exists, it is not re-added."""
+        if self.transaction:
+            # TODO confirm this method of tracking added elements and use MaxId directly instead of FreshId
+            max_id = self.wrapped_data.FreshId()
         inst.wrapped_data.this.disown()
-        return entity_instance(self.wrapped_data.add(inst.wrapped_data, -1 if _id is None else _id), self)
+        result = entity_instance(self.wrapped_data.add(inst.wrapped_data, -1 if _id is None else _id), self)
+        if self.transaction:
+            added_elements = [e for e in self.traverse(result) if e.id() > max_id]
+            [self.transaction.store_create(e) for e in reversed(added_elements)]
+        return result
 
     def by_type(self, type, include_subtypes=True):
         """Return IFC objects filtered by IFC Type and wrapped with the entity_instance class.
@@ -373,7 +380,7 @@ class file(object):
         """
         if max_levels is None:
             max_levels = -1
-        
+
         if breadth_first:
             fn = self.wrapped_data.traverse_breadth_first
         else:
