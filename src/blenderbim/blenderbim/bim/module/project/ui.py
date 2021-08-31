@@ -178,16 +178,9 @@ class BIM_UL_library(UIList):
                     op = row.operator("bim.assign_library_declaration", text="", icon="KEYFRAME", emboss=False)
                     op.definition = item.ifc_definition_id
             if item.ifc_definition_id:
-                file = IfcStore.get_file()
-                try:
-                    element = IfcStore.library_file.by_id(item.ifc_definition_id)
-                    if element.is_a("IfcTypeProduct") or element.is_a("IfcCostSchedule"):
-                        file.by_guid(element.GlobalId)
-                    elif element.is_a("IfcMaterial"):
-                        next(e for e in file.by_type("IfcMaterial") if e.Name == element.Name)
-                    elif element.is_a("IfcProfileDef"):
-                        next(e for e in file.by_type("IfcProfileDef") if e.ProfileName == element.ProfileName)
+                if item.is_appended:
                     row.label(text="", icon="CHECKMARK")
-                except (AttributeError, RuntimeError, StopIteration):
+                else:
                     op = row.operator("bim.append_library_element", text="", icon="APPEND_BLEND")
                     op.definition = item.ifc_definition_id
+                    op.prop_index = data.get_library_element_index(item)

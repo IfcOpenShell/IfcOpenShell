@@ -204,11 +204,13 @@ class ChangeLibraryElement(bpy.types.Operator):
 
     def execute(self, context):
         self.props = context.scene.BIMProjectProperties
+        self.file = IfcStore.get_file()
+        self.library_file = IfcStore.library_file
         ifc_classes = set()
         self.props.active_library_element = self.element_name
         crumb = self.props.library_breadcrumb.add()
         crumb.name = self.element_name
-        elements = IfcStore.library_file.by_type(self.element_name)
+        elements = self.library_file.by_type(self.element_name)
         [ifc_classes.add(e.is_a()) for e in elements]
         self.props.library_elements.clear()
         if len(ifc_classes) == 1 and list(ifc_classes)[0] == self.element_name:
@@ -234,11 +236,21 @@ class ChangeLibraryElement(bpy.types.Operator):
         new = self.props.library_elements.add()
         new.name = name
         new.ifc_definition_id = ifc_definition_id
-        element = IfcStore.library_file.by_id(ifc_definition_id)
-        if IfcStore.library_file.schema == "IFC2X3" or not IfcStore.library_file.by_type("IfcProjectLibrary"):
+        element = self.library_file.by_id(ifc_definition_id)
+        if self.library_file.schema == "IFC2X3" or not self.library_file.by_type("IfcProjectLibrary"):
             new.is_declared = False
         elif getattr(element, "HasContext", None) and element.HasContext[0].RelatingContext.is_a("IfcProjectLibrary"):
             new.is_declared = True
+        try:
+            if element.is_a("IfcMaterial"):
+                next(e for e in self.file.by_type("IfcMaterial") if e.Name == name)
+            elif element.is_a("IfcProfileDef"):
+                next(e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == name)
+            else:
+                self.file.by_guid(element.GlobalId)
+            new.is_appended = True
+        except (AttributeError, RuntimeError, StopIteration):
+            new.is_appended = False
 
 
 class RewindLibrary(bpy.types.Operator):
@@ -345,6 +357,7 @@ class AppendLibraryElement(bpy.types.Operator):
     bl_label = "Append Library Element"
     bl_options = {"REGISTER", "UNDO"}
     definition: bpy.props.IntProperty()
+    prop_index: bpy.props.IntProperty()
 
     @classmethod
     def poll(cls, context):
@@ -367,6 +380,7 @@ class AppendLibraryElement(bpy.types.Operator):
             self.import_type_from_ifc(element, context)
         elif element.is_a("IfcMaterial"):
             self.import_material_from_ifc(element, context)
+        context.scene.BIMProjectProperties.library_elements[self.prop_index].is_appended = True
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
 
