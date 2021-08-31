@@ -36,6 +36,7 @@ class LibraryElement(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_declared: BoolProperty(name="Is Declared", default=False)
+    is_appended: BoolProperty(name="Is Appended", default=False)
 
 
 class BIMProjectProperties(PropertyGroup):
@@ -51,3 +52,6 @@ class BIMProjectProperties(PropertyGroup):
     library_breadcrumb: CollectionProperty(name="Library Breadcrumb", type=StrProperty)
     library_elements: CollectionProperty(name="Library Elements", type=LibraryElement)
     active_library_element_index: IntProperty(name="Active Library Element Index")
+
+    def get_library_element_index(self, lib_element):
+        return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))
