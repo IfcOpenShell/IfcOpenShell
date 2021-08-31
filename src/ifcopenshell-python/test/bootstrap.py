@@ -1,4 +1,5 @@
 import pytest
+import ifcopenshell
 import ifcopenshell.api
 
 
