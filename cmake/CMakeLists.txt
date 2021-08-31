@@ -195,15 +195,16 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
+# libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
+find_package(LibXml2 REQUIRED)
+
 if (IFCXML_SUPPORT)
-    find_package(LibXml2 REQUIRED)
     add_definitions(-DWITH_IFCXML)
 endif()
 
 FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
-
 
 
 # Usage:
