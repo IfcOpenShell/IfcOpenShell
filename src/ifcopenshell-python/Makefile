@@ -1,6 +1,6 @@
 .PHONY: test
 test:
-	pytest -o "testpaths=test"
+	cd test && pytest
 
 .PHONY: coverage
 coverage:

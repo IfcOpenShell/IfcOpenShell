@@ -23,6 +23,7 @@ from __future__ import print_function
 
 import numbers
 import functools
+import ifcopenshell.util.element
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
@@ -111,16 +112,10 @@ class Transaction:
         for inverse in self.file.get_inverse(element):
             inverse_references = []
             for i, attribute in enumerate(inverse):
-                if self.has_element_reference(attribute, element):
+                if ifcopenshell.util.element.has_element_reference(attribute, element):
                     inverse_references.append((i, self.serialise_value(inverse, attribute)))
             inverses[inverse.id()] = inverse_references
         return inverses
-
-    def has_element_reference(self, value, element):
-        if isinstance(value, (tuple, list)):
-            for v in value:
-                return self.has_element_reference(v, element)
-        return value == element
 
     def rollback(self):
         for operation in self.operations[::-1]:
@@ -259,11 +254,7 @@ class file(object):
             f.create_entity('IfcPerson', Identification='Foobar')
             >>> #3=IfcPerson('Foobar',$,$,$,$,$,$,$)
         """
-        eid = -1
-        try:
-            eid = kwargs.pop("id", -1)
-        except:
-            pass
+        eid = kwargs.pop("id", -1)
 
         e = entity_instance((self.schema, type), self)
 
