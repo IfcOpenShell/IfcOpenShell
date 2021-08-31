@@ -26,7 +26,8 @@ def get_property_definition(definition):
             # Entity introduced in IFC4
             # definition.is_a('IfcPreDefinedPropertySet'):
             for prop in range(4, len(definition)):
-                props[definition.attribute_name(prop)] = definition[prop]
+                if definition[prop] is not None:
+                    props[definition.attribute_name(prop)] = definition[prop]
         return props
 
 
@@ -44,7 +45,7 @@ def get_properties(properties):
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
         elif prop.is_a("IfcComplexProperty"):
-            data = prop.get_info()
+            data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
             data["properties"] = get_properties(prop.HasProperties)
             del data["HasProperties"]
             results[prop.Name] = data
