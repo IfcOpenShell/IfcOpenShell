@@ -1,6 +1,6 @@
 
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021 Maxim Vasilyev <qwiglydee@gmail.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -24,7 +24,7 @@ from gpu_extras.batch import batch_for_shader
 
 
 class BaseShader:
-    """Wrapepr for GPUShader
+    """Wrapper for GPUShader
     To use for viewport decorations with geometry generated on GPU side.
 
     The Geometry shader works in clipping coords (aftre projecting before division and window scaling).
