@@ -157,6 +157,7 @@ class SelectLibraryFile(bpy.types.Operator):
         IfcStore.library_path = self.filepath
         IfcStore.library_file = ifcopenshell.open(self.filepath)
         bpy.ops.bim.refresh_library()
+        context.area.tag_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
