@@ -1,6 +1,6 @@
 
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021 Maxim Vasilyev <qwiglydee@gmail.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
