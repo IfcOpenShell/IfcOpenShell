@@ -581,16 +581,16 @@ class AddDrawingToSheet(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     # TODO: check undo redo
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        return props.drawings and props.sheets and context.scene.BIMProperties.data_dir
+
     def execute(self, context):
         props = context.scene.DocProperties
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
-        try:
-            sheet_builder.add_drawing(
-                props.drawings.active_drawing.name, props.active_sheet.name
-            )
-        except FileNotFoundError:
-            self.report({"ERROR"}, "Drawings need to be created before being added to a sheet")
+        sheet_builder.add_drawing(props.active_drawing.name, props.active_sheet.name)
         return {"FINISHED"}
 
 
@@ -598,6 +598,10 @@ class CreateSheets(bpy.types.Operator):
     bl_idname = "bim.create_sheets"
     bl_label = "Create Sheets"
     # TODO: check undo redo
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.DocProperties.sheets and context.scene.BIMProperties.data_dir
 
     def execute(self, context):
         scene = context.scene
@@ -664,7 +668,7 @@ class OpenViewCamera(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return bpy.context.object.mode == "OBJECT"
+        return context.mode == "OBJECT"
 
     def execute(self, context):
         doc_props = context.scene.DocProperties
@@ -1103,13 +1107,16 @@ class AddScheduleToSheet(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     # TODO: check undo redo
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        return props.schedules and props.sheets and context.scene.BIMProperties.data_dir
+
     def execute(self, context):
         props = context.scene.DocProperties
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
-        sheet_builder.add_schedule(
-            props.active_schedule.name, props.active_sheet.name
-        )
+        sheet_builder.add_schedule(props.active_schedule.name, props.active_sheet.name)
         return {"FINISHED"}
 
 
