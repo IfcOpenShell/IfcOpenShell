@@ -444,18 +444,22 @@ class IfcImporter:
         if props.has_blender_offset:
             if self.is_point_far_away((matrix[0, 3], matrix[1, 3], matrix[2, 3])):
                 obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
-                return mathutils.Matrix(
-                    ifcopenshell.util.geolocation.global2local(
-                        matrix,
-                        float(props.blender_eastings) * self.unit_scale,
-                        float(props.blender_northings) * self.unit_scale,
-                        float(props.blender_orthogonal_height) * self.unit_scale,
-                        float(props.blender_x_axis_abscissa),
-                        float(props.blender_x_axis_ordinate),
-                    ).tolist()
+                matrix = ifcopenshell.util.geolocation.global2local(
+                    matrix,
+                    float(props.blender_eastings) * self.unit_scale,
+                    float(props.blender_northings) * self.unit_scale,
+                    float(props.blender_orthogonal_height) * self.unit_scale,
+                    float(props.blender_x_axis_abscissa),
+                    float(props.blender_x_axis_ordinate),
                 )
             else:
                 obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
+
+        if self.ifc_import_settings.should_offset_model:
+            matrix[0,3] += self.ifc_import_settings.model_offset_coordinates[0]
+            matrix[1,3] += self.ifc_import_settings.model_offset_coordinates[1]
+            matrix[2,3] += self.ifc_import_settings.model_offset_coordinates[2]
+
         return mathutils.Matrix(matrix.tolist())
 
     def find_decomposed_ifc_class(self, element, ifc_class):
@@ -747,7 +751,7 @@ class IfcImporter:
         if shape:
             m = shape.transformation.matrix.data
             # We use numpy here because Blender mathutils.Matrix is not accurate enough
-            mat = np.matrix(
+            mat = np.array(
                 ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
             )
             obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, mat)
@@ -1391,13 +1395,7 @@ class IfcImporter:
                 num_vertex_indices = len(geometry.faces)
 
                 mesh.vertices.add(num_vertices)
-                if self.ifc_import_settings.should_offset_model:
-                    # Potentially, there is a smarter way to do this. See #1047
-                    v_index = cycle((0, 1, 2))
-                    verts = [v + self.ifc_import_settings.model_offset_coordinates[next(v_index)] for v in verts]
-                    mesh.vertices.foreach_set("co", verts)
-                else:
-                    mesh.vertices.foreach_set("co", verts)
+                mesh.vertices.foreach_set("co", verts)
                 mesh.loops.add(num_vertex_indices)
                 mesh.loops.foreach_set("vertex_index", geometry.faces)
                 mesh.polygons.add(num_loops)
