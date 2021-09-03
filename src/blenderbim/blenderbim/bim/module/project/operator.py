@@ -21,7 +21,6 @@ import logging
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
-import bpy
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc

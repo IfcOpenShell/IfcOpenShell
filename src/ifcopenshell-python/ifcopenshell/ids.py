@@ -1092,7 +1092,7 @@ class BcfHandler(logging.StreamHandler):
         bcf_handler = BcfHandler(
             project_name="Default IDS Project",
             author="your@email.com",
-            filepath=r".\example.bcfzip",
+            filepath="example.bcf",
         )
         logger = logging.getLogger("IDS_Logger")
         logging.basicConfig(level=logging.INFO, format="%(message)s")

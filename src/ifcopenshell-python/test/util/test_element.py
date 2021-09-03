@@ -1,10 +1,10 @@
 import pytest
-import bootstrap
+import test.bootstrap
 import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class TestGetPsetsIFC4(bootstrap.IFC4):
+class TestGetPsetsIFC4(test.bootstrap.IFC4):
     def test_getting_the_psets_of_a_product_as_a_dictionary(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         assert ifcopenshell.util.element.get_psets(element) == {}
@@ -23,7 +23,7 @@ class TestGetPsetsIFC4(bootstrap.IFC4):
         assert ifcopenshell.util.element.get_psets(self.file.create_entity("IfcPerson")) == {}
 
 
-class TestGetPropertyDefinitionIFC4(bootstrap.IFC4):
+class TestGetPropertyDefinitionIFC4(test.bootstrap.IFC4):
     def test_getting_the_properties_of_a_pset(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="name")
@@ -42,7 +42,7 @@ class TestGetPropertyDefinitionIFC4(bootstrap.IFC4):
         assert ifcopenshell.util.element.get_property_definition(pset) == {"LiningDepth": 42}
 
 
-class TestGetQuantitiesIFC4(bootstrap.IFC4):
+class TestGetQuantitiesIFC4(test.bootstrap.IFC4):
     def test_getting_quantities_from_a_qto(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         qto = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name="name")
@@ -50,7 +50,7 @@ class TestGetQuantitiesIFC4(bootstrap.IFC4):
         assert ifcopenshell.util.element.get_quantities(qto.Quantities) == {"x": 42}
 
 
-class TestGetPropertiesIFC4(bootstrap.IFC4):
+class TestGetPropertiesIFC4(test.bootstrap.IFC4):
     def test_getting_single_properties_from_a_list_of_properties(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="name")
@@ -73,7 +73,7 @@ class TestGetPropertiesIFC4(bootstrap.IFC4):
         }
 
 
-class TestGetTypeIFC4(bootstrap.IFC4):
+class TestGetTypeIFC4(test.bootstrap.IFC4):
     def test_getting_the_type_of_a_product(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
@@ -82,7 +82,7 @@ class TestGetTypeIFC4(bootstrap.IFC4):
         assert ifcopenshell.util.element.get_type(element_type) == element_type
 
 
-class TestGetTypeIFC2X3(bootstrap.IFC2X3):
+class TestGetTypeIFC2X3(test.bootstrap.IFC2X3):
     def test_getting_the_type_of_a_product(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
@@ -91,7 +91,7 @@ class TestGetTypeIFC2X3(bootstrap.IFC2X3):
         assert ifcopenshell.util.element.get_type(element_type) == element_type
 
 
-class TestGetMaterial(bootstrap.IFC4):
+class TestGetMaterial(test.bootstrap.IFC4):
     def test_getting_the_material_of_a_product(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.run("material.add_material", self.file)
@@ -158,7 +158,7 @@ class TestGetMaterial(bootstrap.IFC4):
         assert ifcopenshell.util.element.get_material(element) == material
 
 
-class TestGetContainerIFC4(bootstrap.IFC4):
+class TestGetContainerIFC4(test.bootstrap.IFC4):
     def test_getting_the_spatial_container_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
@@ -166,7 +166,7 @@ class TestGetContainerIFC4(bootstrap.IFC4):
         assert ifcopenshell.util.element.get_container(element) == building
 
 
-class TestGetAggregateIFC4(bootstrap.IFC4):
+class TestGetAggregateIFC4(test.bootstrap.IFC4):
     def test_getting_the_containing_aggregate_of_a_subelement(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcCovering")
@@ -174,7 +174,7 @@ class TestGetAggregateIFC4(bootstrap.IFC4):
         assert ifcopenshell.util.element.get_aggregate(subelement) == element
 
 
-class TestReplaceAttributeIFC4(bootstrap.IFC4):
+class TestReplaceAttributeIFC4(test.bootstrap.IFC4):
     def test_replacing_an_elements_attribute(self):
         element = self.file.createIfcWall("foo")
         ifcopenshell.util.element.replace_attribute(element, "foo", "bar")
@@ -189,7 +189,7 @@ class TestReplaceAttributeIFC4(bootstrap.IFC4):
         assert rel.RelatedObjects == (new,)
 
 
-class TestHasElementReferenceIFC4(bootstrap.IFC4):
+class TestHasElementReferenceIFC4(test.bootstrap.IFC4):
     def test_if_a_element_attribute_references_another_element(self):
         old = self.file.createIfcWall()
         new = self.file.createIfcWall()
@@ -199,7 +199,7 @@ class TestHasElementReferenceIFC4(bootstrap.IFC4):
         assert ifcopenshell.util.element.has_element_reference(rel.RelatedObjects, new) is False
 
 
-class TestRemoveDeepIFC4(bootstrap.IFC4):
+class TestRemoveDeepIFC4(test.bootstrap.IFC4):
     def test_removing_an_element_along_with_all_direct_attributes_recursively(self):
         owner = self.file.createIfcOwnerHistory()
         element = self.file.createIfcWall(GlobalId="id", OwnerHistory=owner)
@@ -219,7 +219,7 @@ class TestRemoveDeepIFC4(bootstrap.IFC4):
         assert self.file.by_guid("id2")
 
 
-class TestCopyIFC4(bootstrap.IFC4):
+class TestCopyIFC4(test.bootstrap.IFC4):
     def test_copying_an_element(self):
         element = self.file.createIfcWall(GlobalId="id", Name="name")
         element2 = ifcopenshell.util.element.copy(self.file, element)
@@ -228,7 +228,7 @@ class TestCopyIFC4(bootstrap.IFC4):
         assert element.Name == element2.Name
 
 
-class TestCopyDeepIFC4(bootstrap.IFC4):
+class TestCopyDeepIFC4(test.bootstrap.IFC4):
     def test_copying_an_element_recursively(self):
         owner = self.file.createIfcOwnerHistory()
         owner.State = "READWRITE"

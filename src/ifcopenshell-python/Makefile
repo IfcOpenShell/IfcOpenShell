@@ -1,6 +1,6 @@
 .PHONY: test
 test:
-	cd test && pytest
+	pytest -p no:pytest-blender test
 
 .PHONY: coverage
 coverage:
