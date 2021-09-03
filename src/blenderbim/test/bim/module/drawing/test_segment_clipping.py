@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Maxim Vasilyev <qwiglydee@gmail.com>
 #
@@ -19,11 +18,10 @@
 
 import pytest
 from mathutils import Vector
+from blenderbim.bim.module.drawing.helper import clip_segment
 
-from blenderbim.bim.helper import clip_segment
 
-
-BOUNDS = (10, 30, 10, 30)
+BOUNDS = (10, 30, 10, 30, None, None)
 
 SEGMENTS_INSIDE = (
     (Vector((15, 20)), Vector((25, 20))),
@@ -40,7 +38,7 @@ SEGMENTS_OUTSIDE = (
     (Vector((25, 5)), Vector((15, 5))),
     (Vector((15, 5)), Vector((5, 15))),
     (Vector((5, 15)), Vector((5, 25))),
-    (Vector((5, 25)), Vector((15, 35)))
+    (Vector((5, 25)), Vector((15, 35))),
 )
 
 SEGMENTS_CLIPPED = (
@@ -54,19 +52,20 @@ SEGMENTS_CLIPPED = (
     ((Vector((35, 20)), Vector((20, 5))), (Vector((30, 15)), Vector((25, 10)))),
 )
 
-@pytest.mark.parametrize('segment', SEGMENTS_INSIDE)
+
+@pytest.mark.parametrize("segment", SEGMENTS_INSIDE)
 def test_clip_inside(segment):
     clipped = clip_segment(BOUNDS, segment)
     assert clipped == segment
 
 
-@pytest.mark.parametrize('segment', SEGMENTS_OUTSIDE)
+@pytest.mark.parametrize("segment", SEGMENTS_OUTSIDE)
 def test_clip_outside(segment):
     clipped = clip_segment(BOUNDS, segment)
     assert clipped is None
 
 
-@pytest.mark.parametrize('segment,expected', SEGMENTS_CLIPPED)
+@pytest.mark.parametrize("segment,expected", SEGMENTS_CLIPPED)
 def test_clip_crossing(segment, expected):
     clipped = clip_segment(BOUNDS, segment)
     assert clipped == expected
