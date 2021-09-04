@@ -2211,7 +2211,9 @@ IfcEntityList::ptr IfcFile::getInverse(int instance_id, const IfcParse::declarat
 		if (valid && attribute_index >= 0) {
             try {
                 Argument* arg = (*it)->data().getArgument(attribute_index);
-                if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
+				if (arg->isNull()) {
+					valid = false;
+				} else if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
                     valid = instance == *arg;
                 } else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
                     IfcEntityList::ptr li = *arg;
