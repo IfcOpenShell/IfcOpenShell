@@ -1,3 +1,22 @@
+
+# BCF - BCF Python library
+# Copyright (C) 2021 Prabhat Singh <singh01prabhat@gmail.com>
+#
+# This file is part of BCF.
+#
+# BCF is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BCF is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with BCF.  If not, see <http://www.gnu.org/licenses/>.
+
 import uuid
 import time
 import json
@@ -6,9 +25,8 @@ import requests
 import webbrowser
 import http.server
 import base64
-
-from werkzeug.datastructures import HeaderSet
-
+import tempfile
+import os
 
 client_id, client_secret = "", ""
 
@@ -135,6 +153,7 @@ class BcfClient:
         self.foundation_client = foundation_client
         self.version_id = None
         self.baseurl = None
+        self.filepath = tempfile.mkdtemp()
 
     def set_version(self, version):
         self.version_id = version["version_id"]
@@ -282,7 +301,7 @@ class BcfClient:
             headers=headers,
         )
         # TODO: write to tmpdir
-        with open(f"{project_id}_{topic_id}_snippet.txt", "w") as f:
+        with open(os.path.join(self.filepath, f"{project_id}_{topic_id}_snippet.txt"), "wb") as f:
             f.write(response.content.decode("utf-8"))
         return response.status_code, response.content
 
@@ -544,7 +563,7 @@ class BcfClient:
             f"{self.baseurl}/projects/{project_id}/topics/documents/{document_id}",
             headers=headers,
         )
-        with open(f"{project_id}_{topic_id}_{document_id}_document.txt", "w") as f:
+        with open(os.path.join(self.filepath, f"{project_id}_{topic_id}_{document_id}_document.txt"), "wb") as f:
             f.write(response.content.decode("utf-8"))
         return response.status_code, response.content
 

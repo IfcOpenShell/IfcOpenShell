@@ -211,10 +211,10 @@ class BIM_PT_cost_schedules(Panel):
     def draw_cost_value_operator_ui(self, layout, cost_value_id, parent_id):
         if self.props.active_cost_value_id and self.props.active_cost_value_id == cost_value_id:
             if self.props.cost_value_editing_type == "ATTRIBUTES":
-                op = layout.operator("bim.edit_cost_item_value", text="", icon="CHECKMARK")
+                op = layout.operator("bim.edit_cost_value", text="", icon="CHECKMARK")
                 op.cost_value = cost_value_id
             elif self.props.cost_value_editing_type == "FORMULA":
-                op = layout.operator("bim.edit_cost_item_value_formula", text="", icon="CHECKMARK")
+                op = layout.operator("bim.edit_cost_value_formula", text="", icon="CHECKMARK")
                 op.cost_value = cost_value_id
             layout.operator("bim.disable_editing_cost_item_value", text="", icon="CANCEL")
         elif self.props.active_cost_value_id:

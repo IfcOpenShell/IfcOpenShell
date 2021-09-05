@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
             submodules: recursive
-      - name: Install dependencies
+      - name: Install C++ dependencies
         run: |
           sudo apt update
           sudo apt-get install --no-install-recommends \
@@ -68,14 +68,17 @@ jobs:
           sudo make -j $(nproc)
           sudo make install
 
-      - name: install dependencies
+      - name: Install Python dependencies
         run: |
           sudo /usr/bin/python -m pip install -U pip
           sudo /usr/bin/python -m pip install xmlschema numpy lxml
           sudo /usr/bin/python -m pip install src/bcf
+          sudo /usr/bin/python -m pip install pytest
 
       - name: Test
         run: |
           cd test
           sudo /usr/bin/python tests.py
-          sudo /usr/bin/python ../src/ifcopenshell-python/ifcopenshell/test_ids.py
+          cd ../src/ifcopenshell-python
+          mv ifcopenshell ifcopenshell-local # Force testing on installed module
+          make test

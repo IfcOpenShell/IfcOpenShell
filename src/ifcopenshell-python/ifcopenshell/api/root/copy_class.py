@@ -24,6 +24,8 @@ class Usecase:
                 inverse.RelatedObjects = [to_element]
                 pset = ifcopenshell.util.element.copy_deep(self.file, inverse.RelatingPropertyDefinition)
                 inverse.RelatingPropertyDefinition = pset
+            if inverse.is_a("IfcRelAggregates") and inverse.RelatingObject == from_element:
+                continue
             else:
                 # TODO: Consider whether this general approach is good or not. Maybe it isn't.
                 for i, value in enumerate(inverse):

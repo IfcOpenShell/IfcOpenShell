@@ -23,6 +23,7 @@ from __future__ import print_function
 
 import numbers
 import functools
+import ifcopenshell.util.element
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
@@ -111,22 +112,16 @@ class Transaction:
         for inverse in self.file.get_inverse(element):
             inverse_references = []
             for i, attribute in enumerate(inverse):
-                if self.has_element_reference(attribute, element):
+                if ifcopenshell.util.element.has_element_reference(attribute, element):
                     inverse_references.append((i, self.serialise_value(inverse, attribute)))
             inverses[inverse.id()] = inverse_references
         return inverses
-
-    def has_element_reference(self, value, element):
-        if isinstance(value, (tuple, list)):
-            for v in value:
-                return self.has_element_reference(v, element)
-        return value == element
 
     def rollback(self):
         for operation in self.operations[::-1]:
             if operation["action"] == "create":
                 element = self.file.by_id(operation["value"]["id"])
-                if hasattr(element, "GlobalId"):
+                if hasattr(element, "GlobalId") and element.GlobalId is None:
                     # hack, otherwise ifcopenshell gets upset
                     element.GlobalId = "x"
                 self.file.remove(element)
@@ -259,11 +254,7 @@ class file(object):
             f.create_entity('IfcPerson', Identification='Foobar')
             >>> #3=IfcPerson('Foobar',$,$,$,$,$,$,$)
         """
-        eid = -1
-        try:
-            eid = kwargs.pop("id", -1)
-        except:
-            pass
+        eid = kwargs.pop("id", -1)
 
         e = entity_instance((self.schema, type), self)
 
@@ -340,8 +331,15 @@ class file(object):
         """Adds an entity including any dependent entities to an IFC file.
 
         If the entity already exists, it is not re-added."""
+        if self.transaction:
+            # TODO confirm this method of tracking added elements and use MaxId directly instead of FreshId
+            max_id = self.wrapped_data.FreshId()
         inst.wrapped_data.this.disown()
-        return entity_instance(self.wrapped_data.add(inst.wrapped_data, -1 if _id is None else _id), self)
+        result = entity_instance(self.wrapped_data.add(inst.wrapped_data, -1 if _id is None else _id), self)
+        if self.transaction:
+            added_elements = [e for e in self.traverse(result) if e.id() > max_id]
+            [self.transaction.store_create(e) for e in reversed(added_elements)]
+        return result
 
     def by_type(self, type, include_subtypes=True):
         """Return IFC objects filtered by IFC Type and wrapped with the entity_instance class.
@@ -373,7 +371,7 @@ class file(object):
         """
         if max_levels is None:
             max_levels = -1
-        
+
         if breadth_first:
             fn = self.wrapped_data.traverse_breadth_first
         else:

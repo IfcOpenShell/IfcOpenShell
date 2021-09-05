@@ -1183,19 +1183,23 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
     if (no_progress) { Logger::SetOutput(NULL, &log_stream); }
 
     time(&start);
-#ifdef USE_MMAP
-	ifc_file = new IfcParse::IfcFile(filename, mmap);
-#else
-	(void)mmap;
 
 #ifdef WITH_IFCXML
 	if (boost::ends_with(boost::to_lower_copy(filename), ".ifcxml")) {
 		ifc_file = IfcParse::parse_ifcxml(filename);
 	} else
 #endif
-	ifc_file = new IfcParse::IfcFile(filename);
-	if (!ifc_file || !ifc_file->good()) {
+
+	{
+#ifdef USE_MMAP
+		ifc_file = new IfcParse::IfcFile(filename, mmap);
+#else
+		(void)mmap;
+		ifc_file = new IfcParse::IfcFile(filename);
 #endif
+	}
+
+	if (!ifc_file || !ifc_file->good()) {
         Logger::Error("Unable to parse input file '" + filename + "'");
         return false;
     }

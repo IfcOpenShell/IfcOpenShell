@@ -1,6 +1,6 @@
 
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021 Maxim Vasilyev <qwiglydee@gmail.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -523,9 +523,6 @@ class ExtrusionWidget(types.GizmoGroup):
     def update(self, ctx):
         """updating object"""
         bpy.ops.bim.update_parametric_representation()
-        # parameters disappear after update
-        # need to retrieve and rebind them again
-        bpy.ops.bim.get_representation_ifc_parameters()
         target = ctx.object
         prop = target.data.BIMMeshProperties.ifc_parameters.get("IfcExtrudedAreaSolid/Depth")
         self.handle.target_set_prop("offset", prop, "value")
