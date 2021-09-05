@@ -3,7 +3,15 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file: ifcopenshell.file, **settings: dict):
+        """Create Entity
+
+        Create a new IFC Root entity
+
+        :param file: The IFC file.
+        :param settings: Settings of the root entity. 
+        :return: root element: The created root entity.
+        """
         self.file = file
         self.settings = {
             "ifc_class": "IfcBuildingElementProxy",

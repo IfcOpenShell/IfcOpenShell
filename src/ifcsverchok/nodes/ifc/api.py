@@ -72,11 +72,8 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
             return usecase.split(".")
 
     def generate_node(self, module, usecase):
-        try:
-            node_data = ifcopenshell.api.extract_docs(module, usecase)
-        except:
-            print("Node not yet implemented:", module, usecase)
-            return
+        # Removed try except for debug
+        node_data = ifcopenshell.api.extract_docs(module, usecase)
         while len(self.inputs) > 1:
             self.inputs.remove(self.inputs[-1])
 
