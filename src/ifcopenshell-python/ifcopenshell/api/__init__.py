@@ -114,11 +114,14 @@ def extract_docs(module, usecase):
     node_data = {"module": module, "usecase": usecase}
 
     signature = inspect.signature(function_init)
+    print("Signature is: " + str(signature))
     for name, parameter in signature.parameters.items():
         if name == "self":
             continue
         inputs[name] = {"name": name}
-        if isinstance(parameter.default, (str, float, int, bool)):
+        print("Name is: " + str(inputs[name]))
+        if isinstance(parameter.default, (str, float, int, bool, dict)):
+            print("implementing default")
             inputs[name]["default"] = parameter.default
 
     type_hints = typing.get_type_hints(function_init)
