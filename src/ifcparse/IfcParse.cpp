@@ -2206,23 +2206,23 @@ IfcEntityList::ptr IfcFile::getInverse(int instance_id, const IfcParse::declarat
 	IfcEntityList::ptr all = instances_by_reference(instance_id);
 	if (!all) return l;
 
-	for(IfcEntityList::it it = all->begin(); it != all->end(); ++it) {
+	for (IfcEntityList::it it = all->begin(); it != all->end(); ++it) {
 		bool valid = type == 0 || (*it)->declaration().is(*type);
 		if (valid && attribute_index >= 0) {
-            try {
-                Argument* arg = (*it)->data().getArgument(attribute_index);
+			try {
+				Argument* arg = (*it)->data().getArgument(attribute_index);
 				if (arg->isNull()) {
 					valid = false;
 				} else if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
-                    valid = instance == *arg;
-                } else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-                    IfcEntityList::ptr li = *arg;
-                    valid = li->contains(instance);
-                } else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
-                    IfcEntityListList::ptr li = *arg;
-                    valid = li->contains(instance);
-                }
-            } catch (const IfcException& e) {
+					valid = instance == *arg;
+				} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+					IfcEntityList::ptr li = *arg;
+					valid = li->contains(instance);
+				} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
+					IfcEntityListList::ptr li = *arg;
+					valid = li->contains(instance);
+				}
+			} catch (const IfcException& e) {
 				valid = false;
 				Logger::Error(e);
 			}
