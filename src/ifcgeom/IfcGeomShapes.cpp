@@ -895,7 +895,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 	bool part_succes = false;
 	const IfcGeom::SurfaceStyle* parent_style = get_style(l);
 	for (aggregate_of_instance::it it = elements->begin(); it != elements->end(); ++it) {
-		IfcSchema::IfcGeometricSetSelect* element = *it;
+		auto element = *it;
 		TopoDS_Shape s;
 		if (shape_type(element) == ST_SHAPELIST) {
 			IfcRepresentationShapeItems items;

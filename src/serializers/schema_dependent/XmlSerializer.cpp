@@ -201,7 +201,7 @@ ptree* format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& tree, boo
     return format_entity_instance(instance, child, tree, as_link);
 }
 
-std::string qualify_unrooted_instance(IfcUtil::IfcBaseClass* inst) {
+std::string qualify_unrooted_instance(IfcUtil::IfcBaseInterface* inst) {
 	return inst->declaration().name() + "_" + boost::lexical_cast<std::string>(inst->data().id());
 }
 

@@ -107,7 +107,7 @@ derived_field_statement = "    {std::set<int> idxs; %(statements)sderived_map[Ty
 derived_field_statement_attrs = "idxs.insert(%d); "
 
 simpletype = """%(documentation)s
-class IFC_PARSE_API %(name)s : public %(superclass)s {
+class IFC_PARSE_API %(name)s : %(superclass)s {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -137,7 +137,7 @@ simpletype_impl_cast_templated = (
 simpletype_impl_declaration = "return *%(schema_name_upper)s_%(class_name)s_type;"
 
 select = """%(documentation)s
-typedef IfcUtil::IfcBaseClass %(name)s;
+class IFC_PARSE_API %(name)s : public virtual IfcUtil::IfcBaseInterface {};
 """
 
 enumeration = """class IFC_PARSE_API %(name)s : public IfcUtil::IfcBaseType {
@@ -157,7 +157,7 @@ public:
 """
 
 entity = """%(documentation)s
-class IFC_PARSE_API %(name)s %(superclass)s{
+class IFC_PARSE_API %(name)s : %(superclass)s {
 public:
 %(attributes)s    %(inverse)s    virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();

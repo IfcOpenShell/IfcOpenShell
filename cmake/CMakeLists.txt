@@ -489,6 +489,11 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
 endif()
 
 IF(MSVC)
+	# warning due to virtual inheritance
+	ADD_DEFINITIONS(-wd4250)
+	# warning due to select definitions in the schema being redundant
+	ADD_DEFINITIONS(-wd4584)
+	
 	# didn't work well on ifcopenbot, @todo make configurable
 	# add_definitions(/MP)
 

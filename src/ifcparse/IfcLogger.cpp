@@ -47,7 +47,7 @@ namespace {
 	const std::array<std::basic_string<wchar_t>, 4> severity_strings<wchar_t>::value = { L"Debug", L"Notice", L"Warning", L"Error" };
 	
 	template <typename T>
-	void plain_text_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+	void plain_text_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
 		os << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
 		if (current_product) {
             std::string global_id = *((IfcUtil::IfcBaseEntity*)*current_product)->get("GlobalId");
@@ -71,7 +71,7 @@ namespace {
 	}
 
 	template <typename T>
-	void json_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+	void json_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
 		boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type> > pt;
 		
 		// @todo this is crazy
@@ -117,7 +117,7 @@ void Logger::SetOutput(std::wostream* l1, std::wostream* l2) {
 	}
 }
 
-void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
 	static std::mutex m;
 	std::lock_guard<std::mutex> lk(m);
 
@@ -141,7 +141,7 @@ void Logger::Message(Logger::Severity type, const std::string& message, const If
 	}
 }
 
-void Logger::Message(Logger::Severity type, const std::exception& exception, const IfcUtil::IfcBaseClass* instance) {
+void Logger::Message(Logger::Severity type, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance) {
 	Message(type, std::string(exception.what()), instance);
 }
 
