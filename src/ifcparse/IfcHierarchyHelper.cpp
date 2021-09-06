@@ -395,11 +395,13 @@ void IfcHierarchyHelper<Schema>::clipRepresentation(typename Schema::IfcRepresen
 	typename Schema::IfcRepresentationItem::list::ptr items = rep->Items();
 	typename Schema::IfcRepresentationItem::list::ptr new_items (new typename Schema::IfcRepresentationItem::list);
 	for (typename Schema::IfcRepresentationItem::list::it i = items->begin(); i != items->end(); ++i) {
-		typename Schema::IfcRepresentationItem* item = *i;
-		typename Schema::IfcBooleanClippingResult* clip = new typename Schema::IfcBooleanClippingResult(
-			Schema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE, item, half_space);
-		addEntity(clip);
-		new_items->push(clip);
+		auto item = dynamic_cast<typename Schema::IfcBooleanOperand*>(*i);
+		if (item) {
+			typename Schema::IfcBooleanClippingResult* clip = new typename Schema::IfcBooleanClippingResult(
+				Schema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE, item, half_space);
+			addEntity(clip);
+			new_items->push(clip);
+		}
 	}
 	rep->setItems(new_items);
 }

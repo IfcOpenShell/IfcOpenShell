@@ -33,14 +33,46 @@ class aggregate_of_instance;
 
 namespace IfcUtil {
 
-	class IFC_PARSE_API IfcBaseClass {
+	class IFC_PARSE_API IfcBaseInterface {
+	protected:
+		static bool is_null(const IfcBaseInterface* not_this) {
+			return !not_this;
+		}
+
+	public:
+		virtual const IfcEntityInstanceData& data() const = 0;
+		virtual IfcEntityInstanceData& data() = 0;
+		virtual const IfcParse::declaration& declaration() const = 0;
+
+		template <class T>
+		T* as() {
+			// @todo: do not allow this to be null in the first place
+			if (is_null(this)) {
+				return static_cast<T*>(0);
+			}
+			return declaration().is(T::Class())
+				? dynamic_cast<T*>(this)
+				: static_cast<T*>(0);
+		}
+
+		template <class T>
+		const T* as() const {
+			if (is_null(this)) {
+				return static_cast<const T*>(0);
+			}
+			return declaration().is(T::Class())
+				? dynamic_cast<const T*>(this)
+				: static_cast<const T*>(0);
+		}
+	};
+
+	class IFC_PARSE_API IfcBaseClass : public virtual IfcBaseInterface {
     protected:
 		IfcEntityInstanceData* data_;
 
 		static bool is_null(const IfcBaseClass* not_this) {
 			return !not_this;
-		}
-        
+		}        
 	public:
         IfcBaseClass() : data_(0) {}
 		IfcBaseClass(IfcEntityInstanceData* d) : data_(d) {}
@@ -51,27 +83,6 @@ namespace IfcUtil {
         void data(IfcEntityInstanceData* d);
         
         virtual const IfcParse::declaration& declaration() const = 0;
-
-		template <class T>
-		T* as() {
-			// @todo: do not allow this to be null in the first place
-			if (is_null(this)) {
-				return static_cast<T*>(0);
-			}
-			return declaration().is(T::Class())
-				? static_cast<T*>(this)
-				: static_cast<T*>(0);
-		}
-
-		template <class T>
-		const T* as() const {
-			if (is_null(this)) {
-				return static_cast<const T*>(0);
-			}
-			return declaration().is(T::Class())
-				? static_cast<const T*>(this)
-				: static_cast<const T*>(0);
-		}
 	};
 
 	class IFC_PARSE_API IfcLateBoundEntity : public IfcBaseClass {

@@ -353,13 +353,13 @@ public:
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
 	bool convert_wire_to_faces(const TopoDS_Wire& wire, TopoDS_Compound& face);
 	bool convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire);
-	bool convert_shapes(const IfcUtil::IfcBaseClass* L, IfcRepresentationShapeItems& result);
-	IfcGeom::ShapeType shape_type(const IfcUtil::IfcBaseClass* L);
-	bool convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
+	bool convert_shapes(const IfcUtil::IfcBaseInterface* L, IfcRepresentationShapeItems& result);
+	IfcGeom::ShapeType shape_type(const IfcUtil::IfcBaseInterface* L);
+	bool convert_shape(const IfcUtil::IfcBaseInterface* L, TopoDS_Shape& result);
 	bool flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& shapes, TopoDS_Shape& result, bool fuse);
-	bool convert_wire(const IfcUtil::IfcBaseClass* L, TopoDS_Wire& result);
-	bool convert_curve(const IfcUtil::IfcBaseClass* L, Handle(Geom_Curve)& result);
-	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
+	bool convert_wire(const IfcUtil::IfcBaseInterface* L, TopoDS_Wire& result);
+	bool convert_curve(const IfcUtil::IfcBaseInterface* L, Handle(Geom_Curve)& result);
+	bool convert_face(const IfcUtil::IfcBaseInterface* L, TopoDS_Shape& result);
 	bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
 	bool convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
 	void assert_closed_wire(TopoDS_Wire& wire);
@@ -426,7 +426,7 @@ public:
 	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_Trsf&);
 	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);
 	
-	bool is_identity_transform(IfcUtil::IfcBaseClass*);
+	bool is_identity_transform(IfcUtil::IfcBaseInterface*);
 
 	IfcSchema::IfcRelVoidsElement::list::ptr find_openings(IfcSchema::IfcProduct* product);
 
@@ -545,7 +545,7 @@ public:
 		const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
 		IfcUtil::IfcBaseClass* product)
 	{
-		return create_brep_for_representation_and_product(settings, (IfcSchema::IfcRepresentation*) representation, (IfcSchema::IfcProduct*) product);
+		return create_brep_for_representation_and_product(settings, representation->as<IfcSchema::IfcRepresentation>(), product->as<IfcSchema::IfcProduct>());
 	}
 
 	virtual IfcRepresentationShapeItems convert(IfcUtil::IfcBaseClass* item) {

@@ -1,8 +1,8 @@
 ﻿#include "IfcRegisterUndef.h"
 #define SHAPES(T) \
-	if ( l->declaration().is(IfcSchema::T::Class()) ) { \
+	if (l->as<IfcSchema::T>()) { \
 		try { \
-			return convert((IfcSchema::T*)l,r); \
+			return convert(l->as<IfcSchema::T>(), r); \
 		} catch (const std::exception& e) { \
 			Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", l); \
 		} catch (const Standard_Failure& f) { \

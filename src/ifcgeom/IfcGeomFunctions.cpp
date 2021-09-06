@@ -3459,7 +3459,7 @@ const IfcSchema::IfcRepresentationItem* IfcGeom::Kernel::find_item_carrying_styl
 	return item;
 }
 
-bool IfcGeom::Kernel::is_identity_transform(IfcUtil::IfcBaseClass* l) {
+bool IfcGeom::Kernel::is_identity_transform(IfcUtil::IfcBaseInterface* l) {
 	IfcSchema::IfcAxis2Placement2D* ax2d;
 	IfcSchema::IfcAxis2Placement3D* ax3d;
 
