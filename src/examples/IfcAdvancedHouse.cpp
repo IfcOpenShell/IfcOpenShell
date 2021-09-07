@@ -112,18 +112,18 @@ int main() {
 	TopoDS_Shape shape;
 	createGroundShape(shape);
 
-	IfcSchema::IfcProductDefinitionShape* ground_representation = IfcGeom::serialise(STRINGIFY(IfcSchema), shape, true)->as<IfcSchema::IfcProductDefinitionShape>();
+	auto ground_representation = IfcGeom::serialise(STRINGIFY(IfcSchema), shape, true);
 	if (!ground_representation) {
-		ground_representation = IfcGeom::tesselate(STRINGIFY(IfcSchema), shape, 100.)->as<IfcSchema::IfcProductDefinitionShape>();
+		ground_representation = IfcGeom::tesselate(STRINGIFY(IfcSchema), shape, 100.);
 	}
-	file.getSingle<IfcSchema::IfcSite>()->setRepresentation(ground_representation);
+	file.getSingle<IfcSchema::IfcSite>()->setRepresentation(ground_representation->as<IfcSchema::IfcProductDefinitionShape>());
 	
 	IfcSchema::IfcRepresentation::list::ptr ground_reps = file.getSingle<IfcSchema::IfcSite>()->Representation()->Representations();
 	for (IfcSchema::IfcRepresentation::list::it it = ground_reps->begin(); it != ground_reps->end(); ++it) {
 		(*it)->setContextOfItems(file.getRepresentationContext("Model"));
 	}
 	file.addEntity(ground_representation);
-	setSurfaceColour(file, ground_representation, 0.15, 0.25, 0.05);
+	setSurfaceColour(file, ground_representation->as<IfcSchema::IfcProductDefinitionShape>(), 0.15, 0.25, 0.05);
 
     /*
     // Note that IFC lacks elementary surfaces that STEP does have, such as spherical_surface.
