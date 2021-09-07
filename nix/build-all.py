@@ -500,13 +500,14 @@ os.environ["LDFLAGS"] = LDFLAGS
 
 if 'hdf5' in targets:
     HDF5_MAJOR=".".join(HDF5_VERSION.split(".")[:-1])
+    get_os_result = get_os()
     build_dependency(
         name="hdf5-{HDF5_VERSION}".format(**locals()),
         mode="ctest",
         build_tool_args=[],
         download_url="https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{HDF5_MAJOR}/hdf5-{HDF5_VERSION}/src/".format(**locals()),
         download_name="CMake-hdf5-{HDF5_VERSION}.tar.gz".format(**locals()),
-        ctest_result="HDF5-{HDF5_VERSION}-Linux".format(**locals()),
+        ctest_result="HDF5-{HDF5_VERSION}-{get_os_result}".format(**locals()),
         ctest_result_path="HDF_Group/HDF5/{HDF5_VERSION}".format(**locals())
     )
 
