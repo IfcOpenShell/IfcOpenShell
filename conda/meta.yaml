@@ -24,13 +24,19 @@ requirements:
     - swig >=3.0.9
     - libboost
     - icu
+    - xmlschema
+    - lxml
+    - numpy
   run:
     - libgcc  # [osx]
     - python
     - oce ==0.18.3
     - libboost
     - icu
-
+    - xmlschema
+    - lxml
+    - numpy
+    
 about:
   home: http://ifcopenshell.org
   license: LGPL
