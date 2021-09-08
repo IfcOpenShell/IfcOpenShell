@@ -96,46 +96,6 @@ class CreateProject(bpy.types.Operator):
         IfcStore.file = data["file"]
 
 
-class CreateProjectLibrary(bpy.types.Operator):
-    bl_idname = "bim.create_project_library"
-    bl_label = "Create Project Library"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        IfcStore.begin_transaction(self)
-        IfcStore.add_transaction_operation(self, rollback=self.rollback, commit=lambda data: True)
-        result = self._execute(context)
-        self.transaction_data = {"file": self.file}
-        IfcStore.add_transaction_operation(self, rollback=lambda data: True, commit=self.commit)
-        IfcStore.end_transaction(self)
-        return result
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        if self.file:
-            return {"FINISHED"}
-
-        IfcStore.file = ifcopenshell.api.run(
-            "project.create_file", **{"version": context.scene.BIMProperties.export_schema}
-        )
-        self.file = IfcStore.get_file()
-
-        if self.file.schema == "IFC2X3":
-            bpy.ops.bim.add_person()
-            bpy.ops.bim.add_organisation()
-
-        project_library = bpy.data.objects.new("My Project Library", None)
-        bpy.ops.bim.assign_class(obj=project_library.name, ifc_class="IfcProjectLibrary")
-        bpy.ops.bim.assign_unit()
-        return {"FINISHED"}
-
-    def rollback(self, data):
-        IfcStore.file = None
-
-    def commit(self, data):
-        IfcStore.file = data["file"]
-
-
 class SelectLibraryFile(bpy.types.Operator):
     bl_idname = "bim.select_library_file"
     bl_label = "Select Library File"
