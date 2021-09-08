@@ -20,6 +20,9 @@
 import re
 import bpy
 import pytest
+import blenderbim
+import ifcopenshell
+import ifcopenshell.util.representation
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -33,6 +36,14 @@ class NewFile:
 def scenario(function):
     def subfunction(self):
         run(function(self))
+
+    return subfunction
+
+
+def scenario_debug(function):
+    def subfunction(self):
+        run_debug(function(self))
+
     return subfunction
 
 
@@ -85,6 +96,46 @@ def the_object_name_is_in_the_collection_collection(name, collection):
     assert collection in [c.name for c in the_object_name_exists(name).users_collection]
 
 
+def the_collection_name1_is_in_the_collection_name2(name1, name2):
+    assert bpy.data.collections.get(name2).children.get(name1)
+
+
+def the_object_name_is_placed_in_the_collection_collection(name, collection):
+    obj = the_object_name_exists(name)
+    [c.objects.unlink(obj) for c in obj.users_collection]
+    bpy.data.collections.get(collection).objects.link(obj)
+
+
+def the_object_name_has_a_type_representation_of_context(name, type, context):
+    ifc = an_ifc_file_exists()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    context, subcontext, target_view = context.split("/")
+    assert ifcopenshell.util.representation.get_representation(
+        element, context, subcontext or None, target_view or None
+    )
+
+
+def the_object_name_is_contained_in_container_name(name, container_name):
+    ifc = an_ifc_file_exists()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    container = ifcopenshell.util.element.get_container(element)
+    if not container:
+        assert False, f'Object "{name}" is not in any container'
+    assert container.Name == container_name, f'Object "{name}" is in {container}'
+
+
+def i_duplicate_the_selected_objects():
+    bpy.ops.object.duplicate_move()
+    blenderbim.bim.handler.active_object_callback()
+
+
+def the_object_name1_and_name2_are_different_elements(name1, name2):
+    ifc = an_ifc_file_exists()
+    element1 = ifc.by_id(the_object_name_exists(name1).BIMObjectProperties.ifc_definition_id)
+    element2 = ifc.by_id(the_object_name_exists(name2).BIMObjectProperties.ifc_definition_id)
+    assert element1 != element2, f"Objects {name1} and {name2} have same elements {element1} and {element2}"
+
+
 definitions = {
     "an empty IFC project": an_empty_ifc_project,
     "I add a cube": i_add_a_cube,
@@ -93,7 +144,13 @@ definitions = {
     'I press "(.*)"': i_press_operator,
     'the object "(.*)" is an "(.*)"': the_object_name_is_an_ifc_class,
     'the object "(.*)" is in the collection "(.*)"': the_object_name_is_in_the_collection_collection,
+    'the collection "(.*)" is in the collection "(.*)"': the_collection_name1_is_in_the_collection_name2,
     "an IFC file exists": an_ifc_file_exists,
+    'the object "(.*)" has a "(.*)" representation of "(.*)"': the_object_name_has_a_type_representation_of_context,
+    'the object "(.*)" is placed in the collection "(.*)"': the_object_name_is_placed_in_the_collection_collection,
+    'the object "(.*)" is contained in "(.*)"': the_object_name_is_contained_in_container_name,
+    "I duplicate the selected objects": i_duplicate_the_selected_objects,
+    'the object "(.*)" and "(.*)" are different elements': the_object_name1_and_name2_are_different_elements,
 }
 
 
