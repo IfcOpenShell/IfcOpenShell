@@ -117,11 +117,11 @@ class AssignClass(bpy.types.Operator):
     def _execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         self.file = IfcStore.get_file()
+        if not self.ifc_class:
+            self.ifc_class = context.scene.BIMRootProperties.ifc_class
         self.declaration = IfcStore.get_schema().declaration_by_name(self.ifc_class)
         if self.predefined_type == "USERDEFINED":
             self.predefined_type = self.userdefined_type
-        elif self.predefined_type == "":
-            predefined_type = None
         for obj in objects:
             self.assign_class(context, obj)
         return {"FINISHED"}
@@ -134,7 +134,7 @@ class AssignClass(bpy.types.Operator):
             self.file,
             **{
                 "ifc_class": self.ifc_class,
-                "predefined_type": self.predefined_type,
+                "predefined_type": self.predefined_type or None,
                 "name": obj.name,
             },
         )

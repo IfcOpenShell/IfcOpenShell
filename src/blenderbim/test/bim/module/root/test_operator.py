@@ -21,12 +21,12 @@ import test.bim.bootstrap
 
 class TestCreateProject(test.bim.bootstrap.NewFile):
     @test.bim.bootstrap.scenario
-    def test_creating_a_project(self):
+    def test_assigning_a_class_to_a_cube(self):
         return """
-        When I press "bim.create_project"
-        Then an IFC file exists
-        And the object named "IfcProject/My Project" is an "IfcProject"
-        And the object named "IfcSite/My Site" is an "IfcSite"
-        And the object named "IfcBuilding/My Building" is an "IfcBuilding"
-        And the object named "IfcBuildingStorey/My Storey" is an "IfcBuildingStorey"
+        Given an empty IFC project
+        When I add a cube
+        And the object named "Cube" is selected
+        And I select "IfcWall" in "scene.BIMRootProperties.ifc_class"
+        And I press "bim.assign_class"
+        And the object named "IfcWall/Cube" is an "IfcWall"
         """

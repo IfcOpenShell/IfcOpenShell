@@ -114,7 +114,7 @@ class IfcExporter:
         IfcStore.edited_objs.clear()
 
     def sync_object_placement(self, obj):
-        blender_matrix = np.matrix(obj.matrix_world)
+        blender_matrix = np.array(obj.matrix_world)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if not hasattr(element, "ObjectPlacement"):
             return
