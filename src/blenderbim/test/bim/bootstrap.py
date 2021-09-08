@@ -17,13 +17,18 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
 import re
 import bpy
 import pytest
+import webbrowser
 import blenderbim
 import ifcopenshell
 import ifcopenshell.util.representation
 from blenderbim.bim.ifc import IfcStore
+
+# Monkey-patch webbrowser opening since we want to test headlessly
+webbrowser.open = lambda x: True
 
 
 class NewFile:
@@ -64,8 +69,15 @@ def the_object_name_is_selected(name):
     obj.select_set(True)
 
 
-def i_select_value_in_prop(value, prop):
-    exec(f'bpy.context.{prop} = "{value}"')
+def i_set_prop_to_value(prop, value):
+    try:
+        exec(f'bpy.context.{prop} = "{value}"')
+    except:
+        exec(f"bpy.context.{prop} = {value}")
+
+
+def i_enable_prop(prop):
+    exec(f"bpy.context.{prop} = True")
 
 
 def i_press_operator(operator):
@@ -136,11 +148,17 @@ def the_object_name1_and_name2_are_different_elements(name1, name2):
     assert element1 != element2, f"Objects {name1} and {name2} have same elements {element1} and {element2}"
 
 
+def the_file_name_should_contain_value(name, value):
+    with open(name, "r") as f:
+        assert value in f.read()
+
+
 definitions = {
     "an empty IFC project": an_empty_ifc_project,
     "I add a cube": i_add_a_cube,
     'the object "(.*)" is selected': the_object_name_is_selected,
-    'I select "(.*)" in "(.*)"': i_select_value_in_prop,
+    'I set "(.*)" to "(.*)"': i_set_prop_to_value,
+    'I enable "(.*)"': i_enable_prop,
     'I press "(.*)"': i_press_operator,
     'the object "(.*)" is an "(.*)"': the_object_name_is_an_ifc_class,
     'the object "(.*)" is in the collection "(.*)"': the_object_name_is_in_the_collection_collection,
@@ -151,6 +169,7 @@ definitions = {
     'the object "(.*)" is contained in "(.*)"': the_object_name_is_contained_in_container_name,
     "I duplicate the selected objects": i_duplicate_the_selected_objects,
     'the object "(.*)" and "(.*)" are different elements': the_object_name1_and_name2_are_different_elements,
+    'the file "(.*)" should contain "(.*)"': the_file_name_should_contain_value,
 }
 
 
@@ -158,6 +177,7 @@ definitions = {
 def run(scenario):
     for line in scenario.split("\n"):
         line = line.strip()
+        line = line.replace("{cwd}", os.getcwd())
         if not line:
             continue
         match = None

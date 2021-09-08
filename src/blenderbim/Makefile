@@ -33,11 +33,13 @@ ifeq ($(PYVERSION), py37)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/linux-64/hpp-fcl-1.7.5-py37h5f1835d_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/linux-64/eigenpy-2.6.5-py37h95e2c48_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py37h0379df6_3.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/30/c0/d0526314971fc661b083ab135747dc68446a3022686da8c16d25fcf6ef07/lxml-4.6.3-cp37-cp37m-manylinux2014_x86_64.whl
 endif
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/linux-64/hpp-fcl-1.7.5-py39hbcdfc36_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/linux-64/eigenpy-2.6.5-py39h5aed9d1_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py39h5472131_3.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/19/d9/a69c6aff5673554df48120565a14a50eaa41d29ae03b02faa0b023666318/lxml-4.6.3-cp39-cp39-manylinux2014_x86_64.whl
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/linux-64/assimp-5.0.1-hedfc422_6.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/linux-64/octomap-1.9.7-h4bd325d_0.tar.bz2
@@ -49,11 +51,13 @@ ifeq ($(PYVERSION), py37)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py37h2d7f23a_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py37h0695097_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py37hd79e0ac_3.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/1e/3e/f0abc15d5dac50939bccc589aae336d5ead4c72e7ad1039a2e0f3630ea92/lxml-4.6.3-cp37-cp37m-macosx_10_9_x86_64.whl
 endif
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py39h1e32b98_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py39h5405915_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py39ha641261_3.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/b8/74/a71f7ad72e8db54ce899efab84507b801660750cbbfa6a39e6717557d36a/lxml-4.6.3-cp39-cp39-macosx_10_9_x86_64.whl
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-64/assimp-5.0.1-h1224e73_6.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/osx-64/octomap-1.9.7-h940c156_0.tar.bz2
@@ -65,11 +69,13 @@ ifeq ($(PYVERSION), py37)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/win-64/hpp-fcl-1.7.5-py37h839d6b1_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/win-64/eigenpy-2.6.5-py37h2c32e34_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/win-64/boost-1.74.0-py37h3b38789_3.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/9e/5e/171ee9d40a600f565fe691ec5bf7596247ec62cfb2edc00c91afe8ea837b/lxml-4.6.3-cp37-cp37m-win_amd64.whl
 endif
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/win-64/hpp-fcl-1.7.5-py39h2e7c763_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/win-64/eigenpy-2.6.5-py39h3ce40e6_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/win-64/boost-1.74.0-py39hefe7e4c_3.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/72/d4/426ecb8849c47c3e370c87aa0ac05d85768df917ffea27fcd6686a5e6495/lxml-4.6.3-cp39-cp39-win_amd64.whl
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/win-64/assimp-5.0.1-hc2aa0de_6.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/win-64/octomap-1.9.7-h5362a0b_0.tar.bz2
@@ -348,6 +354,13 @@ endif
 	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/patch/runner_util.patch
 	cd dist/working/ && patch ../blenderbim/libs/site/packages/behave/model_core.py < model_core.patch
 	cd dist/working/ && patch ../blenderbim/libs/site/packages/behave/runner_util.py < runner_util.patch
+	rm -rf dist/working
+
+	# Required by ids
+	mkdir dist/working
+	cd dist/working && wget $(LXML_URL)
+	cd dist/working && cp *.whl lxml.zip && unzip lxml.zip
+	cp -r dist/working/lxml dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by behave
