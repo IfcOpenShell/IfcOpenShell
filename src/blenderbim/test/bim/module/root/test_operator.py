@@ -19,14 +19,27 @@
 import test.bim.bootstrap
 
 
-class TestCreateProject(test.bim.bootstrap.NewFile):
+class TestAssignClass(test.bim.bootstrap.NewFile):
     @test.bim.bootstrap.scenario
     def test_assigning_a_class_to_a_cube(self):
         return """
         Given an empty IFC project
         When I add a cube
-        And the object named "Cube" is selected
+        And the object "Cube" is selected
         And I select "IfcWall" in "scene.BIMRootProperties.ifc_class"
         And I press "bim.assign_class"
-        And the object named "IfcWall/Cube" is an "IfcWall"
+        And the object "IfcWall/Cube" is an "IfcWall"
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_assigning_a_type_class_to_a_cube(self):
+        return """
+        Given an empty IFC project
+        When I add a cube
+        And the object "Cube" is selected
+        And I select "IfcElementType" in "scene.BIMRootProperties.ifc_product"
+        And I select "IfcWallType" in "scene.BIMRootProperties.ifc_class"
+        And I press "bim.assign_class"
+        And the object "IfcWallType/Cube" is an "IfcWallType"
+        And the object "IfcWallType/Cube" is in the collection "Types"
         """

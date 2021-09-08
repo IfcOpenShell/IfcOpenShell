@@ -33,7 +33,6 @@ class NewFile:
 def scenario(function):
     def subfunction(self):
         run(function(self))
-
     return subfunction
 
 
@@ -45,7 +44,7 @@ def i_add_a_cube():
     bpy.ops.mesh.primitive_cube_add()
 
 
-def the_object_named_name_is_selected(name):
+def the_object_name_is_selected(name):
     obj = bpy.context.scene.objects.get(name)
     if not obj:
         assert False, 'The object "{name}" could not be selected'
@@ -62,7 +61,7 @@ def i_press_operator(operator):
     exec(f"bpy.ops.{operator}()")
 
 
-def the_object_named_name_exists(name):
+def the_object_name_exists(name):
     obj = bpy.data.objects.get(name)
     if not obj:
         assert False, f'The object "{name}" does not exist'
@@ -76,19 +75,24 @@ def an_ifc_file_exists():
     return ifc
 
 
-def the_object_named_name_is_an_ifc_class(name, ifc_class):
+def the_object_name_is_an_ifc_class(name, ifc_class):
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_named_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     assert element.is_a(ifc_class), f'Object "{name}" is a {element.is_a()}'
+
+
+def the_object_name_is_in_the_collection_collection(name, collection):
+    assert collection in [c.name for c in the_object_name_exists(name).users_collection]
 
 
 definitions = {
     "an empty IFC project": an_empty_ifc_project,
     "I add a cube": i_add_a_cube,
-    'the object named "(.*)" is selected': the_object_named_name_is_selected,
+    'the object "(.*)" is selected': the_object_name_is_selected,
     'I select "(.*)" in "(.*)"': i_select_value_in_prop,
     'I press "(.*)"': i_press_operator,
-    'the object named "(.*)" is an "(.*)"': the_object_named_name_is_an_ifc_class,
+    'the object "(.*)" is an "(.*)"': the_object_name_is_an_ifc_class,
+    'the object "(.*)" is in the collection "(.*)"': the_object_name_is_in_the_collection_collection,
     "an IFC file exists": an_ifc_file_exists,
 }
 

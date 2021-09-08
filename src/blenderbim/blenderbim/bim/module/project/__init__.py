@@ -22,7 +22,6 @@ from . import ui, prop, operator
 
 classes = (
     operator.CreateProject,
-    operator.CreateProjectLibrary,
     operator.SelectLibraryFile,
     operator.ChangeLibraryElement,
     operator.RefreshLibrary,
