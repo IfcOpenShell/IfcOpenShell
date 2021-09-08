@@ -1061,14 +1061,14 @@ void SvgSerializer::write(const geometry_data& data) {
 				object_type.erase(std::remove_if(object_type.begin(), object_type.end(), [](char c) { return !std::isalnum(c); }), object_type.end());
 			}
 
-			auto z_local = gp::DZ().Transformed(data.trsf.Inverted());
+			auto z_global = gp::DZ().Transformed(data.trsf);
 
 			if (data.product->declaration().is("IfcAnnotation") &&     // is an Annotation
 				(proj.Magnitude() > 1.e-5) && 					       // when projected onto the view has a length
 				is_floor_plan_
 					? (zmin >= range.first && zmin < (range.second - 1.e-5)) // the Z-coords are within the range of the building storey,
 				                                                             // this excludes the upper bound with a small tolerance
-					: (projection_direction.Dot(z_local) < -0.99)            // For elevations only include annotations that are "facing" the view direction
+					: (projection_direction.Dot(z_global) > 0.99)            // For elevations only include annotations that are "facing" the view direction
 				)
 			{
 				auto svg_name = data.svg_name;
