@@ -549,13 +549,13 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	} else if (elevation_ref_guid_) {
 		is_elevation = *elevation_ref_guid_ == brep_obj->guid();
 	}
+	
+	BRepBuilderAPI_Transform make_transform_global(compound_local, trsf, true);
+	make_transform_global.Build();
+	// (When determinant < 0, copy is implied and the input is not mutated.)
+	auto compound_unmirrored = make_transform_global.Shape();
 
 	if (is_section || is_elevation) {
-		BRepBuilderAPI_Transform make_transform_global(compound_local, trsf, true);
-		make_transform_global.Build();
-		// (When determinant < 0, copy is implied and the input is not mutated.)
-		auto compound_unmirrored = make_transform_global.Shape();
-
 		boost::optional<double> scale;
 		boost::optional<std::pair<double, double>> size;
 
@@ -672,6 +672,10 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 		element_buffer_.push_back(data);
 	}
 
+	// Augment bnd_ regardless of whether emitting storeys as we depend
+	// on the global bounds also for the storey height annotations.
+	BRepBndLib::Add(compound_unmirrored, bnd_);
+
 	if (emit_building_storeys_) {
 		write(data);
 	}
@@ -732,10 +736,6 @@ void SvgSerializer::write(const geometry_data& data) {
 		}
 	}
 #endif
-
-	if (is_floor_plan_) {
-		BRepBndLib::Add(compound_unmirrored, bnd_);
-	}
 
 	// SVG has a coordinate system with the origin in the *upper*-left corner
 	// therefore we mirror the shape along the XZ-plane.	
