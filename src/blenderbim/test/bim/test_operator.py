@@ -17,7 +17,6 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import pytest
 import test.bim.bootstrap
 from blenderbim.bim.ifc import IfcStore
 
