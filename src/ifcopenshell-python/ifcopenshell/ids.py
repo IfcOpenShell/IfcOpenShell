@@ -16,11 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import re
 import logging
-import operator
-import os
-import csv
 import numpy as np
 from datetime import date
 
@@ -30,13 +28,8 @@ import ifcopenshell.util.placement
 from bcf.v2.bcfxml import BcfXml
 from bcf.v2 import data as bcf
 
-from bcf import bcfxml
-
 from xmlschema import XMLSchema
-from xmlschema import XMLSchemaConverter
 from xmlschema import etree_tostring
-from lxml import etree as ElementTree
-from xmlschema.validators import facets
 from xmlschema.validators import identities
 
 
@@ -233,13 +226,18 @@ class ids:
                 else:
                     logger.debug("No applicable elements found. None required.")
 
+            try:
+                percentage = self.ifc_passed / self.ifc_applicable * 100
+            except ZeroDivisionError:
+                percentage = 0
+
             logger.debug(
                 "Out of %s IFC elements, %s were applicable and %s of them passed (%s)."
                 % (
                     len(ifc_file.by_type("IfcProduct")),
                     self.ifc_applicable,
                     self.ifc_passed,
-                    str(self.ifc_passed / self.ifc_applicable * 100) + "%",
+                    str(percentage) + "%",
                 )
             )
         for h in logger.handlers:
@@ -686,25 +684,28 @@ class property(facet):
 
         self.location = self.node["@location"]
 
-        # TODO sometimes AttributeError: 'str' object has no attribute 'wrappedValue'
-        instance_props = ifcopenshell.util.element.get_psets(inst)
-
-        if ifcopenshell.util.element.get_type(inst):
-            type_props = ifcopenshell.util.element.get_psets(ifcopenshell.util.element.get_type(inst))
+        if self.propertyset == "attribute":
+            val = {k.lower(): v for k, v in inst.get_info().items()}.get(self.name, None)
         else:
-            type_props = {}
+            # TODO sometimes AttributeError: 'str' object has no attribute 'wrappedValue'
+            instance_props = ifcopenshell.util.element.get_psets(inst)
 
-        if self.location == "instance":
-            props = instance_props
-        elif self.location == "type" and type_props:
-            props = type_props
-        elif self.location == "any" and (instance_props or type_props):
-            props = {**instance_props, **type_props}
-        else:
-            props = {}
+            if ifcopenshell.util.element.get_type(inst):
+                type_props = ifcopenshell.util.element.get_psets(ifcopenshell.util.element.get_type(inst))
+            else:
+                type_props = {}
 
-        pset = props.get(self.propertyset)
-        val = pset.get(self.name) if pset else None
+            if self.location == "instance":
+                props = instance_props
+            elif self.location == "type" and type_props:
+                props = type_props
+            elif self.location == "any" and (instance_props or type_props):
+                props = {**instance_props, **type_props}
+            else:
+                props = {}
+
+            pset = props.get(self.propertyset)
+            val = pset.get(self.name) if pset else None
 
         self.location_msg = location[self.location]
         di = {"name": self.name, "propertyset": self.propertyset, "value": "'%s'" % val, "location": self.location_msg}
@@ -913,7 +914,7 @@ class restriction:
                     elif n[3:6] == "max":
                         r.options.append("<=")
                     else:
-                        self.options.append("==")
+                        r.options.append("==")
                     r.options[-1] += str(ids_dict[n]["@value"])
                 elif n == "pattern":
                     r.type = "pattern"

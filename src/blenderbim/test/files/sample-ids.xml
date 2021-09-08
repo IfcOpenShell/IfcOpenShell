@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ids xmlns="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://standards.buildingsmart.org/IDS  ids_04.xsd">
+	<specification name="Sample IDS" necessity="required">
+		<applicability>
+			<entity>
+				<name><simpleValue>IfcBuilding</simpleValue></name>
+			</entity>
+		</applicability>
+		<requirements>
+			<property location="any">
+				<propertyset><simpleValue>attribute</simpleValue></propertyset>
+				<name><simpleValue>name</simpleValue></name>
+				<value><simpleValue>My Building</simpleValue></value>
+			</property>
+		</requirements>
+	</specification>
+	<info/>
+</ids>

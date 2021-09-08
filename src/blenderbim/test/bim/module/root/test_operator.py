@@ -26,7 +26,7 @@ class TestAssignClass(test.bim.bootstrap.NewFile):
         Given an empty IFC project
         When I add a cube
         And the object "Cube" is selected
-        And I select "IfcWall" in "scene.BIMRootProperties.ifc_class"
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
         Then the object "IfcWall/Cube" is an "IfcWall"
         And the object "IfcWall/Cube" is in the collection "Collection"
@@ -39,8 +39,8 @@ class TestAssignClass(test.bim.bootstrap.NewFile):
         Given an empty IFC project
         When I add a cube
         And the object "Cube" is selected
-        And I select "IfcElementType" in "scene.BIMRootProperties.ifc_product"
-        And I select "IfcWallType" in "scene.BIMRootProperties.ifc_class"
+        And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
         And I press "bim.assign_class"
         Then the object "IfcWallType/Cube" is an "IfcWallType"
         And the object "IfcWallType/Cube" is in the collection "Types"
@@ -53,8 +53,8 @@ class TestAssignClass(test.bim.bootstrap.NewFile):
         Given an empty IFC project
         When I add a cube
         And the object "Cube" is selected
-        And I select "IfcSpatialElement" in "scene.BIMRootProperties.ifc_product"
-        And I select "IfcBuilding" in "scene.BIMRootProperties.ifc_class"
+        And I set "scene.BIMRootProperties.ifc_product" to "IfcSpatialElement"
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcBuilding"
         And I press "bim.assign_class"
         Then the object "IfcBuilding/Cube" is an "IfcBuilding"
         And the object "IfcBuilding/Cube" is in the collection "IfcBuilding/Cube"
@@ -67,8 +67,8 @@ class TestAssignClass(test.bim.bootstrap.NewFile):
         Given an empty IFC project
         When I add a cube
         And the object "Cube" is selected
-        And I select "IfcElement" in "scene.BIMRootProperties.ifc_product"
-        And I select "IfcOpeningElement" in "scene.BIMRootProperties.ifc_class"
+        And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
         And I press "bim.assign_class"
         Then the object "IfcOpeningElement/Cube" is an "IfcOpeningElement"
         And the object "IfcOpeningElement/Cube" is in the collection "IfcOpeningElements"
@@ -82,7 +82,7 @@ class TestAssignClass(test.bim.bootstrap.NewFile):
         When I add a cube
         And the object "Cube" is selected
         And the object "Cube" is placed in the collection "IfcBuildingStorey/My Storey"
-        And I select "IfcWall" in "scene.BIMRootProperties.ifc_class"
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
         Then the object "IfcWall/Cube" is contained in "My Storey"
         """
@@ -95,7 +95,7 @@ class TestCopyClass(test.bim.bootstrap.NewFile):
         Given an empty IFC project
         When I add a cube
         And the object "Cube" is selected
-        And I select "IfcWall" in "scene.BIMRootProperties.ifc_class"
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
         And I duplicate the selected objects
         Then the object "IfcWall/Cube" and "IfcWall/Cube.001" are different elements
