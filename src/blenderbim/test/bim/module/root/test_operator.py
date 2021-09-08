@@ -28,7 +28,9 @@ class TestAssignClass(test.bim.bootstrap.NewFile):
         And the object "Cube" is selected
         And I select "IfcWall" in "scene.BIMRootProperties.ifc_class"
         And I press "bim.assign_class"
-        And the object "IfcWall/Cube" is an "IfcWall"
+        Then the object "IfcWall/Cube" is an "IfcWall"
+        And the object "IfcWall/Cube" is in the collection "Collection"
+        And the object "IfcWall/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
         """
 
     @test.bim.bootstrap.scenario
@@ -40,6 +42,73 @@ class TestAssignClass(test.bim.bootstrap.NewFile):
         And I select "IfcElementType" in "scene.BIMRootProperties.ifc_product"
         And I select "IfcWallType" in "scene.BIMRootProperties.ifc_class"
         And I press "bim.assign_class"
-        And the object "IfcWallType/Cube" is an "IfcWallType"
+        Then the object "IfcWallType/Cube" is an "IfcWallType"
         And the object "IfcWallType/Cube" is in the collection "Types"
+        And the object "IfcWallType/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_assigning_a_spatial_class_to_a_cube(self):
+        return """
+        Given an empty IFC project
+        When I add a cube
+        And the object "Cube" is selected
+        And I select "IfcSpatialElement" in "scene.BIMRootProperties.ifc_product"
+        And I select "IfcBuilding" in "scene.BIMRootProperties.ifc_class"
+        And I press "bim.assign_class"
+        Then the object "IfcBuilding/Cube" is an "IfcBuilding"
+        And the object "IfcBuilding/Cube" is in the collection "IfcBuilding/Cube"
+        And the object "IfcBuilding/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_assigning_an_opening_class_to_a_cube(self):
+        return """
+        Given an empty IFC project
+        When I add a cube
+        And the object "Cube" is selected
+        And I select "IfcElement" in "scene.BIMRootProperties.ifc_product"
+        And I select "IfcOpeningElement" in "scene.BIMRootProperties.ifc_class"
+        And I press "bim.assign_class"
+        Then the object "IfcOpeningElement/Cube" is an "IfcOpeningElement"
+        And the object "IfcOpeningElement/Cube" is in the collection "IfcOpeningElements"
+        And the object "IfcOpeningElement/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_assigning_a_class_to_a_cube_in_a_collection(self):
+        return """
+        Given an empty IFC project
+        When I add a cube
+        And the object "Cube" is selected
+        And the object "Cube" is placed in the collection "IfcBuildingStorey/My Storey"
+        And I select "IfcWall" in "scene.BIMRootProperties.ifc_class"
+        And I press "bim.assign_class"
+        Then the object "IfcWall/Cube" is contained in "My Storey"
+        """
+
+
+class TestCopyClass(test.bim.bootstrap.NewFile):
+    @test.bim.bootstrap.scenario
+    def test_copying_a_wall(self):
+        return """
+        Given an empty IFC project
+        When I add a cube
+        And the object "Cube" is selected
+        And I select "IfcWall" in "scene.BIMRootProperties.ifc_class"
+        And I press "bim.assign_class"
+        And I duplicate the selected objects
+        Then the object "IfcWall/Cube" and "IfcWall/Cube.001" are different elements
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_copying_a_storey(self):
+        return """
+        Given an empty IFC project
+        And the object "IfcBuildingStorey/My Storey" is selected
+        When I duplicate the selected objects
+        Then the object "IfcBuildingStorey/My Storey" and "IfcBuildingStorey/My Storey.001" are different elements
+        And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
+        And the object "IfcBuildingStorey/My Storey.001" is in the collection "IfcBuildingStorey/My Storey.001"
+        And the collection "IfcBuildingStorey/My Storey.001" is in the collection "IfcBuilding/My Building"
         """
