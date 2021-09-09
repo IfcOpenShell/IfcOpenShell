@@ -245,6 +245,8 @@ public:
 
 	unsigned int FreshId() { return ++MaxId; }
 
+	unsigned int getMaxId() { return MaxId; }
+
 	void recalculate_id_counter();
 
 	IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity, int id=-1);
