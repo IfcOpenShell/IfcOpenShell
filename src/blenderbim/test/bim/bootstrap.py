@@ -115,6 +115,11 @@ def the_object_name_is_an_ifc_class(name, ifc_class):
     assert element.is_a(ifc_class), f'Object "{name}" is a {element.is_a()}'
 
 
+def the_object_name_is_not_an_ifc_element(name):
+    id = the_object_name_exists(name).BIMObjectProperties.ifc_definition_id
+    assert id == 0, f"The ID is {id}"
+
+
 def the_object_name_is_in_the_collection_collection(name, collection):
     assert collection in [c.name for c in the_object_name_exists(name).users_collection]
 
@@ -152,6 +157,11 @@ def i_duplicate_the_selected_objects():
     blenderbim.bim.handler.active_object_callback()
 
 
+def i_delete_the_selected_objects():
+    bpy.ops.object.delete()
+    blenderbim.bim.handler.active_object_callback()
+
+
 def the_object_name1_and_name2_are_different_elements(name1, name2):
     ifc = an_ifc_file_exists()
     element1 = ifc.by_id(the_object_name_exists(name1).BIMObjectProperties.ifc_definition_id)
@@ -167,7 +177,7 @@ def the_file_name_should_contain_value(name, value):
 def the_object_name1_has_a_boolean_difference_by_name2(name1, name2):
     obj = the_object_name_exists(name1)
     for modifier in obj.modifiers:
-        if modifier.type == "BOOLEAN" and modifier.object.name == name2:
+        if modifier.type == "BOOLEAN" and modifier.object and modifier.object.name == name2:
             return True
     assert False, "No boolean found"
 
@@ -175,7 +185,7 @@ def the_object_name1_has_a_boolean_difference_by_name2(name1, name2):
 def the_object_name1_has_no_boolean_difference_by_name2(name1, name2):
     obj = the_object_name_exists(name1)
     for modifier in obj.modifiers:
-        if modifier.type == "BOOLEAN" and modifier.object.name == name2:
+        if modifier.type == "BOOLEAN" and modifier.object and modifier.object.name == name2:
             assert False, "A boolean was found"
 
 
@@ -215,6 +225,7 @@ definitions = {
     'I enable "(.*)"': i_enable_prop,
     'I press "(.*)"': i_press_operator,
     'the object "(.*)" is an "(.*)"': the_object_name_is_an_ifc_class,
+    'the object "(.*)" is not an IFC element': the_object_name_is_not_an_ifc_element,
     'the object "(.*)" is in the collection "(.*)"': the_object_name_is_in_the_collection_collection,
     'the collection "(.*)" is in the collection "(.*)"': the_collection_name1_is_in_the_collection_name2,
     "an IFC file exists": an_ifc_file_exists,
@@ -222,6 +233,7 @@ definitions = {
     'the object "(.*)" is placed in the collection "(.*)"': the_object_name_is_placed_in_the_collection_collection,
     'the object "(.*)" is contained in "(.*)"': the_object_name_is_contained_in_container_name,
     "I duplicate the selected objects": i_duplicate_the_selected_objects,
+    "I delete the selected objects": i_delete_the_selected_objects,
     'the object "(.*)" and "(.*)" are different elements': the_object_name1_and_name2_are_different_elements,
     'the file "(.*)" should contain "(.*)"': the_file_name_should_contain_value,
     'the object "(.*)" has a boolean difference by "(.*)"': the_object_name1_has_a_boolean_difference_by_name2,

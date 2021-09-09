@@ -91,12 +91,13 @@ class RemoveOpening(bpy.types.Operator):
             if modifier.type != "BOOLEAN":
                 continue
             if modifier.object and modifier.object.BIMObjectProperties.ifc_definition_id == self.opening_id:
-                IfcStore.unlink_element(obj=modifier.object)
-                if "/" in modifier.object.name and modifier.object.name[0:3] == "Ifc":
-                    modifier.object.name = "/".join(modifier.object.name.split("/")[1:])
                 is_modifier_removed = True
                 obj.modifiers.remove(modifier)
                 break
+
+        opening = IfcStore.get_element(self.opening_id)
+        opening.name = "/".join(opening.name.split("/")[1:])
+        IfcStore.unlink_element(obj=opening)
 
         ifcopenshell.api.run("void.remove_opening", self.file, **{"opening": self.file.by_id(self.opening_id)})
 
