@@ -75,3 +75,36 @@ class TestRemoveOpening(test.bim.bootstrap.NewFile):
         Then the object "IfcWall/Cube" has "8" vertices
         And the object "Cube" is not an IFC element
         """
+
+    @test.bim.bootstrap.scenario
+    def test_removing_an_opening_using_deletion(self):
+        return """
+        Given an empty IFC project
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+        And I press "bim.assign_class"
+        And I add a cube of size "1" at "1,0,0"
+        And the object "IfcWall/Cube" is selected
+        And additionally the object "Cube" is selected
+        And I press "bim.add_opening(opening='Cube', obj='IfcWall/Cube')"
+        And the object "IfcOpeningElement/Cube" is selected
+        And I delete the selected objects
+        Then the object "IfcWall/Cube" has no boolean difference by "IfcOpeningElement/Cube"
+        And the object "IfcWall/Cube" is not voided by "Cube"
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_removing_an_opening_indirectly_by_deleting_its_building_element(self):
+        return """
+        Given an empty IFC project
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+        And I press "bim.assign_class"
+        And I add a cube of size "1" at "1,0,0"
+        And the object "IfcWall/Cube" is selected
+        And additionally the object "Cube" is selected
+        And I press "bim.add_opening(opening='Cube', obj='IfcWall/Cube')"
+        And the object "IfcWall/Cube" is selected
+        And I delete the selected objects
+        Then the object "Cube" is not an IFC element
+        """

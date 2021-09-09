@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -31,8 +30,8 @@ from . import import_ifc
 from . import schema
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
-from mathutils import Vector, Matrix, Euler, geometry
-from math import radians, degrees, atan, tan, cos, sin
+from mathutils import Vector, Matrix, Euler
+from math import radians
 
 
 class ExportIFC(bpy.types.Operator):
@@ -726,3 +725,38 @@ class CopyAttributeToSelection(bpy.types.Operator):
                 a.name() for a in self.schema.declaration_by_name(ifc_class).all_attributes()
             ]
         return self.applicable_attributes_cache[ifc_class]
+
+
+class OverrideDelete(bpy.types.Operator):
+    bl_idname = "object.delete"
+    bl_label = "Delete"
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def execute(self, context):
+        if IfcStore.get_file():
+            return IfcStore.execute_ifc_operator(self, context)
+        for obj in context.selected_objects:
+            bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    def _execute(self, context):
+        for obj in context.selected_objects:
+            if obj.BIMObjectProperties.ifc_definition_id:
+                element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+                if element.is_a("IfcOpeningElement"):
+                    self.delete_opening_element(element)
+                elif element.HasOpenings:
+                    for rel in element.HasOpenings:
+                        self.delete_opening_element(rel.RelatedOpeningElement)
+            bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+    def delete_opening_element(self, element):
+        obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
+        bpy.ops.bim.remove_opening(opening_id=element.id(), obj=obj.name)
