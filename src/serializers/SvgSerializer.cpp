@@ -706,6 +706,19 @@ namespace {
 	};
 }
 
+namespace {
+	int infront_or_behind(const gp_Pln& pln, const gp_Pnt& p) {
+		auto d = (p.XYZ() - pln.Location().XYZ()).Dot(pln.Axis().Direction().XYZ());
+		int state;
+		if (std::abs(d) < 1.e-5) {
+			state = 0;
+		} else {
+			state = d < 0. ? -1 : 1;
+		}
+		return state;
+	}
+}
+
 void SvgSerializer::write(const geometry_data& data) {
 	std::vector<section_data> section_heights_storage;
 	const std::vector<section_data>* section_heights_used = &section_heights_storage;
@@ -899,13 +912,7 @@ void SvgSerializer::write(const geometry_data& data) {
 			// See if any of the vertices is in the negative Z-axis of the projection plane
 			for (int i = 0; i < 8; ++i) {
 				gp_Pnt p(xs[(i & 1) == 1], ys[(i & 2) == 2], zs[(i & 4) == 4]);
-				auto d = (p.XYZ() - projection_plane.Location().XYZ()).Dot(projection_plane.Axis().Direction().XYZ());
-				int state;
-				if (std::abs(d) < 1.e-5) {
-					state = 0;
-				} else {
-					state = d < 0. ? -1 : 1;
-				}
+				int state = infront_or_behind(projection_plane, p);
 				if (state == -1) {
 					any_in_front = true;
 				} else if (state == +1) {
@@ -944,13 +951,7 @@ void SvgSerializer::write(const geometry_data& data) {
 							TopExp_Explorer exp2(face, TopAbs_VERTEX);
 							for (; exp2.More(); exp2.Next()) {
 								gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(exp2.Current()));
-								auto d = (p.XYZ() - projection_plane.Location().XYZ()).Dot(projection_plane.Axis().Direction().XYZ());
-								int state;
-								if (std::abs(d) < 1.e-5) {
-									state = 0;
-								} else {
-									state = d < 0. ? -1 : 1;
-								}
+								int state = infront_or_behind(projection_plane, p);
 								if (state == -1) {
 									any_in_front_face = true;
 								} else if (state == +1) {
@@ -1062,14 +1063,16 @@ void SvgSerializer::write(const geometry_data& data) {
 			}
 
 			auto z_global = gp::DZ().Transformed(data.trsf);
+			auto xyz_global = gp_Pnt().Transformed(data.trsf);
+			int state = infront_or_behind(projection_plane, xyz_global);
 
 			if (data.product->declaration().is("IfcAnnotation") &&     // is an Annotation
 				(proj.Magnitude() > 1.e-5) && 					       // when projected onto the view has a length
-				is_floor_plan_
+				(is_floor_plan_
 					? (zmin >= range.first && zmin < (range.second - 1.e-5)) // the Z-coords are within the range of the building storey,
 				                                                             // this excludes the upper bound with a small tolerance
-					: (projection_direction.Dot(z_global) > 0.99)            // For elevations only include annotations that are "facing" the view direction
-				)
+					: (projection_direction.Dot(z_global) > 0.99 && state == -1)            // For elevations only include annotations that are "facing" the view direction
+				))
 			{
 				auto svg_name = data.svg_name;
 
