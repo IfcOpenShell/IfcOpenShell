@@ -781,6 +781,34 @@ INSTALL(TARGETS IfcGeomServer
 
 endif()
 
+find_package (Git)
+if (GIT_FOUND)
+	message("git found: ${GIT_EXECUTABLE} with version ${GIT_VERSION_STRING}")
+	execute_process(
+		COMMAND ${GIT_EXECUTABLE} show -s --pretty=%D HEAD
+		OUTPUT_VARIABLE git_branches
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+	string(REPLACE ", " ";" git_branch_list "${git_branches}")
+	string(REPLACE " -> " ";" git_branch_list "${git_branch_list}")
+	foreach(git_branch_candidate IN ITEMS ${git_branch_list})
+		if (NOT git_branch_candidate MATCHES "/")
+			if (NOT git_branch_candidate MATCHES "^HEAD$")
+				set(git_branch ${git_branch_candidate})
+			endif()
+		endif()
+	endforeach()
+	execute_process(
+		COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+		OUTPUT_VARIABLE git_sha
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+	message(STATUS "IfcOpenShell branch ${git_branch}")
+	message(STATUS "IfcOpenShell commit ${git_sha}")
+	add_definitions(-DIFCOPENSHELL_BRANCH=${git_branch})
+	add_definitions(-DIFCOPENSHELL_COMMIT=${git_sha})
+endif()
+
 # Documentation
 IF(BUILD_DOCUMENTATION)
 	set(CMAKE_MODULE_PATH "../docs/cmake")

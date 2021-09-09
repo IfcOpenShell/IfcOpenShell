@@ -27,7 +27,13 @@
 #ifndef IFCPARSE_H
 #define IFCPARSE_H
 
-#define IFCOPENSHELL_VERSION "0.6.0b0"
+#include "../ifcparse/macros.h"
+
+#if defined(IFCOPENSHELL_BRANCH) && defined(IFCOPENSHELL_COMMIT)
+#define IFCOPENSHELL_VERSION STRINGIFY(IFCOPENSHELL_BRANCH) "-" STRINGIFY(IFCOPENSHELL_COMMIT)
+#else
+#define IFCOPENSHELL_VERSION "0.7.0"
+#endif
 
 #include <string>
 #include <sstream>
