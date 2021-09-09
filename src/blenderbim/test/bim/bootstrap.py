@@ -60,11 +60,19 @@ def i_add_a_cube():
     bpy.ops.mesh.primitive_cube_add()
 
 
+def i_add_a_cube_of_size_size_at_location(size, location):
+    bpy.ops.mesh.primitive_cube_add(size=float(size), location=[float(co) for co in location.split(",")])
+
+
 def the_object_name_is_selected(name):
+    bpy.ops.object.select_all(action="DESELECT")
+    additionally_the_object_name_is_selected(name)
+
+
+def additionally_the_object_name_is_selected(name):
     obj = bpy.context.scene.objects.get(name)
     if not obj:
         assert False, 'The object "{name}" could not be selected'
-    bpy.ops.object.select_all(action="DESELECT")
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
 
@@ -81,7 +89,10 @@ def i_enable_prop(prop):
 
 
 def i_press_operator(operator):
-    exec(f"bpy.ops.{operator}()")
+    if "(" in operator:
+        exec(f"bpy.ops.{operator}")
+    else:
+        exec(f"bpy.ops.{operator}()")
 
 
 def the_object_name_exists(name):
@@ -153,14 +164,53 @@ def the_file_name_should_contain_value(name, value):
         assert value in f.read()
 
 
+def the_object_name1_has_a_boolean_difference_by_name2(name1, name2):
+    obj = the_object_name_exists(name1)
+    for modifier in obj.modifiers:
+        if modifier.type == "BOOLEAN" and modifier.object.name == name2:
+            return True
+    assert False, "No boolean found"
+
+
+def the_object_name1_has_no_boolean_difference_by_name2(name1, name2):
+    obj = the_object_name_exists(name1)
+    for modifier in obj.modifiers:
+        if modifier.type == "BOOLEAN" and modifier.object.name == name2:
+            assert False, "A boolean was found"
+
+
+def the_object_name_is_voided_by_void(name, void):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    for rel in element.HasOpenings:
+        if rel.RelatedOpeningElement.Name == void:
+            return True
+    assert False, "No void found"
+
+
+def the_object_name_is_not_voided_by_void(name, void):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    for rel in element.HasOpenings:
+        if rel.RelatedOpeningElement.Name == void:
+            assert False, "A void was found"
+
 
 def the_object_name_should_display_as_mode(name, mode):
     assert the_object_name_exists(name).display_type == mode
 
+
+def the_object_name_has_number_vertices(name, number):
+    total = len(the_object_name_exists(name).data.vertices)
+    assert total == int(number), f"We found {total} vertices"
+
+
 definitions = {
     "an empty IFC project": an_empty_ifc_project,
     "I add a cube": i_add_a_cube,
+    'I add a cube of size "([0-9]+)" at "(.*)"': i_add_a_cube_of_size_size_at_location,
     'the object "(.*)" is selected': the_object_name_is_selected,
+    'additionally the object "(.*)" is selected': additionally_the_object_name_is_selected,
     'I set "(.*)" to "(.*)"': i_set_prop_to_value,
     'I enable "(.*)"': i_enable_prop,
     'I press "(.*)"': i_press_operator,
@@ -174,20 +224,28 @@ definitions = {
     "I duplicate the selected objects": i_duplicate_the_selected_objects,
     'the object "(.*)" and "(.*)" are different elements': the_object_name1_and_name2_are_different_elements,
     'the file "(.*)" should contain "(.*)"': the_file_name_should_contain_value,
+    'the object "(.*)" has a boolean difference by "(.*)"': the_object_name1_has_a_boolean_difference_by_name2,
+    'the object "(.*)" has no boolean difference by "(.*)"': the_object_name1_has_no_boolean_difference_by_name2,
+    'the object "(.*)" is voided by "(.*)"': the_object_name_is_voided_by_void,
+    'the object "(.*)" is not voided by "(.*)"': the_object_name_is_not_voided_by_void,
     'the object "(.*)" should display as "(.*)"': the_object_name_should_display_as_mode,
+    'the object "(.*)" has "([0-9]+)" vertices': the_object_name_has_number_vertices,
 }
 
 
 # Super lightweight Gherkin implementation
 def run(scenario):
+    keywords = ["Given", "When", "Then", "And", "But"]
     for line in scenario.split("\n"):
-        line = line.strip()
         line = line.replace("{cwd}", os.getcwd())
+        for keyword in keywords:
+            line = line.replace(keyword, "")
+        line = line.strip()
         if not line:
             continue
         match = None
         for definition, callback in definitions.items():
-            match = re.search(definition, line)
+            match = re.search("^" + definition + "$", line)
             if match:
                 try:
                     callback(*match.groups())
