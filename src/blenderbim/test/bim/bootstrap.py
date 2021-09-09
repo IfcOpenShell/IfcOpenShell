@@ -153,6 +153,10 @@ def the_file_name_should_contain_value(name, value):
         assert value in f.read()
 
 
+
+def the_object_name_should_display_as_mode(name, mode):
+    assert the_object_name_exists(name).display_type == mode
+
 definitions = {
     "an empty IFC project": an_empty_ifc_project,
     "I add a cube": i_add_a_cube,
@@ -170,6 +174,7 @@ definitions = {
     "I duplicate the selected objects": i_duplicate_the_selected_objects,
     'the object "(.*)" and "(.*)" are different elements': the_object_name1_and_name2_are_different_elements,
     'the file "(.*)" should contain "(.*)"': the_file_name_should_contain_value,
+    'the object "(.*)" should display as "(.*)"': the_object_name_should_display_as_mode,
 }
 
 

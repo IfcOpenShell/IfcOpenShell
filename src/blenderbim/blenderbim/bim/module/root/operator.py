@@ -18,12 +18,10 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import numpy as np
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
-from ifcopenshell.api.geometry.data import Data as GeometryData
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
 
@@ -149,6 +147,7 @@ class AssignClass(bpy.types.Operator):
         if product.is_a("IfcElementType"):
             self.place_in_types_collection(obj, context)
         elif product.is_a("IfcOpeningElement"):
+            obj.display_type = "WIRE"
             self.place_in_openings_collection(obj, context)
         elif (
             product.is_a("IfcSpatialElement")
