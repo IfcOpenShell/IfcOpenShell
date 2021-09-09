@@ -6,6 +6,4 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        return self.file.create_entity("IfcPresentationLayerAssignment", **{
-            "Name": "Unnamed"
-        })
+        return self.file.create_entity("IfcPresentationLayerAssignment", **{"Name": "Unnamed"})

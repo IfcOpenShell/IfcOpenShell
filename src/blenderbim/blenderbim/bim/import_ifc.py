@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -456,9 +455,9 @@ class IfcImporter:
                 obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
 
         if self.ifc_import_settings.should_offset_model:
-            matrix[0,3] += self.ifc_import_settings.model_offset_coordinates[0]
-            matrix[1,3] += self.ifc_import_settings.model_offset_coordinates[1]
-            matrix[2,3] += self.ifc_import_settings.model_offset_coordinates[2]
+            matrix[0, 3] += self.ifc_import_settings.model_offset_coordinates[0]
+            matrix[1, 3] += self.ifc_import_settings.model_offset_coordinates[1]
+            matrix[2, 3] += self.ifc_import_settings.model_offset_coordinates[2]
 
         return mathutils.Matrix(matrix.tolist())
 

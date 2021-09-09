@@ -2,6 +2,10 @@
 test:
 	pytest -p no:pytest-blender test
 
+.PHONY: qa
+qa:
+	black .
+
 .PHONY: coverage
 coverage:
 	coverage run --source ifcopenshell -m pytest

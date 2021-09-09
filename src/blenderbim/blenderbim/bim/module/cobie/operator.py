@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -69,13 +68,14 @@ class ExecuteIfcCobie(bpy.types.Operator):
 
     def execute(self, context):
         from cobie import IfcCobieParser
+
         props = context.scene.COBieProperties
 
         if props.should_load_from_memory:
             output_dir = tempfile.gettempdir()
         else:
-            output_dir = os.path.dirname(props.cobie_ifc_file)  
-        
+            output_dir = os.path.dirname(props.cobie_ifc_file)
+
         output = os.path.join(output_dir, "output")
         logger = logging.getLogger("IFCtoCOBie")
         fh = logging.FileHandler(os.path.join(output_dir, "cobie.log"))
@@ -92,10 +92,10 @@ class ExecuteIfcCobie(bpy.types.Operator):
         parser = IfcCobieParser(logger, selector)
 
         ifc_file = IfcStore.get_file()
-        
+
         if not (ifc_file and props.should_load_from_memory):
             ifc_file = props.cobie_ifc_file
-        
+
         parser.parse(
             ifc_file,
             props.cobie_types,
@@ -122,4 +122,3 @@ class ExecuteIfcCobie(bpy.types.Operator):
             webbrowser.open("file://" + output_dir)
         webbrowser.open("file://" + output_dir + "/cobie.log")
         return {"FINISHED"}
-

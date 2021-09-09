@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -36,11 +35,10 @@ class BIM_PT_cobie(Panel):
         scene = context.scene
         props = scene.COBieProperties
 
-
-        if IfcStore.get_file():       
+        if IfcStore.get_file():
             row = layout.row()
             row.prop(props, "should_load_from_memory")
-          
+
         if not IfcStore.get_file() or not props.should_load_from_memory:
             row = layout.row(align=True)
             row.prop(props, "cobie_ifc_file")

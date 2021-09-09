@@ -11,7 +11,7 @@ class Usecase:
             ccs = self.file.createIfcAxis2Placement3D(point, None, None)
             self.settings["structural_item"].ConditionCoordinateSystem = ccs
             print(ccs)
-        
+
         ccs = self.settings["structural_item"].ConditionCoordinateSystem
         print("use case")
         print(ccs)

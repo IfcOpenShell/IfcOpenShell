@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -232,9 +231,7 @@ class ExecuteIfcClash(bpy.types.Operator):
                 context.scene.render.resolution_x = 480
                 context.scene.render.resolution_y = 270
                 context.scene.render.image_settings.file_format = "PNG"
-                context.scene.render.filepath = os.path.join(
-                    context.scene.BIMProperties.data_dir, "snapshot.png"
-                )
+                context.scene.render.filepath = os.path.join(context.scene.BIMProperties.data_dir, "snapshot.png")
                 bpy.ops.render.opengl(write_still=True)
                 return context.scene.render.filepath
 

@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -37,7 +36,7 @@ class BIM_PT_authoring(Panel):
         tprops = context.scene.BIMTypeProperties
         col = self.layout.column(align=True)
         enabled = True
-        
+
         if type_prop.getIfcTypes(tprops, context):
             col.prop(tprops, "ifc_class", text="", icon="FILE_VOLUME")
         else:

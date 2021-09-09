@@ -34,8 +34,11 @@ class Usecase:
             ):
                 return self.settings["document"].DocumentInfoForObjects[0]
 
-        return self.file.create_entity("IfcRelAssociatesDocument", **{
-            "GlobalId": ifcopenshell.guid.new(),
-            # TODO: owner history
-            "RelatingDocument": self.settings["document"]
-        })
+        return self.file.create_entity(
+            "IfcRelAssociatesDocument",
+            **{
+                "GlobalId": ifcopenshell.guid.new(),
+                # TODO: owner history
+                "RelatingDocument": self.settings["document"],
+            }
+        )

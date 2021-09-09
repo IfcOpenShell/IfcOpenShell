@@ -20,8 +20,5 @@ class Data:
                     "ContextIdentifier": subcontext.ContextIdentifier,
                     "TargetView": subcontext.TargetView,
                 }
-            cls.contexts[int(context.id())] = {
-                "ContextType": context.ContextType,
-                "HasSubContexts": subcontexts
-            }
+            cls.contexts[int(context.id())] = {"ContextType": context.ContextType, "HasSubContexts": subcontexts}
         cls.is_loaded = True

@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -24,4 +23,3 @@ from bpy.props import PointerProperty
 
 class VoidProperties(PropertyGroup):
     desired_opening: PointerProperty(name="Desired Opening To Fill", type=bpy.types.Object)
-

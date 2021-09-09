@@ -34,9 +34,7 @@ class json_logger:
         self.instance = instance
 
     def log(self, level, message, *args, **kwargs):
-        self.statements.append(
-            log_entry_type(level, message % args, kwargs.get("instance"))._asdict()
-        )
+        self.statements.append(log_entry_type(level, message % args, kwargs.get("instance"))._asdict())
 
     def __getattr__(self, level):
         return functools.partial(self.log, level, instance=self.instance)
@@ -83,9 +81,7 @@ def assert_valid(attr, val, schema):
     if isinstance(attr_type, simple_type):
         invalid = type(val) != simple_type_python_mapping[attr_type.declared_type()]
     elif isinstance(attr_type, (entity_type, type_declaration)):
-        invalid = not isinstance(val, ifcopenshell.entity_instance) or not val.is_a(
-            attr_type.name()
-        )
+        invalid = not isinstance(val, ifcopenshell.entity_instance) or not val.is_a(attr_type.name())
     elif isinstance(attr_type, select_type):
         val_to_use = val
         if isinstance(schema.declaration_by_name(val.is_a()), enumeration_type):
@@ -94,19 +90,13 @@ def assert_valid(attr, val, schema):
             else:
                 invalid = True
         if not invalid:
-            invalid = not any(
-                try_valid(x, val_to_use, schema) for x in attr_type.select_list()
-            )
+            invalid = not any(try_valid(x, val_to_use, schema) for x in attr_type.select_list())
     elif isinstance(attr_type, enumeration_type):
         invalid = val not in attr_type.enumeration_items()
     elif isinstance(attr_type, aggregation_type):
         b1, b2 = attr_type.bound1(), attr_type.bound2()
         ty = attr_type.type_of_element()
-        invalid = (
-            len(val) < b1
-            or (b2 != -1 and len(val) > b2)
-            or not all(assert_valid(ty, v, schema) for v in val)
-        )
+        invalid = len(val) < b1 or (b2 != -1 and len(val) > b2) or not all(assert_valid(ty, v, schema) for v in val)
     else:
         raise NotImplementedError("Not impl %s %s" % (type(attr_type), attr_type))
 

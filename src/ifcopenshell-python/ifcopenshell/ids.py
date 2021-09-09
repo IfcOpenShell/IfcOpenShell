@@ -1176,7 +1176,6 @@ class BcfHandler(logging.StreamHandler):
         self.bcf.save_project(self.filepath)
 
 
-
 location = {"instance": "an instance ", "type": "a type ", "any": "a "}
 
 bounds = {
@@ -1207,6 +1206,5 @@ if __name__ == "__main__":
 
     report = SimpleHandler()
     logger.addHandler(report)
-
 
     ids_file.validate(ifc_file, logger)

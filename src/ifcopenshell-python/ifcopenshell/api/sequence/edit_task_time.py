@@ -55,13 +55,10 @@ class Usecase:
         elif "ScheduleFinish" in self.settings["attributes"].keys() and self.settings["task_time"].ScheduleStart:
             self.calculate_duration()
 
-        if (
-            self.settings["task_time"].ScheduleDuration
-            and (
-                "ScheduleStart" in self.settings["attributes"].keys()
-                or "ScheduleFinish" in self.settings["attributes"].keys()
-                or "ScheduleDuration" in self.settings["attributes"].keys()
-            )
+        if self.settings["task_time"].ScheduleDuration and (
+            "ScheduleStart" in self.settings["attributes"].keys()
+            or "ScheduleFinish" in self.settings["attributes"].keys()
+            or "ScheduleDuration" in self.settings["attributes"].keys()
         ):
             ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=self.task)
 

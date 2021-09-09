@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -73,7 +72,7 @@ def updateBcfTopicIsEditable(self, context):
 
 def updateBcfCommentIsEditable(self, context):
     if context.scene.BCFProperties.is_loaded and not self.is_editable:
-        bpy.ops.bim.edit_bcf_comment(comment_guid = self.name)
+        bpy.ops.bim.edit_bcf_comment(comment_guid=self.name)
 
 
 def refreshBcfTopic(self, context):
@@ -91,7 +90,7 @@ class BcfLabel(PropertyGroup):
 
 def getBcfViewpoints(self, context, force_update=False):
     global bcfviewpoints_enum
-    if bcfviewpoints_enum is None or force_update: # Retrieving Viewpoints is slow. Make sure we only do when needed
+    if bcfviewpoints_enum is None or force_update:  # Retrieving Viewpoints is slow. Make sure we only do when needed
         bcfviewpoints_enum = []
         props = context.scene.BCFProperties
         bcfxml = bcfstore.BcfStore.get_bcfxml()

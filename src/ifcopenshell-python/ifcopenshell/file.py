@@ -376,7 +376,7 @@ class file(object):
             fn = self.wrapped_data.traverse_breadth_first
         else:
             fn = self.wrapped_data.traverse
-        
+
         return [entity_instance(e, self) for e in fn(inst.wrapped_data, max_levels)]
 
     def get_inverse(self, inst):

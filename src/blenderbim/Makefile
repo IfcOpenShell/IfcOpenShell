@@ -457,6 +457,10 @@ test-core:
 test-bim:
 	pytest test/bim
 
+.PHONY: qa
+qa:
+	black .
+
 .PHONY: coverage
 coverage:
 	coverage run --source blenderbim.core -m pytest -p no:pytest-blender test/core

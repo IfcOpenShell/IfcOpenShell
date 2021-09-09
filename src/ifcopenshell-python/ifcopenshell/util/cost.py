@@ -48,11 +48,13 @@ def serialise_applied_value(applied_value):
 def unserialise_cost_value(formula, cost_value):
     unserialiser = CostValueUnserialiser()
     result = unserialiser.parse(formula)
+
     def map_element_to_result(element, result):
         result["ifc"] = element
         for i, component in enumerate(result.get("Components", [])):
             if element.Components and i < len(element.Components):
                 map_element_to_result(element.Components[i], result["Components"][i])
+
     map_element_to_result(cost_value, result)
     return result
 

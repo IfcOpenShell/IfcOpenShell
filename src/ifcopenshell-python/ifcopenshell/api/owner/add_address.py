@@ -7,7 +7,9 @@ class Usecase:
 
     def execute(self):
         address = self.file.create_entity(self.settings["ifc_class"], "OFFICE")
-        addresses = list(self.settings["assigned_object"].Addresses) if self.settings["assigned_object"].Addresses else []
+        addresses = (
+            list(self.settings["assigned_object"].Addresses) if self.settings["assigned_object"].Addresses else []
+        )
         addresses.append(address)
         self.settings["assigned_object"].Addresses = addresses
         return address

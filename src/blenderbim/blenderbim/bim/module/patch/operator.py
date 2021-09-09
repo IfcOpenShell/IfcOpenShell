@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -100,7 +99,7 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
             return {"FINISHED"}
         patch_args = context.scene.BIMPatchProperties.ifc_patch_args_attr
         patch_args.clear()
-        docs = ifcpatch.extract_docs(self.recipe, "Patcher", "__init__",  ("src", "file", "logger", "args"))
+        docs = ifcpatch.extract_docs(self.recipe, "Patcher", "__init__", ("src", "file", "logger", "args"))
         if docs and "inputs" in docs:
             inputs = docs["inputs"]
             for arg_name in inputs:
