@@ -73,10 +73,6 @@ class BIMTesterPurge(bpy.types.Operator):
     bl_label = "Purge Tests"
 
     def execute(self, context):
-        filename = os.path.join(
-            context.scene.BimTesterProperties.features_dir,
-            context.scene.BimTesterProperties.features_file + ".feature",
-        )
         cwd = os.getcwd()
         os.chdir(context.scene.BimTesterProperties.features_dir)
         bimtester.clean.TestPurger().purge()
