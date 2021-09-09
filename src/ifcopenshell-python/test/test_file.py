@@ -83,7 +83,7 @@ class TestTransaction(test.bootstrap.IFC4):
         assert len(rel.RelatedObjects) == 0
 
     def test_the_editing_of_invalid_default_values(self):
-        element = self.file.createIfcWall() # This element is invalid, as GlobalId is None
+        element = self.file.createIfcWall()  # This element is invalid, as GlobalId is None
         self.file.begin_transaction()
         element.GlobalId = "id"
         self.file.end_transaction()

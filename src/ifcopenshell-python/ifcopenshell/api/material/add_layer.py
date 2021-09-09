@@ -7,10 +7,9 @@ class Usecase:
 
     def execute(self):
         layers = list(self.settings["layer_set"].MaterialLayers or [])
-        layer = self.file.create_entity("IfcMaterialLayer", **{
-            "Material": self.settings["material"],
-            "LayerThickness": 1.
-        })
+        layer = self.file.create_entity(
+            "IfcMaterialLayer", **{"Material": self.settings["material"], "LayerThickness": 1.0}
+        )
         layers.append(layer)
         self.settings["layer_set"].MaterialLayers = layers
         return layer

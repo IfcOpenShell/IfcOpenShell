@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -91,12 +90,12 @@ class BIM_PT_mesh(Panel):
 
         row = layout.row(align=True)
         op = row.operator("bim.switch_representation", text="Bake Voids", icon="SELECT_SUBTRACT")
-        op.should_switch_all_meshes=True
+        op.should_switch_all_meshes = True
         op.should_reload = True
         op.ifc_definition_id = props.ifc_definition_id
         op.disable_opening_subtractions = False
         op = row.operator("bim.switch_representation", text="Dynamic Voids", icon="SELECT_INTERSECT")
-        op.should_switch_all_meshes=True
+        op.should_switch_all_meshes = True
         op.should_reload = True
         op.ifc_definition_id = props.ifc_definition_id
         op.disable_opening_subtractions = True

@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -56,9 +55,7 @@ def getPsetNames(self, context):
     if ifc_class not in psetnames:
         psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
         psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
-    assigned_names = [
-        Data.psets[p]["Name"] for p in Data.products[obj.BIMObjectProperties.ifc_definition_id]["psets"]
-    ]
+    assigned_names = [Data.psets[p]["Name"] for p in Data.products[obj.BIMObjectProperties.ifc_definition_id]["psets"]]
     return [p for p in psetnames[ifc_class] if p[0] not in assigned_names]
 
 

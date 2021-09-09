@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -66,7 +65,6 @@ class BimTool(WorkSpaceTool):
             row.prop(props, "relating_type", text="")
         else:
             row.label(text="No Relating Type")
-
 
         row.label(text="", icon="BLANK1")
 

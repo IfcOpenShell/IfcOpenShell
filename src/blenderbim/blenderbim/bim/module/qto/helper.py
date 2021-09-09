@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -38,25 +37,25 @@ def calculate_volumes(objs, context):
 
 
 def calculate_mesh_quantity(objs: bpy.types.Object, context, operation):
-        """Get the sum of the target quantity on all passed mesh objects
+    """Get the sum of the target quantity on all passed mesh objects
 
-        :param objs: iterable of mesh object 
-        :param context: current execution context
-        :param operation: function which takes a single bmesh as an argument, returns a float value
-        :returns float:
-        """
-        result = 0
-        edit_mode = context.active_object.mode == "EDIT"
-        for obj in objs:
-            if edit_mode:
-                bm = bmesh.from_edit_mesh(obj.data)
-                result += operation(bm)
-            else:
-                bm = bmesh.new()
-                bm.from_mesh(obj.data)
-                result += operation(bm)
-                bm.free()
-        return result
+    :param objs: iterable of mesh object
+    :param context: current execution context
+    :param operation: function which takes a single bmesh as an argument, returns a float value
+    :returns float:
+    """
+    result = 0
+    edit_mode = context.active_object.mode == "EDIT"
+    for obj in objs:
+        if edit_mode:
+            bm = bmesh.from_edit_mesh(obj.data)
+            result += operation(bm)
+        else:
+            bm = bmesh.new()
+            bm.from_mesh(obj.data)
+            result += operation(bm)
+            bm.free()
+    return result
 
 
 def calculate_formwork_area(objs, context):

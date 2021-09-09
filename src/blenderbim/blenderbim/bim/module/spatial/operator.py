@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -48,7 +47,7 @@ class AssignContainer(bpy.types.Operator):
             self.relating_structure or sprops.spatial_elements[sprops.active_spatial_element_index].ifc_definition_id
         )
         for related_element in related_elements:
-            oprops = related_element.BIMObjectProperties            
+            oprops = related_element.BIMObjectProperties
             if not oprops.ifc_definition_id:
                 continue
             props = related_element.BIMObjectSpatialProperties
@@ -143,13 +142,7 @@ class RemoveContainer(bpy.types.Operator):
             obj_id = obj.BIMObjectProperties.ifc_definition_id
             if not obj_id:
                 continue
-            ifcopenshell.api.run(
-                "spatial.remove_container", 
-                self.file, 
-                **{
-                    "product": self.file.by_id(obj_id)
-                }
-            )
+            ifcopenshell.api.run("spatial.remove_container", self.file, **{"product": self.file.by_id(obj_id)})
             Data.load(self.file, obj_id)
 
             aggregate_collection = bpy.data.collections.get(obj.name)
@@ -178,6 +171,7 @@ class CopyToContainer(bpy.types.Operator):
     Check the mark next to a container in the container list to select it
     Several containers can be selected at a time
     """
+
     bl_idname = "bim.copy_to_container"
     bl_label = "Copy To Container"
     bl_options = {"REGISTER", "UNDO"}
@@ -192,7 +186,9 @@ class CopyToContainer(bpy.types.Operator):
         sprops = context.scene.BIMSpatialProperties
         container_ids = [c.ifc_definition_id for c in sprops.spatial_elements if c.is_selected]
         for obj in objects:
-            container = ifcopenshell.util.element.get_container(self.file.by_id(obj.BIMObjectProperties.ifc_definition_id))
+            container = ifcopenshell.util.element.get_container(
+                self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            )
             if container:
                 container_obj = IfcStore.get_element(container.id())
                 local_position = container_obj.matrix_world.inverted() @ obj.matrix_world

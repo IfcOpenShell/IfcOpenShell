@@ -463,6 +463,7 @@ class BIM_PT_cost_item_quantities(Panel):
             row2 = col.row()
             row2.prop(self.props, "resource_quantity_names", text="")
 
+
 class BIM_PT_cost_item_rates(Panel):
     bl_label = "IFC Cost Item Rates"
     bl_idname = "BIM_PT_cost_item_rates"

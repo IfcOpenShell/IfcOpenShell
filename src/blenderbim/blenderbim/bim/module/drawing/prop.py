@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -271,15 +270,16 @@ class DocProperties(PropertyGroup):
 
     @property
     def active_schedule(self):
-        return self.schedules[self.active_schedule_index]   
-    
+        return self.schedules[self.active_schedule_index]
+
     @property
     def active_drawing(self):
-        return self.drawings[self.active_drawing_index]    
-        
+        return self.drawings[self.active_drawing_index]
+
     @property
     def active_sheet(self):
         return self.sheets[self.active_sheet_index]
+
 
 class BIMCameraProperties(PropertyGroup):
     view_name: StringProperty(name="View Name")

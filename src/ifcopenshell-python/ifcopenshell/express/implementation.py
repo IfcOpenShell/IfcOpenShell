@@ -328,13 +328,17 @@ class Implementation(codegen.Base):
             )
             simple_type_impl.append("")
 
-        external_definitions = [
-            ("extern entity* %s_%%s_type;" % schema_name_upper) % n for n in mapping.schema.entities.keys()
-        ] + [
-            ("extern type_declaration* %s_%%s_type;" % schema_name_upper) % n for n in mapping.schema.simpletypes.keys()
-        ] + [
-            ("extern enumeration_type* %s_%%s_type;" % schema_name_upper) % n for n in mapping.schema.enumerations.keys()
-        ]
+        external_definitions = (
+            [("extern entity* %s_%%s_type;" % schema_name_upper) % n for n in mapping.schema.entities.keys()]
+            + [
+                ("extern type_declaration* %s_%%s_type;" % schema_name_upper) % n
+                for n in mapping.schema.simpletypes.keys()
+            ]
+            + [
+                ("extern enumeration_type* %s_%%s_type;" % schema_name_upper) % n
+                for n in mapping.schema.enumerations.keys()
+            ]
+        )
 
         self.str = templates.implementation % {
             "schema_name_upper": schema_name_upper,

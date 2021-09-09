@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -29,7 +28,7 @@ from blenderbim.bim.ifc import IfcStore
 def add_object(self, context):
     guid = ifcopenshell.guid.new()
     leaf_width = self.overall_width - 0.045 - 0.045
-    #verts = [
+    # verts = [
     #    # Left lining
     #    Vector((0, 0, 0)),
     #    Vector((0, self.depth, 0)),
@@ -50,8 +49,8 @@ def add_object(self, context):
     #    Vector((0.04, (self.depth / 2) - 0.005, 0)),
     #    Vector((self.overall_width - 0.04, (self.depth / 2) - 0.005, 0)),
     #    Vector((self.overall_width - 0.04, (self.depth / 2) + 0.005, 0)),
-    #]
-    #edges = [
+    # ]
+    # edges = [
     #    [0, 1],
     #    [1, 2],
     #    [2, 3],
@@ -66,11 +65,11 @@ def add_object(self, context):
     #    [13, 14],
     #    [14, 15],
     #    [15, 12],  # Window panel
-    #]
-    #faces = []
-    #mesh = bpy.data.meshes.new(name="Plan/Annotation/PLAN_VIEW/" + guid)
-    #mesh.use_fake_user = True
-    #mesh.from_pydata(verts, edges, faces)
+    # ]
+    # faces = []
+    # mesh = bpy.data.meshes.new(name="Plan/Annotation/PLAN_VIEW/" + guid)
+    # mesh.use_fake_user = True
+    # mesh.from_pydata(verts, edges, faces)
 
     # Window lining profile
     verts = [
@@ -174,18 +173,18 @@ def add_object(self, context):
         bpy.ops.bim.assign_class(obj=obj2.name, ifc_class="IfcWindow")
     obj2.name = "Window"
     obj2.location = context.scene.cursor.location
-    #obj2.data.name = "Model/Body/MODEL_VIEW/" + guid
-    #obj2.data.use_fake_user = True
+    # obj2.data.name = "Model/Body/MODEL_VIEW/" + guid
+    # obj2.data.use_fake_user = True
 
-    #rep = obj2.BIMObjectProperties.representation_contexts.add()
-    #rep.context = "Model"
-    #rep.name = "Body"
-    #rep.target_view = "MODEL_VIEW"
+    # rep = obj2.BIMObjectProperties.representation_contexts.add()
+    # rep.context = "Model"
+    # rep.name = "Body"
+    # rep.target_view = "MODEL_VIEW"
 
-    #rep = obj2.BIMObjectProperties.representation_contexts.add()
-    #rep.context = "Plan"
-    #rep.name = "Annotation"
-    #rep.target_view = "PLAN_VIEW"
+    # rep = obj2.BIMObjectProperties.representation_contexts.add()
+    # rep.context = "Plan"
+    # rep.name = "Annotation"
+    # rep.target_view = "PLAN_VIEW"
 
 
 class BIM_OT_add_object(Operator):

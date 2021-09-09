@@ -1,6 +1,7 @@
 import test.bootstrap
 import ifcopenshell.api
 
+
 class TestRemoveOpening(test.bootstrap.IFC4):
     def test_removing_a_simple_opening(self):
         opening = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")

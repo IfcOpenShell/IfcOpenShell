@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -44,11 +43,7 @@ colour_list = [
 def does_keyword_exist(pattern, string, context):
     string = str(string)
     props = context.scene.BIMSearchProperties
-    if (
-        props.should_use_regex
-        and props.should_ignorecase
-        and re.search(pattern, string, flags=re.IGNORECASE)
-    ):
+    if props.should_use_regex and props.should_ignorecase and re.search(pattern, string, flags=re.IGNORECASE):
         return True
     elif props.should_use_regex and re.search(pattern, string):
         return True
@@ -60,6 +55,7 @@ def does_keyword_exist(pattern, string, context):
 
 class SelectGlobalId(bpy.types.Operator):
     """Click to select the objects that match with the given Global ID"""
+
     bl_idname = "bim.select_global_id"
     bl_label = "Select GlobalId"
     bl_options = {"REGISTER", "UNDO"}
@@ -81,6 +77,7 @@ class SelectGlobalId(bpy.types.Operator):
 
 class SelectIfcClass(bpy.types.Operator):
     """Click to select all objects that match with the given IFC class"""
+
     bl_idname = "bim.select_ifc_class"
     bl_label = "Select IFC Class"
     bl_options = {"REGISTER", "UNDO"}
@@ -99,6 +96,7 @@ class SelectIfcClass(bpy.types.Operator):
 
 class SelectAttribute(bpy.types.Operator):
     """Click to select all objects that match with the given Attribute Name and Value"""
+
     bl_idname = "bim.select_attribute"
     bl_label = "Select Attribute"
     bl_options = {"REGISTER", "UNDO"}
@@ -124,6 +122,7 @@ class SelectAttribute(bpy.types.Operator):
 
 class SelectPset(bpy.types.Operator):
     """Click to select all objects that match with the given Pset Name, Properties Name and Value"""
+
     bl_idname = "bim.select_pset"
     bl_label = "Select Pset"
     bl_options = {"REGISTER", "UNDO"}
@@ -157,6 +156,7 @@ class SelectPset(bpy.types.Operator):
 
 class ColourByAttribute(bpy.types.Operator):
     """Click to colour different objects according to given Attribute Name"""
+
     bl_idname = "bim.colour_by_attribute"
     bl_label = "Colour by Attribute"
     bl_options = {"REGISTER", "UNDO"}
@@ -207,6 +207,7 @@ class ColourByAttribute(bpy.types.Operator):
 
 class ColourByPset(bpy.types.Operator):
     """Click to colour different objects according to given Prop Name"""
+
     bl_idname = "bim.colour_by_pset"
     bl_label = "Colour by Pset"
     bl_options = {"REGISTER", "UNDO"}
@@ -265,6 +266,7 @@ class ColourByPset(bpy.types.Operator):
 
 class ColourByClass(bpy.types.Operator):
     """Click to colour different objects according to their IFC Classes"""
+
     bl_idname = "bim.colour_by_class"
     bl_label = "Colour by Class"
     bl_options = {"REGISTER", "UNDO"}
@@ -310,6 +312,7 @@ class ColourByClass(bpy.types.Operator):
 
 class ResetObjectColours(bpy.types.Operator):
     """Reset the colour of selected objects"""
+
     bl_idname = "bim.reset_object_colours"
     bl_label = "Reset Colours"
 

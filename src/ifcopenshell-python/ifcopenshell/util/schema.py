@@ -26,6 +26,7 @@ def get_subtypes(entity):
         for subtype in declaration.subtypes():
             results.extend(get_classes(subtype))
         return results
+
     return get_classes(entity)
 
 
@@ -45,7 +46,6 @@ def reassign_class(ifc_file, element, new_class):
         ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
     ifc_file.remove(element)
     return new_element
-
 
 
 class Migrator:
@@ -213,7 +213,7 @@ class Migrator:
                             "TheOrganization": new_file.create_entity(
                                 "IfcOrganization", **{"Name": "IfcOpenShell Migrator"}
                             ),
-                        }
+                        },
                     ),
                     "OwningApplication": new_file.create_entity(
                         "IfcApplication",
@@ -224,10 +224,10 @@ class Migrator:
                             "Version": "Works for me",
                             "ApplicationFullName": "IfcOpenShell Migrator",
                             "ApplicationIdentifier": "IfcOpenShell Migrator",
-                        }
+                        },
                     ),
                     "ChangeAction": "NOCHANGE",
                     "CreationDate": int(time.time()),
-                }
+                },
             )
         return self.default_entities[attribute.name()]

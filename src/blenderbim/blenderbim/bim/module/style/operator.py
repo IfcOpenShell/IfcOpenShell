@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -97,11 +96,15 @@ class AddStyle(bpy.types.Operator):
         if material.BIMObjectProperties.ifc_definition_id:
             context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
             if context:
-                ifcopenshell.api.run("style.assign_material_style", self.file, **{
-                    "material": self.file.by_id(material.BIMObjectProperties.ifc_definition_id),
-                    "style": style,
-                    "context": context,
-                })
+                ifcopenshell.api.run(
+                    "style.assign_material_style",
+                    self.file,
+                    **{
+                        "material": self.file.by_id(material.BIMObjectProperties.ifc_definition_id),
+                        "style": style,
+                        "context": context,
+                    }
+                )
         return {"FINISHED"}
 
 

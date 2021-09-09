@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -53,11 +52,12 @@ def getIfcPatchRecipes(self, context):
             if f == "__init__":
                 continue
             docs = ifcpatch.extract_docs(f, "Patcher", "__init__", ("src", "file", "logger", "args"))
-            ifcpatchrecipes_enum.append((f, f, docs.get("description","") if docs else ""))
+            ifcpatchrecipes_enum.append((f, f, docs.get("description", "") if docs else ""))
     return ifcpatchrecipes_enum
 
+
 def update_ifc_patch_recipe(self, context):
-    bpy.ops.bim.update_ifc_patch_arguments(recipe = self.ifc_patch_recipes)
+    bpy.ops.bim.update_ifc_patch_arguments(recipe=self.ifc_patch_recipes)
 
 
 class BIMPatchProperties(PropertyGroup):

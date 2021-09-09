@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -20,9 +19,7 @@
 import bpy
 from . import ui
 
-classes = (
-    ui.BIM_PT_boundary,
-)
+classes = (ui.BIM_PT_boundary,)
 
 
 def register():

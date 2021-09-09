@@ -34,9 +34,7 @@ class circle:
     radius: numpy.ndarray
 
     def __call__(self, u):
-        return numpy.array(
-            [self.radius * numpy.cos(u), self.radius * numpy.sin(u), numpy.nan]
-        )
+        return numpy.array([self.radius * numpy.cos(u), self.radius * numpy.sin(u), numpy.nan])
 
 
 def place(matrix, func):

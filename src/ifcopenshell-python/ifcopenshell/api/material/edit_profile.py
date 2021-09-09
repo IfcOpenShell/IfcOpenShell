@@ -1,12 +1,7 @@
-class Usecase():
+class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {
-            "profile": None,
-            "attributes": {},
-            "profile_attributes": {},
-            "material": None
-        }
+        self.settings = {"profile": None, "attributes": {}, "profile_attributes": {}, "material": None}
         for key, value in settings.items():
             self.settings[key] = value
 

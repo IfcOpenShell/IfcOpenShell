@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -28,8 +27,8 @@ import pytest
 
 argv = [__file__]
 
-if '--' in sys.argv:
-    i = sys.argv.index('--')
-    argv += sys.argv[i+1:]
+if "--" in sys.argv:
+    i = sys.argv.index("--")
+    argv += sys.argv[i + 1 :]
 
 pytest.main(argv)

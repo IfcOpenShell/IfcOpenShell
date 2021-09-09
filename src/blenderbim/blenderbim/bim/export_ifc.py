@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -157,7 +156,6 @@ class IfcExporter:
                 return  # Out of the spatial tree
         else:
             parent_collection = obj.users_collection[0]
-
 
         parent_obj = bpy.data.objects.get(parent_collection.name)
         if not parent_obj or not parent_obj.BIMObjectProperties.ifc_definition_id:

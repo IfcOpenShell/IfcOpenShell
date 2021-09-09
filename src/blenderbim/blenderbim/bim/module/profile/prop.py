@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -34,6 +33,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
 
 class Profile(PropertyGroup):
     name: StringProperty(name="Name")

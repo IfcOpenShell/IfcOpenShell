@@ -23,7 +23,7 @@ class Data(CostValueTrait):
             return
         cls.load_resources()
         cls.load_resource_times()
-        cls.is_loaded=True
+        cls.is_loaded = True
 
     @classmethod
     def load_resources(cls):
@@ -63,6 +63,6 @@ class Data(CostValueTrait):
                     continue
                 if "Start" in key or "Finish" in key or key == "StatusTime":
                     data[key] = ifcopenshell.util.date.ifc2datetime(value)
-                elif "Work" in key or key =="LevelingDelay":
+                elif "Work" in key or key == "LevelingDelay":
                     data[key] = ifcopenshell.util.date.ifc2datetime(value)
             cls.resource_times[resource_time.id()] = data

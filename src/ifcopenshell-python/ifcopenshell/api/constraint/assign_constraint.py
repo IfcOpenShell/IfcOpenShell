@@ -22,8 +22,11 @@ class Usecase:
         for rel in self.file.by_type("IfcRelAssociatesConstraint"):
             if rel.RelatingConstraint == self.settings["constraint"]:
                 return rel
-        return self.file.create_entity("IfcRelAssociatesConstraint", **{
-            "GlobalId": ifcopenshell.guid.new(),
-            # TODO: owner history
-            "RelatingConstraint": self.settings["constraint"]
-        })
+        return self.file.create_entity(
+            "IfcRelAssociatesConstraint",
+            **{
+                "GlobalId": ifcopenshell.guid.new(),
+                # TODO: owner history
+                "RelatingConstraint": self.settings["constraint"],
+            }
+        )

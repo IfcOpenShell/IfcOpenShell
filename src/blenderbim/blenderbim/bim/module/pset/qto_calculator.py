@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -162,7 +161,11 @@ class QtoCalculator:
             else:
                 tf_tris = (
                     (me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),
-                    (me.vertices[tfv[2]], me.vertices[tfv[3]], me.vertices[tfv[0]],),
+                    (
+                        me.vertices[tfv[2]],
+                        me.vertices[tfv[3]],
+                        me.vertices[tfv[0]],
+                    ),
                 )
 
             for tf_iter in tf_tris:

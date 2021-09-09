@@ -28,6 +28,6 @@ class Data:
                     "ContextType": c.ContextType,
                     "ContextIdentifier": c.ContextIdentifier,
                     "TargetView": c.TargetView if c.is_a("IfcGeometricRepresentationSubContext") else "",
-                }
+                },
             }
             cls.products[product_id].append(rep_id)

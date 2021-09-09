@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -87,7 +86,9 @@ class EditSystem(bpy.types.Operator):
                 attributes[attribute.name] = attribute.string_value
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
-            "system.edit_system", self.file, **{"system": self.file.by_id(props.active_system_id), "attributes": attributes}
+            "system.edit_system",
+            self.file,
+            **{"system": self.file.by_id(props.active_system_id), "attributes": attributes}
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_systems()

@@ -38,7 +38,11 @@ class Usecase:
         if not work_schedule:
             return default_seconds_per_day
         psets = ifcopenshell.util.element.get_psets(work_schedule)
-        if not psets or "Pset_WorkControlCommon" not in psets or "WorkDayDuration" not in psets["Pset_WorkControlCommon"]:
+        if (
+            not psets
+            or "Pset_WorkControlCommon" not in psets
+            or "WorkDayDuration" not in psets["Pset_WorkControlCommon"]
+        ):
             return default_seconds_per_day
         work_day_duration = ifcopenshell.util.date.ifc2datetime(psets["Pset_WorkControlCommon"]["WorkDayDuration"])
         return work_day_duration.seconds

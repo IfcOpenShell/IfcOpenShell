@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -125,15 +124,19 @@ class CreateDrawing(bpy.types.Operator):
     - IFC file is created
     - Camera is in Orthographic mode
     """
+
     bl_idname = "bim.create_drawing"
     bl_label = "Create Drawing"
 
     @classmethod
     def poll(cls, context):
         camera = context.scene.camera
-        return IfcStore.get_file() \
-            and camera.type == "CAMERA" and camera.data.type == "ORTHO" \
+        return (
+            IfcStore.get_file()
+            and camera.type == "CAMERA"
+            and camera.data.type == "ORTHO"
             and camera.BIMObjectProperties.ifc_definition_id
+        )
 
     def execute(self, context):
         self.camera = context.scene.camera
@@ -568,9 +571,7 @@ class OpenSheet(bpy.types.Operator):
         props = context.scene.DocProperties
         open_with_user_command(
             context.preferences.addons["blenderbim"].preferences.svg_command,
-            os.path.join(
-                context.scene.BIMProperties.data_dir, "sheets", props.active_sheet.name + ".svg"
-            ),
+            os.path.join(context.scene.BIMProperties.data_dir, "sheets", props.active_sheet.name + ".svg"),
         )
         return {"FINISHED"}
 
@@ -661,6 +662,7 @@ class OpenView(bpy.types.Operator):
 
 class OpenViewCamera(bpy.types.Operator):
     """Select this drawing's camera object and expand its drawing properties"""
+
     bl_idname = "bim.open_view_camera"
     bl_label = "Open View Camera"
     bl_options = {"REGISTER", "UNDO"}
@@ -947,9 +949,7 @@ class ActivateDrawingStyle(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        if scene.camera.data.BIMCameraProperties.active_drawing_style_index < len(
-            scene.DocProperties.drawing_styles
-        ):
+        if scene.camera.data.BIMCameraProperties.active_drawing_style_index < len(scene.DocProperties.drawing_styles):
             self.drawing_style = scene.DocProperties.drawing_styles[
                 scene.camera.data.BIMCameraProperties.active_drawing_style_index
             ]
@@ -1265,7 +1265,7 @@ class AddSectionsAnnotations(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
-    def poll(cls, context):        
+    def poll(cls, context):
         camera = helper.get_active_drawing(context.scene)[1]
         return camera and camera.data.type == "ORTHO"
 

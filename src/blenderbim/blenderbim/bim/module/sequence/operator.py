@@ -911,9 +911,7 @@ class UnassignProcess(bpy.types.Operator):
     def unassign_resource(self):
         task = self.file.by_id(self.task)
         resource = self.file.by_id(self.resource)
-        ifcopenshell.api.run(
-            "sequence.unassign_process", self.file, related_object=resource, relating_process=task
-        )
+        ifcopenshell.api.run("sequence.unassign_process", self.file, related_object=resource, relating_process=task)
         ifcopenshell.api.run("resource.remove_resource", self.file, resource=resource)
         ResourceData.load(self.file)
         Data.load(self.file)

@@ -14,12 +14,15 @@ class Usecase:
 
     def execute(self):
         if not self.settings["group"].IsGroupedBy:
-            return self.file.create_entity("IfcRelAssignsToGroup", **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                "RelatedObjects": [self.settings["product"]],
-                "RelatingGroup": self.settings["group"]
-            })
+            return self.file.create_entity(
+                "IfcRelAssignsToGroup",
+                **{
+                    "GlobalId": ifcopenshell.guid.new(),
+                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    "RelatedObjects": [self.settings["product"]],
+                    "RelatingGroup": self.settings["group"],
+                }
+            )
         rel = self.settings["group"].IsGroupedBy[0]
         related_objects = set(rel.RelatedObjects) or set()
         related_objects.add(self.settings["product"])

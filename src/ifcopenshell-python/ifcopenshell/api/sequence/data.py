@@ -142,8 +142,14 @@ class Data:
                 for r in task.HasAssignments
                 if r.is_a("IfcRelAssignsToProduct")
             ]
-            [data["Resources"].extend([o.id() for o in r.RelatedObjects if o.is_a("IfcResource")]) for r in task.OperatesOn]
-            [data["Controls"].extend([o.id() for o in r.RelatedObjects if o.is_a("IfcControl")]) for r in task.OperatesOn]
+            [
+                data["Resources"].extend([o.id() for o in r.RelatedObjects if o.is_a("IfcResource")])
+                for r in task.OperatesOn
+            ]
+            [
+                data["Controls"].extend([o.id() for o in r.RelatedObjects if o.is_a("IfcControl")])
+                for r in task.OperatesOn
+            ]
             [data["Inputs"].extend([o.id() for o in r.RelatedObjects if o.is_a("IfcProduct")]) for r in task.OperatesOn]
             [data["IsPredecessorTo"].append(rel.id()) for rel in task.IsPredecessorTo or []]
             [data["IsSuccessorFrom"].append(rel.id()) for rel in task.IsSuccessorFrom or []]

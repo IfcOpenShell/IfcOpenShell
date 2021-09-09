@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -30,7 +29,7 @@ def add_object(self, context):
     guid = ifcopenshell.guid.new()
     leaf_width = self.overall_width - 0.045 - 0.045
     # TODO reimplement 2D. See #1222.
-    #verts = [
+    # verts = [
     #    # Left lining
     #    Vector((0, 0, 0)),
     #    Vector((0, self.depth, 0)),
@@ -50,8 +49,8 @@ def add_object(self, context):
     #    Vector((0.045, self.depth + leaf_width, 0)),
     #    Vector((0.080, self.depth + leaf_width, 0)),
     #    Vector((0.080, self.depth, 0)),
-    #]
-    #edges = [
+    # ]
+    # edges = [
     #    [0, 1],
     #    [1, 2],
     #    [2, 3],
@@ -66,9 +65,9 @@ def add_object(self, context):
     #    [13, 14],
     #    [14, 15],
     #    [15, 12],  # Door panel
-    #]
+    # ]
     ## Door swing
-    #for i in range(0, 9):
+    # for i in range(0, 9):
     #    verts.append(
     #        Vector(
     #            (
@@ -79,11 +78,11 @@ def add_object(self, context):
     #        )
     #    )
     #    edges.append([16 + i, 17 + i])
-    #edges.pop()
-    #faces = []
-    #mesh = bpy.data.meshes.new(name="Plan/Annotation/PLAN_VIEW/" + guid)
-    #mesh.use_fake_user = True
-    #mesh.from_pydata(verts, edges, faces)
+    # edges.pop()
+    # faces = []
+    # mesh = bpy.data.meshes.new(name="Plan/Annotation/PLAN_VIEW/" + guid)
+    # mesh.use_fake_user = True
+    # mesh.from_pydata(verts, edges, faces)
 
     # Door lining profile
     verts = [
@@ -191,19 +190,19 @@ def add_object(self, context):
         bpy.ops.bim.assign_class(obj=obj2.name, ifc_class="IfcDoor")
 
     obj2.location = context.scene.cursor.location
-    #obj2.data.name = "Model/Body/MODEL_VIEW/" + guid
-    #obj2.data.use_fake_user = True
+    # obj2.data.name = "Model/Body/MODEL_VIEW/" + guid
+    # obj2.data.use_fake_user = True
 
     # TODO: reimplement. See #1222.
-    #rep = obj2.BIMObjectProperties.representation_contexts.add()
-    #rep.context = "Model"
-    #rep.name = "Body"
-    #rep.target_view = "MODEL_VIEW"
+    # rep = obj2.BIMObjectProperties.representation_contexts.add()
+    # rep.context = "Model"
+    # rep.name = "Body"
+    # rep.target_view = "MODEL_VIEW"
 
-    #rep = obj2.BIMObjectProperties.representation_contexts.add()
-    #rep.context = "Plan"
-    #rep.name = "Annotation"
-    #rep.target_view = "PLAN_VIEW"
+    # rep = obj2.BIMObjectProperties.representation_contexts.add()
+    # rep.context = "Plan"
+    # rep.name = "Annotation"
+    # rep.target_view = "PLAN_VIEW"
 
 
 class BIM_OT_add_object(Operator):

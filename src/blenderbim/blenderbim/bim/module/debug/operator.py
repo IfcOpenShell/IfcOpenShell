@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -164,9 +163,11 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        [o.select_set(True) for o in context.view_layer.objects
-            if o.type == "MESH"
-            and len(o.data.polygons) > context.scene.BIMDebugProperties.number_of_polygons]
+        [
+            o.select_set(True)
+            for o in context.view_layer.objects
+            if o.type == "MESH" and len(o.data.polygons) > context.scene.BIMDebugProperties.number_of_polygons
+        ]
         return {"FINISHED"}
 
 

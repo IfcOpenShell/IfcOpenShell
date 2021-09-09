@@ -3,7 +3,7 @@
 
 def get_person(ifc):
     people = ifc.by_type("IfcPerson") or [None]
-    return people [0]
+    return people[0]
 
 
 def get_organisation(ifc):

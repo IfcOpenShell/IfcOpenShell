@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -56,7 +55,9 @@ class BIM_PT_aggregate(Panel):
             row = self.layout.row(align=True)
             row.prop(props, "relating_object", text="")
             if props.relating_object:
-                row.operator("bim.assign_object", icon="CHECKMARK", text="").relating_object = props.relating_object.name
+                row.operator(
+                    "bim.assign_object", icon="CHECKMARK", text=""
+                ).relating_object = props.relating_object.name
             row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
         else:
             row = self.layout.row(align=True)

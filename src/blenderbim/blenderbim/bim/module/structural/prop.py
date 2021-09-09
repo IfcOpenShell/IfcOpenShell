@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -56,10 +55,12 @@ def getApplicableStructuralLoadTypes(self, context):
     )
     types = [("IfcStructuralLoadTemperature", "IfcStructuralLoadTemperature", "")]
     if "IfcStructuralPointConnection" in element_classes:
-        types.extend([
-            ("IfcStructuralLoadSingleForce", "IfcStructuralLoadSingleForce", ""),
-            ("IfcStructuralLoadSingleDisplacement", "IfcStructuralLoadSingleDisplacement", "")
-        ])
+        types.extend(
+            [
+                ("IfcStructuralLoadSingleForce", "IfcStructuralLoadSingleForce", ""),
+                ("IfcStructuralLoadSingleDisplacement", "IfcStructuralLoadSingleDisplacement", ""),
+            ]
+        )
     if "IfcStructuralCurveMember" in element_classes:
         types.append(("IfcStructuralLoadLinearForce", "IfcStructuralLoadLinearForce", ""))
     if "IfcStructuralSurfaceMember" in element_classes:

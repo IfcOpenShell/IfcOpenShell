@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -148,7 +147,6 @@ class BIM_PT_drawing_underlay(Panel):
                 row = layout.row(align=True)
                 row.operator("bim.save_drawing_style")
                 row.operator("bim.activate_drawing_style")
-
 
 
 class BIM_PT_drawings(Panel):
