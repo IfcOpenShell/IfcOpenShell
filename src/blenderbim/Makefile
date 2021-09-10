@@ -460,6 +460,7 @@ test-bim:
 .PHONY: qa
 qa:
 	black .
+	pylint ./* --output-format=colorized --disable all --enable E --disable import-error
 
 .PHONY: coverage
 coverage:
