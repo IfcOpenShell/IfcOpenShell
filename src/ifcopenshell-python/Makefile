@@ -5,6 +5,7 @@ test:
 .PHONY: qa
 qa:
 	black .
+	pylint ./* --output-format=colorized --disable all --enable E
 
 .PHONY: coverage
 coverage:
