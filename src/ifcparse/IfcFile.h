@@ -283,7 +283,7 @@ public:
 
 	std::string createTimestamp() const;
 
-	size_t load(unsigned entity_instance_name, const IfcParse::entity* entity, Argument**& attributes, size_t num_attributes);
+	size_t load(unsigned entity_instance_name, const IfcParse::entity* entity, Argument**& attributes, size_t num_attributes, int attribute_index=-1);
 	void seek_to(const IfcEntityInstanceData& data);
 	void try_read_semicolon();
 

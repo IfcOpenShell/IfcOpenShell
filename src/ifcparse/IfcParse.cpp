@@ -685,7 +685,7 @@ namespace {
 // Reads the arguments from a list of token
 // Aditionally, registers the ids (i.e. #[\d]+) in the inverse map
 //
-size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::entity* entity, Argument**& attributes, size_t num_attributes) {
+size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::entity* entity, Argument**& attributes, size_t num_attributes, int attribute_index) {
 	Token next = tokens->Next();
 
 	std::vector<Argument*>* vector = 0;
@@ -707,23 +707,26 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 			ArgumentList* alist = new ArgumentList();
 			// entity is passed along here, after all the it is the type of the instance
 			// that owns the list that is significant for inverse attributes
-			alist->size() = load(entity_instance_name, entity, alist->arguments(), 0);
+			alist->size() = load(entity_instance_name, entity, alist->arguments(), 0, attribute_index == -1 ? (int)filler.index() : attribute_index);
 			filler.push_back(alist);
 		} else {
 			return_value++;
-			if ( TokenFunc::isIdentifier(next) ) {
+			if (TokenFunc::isIdentifier(next)) {
 				if (!parsing_complete_) {
-					register_inverse(entity_instance_name, entity, next, (int) filler.index());
+					register_inverse(entity_instance_name, entity, next, attribute_index == -1 ? (int)filler.index() : attribute_index);
 				}
-			} if ( TokenFunc::isKeyword(next) ) {
+			}
+			
+			if (TokenFunc::isKeyword(next)) {
 				try {
 					filler.push_back(new EntityArgument(next));
-				} catch ( IfcException& e ) {
+				} catch (IfcException& e) {
 					Logger::Message(Logger::LOG_ERROR, e.what());
 				}
 			} else {
 				filler.push_back(new TokenArgument(next));
 			}
+
 		}
 		next = tokens->Next();
 	}
