@@ -733,7 +733,6 @@ exec_args=[
 ]
 
 cmake_args=[
-    "-DSCHEMA_VERSIONS=2x3",
     "-DUSE_MMAP="                      "OFF",
     "-DBUILD_EXAMPLES="                "OFF",
     "-DBUILD_SHARED_LIBS="            +OFF_ON[not BUILD_STATIC],
