@@ -172,6 +172,7 @@ class IfcExporter:
         try:
             # This will throw an exception if the Blender object no longer exists
             foo = obj.name
+            foo
             return False
         except:
             return True
@@ -199,7 +200,6 @@ class IfcExportSettings:
 
     @staticmethod
     def factory(context, output_file, logger):
-        scene_bim = context.scene.BIMProperties
         settings = IfcExportSettings()
         settings.output_file = output_file
         settings.logger = logger

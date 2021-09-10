@@ -52,8 +52,25 @@ class UpdateStyleColours(bpy.types.Operator):
         self.file = IfcStore.get_file()
         material = bpy.data.materials.get(self.material) if self.material else context.active_object.active_material
         settings = get_colour_settings(material)
-        settings["style"] = self.file.by_id(material.BIMMaterialProperties.ifc_style_id)
-        ifcopenshell.api.run("style.edit_style_colours", self.file, **settings)
+        for style in self.file.by_id(material.BIMMaterialProperties.ifc_style_id).Styles:
+            if style.is_a("IfcSurfaceStyleRendering"):
+                ifcopenshell.api.run(
+                    "style.edit_surface_style",
+                    self.file,
+                    style=style,
+                    attributes={
+                        "SurfaceColour": settings["surface_colour"],
+                        "Transparency": settings["transparency"],
+                        "DiffuseColour": settings["diffuse_colour"],
+                    },
+                )
+            elif style.is_a("IfcSurfaceStyleShading"):
+                ifcopenshell.api.run(
+                    "style.edit_surface_style",
+                    self.file,
+                    style=style,
+                    attributes={"SurfaceColour": settings["surface_colour"], "Transparency": settings["transparency"]},
+                )
         return {"FINISHED"}
 
 
@@ -167,7 +184,7 @@ class EditStyle(bpy.types.Operator):
         attributes = blenderbim.bim.helper.export_attributes(props.attributes)
         self.file = IfcStore.get_file()
         style = self.file.by_id(material.BIMMaterialProperties.ifc_style_id)
-        ifcopenshell.api.run("style.edit_style", self.file, **{"style": style, "attributes": attributes})
+        ifcopenshell.api.run("style.edit_presentation_style", self.file, **{"style": style, "attributes": attributes})
         Data.load(IfcStore.get_file(), material.BIMMaterialProperties.ifc_style_id)
         bpy.ops.bim.disable_editing_style()
         return {"FINISHED"}

@@ -16,31 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.geom
-import ifcopenshell.util.geolocation
-import ifcopenshell.util.selector
-import ifcopenshell.util.element
-import ifcopenshell.util.unit
-import bpy
-import bmesh
-import os
 import re
-import shutil
-import threading
+import bpy
 import json
 import time
+import bmesh
+import shutil
+import threading
 import mathutils
-import math
-import multiprocessing
-import zipfile
-import tempfile
 import numpy as np
-from blenderbim.bim.module.drawing.prop import getDiagramScales
-from pathlib import Path
-from itertools import cycle
-from datetime import datetime
+import multiprocessing
+import ifcopenshell
+import ifcopenshell.geom
+import ifcopenshell.util.unit
+import ifcopenshell.util.element
+import ifcopenshell.util.selector
+import ifcopenshell.util.geolocation
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.drawing.prop import getDiagramScales
 
 
 class FileCopy(threading.Thread):
@@ -407,7 +400,6 @@ class IfcImporter:
         props.has_blender_offset = True
 
     def get_offset_point(self):
-        offset_point = None
         elements_checked = 0
         # If more than these points aren't far away, the file probably isn't absolutely positioned
         element_checking_threshold = 100
@@ -462,16 +454,14 @@ class IfcImporter:
         return mathutils.Matrix(matrix.tolist())
 
     def find_decomposed_ifc_class(self, element, ifc_class):
-        results = []
+        if element.is_a(ifc_class):
+            return element
         rel_aggregates = element.IsDecomposedBy
-        if not rel_aggregates:
-            return results
         for rel_aggregate in rel_aggregates:
             for part in rel_aggregate.RelatedObjects:
-                if part.is_a(ifc_class):
-                    results.append(part)
-                results.extend(self.find_decomposed_ifc_class(part, ifc_class))
-        return results
+                result = self.find_decomposed_ifc_class(part, ifc_class)
+                if result:
+                    return result
 
     def create_grids(self):
         grids = self.file.by_type("IfcGrid")
@@ -1485,7 +1475,6 @@ class IfcImportSettings:
 
     @staticmethod
     def factory(context, input_file, logger):
-        scene_bim = context.scene.BIMProperties
         scene_diff = context.scene.DiffProperties
         settings = IfcImportSettings()
         settings.input_file = input_file
