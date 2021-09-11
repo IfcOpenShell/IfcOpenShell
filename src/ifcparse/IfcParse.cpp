@@ -2400,4 +2400,4 @@ void IfcParse::IfcFile::build_inverses() {
 	}
 }
 
-std::atomic_uint32_t IfcUtil::IfcBaseClass::counter_ = 0;
+std::atomic_uint32_t IfcUtil::IfcBaseClass::counter_(0);
