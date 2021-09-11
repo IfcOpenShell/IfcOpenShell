@@ -21,6 +21,8 @@ from . import ui, prop, operator
 
 classes = (
     operator.CreateProject,
+    operator.LoadProject,
+    operator.LoadProjectElements,
     operator.SelectLibraryFile,
     operator.ChangeLibraryElement,
     operator.RefreshLibrary,

@@ -200,10 +200,6 @@ class IfcImporter:
         bpy.context.window_manager.progress_begin(0, 100)
         self.progress = 0
         self.profile_code("Starting import process")
-        self.load_diff()
-        self.profile_code("Load diff")
-        self.purge_diff()
-        self.profile_code("Purge diffs")
         self.load_file()
         self.profile_code("Loading file")
         self.calculate_unit_scale()
@@ -953,15 +949,10 @@ class IfcImporter:
             return
         self.openings[element.GlobalId] = obj
 
-    def load_diff(self):
-        if not self.ifc_import_settings.diff_file:
-            return
-        with open(self.ifc_import_settings.diff_file, "r") as file:
-            self.diff = json.load(file)
-
     def load_file(self):
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)
-        bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
+        if not bpy.context.scene.BIMProperties.ifc_file:
+            bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
         self.file = IfcStore.get_file()
 
     def calculate_unit_scale(self):
@@ -1127,18 +1118,6 @@ class IfcImporter:
 
     def get_name(self, element):
         return "{}/{}".format(element.is_a(), element.Name)
-
-    def purge_diff(self):
-        if not self.diff:
-            return
-        objects_to_purge = []
-        for obj in bpy.data.objects:
-            if "GlobalId" not in obj.BIMObjectProperties.attributes:
-                continue
-            global_id = obj.BIMObjectProperties.attributes["GlobalId"].string_value
-            if global_id in self.diff["deleted"] or global_id in self.diff["changed"].keys():
-                objects_to_purge.append(obj)
-        bpy.ops.object.delete({"selected_objects": objects_to_purge})
 
     def place_objects_in_spatial_tree(self):
         for ifc_definition_id, obj in self.added_data.items():

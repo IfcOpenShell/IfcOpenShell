@@ -79,9 +79,29 @@ def additionally_the_object_name_is_selected(name):
 
 def i_set_prop_to_value(prop, value):
     try:
+        eval(f"bpy.context.{prop}")
+    except:
+        assert False, "Property does not exist"
+    try:
         exec(f'bpy.context.{prop} = "{value}"')
     except:
         exec(f"bpy.context.{prop} = {value}")
+
+
+def prop_is_value(prop, value):
+    is_value = False
+    try:
+        exec(f'assert bpy.context.{prop} == "{value}"')
+        is_value = True
+    except:
+        try:
+            exec(f"assert bpy.context.{prop} == {value}")
+            is_value = True
+        except:
+            pass
+    if not is_value:
+        actual_value = eval(f"bpy.context.{prop}")
+        assert False, f"Value is {actual_value}"
 
 
 def i_enable_prop(prop):
@@ -222,6 +242,7 @@ definitions = {
     'the object "(.*)" is selected': the_object_name_is_selected,
     'additionally the object "(.*)" is selected': additionally_the_object_name_is_selected,
     'I set "(.*)" to "(.*)"': i_set_prop_to_value,
+    '"(.*)" is "(.*)"': prop_is_value,
     'I enable "(.*)"': i_enable_prop,
     'I press "(.*)"': i_press_operator,
     'the object "(.*)" is an "(.*)"': the_object_name_is_an_ifc_class,

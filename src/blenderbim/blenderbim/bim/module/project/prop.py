@@ -41,6 +41,7 @@ class LibraryElement(PropertyGroup):
 class BIMProjectProperties(PropertyGroup):
     is_authoring: BoolProperty(name="Enable Authoring Mode", default=True)
     is_editing: BoolProperty(name="Is Editing", default=False)
+    is_loading: BoolProperty(name="Is Loading", default=False)
     mvd: StringProperty(name="MVD")
     author_name: StringProperty(name="Author")
     author_email: StringProperty(name="Author Email")
@@ -51,6 +52,15 @@ class BIMProjectProperties(PropertyGroup):
     library_breadcrumb: CollectionProperty(name="Library Breadcrumb", type=StrProperty)
     library_elements: CollectionProperty(name="Library Elements", type=LibraryElement)
     active_library_element_index: IntProperty(name="Active Library Element Index")
+    collection_mode: bpy.props.EnumProperty(
+        items=[
+            ("DECOMPOSITION", "Decomposition", "Collections represent aggregates and spatial containers"),
+            ("SPATIAL_DECOMPOSITION", "Spatial Decomposition", "Collections represent spatial containers"),
+            ("IFC_CLASS", "IFC Class", "Collections represention IFC class"),
+        ],
+        name="Collection Mode",
+    )
+
 
     def get_library_element_index(self, lib_element):
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))

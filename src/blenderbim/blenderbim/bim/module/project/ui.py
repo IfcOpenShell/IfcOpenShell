@@ -32,11 +32,21 @@ class BIM_PT_project(Panel):
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
         props = context.scene.BIMProperties
+        pprops = context.scene.BIMProjectProperties
         self.file = IfcStore.get_file()
-        if self.file or props.ifc_file:
+        if pprops.is_loading:
+            self.draw_load_ui(context)
+        elif self.file or props.ifc_file:
             self.draw_project_ui(context)
         else:
             self.draw_create_project_ui(context)
+
+    def draw_load_ui(self, context):
+        pprops = context.scene.BIMProjectProperties
+        row = self.layout.row()
+        row.prop(pprops, "collection_mode")
+        row = self.layout.row()
+        row.operator("bim.load_project_elements").mode = "ALL"
 
     def draw_project_ui(self, context):
         props = context.scene.BIMProperties
@@ -109,8 +119,9 @@ class BIM_PT_project(Panel):
         row.prop(props, "area_unit", text="Area Unit")
         row = self.layout.row()
         row.prop(props, "volume_unit", text="Volume Unit")
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         row.operator("bim.create_project")
+        row.operator("bim.load_project")
 
 
 class BIM_PT_project_library(Panel):

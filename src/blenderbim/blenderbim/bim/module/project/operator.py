@@ -16,8 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
+import time
 import logging
+import tempfile
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
@@ -500,4 +503,56 @@ class DisableEditingHeader(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMProjectProperties.is_editing = False
+        return {"FINISHED"}
+
+
+class LoadProject(bpy.types.Operator):
+    bl_idname = "bim.load_project"
+    bl_label = "Load Project"
+    bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
+
+    def execute(self, context):
+        if os.path.exists(self.filepath) and "ifc" in os.path.splitext(self.filepath)[1]:
+            context.scene.BIMProperties.ifc_file = self.filepath
+        context.scene.BIMProjectProperties.is_loading = True
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class LoadProjectElements(bpy.types.Operator):
+    bl_idname = "bim.load_project_elements"
+    bl_label = "Load Project Elements"
+    bl_options = {"REGISTER", "UNDO"}
+    mode: bpy.props.EnumProperty(
+        items=[
+            ("ALL", "All", ""),
+            ("WHITELIST", "Whitelist", ""),
+            ("BLACKLIST", "Blacklist", ""),
+        ],
+        name="Mode",
+    )
+
+    def execute(self, context):
+        start = time.time()
+        logger = logging.getLogger("ImportIFC")
+        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
+        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
+            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
+        logging.basicConfig(
+            filename=path_log,
+            filemode="a",
+            level=logging.DEBUG,
+        )
+        settings = import_ifc.IfcImportSettings.factory(context, context.scene.BIMProperties.ifc_file, logger)
+        settings.logger.info("Starting import")
+        ifc_importer = import_ifc.IfcImporter(settings)
+        ifc_importer.execute()
+        settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        context.scene.BIMProjectProperties.is_loading = False
         return {"FINISHED"}
