@@ -28,6 +28,8 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <atomic>
+
 class Argument;
 class aggregate_of_instance;
 
@@ -67,15 +69,19 @@ namespace IfcUtil {
 	};
 
 	class IFC_PARSE_API IfcBaseClass : public virtual IfcBaseInterface {
-    protected:
+	private:
+		uint32_t identity_;
+		static std::atomic_uint32_t counter_;
+
+	protected:
 		IfcEntityInstanceData* data_;
 
 		static bool is_null(const IfcBaseClass* not_this) {
 			return !not_this;
 		}        
 	public:
-        IfcBaseClass() : data_(0) {}
-		IfcBaseClass(IfcEntityInstanceData* d) : data_(d) {}
+        IfcBaseClass() : identity_(counter_++), data_(0) {}
+		IfcBaseClass(IfcEntityInstanceData* d) : identity_(counter_++), data_(d) {}
 		virtual ~IfcBaseClass() { delete data_; }
         
         const IfcEntityInstanceData& data() const { return *data_; }
@@ -83,6 +89,8 @@ namespace IfcUtil {
         void data(IfcEntityInstanceData* d);
         
         virtual const IfcParse::declaration& declaration() const = 0;
+
+		uint32_t identity() const { return identity_; }
 	};
 
 	class IFC_PARSE_API IfcLateBoundEntity : public IfcBaseClass {
