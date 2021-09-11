@@ -1703,7 +1703,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 
 	// If this instance has been inserted before, return
 	// a reference to the copy that was created from it.
-	entity_entity_map_t::iterator mit = entity_file_map.find(entity);
+	entity_entity_map_t::iterator mit = entity_file_map.find(entity->identity());
 	if (mit != entity_file_map.end()) {
 		return mit->second;
 	}
@@ -1717,9 +1717,9 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 			aggregate_of_instance::ptr entity_attributes = traverse(entity, 1);
 			for (aggregate_of_instance::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
 				if (*it != entity) {
-					entity_entity_map_t::iterator mit2 = entity_file_map.find(*it);
+					entity_entity_map_t::iterator mit2 = entity_file_map.find((*it)->identity());
 					if (mit2 == entity_file_map.end()) {
-						entity_file_map.insert(entity_entity_map_t::value_type(*it, addEntity(*it)));
+						entity_file_map.insert(entity_entity_map_t::value_type((*it)->identity(), addEntity(*it)));
 					}
 				}
 			}
@@ -1764,7 +1764,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 			}
 			
 			if (attr_type == IfcUtil::Argument_ENTITY_INSTANCE) {
-				entity_entity_map_t::const_iterator eit = entity_file_map.find(*attr);
+				entity_entity_map_t::const_iterator eit = entity_file_map.find(((IfcUtil::IfcBaseClass*)(*attr))->identity());
 				if (eit == entity_file_map.end()) throw IfcParse::IfcException("Unable to map instance to file");
 				
 				IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
@@ -1774,7 +1774,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 				aggregate_of_instance::ptr instances = *attr;
 				aggregate_of_instance::ptr new_instances(new aggregate_of_instance);
 				for (aggregate_of_instance::it it = instances->begin(); it != instances->end(); ++it) {
-					entity_entity_map_t::const_iterator eit = entity_file_map.find(*it);
+					entity_entity_map_t::const_iterator eit = entity_file_map.find((*it)->identity());
 					if (eit == entity_file_map.end()) throw IfcParse::IfcException("Unable to map instance to file");
 					new_instances->push(eit->second);
 				}
@@ -1788,7 +1788,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 				for (aggregate_of_aggregate_of_instance::outer_it it = instances->begin(); it != instances->end(); ++it) {
 					std::vector<IfcUtil::IfcBaseClass*> list;
 					for (aggregate_of_aggregate_of_instance::inner_it jt = it->begin(); jt != it->end(); ++jt) {
-						entity_entity_map_t::const_iterator eit = entity_file_map.find(*jt);
+						entity_entity_map_t::const_iterator eit = entity_file_map.find((*jt)->identity());
 						if (eit == entity_file_map.end()) throw IfcParse::IfcException("Unable to map instance to file");
 						list.push_back(eit->second);
 					}
@@ -1842,8 +1842,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 			}
 		}
 
-		// @todo entity_file_map: use weak_ptr
-		entity_file_map.insert(entity_entity_map_t::value_type(entity, new_entity));
+		entity_file_map.insert(entity_entity_map_t::value_type(entity->identity(), new_entity));
 	}
 
 	// For subtypes of IfcRoot, the GUID mapping needs to be updated.
@@ -2096,13 +2095,12 @@ void IfcFile::process_deletion_() {
 			}
 		}
 
-		// This entity_file_map remains obviously flawed, but until we have proper lookup by value, or another mechanism,
-		// to prevent duplicate definitions with usage of add() we have to keep it. This might be a good moment to clear it.
+		// entity_file_map is in place to prevent duplicate definitions with usage of add().
+		// Upon deletion the pairs need to be erased.
 		for (auto it = entity_file_map.begin(); it != entity_file_map.end();) {
 			if (it->second == entity) {
 				it = entity_file_map.erase(it);
-			}
-			else {
+			} else {
 				++it;
 			}
 		}
@@ -2401,3 +2399,5 @@ void IfcParse::IfcFile::build_inverses() {
 		build_inverses_(pair.second);	
 	}
 }
+
+std::atomic_uint32_t IfcUtil::IfcBaseClass::counter_ = 0;

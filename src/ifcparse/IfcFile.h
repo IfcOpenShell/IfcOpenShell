@@ -23,6 +23,7 @@
 #include <map>
 #include <set>
 #include <iterator>
+
 #include <boost/unordered_map.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
@@ -112,7 +113,7 @@ public:
 	};
 
 private:
-	typedef std::map<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*> entity_entity_map_t;
+	typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
 	bool parsing_complete_;
 	file_open_status good_ = file_open_status::SUCCESS;

@@ -236,17 +236,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	}
 
 	bool __eq__(IfcUtil::IfcBaseClass* other) const {
-		if ($self == other) {
-			return true;
-		}
-		if (!$self->declaration().as_entity() || !other->declaration().as_entity()) {
-			/// @todo
-			return false;
-		} else {
-			IfcUtil::IfcBaseEntity* self_ = (IfcUtil::IfcBaseEntity*) self;
-			IfcUtil::IfcBaseEntity* other_ = (IfcUtil::IfcBaseEntity*) other;
-			return self_->data().id() == other_->data().id() && self_->data().file == other_->data().file;
-		} 
+		return $self->identity() == other->identity();
 	}
 
 	std::string __repr__() const {
