@@ -34,3 +34,37 @@ class TestCreateProject(test.bim.bootstrap.NewFile):
         And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
         And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
         """
+
+
+class TestLoadProject(test.bim.bootstrap.NewFile):
+    @test.bim.bootstrap.scenario
+    def test_loading_a_project(self):
+        return """
+        When I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
+        Then an IFC file exists
+        And "scene.BIMProjectProperties.is_loading" is "True"
+        """
+
+
+class TestLoadProjectElements(test.bim.bootstrap.NewFile):
+    @test.bim.bootstrap.scenario
+    def test_loading_all_project_elements(self):
+        return """
+        Given I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
+        When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
+        And I press "bim.load_project_elements(mode='ALL')"
+        Then the object "IfcProject/My Project" is an "IfcProject"
+        And the object "IfcSite/My Site" is an "IfcSite"
+        And the object "IfcBuilding/My Building" is an "IfcBuilding"
+        And the object "IfcBuildingStorey/Ground Floor" is an "IfcBuildingStorey"
+        And the object "IfcBuildingStorey/Level 1" is an "IfcBuildingStorey"
+        And the object "IfcSlab/Slab" is an "IfcSlab"
+        And the object "IfcWall/Wall" is an "IfcWall"
+        And the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
+        And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
+        And the object "IfcBuildingStorey/Ground Floor" is in the collection "IfcBuildingStorey/Ground Floor"
+        And the object "IfcBuildingStorey/Level 1" is in the collection "IfcBuildingStorey/Level 1"
+        And the object "IfcSlab/Slab" is in the collection "IfcBuildingStorey/Ground Floor"
+        And the object "IfcWall/Wall" is in the collection "IfcBuildingStorey/Level 1"
+        And "scene.BIMProjectProperties.is_loading" is "False"
+        """
