@@ -112,7 +112,8 @@ def extract_docs(module, usecase):
     function_execute = getattr(getattr(ifcopenshell.api, module), usecase).Usecase.execute
 
     node_data = {"module": module, "usecase": usecase}
-
+    
+    print("Function_init is: " + str(function_init))
     signature = inspect.signature(function_init)
     print("Signature is: " + str(signature))
     for name, parameter in signature.parameters.items():

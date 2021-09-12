@@ -60,7 +60,7 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
         op.tooltip = self.tooltip
 
     def process(self):
-        print("process")
+        print("process api node")
         module_usecase = self.get_module_usecase()
         if module_usecase:
             self.sv_input_names = [i.name for i in self.inputs]
