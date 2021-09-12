@@ -95,6 +95,46 @@ class TestLoadProjectElements(test.bim.bootstrap.NewFile):
         And the object "IfcWall/Wall" does not exist
         """
 
+    @test.bim.bootstrap.scenario
+    def test_loading_objects_filtered_by_ifc_class(self):
+        return """
+        Given I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
+        When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
+        And I set "scene.BIMProjectProperties.filter_mode" to "IFC_CLASS"
+        Then "scene.BIMProjectProperties.filter_categories['IfcWall'].total_elements" is "1"
+        And "scene.BIMProjectProperties.filter_categories['IfcSlab'].total_elements" is "1"
+        When I set "scene.BIMProjectProperties.filter_categories['IfcSlab'].is_selected" to "True"
+        And I press "bim.load_project_elements"
+        Then the object "IfcProject/My Project" is an "IfcProject"
+        And the object "IfcSite/My Site" is an "IfcSite"
+        And the object "IfcBuilding/My Building" is an "IfcBuilding"
+        And the object "IfcBuildingStorey/Ground Floor" is an "IfcBuildingStorey"
+        And the object "IfcSlab/Slab" is an "IfcSlab"
+        And the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
+        And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
+        And the object "IfcBuildingStorey/Ground Floor" is in the collection "IfcBuildingStorey/Ground Floor"
+        And the object "IfcSlab/Slab" is in the collection "IfcBuildingStorey/Ground Floor"
+        And the object "IfcBuildingStorey/Level 1" does not exist
+        And the object "IfcWall/Wall" does not exist
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_loading_no_objects_due_to_filter(self):
+        return """
+        Given I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
+        When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
+        And I set "scene.BIMProjectProperties.filter_mode" to "IFC_CLASS"
+        And I press "bim.load_project_elements"
+        Then the object "IfcProject/My Project" is an "IfcProject"
+        And the object "IfcSite/My Site" does not exist
+        And the object "IfcBuilding/My Building" does not exist
+        And the object "IfcBuildingStorey/Ground Floor" does not exist
+        And the object "IfcBuildingStorey/Level 1" does not exist
+        And the object "IfcSlab/Slab" does not exist
+        And the object "IfcWall/Wall" does not exist
+        """
+
+
 class TestUnloadProject(test.bim.bootstrap.NewFile):
     @test.bim.bootstrap.scenario
     def test_unloading_a_project(self):

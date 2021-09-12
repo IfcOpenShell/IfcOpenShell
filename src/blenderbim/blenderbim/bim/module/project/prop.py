@@ -43,6 +43,11 @@ def update_filter_mode(self, context):
             new.name = "{}/{}".format(element.is_a(), element.Name or "Unnamed")
             new.ifc_definition_id = element.id()
             new.total_elements = sum([len(r.RelatedElements) for r in element.ContainsElements])
+    elif self.filter_mode == "IFC_CLASS":
+        for ifc_class in sorted(list(set([e.is_a() for e in file.by_type("IfcElement")]))):
+            new = self.filter_categories.add()
+            new.name = ifc_class
+            new.total_elements = len(file.by_type(ifc_class, include_subtypes=False))
 
 
 class LibraryElement(PropertyGroup):
