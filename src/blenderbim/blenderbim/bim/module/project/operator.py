@@ -528,16 +528,10 @@ class LoadProjectElements(bpy.types.Operator):
     bl_idname = "bim.load_project_elements"
     bl_label = "Load Project Elements"
     bl_options = {"REGISTER", "UNDO"}
-    mode: bpy.props.EnumProperty(
-        items=[
-            ("ALL", "All", ""),
-            ("WHITELIST", "Whitelist", ""),
-            ("BLACKLIST", "Blacklist", ""),
-        ],
-        name="Mode",
-    )
 
     def execute(self, context):
+        self.props = context.scene.BIMProjectProperties
+        self.file = IfcStore.get_file()
         start = time.time()
         logger = logging.getLogger("ImportIFC")
         path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
@@ -549,6 +543,9 @@ class LoadProjectElements(bpy.types.Operator):
             level=logging.DEBUG,
         )
         settings = import_ifc.IfcImportSettings.factory(context, context.scene.BIMProperties.ifc_file, logger)
+        settings.has_filter = self.props.filter_mode != "NONE"
+        if self.props.filter_mode == "DECOMPOSITION":
+            settings.elements = self.get_decomposition_elements()
         settings.logger.info("Starting import")
         ifc_importer = import_ifc.IfcImporter(settings)
         ifc_importer.execute()
@@ -556,3 +553,20 @@ class LoadProjectElements(bpy.types.Operator):
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         context.scene.BIMProjectProperties.is_loading = False
         return {"FINISHED"}
+
+    def get_decomposition_elements(self):
+        containers = set()
+        for filter_category in self.props.filter_categories:
+            if not filter_category.is_selected:
+                continue
+            container = self.file.by_id(filter_category.ifc_definition_id)
+            while container:
+                containers.add(container)
+                container = ifcopenshell.util.element.get_aggregate(container)
+                if container.is_a("IfcContext"):
+                    container = None
+        elements = set()
+        for container in containers:
+            for rel in container.ContainsElements:
+                elements.update(rel.RelatedElements)
+        return list(elements)

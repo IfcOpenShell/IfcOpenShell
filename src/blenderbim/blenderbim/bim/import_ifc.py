@@ -18,7 +18,6 @@
 
 import re
 import bpy
-import json
 import time
 import bmesh
 import shutil
@@ -164,12 +163,10 @@ class IfcImporter:
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
-        self.filter_mode = None
-        self.include_elements = set()
-        self.exclude_elements = set()
+        self.iterator_elements = set()
         self.project = None
         self.spatial_structure_elements = {}
-        self.elements = []
+        self.elements = set()
         self.type_collection = None
         self.type_products = {}
         self.openings = {}
@@ -210,10 +207,10 @@ class IfcImporter:
         self.profile_code("Set units")
         self.create_project()
         self.profile_code("Create project")
-        self.create_spatial_hierarchy()
-        self.profile_code("Create spatial hierarchy")
         self.process_element_filter()
         self.profile_code("Process element filter")
+        self.create_collections()
+        self.profile_code("Create collections")
         self.create_aggregates()
         self.profile_code("Create aggregates")
         self.create_aggregate_tree()
@@ -278,32 +275,17 @@ class IfcImporter:
         return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
 
     def process_element_filter(self):
-        if self.ifc_import_settings.ifc_import_filter == "NONE" or not self.ifc_import_settings.ifc_selector:
-            self.elements = self.file.by_type("IfcElement")
-            return
-
-        selector = ifcopenshell.util.selector.Selector()
-        elements = selector.parse(self.file, self.ifc_import_settings.ifc_selector)
-        if self.ifc_import_settings.ifc_import_filter == "WHITELIST":
-            self.filter_mode = "WHITELIST"
-            self.include_elements = set(elements)
-            self.elements = self.include_elements
-        elif self.ifc_import_settings.ifc_import_filter == "BLACKLIST":
-            self.filter_mode = "BLACKLIST"
-            self.exclude_elements = set(elements)
-            self.elements = [e for e in self.file.by_type("IfcElement") if e not in self.exclude_elements]
+        if self.ifc_import_settings.has_filter:
+            self.elements = set(self.ifc_import_settings.elements)
+        else:
+            self.elements = set(self.file.by_type("IfcElement"))
+        self.iterator_elements = set(self.elements)
 
     def parse_native_elements(self):
-        if self.filter_mode == "WHITELIST":
-            for element in self.include_elements:
-                if self.is_native(element):
-                    self.native_elements[element.GlobalId] = element
-            self.include_elements -= self.native_elements
-        elif self.filter_mode == "BLACKLIST":
-            for element in set(self.file.by_type("IfcElement")) - self.exclude_elements:
-                if self.is_native(element):
-                    self.native_elements.add(element)
-            self.exclude_elements |= self.native_elements
+        for element in self.elements:
+            if self.is_native(element):
+                self.native_elements.add(element)
+        self.iterator_elements -= self.native_elements
 
     def is_native(self, element):
         if (
@@ -500,7 +482,7 @@ class IfcImporter:
             self.type_collection = bpy.data.collections.new("Types")
             self.project["blender"].children.link(self.type_collection)
 
-        if self.filter_mode in ["WHITELIST", "BLACKLIST"]:
+        if self.ifc_import_settings.has_filter:
             type_products = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
         else:
             type_products = self.file.by_type("IfcTypeProduct")
@@ -584,19 +566,16 @@ class IfcImporter:
                 self.settings,
                 self.file,
                 multiprocessing.cpu_count(),
-                include=self.include_elements or None,
-                exclude=self.exclude_elements or None,
+                include=self.iterator_elements or None,
             )
         else:
-            iterator = ifcopenshell.geom.iterator(
-                self.settings, self.file, include=self.include_elements or None, exclude=self.exclude_elements or None
-            )
+            iterator = ifcopenshell.geom.iterator(self.settings, self.file, include=self.iterator_elements or None)
         valid_file = iterator.initialize()
         if not valid_file:
             return False
         checkpoint = time.time()
         total_created = 0
-        approx_total_products = len(self.include_elements) or len(self.file.by_type("IfcElement"))
+        approx_total_products = len(self.iterator_elements) or len(self.file.by_type("IfcElement"))
         start_progress = self.progress
         progress_range = 85 - start_progress
         while True:
@@ -988,10 +967,7 @@ class IfcImporter:
                 )
 
     def create_project(self):
-        if self.file.schema == "IFC2X3":
-            self.project = {"ifc": self.file.by_type("IfcProject")[0]}
-        else:
-            self.project = {"ifc": self.file.by_type("IfcContext")[0]}
+        self.project = {"ifc": self.file.by_type("IfcProject")[0]}
         self.project["blender"] = bpy.data.collections.new(
             "{}/{}".format(self.project["ifc"].is_a(), self.project["ifc"].Name)
         )
@@ -999,13 +975,31 @@ class IfcImporter:
         if obj:
             self.project["blender"].objects.link(obj)
 
-    def create_spatial_hierarchy(self):
-        if self.project["ifc"].IsDecomposedBy:
-            for rel_aggregate in self.project["ifc"].IsDecomposedBy:
-                self.add_related_objects(self.project["blender"], rel_aggregate.RelatedObjects)
+    def create_collections(self):
+        if self.ifc_import_settings.collection_mode == "DECOMPOSITION" and len(self.file.by_type("IfcRelAggregates")) > 10000:
+            # More than 10,000 collections makes Blender unhappy
+            print("Falling back to SPATIAL_DECOMPOSITION collection mode")
+            self.ifc_import_settings.collection_mode = "SPATIAL_DECOMPOSITION"
+
+        if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
+            self.create_decomposition_collections()
+
+    def create_decomposition_collections(self):
+        containers = set([ifcopenshell.util.element.get_container(e) for e in self.elements])
+        self.decomposition_containers = set()
+        for container in containers:
+            while container:
+                self.decomposition_containers.add(container)
+                container = ifcopenshell.util.element.get_aggregate(container)
+                if container and container.is_a("IfcContext"):
+                    container = None
+        for rel_aggregate in self.project["ifc"].IsDecomposedBy or []:
+            self.add_related_objects(self.project["blender"], rel_aggregate.RelatedObjects)
 
     def add_related_objects(self, parent, related_objects):
         for element in related_objects:
+            if element not in self.decomposition_containers:
+                continue
             global_id = element.GlobalId
             collection = bpy.data.collections.new(self.get_name(element))
             self.spatial_structure_elements[global_id] = {"blender": collection}
@@ -1019,7 +1013,7 @@ class IfcImporter:
                     self.add_related_objects(collection, rel_aggregate.RelatedObjects)
 
     def create_aggregates(self):
-        if self.filter_mode in ["WHITELIST", "BLACKLIST"]:
+        if self.ifc_import_settings.has_filter:
             rel_aggregates = [e.IsDecomposedBy[0].RelatingObject for e in self.elements if e.IsDecomposedBy]
         else:
             rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
@@ -1448,8 +1442,8 @@ class IfcImportSettings:
         self.angular_tolerance = 0.5
         self.should_offset_model = False
         self.model_offset_coordinates = (0, 0, 0)
-        self.ifc_import_filter = "NONE"
-        self.ifc_selector = ""
+        self.has_filter = None
+        self.elements = ""
         self.collection_mode = "DECOMPOSITION"
 
     @staticmethod

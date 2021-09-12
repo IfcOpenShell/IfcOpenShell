@@ -46,7 +46,18 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "collection_mode")
         row = self.layout.row()
-        row.operator("bim.load_project_elements").mode = "ALL"
+        row.prop(pprops, "filter_mode")
+        if pprops.filter_mode == "DECOMPOSITION":
+            self.layout.template_list(
+                "BIM_UL_filter_categories",
+                "",
+                pprops,
+                "filter_categories",
+                pprops,
+                "active_filter_category_index",
+            )
+        row = self.layout.row()
+        row.operator("bim.load_project_elements")
 
     def draw_project_ui(self, context):
         props = context.scene.BIMProperties
@@ -191,3 +202,17 @@ class BIM_UL_library(UIList):
                     op = row.operator("bim.append_library_element", text="", icon="APPEND_BLEND")
                     op.definition = item.ifc_definition_id
                     op.prop_index = data.get_library_element_index(item)
+
+
+class BIM_UL_filter_categories(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=f"{item.name} ({item.total_elements})")
+            row.prop(
+                item,
+                "is_selected",
+                icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT",
+                text="",
+                emboss=False,
+            )
