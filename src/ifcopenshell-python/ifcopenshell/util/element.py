@@ -79,6 +79,9 @@ def get_material(element, should_skip_usage=False):
 
 
 def get_container(element):
+    aggregate = get_aggregate(element)
+    if aggregate:
+        return get_container(aggregate)
     if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
         return element.ContainedInStructure[0].RelatingStructure
 

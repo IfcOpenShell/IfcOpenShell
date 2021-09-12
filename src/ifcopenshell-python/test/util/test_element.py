@@ -165,6 +165,14 @@ class TestGetContainerIFC4(test.bootstrap.IFC4):
         ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
         assert ifcopenshell.util.element.get_container(element) == building
 
+    def test_getting_an_indirect_spatial_container_of_an_element(self):
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
+        building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        assert ifcopenshell.util.element.get_container(subelement) == building
+
 
 class TestGetAggregateIFC4(test.bootstrap.IFC4):
     def test_getting_the_containing_aggregate_of_a_subelement(self):
