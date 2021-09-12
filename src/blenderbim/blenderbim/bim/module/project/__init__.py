@@ -35,10 +35,12 @@ classes = (
     operator.DisableEditingHeader,
     operator.EditHeader,
     prop.LibraryElement,
+    prop.FilterCategory,
     prop.BIMProjectProperties,
     ui.BIM_PT_project,
     ui.BIM_PT_project_library,
     ui.BIM_UL_library,
+    ui.BIM_UL_filter_categories,
 )
 
 

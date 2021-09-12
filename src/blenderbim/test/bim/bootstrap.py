@@ -129,6 +129,10 @@ def an_ifc_file_exists():
     return ifc
 
 
+def the_object_name_does_not_exist(name):
+    assert bpy.data.objects.get(name) is None, "Object exists"
+
+
 def the_object_name_is_an_ifc_class(name, ifc_class):
     ifc = an_ifc_file_exists()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
@@ -245,6 +249,7 @@ definitions = {
     '"(.*)" is "(.*)"': prop_is_value,
     'I enable "(.*)"': i_enable_prop,
     'I press "(.*)"': i_press_operator,
+    'the object "(.*)" does not exist': the_object_name_does_not_exist,
     'the object "(.*)" is an "(.*)"': the_object_name_is_an_ifc_class,
     'the object "(.*)" is not an IFC element': the_object_name_is_not_an_ifc_element,
     'the object "(.*)" is in the collection "(.*)"': the_object_name_is_in_the_collection_collection,
