@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -30,11 +29,8 @@ def draw_string_collection(layout, owner, collection_name):
     for i in range(len(collection)):
         if i == 0:
             row = draw_prop_on_new_row(
-                column, 
-                collection[i], 
-                "name", 
-                align=True, 
-                text=f"{owner.bl_rna.properties[collection_name].name}")
+                column, collection[i], "name", align=True, text=f"{owner.bl_rna.properties[collection_name].name}"
+            )
             add_op = row.operator(AddOrRemoveElementFromCollection.bl_idname, icon="ADD", text="")
             add_op.operation = "+"
             add_op.collection_path = collection.path_from_id()
@@ -46,7 +42,7 @@ def draw_string_collection(layout, owner, collection_name):
             rem_op.selected_item_idx = i
 
 
-def draw_prop_on_new_row(layout, owner, attribute, align=False, **kwargs):    
+def draw_prop_on_new_row(layout, owner, attribute, align=False, **kwargs):
     row = layout.row(align=align)
     row.prop(owner, attribute, **kwargs)
     return row
@@ -103,7 +99,7 @@ def draw_addresses_ui(box, assigned_object_id, addresses, file, context):
                 draw_prop_on_new_row(box2, blender_address, "pager_number")
                 draw_string_collection(box2, blender_address, "electronic_mail_addresses")
                 draw_prop_on_new_row(box2, blender_address, "www_home_page_url")
-                if file.schema != "IFC2X3":                    
+                if file.schema != "IFC2X3":
                     draw_string_collection(box2, blender_address, "messaging_ids")
             elif address["type"] == "IfcPostalAddress":
                 draw_prop_on_new_row(box2, blender_address, "internal_location")
@@ -151,7 +147,7 @@ class BIM_PT_people(Panel):
                 row = draw_prop_on_new_row(box, blender_person, "name", align=True, icon="USER", text="")
                 row.operator("bim.edit_person", icon="CHECKMARK", text="")
                 row.operator("bim.disable_editing_person", icon="CANCEL", text="")
-                draw_prop_on_new_row(box, blender_person, "family_name")                
+                draw_prop_on_new_row(box, blender_person, "family_name")
                 draw_prop_on_new_row(box, blender_person, "given_name")
                 draw_string_collection(box, blender_person, "middle_names")
                 draw_string_collection(box, blender_person, "prefix_titles")
@@ -204,8 +200,8 @@ class BIM_PT_organisations(Panel):
                 row = box.row(align=True)
                 row.prop(blender_organisation, "name", icon="USER", text="")
                 row.operator("bim.edit_organisation", icon="CHECKMARK", text="")
-                row.operator("bim.disable_editing_organisation", icon="CANCEL", text="")                
-                draw_prop_on_new_row(box, blender_organisation, "identification")           
+                row.operator("bim.disable_editing_organisation", icon="CANCEL", text="")
+                draw_prop_on_new_row(box, blender_organisation, "identification")
                 draw_prop_on_new_row(box, blender_organisation, "description")
 
                 draw_roles_ui(box, organisation_id, organisation["Roles"], context)
@@ -215,7 +211,9 @@ class BIM_PT_organisations(Panel):
                 row.label(text=organisation["Name"])
                 if organisation["Roles"]:
                     row.label(text=", ".join([Data.roles[r]["Role"] for r in organisation["Roles"]]))
-                row.operator("bim.enable_editing_organisation", icon="GREASEPENCIL", text="").organisation_id = organisation_id
+                row.operator(
+                    "bim.enable_editing_organisation", icon="GREASEPENCIL", text=""
+                ).organisation_id = organisation_id
                 if not organisation["is_engaged"]:
                     row.operator("bim.remove_organisation", icon="X", text="").organisation_id = organisation_id
 

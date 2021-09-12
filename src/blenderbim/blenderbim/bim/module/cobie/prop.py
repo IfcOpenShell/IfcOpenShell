@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -37,4 +36,3 @@ class COBieProperties(PropertyGroup):
     cobie_components: StringProperty(default=".COBie", name="COBie Components")
     cobie_json_file: StringProperty(default="", name="COBie JSON File")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
-    

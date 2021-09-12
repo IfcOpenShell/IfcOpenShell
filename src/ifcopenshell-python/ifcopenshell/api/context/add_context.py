@@ -35,12 +35,15 @@ class Usecase:
             project.RepresentationContexts = contexts
             return context
         parent = parent[0]
-        return self.file.create_entity("IfcGeometricRepresentationSubContext", **{
-            "ContextIdentifier": self.settings["subcontext"],
-            "ContextType": self.settings["context"],
-            "ParentContext": parent,
-            "TargetView": self.settings["target_view"],
-        })
+        return self.file.create_entity(
+            "IfcGeometricRepresentationSubContext",
+            **{
+                "ContextIdentifier": self.settings["subcontext"],
+                "ContextType": self.settings["context"],
+                "ParentContext": parent,
+                "TargetView": self.settings["target_view"],
+            }
+        )
 
     def create_origin(self):
         self.origin = self.file.createIfcAxis2Placement3D(

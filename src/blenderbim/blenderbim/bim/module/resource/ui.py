@@ -165,7 +165,6 @@ class BIM_PT_resources(Panel):
             op.resource = self.props.active_resource_id
             op.ifc_class = self.props.quantity_types
 
-
     def draw_editable_resource_costs_ui(self):
         row = self.layout.row(align=True)
         row.prop(self.props, "cost_types", text="")

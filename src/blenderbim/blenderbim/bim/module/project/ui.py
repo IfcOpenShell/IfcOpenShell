@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -33,11 +32,33 @@ class BIM_PT_project(Panel):
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
         props = context.scene.BIMProperties
+        pprops = context.scene.BIMProjectProperties
         self.file = IfcStore.get_file()
-        if self.file or props.ifc_file:
+        if pprops.is_loading:
+            self.draw_load_ui(context)
+        elif self.file or props.ifc_file:
             self.draw_project_ui(context)
         else:
             self.draw_create_project_ui(context)
+
+    def draw_load_ui(self, context):
+        pprops = context.scene.BIMProjectProperties
+        row = self.layout.row()
+        row.prop(pprops, "collection_mode")
+        row = self.layout.row()
+        row.prop(pprops, "filter_mode")
+        if pprops.filter_mode != "NONE":
+            self.layout.template_list(
+                "BIM_UL_filter_categories",
+                "",
+                pprops,
+                "filter_categories",
+                pprops,
+                "active_filter_category_index",
+            )
+        row = self.layout.row(align=True)
+        row.operator("bim.load_project_elements")
+        row.operator("bim.unload_project", text="", icon="CANCEL")
 
     def draw_project_ui(self, context):
         props = context.scene.BIMProperties
@@ -110,11 +131,9 @@ class BIM_PT_project(Panel):
         row.prop(props, "area_unit", text="Area Unit")
         row = self.layout.row()
         row.prop(props, "volume_unit", text="Volume Unit")
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         row.operator("bim.create_project")
-        if props.export_schema != "IFC2X3":
-            row = self.layout.row()
-            row.operator("bim.create_project_library")
+        row.operator("bim.load_project")
 
 
 class BIM_PT_project_library(Panel):
@@ -184,3 +203,17 @@ class BIM_UL_library(UIList):
                     op = row.operator("bim.append_library_element", text="", icon="APPEND_BLEND")
                     op.definition = item.ifc_definition_id
                     op.prop_index = data.get_library_element_index(item)
+
+
+class BIM_UL_filter_categories(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=f"{item.name} ({item.total_elements})")
+            row.prop(
+                item,
+                "is_selected",
+                icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT",
+                text="",
+                emboss=False,
+            )

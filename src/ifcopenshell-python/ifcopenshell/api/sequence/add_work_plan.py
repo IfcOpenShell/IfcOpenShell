@@ -25,7 +25,5 @@ class Usecase:
         work_plan.StartTime = ifcopenshell.util.date.datetime2ifc(self.settings["start_time"], "IfcDateTime")
 
         context = self.file.by_type("IfcContext")[0]
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definition=work_plan, relating_context=context
-        )
+        ifcopenshell.api.run("project.assign_declaration", self.file, definition=work_plan, relating_context=context)
         return work_plan

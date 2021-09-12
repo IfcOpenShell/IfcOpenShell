@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -87,6 +86,7 @@ classes = [
     operator.SetViewportShadowFromSun,
     operator.LinkIfc,
     operator.SnapSpacesTogether,
+    operator.OverrideDelete,
     prop.StrProperty,
     prop.Attribute,
     prop.BIMProperties,
@@ -105,15 +105,19 @@ classes = [
 for mod in modules.values():
     classes.extend(mod.classes)
 
+
 def menu_func_export(self, context):
     self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
+
 
 def menu_func_import(self, context):
     self.layout.operator(operator.ImportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcxml)")
 
+
 def on_register(scene):
     handler.setDefaultProperties(scene)
     bpy.app.handlers.depsgraph_update_post.remove(on_register)
+
 
 def register():
     for cls in classes:
@@ -140,6 +144,7 @@ def register():
 
     for mod in modules.values():
         mod.register()
+
 
 def unregister():
     for cls in reversed(classes):

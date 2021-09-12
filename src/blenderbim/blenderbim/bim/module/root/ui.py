@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -51,8 +50,8 @@ class BIM_PT_class(Panel):
                 row.operator("bim.reassign_class", icon="CHECKMARK")
                 row.operator("bim.disable_reassign_class", icon="CANCEL", text="")
                 self.draw_class_dropdowns(
-                    context,
-                    root_prop.getIfcPredefinedTypes(context.scene.BIMRootProperties, context))
+                    context, root_prop.getIfcPredefinedTypes(context.scene.BIMRootProperties, context)
+                )
             else:
                 data = Data.products[props.ifc_definition_id]
                 name = data["type"]

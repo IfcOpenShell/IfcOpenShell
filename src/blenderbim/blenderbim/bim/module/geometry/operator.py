@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -154,7 +153,6 @@ class AddRepresentation(bpy.types.Operator):
             "geometry.assign_representation", self.file, **{"product": product, "representation": result}
         )
 
-        existing_mesh = obj.data
         mesh = obj.data.copy()
         mesh.name = "{}/{}".format(context_id, result.id())
         mesh.BIMMeshProperties.ifc_definition_id = int(result.id())

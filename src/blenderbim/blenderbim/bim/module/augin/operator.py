@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -68,6 +67,7 @@ class AuginCreateNewModel(bpy.types.Operator):
     def execute(self, context):
         import boto3
         from botocore.config import Config
+
         props = context.scene.AuginProperties
 
         # Create project
@@ -134,7 +134,6 @@ class AuginCreateNewModel(bpy.types.Operator):
 
         client.upload_file(context.scene.BIMProperties.ifc_file, result["s3_bucket"], result["model_path"])
         client.upload_file(thumb_path, result["s3_bucket"], result["thumb_path"])
-
 
         # Notify done
         url = "https://server.auge.pro.br/API/v3/augin_rest.php/files_uploaded"

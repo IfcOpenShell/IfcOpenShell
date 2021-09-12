@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -24,7 +23,6 @@ import json
 from blenderbim.bim.ifc import IfcStore
 
 
-
 class SelectDiffJsonFile(bpy.types.Operator):
     bl_idname = "bim.select_diff_json_file"
     bl_label = "Select Diff JSON File"
@@ -46,8 +44,8 @@ class VisualiseDiff(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        #ifc_file = IfcStore.get_file() # In case we get from Store
-        ifc_file = ifcopenshell.open(context.scene.DiffProperties.diff_new_file) # for Now refer to the new file
+        # ifc_file = IfcStore.get_file() # In case we get from Store
+        ifc_file = ifcopenshell.open(context.scene.DiffProperties.diff_new_file)  # for Now refer to the new file
         with open(context.scene.DiffProperties.diff_json_file, "r") as file:
             diff = json.load(file)
         for obj in context.visible_objects:

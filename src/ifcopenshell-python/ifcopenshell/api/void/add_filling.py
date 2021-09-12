@@ -9,8 +9,11 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        self.file.create_entity("IfcRelFillsElement", **{
-            "GlobalId": ifcopenshell.guid.new(),
-            "RelatingOpeningElement": self.settings["opening"],
-            "RelatedBuildingElement": self.settings["element"]
-        })
+        self.file.create_entity(
+            "IfcRelFillsElement",
+            **{
+                "GlobalId": ifcopenshell.guid.new(),
+                "RelatingOpeningElement": self.settings["opening"],
+                "RelatedBuildingElement": self.settings["element"],
+            }
+        )

@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -36,8 +35,8 @@ class BIMGeoreferenceProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     map_conversion: CollectionProperty(name="Map Conversion", type=Attribute)
     projected_crs: CollectionProperty(name="Projected CRS", type=Attribute)
-    coordinate_input: StringProperty(name="Coordinate Input", description="Formatted \"x,y,z\" (without quotes)")
-    coordinate_output: StringProperty(name="Coordinate Output", description="Formatted \"x,y,z\" (without quotes)")
+    coordinate_input: StringProperty(name="Coordinate Input", description='Formatted "x,y,z" (without quotes)')
+    coordinate_output: StringProperty(name="Coordinate Output", description='Formatted "x,y,z" (without quotes)')
     has_blender_offset: BoolProperty(name="Has Blender Offset")
     blender_eastings: StringProperty(name="Blender Eastings", default="0")
     blender_northings: StringProperty(name="Blender Northings", default="0")

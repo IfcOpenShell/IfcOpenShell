@@ -4,9 +4,7 @@ import ifcopenshell.util.element
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {
-            "prop_template": None
-        }
+        self.settings = {"prop_template": None}
         for key, value in settings.items():
             self.settings[key] = value
 

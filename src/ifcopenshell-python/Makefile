@@ -2,6 +2,11 @@
 test:
 	pytest -p no:pytest-blender test
 
+.PHONY: qa
+qa:
+	black .
+	pylint ./* --output-format=colorized --disable all --enable E
+
 .PHONY: coverage
 coverage:
 	coverage run --source ifcopenshell -m pytest

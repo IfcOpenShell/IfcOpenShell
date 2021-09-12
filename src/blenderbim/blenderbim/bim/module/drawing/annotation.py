@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Maxim Vasilyev <qwiglydee@gmail.com>
 #
@@ -171,16 +170,14 @@ class Annotator:
         camera = context.scene.camera
         z_offset = camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
         if context.scene.render.resolution_x > context.scene.render.resolution_y:
-            y = (
-                camera.data.ortho_scale
-                * (context.scene.render.resolution_y / context.scene.render.resolution_x)
-                / 4
-            )
+            y = camera.data.ortho_scale * (context.scene.render.resolution_y / context.scene.render.resolution_x) / 4
         else:
             y = camera.data.ortho_scale / 4
         y_offset = camera.matrix_world.to_quaternion() @ Vector((0, y, 0))
-        x_offset = camera.matrix_world.to_quaternion() @ Vector((y/2, 0, 0))
-        return (camera.location + z_offset,
-                camera.location + z_offset + y_offset,
-                camera.location + z_offset + x_offset,
-                camera.location + z_offset + x_offset + y_offset)
+        x_offset = camera.matrix_world.to_quaternion() @ Vector((y / 2, 0, 0))
+        return (
+            camera.location + z_offset,
+            camera.location + z_offset + y_offset,
+            camera.location + z_offset + x_offset,
+            camera.location + z_offset + x_offset + y_offset,
+        )

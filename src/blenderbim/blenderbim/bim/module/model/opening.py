@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -151,32 +150,32 @@ class AddElementOpening(bpy.types.Operator):
                 Vector((-0.1, 0, z)),
                 Vector((-0.1, y, 0)),
                 Vector((-0.1, y, z)),
-                Vector((dimension+0.1, 0, 0)),
-                Vector((dimension+0.1, 0, z)),
-                Vector((dimension+0.1, y, 0)),
-                Vector((dimension+0.1, y, z)),
+                Vector((dimension + 0.1, 0, 0)),
+                Vector((dimension + 0.1, 0, z)),
+                Vector((dimension + 0.1, y, 0)),
+                Vector((dimension + 0.1, y, z)),
             ]
         elif dimension == voided_obj.dimensions[1]:
             verts = [
                 Vector((0, -0.1, 0)),
                 Vector((0, -0.1, z)),
-                Vector((0, dimension+0.1, 0)),
-                Vector((0, dimension+0.1, z)),
+                Vector((0, dimension + 0.1, 0)),
+                Vector((0, dimension + 0.1, z)),
                 Vector((x, -0.1, 0)),
                 Vector((x, -0.1, z)),
-                Vector((x, dimension+0.1, 0)),
-                Vector((x, dimension+0.1, z)),
+                Vector((x, dimension + 0.1, 0)),
+                Vector((x, dimension + 0.1, z)),
             ]
         elif dimension == voided_obj.dimensions[2]:
             verts = [
                 Vector((0, 0, -0.1)),
-                Vector((0, 0, dimension+0.1)),
+                Vector((0, 0, dimension + 0.1)),
                 Vector((0, y, -0.1)),
-                Vector((0, y, dimension+0.1)),
+                Vector((0, y, dimension + 0.1)),
                 Vector((x, 0, -0.1)),
-                Vector((x, 0, dimension+0.1)),
+                Vector((x, 0, dimension + 0.1)),
                 Vector((x, y, -0.1)),
-                Vector((x, y, dimension+0.1)),
+                Vector((x, y, dimension + 0.1)),
             ]
         edges = []
         faces = [

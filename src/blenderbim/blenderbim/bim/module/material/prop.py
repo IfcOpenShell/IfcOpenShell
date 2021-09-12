@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -69,10 +68,12 @@ def getParameterizedProfileClasses(self, context):
             for t in IfcStore.get_schema().declaration_by_name("IfcParameterizedProfileDef").subtypes()
         ]
         for ifc_class in parameterizedprofileclasses_enum:
-            parameterizedprofileclasses_enum.extend([
-                (t.name(), t.name(), "")
-                for t in IfcStore.get_schema().declaration_by_name(ifc_class[0]).subtypes() or []
-            ])
+            parameterizedprofileclasses_enum.extend(
+                [
+                    (t.name(), t.name(), "")
+                    for t in IfcStore.get_schema().declaration_by_name(ifc_class[0]).subtypes() or []
+                ]
+            )
     return parameterizedprofileclasses_enum
 
 
@@ -111,7 +112,9 @@ class BIMObjectMaterialProperties(PropertyGroup):
     material_set_attributes: CollectionProperty(name="Material Set Attributes", type=Attribute)
     active_material_set_item_id: IntProperty(name="Active Material Set ID")
     material_set_item_attributes: CollectionProperty(name="Material Set Item Attributes", type=Attribute)
-    material_set_item_profile_attributes: CollectionProperty(name="Material Set Item Profile Attributes", type=Attribute)
+    material_set_item_profile_attributes: CollectionProperty(
+        name="Material Set Item Profile Attributes", type=Attribute
+    )
     material_set_item_material: EnumProperty(items=getMaterials, name="Material")
     profile_classes: EnumProperty(items=getProfileClasses, name="Profile Classes")
     parameterized_profile_classes: EnumProperty(

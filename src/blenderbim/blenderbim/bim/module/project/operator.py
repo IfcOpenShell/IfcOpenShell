@@ -16,8 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
+import time
 import logging
+import tempfile
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
@@ -88,46 +91,6 @@ class CreateProject(bpy.types.Operator):
         while bpy.data.objects.get(f"{ifc_class}/{name} {i}"):
             i += 1
         return f"{name} {i}"
-
-    def rollback(self, data):
-        IfcStore.file = None
-
-    def commit(self, data):
-        IfcStore.file = data["file"]
-
-
-class CreateProjectLibrary(bpy.types.Operator):
-    bl_idname = "bim.create_project_library"
-    bl_label = "Create Project Library"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        IfcStore.begin_transaction(self)
-        IfcStore.add_transaction_operation(self, rollback=self.rollback, commit=lambda data: True)
-        result = self._execute(context)
-        self.transaction_data = {"file": self.file}
-        IfcStore.add_transaction_operation(self, rollback=lambda data: True, commit=self.commit)
-        IfcStore.end_transaction(self)
-        return result
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        if self.file:
-            return {"FINISHED"}
-
-        IfcStore.file = ifcopenshell.api.run(
-            "project.create_file", **{"version": context.scene.BIMProperties.export_schema}
-        )
-        self.file = IfcStore.get_file()
-
-        if self.file.schema == "IFC2X3":
-            bpy.ops.bim.add_person()
-            bpy.ops.bim.add_organisation()
-
-        project_library = bpy.data.objects.new("My Project Library", None)
-        bpy.ops.bim.assign_class(obj=project_library.name, ifc_class="IfcProjectLibrary")
-        bpy.ops.bim.assign_unit()
-        return {"FINISHED"}
 
     def rollback(self, data):
         IfcStore.file = None
@@ -541,3 +504,91 @@ class DisableEditingHeader(bpy.types.Operator):
     def execute(self, context):
         context.scene.BIMProjectProperties.is_editing = False
         return {"FINISHED"}
+
+
+class LoadProject(bpy.types.Operator):
+    bl_idname = "bim.load_project"
+    bl_label = "Load Project"
+    bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
+
+    def execute(self, context):
+        if os.path.exists(self.filepath) and "ifc" in os.path.splitext(self.filepath)[1]:
+            context.scene.BIMProperties.ifc_file = self.filepath
+        context.scene.BIMProjectProperties.is_loading = True
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class UnloadProject(bpy.types.Operator):
+    bl_idname = "bim.unload_project"
+    bl_label = "Unload Project"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        IfcStore.purge()
+        context.scene.BIMProperties.ifc_file = ""
+        context.scene.BIMProjectProperties.is_loading = False
+        return {"FINISHED"}
+
+
+class LoadProjectElements(bpy.types.Operator):
+    bl_idname = "bim.load_project_elements"
+    bl_label = "Load Project Elements"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        self.props = context.scene.BIMProjectProperties
+        self.file = IfcStore.get_file()
+        start = time.time()
+        logger = logging.getLogger("ImportIFC")
+        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
+        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
+            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
+        logging.basicConfig(
+            filename=path_log,
+            filemode="a",
+            level=logging.DEBUG,
+        )
+        settings = import_ifc.IfcImportSettings.factory(context, context.scene.BIMProperties.ifc_file, logger)
+        settings.has_filter = self.props.filter_mode != "NONE"
+        if self.props.filter_mode == "DECOMPOSITION":
+            settings.elements = self.get_decomposition_elements()
+        elif self.props.filter_mode == "IFC_CLASS":
+            settings.elements = self.get_ifc_class_elements()
+        settings.logger.info("Starting import")
+        ifc_importer = import_ifc.IfcImporter(settings)
+        ifc_importer.execute()
+        settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        context.scene.BIMProjectProperties.is_loading = False
+        return {"FINISHED"}
+
+    def get_decomposition_elements(self):
+        containers = set()
+        for filter_category in self.props.filter_categories:
+            if not filter_category.is_selected:
+                continue
+            container = self.file.by_id(filter_category.ifc_definition_id)
+            while container:
+                containers.add(container)
+                container = ifcopenshell.util.element.get_aggregate(container)
+                if container.is_a("IfcContext"):
+                    container = None
+        elements = set()
+        for container in containers:
+            for rel in container.ContainsElements:
+                elements.update(rel.RelatedElements)
+        return elements
+
+    def get_ifc_class_elements(self):
+        elements = set()
+        for filter_category in self.props.filter_categories:
+            if not filter_category.is_selected:
+                continue
+            elements.update(self.file.by_type(filter_category.name, include_subtypes=False))
+        return elements

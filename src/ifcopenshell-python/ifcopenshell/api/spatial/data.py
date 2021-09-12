@@ -46,5 +46,5 @@ class Data:
                 "Name": element.Name,
                 "LongName": element.LongName,
                 "Decomposes": decomposes,
-                "IsDecomposedBy": is_decomposed_by
+                "IsDecomposedBy": is_decomposed_by,
             }

@@ -21,7 +21,6 @@ import ifcopenshell.api
 import ifcopenshell.util.representation
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.void.data import Data
-from ifcopenshell.api.context.data import Data as ContextData
 
 
 class AddOpening(bpy.types.Operator):
@@ -87,17 +86,28 @@ class RemoveOpening(bpy.types.Operator):
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
+        is_modifier_removed = False
         for modifier in obj.modifiers:
             if modifier.type != "BOOLEAN":
                 continue
             if modifier.object and modifier.object.BIMObjectProperties.ifc_definition_id == self.opening_id:
-                IfcStore.unlink_element(obj=modifier.object)
-                if "/" in modifier.object.name and modifier.object.name[0:3] == "Ifc":
-                    modifier.object.name = "/".join(modifier.object.name.split("/")[1:])
+                is_modifier_removed = True
                 obj.modifiers.remove(modifier)
                 break
 
+        opening = IfcStore.get_element(self.opening_id)
+        opening.name = "/".join(opening.name.split("/")[1:])
+        IfcStore.unlink_element(obj=opening)
+
         ifcopenshell.api.run("void.remove_opening", self.file, **{"opening": self.file.by_id(self.opening_id)})
+
+        if not is_modifier_removed:
+            bpy.ops.bim.switch_representation(
+                ifc_definition_id=obj.data.BIMMeshProperties.ifc_definition_id,
+                should_reload=True,
+                should_switch_all_meshes=True,
+            )
+
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 

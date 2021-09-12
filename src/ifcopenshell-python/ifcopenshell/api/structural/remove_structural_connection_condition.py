@@ -16,4 +16,3 @@ class Usecase:
                 **{"connection": self.settings["relation"].RelatedStructuralConnection}
             )
         self.file.remove(self.settings["relation"])
-
