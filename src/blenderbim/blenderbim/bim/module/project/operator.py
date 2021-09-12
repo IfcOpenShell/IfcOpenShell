@@ -514,8 +514,9 @@ class LoadProject(bpy.types.Operator):
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
     def execute(self, context):
-        if os.path.exists(self.filepath) and "ifc" in os.path.splitext(self.filepath)[1]:
-            context.scene.BIMProperties.ifc_file = self.filepath
+        if not os.path.exists(self.filepath) or "ifc" not in os.path.splitext(self.filepath)[1].lower():
+            return {"FINISHED"}
+        context.scene.BIMProperties.ifc_file = self.filepath
         context.scene.BIMProjectProperties.is_loading = True
         return {"FINISHED"}
 
@@ -583,7 +584,18 @@ class LoadProjectElements(bpy.types.Operator):
         for container in containers:
             for rel in container.ContainsElements:
                 elements.update(rel.RelatedElements)
+        self.append_decomposed_elements(elements)
         return elements
+
+    def append_decomposed_elements(self, elements):
+        decomposed_elements = set()
+        for element in elements:
+            if element.IsDecomposedBy:
+                for subelement in element.IsDecomposedBy[0].RelatedObjects:
+                    decomposed_elements.add(subelement)
+        if decomposed_elements:
+            self.append_decomposed_elements(decomposed_elements)
+        elements.update(decomposed_elements)
 
     def get_ifc_class_elements(self):
         elements = set()

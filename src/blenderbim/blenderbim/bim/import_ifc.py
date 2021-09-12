@@ -211,10 +211,6 @@ class IfcImporter:
         self.profile_code("Process element filter")
         self.create_collections()
         self.profile_code("Create collections")
-        self.create_aggregates()
-        self.profile_code("Create aggregates")
-        self.create_aggregate_tree()
-        self.profile_code("Create aggregate tree")
         self.create_openings_collection()
         self.profile_code("Create opening collection")
         self.create_materials()
@@ -978,15 +974,16 @@ class IfcImporter:
             self.project["blender"].objects.link(obj)
 
     def create_collections(self):
-        if self.ifc_import_settings.collection_mode == "DECOMPOSITION" and len(self.file.by_type("IfcRelAggregates")) > 10000:
-            # More than 10,000 collections makes Blender unhappy
-            print("Falling back to SPATIAL_DECOMPOSITION collection mode")
-            self.ifc_import_settings.collection_mode = "SPATIAL_DECOMPOSITION"
-
         if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
             self.create_decomposition_collections()
+        elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
+            self.create_spatial_decomposition_collections()
 
     def create_decomposition_collections(self):
+        self.create_spatial_decomposition_collections()
+        self.create_aggregate_collections()
+
+    def create_spatial_decomposition_collections(self):
         containers = set([ifcopenshell.util.element.get_container(e) for e in self.elements])
         self.decomposition_containers = set()
         for container in containers:
@@ -1014,18 +1011,23 @@ class IfcImporter:
                 for rel_aggregate in element.IsDecomposedBy:
                     self.add_related_objects(collection, rel_aggregate.RelatedObjects)
 
+    def create_aggregate_collections(self):
+        self.create_aggregates()
+        self.create_aggregate_tree()
+
     def create_aggregates(self):
         if self.ifc_import_settings.has_filter:
-            rel_aggregates = [e.IsDecomposedBy[0].RelatingObject for e in self.elements if e.IsDecomposedBy]
+            rel_aggregates = [e.IsDecomposedBy[0] for e in self.elements if e.IsDecomposedBy]
         else:
             rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
+
         if len(rel_aggregates) > 10000:
             # More than 10,000 collections makes Blender unhappy
-            print("Falling back to SPATIAL_DECOMPOSITION collection mode")
-            self.ifc_import_settings.collection_mode = "SPATIAL_DECOMPOSITION"
-        else:
-            for rel_aggregate in rel_aggregates:
-                self.create_aggregate(rel_aggregate)
+            print("Skipping aggregate collections for performance.")
+            return
+
+        for rel_aggregate in rel_aggregates:
+            self.create_aggregate(rel_aggregate)
 
     def create_aggregate_tree(self):
         for aggregate in self.aggregates.values():
