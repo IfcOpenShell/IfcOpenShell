@@ -129,6 +129,12 @@ def an_ifc_file_exists():
     return ifc
 
 
+def an_ifc_file_does_not_exist():
+    ifc = IfcStore.get_file()
+    if ifc:
+        assert False, "An IFC is available"
+
+
 def the_object_name_does_not_exist(name):
     assert bpy.data.objects.get(name) is None, "Object exists"
 
@@ -255,6 +261,7 @@ definitions = {
     'the object "(.*)" is in the collection "(.*)"': the_object_name_is_in_the_collection_collection,
     'the collection "(.*)" is in the collection "(.*)"': the_collection_name1_is_in_the_collection_name2,
     "an IFC file exists": an_ifc_file_exists,
+    "an IFC file does not exist": an_ifc_file_does_not_exist,
     'the object "(.*)" has a "(.*)" representation of "(.*)"': the_object_name_has_a_type_representation_of_context,
     'the object "(.*)" is placed in the collection "(.*)"': the_object_name_is_placed_in_the_collection_collection,
     'the object "(.*)" is contained in "(.*)"': the_object_name_is_contained_in_container_name,
