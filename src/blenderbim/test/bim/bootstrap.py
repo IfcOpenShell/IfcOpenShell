@@ -26,6 +26,7 @@ import blenderbim
 import ifcopenshell
 import ifcopenshell.util.representation
 from blenderbim.bim.ifc import IfcStore
+from mathutils import Vector
 
 # Monkey-patch webbrowser opening since we want to test headlessly
 webbrowser.open = lambda x: True
@@ -245,6 +246,11 @@ def the_object_name_has_number_vertices(name, number):
     assert total == int(number), f"We found {total} vertices"
 
 
+def the_object_name_is_at_location(name, location):
+    obj_location = the_object_name_exists(name).location
+    assert (obj_location - Vector([float(co) for co in location.split(",")])).length < 0.1, f"Object is at {obj_location}"
+
+
 definitions = {
     "an empty IFC project": an_empty_ifc_project,
     "I add a cube": i_add_a_cube,
@@ -275,6 +281,7 @@ definitions = {
     'the object "(.*)" is not voided by "(.*)"': the_object_name_is_not_voided_by_void,
     'the object "(.*)" should display as "(.*)"': the_object_name_should_display_as_mode,
     'the object "(.*)" has "([0-9]+)" vertices': the_object_name_has_number_vertices,
+    'the object "(.*)" is at "(.*)"': the_object_name_is_at_location,
 }
 
 

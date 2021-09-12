@@ -23,6 +23,7 @@ import logging
 import tempfile
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
@@ -512,12 +513,15 @@ class LoadProject(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
+    is_advanced: bpy.props.BoolProperty(name="Enable Advanced Mode", default=False)
 
     def execute(self, context):
         if not os.path.exists(self.filepath) or "ifc" not in os.path.splitext(self.filepath)[1].lower():
             return {"FINISHED"}
         context.scene.BIMProperties.ifc_file = self.filepath
         context.scene.BIMProjectProperties.is_loading = True
+        if not self.is_advanced:
+            bpy.ops.bim.load_project_elements()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -561,6 +565,23 @@ class LoadProjectElements(bpy.types.Operator):
             settings.elements = self.get_decomposition_elements()
         elif self.props.filter_mode == "IFC_CLASS":
             settings.elements = self.get_ifc_class_elements()
+        elif self.props.filter_mode == "WHITELIST":
+            settings.elements = self.get_whitelist_elements()
+        elif self.props.filter_mode == "BLACKLIST":
+            settings.elements = self.get_blacklist_elements()
+        settings.should_use_cpu_multiprocessing = self.props.should_use_cpu_multiprocessing
+        settings.should_merge_by_class = self.props.should_merge_by_class
+        settings.should_merge_by_material = self.props.should_merge_by_material
+        settings.should_merge_materials_by_colour = self.props.should_merge_materials_by_colour
+        settings.should_clean_mesh = self.props.should_clean_mesh
+        settings.deflection_tolerance = self.props.deflection_tolerance
+        settings.angular_tolerance = self.props.angular_tolerance
+        settings.should_offset_model = self.props.should_offset_model
+        settings.model_offset_coordinates = (
+            [float(o) for o in self.props.model_offset_coordinates.split(",")]
+            if self.props.model_offset_coordinates
+            else (0, 0, 0)
+        )
         settings.logger.info("Starting import")
         ifc_importer = import_ifc.IfcImporter(settings)
         ifc_importer.execute()
@@ -604,3 +625,11 @@ class LoadProjectElements(bpy.types.Operator):
                 continue
             elements.update(self.file.by_type(filter_category.name, include_subtypes=False))
         return elements
+
+    def get_whitelist_elements(self):
+        selector = ifcopenshell.util.selector.Selector()
+        return set(selector.parse(self.file, self.props.filter_query))
+
+    def get_blacklist_elements(self):
+        selector = ifcopenshell.util.selector.Selector()
+        return set(self.file.by_type("IfcElement")) - set(selector.parse(self.file, self.props.filter_query))

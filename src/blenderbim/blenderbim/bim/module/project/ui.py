@@ -47,7 +47,7 @@ class BIM_PT_project(Panel):
         row.prop(pprops, "collection_mode")
         row = self.layout.row()
         row.prop(pprops, "filter_mode")
-        if pprops.filter_mode != "NONE":
+        if pprops.filter_mode in ["DECOMPOSITION", "IFC_CLASS"]:
             self.layout.template_list(
                 "BIM_UL_filter_categories",
                 "",
@@ -56,6 +56,28 @@ class BIM_PT_project(Panel):
                 pprops,
                 "active_filter_category_index",
             )
+        elif pprops.filter_mode in ["WHITELIST", "BLACKLIST"]:
+            row = self.layout.row()
+            row.prop(pprops, "filter_query")
+        row = self.layout.row()
+        row.prop(pprops, "should_use_cpu_multiprocessing")
+        row = self.layout.row()
+        row.prop(pprops, "should_merge_by_class")
+        row = self.layout.row()
+        row.prop(pprops, "should_merge_by_material")
+        row = self.layout.row()
+        row.prop(pprops, "should_merge_materials_by_colour")
+        row = self.layout.row()
+        row.prop(pprops, "should_clean_mesh")
+        row = self.layout.row()
+        row.prop(pprops, "deflection_tolerance")
+        row = self.layout.row()
+        row.prop(pprops, "angular_tolerance")
+        row = self.layout.row()
+        row.prop(pprops, "should_offset_model")
+        row = self.layout.row()
+        row.prop(pprops, "model_offset_coordinates")
+
         row = self.layout.row(align=True)
         row.operator("bim.load_project_elements")
         row.operator("bim.unload_project", text="", icon="CANCEL")

@@ -32,7 +32,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.drawing.prop import getDiagramScales
+from blenderbim.bim.module.drawing.prop import get_diagram_scales
 
 
 class FileCopy(threading.Thread):
@@ -241,9 +241,7 @@ class IfcImporter:
         elif self.ifc_import_settings.should_merge_by_material:
             self.merge_by_material()
             self.profile_code("Merging by material")
-        if self.ifc_import_settings.should_merge_materials_by_colour or (
-            self.ifc_import_settings.should_auto_set_workarounds and len(self.material_creator.materials) > 300
-        ):
+        if self.ifc_import_settings.should_merge_materials_by_colour or len(self.material_creator.materials) > 300:
             self.merge_materials_by_colour()
             self.profile_code("Merging by colour")
         self.add_project_to_scene()
@@ -1314,7 +1312,7 @@ class IfcImporter:
             if "TargetView" in pset:
                 camera.BIMCameraProperties.target_view = pset["TargetView"]
             if "Scale" in pset:
-                valid_scales = [i[0] for i in getDiagramScales(None, None) if pset["Scale"] == i[0].split("|")[-1]]
+                valid_scales = [i[0] for i in get_diagram_scales(None, bpy.context) if pset["Scale"] == i[0].split("|")[-1]]
                 if valid_scales:
                     camera.BIMCameraProperties.diagram_scale = valid_scales[0]
                 else:
@@ -1436,7 +1434,6 @@ class IfcImportSettings:
         self.logger = None
         self.input_file = None
         self.diff_file = None
-        self.should_auto_set_workarounds = True
         self.should_use_cpu_multiprocessing = True
         self.should_merge_by_class = False
         self.should_merge_by_material = False
