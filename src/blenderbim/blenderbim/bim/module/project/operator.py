@@ -524,6 +524,18 @@ class LoadProject(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
 
+class UnloadProject(bpy.types.Operator):
+    bl_idname = "bim.unload_project"
+    bl_label = "Unload Project"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        IfcStore.purge()
+        context.scene.BIMProperties.ifc_file = ""
+        context.scene.BIMProjectProperties.is_loading = False
+        return {"FINISHED"}
+
+
 class LoadProjectElements(bpy.types.Operator):
     bl_idname = "bim.load_project_elements"
     bl_label = "Load Project Elements"

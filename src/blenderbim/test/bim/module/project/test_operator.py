@@ -94,3 +94,13 @@ class TestLoadProjectElements(test.bim.bootstrap.NewFile):
         And the object "IfcBuildingStorey/Level 1" does not exist
         And the object "IfcWall/Wall" does not exist
         """
+
+class TestUnloadProject(test.bim.bootstrap.NewFile):
+    @test.bim.bootstrap.scenario
+    def test_unloading_a_project(self):
+        return """
+        When I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
+        And I press "bim.unload_project"
+        Then an IFC file does not exist
+        And "scene.BIMProjectProperties.is_loading" is "False"
+        """
