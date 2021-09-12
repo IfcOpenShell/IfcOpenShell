@@ -53,7 +53,7 @@ def purge():
     vector_styles_enum = []
 
 
-def getDiagramScales(self, context):
+def get_diagram_scales(self, context):
     global diagram_scales_enum
     if (
         len(diagram_scales_enum) < 1
@@ -294,7 +294,7 @@ class BIMCameraProperties(PropertyGroup):
         name="Target View",
         default="PLAN_VIEW",
     )
-    diagram_scale: EnumProperty(items=getDiagramScales, name="Drawing Scale")
+    diagram_scale: EnumProperty(items=get_diagram_scales, name="Drawing Scale")
     custom_diagram_scale: StringProperty(name="Custom Scale")
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
