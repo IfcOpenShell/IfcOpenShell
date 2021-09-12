@@ -47,7 +47,7 @@ class BIM_PT_project(Panel):
         row.prop(pprops, "collection_mode")
         row = self.layout.row()
         row.prop(pprops, "filter_mode")
-        if pprops.filter_mode == "DECOMPOSITION":
+        if pprops.filter_mode != "NONE":
             self.layout.template_list(
                 "BIM_UL_filter_categories",
                 "",

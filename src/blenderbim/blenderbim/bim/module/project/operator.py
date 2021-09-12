@@ -558,6 +558,8 @@ class LoadProjectElements(bpy.types.Operator):
         settings.has_filter = self.props.filter_mode != "NONE"
         if self.props.filter_mode == "DECOMPOSITION":
             settings.elements = self.get_decomposition_elements()
+        elif self.props.filter_mode == "IFC_CLASS":
+            settings.elements = self.get_ifc_class_elements()
         settings.logger.info("Starting import")
         ifc_importer = import_ifc.IfcImporter(settings)
         ifc_importer.execute()
@@ -581,4 +583,12 @@ class LoadProjectElements(bpy.types.Operator):
         for container in containers:
             for rel in container.ContainsElements:
                 elements.update(rel.RelatedElements)
-        return list(elements)
+        return elements
+
+    def get_ifc_class_elements(self):
+        elements = set()
+        for filter_category in self.props.filter_categories:
+            if not filter_category.is_selected:
+                continue
+            elements.update(self.file.by_type(filter_category.name, include_subtypes=False))
+        return elements

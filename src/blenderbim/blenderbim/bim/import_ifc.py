@@ -561,6 +561,8 @@ class IfcImporter:
         print("Done creating geometry")
 
     def create_products(self):
+        if self.ifc_import_settings.has_filter and not self.iterator_elements:
+            return
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
             iterator = ifcopenshell.geom.iterator(
                 self.settings,
