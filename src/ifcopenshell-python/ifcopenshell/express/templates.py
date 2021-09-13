@@ -243,7 +243,7 @@ optional_attr_stmt = "return !data_->getArgument(%(index)d)->isNull();"
 
 get_attr_stmt = "%(null_check)s %(non_optional_type)s v = *data_->getArgument(%(index)d); return v;"
 get_attr_stmt_enum = "%(null_check)s return %(non_optional_type)s::FromString(*data_->getArgument(%(index)d));"
-get_attr_stmt_entity = "%(null_check)s return (%(non_optional_type)s)((IfcUtil::IfcBaseClass*)(*data_->getArgument(%(index)d)));"
+get_attr_stmt_entity = "%(null_check)s return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(%(index)d)))->as<%(non_optional_type_no_pointer)s>();"
 get_attr_stmt_array = (
     "%(null_check)s aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
 )
