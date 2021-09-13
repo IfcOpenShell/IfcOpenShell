@@ -268,4 +268,12 @@ class BIM_UL_links(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name, icon="CHECKMARK" if item.is_loaded else "APPEND_BLEND")
+            row.label(text=item.name)
+            if item.is_loaded:
+                op = row.operator("bim.unload_link", text="", icon="UNLINKED")
+                op.filepath=item.name
+            else:
+                op = row.operator("bim.load_link", text="", icon="LINKED")
+                op.filepath=item.name
+                op = row.operator("bim.unlink_ifc", text="", icon="X")
+                op.filepath=item.name

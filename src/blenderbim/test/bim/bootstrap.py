@@ -155,8 +155,16 @@ def the_object_name_is_in_the_collection_collection(name, collection):
     assert collection in [c.name for c in the_object_name_exists(name).users_collection]
 
 
+def the_object_name_is_not_in_the_collection_collection(name, collection):
+    assert collection not in [c.name for c in the_object_name_exists(name).users_collection]
+
+
 def the_collection_name1_is_in_the_collection_name2(name1, name2):
     assert bpy.data.collections.get(name2).children.get(name1)
+
+
+def the_collection_name1_is_not_in_the_collection_name2(name1, name2):
+    assert not bpy.data.collections.get(name2).children.get(name1)
 
 
 def the_object_name_is_placed_in_the_collection_collection(name, collection):
@@ -266,7 +274,9 @@ definitions = {
     'the object "(.*)" is an "(.*)"': the_object_name_is_an_ifc_class,
     'the object "(.*)" is not an IFC element': the_object_name_is_not_an_ifc_element,
     'the object "(.*)" is in the collection "(.*)"': the_object_name_is_in_the_collection_collection,
+    'the object "(.*)" is not in the collection "(.*)"': the_object_name_is_not_in_the_collection_collection,
     'the collection "(.*)" is in the collection "(.*)"': the_collection_name1_is_in_the_collection_name2,
+    'the collection "(.*)" is not in the collection "(.*)"': the_collection_name1_is_not_in_the_collection_name2,
     "an IFC file exists": an_ifc_file_exists,
     "an IFC file does not exist": an_ifc_file_does_not_exist,
     'the object "(.*)" has a "(.*)" representation of "(.*)"': the_object_name_has_a_type_representation_of_context,
