@@ -65,6 +65,11 @@ class FilterCategory(PropertyGroup):
     total_elements: IntProperty(name="Total Elements")
 
 
+class Link(PropertyGroup):
+    name: StringProperty(name="Name")
+    is_loaded: BoolProperty(name="Is Loaded", default=False)
+
+
 class BIMProjectProperties(PropertyGroup):
     is_authoring: BoolProperty(name="Enable Authoring Mode", default=True)
     is_editing: BoolProperty(name="Is Editing", default=False)
@@ -111,6 +116,8 @@ class BIMProjectProperties(PropertyGroup):
     angular_tolerance: FloatProperty(name="Import Angular Tolerance", default=0.5)
     should_offset_model: BoolProperty(name="Import and Offset Model", default=False)
     model_offset_coordinates: StringProperty(name="Model Offset Coordinates", default="0,0,0")
+    links: CollectionProperty(name="Links", type=Link)
+    active_link_index: IntProperty(name="Active Link Index")
 
 
     def get_library_element_index(self, lib_element):

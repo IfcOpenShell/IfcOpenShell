@@ -137,6 +137,8 @@ class TestLoadProjectElements(test.bim.bootstrap.NewFile):
         And I set "scene.BIMProjectProperties.filter_mode" to "IFC_CLASS"
         Then "scene.BIMProjectProperties.filter_categories['IfcWall'].total_elements" is "1"
         And "scene.BIMProjectProperties.filter_categories['IfcSlab'].total_elements" is "1"
+        And "scene.BIMProjectProperties.filter_categories['IfcElementAssembly'].total_elements" is "1"
+        And "scene.BIMProjectProperties.filter_categories['IfcBeam'].total_elements" is "1"
         When I set "scene.BIMProjectProperties.filter_categories['IfcSlab'].is_selected" to "True"
         And I press "bim.load_project_elements"
         Then the object "IfcProject/My Project" is an "IfcProject"
@@ -233,4 +235,20 @@ class TestUnloadProject(test.bim.bootstrap.NewFile):
         And I press "bim.unload_project"
         Then an IFC file does not exist
         And "scene.BIMProjectProperties.is_loading" is "False"
+        """
+
+
+class TestLinkIFC(test.bim.bootstrap.NewFile):
+    @test.bim.bootstrap.scenario
+    def test_linking_an_ifc(self):
+        return """
+        Given I press "bim.create_project"
+        When I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
+        Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.blend'].is_loaded" is "True"
+        And the object "IfcWall/Wall" exists
+        And the object "IfcSlab/Slab" exists
+        And the object "IfcElementAssembly/Empty" exists
+        And the object "IfcBeam/Beam" exists
+        And the object "IfcBuildingStorey/Ground Floor" exists
+        And the object "IfcBuildingStorey/Level 1" exists
         """

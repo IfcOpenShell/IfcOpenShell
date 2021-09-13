@@ -261,6 +261,7 @@ definitions = {
     '"(.*)" is "(.*)"': prop_is_value,
     'I enable "(.*)"': i_enable_prop,
     'I press "(.*)"': i_press_operator,
+    'the object "(.*)" exists': the_object_name_exists,
     'the object "(.*)" does not exist': the_object_name_does_not_exist,
     'the object "(.*)" is an "(.*)"': the_object_name_is_an_ifc_class,
     'the object "(.*)" is not an IFC element': the_object_name_is_not_an_ifc_element,
