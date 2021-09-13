@@ -199,6 +199,29 @@ class BIM_PT_project_library(Panel):
         )
 
 
+class BIM_PT_links(Panel):
+    bl_label = "IFC Links"
+    bl_idname = "BIM_PT_links"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    def draw(self, context):
+        self.props = context.scene.BIMProjectProperties
+        row = self.layout.row(align=True)
+        row.operator("bim.link_ifc")
+        if self.props.links:
+            self.layout.template_list(
+                "BIM_UL_links",
+                "",
+                self.props,
+                "links",
+                self.props,
+                "active_link_index",
+            )
+
+
 class BIM_UL_library(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
@@ -239,3 +262,10 @@ class BIM_UL_filter_categories(UIList):
                 text="",
                 emboss=False,
             )
+
+
+class BIM_UL_links(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name, icon="CHECKMARK" if item.is_loaded else "APPEND_BLEND")

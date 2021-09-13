@@ -84,7 +84,6 @@ classes = [
     operator.RemoveIfcFile,
     operator.SetOverrideColour,
     operator.SetViewportShadowFromSun,
-    operator.LinkIfc,
     operator.SnapSpacesTogether,
     operator.OverrideDelete,
     prop.StrProperty,

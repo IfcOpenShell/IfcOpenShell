@@ -633,3 +633,30 @@ class LoadProjectElements(bpy.types.Operator):
     def get_blacklist_elements(self):
         selector = ifcopenshell.util.selector.Selector()
         return set(self.file.by_type("IfcElement")) - set(selector.parse(self.file, self.props.filter_query))
+
+
+class LinkIfc(bpy.types.Operator):
+    bl_idname = "bim.link_ifc"
+    bl_label = "Link IFC"
+    bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.blend;*.blend1", options={"HIDDEN"})
+
+    def execute(self, context):
+        with bpy.data.libraries.load(self.filepath, link=True) as (data_from, data_to):
+            data_to.scenes = data_from.scenes
+        for scene in bpy.data.scenes:
+            if not scene.library or scene.library.filepath != self.filepath:
+                continue
+            for child in scene.collection.children:
+                if "IfcProject" not in child.name:
+                    continue
+                bpy.data.scenes[0].collection.children.link(child)
+        new = context.scene.BIMProjectProperties.links.add()
+        new.name = self.filepath
+        new.is_loaded = True
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}

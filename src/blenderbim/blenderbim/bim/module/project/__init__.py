@@ -24,6 +24,7 @@ classes = (
     operator.LoadProject,
     operator.UnloadProject,
     operator.LoadProjectElements,
+    operator.LinkIfc,
     operator.SelectLibraryFile,
     operator.ChangeLibraryElement,
     operator.RefreshLibrary,
@@ -37,11 +38,14 @@ classes = (
     operator.EditHeader,
     prop.LibraryElement,
     prop.FilterCategory,
+    prop.Link,
     prop.BIMProjectProperties,
     ui.BIM_PT_project,
     ui.BIM_PT_project_library,
+    ui.BIM_PT_links,
     ui.BIM_UL_library,
     ui.BIM_UL_filter_categories,
+    ui.BIM_UL_links,
 )
 
 
