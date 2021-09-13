@@ -1077,7 +1077,16 @@ void IfcEntityInstanceData::load() const {
 	if (type_ != 0) {
 		tmp_data = new Argument*[getArgumentCount()]{};
 	}
-	file->seek_to(*this);
+	
+	if (file->parsing_complete()) {
+		// only when parsing is fully complete we need to seek to the instance, otherwise
+		// we know the token cursor is currently at the keyword token
+		file->seek_to(*this);
+	} else {
+		// Apparently the load() function assumes one token later after the opening parenthesis
+		file->tokens->Next();
+	}
+
 	size_t n = file->load(id(), type_ ? type_->as_entity() : nullptr, tmp_data, getArgumentCount());
 	if (n != getArgumentCount()) {
 		Logger::Error("Wrong number of attributes on instance with id #" + boost::lexical_cast<std::string>(id_));
@@ -1485,6 +1494,10 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 			if (!((++progress) % 1000)) {
 				std::stringstream ss; ss << "\r#" << current_id;
 				Logger::Status(ss.str(), false);
+			}
+
+			if (!lazy_load_) {
+				data->load();
 			}
 
 			if (instance->declaration().is(*ifcroot_type_)) {
@@ -2401,3 +2414,6 @@ void IfcParse::IfcFile::build_inverses() {
 }
 
 std::atomic_uint32_t IfcUtil::IfcBaseClass::counter_(0);
+
+bool IfcParse::IfcFile::lazy_load_ = true;
+bool IfcParse::IfcFile::guid_map_ = true;

@@ -112,6 +112,14 @@ public:
 		}
 	};
 
+	static bool lazy_load_;
+	static bool lazy_load() { return lazy_load_; }
+	static void lazy_load(bool b) { lazy_load_ = b; }
+
+	static bool guid_map_;
+	static bool guid_map() { return guid_map_; }
+	static void guid_map(bool b) { guid_map_ = b; }
+
 private:
 	typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
