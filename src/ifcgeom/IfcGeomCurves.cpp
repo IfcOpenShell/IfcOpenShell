@@ -93,11 +93,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)&
 	}
 	gp_Trsf trsf;
 	IfcSchema::IfcAxis2Placement* placement = l->Position();
-	if (placement->declaration().is(IfcSchema::IfcAxis2Placement3D::Class())) {
-		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
+	if (placement->as<IfcSchema::IfcAxis2Placement3D>()) {
+		IfcGeom::Kernel::convert(placement->as<IfcSchema::IfcAxis2Placement3D>(),trsf);
 	} else {
 		gp_Trsf2d trsf2d;
-		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf2d);
+		IfcGeom::Kernel::convert(placement->as<IfcSchema::IfcAxis2Placement2D>(),trsf2d);
 		trsf = trsf2d;
 	}
 	gp_Ax2 ax = gp_Ax2().Transformed(trsf);
@@ -117,14 +117,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)
 	// when creating a trimmed curve off of an ellipse like this.
 	const bool rotated = y > x;
 	gp_Trsf trsf;
+	
 	IfcSchema::IfcAxis2Placement* placement = l->Position();
-	if (placement->declaration().is(IfcSchema::IfcAxis2Placement3D::Class())) {
-		convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
+	if (placement->as<IfcSchema::IfcAxis2Placement3D>()) {
+		IfcGeom::Kernel::convert(placement->as<IfcSchema::IfcAxis2Placement3D>(), trsf);
 	} else {
 		gp_Trsf2d trsf2d;
-		convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf2d);
+		IfcGeom::Kernel::convert(placement->as<IfcSchema::IfcAxis2Placement2D>(), trsf2d);
 		trsf = trsf2d;
 	}
+
 	gp_Ax2 ax = gp_Ax2();
 	if (rotated) {
 		ax.Rotate(ax.Axis(), M_PI / 2.);

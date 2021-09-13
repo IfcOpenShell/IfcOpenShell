@@ -115,6 +115,7 @@ class Implementation(codegen.Base):
                             "index": arg["index"] - 1,
                             "type": arg["full_type"].replace("::Value", ""),
                             "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
+                            "non_optional_type_no_pointer": arg["non_optional_type"].replace("::Value", "").replace("*", ""),
                             "list_instance_type": arg["list_instance_type"],
                             "null_check": null_check
                         },

@@ -429,8 +429,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& t
 	for (;;) {
 		gp_Trsf trsf2;
 		IfcSchema::IfcAxis2Placement* relplacement = current->RelativePlacement();
-		if ( relplacement->declaration().is(IfcSchema::IfcAxis2Placement3D::Class()) ) {
-			IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)relplacement,trsf2);
+		if (relplacement->as<IfcSchema::IfcAxis2Placement3D>()) {
+			IfcGeom::Kernel::convert(relplacement->as<IfcSchema::IfcAxis2Placement3D>(),trsf2);
 			trsf.PreMultiply(trsf2);
 		}
 		if ( current->PlacementRelTo() ) {
@@ -444,7 +444,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& t
 
 			if ( parentPlacesType ) break;
 			else if ( parent->declaration().is(IfcSchema::IfcLocalPlacement::Class()) )
-				current = (IfcSchema::IfcLocalPlacement*)current->PlacementRelTo();
+				current = current->PlacementRelTo()->as<IfcSchema::IfcLocalPlacement>();
 			else break;
 		} else break;
 	}

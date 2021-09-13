@@ -52,9 +52,7 @@ namespace IfcUtil {
 			if (is_null(this)) {
 				return static_cast<T*>(0);
 			}
-			return declaration().is(T::Class())
-				? dynamic_cast<T*>(this)
-				: static_cast<T*>(0);
+			return dynamic_cast<T*>(this);
 		}
 
 		template <class T>
@@ -62,9 +60,7 @@ namespace IfcUtil {
 			if (is_null(this)) {
 				return static_cast<const T*>(0);
 			}
-			return declaration().is(T::Class())
-				? dynamic_cast<const T*>(this)
-				: static_cast<const T*>(0);
+			return dynamic_cast<const T*>(this);
 		}
 	};
 
