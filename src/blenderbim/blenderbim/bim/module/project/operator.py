@@ -643,6 +643,55 @@ class LinkIfc(bpy.types.Operator):
     filter_glob: bpy.props.StringProperty(default="*.blend;*.blend1", options={"HIDDEN"})
 
     def execute(self, context):
+        new = context.scene.BIMProjectProperties.links.add()
+        new.name = self.filepath
+        bpy.ops.bim.load_link(filepath=self.filepath)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class UnlinkIfc(bpy.types.Operator):
+    bl_idname = "bim.unlink_ifc"
+    bl_label = "UnLink IFC"
+    bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty()
+
+    def execute(self, context):
+        bpy.ops.bim.unload_link(filepath=self.filepath)
+        index = context.scene.BIMProjectProperties.links.find(self.filepath)
+        if index != -1:
+            context.scene.BIMProjectProperties.links.remove(index)
+        return {"FINISHED"}
+
+
+class UnloadLink(bpy.types.Operator):
+    bl_idname = "bim.unload_link"
+    bl_label = "Unload Link"
+    bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty()
+
+    def execute(self, context):
+        for collection in context.scene.collection.children:
+            if collection.library and collection.library.filepath == self.filepath:
+                context.scene.collection.children.unlink(collection)
+        for scene in bpy.data.scenes:
+            if scene.library and scene.library.filepath == self.filepath:
+                bpy.data.scenes.remove(scene)
+        link = context.scene.BIMProjectProperties.links.get(self.filepath)
+        link.is_loaded = False
+        return {"FINISHED"}
+
+
+class LoadLink(bpy.types.Operator):
+    bl_idname = "bim.load_link"
+    bl_label = "Load Link"
+    bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty()
+
+    def execute(self, context):
         with bpy.data.libraries.load(self.filepath, link=True) as (data_from, data_to):
             data_to.scenes = data_from.scenes
         for scene in bpy.data.scenes:
@@ -652,11 +701,6 @@ class LinkIfc(bpy.types.Operator):
                 if "IfcProject" not in child.name:
                     continue
                 bpy.data.scenes[0].collection.children.link(child)
-        new = context.scene.BIMProjectProperties.links.add()
-        new.name = self.filepath
-        new.is_loaded = True
+        link = context.scene.BIMProjectProperties.links.get(self.filepath)
+        link.is_loaded = True
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}

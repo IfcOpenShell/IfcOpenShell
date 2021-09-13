@@ -252,3 +252,38 @@ class TestLinkIFC(test.bim.bootstrap.NewFile):
         And the object "IfcBuildingStorey/Ground Floor" exists
         And the object "IfcBuildingStorey/Level 1" exists
         """
+
+
+class TestUnloadLink(test.bim.bootstrap.NewFile):
+    @test.bim.bootstrap.scenario
+    def test_unloading_a_link(self):
+        return """
+        When I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
+        And I press "bim.unload_link(filepath='{cwd}/test/files/basic.blend')"
+        Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.blend'].is_loaded" is "False"
+        And "scene.collection.children.get('IfcProject/My Project')" is "None"
+        """
+
+
+class TestLoadLink(test.bim.bootstrap.NewFile):
+    @test.bim.bootstrap.scenario
+    def test_loading_a_link(self):
+        return """
+        When I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
+        And I press "bim.unload_link(filepath='{cwd}/test/files/basic.blend')"
+        And I press "bim.load_link(filepath='{cwd}/test/files/basic.blend')"
+        Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.blend'].is_loaded" is "True"
+        And "scene.collection.children['IfcProject/My Project'].users" is "2"
+        """
+
+
+class TestUnlinkIFC(test.bim.bootstrap.NewFile):
+    @test.bim.bootstrap.scenario
+    def test_unlinking_an_ifc(self):
+        return """
+        When I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
+        And I press "bim.unload_link(filepath='{cwd}/test/files/basic.blend')"
+        And I press "bim.unlink_ifc(filepath='{cwd}/test/files/basic.blend')"
+        Then "scene.BIMProjectProperties.links.get('{cwd}/test/files/basic.blend')" is "None"
+        And "scene.collection.children.get('IfcProject/My Project')" is "None"
+        """
