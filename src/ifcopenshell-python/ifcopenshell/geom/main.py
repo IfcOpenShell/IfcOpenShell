@@ -97,10 +97,9 @@ class iterator(ifcopenshell_wrapper.Iterator):
                 if not all(inst.is_a("IfcProduct") for inst in include_or_exclude):
                     raise ValueError("include and exclude need to be an aggregate of IfcProduct")
 
-                initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude_globalid
+                initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude_id
 
-                decode_unicode = lambda x: x.encode("ascii") if x.__class__.__name__ == "unicode" else x
-                include_or_exclude = list(map(decode_unicode, map(operator.attrgetter("GlobalId"), include_or_exclude)))
+                include_or_exclude = [i.id() for i in include_or_exclude]
             else:
                 initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude
 
