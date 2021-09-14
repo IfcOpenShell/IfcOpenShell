@@ -214,10 +214,17 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		af.include = include;
 		return new IfcGeom::Iterator(settings, file, {af}, num_threads);
 	}
+
+	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<int> elems, bool include, int num_threads) {
+		std::set<int> elems_set(elems.begin(), elems.end());
+		IfcGeom::instance_id_filter af(include, false, elems_set);
+		return new IfcGeom::Iterator(settings, file, {af}, num_threads);
+	}
 %}
 
 %newobject construct_iterator_with_include_exclude;
 %newobject construct_iterator_with_include_exclude_globalid;
+%newobject construct_iterator_with_include_exclude_id;
 
 %extend IfcGeom::Representation::Triangulation {
 	%pythoncode %{
