@@ -67,7 +67,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         input_file = context.scene.BIMPatchProperties.ifc_patch_input
-        return os.path.isfile(input_file) and "ifc" in os.path.splitext(input_file)[1]
+        return os.path.isfile(input_file) and "ifc" in os.path.splitext(input_file)[1].lower()
 
     def execute(self, context):
         props = context.scene.BIMPatchProperties
