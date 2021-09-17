@@ -13,7 +13,6 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        print('EXECUTING', self.settings["product"])
         if not hasattr(self.settings["product"], "ObjectPlacement"):
             return
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
@@ -25,7 +24,6 @@ class Usecase:
 
         children_settings = []
         if not self.settings["should_transform_children"]:
-            print("THIS IS RUNNING")
             children_settings = self.get_children_settings(self.settings["product"].ObjectPlacement)
 
         placement_rel_to = self.get_placement_rel_to()
