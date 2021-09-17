@@ -174,6 +174,18 @@ class TestGetContainerIFC4(test.bootstrap.IFC4):
         assert ifcopenshell.util.element.get_container(subelement) == building
 
 
+class TestGetDecompositionIFC4(test.bootstrap.IFC4):
+    def test_getting_decomposed_subelements_of_an_element(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
+        building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        results = ifcopenshell.util.element.get_decomposition(building)
+        assert element in results
+        assert subelement in results
+
+
 class TestGetAggregateIFC4(test.bootstrap.IFC4):
     def test_getting_the_containing_aggregate_of_a_subelement(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
