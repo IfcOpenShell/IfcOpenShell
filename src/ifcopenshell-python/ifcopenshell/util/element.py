@@ -86,6 +86,20 @@ def get_container(element):
         return element.ContainedInStructure[0].RelatingStructure
 
 
+def get_decomposition(element):
+    queue = [element]
+    results = []
+    while queue:
+        element = queue.pop()
+        for rel in getattr(element, "ContainsElements", []):
+            queue.extend(rel.RelatedElements)
+            results.extend(rel.RelatedElements)
+        for rel in getattr(element, "IsDecomposedBy", []):
+            queue.extend(rel.RelatedObjects)
+            results.extend(rel.RelatedObjects)
+    return results
+
+
 def get_aggregate(element):
     if hasattr(element, "Decomposes") and element.Decomposes:
         return element.Decomposes[0].RelatingObject
