@@ -42,7 +42,7 @@ def purge():
     ifcpatchrecipes_enum = []
 
 
-def getIfcPatchRecipes(self, context):
+def get_ifcpatch_recipes(self, context):
     global ifcpatchrecipes_enum
     if len(ifcpatchrecipes_enum) < 1:
         ifcpatchrecipes_enum.clear()
@@ -61,7 +61,7 @@ def update_ifc_patch_recipe(self, context):
 
 
 class BIMPatchProperties(PropertyGroup):
-    ifc_patch_recipes: EnumProperty(items=getIfcPatchRecipes, name="Recipes", update=update_ifc_patch_recipe)
+    ifc_patch_recipes: EnumProperty(items=get_ifcpatch_recipes, name="Recipes", update=update_ifc_patch_recipe)
     ifc_patch_input: StringProperty(default="", name="IFC Patch Input IFC")
     ifc_patch_output: StringProperty(default="", name="IFC Patch Output IFC")
     ifc_patch_args: StringProperty(default="", name="Arguments")
