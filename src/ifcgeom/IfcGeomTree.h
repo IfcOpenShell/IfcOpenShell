@@ -220,7 +220,7 @@ namespace IfcGeom {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
 					if (extend > 0.0) {
 						BRepExtrema_DistShapeShape dss(v, B);
-						if (dss.Perform() && dss.NbSolution() >= 1) {
+						if (dss.Perform() && dss.NbSolution() >= 1 && dss.Value() <= extend) {
 							ts_filtered.push_back(*it);
 						}
 					} else {

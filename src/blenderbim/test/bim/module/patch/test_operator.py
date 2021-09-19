@@ -16,16 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import test.bim.bootstrap
-from blenderbim.bim.ifc import IfcStore
 
 
-class TestImportIFC(test.bim.bootstrap.NewFile):
-    def test_manual_offset_of_object_placements(self):
-        bpy.ops.import_ifc.bim(
-            filepath="./test/files/manual-geolocation.ifc",
-            should_offset_model=True,
-            model_offset_coordinates="-268388.5, -5774506.0, -21.899999618530273",
-        )
-        assert IfcStore.id_map[63].location.length < 1
+class TestExecuteIfcPatch(test.bim.bootstrap.NewFile):
+    @test.bim.bootstrap.scenario
+    def test_executing_ifcpatch(self):
+        return """
+        Given I set "scene.BIMPatchProperties.ifc_patch_recipes" to "OffsetObjectPlacements"
+        And I set "scene.BIMPatchProperties.ifc_patch_input" to "{cwd}/test/files/basic.ifc"
+        And I set "scene.BIMPatchProperties.ifc_patch_output" to "{cwd}/test/files/basic-patched.ifc"
+        And I set "scene.BIMPatchProperties.ifc_patch_args" to "[123454321,0,0,0]"
+        When I press "bim.execute_ifc_patch"
+        Then the file "{cwd}/test/files/basic-patched.ifc" should contain "123454321"
+        """

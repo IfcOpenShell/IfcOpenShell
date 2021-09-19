@@ -23,6 +23,7 @@ from bpy.types import PropertyGroup
 from bpy.props import (
     StringProperty,
     BoolProperty,
+    FloatProperty,
     IntProperty,
     CollectionProperty,
 )
@@ -64,6 +65,11 @@ class FilterCategory(PropertyGroup):
     total_elements: IntProperty(name="Total Elements")
 
 
+class Link(PropertyGroup):
+    name: StringProperty(name="Name")
+    is_loaded: BoolProperty(name="Is Loaded", default=False)
+
+
 class BIMProjectProperties(PropertyGroup):
     is_authoring: BoolProperty(name="Enable Authoring Mode", default=True)
     is_editing: BoolProperty(name="Is Editing", default=False)
@@ -92,12 +98,26 @@ class BIMProjectProperties(PropertyGroup):
             ("NONE", "None", "No filtering is performed"),
             ("DECOMPOSITION", "Decomposition", "Filter objects by decomposition"),
             ("IFC_CLASS", "IFC Class", "Filter objects by class"),
+            ("WHITELIST", "Whitelist", "Filter objects using a custom whitelist query"),
+            ("BLACKLIST", "Blacklist", "Filter objects using a custom blacklist query"),
         ],
         name="Filter Mode",
         update=update_filter_mode
     )
     filter_categories: CollectionProperty(name="Filter Categories", type=FilterCategory)
     active_filter_category_index: IntProperty(name="Active Filter Category Index")
+    filter_query: StringProperty(name="Filter Query")
+    should_use_cpu_multiprocessing: BoolProperty(name="Import with CPU Multiprocessing", default=True)
+    should_merge_by_class: BoolProperty(name="Import and Merge by Class", default=False)
+    should_merge_by_material: BoolProperty(name="Import and Merge by Material", default=False)
+    should_merge_materials_by_colour: BoolProperty(name="Import and Merge Materials by Colour", default=False)
+    should_clean_mesh: BoolProperty(name="Import and Clean Mesh", default=True)
+    deflection_tolerance: FloatProperty(name="Import Deflection Tolerance", default=0.001)
+    angular_tolerance: FloatProperty(name="Import Angular Tolerance", default=0.5)
+    should_offset_model: BoolProperty(name="Import and Offset Model", default=False)
+    model_offset_coordinates: StringProperty(name="Model Offset Coordinates", default="0,0,0")
+    links: CollectionProperty(name="Links", type=Link)
+    active_link_index: IntProperty(name="Active Link Index")
 
 
     def get_library_element_index(self, lib_element):

@@ -3,7 +3,7 @@ import test.bootstrap
 import ifcopenshell.api
 
 
-class TestEditStyleColours(test.bootstrap.IFC4):
+class TestEditSurfaceStyle(test.bootstrap.IFC4):
     def test_editing_a_shading_style(self):
         colour = self.file.createIfcColourRgb(None, 0, 0, 0)
         style = self.file.createIfcSurfaceStyleShading(colour)

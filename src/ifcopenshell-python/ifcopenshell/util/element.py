@@ -79,8 +79,25 @@ def get_material(element, should_skip_usage=False):
 
 
 def get_container(element):
+    aggregate = get_aggregate(element)
+    if aggregate:
+        return get_container(aggregate)
     if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
         return element.ContainedInStructure[0].RelatingStructure
+
+
+def get_decomposition(element):
+    queue = [element]
+    results = []
+    while queue:
+        element = queue.pop()
+        for rel in getattr(element, "ContainsElements", []):
+            queue.extend(rel.RelatedElements)
+            results.extend(rel.RelatedElements)
+        for rel in getattr(element, "IsDecomposedBy", []):
+            queue.extend(rel.RelatedObjects)
+            results.extend(rel.RelatedObjects)
+    return results
 
 
 def get_aggregate(element):

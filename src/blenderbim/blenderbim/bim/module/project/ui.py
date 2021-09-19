@@ -47,7 +47,7 @@ class BIM_PT_project(Panel):
         row.prop(pprops, "collection_mode")
         row = self.layout.row()
         row.prop(pprops, "filter_mode")
-        if pprops.filter_mode != "NONE":
+        if pprops.filter_mode in ["DECOMPOSITION", "IFC_CLASS"]:
             self.layout.template_list(
                 "BIM_UL_filter_categories",
                 "",
@@ -56,6 +56,28 @@ class BIM_PT_project(Panel):
                 pprops,
                 "active_filter_category_index",
             )
+        elif pprops.filter_mode in ["WHITELIST", "BLACKLIST"]:
+            row = self.layout.row()
+            row.prop(pprops, "filter_query")
+        row = self.layout.row()
+        row.prop(pprops, "should_use_cpu_multiprocessing")
+        row = self.layout.row()
+        row.prop(pprops, "should_merge_by_class")
+        row = self.layout.row()
+        row.prop(pprops, "should_merge_by_material")
+        row = self.layout.row()
+        row.prop(pprops, "should_merge_materials_by_colour")
+        row = self.layout.row()
+        row.prop(pprops, "should_clean_mesh")
+        row = self.layout.row()
+        row.prop(pprops, "deflection_tolerance")
+        row = self.layout.row()
+        row.prop(pprops, "angular_tolerance")
+        row = self.layout.row()
+        row.prop(pprops, "should_offset_model")
+        row = self.layout.row()
+        row.prop(pprops, "model_offset_coordinates")
+
         row = self.layout.row(align=True)
         row.operator("bim.load_project_elements")
         row.operator("bim.unload_project", text="", icon="CANCEL")
@@ -177,6 +199,29 @@ class BIM_PT_project_library(Panel):
         )
 
 
+class BIM_PT_links(Panel):
+    bl_label = "IFC Links"
+    bl_idname = "BIM_PT_links"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    def draw(self, context):
+        self.props = context.scene.BIMProjectProperties
+        row = self.layout.row(align=True)
+        row.operator("bim.link_ifc")
+        if self.props.links:
+            self.layout.template_list(
+                "BIM_UL_links",
+                "",
+                self.props,
+                "links",
+                self.props,
+                "active_link_index",
+            )
+
+
 class BIM_UL_library(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
@@ -217,3 +262,18 @@ class BIM_UL_filter_categories(UIList):
                 text="",
                 emboss=False,
             )
+
+
+class BIM_UL_links(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
+            if item.is_loaded:
+                op = row.operator("bim.unload_link", text="", icon="UNLINKED")
+                op.filepath=item.name
+            else:
+                op = row.operator("bim.load_link", text="", icon="LINKED")
+                op.filepath=item.name
+                op = row.operator("bim.unlink_ifc", text="", icon="X")
+                op.filepath=item.name

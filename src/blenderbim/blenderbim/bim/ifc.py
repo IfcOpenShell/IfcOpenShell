@@ -18,8 +18,11 @@
 
 import bpy
 import uuid
+import zipfile
+import tempfile
 import ifcopenshell
 import blenderbim.bim.handler
+from pathlib import Path
 
 
 class IfcStore:

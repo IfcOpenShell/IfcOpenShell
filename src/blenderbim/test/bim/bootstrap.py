@@ -26,6 +26,7 @@ import blenderbim
 import ifcopenshell
 import ifcopenshell.util.representation
 from blenderbim.bim.ifc import IfcStore
+from mathutils import Vector
 
 # Monkey-patch webbrowser opening since we want to test headlessly
 webbrowser.open = lambda x: True
@@ -154,8 +155,16 @@ def the_object_name_is_in_the_collection_collection(name, collection):
     assert collection in [c.name for c in the_object_name_exists(name).users_collection]
 
 
+def the_object_name_is_not_in_the_collection_collection(name, collection):
+    assert collection not in [c.name for c in the_object_name_exists(name).users_collection]
+
+
 def the_collection_name1_is_in_the_collection_name2(name1, name2):
     assert bpy.data.collections.get(name2).children.get(name1)
+
+
+def the_collection_name1_is_not_in_the_collection_name2(name1, name2):
+    assert not bpy.data.collections.get(name2).children.get(name1)
 
 
 def the_object_name_is_placed_in_the_collection_collection(name, collection):
@@ -245,6 +254,11 @@ def the_object_name_has_number_vertices(name, number):
     assert total == int(number), f"We found {total} vertices"
 
 
+def the_object_name_is_at_location(name, location):
+    obj_location = the_object_name_exists(name).location
+    assert (obj_location - Vector([float(co) for co in location.split(",")])).length < 0.1, f"Object is at {obj_location}"
+
+
 definitions = {
     "an empty IFC project": an_empty_ifc_project,
     "I add a cube": i_add_a_cube,
@@ -255,11 +269,14 @@ definitions = {
     '"(.*)" is "(.*)"': prop_is_value,
     'I enable "(.*)"': i_enable_prop,
     'I press "(.*)"': i_press_operator,
+    'the object "(.*)" exists': the_object_name_exists,
     'the object "(.*)" does not exist': the_object_name_does_not_exist,
     'the object "(.*)" is an "(.*)"': the_object_name_is_an_ifc_class,
     'the object "(.*)" is not an IFC element': the_object_name_is_not_an_ifc_element,
     'the object "(.*)" is in the collection "(.*)"': the_object_name_is_in_the_collection_collection,
+    'the object "(.*)" is not in the collection "(.*)"': the_object_name_is_not_in_the_collection_collection,
     'the collection "(.*)" is in the collection "(.*)"': the_collection_name1_is_in_the_collection_name2,
+    'the collection "(.*)" is not in the collection "(.*)"': the_collection_name1_is_not_in_the_collection_name2,
     "an IFC file exists": an_ifc_file_exists,
     "an IFC file does not exist": an_ifc_file_does_not_exist,
     'the object "(.*)" has a "(.*)" representation of "(.*)"': the_object_name_has_a_type_representation_of_context,
@@ -275,6 +292,7 @@ definitions = {
     'the object "(.*)" is not voided by "(.*)"': the_object_name_is_not_voided_by_void,
     'the object "(.*)" should display as "(.*)"': the_object_name_should_display_as_mode,
     'the object "(.*)" has "([0-9]+)" vertices': the_object_name_has_number_vertices,
+    'the object "(.*)" is at "(.*)"': the_object_name_is_at_location,
 }
 
 
