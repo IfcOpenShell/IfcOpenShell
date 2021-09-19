@@ -154,18 +154,18 @@ named_dimensions = {
 }
 
 si_conversions = {
-    "thousandth of an inch": 0.0000254,
+    "thou": 0.0000254,
     "inch": 0.0254,
     "foot": 0.3048,
     "yard": 0.914,
     "mile": 1609,
-    "square thousandth of an inch": 6.4516e-10,
+    "square thou": 6.4516e-10,
     "square inch": 0.0006452,
     "square foot": 0.09290304,
     "square yard": 0.83612736,
     "acre": 4046.86,
     "square mile": 2588881,
-    "cubic thousandth of an inch": 1.6387064e-14,
+    "cubic thou": 1.6387064e-14,
     "cubic inch": 0.00001639,
     "cubic foot": 0.02831684671168849,
     "cubic yard": 0.7636,
