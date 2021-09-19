@@ -548,5 +548,5 @@ class ExtrusionWidget(types.GizmoGroup):
             elif length_unit == "INCHES":
                 scale_value /= si_conversions["inch"]
             elif length_unit == "THOU":
-                scale_value /= si_conversions["thousandth of an inch"]
+                scale_value /= si_conversions["thou"]
         return scale_value
