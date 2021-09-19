@@ -25,6 +25,7 @@ from mathutils import Vector, Matrix
 from mathutils import geometry
 from bpy_extras import view3d_utils
 from blenderbim.bim.module.drawing.shaders import DotsGizmoShader, ExtrusionGuidesShader, BaseLinesShader
+from ifcopenshell.util.unit import si_conversions
 
 
 """Gizmos under the hood
@@ -469,8 +470,6 @@ class ExtrusionWidget(types.GizmoGroup):
     bl_region_type = "WINDOW"
     bl_options = {"3D", "PERSISTENT", "SHOW_MODAL_ALL"}
 
-    # FIXME: use proper scale from ifc value to blender units
-
     @classmethod
     def poll(cls, ctx):
         obj = ctx.object
@@ -486,6 +485,7 @@ class ExtrusionWidget(types.GizmoGroup):
 
         basis = target.matrix_world.normalized()
         theme = ctx.preferences.themes[0].user_interface
+        scale_value = self.get_scale_value(ctx.scene.unit_settings.system, ctx.scene.unit_settings.length_unit)
 
         gz = self.handle = self.gizmos.new("BIM_GT_uglydot_3d")
         gz.matrix_basis = basis
@@ -495,7 +495,7 @@ class ExtrusionWidget(types.GizmoGroup):
         gz.alpha_highlight = 1.0
         gz.use_draw_modal = True
         gz.target_set_prop("offset", prop, "value")
-        gz.scale_value = 1000
+        gz.scale_value = scale_value
 
         gz = self.guides = self.gizmos.new("BIM_GT_extrusion_guides")
         gz.matrix_basis = basis
@@ -503,7 +503,7 @@ class ExtrusionWidget(types.GizmoGroup):
         gz.alpha = gz.alpha_highlight = 0.5
         gz.use_draw_modal = True
         gz.target_set_prop("depth", prop, "value")
-        gz.scale_value = 1000
+        gz.scale_value = scale_value
 
         # gz = self.label = self.gizmos.new('GIZMO_GT_dimension_label')
         # gz.matrix_basis = basis
@@ -526,3 +526,26 @@ class ExtrusionWidget(types.GizmoGroup):
         prop = target.data.BIMMeshProperties.ifc_parameters.get("IfcExtrudedAreaSolid/Depth")
         self.handle.target_set_prop("offset", prop, "value")
         self.guides.target_set_prop("depth", prop, "value")
+
+    @staticmethod
+    def get_scale_value(system, length_unit):
+        scale_value = 1
+        if system == "METRIC":
+            if length_unit == "KILOMETERS":
+                scale_value /= 1000
+            elif length_unit == "CENTIMETERS":
+                scale_value *= 100
+            elif length_unit == "MILLIMETERS":
+                scale_value *= 1000
+            elif length_unit == "MICROMETERS":
+                scale_value *= 1000000
+        elif system == "IMPERIAL":
+            if length_unit == "MILES":
+                scale_value /= si_conversions["mile"]
+            elif length_unit == "FEET":
+                scale_value /= si_conversions["foot"]
+            elif length_unit == "INCHES":
+                scale_value /= si_conversions["inch"]
+            elif length_unit == "THOU":
+                scale_value /= si_conversions["thou"]
+        return scale_value
