@@ -103,9 +103,9 @@ def extract_docs(module, usecase):
     import typing
     import inspect
     import collections
+    print("EXTRACTING DOCS...")
 
     results = []
-
     inputs = collections.OrderedDict()
 
     function_init = getattr(getattr(ifcopenshell.api, module), usecase).Usecase.__init__
@@ -113,9 +113,7 @@ def extract_docs(module, usecase):
 
     node_data = {"module": module, "usecase": usecase}
     
-    print("Function_init is: " + str(function_init))
     signature = inspect.signature(function_init)
-    print("Signature is: " + str(signature))
     for name, parameter in signature.parameters.items():
         if name == "self":
             continue

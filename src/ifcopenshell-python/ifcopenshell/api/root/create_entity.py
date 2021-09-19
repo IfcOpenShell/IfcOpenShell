@@ -3,7 +3,7 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file: str = "file", ifc_class: str = "IfcBuildingElementProxy", predefined_type: str = "type", name: str = "dummyName"):
+    def __init__(self, file: ifcopenshell.file = "file", ifc_class: str = "IfcBuildingElementProxy", predefined_type: str = None, name: str = None):
         """Create Entity
 
         Create a new IFC Root entity
@@ -12,16 +12,15 @@ class Usecase:
         :param ifc_class: The IFC class
         :param predefined_type: The predefined type
         :param name: The name of the root entity
-        :return: root element: The created root entity.
+        :return: element: The created root entity.
         """
+
         self.file = file
         self.settings = {
             "ifc_class": ifc_class,
             "predefined_type": predefined_type,
             "name": name,
         }
-        # for key, value in settings.items():
-        #     self.settings[key] = value
 
     def execute(self):
         element = self.file.create_entity(
