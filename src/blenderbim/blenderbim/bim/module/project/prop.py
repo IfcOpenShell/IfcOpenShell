@@ -102,7 +102,7 @@ class BIMProjectProperties(PropertyGroup):
             ("BLACKLIST", "Blacklist", "Filter objects using a custom blacklist query"),
         ],
         name="Filter Mode",
-        update=update_filter_mode
+        update=update_filter_mode,
     )
     filter_categories: CollectionProperty(name="Filter Categories", type=FilterCategory)
     active_filter_category_index: IntProperty(name="Active Filter Category Index")
@@ -118,7 +118,6 @@ class BIMProjectProperties(PropertyGroup):
     model_offset_coordinates: StringProperty(name="Model Offset Coordinates", default="0,0,0")
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
-
 
     def get_library_element_index(self, lib_element):
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))

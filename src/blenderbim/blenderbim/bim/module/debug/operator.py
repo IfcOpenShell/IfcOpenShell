@@ -116,7 +116,13 @@ class CreateAllShapes(bpy.types.Operator):
             start = time.time()
             try:
                 shape = ifcopenshell.geom.create_shape(settings, element)
-                print("Success", time.time()-start, len(shape.geometry.verts), len(shape.geometry.edges), len(shape.geometry.faces))
+                print(
+                    "Success",
+                    time.time() - start,
+                    len(shape.geometry.verts),
+                    len(shape.geometry.edges),
+                    len(shape.geometry.faces),
+                )
             except:
                 failures.append(element)
                 print("***** FAILURE *****")

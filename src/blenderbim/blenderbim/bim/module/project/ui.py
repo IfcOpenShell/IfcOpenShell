@@ -271,9 +271,9 @@ class BIM_UL_links(UIList):
             row.label(text=item.name)
             if item.is_loaded:
                 op = row.operator("bim.unload_link", text="", icon="UNLINKED")
-                op.filepath=item.name
+                op.filepath = item.name
             else:
                 op = row.operator("bim.load_link", text="", icon="LINKED")
-                op.filepath=item.name
+                op.filepath = item.name
                 op = row.operator("bim.unlink_ifc", text="", icon="X")
-                op.filepath=item.name
+                op.filepath = item.name

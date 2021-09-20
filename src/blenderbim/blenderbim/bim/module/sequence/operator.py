@@ -1742,17 +1742,47 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
                     self.animate_input(obj, product_frame)
                 elif product_frame["relationship"] == "output":
                     self.animate_output(obj, product_frame)
+        self.add_text_animation_handler()
 
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         context.scene.frame_start = self.start_frame
-        context.scene.frame_end = self.start_frame + self.total_frames
+        context.scene.frame_end = int(self.start_frame + self.total_frames)
         # with open("/home/dion/animation.json", "w") as json_file:
         #    guid_frames = {}
         #    for k, v in self.product_frames.items():
         #        guid_frames[self.file.by_id(k).GlobalId] = v
         #    json.dump(guid_frames, json_file)
         return {"FINISHED"}
+
+    def add_text_animation_handler(self):
+        data = bpy.data.curves.get("Timeline")
+        if not data:
+            data = bpy.data.curves.new(type="FONT", name="Timeline")
+        obj = bpy.data.objects.get("Timeline")
+        if not obj:
+            obj = bpy.data.objects.new(name="Timeline", object_data=data)
+            bpy.context.scene.collection.objects.link(obj)
+        obj.data.BIMDateTextProperties.start_frame = self.start_frame
+        obj.data.BIMDateTextProperties.total_frames = int(self.total_frames)
+        obj.data.BIMDateTextProperties.start = self.props.visualisation_start
+        obj.data.BIMDateTextProperties.finish = self.props.visualisation_finish
+        bpy.app.handlers.frame_change_post.append(self.animate_text)
+
+    def remove_text_animation_handler(self):
+        bpy.app.handlers.frame_change_post.remove(self.animate_text)
+
+    def animate_text(self, scene, context):
+        data = bpy.data.curves.get("Timeline")
+        if not data or not bpy.data.objects.get("Timeline"):
+            self.remove_text_animation_handler()
+            scene.frame_current
+        props = data.BIMDateTextProperties
+        start = parser.parse(props.start, dayfirst=True, fuzzy=True)
+        finish = parser.parse(props.finish, dayfirst=True, fuzzy=True)
+        duration = finish - start
+        frame_date = (((scene.frame_current - props.start_frame) / props.total_frames) * duration) + start
+        data.body = frame_date.date().isoformat()
 
     def animate_input(self, obj, product_frame):
         if product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
