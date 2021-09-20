@@ -23,14 +23,22 @@ class Usecase:
         total_produced = self.get_total_produced()
         if not unit_consumed or not unit_produced or not total_produced:
             return
-        seconds_worked = total_produced / unit_produced * unit_consumed
-        self.set_schedule_work(seconds_worked)
+        if not self.settings["resource"].Usage:
+            ifcopenshell.api.run("resource.add_resource_time", self.file, resource=self.settings["resource"])
+        if "T" in self.productivity.get("BaseQuantityConsumed", None):
+            seconds = (unit_consumed.days * 24 * 60 * 60) + unit_consumed.seconds
+            amount_worked = total_produced / unit_produced * seconds
+            self.settings["resource"].Usage.ScheduleWork = f"PT{amount_worked / 60 / 60}H"
+        else:
+            days = unit_consumed.days + (unit_consumed.seconds / (24 * 60 * 60))
+            amount_worked = total_produced / unit_produced * days
+            self.settings["resource"].Usage.ScheduleWork = f"P{amount_worked}D"
 
     def get_unit_consumed(self):
         duration = self.productivity.get("BaseQuantityConsumed", None)
         if not duration:
             return
-        return ifcopenshell.util.date.ifc2datetime(duration).seconds
+        return ifcopenshell.util.date.ifc2datetime(duration)
 
     def get_total_produced(self):
         total = 0
@@ -49,8 +57,3 @@ class Usecase:
                             except:
                                 pass
         return total
-
-    def set_schedule_work(self, seconds):
-        if not self.settings["resource"].Usage:
-            ifcopenshell.api.run("resource.add_resource_time", self.file, resource=self.settings["resource"])
-        self.settings["resource"].Usage.ScheduleWork = f"PT{seconds / 60 / 60}H"
