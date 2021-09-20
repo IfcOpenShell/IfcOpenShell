@@ -78,6 +78,10 @@ def additionally_the_object_name_is_selected(name):
     obj.select_set(True)
 
 
+def i_am_on_frame_number(number):
+    bpy.context.scene.frame_set(int(number))
+
+
 def i_set_prop_to_value(prop, value):
     try:
         eval(f"bpy.context.{prop}")
@@ -157,6 +161,10 @@ def the_object_name_is_in_the_collection_collection(name, collection):
 
 def the_object_name_is_not_in_the_collection_collection(name, collection):
     assert collection not in [c.name for c in the_object_name_exists(name).users_collection]
+
+
+def the_object_name_has_a_body_of_value(name, value):
+    assert the_object_name_exists(name).data.body == value
 
 
 def the_collection_name1_is_in_the_collection_name2(name1, name2):
@@ -256,7 +264,9 @@ def the_object_name_has_number_vertices(name, number):
 
 def the_object_name_is_at_location(name, location):
     obj_location = the_object_name_exists(name).location
-    assert (obj_location - Vector([float(co) for co in location.split(",")])).length < 0.1, f"Object is at {obj_location}"
+    assert (
+        obj_location - Vector([float(co) for co in location.split(",")])
+    ).length < 0.1, f"Object is at {obj_location}"
 
 
 definitions = {
@@ -265,6 +275,7 @@ definitions = {
     'I add a cube of size "([0-9]+)" at "(.*)"': i_add_a_cube_of_size_size_at_location,
     'the object "(.*)" is selected': the_object_name_is_selected,
     'additionally the object "(.*)" is selected': additionally_the_object_name_is_selected,
+    'I am on frame "([0-9]+)"': i_am_on_frame_number,
     'I set "(.*)" to "(.*)"': i_set_prop_to_value,
     '"(.*)" is "(.*)"': prop_is_value,
     'I enable "(.*)"': i_enable_prop,
@@ -275,6 +286,7 @@ definitions = {
     'the object "(.*)" is not an IFC element': the_object_name_is_not_an_ifc_element,
     'the object "(.*)" is in the collection "(.*)"': the_object_name_is_in_the_collection_collection,
     'the object "(.*)" is not in the collection "(.*)"': the_object_name_is_not_in_the_collection_collection,
+    'the object "(.*)" has a body of "(.*)"': the_object_name_has_a_body_of_value,
     'the collection "(.*)" is in the collection "(.*)"': the_collection_name1_is_in_the_collection_name2,
     'the collection "(.*)" is not in the collection "(.*)"': the_collection_name1_is_not_in_the_collection_name2,
     "an IFC file exists": an_ifc_file_exists,

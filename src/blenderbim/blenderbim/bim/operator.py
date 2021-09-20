@@ -104,7 +104,7 @@ class ImportIFC(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bpy.ops.bim.load_project('INVOKE_DEFAULT')
+        bpy.ops.bim.load_project("INVOKE_DEFAULT")
         return {"FINISHED"}
 
 

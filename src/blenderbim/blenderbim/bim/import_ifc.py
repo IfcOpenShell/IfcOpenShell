@@ -1312,7 +1312,9 @@ class IfcImporter:
             if "TargetView" in pset:
                 camera.BIMCameraProperties.target_view = pset["TargetView"]
             if "Scale" in pset:
-                valid_scales = [i[0] for i in get_diagram_scales(None, bpy.context) if pset["Scale"] == i[0].split("|")[-1]]
+                valid_scales = [
+                    i[0] for i in get_diagram_scales(None, bpy.context) if pset["Scale"] == i[0].split("|")[-1]
+                ]
                 if valid_scales:
                     camera.BIMCameraProperties.diagram_scale = valid_scales[0]
                 else:
