@@ -12,7 +12,7 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        self.seconds_per_day = self.calculate_seconds_per_day()
+        self.seconds_per_workday = self.calculate_seconds_per_workday()
         duration = self.calculate_max_resource_usage_duration()
         if duration:
             self.set_task_duration(duration)
@@ -32,18 +32,18 @@ class Usecase:
             ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.settings["task"])
         self.settings["task"].TaskTime.ScheduleDuration = f"P{duration}D"
 
-    def calculate_seconds_per_day(self):
-        default_seconds_per_day = 8 * 60 * 60
-        work_schedule = self.get_work_schedule()
+    def calculate_seconds_per_workday(self):
+        default_seconds_per_workday = 8 * 60 * 60
+        work_schedule = self.get_work_schedule(self.settings["task"])
         if not work_schedule:
-            return default_seconds_per_day
+            return default_seconds_per_workday
         psets = ifcopenshell.util.element.get_psets(work_schedule)
         if (
             not psets
             or "Pset_WorkControlCommon" not in psets
             or "WorkDayDuration" not in psets["Pset_WorkControlCommon"]
         ):
-            return default_seconds_per_day
+            return default_seconds_per_workday
         work_day_duration = ifcopenshell.util.date.ifc2datetime(psets["Pset_WorkControlCommon"]["WorkDayDuration"])
         return work_day_duration.seconds
 
@@ -59,8 +59,12 @@ class Usecase:
             return
         schedule_usage = resource.Usage.ScheduleUsage or 1
         schedule_duration = ifcopenshell.util.date.ifc2datetime(resource.Usage.ScheduleWork)
-        schedule_seconds = 0
-        if schedule_duration.days:
-            schedule_seconds += schedule_duration.days * self.seconds_per_day
-        schedule_seconds += schedule_duration.seconds
-        return math.ceil((schedule_seconds / self.seconds_per_day) / schedule_usage)
+        if self.is_hourly_work(resource.Usage.ScheduleWork):
+            schedule_seconds = (schedule_duration.days * 24 * 60 * 60) + schedule_duration.seconds
+        else:
+            partial_days = schedule_duration.seconds / (24 * 60 * 60)
+            schedule_seconds = (schedule_duration.days + partial_days) * self.seconds_per_workday
+        return math.ceil((schedule_seconds / self.seconds_per_workday) / schedule_usage)
+
+    def is_hourly_work(self, schedule_work):
+        return "T" in schedule_work
