@@ -124,6 +124,10 @@ def i_press_operator(operator):
         exec(f"bpy.ops.{operator}()")
 
 
+def i_rename_the_object_name1_to_name2(name1, name2):
+    the_object_name_exists(name1).name = name2
+
+
 def the_object_name_exists(name):
     obj = bpy.data.objects.get(name)
     if not obj:
@@ -284,6 +288,7 @@ definitions = {
     '"(.*)" is "(.*)"': prop_is_value,
     'I enable "(.*)"': i_enable_prop,
     'I press "(.*)"': i_press_operator,
+    'I rename the object "(.*)" to "(.*)"': i_rename_the_object_name1_to_name2,
     'the object "(.*)" exists': the_object_name_exists,
     'the object "(.*)" does not exist': the_object_name_does_not_exist,
     'the object "(.*)" is an "(.*)"': the_object_name_is_an_ifc_class,
