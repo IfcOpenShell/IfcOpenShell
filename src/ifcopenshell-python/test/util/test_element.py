@@ -51,6 +51,11 @@ class TestGetQuantitiesIFC4(test.bootstrap.IFC4):
 
 
 class TestGetPropertiesIFC4(test.bootstrap.IFC4):
+    def test_getting_no_properties_when_none_are_available(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="name")
+        assert ifcopenshell.util.element.get_properties(pset.HasProperties) == {}
+
     def test_getting_single_properties_from_a_list_of_properties(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="name")

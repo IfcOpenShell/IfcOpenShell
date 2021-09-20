@@ -41,7 +41,7 @@ def get_quantities(quantities):
 
 def get_properties(properties):
     results = {}
-    for prop in properties:
+    for prop in properties or []:
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
         elif prop.is_a("IfcComplexProperty"):
