@@ -9,7 +9,7 @@ qa:
 
 .PHONY: coverage
 coverage:
-	coverage run --source ifcopenshell -m pytest
+	coverage run --source ifcopenshell -m pytest -p no:pytest-blender test
 	coverage html
 	xdg-open htmlcov/index.html
 
