@@ -1814,14 +1814,20 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
 
     def animate_destruction(self, obj, product_frame):
         obj.color = (1.0, 1.0, 1.0, 1)
+        obj.hide_viewport = False
+        obj.hide_render = False
         obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
         obj.color = (1.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.hide_viewport = True
+        obj.hide_render = True
         obj.color = (0.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
 
     def animate_operation(self, obj, product_frame):
         obj.color = (1.0, 1.0, 1.0, 1)
