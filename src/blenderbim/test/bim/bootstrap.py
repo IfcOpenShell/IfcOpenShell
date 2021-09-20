@@ -103,7 +103,11 @@ def prop_is_value(prop, value):
             exec(f"assert bpy.context.{prop} == {value}")
             is_value = True
         except:
-            pass
+            try:
+                exec(f"assert list(bpy.context.{prop}) == {value}")
+                is_value = True
+            except:
+                pass
     if not is_value:
         actual_value = eval(f"bpy.context.{prop}")
         assert False, f"Value is {actual_value}"
