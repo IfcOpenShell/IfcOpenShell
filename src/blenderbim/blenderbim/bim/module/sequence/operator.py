@@ -1804,10 +1804,14 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
 
     def animate_creation(self, obj, product_frame):
         obj.hide_viewport = True
+        obj.hide_render = True
         obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
         obj.hide_viewport = False
+        obj.hide_render = False
         obj.color = (0.0, 1.0, 0.0, 1)
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"])
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
@@ -1840,10 +1844,14 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
 
     def animate_movement_to(self, obj, product_frame):
         obj.hide_viewport = True
+        obj.hide_render = True
         obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
         obj.hide_viewport = False
+        obj.hide_render = False
         obj.color = (1.0, 1.0, 0.0, 1)
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"])
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
@@ -1851,24 +1859,36 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
     def animate_movement_from(self, obj, product_frame):
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.hide_viewport = False
+        obj.hide_render = False
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"] - 1)
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"] - 1)
         obj.color = (1.0, 0.5, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.hide_viewport = True
+        obj.hide_render = True
         obj.color = (0.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
 
     def animate_consumption(self, obj, product_frame):
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.hide_viewport = False
+        obj.hide_render = False
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"] - 1)
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"] - 1)
         obj.color = (0.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.hide_viewport = True
+        obj.hide_render = True
         obj.color = (0.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
 
     def calculate_total_frames(self, context):
         if self.props.speed_types == "FRAME_SPEED":
