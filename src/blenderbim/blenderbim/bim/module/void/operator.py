@@ -55,21 +55,20 @@ class AddOpening(bpy.types.Operator):
                 "element": self.file.by_id(element_id),
             },
         )
-        Data.load(IfcStore.get_file(), element_id)
+        Data.load(self.file, element_id)
 
-        has_modifier = False
-
-        for modifier in obj.modifiers:
-            if modifier.type == "BOOLEAN" and modifier.object and modifier.object == opening:
-                has_modifier = True
-                break
-
-        if not has_modifier:
+        try:
+            modifier = next(m for m in obj.modifiers if m.type == "BOOLEAN" and m.object == opening)
+        except StopIteration:
             modifier = obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-            modifier.operation = "DIFFERENCE"
             modifier.object = opening
+        finally:
+            modifier.operation = "DIFFERENCE"
             modifier.solver = "EXACT"
             modifier.use_self = True
+            modifier.operand_type = "OBJECT"
+
+        context.view_layer.objects.active = obj
         return {"FINISHED"}
 
 
