@@ -47,11 +47,11 @@ class Usecase:
         work_day_duration = ifcopenshell.util.date.ifc2datetime(psets["Pset_WorkControlCommon"]["WorkDayDuration"])
         return work_day_duration.seconds
 
-    def get_work_schedule(self):
-        for rel in self.settings["task"].HasAssignments or []:
+    def get_work_schedule(self, task):
+        for rel in task.HasAssignments or []:
             if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
                 return rel.RelatingControl
-        for rel in self.settings["task"].Nests or []:
+        for rel in task.Nests or []:
             return self.get_work_schedule(rel.RelatingObject)
 
     def calculate_duration_in_days(self, resource):
