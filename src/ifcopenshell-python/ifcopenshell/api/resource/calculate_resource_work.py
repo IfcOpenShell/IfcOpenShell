@@ -48,12 +48,12 @@ class Usecase:
             for rel2 in rel.RelatingProcess.HasAssignments or []:
                 if not rel2.is_a("IfcRelAssignsToProduct"):
                     continue
-                psets = ifcopenshell.util.element.get_psets(rel2.RelatingProduct)
-                for pset in psets.values():
-                    for name, value in pset.items():
-                        if name == self.unit_produced_name:
-                            try:
+                if self.unit_produced_name == "Count":
+                    total += 1
+                else:
+                    psets = ifcopenshell.util.element.get_psets(rel2.RelatingProduct)
+                    for pset in psets.values():
+                        for name, value in pset.items():
+                            if name == self.unit_produced_name:
                                 total += float(value)
-                            except:
-                                pass
         return total
