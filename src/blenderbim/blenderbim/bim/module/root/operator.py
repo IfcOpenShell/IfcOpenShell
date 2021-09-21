@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
+import blenderbim.bim.handler
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
 
@@ -310,11 +311,14 @@ class CopyClass(bpy.types.Operator):
             else:
                 bpy.ops.bim.add_representation(obj=obj.name)
             if result.is_a("IfcSpatialElement") or result.is_a("IfcSpatialStructureElement"):
-                self.place_in_spatial_collection(old_element, obj)
+                self.place_in_spatial_collection(result, obj)
+            elif result.is_a("IfcOpeningElement"):
+                self.add_opening_modifiers(result, obj)
+        blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
 
-    def place_in_spatial_collection(self, old_element, obj):
-        aggregate = ifcopenshell.util.element.get_aggregate(old_element)
+    def place_in_spatial_collection(self, element, obj):
+        aggregate = ifcopenshell.util.element.get_aggregate(element)
         if not aggregate:
             return
         container_obj = IfcStore.get_element(aggregate.id())
@@ -327,3 +331,17 @@ class CopyClass(bpy.types.Operator):
                 new = bpy.data.collections.new(obj.name)
                 new.objects.link(obj)
                 collection.children.link(new)
+
+    def add_opening_modifiers(self, result, obj):
+        for rel in result.VoidsElements:
+            building_obj = IfcStore.get_element(rel.RelatingBuildingElement.id())
+            try:
+                modifier = next(m for m in obj.modifiers if m.type == "BOOLEAN" and m.object == obj)
+            except StopIteration:
+                modifier = building_obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
+                modifier.object = obj
+            finally:
+                modifier.operation = "DIFFERENCE"
+                modifier.solver = "EXACT"
+                modifier.use_self = True
+                modifier.operand_type = "OBJECT"
