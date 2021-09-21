@@ -32,6 +32,13 @@ class TestCopyClass(test.bootstrap.IFC4):
         assert element.IsDecomposedBy
         assert not new.IsDecomposedBy
 
+    def test_copying_an_aggregate_decomposition(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
+        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=subelement)
+        assert new.Decomposes[0].RelatingObject == element
+
     def test_not_copying_any_representations_because_life_is_hard(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element.Representation = self.file.createIfcProductDefinitionShape()
@@ -56,3 +63,10 @@ class TestCopyClass(test.bootstrap.IFC4):
         ifcopenshell.api.run("void.add_filling", self.file, opening=opening, element=door)
         new = ifcopenshell.api.run("root.copy_class", self.file, product=opening)
         assert not new.HasFillings
+
+    def test_copying_a_filling(self):
+        door = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDoor")
+        opening = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
+        ifcopenshell.api.run("void.add_filling", self.file, opening=opening, element=door)
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=door)
+        assert not new.FillsVoids
