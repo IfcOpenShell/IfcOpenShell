@@ -377,7 +377,7 @@ class AppendLibraryElement(bpy.types.Operator):
         self.import_type_materials(element, ifc_importer)
         self.import_type_styles(element, ifc_importer)
         ifc_importer.create_type_product(element)
-        ifc_importer.place_objects_in_spatial_tree()
+        ifc_importer.place_objects_in_collections()
 
     def import_type_materials(self, element, ifc_importer):
         for rel in element.HasAssociations:
@@ -569,6 +569,7 @@ class LoadProjectElements(bpy.types.Operator):
             settings.elements = self.get_whitelist_elements()
         elif self.props.filter_mode == "BLACKLIST":
             settings.elements = self.get_blacklist_elements()
+        settings.collection_mode = self.props.collection_mode
         settings.should_use_cpu_multiprocessing = self.props.should_use_cpu_multiprocessing
         settings.should_merge_by_class = self.props.should_merge_by_class
         settings.should_merge_by_material = self.props.should_merge_by_material
