@@ -332,8 +332,7 @@ class file(object):
 
         If the entity already exists, it is not re-added."""
         if self.transaction:
-            # TODO confirm this method of tracking added elements and use MaxId directly instead of FreshId
-            max_id = self.wrapped_data.FreshId()
+            max_id = self.wrapped_data.getMaxId()
         inst.wrapped_data.this.disown()
         result = entity_instance(self.wrapped_data.add(inst.wrapped_data, -1 if _id is None else _id), self)
         if self.transaction:
