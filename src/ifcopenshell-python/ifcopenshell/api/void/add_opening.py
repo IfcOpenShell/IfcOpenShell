@@ -10,6 +10,13 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        voids_elements = self.settings["opening"].VoidsElements
+
+        if voids_elements:
+            if voids_elements[0].RelatingBuildingElement == self.settings["element"]:
+                return
+            self.file.remove(voids_elements[0])
+
         self.file.create_entity(
             "IfcRelVoidsElement",
             **{
