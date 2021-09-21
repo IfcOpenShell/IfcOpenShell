@@ -9,6 +9,13 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        fills_voids = self.settings["element"].FillsVoids
+
+        if fills_voids:
+            if fills_voids[0].RelatingOpeningElement == self.settings["opening"]:
+                return
+            self.file.remove(fills_voids[0])
+
         self.file.create_entity(
             "IfcRelFillsElement",
             **{
