@@ -144,8 +144,6 @@ class Data:
 
     @classmethod
     def load_structural_connection(cls, product_id):
-        cls.connects_structural_members = {}
-
         connection = cls._file.by_id(product_id)
         data = connection.get_info()
         del data["OwnerHistory"]
