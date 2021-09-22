@@ -190,14 +190,14 @@ const IfcParse::enumeration_type& %(schema_name)s::%(name)s::Class() { return *%
 }
 
 const char* %(schema_name)s::%(name)s::ToString(Value v) {
-    if ( v < 0 || v >= %(max_id)d ) throw IfcException("Unable to find find keyword in schema");
+    if ( v < 0 || v >= %(max_id)d ) throw IfcException("Unable to find keyword in schema");
     const char* names[] = { %(values)s };
     return names[v];
 }
 
 %(schema_name)s::%(name)s::Value %(schema_name)s::%(name)s::FromString(const std::string& s) {
 %(from_string_statements)s
-    throw IfcException("Unable to find find keyword in schema");
+    throw IfcException("Unable to find keyword in schema: " + s);
 }
 
 %(schema_name)s::%(name)s::operator %(schema_name)s::%(name)s::Value() const {
@@ -210,7 +210,7 @@ entity_implementation = """// Function implementations for %(name)s
 %(inverse)s
 const IfcParse::entity& %(schema_name)s::%(name)s::declaration() const { return *%(schema_name_upper)s_%(name)s_type; }
 const IfcParse::entity& %(schema_name)s::%(name)s::Class() { return *%(schema_name_upper)s_%(name)s_type; }
-%(schema_name)s::%(name)s::%(name)s(IfcEntityInstanceData* e) : %(superclass)s { if (!e) return; if (e->type() != %(schema_name_upper)s_%(name)s_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
+%(schema_name)s::%(name)s::%(name)s(IfcEntityInstanceData* e) : %(superclass)s { if (!e) return; if (e->type() != %(schema_name_upper)s_%(name)s_type) throw IfcException("Unable to find keyword in schema"); data_ = e; }
 %(schema_name)s::%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass)s {data_ = new IfcEntityInstanceData(%(schema_name_upper)s_%(name)s_type); %(constructor_implementation)s }
 """
 
