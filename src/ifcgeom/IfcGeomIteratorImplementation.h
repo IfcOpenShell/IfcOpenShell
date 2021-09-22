@@ -205,8 +205,10 @@ namespace IfcGeom {
 		IfcSchema::IfcProduct::list::ptr ifcproducts;
 		IfcSchema::IfcProduct::list::it ifcproduct_iterator;
 
-
         IfcSchema::IfcRepresentation::list::ptr ok_mapped_representations;
+
+		double lowest_precision_encountered;
+		bool any_precision_encountered;
 
 		int done;
 		int total;
@@ -255,111 +257,13 @@ namespace IfcGeom {
 
 			representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
 			ok_mapped_representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
-			double lowest_precision_encountered = std::numeric_limits<double>::infinity();
-			bool any_precision_encountered = false;
+			lowest_precision_encountered = std::numeric_limits<double>::infinity();
+			any_precision_encountered = false;
 
 			if (settings.context_ids().size() != 0) {
-				for (auto context_id : settings.context_ids()) {
-					IfcSchema::IfcGeometricRepresentationContext* context = ifc_file->instance_by_id(context_id)->as<IfcSchema::IfcGeometricRepresentationContext>();
-					representations->push(context->RepresentationsInContext());
-
-					try {
-						if (context->Precision() && *context->Precision() < lowest_precision_encountered) {
-							lowest_precision_encountered = *context->Precision();
-							any_precision_encountered = true;
-						}
-					} catch (const std::exception& e) {
-						Logger::Error(e);
-					}
-				}
+				addRepresentationsFromContextIds();
 			} else {
-				std::set<std::string> allowed_context_types;
-				allowed_context_types.insert("model");
-				allowed_context_types.insert("plan");
-				allowed_context_types.insert("notdefined");
-
-				std::set<std::string> context_types;
-				if (!settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
-					// Really this should only be 'Model', as per
-					// the standard 'Design' is deprecated. So,
-					// just for backwards compatibility:
-					context_types.insert("model");
-					context_types.insert("design");
-					// Some earlier (?) versions DDS-CAD output their own ContextTypes
-					context_types.insert("model view");
-					context_types.insert("detail view");
-				}
-				if (settings.get(IteratorSettings::INCLUDE_CURVES)) {
-					context_types.insert("plan");
-				}
-
-				IfcSchema::IfcGeometricRepresentationContext::list::it it;
-				IfcSchema::IfcGeometricRepresentationSubContext::list::it jt;
-				IfcSchema::IfcGeometricRepresentationContext::list::ptr contexts =
-					ifc_file->instances_by_type<IfcSchema::IfcGeometricRepresentationContext>();
-
-				IfcSchema::IfcGeometricRepresentationContext::list::ptr filtered_contexts (new IfcSchema::IfcGeometricRepresentationContext::list);
-
-				for (it = contexts->begin(); it != contexts->end(); ++it) {
-					IfcSchema::IfcGeometricRepresentationContext* context = *it;
-					if (context->declaration().is(IfcSchema::IfcGeometricRepresentationSubContext::Class())) {
-						// Continue, as the list of subcontexts will be considered
-						// by the parent's context inverse attributes.
-						continue;
-					}
-					try {
-						if (context->ContextType()) {
-							std::string context_type = *context->ContextType();
-							boost::to_lower(context_type);
-
-							if (allowed_context_types.find(context_type) == allowed_context_types.end()) {
-								Logger::Warning(std::string("ContextType '") + *context->ContextType() + "' not allowed:", context);
-							}
-							if (context_types.find(context_type) != context_types.end()) {
-								filtered_contexts->push(context);
-							}
-						}
-					} catch (const std::exception& e) {
-						Logger::Error(e);
-					}
-				}
-
-				// In case no contexts are identified based on their ContextType, all contexts are
-				// considered. Note that sub contexts are excluded as they are considered later on.
-				if (filtered_contexts->size() == 0) {
-					for (it = contexts->begin(); it != contexts->end(); ++it) {
-						IfcSchema::IfcGeometricRepresentationContext* context = *it;
-						if (!context->declaration().is(IfcSchema::IfcGeometricRepresentationSubContext::Class())) {
-							filtered_contexts->push(context);
-						}
-					}
-				}
-
-				for (it = filtered_contexts->begin(); it != filtered_contexts->end(); ++it) {
-					IfcSchema::IfcGeometricRepresentationContext* context = *it;
-
-					representations->push(context->RepresentationsInContext());
-					try {
-						if (context->Precision() && *context->Precision() < lowest_precision_encountered) {
-							lowest_precision_encountered = *context->Precision();
-							any_precision_encountered = true;
-						}
-					} catch (const std::exception& e) {
-						Logger::Error(e);
-					}
-
-					IfcSchema::IfcGeometricRepresentationSubContext::list::ptr sub_contexts = context->HasSubContexts();
-					for (jt = sub_contexts->begin(); jt != sub_contexts->end(); ++jt) {
-						representations->push((*jt)->RepresentationsInContext());
-					}
-					// There is no need for full recursion as the following is governed by the schema:
-					// WR31: The parent context shall not be another geometric representation sub context.
-				}
-
-				if (representations->size() == 0) {
-					Logger::Warning("No representations encountered in relevant contexts, using all");
-					representations = ifc_file->instances_by_type<IfcSchema::IfcRepresentation>();
-				}
+				addRepresentationsFromDefaultContexts();
 			}
 
 			if (any_precision_encountered) {
@@ -590,6 +494,112 @@ namespace IfcGeom {
         const gp_XYZ& bounds_max() const { return bounds_max_; }
 
 	private:
+		void addRepresentationsFromContextIds() {
+			for (auto context_id : settings.context_ids()) {
+				IfcSchema::IfcGeometricRepresentationContext* context = ifc_file->instance_by_id(context_id)->as<IfcSchema::IfcGeometricRepresentationContext>();
+				representations->push(context->RepresentationsInContext());
+
+				try {
+					if (context->Precision() && *context->Precision() < lowest_precision_encountered) {
+						lowest_precision_encountered = *context->Precision();
+						any_precision_encountered = true;
+					}
+				} catch (const std::exception& e) {
+					Logger::Error(e);
+				}
+			}
+		}
+
+		void addRepresentationsFromDefaultContexts() {
+			std::set<std::string> allowed_context_types;
+			allowed_context_types.insert("model");
+			allowed_context_types.insert("plan");
+			allowed_context_types.insert("notdefined");
+
+			std::set<std::string> context_types;
+			if (!settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
+				// Really this should only be 'Model', as per
+				// the standard 'Design' is deprecated. So,
+				// just for backwards compatibility:
+				context_types.insert("model");
+				context_types.insert("design");
+				// Some earlier (?) versions DDS-CAD output their own ContextTypes
+				context_types.insert("model view");
+				context_types.insert("detail view");
+			}
+			if (settings.get(IteratorSettings::INCLUDE_CURVES)) {
+				context_types.insert("plan");
+			}
+
+			IfcSchema::IfcGeometricRepresentationContext::list::it it;
+			IfcSchema::IfcGeometricRepresentationSubContext::list::it jt;
+			IfcSchema::IfcGeometricRepresentationContext::list::ptr contexts =
+				ifc_file->instances_by_type<IfcSchema::IfcGeometricRepresentationContext>();
+
+			IfcSchema::IfcGeometricRepresentationContext::list::ptr filtered_contexts (new IfcSchema::IfcGeometricRepresentationContext::list);
+
+			for (it = contexts->begin(); it != contexts->end(); ++it) {
+				IfcSchema::IfcGeometricRepresentationContext* context = *it;
+				if (context->declaration().is(IfcSchema::IfcGeometricRepresentationSubContext::Class())) {
+					// Continue, as the list of subcontexts will be considered
+					// by the parent's context inverse attributes.
+					continue;
+				}
+				try {
+					if (context->ContextType()) {
+						std::string context_type = *context->ContextType();
+						boost::to_lower(context_type);
+
+						if (allowed_context_types.find(context_type) == allowed_context_types.end()) {
+							Logger::Warning(std::string("ContextType '") + *context->ContextType() + "' not allowed:", context);
+						}
+						if (context_types.find(context_type) != context_types.end()) {
+							filtered_contexts->push(context);
+						}
+					}
+				} catch (const std::exception& e) {
+					Logger::Error(e);
+				}
+			}
+
+			// In case no contexts are identified based on their ContextType, all contexts are
+			// considered. Note that sub contexts are excluded as they are considered later on.
+			if (filtered_contexts->size() == 0) {
+				for (it = contexts->begin(); it != contexts->end(); ++it) {
+					IfcSchema::IfcGeometricRepresentationContext* context = *it;
+					if (!context->declaration().is(IfcSchema::IfcGeometricRepresentationSubContext::Class())) {
+						filtered_contexts->push(context);
+					}
+				}
+			}
+
+			for (it = filtered_contexts->begin(); it != filtered_contexts->end(); ++it) {
+				IfcSchema::IfcGeometricRepresentationContext* context = *it;
+
+				representations->push(context->RepresentationsInContext());
+				try {
+					if (context->Precision() && *context->Precision() < lowest_precision_encountered) {
+						lowest_precision_encountered = *context->Precision();
+						any_precision_encountered = true;
+					}
+				} catch (const std::exception& e) {
+					Logger::Error(e);
+				}
+
+				IfcSchema::IfcGeometricRepresentationSubContext::list::ptr sub_contexts = context->HasSubContexts();
+				for (jt = sub_contexts->begin(); jt != sub_contexts->end(); ++jt) {
+					representations->push((*jt)->RepresentationsInContext());
+				}
+				// There is no need for full recursion as the following is governed by the schema:
+				// WR31: The parent context shall not be another geometric representation sub context.
+			}
+
+			if (representations->size() == 0) {
+				Logger::Warning("No representations encountered in relevant contexts, using all");
+				representations = ifc_file->instances_by_type<IfcSchema::IfcRepresentation>();
+			}
+		}
+
 		// Move to the next IfcRepresentation
 		void _nextShape() {
 			// In order to conserve memory and reduce cache insertion times, the cache is
