@@ -237,6 +237,7 @@ class BIM_PT_material_psets(Panel):
 class BIM_PT_task_qtos(Panel):
     bl_label = "IFC Task Quantity Sets"
     bl_idname = "BIM_PT_task_qtos"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -245,6 +246,8 @@ class BIM_PT_task_qtos(Panel):
     @classmethod
     def poll(cls, context):
         props = context.scene.BIMWorkScheduleProperties
+        if not props.active_work_schedule_id:
+            return False
         total_tasks = len(context.scene.BIMTaskTreeProperties.tasks)
         if total_tasks > 0 and props.active_task_index < total_tasks:
             return True
@@ -270,6 +273,7 @@ class BIM_PT_task_qtos(Panel):
 class BIM_PT_resource_qtos(Panel):
     bl_label = "IFC Resource Quantity Sets"
     bl_idname = "BIM_PT_resource_qtos"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -303,6 +307,7 @@ class BIM_PT_resource_qtos(Panel):
 class BIM_PT_profile_psets(Panel):
     bl_label = "IFC Profile Property Sets"
     bl_idname = "BIM_PT_profile_psets"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -337,6 +342,7 @@ class BIM_PT_profile_psets(Panel):
 class BIM_PT_work_schedule_psets(Panel):
     bl_label = "IFC Work Schedule Property Sets"
     bl_idname = "BIM_PT_work_schedule_psets"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -344,7 +350,6 @@ class BIM_PT_work_schedule_psets(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMWorkScheduleProperties
         if not context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
             return False
         return True
