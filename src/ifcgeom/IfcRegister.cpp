@@ -54,34 +54,30 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseInterface* l, TopoDS_Shape& r) 
 	const unsigned int id = l->data().id();
 	bool success = false;
 	bool processed = false;
-	bool ignored = false;
 
 #ifndef NO_CACHE
 	std::map<int,TopoDS_Shape>::const_iterator it = cache.Shape.find(id);
 	if ( it != cache.Shape.end() ) { r = it->second; return true; }
 #endif
-	const bool include_curves = getValue(GV_DIMENSIONALITY) != +1;
-	const bool include_solids_and_surfaces = getValue(GV_DIMENSIONALITY) != -1;
 
 	IfcGeom::ShapeType st = shape_type(l);
-	ignored = (!include_solids_and_surfaces && (st == ST_SHAPE || st == ST_FACE)) || (!include_curves && (st == ST_WIRE || st == ST_CURVE));
 	if (st == ST_SHAPELIST) {
 		processed = true;
 		IfcRepresentationShapeItems items;
 		success = convert_shapes(l, items) && flatten_shape_list(items, r, false);
-	} else if (st == ST_SHAPE && include_solids_and_surfaces) {
+	} else if (st == ST_SHAPE) {
 #include "IfcRegisterConvertShape.h"
-	} else if (st == ST_FACE && include_solids_and_surfaces) {
+	} else if (st == ST_FACE) {
 		processed = true;
 		success = convert_face(l, r);
-	} else if (st == ST_WIRE && include_curves) {
+	} else if (st == ST_WIRE) {
 		processed = true;
 		TopoDS_Wire w;
 		success = convert_wire(l, w);
 		if (success) {
 			r = w;
 		}
-	} else if (st == ST_CURVE && include_curves) {
+	} else if (st == ST_CURVE) {
 		processed = true;
 		Handle(Geom_Curve) crv;
 		TopoDS_Wire w;
@@ -102,7 +98,7 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseInterface* l, TopoDS_Shape& r) 
 			BRepCheck_Analyzer ana(r);
 			Logger::Notice("Valid: " + std::to_string(ana.IsValid()), l);
 		}
-	} else if (!ignored) {
+	} else {
 		const char* const msg = processed
 			? "Failed to convert:"
 			: "No operation defined for:";

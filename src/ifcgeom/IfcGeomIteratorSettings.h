@@ -112,6 +112,7 @@ namespace IfcGeom
         double deflection_tolerance() const { return deflection_tolerance_; }
 		double angular_tolerance() const { return angular_tolerance_; }
 		double force_space_transparency() const { return force_space_transparency_; }
+		std::set<int> context_ids() const { return context_ids_; }
 
         void set_deflection_tolerance(double value)
         {
@@ -130,7 +131,11 @@ namespace IfcGeom
 
 		void force_space_transparency(double value) {
 			force_space_transparency_ = value;
-		}		
+		}
+
+		void set_context_ids(std::vector<int> value) {
+			context_ids_ = std::set<int>(value.begin(), value.end());
+		}
 
         /// Get boolean value for a single settings or for a combination of settings.
         bool get(unsigned setting) const
@@ -158,6 +163,7 @@ namespace IfcGeom
     protected:
 		unsigned settings_;
         double deflection_tolerance_, angular_tolerance_, force_space_transparency_;
+		std::set<int> context_ids_;
     };
 
     class IFC_GEOM_API ElementSettings : public IteratorSettings
