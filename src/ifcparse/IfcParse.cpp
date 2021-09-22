@@ -2393,11 +2393,9 @@ std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& un
 }
 
 void IfcParse::IfcFile::build_inverses_(IfcUtil::IfcBaseClass* inst) {
-	aggregate_of_instance::ptr entity_attributes(new aggregate_of_instance);
-
-	std::function<void(IfcUtil::IfcBaseClass*,int)> fn = [this](IfcUtil::IfcBaseClass* inst, int idx) {
-		if (inst->declaration().as_entity()) {
-			unsigned entity_attribute_id = inst->data().id();
+	std::function<void(IfcUtil::IfcBaseClass*,int)> fn = [this, inst](IfcUtil::IfcBaseClass* attr, int idx) {
+		if (attr->declaration().as_entity()) {
+			unsigned entity_attribute_id = attr->data().id();
 			auto decl = inst->declaration().as_entity();
 			while (decl) {
 				byref[{entity_attribute_id, decl->index_in_schema(), idx}].push_back(inst->data().id());
@@ -2405,6 +2403,8 @@ void IfcParse::IfcFile::build_inverses_(IfcUtil::IfcBaseClass* inst) {
 			}
 		}
 	};
+	
+	apply_individual_instance_visitor(&inst->data()).apply(fn);
 }
 
 void IfcParse::IfcFile::build_inverses() {
