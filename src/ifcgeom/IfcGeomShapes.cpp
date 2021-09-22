@@ -952,19 +952,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBoundingBox* l, TopoDS_Shape& 
 	const double dy = l->YDim() * getValue(GV_LENGTH_UNIT);
 	const double dz = l->ZDim() * getValue(GV_LENGTH_UNIT);
 
-	BRepPrimAPI_MakeBox builder(dx, dy, dz);
 	gp_Pnt corner;
 	IfcGeom::Kernel::convert(l->Corner(), corner);
+	BRepPrimAPI_MakeBox builder(corner, dx, dy, dz);
 
-	gp_Trsf trsf;
-	gp_Dir axis1 (1.,0.,0.);
-	gp_Dir axis3 (0.,0.,1.);
-	gp_Ax3 ax3 (corner, axis3, axis1);
-	trsf.SetTransformation(ax3);
-	trsf.Invert();
-
-	// IfcBoundingBox.Corner has unit scale factor
-	shape = builder.Solid().Moved(trsf);
+	shape = builder.Solid();
 
 	return true;
 }
