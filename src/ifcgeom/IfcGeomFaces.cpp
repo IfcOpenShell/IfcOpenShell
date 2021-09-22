@@ -455,6 +455,35 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryClosedProfileDef* l, 
 	return success;
 }
 
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcAnnotationFillArea* l, TopoDS_Shape& face) {
+	TopoDS_Wire outer_boundary;
+	if (!convert_wire(l->OuterBoundary(), outer_boundary)) {
+		return false;
+	}
+
+	assert_closed_wire(outer_boundary);
+
+	BRepBuilderAPI_MakeFace mf(outer_boundary);
+
+	if (l->InnerBoundaries()) {
+		IfcSchema::IfcCurve::list::ptr inner_boundaries = *l->InnerBoundaries();
+
+		for(IfcSchema::IfcCurve::list::it it = inner_boundaries->begin(); it != inner_boundaries->end(); ++it) {
+			TopoDS_Wire hole;
+			if (convert_wire(*it, hole)) {
+				assert_closed_wire(hole);
+				mf.Add(hole);
+			}
+		}
+	}
+
+	ShapeFix_Shape sfs(mf.Face());
+	sfs.Perform();
+	face = sfs.Shape();
+
+	return true;
+}
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids* l, TopoDS_Shape& face) {
 	TopoDS_Wire profile;
 	if (!convert_wire(l->OuterCurve(), profile)) {
