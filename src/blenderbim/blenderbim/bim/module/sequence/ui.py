@@ -170,14 +170,8 @@ class BIM_PT_work_schedules(Panel):
                 row.operator("bim.remove_task", text="", icon="X").task = ifc_definition_id
             else:
                 row.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING").task = ifc_definition_id
-                row.operator(
-                    "bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text=""
-                ).task = ifc_definition_id
                 row.operator("bim.enable_editing_task_time", text="", icon="TIME").task = ifc_definition_id
                 row.operator("bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO").task = ifc_definition_id
-                row.operator(
-                    "bim.enable_assigning_process_to_resources", text="", icon="COMMUNITY"
-                ).task = ifc_definition_id
                 row.operator("bim.enable_editing_task", text="", icon="GREASEPENCIL").task = ifc_definition_id
                 row.operator("bim.add_task", text="", icon="ADD").task = ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = ifc_definition_id
@@ -252,8 +246,6 @@ class BIM_PT_work_schedules(Panel):
             self.draw_editable_task_sequence_ui()
         elif self.props.active_task_time_id and self.props.editing_task_type == "TASKTIME":
             self.draw_editable_task_time_attributes_ui()
-        elif self.props.active_task_id and self.props.editing_task_type == "RESOURCES":
-            self.draw_editable_task_resource_ui()
 
     def draw_editable_task_sequence_ui(self):
         task = Data.tasks[self.props.active_task_id]
@@ -327,22 +319,98 @@ class BIM_PT_work_schedules(Panel):
     def draw_editable_task_time_attributes_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.task_time_attributes, self.layout)
 
-    def draw_editable_task_resource_ui(self):
-        row = self.layout.row(align=True)
-        row.prop(self.props, "resources", text="")
-        op = row.operator("bim.assign_process", text="", icon="ADD")
-        if self.props.resources:
-            op.parent_resource = int(self.props.resources)
-            op.task = self.props.active_task_id
-            task = Data.tasks[self.props.active_task_id]
-            ResourceData.load(IfcStore.get_file())
-            for related_obect_id in task["OperatesOn"]:
-                resource = ResourceData.resources[related_obect_id]
-                row = self.layout.row(align=True)
-                row.label(text=resource["Name"], icon="COMMUNITY")
-                op = row.operator("bim.unassign_process", text="", icon="X")
-                op.task = self.props.active_task_id
-                op.resource = related_obect_id
+
+class BIM_PT_task_icom(Panel):
+    bl_label = "IFC Task ICOM"
+    bl_idname = "BIM_PT_task_icom"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_work_schedules"
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMWorkScheduleProperties
+        if not props.active_work_schedule_id:
+            return False
+        total_tasks = len(context.scene.BIMTaskTreeProperties.tasks)
+        if total_tasks > 0 and props.active_task_index < total_tasks:
+            return True
+        return False
+
+    def draw(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.tprops = context.scene.BIMTaskTreeProperties
+        task = self.tprops.tasks[self.props.active_task_index]
+
+        grid = self.layout.grid_flow(columns=3, even_columns=True)
+
+        # Column1
+        col = grid.column()
+
+        row2 = col.row(align=True)
+        row2.label(text="Inputs")
+
+        if context.selected_objects:
+            op = row2.operator("bim.assign_process", icon="ADD", text="")
+            op.task = task.ifc_definition_id
+            op.related_object_type = "PRODUCT"
+            op.related_object = ""
+            op = row2.operator("bim.unassign_process", icon="REMOVE", text="")
+            op.task = task.ifc_definition_id
+            op.related_object_type = "PRODUCT"
+            op.related_object = ""
+
+        row2 = col.row()
+        row2.template_list(
+            "BIM_UL_task_inputs", "", self.props, "task_inputs", self.props, "active_task_input_index"
+        )
+
+        # Column2
+        col = grid.column()
+
+        row2 = col.row(align=True)
+        row2.label(text="Resources")
+
+        total_resources = len(context.scene.BIMResourceTreeProperties.resources)
+        if total_resources and context.scene.BIMResourceProperties.active_resource_index < total_resources:
+            resource_id = context.scene.BIMResourceTreeProperties.resources[context.scene.BIMResourceProperties.active_resource_index].ifc_definition_id
+            op = row2.operator("bim.assign_process", icon="ADD", text="")
+            op.task = task.ifc_definition_id
+            op.related_object_type = "RESOURCE"
+            op.resource = resource_id
+            op = row2.operator("bim.unassign_process", icon="REMOVE", text="")
+            op.task = task.ifc_definition_id
+            op.related_object_type = "RESOURCE"
+            op.resource = resource_id
+
+        row2 = col.row()
+        row2.template_list(
+            "BIM_UL_task_resources", "", self.props, "task_resources", self.props, "active_task_resource_index"
+        )
+
+        # Column3
+        col = grid.column()
+
+        row2 = col.row(align=True)
+        row2.label(text="Outputs")
+
+        if context.selected_objects:
+            op = row2.operator("bim.assign_product", icon="ADD", text="")
+            op.task = task.ifc_definition_id
+            op.relating_product = ""
+            op = row2.operator("bim.unassign_product", icon="REMOVE", text="")
+            op.task = task.ifc_definition_id
+            op.relating_product = ""
+
+        op = row2.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="")
+        op.task = task.ifc_definition_id
+
+        row2 = col.row()
+        row2.template_list(
+            "BIM_UL_task_outputs", "", self.props, "task_outputs", self.props, "active_task_output_index"
+        )
 
 
 class BIM_UL_task_columns(UIList):
@@ -354,6 +422,31 @@ class BIM_UL_task_columns(UIList):
             if props.sort_column == item.name:
                 row.label(text="", icon="SORTALPHA")
             row.operator("bim.remove_task_column", text="", icon="X").name = item.name
+
+
+class BIM_UL_task_inputs(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        props = context.scene.BIMWorkScheduleProperties
+        if item:
+            row = layout.row(align=True)
+            row.prop(item, "name", emboss=False, text="")
+            #row.operator("bim.remove_task_column", text="", icon="X").name = item.name
+
+
+class BIM_UL_task_resources(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        props = context.scene.BIMWorkScheduleProperties
+        if item:
+            row = layout.row(align=True)
+            row.prop(item, "name", emboss=False, text="")
+
+
+class BIM_UL_task_outputs(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        props = context.scene.BIMWorkScheduleProperties
+        if item:
+            row = layout.row(align=True)
+            row.prop(item, "name", emboss=False, text="")
 
 
 class BIM_UL_tasks(UIList):
@@ -371,23 +464,6 @@ class BIM_UL_tasks(UIList):
             split2.prop(item, "name", emboss=False, text="")
 
             self.draw_custom_columns(split2, item, task)
-
-            if context.active_object:
-                oprops = context.active_object.BIMObjectProperties
-
-                if oprops.ifc_definition_id in Data.tasks[item.ifc_definition_id]["OperatesOn"]:
-                    op = row.operator("bim.unassign_process", text="", icon="MARKER_HLT", emboss=False)
-                    op.task = item.ifc_definition_id
-                else:
-                    op = row.operator("bim.assign_process", text="", icon="MARKER", emboss=False)
-                    op.task = item.ifc_definition_id
-
-                if oprops.ifc_definition_id in Data.tasks[item.ifc_definition_id]["RelatingProducts"]:
-                    op = row.operator("bim.unassign_product", text="", icon="KEYFRAME_HLT", emboss=False)
-                    op.task = item.ifc_definition_id
-                else:
-                    op = row.operator("bim.assign_product", text="", icon="KEYFRAME", emboss=False)
-                    op.task = item.ifc_definition_id
 
             if self.props.active_task_id and self.props.editing_task_type == "ATTRIBUTES":
                 row.prop(

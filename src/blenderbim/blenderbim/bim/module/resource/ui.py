@@ -61,6 +61,7 @@ class BIM_PT_resources(Panel):
         op.resource = 0
 
         icon_map = {
+            "IfcSubContractResource": "TEXT",
             "IfcConstructionEquipmentResource": "TOOL_SETTINGS",
             "IfcLaborResource": "OUTLINER_OB_ARMATURE",
             "IfcConstructionMaterialResource": "MATERIAL",

@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -784,11 +783,13 @@ class AssignProduct(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
+        self.file = IfcStore.get_file()
         relating_products = (
             [bpy.data.objects.get(self.relating_product)] if self.relating_product else context.selected_objects
         )
         for relating_product in relating_products:
-            self.file = IfcStore.get_file()
+            if not relating_product.BIMObjectProperties.ifc_definition_id:
+                continue
             ifcopenshell.api.run(
                 "sequence.assign_product",
                 self.file,
@@ -810,11 +811,13 @@ class UnassignProduct(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
+        self.file = IfcStore.get_file()
         relating_products = (
             [bpy.data.objects.get(self.relating_product)] if self.relating_product else context.selected_objects
         )
         for relating_product in relating_products:
-            self.file = IfcStore.get_file()
+            if not relating_product.BIMObjectProperties.ifc_definition_id:
+                continue
             ifcopenshell.api.run(
                 "sequence.unassign_product",
                 self.file,
@@ -830,54 +833,7 @@ class AssignProcess(bpy.types.Operator):
     bl_label = "Assign Process"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
-    related_object: bpy.props.StringProperty()
-    parent_resource: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        if self.parent_resource:
-            resource = ifcopenshell.api.run(
-                "resource.add_resource",
-                self.file,
-                **{
-                    "parent_resource": self.file.by_id(self.parent_resource),
-                    "ifc_class": self.file.by_id(self.parent_resource).is_a(),
-                    "name": self.file.by_id(self.parent_resource).Name + ": " + self.file.by_id(self.task).Name,
-                },
-            )
-            ifcopenshell.api.run(
-                "sequence.assign_process",
-                self.file,
-                **{
-                    "related_object": resource,
-                    "relating_process": self.file.by_id(self.task),
-                },
-            )
-            ResourceData.load(self.file)
-            bpy.ops.bim.load_resources()
-        else:
-            related_objects = (
-                [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
-            )
-            for related_object in related_objects:
-                ifcopenshell.api.run(
-                    "sequence.assign_process",
-                    self.file,
-                    related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
-                    relating_process=self.file.by_id(self.task),
-                )
-        Data.load(self.file)
-        return {"FINISHED"}
-
-
-class UnassignProcess(bpy.types.Operator):
-    bl_idname = "bim.unassign_process"
-    bl_label = "Unassign Process"
-    bl_options = {"REGISTER", "UNDO"}
-    task: bpy.props.IntProperty()
+    related_object_type: bpy.props.StringProperty()
     related_object: bpy.props.StringProperty()
     resource: bpy.props.IntProperty()
 
@@ -886,33 +842,98 @@ class UnassignProcess(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        if self.resource:
+        if self.related_object_type == "RESOURCE":
+            self.assign_resource()
+        elif self.related_object_type == "PRODUCT":
+            self.assign_product(context)
+        elif self.related_object_type == "CONTROL":
+            pass  # TODO
+        return {"FINISHED"}
+
+    def assign_resource(self):
+        task = self.file.by_id(self.task)
+        resource = self.file.by_id(self.resource)
+        subresource = ifcopenshell.api.run(
+            "resource.add_resource",
+            self.file,
+            **{"parent_resource": resource, "ifc_class": resource.is_a(), "name": resource.Name},
+        )
+        ifcopenshell.api.run(
+            "sequence.assign_process", self.file, **{"related_object": subresource, "relating_process": task}
+        )
+        ResourceData.load(self.file)
+        Data.load(self.file)
+        bpy.ops.bim.load_resources()
+        bpy.ops.bim.load_task_resources()
+
+    def assign_product(self, context):
+        task = self.file.by_id(self.task)
+        related_objects = (
+            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
+        )
+        for related_object in related_objects:
+            if not related_object.BIMObjectProperties.ifc_definition_id:
+                continue
+            ifcopenshell.api.run(
+                "sequence.assign_process",
+                self.file,
+                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
+                relating_process=task,
+            )
+        Data.load(self.file)
+        bpy.ops.bim.load_task_inputs()
+
+
+class UnassignProcess(bpy.types.Operator):
+    bl_idname = "bim.unassign_process"
+    bl_label = "Unassign Process"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+    related_object_type: bpy.props.StringProperty()
+    related_object: bpy.props.StringProperty()
+    resource: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        if self.related_object_type == "RESOURCE":
+            self.unassign_resource()
+        elif self.related_object_type == "PRODUCT":
+            self.unassign_product(context)
+        elif self.related_object_type == "CONTROL":
+            pass  # TODO
+        return {"FINISHED"}
+
+    def unassign_resource(self):
+        task = self.file.by_id(self.task)
+        resource = self.file.by_id(self.resource)
+        ifcopenshell.api.run(
+            "sequence.unassign_process", self.file, related_object=resource, relating_process=task
+        )
+        ifcopenshell.api.run("resource.remove_resource", self.file, resource=resource)
+        ResourceData.load(self.file)
+        Data.load(self.file)
+        bpy.ops.bim.load_resources()
+        bpy.ops.bim.load_task_resources()
+
+    def unassign_product(self, context):
+        task = self.file.by_id(self.task)
+        related_objects = (
+            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
+        )
+        for related_object in related_objects:
+            if not related_object.BIMObjectProperties.ifc_definition_id:
+                continue
             ifcopenshell.api.run(
                 "sequence.unassign_process",
                 self.file,
-                related_object=self.file.by_id(self.resource),
-                relating_process=self.file.by_id(self.task),
+                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
+                relating_process=task,
             )
-            ifcopenshell.api.run(
-                "resource.remove_resource",
-                self.file,
-                resource=self.file.by_id(self.resource),
-            )
-            ResourceData.load(self.file)
-            bpy.ops.bim.load_resources()
-        else:
-            related_objects = (
-                [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
-            )
-            for related_object in related_objects:
-                ifcopenshell.api.run(
-                    "sequence.unassign_process",
-                    self.file,
-                    related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
-                    relating_process=self.file.by_id(self.task),
-                )
         Data.load(self.file)
-        return {"FINISHED"}
+        bpy.ops.bim.load_task_inputs()
 
 
 class GenerateGanttChart(bpy.types.Operator):
@@ -1726,6 +1747,11 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         area.spaces[0].shading.color_type = "OBJECT"
         context.scene.frame_start = self.start_frame
         context.scene.frame_end = self.start_frame + self.total_frames
+        # with open("/home/dion/animation.json", "w") as json_file:
+        #    guid_frames = {}
+        #    for k, v in self.product_frames.items():
+        #        guid_frames[self.file.by_id(k).GlobalId] = v
+        #    json.dump(guid_frames, json_file)
         return {"FINISHED"}
 
     def animate_input(self, obj, product_frame):
@@ -1857,13 +1883,9 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         finish = helper.derive_date(task.id(), "ScheduleFinish", is_latest=True)
         if not start or not finish:
             return
-        output_ids = [r.RelatingProduct.id() for r in task.HasAssignments or [] if r.is_a("IfcRelAssignsToProduct")]
-        for output_id in output_ids:
+        for output_id in Data.tasks[task.id()]["Outputs"]:
             self.add_product_frame(output_id, task, start, finish, "output")
-
-        input_ids = []
-        [input_ids.extend([o.id() for o in r.RelatedObjects]) for r in task.OperatesOn or []]
-        for input_id in input_ids:
+        for input_id in Data.tasks[task.id()]["Inputs"]:
             self.add_product_frame(input_id, task, start, finish, "input")
 
     def add_product_frame(self, product_id, task, start, finish, relationship):
@@ -2027,14 +2049,58 @@ class SetTaskSortColumn(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableAssigningProcessToResource(bpy.types.Operator):
-    bl_idname = "bim.enable_assigning_process_to_resources"
-    bl_label = "Enable Assigning Resources To Tasks"
+class LoadTaskResources(bpy.types.Operator):
+    bl_idname = "bim.load_task_resources"
+    bl_label = "Load Task Resources"
     bl_options = {"REGISTER", "UNDO"}
-    task: bpy.props.IntProperty()
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         self.props = context.scene.BIMWorkScheduleProperties
-        self.props.active_task_id = self.task
-        self.props.editing_task_type = "RESOURCES"
+        self.tprops = context.scene.BIMTaskTreeProperties
+        ifc_definition_id = self.tprops.tasks[self.props.active_task_index].ifc_definition_id
+        self.props.task_resources.clear()
+        for resource_id in Data.tasks[ifc_definition_id]["Resources"]:
+            resource = self.file.by_id(resource_id)
+            new = self.props.task_resources.add()
+            new.ifc_definition_id = resource_id
+            new.name = resource.Name or "Unnamed"
+        return {"FINISHED"}
+
+
+class LoadTaskInputs(bpy.types.Operator):
+    bl_idname = "bim.load_task_inputs"
+    bl_label = "Load Task Inputs"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.tprops = context.scene.BIMTaskTreeProperties
+        ifc_definition_id = self.tprops.tasks[self.props.active_task_index].ifc_definition_id
+        self.props.task_inputs.clear()
+        for input_id in Data.tasks[ifc_definition_id]["Inputs"]:
+            product = self.file.by_id(input_id)
+            new = self.props.task_inputs.add()
+            new.ifc_definition_id = input_id
+            new.name = product.Name or "Unnamed"
+        return {"FINISHED"}
+
+
+class LoadTaskOutputs(bpy.types.Operator):
+    bl_idname = "bim.load_task_outputs"
+    bl_label = "Load Task Outputs"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.tprops = context.scene.BIMTaskTreeProperties
+        ifc_definition_id = self.tprops.tasks[self.props.active_task_index].ifc_definition_id
+        self.props.task_outputs.clear()
+        for output_id in Data.tasks[ifc_definition_id]["outputs"]:
+            product = self.file.by_id(output_id)
+            new = self.props.task_outputs.add()
+            new.ifc_definition_id = output_id
+            new.name = product.Name or "Unnamed"
         return {"FINISHED"}
