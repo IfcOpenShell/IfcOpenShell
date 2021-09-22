@@ -128,15 +128,18 @@ class AddFilling(bpy.types.Operator):
             return {"FINISHED"}
         self.file = IfcStore.get_file()
         element_id = obj.BIMObjectProperties.ifc_definition_id
+        opening_id = opening.BIMObjectProperties.ifc_definition_id
+        if not element_id or not opening_id:
+            return {"FINISHED"}
         ifcopenshell.api.run(
             "void.add_filling",
             self.file,
             **{
-                "opening": self.file.by_id(opening.BIMObjectProperties.ifc_definition_id),
+                "opening": self.file.by_id(opening_id),
                 "element": self.file.by_id(element_id),
             },
         )
-        Data.load(IfcStore.get_file(), element_id)
+        Data.load(self.file, element_id)
         return {"FINISHED"}
 
 
