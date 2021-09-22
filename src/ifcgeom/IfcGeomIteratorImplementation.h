@@ -45,7 +45,7 @@
  *                                                                              *
  * IfcGeom::Iterator::get()                                                     *
  *   returns a pointer to the current IfcGeom::Element                          *
- *                                                                              * 
+ *                                                                              *
  * IfcGeom::Iterator::next()                                                    *
  *   returns true iff a following entity is available for a successive call to  *
  *   IfcGeom::Iterator::get()                                                   *
@@ -110,7 +110,7 @@ namespace {
 
 	IfcGeom::Element* process_based_on_settings(
 		const IfcGeom::IteratorSettings& settings,
-		IfcGeom::BRepElement* elem, 
+		IfcGeom::BRepElement* elem,
 		IfcGeom::TriangulationElement* previous=nullptr)
 	{
 		if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
@@ -137,9 +137,9 @@ namespace {
 	}
 
 	void create_element(
-		IfcGeom::MAKE_TYPE_NAME(Kernel)* kernel, 
+		IfcGeom::MAKE_TYPE_NAME(Kernel)* kernel,
 		const IfcGeom::IteratorSettings& settings,
-		geometry_conversion_task* rep) 
+		geometry_conversion_task* rep)
 	{
 		IfcSchema::IfcRepresentation *representation = rep->representation;
 		IfcSchema::IfcProduct *product = *rep->products->begin();
@@ -170,7 +170,7 @@ namespace {
 }
 
 namespace IfcGeom {
-	
+
 	class MAKE_TYPE_NAME(IteratorImplementation_) : public IteratorImplementation {
 	private:
 
@@ -200,7 +200,7 @@ namespace IfcGeom {
 		TriangulationElement* current_triangulation;
 		BRepElement* current_shape_model;
 		SerializedElement* current_serialization;
-		
+
 		// A container and iterator for IfcBuildingElements for the current IfcRepresentation referenced by *representation_iterator
 		IfcSchema::IfcProduct::list::ptr ifcproducts;
 		IfcSchema::IfcProduct::list::it ifcproduct_iterator;
@@ -253,98 +253,113 @@ namespace IfcGeom {
 				Logger::Error(e);
 			}
 
-			std::set<std::string> allowed_context_types;
-			allowed_context_types.insert("model");
-			allowed_context_types.insert("plan");
-			allowed_context_types.insert("notdefined");
-
-			std::set<std::string> context_types;
-            if (!settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
-				// Really this should only be 'Model', as per 
-				// the standard 'Design' is deprecated. So,
-				// just for backwards compatibility:
-				context_types.insert("model");
-				context_types.insert("design");
-				// Some earlier (?) versions DDS-CAD output their own ContextTypes
-				context_types.insert("model view");
-				context_types.insert("detail view");
-			}
-            if (settings.get(IteratorSettings::INCLUDE_CURVES)) {
-				context_types.insert("plan");
-			}			
-
+			representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
+			ok_mapped_representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
 			double lowest_precision_encountered = std::numeric_limits<double>::infinity();
 			bool any_precision_encountered = false;
 
-			representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
-            ok_mapped_representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
+			if (settings.context_ids().size() != 0) {
+				for (auto context_id : settings.context_ids()) {
+					IfcSchema::IfcGeometricRepresentationContext* context = ifc_file->instance_by_id(context_id)->as<IfcSchema::IfcGeometricRepresentationContext>();
+					representations->push(context->RepresentationsInContext());
 
-			IfcSchema::IfcGeometricRepresentationContext::list::it it;
-			IfcSchema::IfcGeometricRepresentationSubContext::list::it jt;
-			IfcSchema::IfcGeometricRepresentationContext::list::ptr contexts = 
-				ifc_file->instances_by_type<IfcSchema::IfcGeometricRepresentationContext>();
-
-			IfcSchema::IfcGeometricRepresentationContext::list::ptr filtered_contexts (new IfcSchema::IfcGeometricRepresentationContext::list);
-
- 			for (it = contexts->begin(); it != contexts->end(); ++it) {
-				IfcSchema::IfcGeometricRepresentationContext* context = *it;
-				if (context->declaration().is(IfcSchema::IfcGeometricRepresentationSubContext::Class())) {
-					// Continue, as the list of subcontexts will be considered
-					// by the parent's context inverse attributes.
-					continue;
-				}
-				try {
-					if (context->ContextType()) {
-						std::string context_type = *context->ContextType();
-						boost::to_lower(context_type);
-
-						if (allowed_context_types.find(context_type) == allowed_context_types.end()) {
-							Logger::Warning(std::string("ContextType '") + *context->ContextType() + "' not allowed:", context);
+					try {
+						if (context->Precision() && *context->Precision() < lowest_precision_encountered) {
+							lowest_precision_encountered = *context->Precision();
+							any_precision_encountered = true;
 						}
-						if (context_types.find(context_type) != context_types.end()) {
+					} catch (const std::exception& e) {
+						Logger::Error(e);
+					}
+				}
+			} else {
+				std::set<std::string> allowed_context_types;
+				allowed_context_types.insert("model");
+				allowed_context_types.insert("plan");
+				allowed_context_types.insert("notdefined");
+
+				std::set<std::string> context_types;
+				if (!settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
+					// Really this should only be 'Model', as per
+					// the standard 'Design' is deprecated. So,
+					// just for backwards compatibility:
+					context_types.insert("model");
+					context_types.insert("design");
+					// Some earlier (?) versions DDS-CAD output their own ContextTypes
+					context_types.insert("model view");
+					context_types.insert("detail view");
+				}
+				if (settings.get(IteratorSettings::INCLUDE_CURVES)) {
+					context_types.insert("plan");
+				}
+
+				IfcSchema::IfcGeometricRepresentationContext::list::it it;
+				IfcSchema::IfcGeometricRepresentationSubContext::list::it jt;
+				IfcSchema::IfcGeometricRepresentationContext::list::ptr contexts =
+					ifc_file->instances_by_type<IfcSchema::IfcGeometricRepresentationContext>();
+
+				IfcSchema::IfcGeometricRepresentationContext::list::ptr filtered_contexts (new IfcSchema::IfcGeometricRepresentationContext::list);
+
+				for (it = contexts->begin(); it != contexts->end(); ++it) {
+					IfcSchema::IfcGeometricRepresentationContext* context = *it;
+					if (context->declaration().is(IfcSchema::IfcGeometricRepresentationSubContext::Class())) {
+						// Continue, as the list of subcontexts will be considered
+						// by the parent's context inverse attributes.
+						continue;
+					}
+					try {
+						if (context->ContextType()) {
+							std::string context_type = *context->ContextType();
+							boost::to_lower(context_type);
+
+							if (allowed_context_types.find(context_type) == allowed_context_types.end()) {
+								Logger::Warning(std::string("ContextType '") + *context->ContextType() + "' not allowed:", context);
+							}
+							if (context_types.find(context_type) != context_types.end()) {
+								filtered_contexts->push(context);
+							}
+						}
+					} catch (const std::exception& e) {
+						Logger::Error(e);
+					}
+				}
+
+				// In case no contexts are identified based on their ContextType, all contexts are
+				// considered. Note that sub contexts are excluded as they are considered later on.
+				if (filtered_contexts->size() == 0) {
+					for (it = contexts->begin(); it != contexts->end(); ++it) {
+						IfcSchema::IfcGeometricRepresentationContext* context = *it;
+						if (!context->declaration().is(IfcSchema::IfcGeometricRepresentationSubContext::Class())) {
 							filtered_contexts->push(context);
 						}
 					}
-				} catch (const std::exception& e) {
-					Logger::Error(e);
 				}
-			}
 
-			// In case no contexts are identified based on their ContextType, all contexts are
-			// considered. Note that sub contexts are excluded as they are considered later on.
-			if (filtered_contexts->size() == 0) {
-				for (it = contexts->begin(); it != contexts->end(); ++it) {
+				for (it = filtered_contexts->begin(); it != filtered_contexts->end(); ++it) {
 					IfcSchema::IfcGeometricRepresentationContext* context = *it;
-					if (!context->declaration().is(IfcSchema::IfcGeometricRepresentationSubContext::Class())) {
-						filtered_contexts->push(context);
+
+					representations->push(context->RepresentationsInContext());
+					try {
+						if (context->Precision() && *context->Precision() < lowest_precision_encountered) {
+							lowest_precision_encountered = *context->Precision();
+							any_precision_encountered = true;
+						}
+					} catch (const std::exception& e) {
+						Logger::Error(e);
 					}
-				}
-			}
 
-			for (it = filtered_contexts->begin(); it != filtered_contexts->end(); ++it) {
-				IfcSchema::IfcGeometricRepresentationContext* context = *it;
-
-				representations->push(context->RepresentationsInContext());
-				try {
-					if (context->Precision() && *context->Precision() < lowest_precision_encountered) {
-						lowest_precision_encountered = *context->Precision();
-						any_precision_encountered = true;
+					IfcSchema::IfcGeometricRepresentationSubContext::list::ptr sub_contexts = context->HasSubContexts();
+					for (jt = sub_contexts->begin(); jt != sub_contexts->end(); ++jt) {
+						representations->push((*jt)->RepresentationsInContext());
 					}
-				} catch (const std::exception& e) {
-					Logger::Error(e);
+					// There is no need for full recursion as the following is governed by the schema:
+					// WR31: The parent context shall not be another geometric representation sub context.
 				}
 
-				IfcSchema::IfcGeometricRepresentationSubContext::list::ptr sub_contexts = context->HasSubContexts();
-				for (jt = sub_contexts->begin(); jt != sub_contexts->end(); ++jt) {
-					representations->push((*jt)->RepresentationsInContext());
+				if (representations->size() == 0) {
+					Logger::Warning("No representations encountered in relevant contexts, using all");
+					representations = ifc_file->instances_by_type<IfcSchema::IfcRepresentation>();
 				}
-				// There is no need for full recursion as the following is governed by the schema:
-				// WR31: The parent context shall not be another geometric representation sub context. 
-			}
-
-			for (auto context_id : settings.context_ids()) {
-				IfcSchema::IfcGeometricRepresentationContext* context = ifc_file->instance_by_id(context_id)->as<IfcSchema::IfcGeometricRepresentationContext>();
-				representations->push(context->RepresentationsInContext());
 			}
 
 			if (any_precision_encountered) {
@@ -361,11 +376,6 @@ namespace IfcGeom {
 			} else {
 				kernel.setValue(IfcGeom::Kernel::GV_PRECISION, 1.e-5);
 			}
-
-            if (representations->size() == 0) {
-                Logger::Warning("No representations encountered in relevant contexts, using all");
-				representations = ifc_file->instances_by_type<IfcSchema::IfcRepresentation>();
-            }
 
 			if (representations->size() == 0) {
 				Logger::Warning("No representations encountered, aborting");
@@ -422,7 +432,7 @@ namespace IfcGeom {
 			if (conc_threads > tasks_.size()) {
 				conc_threads = tasks_.size();
 			}
-			
+
 			std::vector<MAKE_TYPE_NAME(Kernel)*> kernel_pool;
 			kernel_pool.reserve(conc_threads);
 			for (unsigned i = 0; i < conc_threads; ++i) {
@@ -449,14 +459,14 @@ namespace IfcGeom {
 						status = fu.wait_for(std::chrono::seconds(0));
 						if (status == std::future_status::ready) {
 							fu.get();
-							
+
 							processed += 1;
 							progress_ = processed * 50 / tasks_.size();
 							if (progress_ != old_progress) {
 								Logger::ProgressBar(progress_);
 								old_progress = progress_;
 							}
-								
+
 							std::swap(threadpool[i], threadpool.back());
 							threadpool.pop_back();
 							std::swap(kernel_pool[i], kernel_pool.back());
@@ -514,7 +524,7 @@ namespace IfcGeom {
 						const double& x = *(it++);
 						const double& y = *(it++);
 						const double& z = *(it++);
-						
+
 						bounds_min_.SetX(std::min(bounds_min_.X(), pos.X() + x));
 						bounds_min_.SetY(std::min(bounds_min_.Y(), pos.Y() + y));
 						bounds_min_.SetZ(std::min(bounds_min_.Z(), pos.Z() + z));
@@ -529,7 +539,7 @@ namespace IfcGeom {
 					IfcSchema::IfcProduct* product = *iter;
 					if (product->ObjectPlacement()) {
 						// Use a fresh trsf every time in order to prevent the result to be concatenated
-						gp_Trsf trsf; 
+						gp_Trsf trsf;
 						bool success = false;
 
 						try {
@@ -556,7 +566,7 @@ namespace IfcGeom {
 			}
         }
 
-		int progress() const { 
+		int progress() const {
 			if (num_threads_ == 1) {
 				return 100 * done / total;
 			} else {
@@ -568,7 +578,7 @@ namespace IfcGeom {
 
         /// @note Double always as per IFC specification.
         double getUnitMagnitude() const { return unit_magnitude; }
-	
+
 		std::string getLog() const { return Logger::GetLog(); }
 
 		IfcParse::IfcFile* file() const { return ifc_file; }
@@ -622,7 +632,7 @@ namespace IfcGeom {
 						IfcSchema::IfcRelAssociatesMaterial* assoc = (*jt)->as<IfcSchema::IfcRelAssociatesMaterial>();
 						if (assoc) {
 							if (assoc->RelatingMaterial()->declaration().is(IfcSchema::IfcMaterialLayerSetUsage::Class())) {
-								// TODO: Check whether single layer? 
+								// TODO: Check whether single layer?
 								return false;
 							}
 						}
@@ -817,12 +827,12 @@ namespace IfcGeom {
 			if (num_threads_ != 1) {
 				ret = *task_result_iterator_;
 			} else {
-				if (current_triangulation) { 
-					ret = current_triangulation; 
-				} else if (current_serialization) { 
-					ret = current_serialization; 
-				} else if (current_shape_model) { 
-					ret = current_shape_model; 
+				if (current_triangulation) {
+					ret = current_triangulation;
+				} else if (current_serialization) {
+					ret = current_serialization;
+				} else if (current_shape_model) {
+					ret = current_shape_model;
 				}
 			}
 
@@ -832,14 +842,14 @@ namespace IfcGeom {
 				// We are going to build a vector with the element parents.
 				// First, create the parent vector
 				std::vector<const IfcGeom::Element*> parents;
-				
+
 				// if the element has a parent
 				if (ret->parent_id() != -1)
 				{
 					const IfcGeom::Element* parent_object = NULL;
 					bool hasParent = true;
 
-					// get the parent 
+					// get the parent
 					try {
 						parent_object = get_object(ret->parent_id());
 					} catch (const std::exception& e) {
@@ -849,7 +859,7 @@ namespace IfcGeom {
 
 					// Add the previously found parent to the vector
 					if (hasParent) parents.insert(parents.begin(), parent_object);
-					
+
 					// We need to find all the parents
 					while (parent_object != NULL && hasParent && parent_object->parent_id() != -1)
 					{
@@ -1039,7 +1049,7 @@ namespace IfcGeom {
 			kernel.set_offset(settings.offset);
 			kernel.set_rotation(settings.rotation);
 		}
-		
+
 	public:
 		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
 			: settings(settings)
