@@ -342,6 +342,11 @@ namespace IfcGeom {
 				// WR31: The parent context shall not be another geometric representation sub context. 
 			}
 
+			for (auto context_id : settings.context_ids()) {
+				IfcSchema::IfcGeometricRepresentationContext* context = ifc_file->instance_by_id(context_id)->as<IfcSchema::IfcGeometricRepresentationContext>();
+				representations->push(context->RepresentationsInContext());
+			}
+
 			if (any_precision_encountered) {
 				// Some arbitrary factor that has proven to work better for the models in the set of test files.
 				lowest_precision_encountered *= kernel.getValue(IfcGeom::Kernel::GV_PRECISION_FACTOR);
