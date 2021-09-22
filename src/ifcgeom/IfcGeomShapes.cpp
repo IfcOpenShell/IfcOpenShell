@@ -887,6 +887,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 	// @nb the selection is partly duplicated from convert_curves() but it's needed as a
 	// geometric set by it's static class definition does not inform us of the type of elements.
 	// @todo handle this better so that this doesn't log an error.
+	const bool include_curves = getValue(GV_DIMENSIONALITY) != +1;
+	const bool include_solids_and_surfaces = getValue(GV_DIMENSIONALITY) != -1;
 
 	aggregate_of_instance::ptr elements = l->Elements();
 	if ( !elements->size() ) return false;
@@ -900,11 +902,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 			if (!(convert_shapes(element, items) && flatten_shape_list(items, s, false))) {
 				continue;
 			}
-		} else if (shape_type(element) == ST_SHAPE) {
+		} else if (shape_type(element) == ST_SHAPE && include_solids_and_surfaces) {
 			if (!convert_shape(element, s)) {
 				continue;
 			}
-		} else if (shape_type(element) == ST_WIRE) {
+		} else if (shape_type(element) == ST_WIRE && include_curves) {
 			TopoDS_Wire w;
 			if (!convert_wire(element, w)) {
 				continue;
