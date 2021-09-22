@@ -497,11 +497,25 @@ namespace IfcGeom {
 		void addRepresentationsFromContextIds() {
 			for (auto context_id : settings.context_ids()) {
 				IfcSchema::IfcGeometricRepresentationContext* context = ifc_file->instance_by_id(context_id)->as<IfcSchema::IfcGeometricRepresentationContext>();
+
+				if (!context) {
+					Logger::Error("Failed to process context ID " + std::to_string(context_id));
+					continue;
+				}
+
 				representations->push(context->RepresentationsInContext());
 
 				try {
-					if (context->Precision() && *context->Precision() < lowest_precision_encountered) {
-						lowest_precision_encountered = *context->Precision();
+					double precision;
+
+					if (context->as<IfcSchema::IfcGeometricRepresentationSubContext>()) {
+						precision = *context->as<IfcSchema::IfcGeometricRepresentationSubContext>()->ParentContext()->Precision();
+					} else {
+						precision = *context->Precision();
+					}
+
+					if (precision && precision < lowest_precision_encountered) {
+						lowest_precision_encountered = precision;
 						any_precision_encountered = true;
 					}
 				} catch (const std::exception& e) {
