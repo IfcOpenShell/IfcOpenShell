@@ -947,6 +947,28 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBlock* l, TopoDS_Shape& shape)
 	return true;
 }
 
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcBoundingBox* l, TopoDS_Shape& shape) {
+	const double dx = l->XDim() * getValue(GV_LENGTH_UNIT);
+	const double dy = l->YDim() * getValue(GV_LENGTH_UNIT);
+	const double dz = l->ZDim() * getValue(GV_LENGTH_UNIT);
+
+	BRepPrimAPI_MakeBox builder(dx, dy, dz);
+	gp_Pnt corner;
+	IfcGeom::Kernel::convert(l->Corner(), corner);
+
+	gp_Trsf trsf;
+	gp_Dir axis1 (1.,0.,0.);
+	gp_Dir axis3 (0.,0.,1.);
+	gp_Ax3 ax3 (corner, axis3, axis1);
+	trsf.SetTransformation(ax3);
+	trsf.Invert();
+
+	// IfcBoundingBox.Corner has unit scale factor
+	shape = builder.Solid().Moved(trsf);
+
+	return true;
+}
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangularPyramid* l, TopoDS_Shape& shape) {
 	const double dx = l->XLength() * getValue(GV_LENGTH_UNIT);
 	const double dy = l->YLength() * getValue(GV_LENGTH_UNIT);
