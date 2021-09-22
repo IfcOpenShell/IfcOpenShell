@@ -98,6 +98,7 @@ SHAPE(IfcRectangularTrimmedSurface);
 SHAPE(IfcSurfaceCurveSweptAreaSolid);
 SHAPE(IfcSweptDiskSolid);
 
+FACE(IfcAnnotationFillArea);
 FACE(IfcArbitraryProfileDefWithVoids);
 FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcRoundedRectangleProfileDef);
