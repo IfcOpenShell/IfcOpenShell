@@ -52,6 +52,7 @@ class TestVisualiseWorkScheduleDateRange(test.bim.bootstrap.NewFile):
         And I set "scene.BIMWorkScheduleProperties.task_time_attributes.get("ScheduleStart").string_value" to "2021-01-02"
         And I set "scene.BIMWorkScheduleProperties.task_time_attributes.get("ScheduleFinish").string_value" to "2021-01-06"
         And I press "bim.edit_task_time"
+        And I add a cube
         And the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
@@ -88,6 +89,7 @@ class TestVisualiseWorkScheduleDateRange(test.bim.bootstrap.NewFile):
         And I set "scene.BIMWorkScheduleProperties.task_time_attributes.get("ScheduleStart").string_value" to "2021-01-02"
         And I set "scene.BIMWorkScheduleProperties.task_time_attributes.get("ScheduleFinish").string_value" to "2021-01-06"
         And I press "bim.edit_task_time"
+        And I add a cube
         And the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
@@ -127,6 +129,7 @@ class TestVisualiseWorkScheduleDateRange(test.bim.bootstrap.NewFile):
         And I set "scene.BIMWorkScheduleProperties.task_time_attributes.get("ScheduleStart").string_value" to "2021-01-02"
         And I set "scene.BIMWorkScheduleProperties.task_time_attributes.get("ScheduleFinish").string_value" to "2021-01-06"
         And I press "bim.edit_task_time"
+        And I add a cube
         And the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
@@ -211,6 +214,7 @@ class TestVisualiseWorkScheduleDateRange(test.bim.bootstrap.NewFile):
         And I set "scene.BIMWorkScheduleProperties.task_time_attributes.get("ScheduleStart").string_value" to "2021-01-02"
         And I set "scene.BIMWorkScheduleProperties.task_time_attributes.get("ScheduleFinish").string_value" to "2021-01-06"
         And I press "bim.edit_task_time"
+        And I add a cube
         And the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
