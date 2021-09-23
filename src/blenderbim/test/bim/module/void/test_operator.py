@@ -24,6 +24,7 @@ class TestAddOpening(test.bim.bootstrap.NewFile):
     def test_adding_an_opening(self):
         return """
         Given an empty IFC project
+        Given I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
@@ -43,6 +44,7 @@ class TestRemoveOpening(test.bim.bootstrap.NewFile):
     def test_removing_an_opening_manually(self):
         return """
         Given an empty IFC project
+        Given I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
@@ -60,6 +62,7 @@ class TestRemoveOpening(test.bim.bootstrap.NewFile):
     def test_removing_a_non_dynamic_opening_manually(self):
         return """
         Given an empty IFC project
+        Given I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
@@ -80,6 +83,7 @@ class TestRemoveOpening(test.bim.bootstrap.NewFile):
     def test_removing_an_opening_using_deletion(self):
         return """
         Given an empty IFC project
+        Given I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
@@ -97,6 +101,7 @@ class TestRemoveOpening(test.bim.bootstrap.NewFile):
     def test_removing_an_opening_indirectly_by_deleting_its_building_element(self):
         return """
         Given an empty IFC project
+        Given I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"

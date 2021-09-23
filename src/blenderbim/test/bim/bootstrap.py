@@ -37,6 +37,9 @@ class NewFile:
     def setup(self):
         IfcStore.purge()
         bpy.ops.wm.read_homefile(app_template="")
+        while bpy.data.objects:
+            bpy.data.objects.remove(bpy.data.objects[0])
+        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
 
 
 def scenario(function):
