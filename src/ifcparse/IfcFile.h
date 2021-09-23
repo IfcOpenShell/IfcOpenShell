@@ -132,7 +132,7 @@ private:
 	entity_by_id_t byid;
 	entities_by_type_t bytype;
 	entities_by_type_t bytype_excl;
-	entities_by_ref_t byref;
+	entities_by_ref_t byref, byref_excl;
 	ref_map_t by_ref_cached_;
 	entity_by_guid_t byguid;
 	entity_entity_map_t entity_file_map;
