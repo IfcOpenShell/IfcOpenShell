@@ -7884,7 +7884,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcAbsorbedDoseMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcAbsorbedDoseMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -7897,7 +7897,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcAccelerationMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcAccelerationMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -7913,7 +7913,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: amount_of_substance_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcAmountOfSubstanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcAmountOfSubstanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -7926,7 +7926,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcAngularVelocityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcAngularVelocityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -7944,7 +7944,7 @@ public:
     operator std::vector< int > /*[3:3]*/() const;
 };
 
-class IFC_PARSE_API IfcAreaDensityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcAreaDensityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -7959,7 +7959,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: area_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcAreaMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcAreaMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -7968,7 +7968,7 @@ public:
     operator double() const;
 };
 
-class IFC_PARSE_API IfcBinary : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcValue, public  IfcSimpleValue {
+class IFC_PARSE_API IfcBinary : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcSimpleValue, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -7981,7 +7981,7 @@ public:
 /// Type: BOOLEAN
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcBoolean : public  IfcUtil::IfcBaseType, public  IfcValue, public  IfcModulusOfTranslationalSubgradeReactionSelect, public  IfcSimpleValue, public  IfcRotationalStiffnessSelect, public  IfcAppliedValueSelect, public  IfcWarpingStiffnessSelect, public  IfcMetricValueSelect, public  IfcTranslationalStiffnessSelect, public  IfcModulusOfSubgradeReactionSelect, public  IfcModulusOfRotationalSubgradeReactionSelect {
+class IFC_PARSE_API IfcBoolean : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcModulusOfRotationalSubgradeReactionSelect, public  IfcModulusOfSubgradeReactionSelect, public  IfcModulusOfTranslationalSubgradeReactionSelect, public  IfcRotationalStiffnessSelect, public  IfcSimpleValue, public  IfcTranslationalStiffnessSelect, public  IfcValue, public  IfcWarpingStiffnessSelect {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8051,7 +8051,7 @@ public:
 /// Type: ARRAY [1:2] OF REAL
 /// 
 /// HISTORY New type in IFC Release 2x2.
-class IFC_PARSE_API IfcComplexNumber : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcComplexNumber : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8107,7 +8107,7 @@ public:
 ///      + FORMAT(ABS(c[4]), '##');  -- -50° 58' 33" 110400
 /// 
 /// Another often encountered display format of latitudes and longitudes is to omit the signs and print N, S, E, W indicators instead, for example, 50°58'33"S.  When stored as IfcCompoundPlaneAngleMeasure however, a compound plane angle measure is always signed, with same sign of all components.
-class IFC_PARSE_API IfcCompoundPlaneAngleMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcCompoundPlaneAngleMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8121,7 +8121,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: context_dependent_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcContextDependentMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcContextDependentMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8135,7 +8135,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: count_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcCountMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcCountMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8150,7 +8150,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcCurvatureMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcCurvatureMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8164,7 +8164,7 @@ public:
 /// 
 /// Use definitions
 /// All given values should be provided in context and converted into a Gregorian date context and be shall be processable by a receiving application.
-class IFC_PARSE_API IfcDate : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcValue, public  IfcSimpleValue {
+class IFC_PARSE_API IfcDate : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcSimpleValue, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8190,7 +8190,7 @@ public:
 ///   otherwise they are forbidden. The year 0000 is prohibited.
 /// 
 /// HISTORY: New type in IFC2x4
-class IFC_PARSE_API IfcDateTime : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcValue, public  IfcSimpleValue {
+class IFC_PARSE_API IfcDateTime : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcSimpleValue, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8266,7 +8266,7 @@ public:
 /// NOTE Corresponding ISO 10303 name:descriptive_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcDescriptiveMeasure : public  IfcUtil::IfcBaseType, public  IfcValue, public  IfcSizeSelect, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcMeasureValue {
+class IFC_PARSE_API IfcDescriptiveMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcSizeSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8294,7 +8294,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcDoseEquivalentMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcDoseEquivalentMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8307,7 +8307,7 @@ public:
 /// EXAMPLE: P0002-10-15T10:30:20 (duration of two years, 10 months, 15 days, 10 hours, 30 minutes and 20 seconds).
 /// 
 /// HISTORY: New type in IFC2x4
-class IFC_PARSE_API IfcDuration : public  IfcUtil::IfcBaseType, public  IfcValue, public  IfcTimeOrRatioSelect, public  IfcSimpleValue, public  IfcMetricValueSelect, public  IfcAppliedValueSelect {
+class IFC_PARSE_API IfcDuration : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcSimpleValue, public  IfcTimeOrRatioSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8321,7 +8321,7 @@ public:
 /// Type: REAL 
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcDynamicViscosityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcDynamicViscosityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8334,7 +8334,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcElectricCapacitanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcElectricCapacitanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8347,7 +8347,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcElectricChargeMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcElectricChargeMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8360,7 +8360,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcElectricConductanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcElectricConductanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8375,7 +8375,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: electric_current_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcElectricCurrentMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcElectricCurrentMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8388,7 +8388,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcElectricResistanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcElectricResistanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8401,7 +8401,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcElectricVoltageMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcElectricVoltageMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8414,7 +8414,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcEnergyMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcEnergyMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8500,7 +8500,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcForceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcForceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8513,7 +8513,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcFrequencyMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcFrequencyMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8547,7 +8547,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcHeatFluxDensityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcHeatFluxDensityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8558,7 +8558,7 @@ public:
 /// IfcHeatingValueMeasure defines the amount of energy released (usually in MJ/kg) when a fuel is burned.
 /// 
 /// HISTORY: This is new type in IFC2x2.
-class IFC_PARSE_API IfcHeatingValueMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcHeatingValueMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8580,7 +8580,7 @@ public:
 /// Per ISO 10303-11, the set of characters that may appear in STRINGs is defined in ISO 10646.  The encoding of characters in case of file-based exchange is defined in ISO 10303-21 (STEP physical files) and ISO 10303-28 (XML files).  Among else, these specifications define the encoding of 8-bit characters from ISO 8859-1...-16 and of 2-byte Unicode characters.
 /// 
 /// Note that while IfcIdentifier is restricted to 255 characters, the size in exchange files after encoding may be considerably larger than 255 octets, depending on the particular encoding and on the contents of the identifier.
-class IFC_PARSE_API IfcIdentifier : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcValue, public  IfcSimpleValue {
+class IFC_PARSE_API IfcIdentifier : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcSimpleValue, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8593,7 +8593,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcIlluminanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcIlluminanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8606,7 +8606,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcInductanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcInductanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8621,7 +8621,7 @@ public:
 /// Type: INTEGER
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcInteger : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcValue, public  IfcSimpleValue {
+class IFC_PARSE_API IfcInteger : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcSimpleValue, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8636,7 +8636,7 @@ public:
 /// Type: INTEGER
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcIntegerCountRateMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcIntegerCountRateMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8647,7 +8647,7 @@ public:
 /// IfcIonConcentrationMeasure is a measure of particular ion concentration in a liquid, given in mg/L.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_PARSE_API IfcIonConcentrationMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcIonConcentrationMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8660,7 +8660,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcIsothermalMoistureCapacityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcIsothermalMoistureCapacityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8673,7 +8673,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcKinematicViscosityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcKinematicViscosityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8695,7 +8695,7 @@ public:
 /// Per ISO 10303-11, the set of characters that may appear in STRINGs is defined in ISO 10646.  The encoding of characters in case of file-based exchange is defined in ISO 10303-21 (STEP physical files) and ISO 10303-28 (XML files).  Among else, these specifications define the encoding of 8-bit characters from ISO 8859-1...-16 and of 2-byte Unicode characters.
 /// 
 /// Note that while IfcLabel is restricted to 255 characters, the size in exchange files after encoding may be considerably larger than 255 octets, depending on the particular encoding and on the contents of the label.
-class IFC_PARSE_API IfcLabel : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcValue, public  IfcSimpleValue {
+class IFC_PARSE_API IfcLabel : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcSimpleValue, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8728,7 +8728,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: length_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcLengthMeasure : public  IfcUtil::IfcBaseType, public  IfcValue, public  IfcSizeSelect, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcMeasureValue, public  IfcBendingParameterSelect {
+class IFC_PARSE_API IfcLengthMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcBendingParameterSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcSizeSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8750,7 +8750,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcLinearForceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcLinearForceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8763,7 +8763,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcLinearMomentMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcLinearMomentMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8776,7 +8776,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcLinearStiffnessMeasure : public  IfcUtil::IfcBaseType, public  IfcValue, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcAppliedValueSelect, public  IfcTranslationalStiffnessSelect {
+class IFC_PARSE_API IfcLinearStiffnessMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcTranslationalStiffnessSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8789,7 +8789,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcLinearVelocityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcLinearVelocityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8802,7 +8802,7 @@ public:
 /// Type: LOGICAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcLogical : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcValue, public  IfcSimpleValue {
+class IFC_PARSE_API IfcLogical : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcSimpleValue, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8815,7 +8815,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcLuminousFluxMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcLuminousFluxMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8830,7 +8830,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcLuminousIntensityDistributionMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcLuminousIntensityDistributionMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8845,7 +8845,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: luminous_intensity_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcLuminousIntensityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcLuminousIntensityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8858,7 +8858,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcMagneticFluxDensityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcMagneticFluxDensityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8871,7 +8871,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcMagneticFluxMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcMagneticFluxMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8884,7 +8884,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcMassDensityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcMassDensityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8897,7 +8897,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcMassFlowRateMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcMassFlowRateMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8912,7 +8912,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: mass_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcMassMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcMassMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8927,7 +8927,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcMassPerLengthMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcMassPerLengthMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8940,7 +8940,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcModulusOfElasticityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcModulusOfElasticityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8953,7 +8953,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC Release 2x2.
-class IFC_PARSE_API IfcModulusOfLinearSubgradeReactionMeasure : public  IfcUtil::IfcBaseType, public  IfcValue, public  IfcDerivedMeasureValue, public  IfcModulusOfTranslationalSubgradeReactionSelect, public  IfcAppliedValueSelect, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcModulusOfLinearSubgradeReactionMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcModulusOfTranslationalSubgradeReactionSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8966,7 +8966,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcModulusOfRotationalSubgradeReactionMeasure : public  IfcUtil::IfcBaseType, public  IfcValue, public  IfcDerivedMeasureValue, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcModulusOfRotationalSubgradeReactionSelect {
+class IFC_PARSE_API IfcModulusOfRotationalSubgradeReactionMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcModulusOfRotationalSubgradeReactionSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8983,7 +8983,7 @@ public:
 /// Figure 290 illustrates elastic support of a planar member.
 /// 
 /// Figure 290 — Modulus of subgrade reaction measure
-class IFC_PARSE_API IfcModulusOfSubgradeReactionMeasure : public  IfcUtil::IfcBaseType, public  IfcValue, public  IfcDerivedMeasureValue, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcModulusOfSubgradeReactionSelect {
+class IFC_PARSE_API IfcModulusOfSubgradeReactionMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcModulusOfSubgradeReactionSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -8996,7 +8996,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcMoistureDiffusivityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcMoistureDiffusivityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9009,7 +9009,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcMolecularWeightMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcMolecularWeightMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9022,7 +9022,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcMomentOfInertiaMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcMomentOfInertiaMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9034,7 +9034,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcMonetaryMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcMonetaryMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9111,7 +9111,7 @@ public:
 /// Type: IfcLengthMeasure
 /// 
 /// HISTORY New type in IFC Release 2x4.
-class IFC_PARSE_API IfcNonNegativeLengthMeasure : public  IfcLengthMeasure, public  IfcCurveMeasureSelect, public  IfcValue, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcMeasureValue {
+class IFC_PARSE_API IfcNonNegativeLengthMeasure : public  IfcLengthMeasure, public  IfcAppliedValueSelect, public  IfcCurveMeasureSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9125,7 +9125,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: numeric_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcNumericMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcNumericMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9136,7 +9136,7 @@ public:
 /// IfcPHMeasure is a measure of the molar hydrogen ion concentration in a liquid (usually defined as the measure of acidity) in a range from 0 to 14.
 /// 
 /// HISTORY: New type in IFC 2x2.
-class IFC_PARSE_API IfcPHMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcPHMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9151,7 +9151,7 @@ public:
 /// NOTE Corresponding STEP name: parameter_value, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcParameterValue : public  IfcUtil::IfcBaseType, public  IfcCurveMeasureSelect, public  IfcValue, public  IfcTrimmingSelect, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcMeasureValue {
+class IFC_PARSE_API IfcParameterValue : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcCurveMeasureSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcTrimmingSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9164,7 +9164,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcPlanarForceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcPlanarForceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9183,7 +9183,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: plane_angle_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcPlaneAngleMeasure : public  IfcUtil::IfcBaseType, public  IfcValue, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcMeasureValue, public  IfcBendingParameterSelect {
+class IFC_PARSE_API IfcPlaneAngleMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcBendingParameterSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9192,7 +9192,7 @@ public:
     operator double() const;
 };
 
-class IFC_PARSE_API IfcPositiveInteger : public  IfcInteger, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcValue, public  IfcSimpleValue {
+class IFC_PARSE_API IfcPositiveInteger : public  IfcInteger, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcSimpleValue, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9206,7 +9206,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: positive_length_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcPositiveLengthMeasure : public  IfcLengthMeasure, public  IfcValue, public  IfcSizeSelect, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcMeasureValue, public  IfcHatchLineDistanceSelect {
+class IFC_PARSE_API IfcPositiveLengthMeasure : public  IfcLengthMeasure, public  IfcAppliedValueSelect, public  IfcHatchLineDistanceSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcSizeSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9220,7 +9220,7 @@ public:
 /// NOTE Corresponding STEP name: positive_plane_angle_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcPositivePlaneAngleMeasure : public  IfcPlaneAngleMeasure, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcPositivePlaneAngleMeasure : public  IfcPlaneAngleMeasure, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9233,7 +9233,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcPowerMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcPowerMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9263,7 +9263,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcPressureMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcPressureMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9285,7 +9285,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcRadioActivityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcRadioActivityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9303,7 +9303,7 @@ public:
 /// NOTE Corresponding STEP name: ratio_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcRatioMeasure : public  IfcUtil::IfcBaseType, public  IfcValue, public  IfcTimeOrRatioSelect, public  IfcSizeSelect, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcMeasureValue {
+class IFC_PARSE_API IfcRatioMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcSizeSelect, public  IfcTimeOrRatioSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9318,7 +9318,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY: New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcReal : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcValue, public  IfcSimpleValue {
+class IFC_PARSE_API IfcReal : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcSimpleValue, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9331,7 +9331,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcRotationalFrequencyMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcRotationalFrequencyMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9345,7 +9345,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcRotationalMassMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcRotationalMassMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9358,7 +9358,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcRotationalStiffnessMeasure : public  IfcUtil::IfcBaseType, public  IfcValue, public  IfcDerivedMeasureValue, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcRotationalStiffnessSelect {
+class IFC_PARSE_API IfcRotationalStiffnessMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcRotationalStiffnessSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9371,7 +9371,7 @@ public:
 /// Type: REAL 
 /// 
 /// HISTORY New type in IFC Release 2x2.
-class IFC_PARSE_API IfcSectionModulusMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcSectionModulusMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9384,7 +9384,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcSectionalAreaIntegralMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcSectionalAreaIntegralMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9397,7 +9397,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcShearModulusMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcShearModulusMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9412,7 +9412,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: solid_angle_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcSolidAngleMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcSolidAngleMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9421,7 +9421,7 @@ public:
     operator double() const;
 };
 
-class IFC_PARSE_API IfcSoundPowerLevelMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcSoundPowerLevelMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9434,7 +9434,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcSoundPowerMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcSoundPowerMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9443,7 +9443,7 @@ public:
     operator double() const;
 };
 
-class IFC_PARSE_API IfcSoundPressureLevelMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcSoundPressureLevelMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9456,7 +9456,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcSoundPressureMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcSoundPressureMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9469,7 +9469,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcSpecificHeatCapacityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcSpecificHeatCapacityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9514,7 +9514,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcTemperatureGradientMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcTemperatureGradientMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9527,7 +9527,7 @@ public:
 /// Type: REAL 
 /// 
 /// HISTORY  New type in IFC2x4.
-class IFC_PARSE_API IfcTemperatureRateOfChangeMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcTemperatureRateOfChangeMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9546,7 +9546,7 @@ public:
 /// Per ISO 10303-11, the set of characters that may appear in STRINGs is defined in ISO 10646.  The encoding of characters in case of file-based exchange is defined in ISO 10303-21 (STEP physical files) and ISO 10303-28 (XML files).  Among else, these specifications define the encoding of 8-bit characters from ISO 8859-1...-16 and of 2-byte Unicode characters.
 /// 
 /// Note that while IfcText is not formally restricted in length, the size of a string in ISO 10303-21:2002 conforming exchange files must not exceed 32767 octets after encoding and escaping.
-class IFC_PARSE_API IfcText : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcValue, public  IfcSimpleValue {
+class IFC_PARSE_API IfcText : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcSimpleValue, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9643,7 +9643,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcThermalAdmittanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcThermalAdmittanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9656,7 +9656,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcThermalConductivityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcThermalConductivityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9668,7 +9668,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcThermalExpansionCoefficientMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcThermalExpansionCoefficientMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9680,7 +9680,7 @@ public:
 /// Usually measured in m2 Kelvin/Watt.
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcThermalResistanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcThermalResistanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9693,7 +9693,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcThermalTransmittanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcThermalTransmittanceMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9708,7 +9708,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: thermodynamic_temperature_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcThermodynamicTemperatureMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcThermodynamicTemperatureMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9724,7 +9724,7 @@ public:
 ///   13:20:00-05:00.
 /// 
 /// HISTORY: New type in IFC2x4
-class IFC_PARSE_API IfcTime : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcValue, public  IfcSimpleValue {
+class IFC_PARSE_API IfcTime : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcSimpleValue, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9739,7 +9739,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: time_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcTimeMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcTimeMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9751,7 +9751,7 @@ public:
 /// Type: INTEGER
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcTimeStamp : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcValue, public  IfcSimpleValue {
+class IFC_PARSE_API IfcTimeStamp : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcSimpleValue, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9764,7 +9764,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcTorqueMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcTorqueMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9792,7 +9792,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcVaporPermeabilityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcVaporPermeabilityMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9807,7 +9807,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: volume_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcVolumeMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcVolumeMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9820,7 +9820,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcVolumetricFlowRateMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcVolumetricFlowRateMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9833,7 +9833,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcWarpingConstantMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcValue, public  IfcMetricValueSelect {
+class IFC_PARSE_API IfcWarpingConstantMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9846,7 +9846,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcWarpingMomentMeasure : public  IfcUtil::IfcBaseType, public  IfcValue, public  IfcDerivedMeasureValue, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcWarpingStiffnessSelect {
+class IFC_PARSE_API IfcWarpingMomentMeasure : public  IfcUtil::IfcBaseType, public  IfcAppliedValueSelect, public  IfcDerivedMeasureValue, public  IfcMetricValueSelect, public  IfcValue, public  IfcWarpingStiffnessSelect {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9892,7 +9892,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcNormalisedRatioMeasure : public  IfcRatioMeasure, public  IfcValue, public  IfcColourOrFactor, public  IfcSizeSelect, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcMeasureValue {
+class IFC_PARSE_API IfcNormalisedRatioMeasure : public  IfcRatioMeasure, public  IfcAppliedValueSelect, public  IfcColourOrFactor, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcSizeSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -9906,7 +9906,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: positive_ratio_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcPositiveRatioMeasure : public  IfcRatioMeasure, public  IfcValue, public  IfcSizeSelect, public  IfcAppliedValueSelect, public  IfcMetricValueSelect, public  IfcMeasureValue {
+class IFC_PARSE_API IfcPositiveRatioMeasure : public  IfcRatioMeasure, public  IfcAppliedValueSelect, public  IfcMeasureValue, public  IfcMetricValueSelect, public  IfcSizeSelect, public  IfcValue {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -10703,7 +10703,7 @@ public:
 /// IfcExternalReference is an abstract supertype of all external reference entities.
 /// 
 /// HISTORY New entity in IFC2x.
-class IFC_PARSE_API IfcExternalReference : public  IfcUtil::IfcBaseEntity, public  IfcObjectReferenceSelect, public  IfcResourceObjectSelect, public  IfcLightDistributionDataSourceSelect {
+class IFC_PARSE_API IfcExternalReference : public  IfcUtil::IfcBaseEntity, public  IfcLightDistributionDataSourceSelect, public  IfcObjectReferenceSelect, public  IfcResourceObjectSelect {
 public:
     /// Location, where the external source (classification, document or library) can be accessed by electronic means. The electronic location is provided as an URI, and would normally be given as an URL location string.
     /// 
@@ -11048,7 +11048,7 @@ public:
 /// IfcRelAssociatesMaterial.
 /// 
 /// HISTORY New entity in IFC2x4
-class IFC_PARSE_API IfcMaterialDefinition : public  IfcUtil::IfcBaseEntity, public  IfcObjectReferenceSelect, public  IfcResourceObjectSelect, public  IfcMaterialSelect {
+class IFC_PARSE_API IfcMaterialDefinition : public  IfcUtil::IfcBaseEntity, public  IfcMaterialSelect, public  IfcObjectReferenceSelect, public  IfcResourceObjectSelect {
 public:
         aggregate_of< IfcRelAssociatesMaterial >::ptr AssociatedTo() const; // INVERSE IfcRelAssociatesMaterial::RelatingMaterial
     aggregate_of< IfcExternalReferenceRelationship >::ptr HasExternalReferences() const; // INVERSE IfcExternalReferenceRelationship::RelatedResourceObjects
@@ -11561,7 +11561,7 @@ public:
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
 /// IFC 2x4 change: attribute Id renamed to Identification.
-class IFC_PARSE_API IfcOrganization : public  IfcUtil::IfcBaseEntity, public  IfcObjectReferenceSelect, public  IfcResourceObjectSelect, public  IfcActorSelect {
+class IFC_PARSE_API IfcOrganization : public  IfcUtil::IfcBaseEntity, public  IfcActorSelect, public  IfcObjectReferenceSelect, public  IfcResourceObjectSelect {
 public:
     /// Identification of the organization.
     boost::optional< std::string > Identification() const;
@@ -11639,7 +11639,7 @@ public:
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
 /// IFC 2x4 change: attribute Id renamed to Identification.  WHERE rule relaxed to allow omission of names if Identification is provided.
-class IFC_PARSE_API IfcPerson : public  IfcUtil::IfcBaseEntity, public  IfcObjectReferenceSelect, public  IfcResourceObjectSelect, public  IfcActorSelect {
+class IFC_PARSE_API IfcPerson : public  IfcUtil::IfcBaseEntity, public  IfcActorSelect, public  IfcObjectReferenceSelect, public  IfcResourceObjectSelect {
 public:
     /// Identification of the person.
     boost::optional< std::string > Identification() const;
@@ -11683,7 +11683,7 @@ public:
 /// NOTE Corresponds to the following entity in ISO-10303-41: person_and_organization.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1
-class IFC_PARSE_API IfcPersonAndOrganization : public  IfcUtil::IfcBaseEntity, public  IfcObjectReferenceSelect, public  IfcResourceObjectSelect, public  IfcActorSelect {
+class IFC_PARSE_API IfcPersonAndOrganization : public  IfcUtil::IfcBaseEntity, public  IfcActorSelect, public  IfcObjectReferenceSelect, public  IfcResourceObjectSelect {
 public:
     /// The person who is related to the organization.
     ::Ifc4x3_rc4::IfcPerson* ThePerson() const;
@@ -14444,7 +14444,7 @@ public:
 /// 
 /// Including the classification system structure within the dataset: Here a hierarchical tree of IfcClassificationItem's is included that defines the classification system including the relationship between the classification items. An IfcClassificationNotation is used to classify an object.
 /// Referencing the classification system by a classification key or id: Here the IfcClassificationReference is used to assign a classification id or key to each classified object.
-class IFC_PARSE_API IfcClassification : public  IfcExternalInformation, public  IfcClassificationSelect, public  IfcClassificationReferenceSelect {
+class IFC_PARSE_API IfcClassification : public  IfcExternalInformation, public  IfcClassificationReferenceSelect, public  IfcClassificationSelect {
 public:
     /// Source (or publisher) for this classification.
     /// 
@@ -14523,7 +14523,7 @@ public:
 /// The IfcClassificationReference can be used to only assign classification keys to objects, or to hold a fully classification hierarchy. The first is refered to as "lightweight classification", and the second as "full classification"
 /// 
 /// The IfcClassificationReference can be used as a form of 'lightweight' classification through the 'Identification' attribute inherited from the abstract IfcExternalReference class. In this case, the 'Identification' could take (for instance) the Uniclass notation "L6814" which, if the classification was well understood by all parties and was known to be taken from a particular classification source, would be sufficient. The Name attribute could be the title "Tanking". This would remove the need for the overhead of the more complete classification structure of the model.
-class IFC_PARSE_API IfcClassificationReference : public  IfcExternalReference, public  IfcClassificationSelect, public  IfcClassificationReferenceSelect {
+class IFC_PARSE_API IfcClassificationReference : public  IfcExternalReference, public  IfcClassificationReferenceSelect, public  IfcClassificationSelect {
 public:
     /// The classification system or source that is referenced.
     ::Ifc4x3_rc4::IfcClassificationReferenceSelect* ReferencedSource() const;
@@ -14559,7 +14559,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: colour_specification. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcColourSpecification : public  IfcPresentationItem, public  IfcFillStyleSelect, public  IfcColour {
+class IFC_PARSE_API IfcColourSpecification : public  IfcPresentationItem, public  IfcColour, public  IfcFillStyleSelect {
 public:
     /// Optional name given to a particular colour specification in addition to the colour components (like the RGB values).
     /// 
@@ -17157,7 +17157,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: point. Only the subtypes cartesian_point, point_on_curve, point_on_surface have been incorporated in the current release of IFC. Please refer to ISO/IS 10303-42:1994, p. 22 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.5
-class IFC_PARSE_API IfcPoint : public  IfcGeometricRepresentationItem, public  IfcPointOrVertexPoint, public  IfcGeometricSetSelect {
+class IFC_PARSE_API IfcPoint : public  IfcGeometricRepresentationItem, public  IfcGeometricSetSelect, public  IfcPointOrVertexPoint {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
@@ -18308,7 +18308,7 @@ public:
 /// 
 /// A surface has non zero area. 
 /// A surface is arcwise connected.
-class IFC_PARSE_API IfcSurface : public  IfcGeometricRepresentationItem, public  IfcSurfaceOrFaceSurface, public  IfcGeometricSetSelect {
+class IFC_PARSE_API IfcSurface : public  IfcGeometricRepresentationItem, public  IfcGeometricSetSelect, public  IfcSurfaceOrFaceSurface {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
@@ -19883,7 +19883,7 @@ public:
 ///   The closed shell shall be an oriented arcwise connected 2-manifold. 
 ///   The Euler equation shall be satisfied. Note: Please refer to ISO/IS
 ///   10303-42:1994, p.149 for the equation.
-class IFC_PARSE_API IfcClosedShell : public  IfcConnectedFaceSet, public  IfcSolidOrShell, public  IfcShell {
+class IFC_PARSE_API IfcClosedShell : public  IfcConnectedFaceSet, public  IfcShell, public  IfcSolidOrShell {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
@@ -21676,7 +21676,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: pre_defined_colour. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcPreDefinedColour : public  IfcPreDefinedItem, public  IfcFillStyleSelect, public  IfcColour {
+class IFC_PARSE_API IfcPreDefinedColour : public  IfcPreDefinedItem, public  IfcColour, public  IfcFillStyleSelect {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
@@ -21905,7 +21905,7 @@ public:
 /// IfcProductDefinitionShape being either a geometric shape
 /// representation, or a topology representation (with or without
 /// underlying geometry of the topological items).
-class IFC_PARSE_API IfcProduct : public  IfcObject, public  IfcSpatialReferenceSelect, public  IfcProductSelect {
+class IFC_PARSE_API IfcProduct : public  IfcObject, public  IfcProductSelect, public  IfcSpatialReferenceSelect {
 public:
     /// Placement of the product in space, the placement can either be absolute (relative to the world coordinate system), relative (relative to the object placement of another product), or constraint (e.g. relative to grid axes). It is determined by the various subtypes of IfcObjectPlacement, which includes the axis placement information to determine the  transformation for the object coordinate system.
     ::Ifc4x3_rc4::IfcObjectPlacement* ObjectPlacement() const;
