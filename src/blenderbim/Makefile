@@ -476,3 +476,7 @@ license:
 clean:
 	rm -rf dist
 	rm -rf htmlcov
+
+.PHONY: dev
+dev:
+	blender -p setup_pytest.py
