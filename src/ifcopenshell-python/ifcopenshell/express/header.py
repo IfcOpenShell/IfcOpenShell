@@ -52,7 +52,7 @@ class Header(codegen.Base):
             x = list(select_super_types[nm.lower()])
             for y in x:
                 x.extend(get_select_super_types(y))
-            return set(x)
+            return sorted(set(x))
 
         for name, type in mapping.schema.enumerations.items():
             short_name = name[:-4] if name.endswith("Enum") else name
