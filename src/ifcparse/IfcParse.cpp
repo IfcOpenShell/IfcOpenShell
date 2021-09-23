@@ -970,6 +970,7 @@ void IfcParse::IfcFile::try_read_semicolon() {
 void IfcParse::IfcFile::register_inverse(unsigned id_from, const IfcParse::entity* from_entity, Token t, int attribute_index) {
 	// Assume a check on token type has already been performed
 	auto e = from_entity;
+	byref_excl[{t.value_int, e->index_in_schema(), attribute_index}].push_back(id_from);
 	while (e) {
 		byref[{t.value_int, e->index_in_schema(), attribute_index}].push_back(id_from);
 		e = e->supertype();
@@ -978,6 +979,7 @@ void IfcParse::IfcFile::register_inverse(unsigned id_from, const IfcParse::entit
 
 void IfcParse::IfcFile::register_inverse(unsigned id_from, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass* inst, int attribute_index) {
 	auto e = from_entity;
+	byref_excl[{inst->data().id(), e->index_in_schema(), attribute_index}].push_back(id_from);
 	while (e) {
 		byref[{inst->data().id(), e->index_in_schema(), attribute_index}].push_back(id_from);
 		e = e->supertype();
@@ -992,12 +994,20 @@ void IfcParse::IfcFile::unregister_inverse(unsigned id_from, const IfcParse::ent
 		if (it == ids.end()) {
 			// @todo inverses also need to be populated when multiple instances are added to a new file.
 			// throw IfcParse::IfcException("Instance not found among inverses");
-		}
-		else {
+		} else {
 			ids.erase(it);
 		}
 		e = e->supertype();
-	}	
+	}
+
+	std::vector<int>& ids = byref_excl[{inst->data().id(), e->index_in_schema(), attribute_index}];
+	std::vector<int>::iterator it = std::find(ids.begin(), ids.end(), id_from);
+	if (it == ids.end()) {
+		// @todo inverses also need to be populated when multiple instances are added to a new file.
+		// throw IfcParse::IfcException("Instance not found among inverses");
+	} else {
+		ids.erase(it);
+	}
 }
 
 //
@@ -2045,6 +2055,11 @@ void IfcFile::process_deletion_() {
 				byref.lower_bound({ id,-1,-1 }), 
 				byref.upper_bound({ id, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() })
 			);
+
+			byref_excl.erase(
+				byref_excl.lower_bound({ id,-1,-1 }),
+				byref_excl.upper_bound({ id, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() })
+			);
 			
 			// This is based on traversal which needs instances to still be contained in the map.
 			// another option would be to keep byid intact for the remainder of this loop
@@ -2055,12 +2070,23 @@ void IfcFile::process_deletion_() {
 				const unsigned int name = entity_attribute->data().id();
 				// Do not update inverses for simple types (which have id()==0 in IfcOpenShell).
 				if (name != 0) {
-					auto lower = byref.lower_bound({ name,-1,-1 });
-					auto upper = byref.upper_bound({ name, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+					{
+						auto lower = byref.lower_bound({ name,-1,-1 });
+						auto upper = byref.upper_bound({ name, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
 
-					for (auto byref_it = lower; byref_it != upper; ++byref_it) {
-						auto& ids = byref_it->second;
-						ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
+						for (auto byref_it = lower; byref_it != upper; ++byref_it) {
+							auto& ids = byref_it->second;
+							ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
+						}
+					}
+					{
+						auto lower = byref_excl.lower_bound({ name,-1,-1 });
+						auto upper = byref_excl.upper_bound({ name, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+
+						for (auto byref_it = lower; byref_it != upper; ++byref_it) {
+							auto& ids = byref_it->second;
+							ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
+						}
 					}
 					by_ref_cached_.erase(name);
 				}
@@ -2138,6 +2164,21 @@ void IfcFile::process_deletion_() {
 				++it;
 			}
 		}
+
+		for (auto it = byref_excl.begin(); it != byref_excl.end();) {
+			bool do_delete = batch_deletion_ids_.get<1>().find(std::get<INSTANCE_ID>(it->first)) != batch_deletion_ids_.get<1>().end();
+			if (!do_delete) {
+				it->second.erase(std::remove_if(it->second.begin(), it->second.end(), [this](int x) {
+					return batch_deletion_ids_.get<1>().find(x) != batch_deletion_ids_.get<1>().end();
+				}), it->second.end());
+				do_delete = it->second.empty();
+			}
+			if (do_delete) {
+				it = byref_excl.erase(it);
+			} else {
+				++it;
+			}
+		}
 	}
 
 	by_ref_cached_.clear();
@@ -2164,8 +2205,8 @@ aggregate_of_instance::ptr IfcFile::instances_by_type_excl_subtypes(const std::s
 }
 
 aggregate_of_instance::ptr IfcFile::instances_by_reference(int t) {
-	auto lower = byref.lower_bound({ t,-1,-1 });
-	auto upper = byref.upper_bound({ t, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+	auto lower = byref_excl.lower_bound({ t,-1,-1 });
+	auto upper = byref_excl.upper_bound({ t, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
 
 	aggregate_of_instance::ptr ret(new aggregate_of_instance);
 	for (auto it = lower; it != upper; it++) {
@@ -2397,6 +2438,7 @@ void IfcParse::IfcFile::build_inverses_(IfcUtil::IfcBaseClass* inst) {
 		if (attr->declaration().as_entity()) {
 			unsigned entity_attribute_id = attr->data().id();
 			auto decl = inst->declaration().as_entity();
+			byref_excl[{entity_attribute_id, decl->index_in_schema(), idx}].push_back(inst->data().id());
 			while (decl) {
 				byref[{entity_attribute_id, decl->index_in_schema(), idx}].push_back(inst->data().id());
 				decl = decl->supertype();
