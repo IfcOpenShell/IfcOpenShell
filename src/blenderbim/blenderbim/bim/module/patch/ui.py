@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -37,8 +36,7 @@ class BIM_PT_patch(bpy.types.Panel):
         scene = context.scene
         props = scene.BIMPatchProperties
         row = layout.row()
-        row.prop(props, "ifc_patch_recipes")      
-        
+        row.prop(props, "ifc_patch_recipes")
 
         row = layout.row(align=True)
         row.prop(props, "ifc_patch_input")

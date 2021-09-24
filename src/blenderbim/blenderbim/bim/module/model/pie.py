@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -19,6 +18,7 @@
 
 import bpy
 from blenderbim.bim.ifc import IfcStore
+
 
 class OpenPieClass(bpy.types.Operator):
     bl_idname = "bim.open_pie_class"

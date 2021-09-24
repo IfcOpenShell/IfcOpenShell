@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -68,37 +67,78 @@ class BIM_PT_groups(Panel):
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
 
+class BIM_PT_object_groups(Panel):
+    bl_label = "IFC Groups"
+    bl_idname = "BIM_PT_object_groups"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file() and context.active_object.BIMObjectProperties.ifc_definition_id
+
+    def draw(self, context):
+        if not Data.is_loaded:
+            Data.load(IfcStore.get_file())
+        self.props = context.scene.BIMGroupProperties
+        row = self.layout.row(align=True)
+        if self.props.is_adding:
+            row.label(text="Adding Groups", icon="OUTLINER")
+            row.operator("bim.toggle_assigning_group", text="", icon="CANCEL")
+            self.layout.template_list(
+                "BIM_UL_object_groups",
+                "",
+                self.props,
+                "groups",
+                self.props,
+                "active_group_index",
+            )
+        else:
+            row.label(text=f"{len(Data.groups)} Groups in IFC Project", icon="OUTLINER")
+            row.operator("bim.toggle_assigning_group", text="", icon="ADD")
+
+        groups_object = Data.products.get(context.active_object.BIMObjectProperties.ifc_definition_id, [])
+        for group_id in groups_object:
+            row = self.layout.row(align=True)
+            row.label(text=Data.groups[group_id].get("Name", "Unnamed"))
+            op = row.operator("bim.unassign_group", text="", icon="X")
+            op.group = group_id
+
+        if not groups_object:
+            self.layout.label(text="No Group associated with Active Object")
+
 
 class BIM_UL_groups(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)
-
-            if context.active_object:
-                oprops = context.active_object.BIMObjectProperties
-                if (
-                    oprops.ifc_definition_id in Data.products
-                    and item.ifc_definition_id in Data.products[oprops.ifc_definition_id]
-                ):
-                    op = row.operator("bim.unassign_group", text="", icon="KEYFRAME_HLT", emboss=False)
-                    op.group = item.ifc_definition_id
-                else:
-                    op = row.operator("bim.assign_group", text="", icon="KEYFRAME", emboss=False)
-                    op.group = item.ifc_definition_id
-
-            if context.scene.BIMGroupProperties.active_group_id == item.ifc_definition_id:
+            group_id = item.ifc_definition_id
+            if context.scene.BIMGroupProperties.active_group_id == group_id:
                 op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.group = item.ifc_definition_id
+                op.group = group_id
                 row.operator("bim.edit_group", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_group", text="", icon="CANCEL")
             elif context.scene.BIMGroupProperties.active_group_id:
                 op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.group = item.ifc_definition_id
-                row.operator("bim.remove_group", text="", icon="X").group = item.ifc_definition_id
+                op.group = group_id
+                op = row.operator("bim.remove_group", text="", icon="X")
+                op.group = group_id
             else:
                 op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.group = item.ifc_definition_id
+                op.group = group_id
                 op = row.operator("bim.enable_editing_group", text="", icon="GREASEPENCIL")
-                op.group = item.ifc_definition_id
-                row.operator("bim.remove_group", text="", icon="X").group = item.ifc_definition_id
+                op.group = group_id
+                op = row.operator("bim.remove_group", text="", icon="X")
+                op.group = group_id
+
+
+class BIM_UL_object_groups(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
+            op = row.operator("bim.assign_group", text="", icon="ADD")
+            op.group = item.ifc_definition_id

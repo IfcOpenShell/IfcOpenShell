@@ -21,7 +21,6 @@ import ifcopenshell.api
 import ifcopenshell.util.representation
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.void.data import Data
-from ifcopenshell.api.context.data import Data as ContextData
 
 
 class AddOpening(bpy.types.Operator):
@@ -56,21 +55,20 @@ class AddOpening(bpy.types.Operator):
                 "element": self.file.by_id(element_id),
             },
         )
-        Data.load(IfcStore.get_file(), element_id)
+        Data.load(self.file, element_id)
 
-        has_modifier = False
-
-        for modifier in obj.modifiers:
-            if modifier.type == "BOOLEAN" and modifier.object and modifier.object == opening:
-                has_modifier = True
-                break
-
-        if not has_modifier:
+        try:
+            modifier = next(m for m in obj.modifiers if m.type == "BOOLEAN" and m.object == opening)
+        except StopIteration:
             modifier = obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-            modifier.operation = "DIFFERENCE"
             modifier.object = opening
+        finally:
+            modifier.operation = "DIFFERENCE"
             modifier.solver = "EXACT"
             modifier.use_self = True
+            modifier.operand_type = "OBJECT"
+
+        context.view_layer.objects.active = obj
         return {"FINISHED"}
 
 
@@ -87,17 +85,28 @@ class RemoveOpening(bpy.types.Operator):
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
+        is_modifier_removed = False
         for modifier in obj.modifiers:
             if modifier.type != "BOOLEAN":
                 continue
             if modifier.object and modifier.object.BIMObjectProperties.ifc_definition_id == self.opening_id:
-                IfcStore.unlink_element(obj=modifier.object)
-                if "/" in modifier.object.name and modifier.object.name[0:3] == "Ifc":
-                    modifier.object.name = "/".join(modifier.object.name.split("/")[1:])
+                is_modifier_removed = True
                 obj.modifiers.remove(modifier)
                 break
 
+        opening = IfcStore.get_element(self.opening_id)
+        opening.name = "/".join(opening.name.split("/")[1:])
+        IfcStore.unlink_element(obj=opening)
+
         ifcopenshell.api.run("void.remove_opening", self.file, **{"opening": self.file.by_id(self.opening_id)})
+
+        if not is_modifier_removed:
+            bpy.ops.bim.switch_representation(
+                ifc_definition_id=obj.data.BIMMeshProperties.ifc_definition_id,
+                should_reload=True,
+                should_switch_all_meshes=True,
+            )
+
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
@@ -119,15 +128,18 @@ class AddFilling(bpy.types.Operator):
             return {"FINISHED"}
         self.file = IfcStore.get_file()
         element_id = obj.BIMObjectProperties.ifc_definition_id
+        opening_id = opening.BIMObjectProperties.ifc_definition_id
+        if not element_id or not opening_id:
+            return {"FINISHED"}
         ifcopenshell.api.run(
             "void.add_filling",
             self.file,
             **{
-                "opening": self.file.by_id(opening.BIMObjectProperties.ifc_definition_id),
+                "opening": self.file.by_id(opening_id),
                 "element": self.file.by_id(element_id),
             },
         )
-        Data.load(IfcStore.get_file(), element_id)
+        Data.load(self.file, element_id)
         return {"FINISHED"}
 
 

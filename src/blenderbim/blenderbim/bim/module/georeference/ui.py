@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -55,14 +54,6 @@ class BIM_PT_gis(Panel):
         row.operator("bim.disable_editing_georeferencing", icon="CANCEL", text="")
 
         draw_attributes(props.projected_crs, self.layout)
-
-        row = self.layout.row(align=True)
-        row.prop(props, "map_unit_type", text="MapUnit")
-        if props.map_unit_type == "IfcSIUnit":
-            row.prop(props, "map_unit_si", text="")
-        elif props.map_unit_type == "IfcConversionBasedUnit":
-            row.prop(props, "map_unit_imperial", text="")
-        row.prop(props, "is_map_unit_null", icon="RADIOBUT_OFF" if props.is_map_unit_null else "RADIOBUT_ON", text="")
 
         row = self.layout.row()
         row.label(text="Map Conversion", icon="GRID")

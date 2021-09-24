@@ -26,7 +26,8 @@ def get_property_definition(definition):
             # Entity introduced in IFC4
             # definition.is_a('IfcPreDefinedPropertySet'):
             for prop in range(4, len(definition)):
-                props[definition.attribute_name(prop)] = definition[prop]
+                if definition[prop] is not None:
+                    props[definition.attribute_name(prop)] = definition[prop]
         return props
 
 
@@ -40,11 +41,11 @@ def get_quantities(quantities):
 
 def get_properties(properties):
     results = {}
-    for prop in properties:
+    for prop in properties or []:
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
         elif prop.is_a("IfcComplexProperty"):
-            data = prop.get_info()
+            data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
             data["properties"] = get_properties(prop.HasProperties)
             del data["HasProperties"]
             results[prop.Name] = data
@@ -78,8 +79,25 @@ def get_material(element, should_skip_usage=False):
 
 
 def get_container(element):
+    aggregate = get_aggregate(element)
+    if aggregate:
+        return get_container(aggregate)
     if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
         return element.ContainedInStructure[0].RelatingStructure
+
+
+def get_decomposition(element):
+    queue = [element]
+    results = []
+    while queue:
+        element = queue.pop()
+        for rel in getattr(element, "ContainsElements", []):
+            queue.extend(rel.RelatedElements)
+            results.extend(rel.RelatedElements)
+        for rel in getattr(element, "IsDecomposedBy", []):
+            queue.extend(rel.RelatedObjects)
+            results.extend(rel.RelatedObjects)
+    return results
 
 
 def get_aggregate(element):
@@ -97,7 +115,9 @@ def replace_attribute(element, old, new):
 def has_element_reference(value, element):
     if isinstance(value, (tuple, list)):
         for v in value:
-            return has_element_reference(v, element)
+            if has_element_reference(v, element):
+                return True
+        return False
     return value == element
 
 

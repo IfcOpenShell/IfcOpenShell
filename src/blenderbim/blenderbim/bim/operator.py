@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -27,12 +26,10 @@ import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
 from . import export_ifc
-from . import import_ifc
 from . import schema
 from blenderbim.bim.ifc import IfcStore
-from bpy_extras.io_utils import ImportHelper
-from mathutils import Vector, Matrix, Euler, geometry
-from math import radians, degrees, atan, tan, cos, sin
+from mathutils import Vector, Matrix, Euler
+from math import radians
 
 
 class ExportIFC(bpy.types.Operator):
@@ -101,66 +98,13 @@ class ExportIFC(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ImportIFC(bpy.types.Operator, ImportHelper):
+class ImportIFC(bpy.types.Operator):
     bl_idname = "import_ifc.bim"
     bl_label = "Import IFC"
     bl_options = {"REGISTER", "UNDO"}
-    filename_ext = ".ifc"
-    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-
-    should_auto_set_workarounds: bpy.props.BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
-    should_use_cpu_multiprocessing: bpy.props.BoolProperty(name="Import with CPU Multiprocessing", default=True)
-    should_merge_by_class: bpy.props.BoolProperty(name="Import and Merge by Class", default=False)
-    should_merge_by_material: bpy.props.BoolProperty(name="Import and Merge by Material", default=False)
-    should_merge_materials_by_colour: bpy.props.BoolProperty(name="Import and Merge Materials by Colour", default=False)
-    should_clean_mesh: bpy.props.BoolProperty(name="Import and Clean Mesh", default=True)
-    deflection_tolerance: bpy.props.FloatProperty(name="Import Deflection Tolerance", default=0.001)
-    angular_tolerance: bpy.props.FloatProperty(name="Import Angular Tolerance", default=0.5)
-    should_offset_model: bpy.props.BoolProperty(name="Import and Offset Model", default=False)
-    model_offset_coordinates: bpy.props.StringProperty(name="Model Offset Coordinates", default="0,0,0")
-    ifc_import_filter: bpy.props.EnumProperty(
-        items=[
-            ("NONE", "None", ""),
-            ("WHITELIST", "Whitelist", ""),
-            ("BLACKLIST", "Blacklist", ""),
-        ],
-        name="Import Filter",
-    )
-    ifc_selector: bpy.props.StringProperty(default="", name="IFC Selector")
 
     def execute(self, context):
-        start = time.time()
-        logger = logging.getLogger("ImportIFC")
-        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
-        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
-            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
-        logging.basicConfig(
-            filename=path_log,
-            filemode="a",
-            level=logging.DEBUG,
-        )
-
-        settings = import_ifc.IfcImportSettings.factory(context, self.filepath, logger)
-        settings.should_auto_set_workarounds = self.should_auto_set_workarounds
-        settings.should_use_cpu_multiprocessing = self.should_use_cpu_multiprocessing
-        settings.should_merge_by_class = self.should_merge_by_class
-        settings.should_merge_by_material = self.should_merge_by_material
-        settings.should_merge_materials_by_colour = self.should_merge_materials_by_colour
-        settings.should_clean_mesh = self.should_clean_mesh
-        settings.deflection_tolerance = self.deflection_tolerance
-        settings.angular_tolerance = self.angular_tolerance
-        settings.should_offset_model = self.should_offset_model
-        settings.model_offset_coordinates = (
-            [float(o) for o in self.model_offset_coordinates.split(",")] if self.model_offset_coordinates else (0, 0, 0)
-        )
-        settings.ifc_import_filter = self.ifc_import_filter
-        settings.ifc_selector = self.ifc_selector
-
-        settings.logger.info("Starting import")
-        ifc_importer = import_ifc.IfcImporter(settings)
-        ifc_importer.execute()
-        settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        bpy.ops.bim.load_project("INVOKE_DEFAULT")
         return {"FINISHED"}
 
 
@@ -529,34 +473,6 @@ class SetViewportShadowFromSun(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LinkIfc(bpy.types.Operator):
-    bl_idname = "bim.link_ifc"
-    bl_label = "Link IFC"
-    bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        # context.active_object.active_material.BIMMaterialProperties.location = self.filepath
-        # coll_name = "MyCollection"
-
-        with bpy.data.libraries.load(self.filepath, link=True) as (data_from, data_to):
-            data_to.scenes = data_from.scenes
-
-        for scene in bpy.data.scenes:
-            if not scene.library or scene.library.filepath != self.filepath:
-                continue
-            for child in scene.collection.children:
-                if "IfcProject" not in child.name:
-                    continue
-                bpy.data.scenes[0].collection.children.link(child)
-
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
 class SnapSpacesTogether(bpy.types.Operator):
     bl_idname = "bim.snap_spaces_together"
     bl_label = "Snap Spaces Together"
@@ -726,3 +642,38 @@ class CopyAttributeToSelection(bpy.types.Operator):
                 a.name() for a in self.schema.declaration_by_name(ifc_class).all_attributes()
             ]
         return self.applicable_attributes_cache[ifc_class]
+
+
+class OverrideDelete(bpy.types.Operator):
+    bl_idname = "object.delete"
+    bl_label = "Delete"
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def execute(self, context):
+        if IfcStore.get_file():
+            return IfcStore.execute_ifc_operator(self, context)
+        for obj in context.selected_objects:
+            bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    def _execute(self, context):
+        for obj in context.selected_objects:
+            if obj.BIMObjectProperties.ifc_definition_id:
+                element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+                if element.is_a("IfcOpeningElement"):
+                    self.delete_opening_element(element)
+                elif element.HasOpenings:
+                    for rel in element.HasOpenings:
+                        self.delete_opening_element(rel.RelatedOpeningElement)
+            bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+    def delete_opening_element(self, element):
+        obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
+        bpy.ops.bim.remove_opening(opening_id=element.id(), obj=obj.name)

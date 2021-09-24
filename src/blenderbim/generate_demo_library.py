@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -29,13 +28,21 @@ class LibraryGenerator:
 
         self.file = ifcopenshell.api.run("project.create_file")
         self.project = ifcopenshell.api.run(
+            "root.create_entity", self.file, ifc_class="IfcProject", name="BlenderBIM Demo"
+        )
+        self.library = ifcopenshell.api.run(
             "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name="BlenderBIM Demo Library"
+        )
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definition=self.library, relating_context=self.project
         )
         ifcopenshell.api.run("unit.assign_unit", self.file, length={"is_metric": True, "raw": "METERS"})
         ifcopenshell.api.run("context.add_context", self.file, context="Model")
-        self.body = ifcopenshell.api.run(
-            "context.add_context", self.file, context="Model", subcontext="Body", target_view="MODEL_VIEW"
-        )
+        self.representations = {
+            "body": ifcopenshell.api.run(
+                "context.add_context", self.file, context="Model", subcontext="Body", target_view="MODEL_VIEW"
+            )
+        }
         ifcopenshell.api.run("context.add_context", self.file, context="Plan")
         self.annotation = ifcopenshell.api.run(
             "context.add_context", self.file, context="Model", subcontext="Annotation", target_view="PLAN_VIEW"
@@ -109,7 +116,9 @@ class LibraryGenerator:
         )
         self.create_profile_type("IfcBeamType", "DEMO2", profile)
 
-        self.create_window_type("IfcWindowType", "DEMO1")
+        self.create_type("IfcWindowType", "DEMO1", {"body": "Window"})
+        self.create_type("IfcDoorType", "DEMO1", {"body": "Door"})
+        self.create_type("IfcFurnitureType", "BUNNY", {"body": "Bunny"})
 
         self.file.write("blenderbim-demo-library.ifc")
 
@@ -119,7 +128,7 @@ class LibraryGenerator:
         layer_set = rel.RelatingMaterial
         layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=layer_set, material=self.material)
         layer.LayerThickness = thickness
-        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.project)
+        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
         return element
 
     def create_profile_type(self, ifc_class, name, profile):
@@ -130,35 +139,35 @@ class LibraryGenerator:
             "material.add_profile", self.file, profile_set=profile_set, material=self.material
         )
         ifcopenshell.api.run("material.assign_profile", self.file, material_profile=material_profile, profile=profile)
-        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.project)
+        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
 
-    def create_window_type(self, ifc_class, name):
+    def create_type(self, ifc_class, name, representations):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        obj = bpy.data.objects.get("Window")
-        representation = ifcopenshell.api.run(
-            "geometry.add_representation",
-            self.file,
-            context=self.body,
-            blender_object=obj,
-            geometry=obj.data,
-            total_items=max(1, len(obj.material_slots)),
-        )
-
-        ifcopenshell.api.run(
-            "style.assign_representation_styles",
-            self.file,
-            **{
-                "shape_representation": representation,
-                "styles": [
-                    ifcopenshell.api.run("style.add_style", self.file, **self.get_style_settings(s.material))
-                    for s in obj.material_slots
-                ],
-            },
-        )
-        ifcopenshell.api.run(
-            "geometry.assign_representation", self.file, product=element, representation=representation
-        )
-        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.project)
+        for rep_name, obj_name in representations.items():
+            obj = bpy.data.objects.get(obj_name)
+            representation = ifcopenshell.api.run(
+                "geometry.add_representation",
+                self.file,
+                context=self.representations[rep_name],
+                blender_object=obj,
+                geometry=obj.data,
+                total_items=max(1, len(obj.material_slots)),
+            )
+            ifcopenshell.api.run(
+                "style.assign_representation_styles",
+                self.file,
+                **{
+                    "shape_representation": representation,
+                    "styles": [
+                        ifcopenshell.api.run("style.add_style", self.file, **self.get_style_settings(s.material))
+                        for s in obj.material_slots
+                    ],
+                },
+            )
+            ifcopenshell.api.run(
+                "geometry.assign_representation", self.file, product=element, representation=representation
+            )
+        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
 
     def get_style_settings(self, material):
         transparency = material.diffuse_color[3]

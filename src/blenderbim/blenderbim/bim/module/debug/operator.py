@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -18,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import time
 import logging
 import ifcopenshell
 import ifcopenshell.util.placement
@@ -88,10 +88,7 @@ class ProfileImportIFC(bpy.types.Operator):
         import cProfile
         import pstats
 
-        # For Windows
-        filepath = context.scene.BIMProperties.ifc_file.replace("\\", "\\\\")
-
-        cProfile.run(f"import bpy; bpy.ops.import_ifc.bim(filepath='{filepath}')", "blender.prof")
+        cProfile.run("import bpy; bpy.ops.bim.load_project_elements()", "blender.prof")
         p = pstats.Stats("blender.prof")
         p.sort_stats("cumulative").print_stats(50)
         return {"FINISHED"}
@@ -116,9 +113,16 @@ class CreateAllShapes(bpy.types.Operator):
             if element.GlobalId in excludes:
                 continue
             print(f"{i}/{total}:", element)
+            start = time.time()
             try:
                 shape = ifcopenshell.geom.create_shape(settings, element)
-                print("Success", len(shape.geometry.verts), len(shape.geometry.edges), len(shape.geometry.faces))
+                print(
+                    "Success",
+                    time.time() - start,
+                    len(shape.geometry.verts),
+                    len(shape.geometry.edges),
+                    len(shape.geometry.faces),
+                )
             except:
                 failures.append(element)
                 print("***** FAILURE *****")
@@ -164,9 +168,11 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        [o.select_set(True) for o in context.view_layer.objects
-            if o.type == "MESH"
-            and len(o.data.polygons) > context.scene.BIMDebugProperties.number_of_polygons]
+        [
+            o.select_set(True)
+            for o in context.view_layer.objects
+            if o.type == "MESH" and len(o.data.polygons) > context.scene.BIMDebugProperties.number_of_polygons
+        ]
         return {"FINISHED"}
 
 

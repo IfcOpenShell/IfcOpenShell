@@ -1847,6 +1847,18 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 					IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
 					copy->set(v);
 					we->setArgument(i, copy);
+				} else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
+					std::vector<std::vector<double>> v = *attr;
+					for (std::vector<std::vector<double>>::iterator it = v.begin(); it != v.end(); ++it) {
+						std::vector<double>& v2 = (*it);
+						for (std::vector<double>::iterator jt = v2.begin(); jt != v2.end(); ++jt) {
+							(*jt) *= conversion_factor;
+						}
+					}
+
+					IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
+					copy->set(v);
+					we->setArgument(i, copy);
 				}
 			}
 		}
@@ -2368,7 +2380,13 @@ void IfcFile::setDefaultHeaderValues() {
 
 std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& unit_type) {
 	std::pair<IfcUtil::IfcBaseClass*, double> return_value(0, 1.);
+
 	aggregate_of_instance::ptr projects = instances_by_type(schema()->declaration_by_name("IfcProject"));
+	if (!projects || projects->size() == 0) {
+		try {
+			projects = instances_by_type(schema()->declaration_by_name("IfcContext"));
+		} catch ( IfcException& e ) {}
+	}
 
 	if (projects && projects->size() == 1) {
 		IfcUtil::IfcBaseClass* project = *projects->begin();

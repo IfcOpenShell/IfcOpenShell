@@ -20,12 +20,16 @@ class Usecase:
     def copy_indirect_attributes(self, from_element, to_element):
         for inverse in self.file.get_inverse(from_element):
             if inverse.is_a("IfcRelDefinesByProperties"):
+                # Properties must not be shared between objects for convenience of authoring
                 inverse = ifcopenshell.util.element.copy(self.file, inverse)
                 inverse.RelatedObjects = [to_element]
                 pset = ifcopenshell.util.element.copy_deep(self.file, inverse.RelatingPropertyDefinition)
                 inverse.RelatingPropertyDefinition = pset
+            elif inverse.is_a("IfcRelAggregates") and inverse.RelatingObject == from_element:
+                continue
+            elif inverse.is_a("IfcRelFillsElement"):
+                continue
             else:
-                # TODO: Consider whether this general approach is good or not. Maybe it isn't.
                 for i, value in enumerate(inverse):
                     if value == from_element:
                         new_inverse = ifcopenshell.util.element.copy(self.file, inverse)

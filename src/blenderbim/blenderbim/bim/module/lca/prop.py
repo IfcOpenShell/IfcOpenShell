@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -45,9 +44,7 @@ def get_product_systems(self, context):
     if not len(productsystems_enum):
         client = olca.Client(context.preferences.addons["blenderbim"].preferences.openlca_port)
         try:
-            productsystems_enum = [
-                (ps.name, ps.name, "") for ps in client.get_all(olca.ProductSystem)
-            ]
+            productsystems_enum = [(ps.name, ps.name, "") for ps in client.get_all(olca.ProductSystem)]
         except:
             pass
     return productsystems_enum

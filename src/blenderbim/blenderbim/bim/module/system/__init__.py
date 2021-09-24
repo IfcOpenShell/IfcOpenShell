@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -26,6 +25,7 @@ classes = (
     operator.AddSystem,
     operator.EditSystem,
     operator.RemoveSystem,
+    operator.ToggleAssigningSystem,
     operator.AssignSystem,
     operator.UnassignSystem,
     operator.EnableEditingSystem,
@@ -34,7 +34,9 @@ classes = (
     prop.System,
     prop.BIMSystemProperties,
     ui.BIM_PT_systems,
+    ui.BIM_PT_object_systems,
     ui.BIM_UL_systems,
+    ui.BIM_UL_object_systems,
 )
 
 

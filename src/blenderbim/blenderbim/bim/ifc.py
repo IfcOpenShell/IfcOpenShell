@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -19,8 +18,11 @@
 
 import bpy
 import uuid
+import zipfile
+import tempfile
 import ifcopenshell
 import blenderbim.bim.handler
+from pathlib import Path
 
 
 class IfcStore:
@@ -183,7 +185,7 @@ class IfcStore:
     def commit_link_element(data):
         obj = bpy.data.objects.get(data["obj"])
         IfcStore.id_map[data["id"]] = obj
-        if data["guid"]:
+        if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
         blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
         blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)

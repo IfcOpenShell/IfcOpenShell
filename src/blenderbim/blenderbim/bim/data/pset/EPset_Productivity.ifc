@@ -1,0 +1,13 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION((),'2;1');
+FILE_NAME('EPset_Productivity.ifc','2020-01-01T00:00:00',(),(),'EPset_Productivity','EPset_Productivity',$);
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROPERTYSETTEMPLATE('24XxTA2ED4o83uiZBG59D_',$,'EPset_Productivity','',.PSET_TYPEDRIVENOVERRIDE.,'IfcConstructionEquipmentResource,IfcLaborResource',(#2,#3,#4));
+#2=IFCSIMPLEPROPERTYTEMPLATE('3mL27FQ4X4MQn5fiGqIt8x',$,'BaseQuantityConsumed','',.P_SINGLEVALUE.,'IfcDuration',$,$,$,$,$,.READWRITE.);
+#3=IFCSIMPLEPROPERTYTEMPLATE('1DdJt5_Ar2mR4UDpO$98Ws',$,'BaseQuantityProducedName','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
+#4=IFCSIMPLEPROPERTYTEMPLATE('2OZPZ$Onb2gOvW20q7gacH',$,'BaseQuantityProducedValue','',.P_SINGLEVALUE.,'IfcReal',$,$,$,$,$,.READWRITE.);
+ENDSEC;
+END-ISO-10303-21;

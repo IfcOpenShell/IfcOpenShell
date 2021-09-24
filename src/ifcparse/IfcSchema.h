@@ -383,12 +383,12 @@ namespace IfcParse {
 		virtual const entity* as_entity() const { return this; }
 	};
 
-	class instance_factory {
+	class IFC_PARSE_API instance_factory {
 	public:
 		virtual IfcUtil::IfcBaseClass* operator()(IfcEntityInstanceData* data) const = 0;
 	};
 
-	class schema_definition {
+	class IFC_PARSE_API schema_definition {
 	private:
 		std::string name_;
 

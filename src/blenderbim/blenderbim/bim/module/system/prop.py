@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -40,6 +39,7 @@ class System(PropertyGroup):
 class BIMSystemProperties(PropertyGroup):
     system_attributes: CollectionProperty(name="System Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing", default=False)
+    is_adding: BoolProperty(name="Is Adding", default=False)
     systems: CollectionProperty(name="Systems", type=System)
     active_system_index: IntProperty(name="Active System Index")
     active_system_id: IntProperty(name="Active System Id")

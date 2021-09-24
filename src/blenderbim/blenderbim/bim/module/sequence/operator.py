@@ -443,7 +443,7 @@ class AddTask(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run("sequence.add_task", self.file, **{"parent_task": self.file.by_id(self.task)})
+        ifcopenshell.api.run("sequence.add_task", self.file, parent_task=self.file.by_id(self.task))
         Data.load(self.file)
         bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
         return {"FINISHED"}
@@ -461,7 +461,7 @@ class AddSummaryTask(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run("sequence.add_task", self.file, **{"work_schedule": self.file.by_id(self.work_schedule)})
+        ifcopenshell.api.run("sequence.add_task", self.file, work_schedule=self.file.by_id(self.work_schedule))
         Data.load(self.file)
         bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
         return {"FINISHED"}
@@ -797,6 +797,7 @@ class AssignProduct(bpy.types.Operator):
                 related_object=self.file.by_id(self.task),
             )
         Data.load(self.file)
+        bpy.ops.bim.load_task_outputs()
         return {"FINISHED"}
 
 
@@ -825,6 +826,7 @@ class UnassignProduct(bpy.types.Operator):
                 related_object=self.file.by_id(self.task),
             )
         Data.load(self.file)
+        bpy.ops.bim.load_task_outputs()
         return {"FINISHED"}
 
 
@@ -909,9 +911,7 @@ class UnassignProcess(bpy.types.Operator):
     def unassign_resource(self):
         task = self.file.by_id(self.task)
         resource = self.file.by_id(self.resource)
-        ifcopenshell.api.run(
-            "sequence.unassign_process", self.file, related_object=resource, relating_process=task
-        )
+        ifcopenshell.api.run("sequence.unassign_process", self.file, related_object=resource, relating_process=task)
         ifcopenshell.api.run("resource.remove_resource", self.file, resource=resource)
         ResourceData.load(self.file)
         Data.load(self.file)
@@ -1742,17 +1742,47 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
                     self.animate_input(obj, product_frame)
                 elif product_frame["relationship"] == "output":
                     self.animate_output(obj, product_frame)
+        self.add_text_animation_handler()
 
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         context.scene.frame_start = self.start_frame
-        context.scene.frame_end = self.start_frame + self.total_frames
+        context.scene.frame_end = int(self.start_frame + self.total_frames)
         # with open("/home/dion/animation.json", "w") as json_file:
         #    guid_frames = {}
         #    for k, v in self.product_frames.items():
         #        guid_frames[self.file.by_id(k).GlobalId] = v
         #    json.dump(guid_frames, json_file)
         return {"FINISHED"}
+
+    def add_text_animation_handler(self):
+        data = bpy.data.curves.get("Timeline")
+        if not data:
+            data = bpy.data.curves.new(type="FONT", name="Timeline")
+        obj = bpy.data.objects.get("Timeline")
+        if not obj:
+            obj = bpy.data.objects.new(name="Timeline", object_data=data)
+            bpy.context.scene.collection.objects.link(obj)
+        obj.data.BIMDateTextProperties.start_frame = self.start_frame
+        obj.data.BIMDateTextProperties.total_frames = int(self.total_frames)
+        obj.data.BIMDateTextProperties.start = self.props.visualisation_start
+        obj.data.BIMDateTextProperties.finish = self.props.visualisation_finish
+        bpy.app.handlers.frame_change_post.append(self.animate_text)
+
+    def remove_text_animation_handler(self):
+        bpy.app.handlers.frame_change_post.remove(self.animate_text)
+
+    def animate_text(self, scene, context):
+        data = bpy.data.curves.get("Timeline")
+        if not data or not bpy.data.objects.get("Timeline"):
+            self.remove_text_animation_handler()
+            scene.frame_current
+        props = data.BIMDateTextProperties
+        start = parser.parse(props.start, dayfirst=True, fuzzy=True)
+        finish = parser.parse(props.finish, dayfirst=True, fuzzy=True)
+        duration = finish - start
+        frame_date = (((scene.frame_current - props.start_frame) / props.total_frames) * duration) + start
+        data.body = frame_date.date().isoformat()
 
     def animate_input(self, obj, product_frame):
         if product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
@@ -1774,24 +1804,34 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
 
     def animate_creation(self, obj, product_frame):
         obj.hide_viewport = True
+        obj.hide_render = True
         obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
         obj.hide_viewport = False
+        obj.hide_render = False
         obj.color = (0.0, 1.0, 0.0, 1)
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"])
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
 
     def animate_destruction(self, obj, product_frame):
         obj.color = (1.0, 1.0, 1.0, 1)
+        obj.hide_viewport = False
+        obj.hide_render = False
         obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
         obj.color = (1.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.hide_viewport = True
+        obj.hide_render = True
         obj.color = (0.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
 
     def animate_operation(self, obj, product_frame):
         obj.color = (1.0, 1.0, 1.0, 1)
@@ -1804,10 +1844,14 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
 
     def animate_movement_to(self, obj, product_frame):
         obj.hide_viewport = True
+        obj.hide_render = True
         obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
         obj.hide_viewport = False
+        obj.hide_render = False
         obj.color = (1.0, 1.0, 0.0, 1)
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"])
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
@@ -1815,24 +1859,36 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
     def animate_movement_from(self, obj, product_frame):
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.hide_viewport = False
+        obj.hide_render = False
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"] - 1)
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"] - 1)
         obj.color = (1.0, 0.5, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.hide_viewport = True
+        obj.hide_render = True
         obj.color = (0.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
 
     def animate_consumption(self, obj, product_frame):
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.hide_viewport = False
+        obj.hide_render = False
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"] - 1)
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["STARTED"] - 1)
         obj.color = (0.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.hide_viewport = True
+        obj.hide_render = True
         obj.color = (0.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
 
     def calculate_total_frames(self, context):
         if self.props.speed_types == "FRAME_SPEED":
@@ -2098,9 +2154,24 @@ class LoadTaskOutputs(bpy.types.Operator):
         self.tprops = context.scene.BIMTaskTreeProperties
         ifc_definition_id = self.tprops.tasks[self.props.active_task_index].ifc_definition_id
         self.props.task_outputs.clear()
-        for output_id in Data.tasks[ifc_definition_id]["outputs"]:
+        for output_id in Data.tasks[ifc_definition_id]["Outputs"]:
             product = self.file.by_id(output_id)
             new = self.props.task_outputs.add()
             new.ifc_definition_id = output_id
             new.name = product.Name or "Unnamed"
+        return {"FINISHED"}
+
+
+class CalculateTaskDuration(bpy.types.Operator):
+    bl_idname = "bim.calculate_task_duration"
+    bl_label = "Calculate Task Duration"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run("sequence.calculate_task_duration", self.file, task=self.file.by_id(self.task))
+        Data.load(self.file)
+        bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
         return {"FINISHED"}

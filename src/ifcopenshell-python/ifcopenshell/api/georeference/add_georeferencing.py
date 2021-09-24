@@ -11,10 +11,13 @@ class Usecase:
         if not source_crs:
             return
         projected_crs = self.file.create_entity("IfcProjectedCRS", **{"Name": ""})
-        self.file.create_entity("IfcMapConversion", **{
-            "SourceCRS": source_crs,
-            "TargetCRS": projected_crs,
-            "Eastings": 0,
-            "Northings": 0,
-            "OrthogonalHeight": 0,
-        })
+        self.file.create_entity(
+            "IfcMapConversion",
+            **{
+                "SourceCRS": source_crs,
+                "TargetCRS": projected_crs,
+                "Eastings": 0,
+                "Northings": 0,
+                "OrthogonalHeight": 0,
+            }
+        )

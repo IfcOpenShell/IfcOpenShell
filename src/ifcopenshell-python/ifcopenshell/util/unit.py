@@ -114,7 +114,7 @@ si_type_names = {
     "PRESSUREUNIT": "PASCAL",
     "RADIOACTIVITYUNIT": "BECQUEREL",
     "SOLIDANGLEUNIT": "STERADIAN",
-    "THERMODYNAMICTEMPERATUREUNIT": "KELVIN", # Or, DEGREE_CELSIUS, but this is a quirk of IFC
+    "THERMODYNAMICTEMPERATUREUNIT": "KELVIN",  # Or, DEGREE_CELSIUS, but this is a quirk of IFC
     "TIMEUNIT": "SECOND",
     "VOLUMEUNIT": "CUBIC_METRE",
 }
@@ -154,18 +154,22 @@ named_dimensions = {
 }
 
 si_conversions = {
+    "thou": 0.0000254,
     "inch": 0.0254,
     "foot": 0.3048,
     "yard": 0.914,
     "mile": 1609,
+    "square thou": 6.4516e-10,
     "square inch": 0.0006452,
     "square foot": 0.09290304,
     "square yard": 0.83612736,
     "acre": 4046.86,
     "square mile": 2588881,
+    "cubic thou": 1.6387064e-14,
     "cubic inch": 0.00001639,
     "cubic foot": 0.02831684671168849,
     "cubic yard": 0.7636,
+    "cubic mile": 4165509529,
     "litre": 0.001,
     "fluid ounce UK": 0.0000284130625,
     "fluid ounce US": 0.00002957353,

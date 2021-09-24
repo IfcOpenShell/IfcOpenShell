@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -30,6 +29,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
 
 class BIMQtoProperties(PropertyGroup):
     qto_result: StringProperty(default="", name="Qto Result")

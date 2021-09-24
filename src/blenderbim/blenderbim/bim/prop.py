@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -65,7 +64,7 @@ def updateDataDir(self, context):
     blenderbim.bim.schema.ifc.data_dir = context.scene.BIMProperties.data_dir
 
 
-def updateIfcFile(self, context):
+def update_ifc_file(self, context):
     if context.scene.BIMProperties.ifc_file:
         blenderbim.bim.handler.loadIfcStore(context.scene)
 
@@ -222,7 +221,7 @@ class BIMProperties(PropertyGroup):
     data_dir: StringProperty(
         default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory", update=updateDataDir
     )
-    ifc_file: StringProperty(name="IFC File", update=updateIfcFile)
+    ifc_file: StringProperty(name="IFC File", update=update_ifc_file)
     export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")
     last_transaction: StringProperty(name="Last Transaction")
     contexts: EnumProperty(items=getContexts, name="Contexts")

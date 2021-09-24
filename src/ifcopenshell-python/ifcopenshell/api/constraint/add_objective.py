@@ -1,5 +1,6 @@
 import ifcopenshell
 
+
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
@@ -8,8 +9,6 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        return self.file.create_entity("IfcObjective", **{
-            "Name": "Unnamed",
-            "ConstraintGrade": "NOTDEFINED",
-            "ObjectiveQualifier": "NOTDEFINED"
-        })
+        return self.file.create_entity(
+            "IfcObjective", **{"Name": "Unnamed", "ConstraintGrade": "NOTDEFINED", "ObjectiveQualifier": "NOTDEFINED"}
+        )

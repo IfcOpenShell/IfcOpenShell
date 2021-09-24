@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -17,10 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import bpy
 from bpy.types import Panel
-from bpy.props import StringProperty, BoolProperty
 
 
 class BIM_PT_camera(Panel):
@@ -32,7 +29,6 @@ class BIM_PT_camera(Panel):
 
     @classmethod
     def poll(cls, context):
-        engine = context.engine
         return context.camera and hasattr(context.active_object.data, "BIMCameraProperties")
 
     def draw(self, context):
@@ -105,7 +101,6 @@ class BIM_PT_drawing_underlay(Panel):
 
     @classmethod
     def poll(cls, context):
-        engine = context.engine
         return context.camera and hasattr(context.active_object.data, "BIMCameraProperties")
 
     def draw(self, context):
@@ -148,7 +143,6 @@ class BIM_PT_drawing_underlay(Panel):
                 row = layout.row(align=True)
                 row.operator("bim.save_drawing_style")
                 row.operator("bim.activate_drawing_style")
-
 
 
 class BIM_PT_drawings(Panel):
@@ -288,8 +282,6 @@ class BIM_PT_annotation_utilities(Panel):
 
         row = layout.row(align=True)
         row.operator("bim.clean_wireframes")
-        row = layout.row(align=True)
-        row.operator("bim.link_ifc")
         row = layout.row(align=True)
         row.operator("bim.add_grid")
         row = layout.row(align=True)

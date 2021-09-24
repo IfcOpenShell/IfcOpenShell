@@ -11,6 +11,10 @@ class Usecase:
             values = list(self.settings["parent"].CostValues or [])
             values.append(value)
             self.settings["parent"].CostValues = values
+        elif self.settings["parent"].is_a("IfcConstructionResource"):
+            values = list(self.settings["parent"].BaseCosts or [])
+            values.append(value)
+            self.settings["parent"].BaseCosts = values
         elif self.settings["parent"].is_a("IfcCostValue"):
             values = list(self.settings["parent"].Components or [])
             values.append(value)

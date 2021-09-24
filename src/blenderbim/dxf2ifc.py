@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -20,6 +19,7 @@
 import ifcopenshell
 import ezdxf
 
+
 class Dxf2Ifc:
     def execute(self):
         self.create_ifc_file()
@@ -36,7 +36,10 @@ class Dxf2Ifc:
                             [
                                 self.file.createIfcFaceOuterBound(
                                     self.file.createIfcPolyLoop(
-                                        [self.file.createIfcCartesianPoint((face[index].dxf.location)) for index in range(len(face) -1)]
+                                        [
+                                            self.file.createIfcCartesianPoint((face[index].dxf.location))
+                                            for index in range(len(face) - 1)
+                                        ]
                                     ),
                                     True,
                                 )

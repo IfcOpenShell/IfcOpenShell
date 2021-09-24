@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -21,7 +20,6 @@ import os
 import bpy
 import tempfile
 import webbrowser
-import ifcopenshell
 
 try:
     import bimtester
@@ -31,7 +29,6 @@ except:
     print("Failed to load BIMTester. Try disabling other add-ons, in particular Blender-OSM. See bug #1318.")
 
 from pathlib import Path
-from itertools import cycle
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -42,7 +39,7 @@ class ExecuteBIMTester(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.BimTesterProperties
-        return props.ifc_file and props.feature
+        return (props.ifc_file or props.should_load_from_memory) and props.feature
 
     def execute(self, context):
         props = context.scene.BimTesterProperties
@@ -75,10 +72,6 @@ class BIMTesterPurge(bpy.types.Operator):
     bl_label = "Purge Tests"
 
     def execute(self, context):
-        filename = os.path.join(
-            context.scene.BimTesterProperties.features_dir,
-            context.scene.BimTesterProperties.features_file + ".feature",
-        )
         cwd = os.getcwd()
         os.chdir(context.scene.BimTesterProperties.features_dir)
         bimtester.clean.TestPurger().purge()
@@ -243,19 +236,3 @@ class QAHelper:
                         is_in_scenario = False
                     destination.write(source_line)
         os.remove(filename + "~")
-
-
-colour_list = [
-    (0.651, 0.81, 0.892, 1),
-    (0.121, 0.471, 0.706, 1),
-    (0.699, 0.876, 0.54, 1),
-    (0.199, 0.629, 0.174, 1),
-    (0.983, 0.605, 0.602, 1),
-    (0.89, 0.101, 0.112, 1),
-    (0.989, 0.751, 0.427, 1),
-    (0.986, 0.497, 0.1, 1),
-    (0.792, 0.699, 0.839, 1),
-    (0.414, 0.239, 0.603, 1),
-    (0.993, 0.999, 0.6, 1),
-    (0.693, 0.349, 0.157, 1),
-]

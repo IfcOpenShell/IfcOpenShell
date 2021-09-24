@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -73,9 +72,11 @@ class RemovePsetTemplate(bpy.types.Operator):
         props = context.scene.BIMPsetTemplateProperties
         if props.active_pset_template_id == int(props.pset_templates):
             bpy.ops.bim.disable_editing_pset_template()
-        ifcopenshell.api.run("pset_template.remove_pset_template", IfcStore.pset_template_file, **{
-            "pset_template": IfcStore.pset_template_file.by_id(int(props.pset_templates))
-        })
+        ifcopenshell.api.run(
+            "pset_template.remove_pset_template",
+            IfcStore.pset_template_file,
+            **{"pset_template": IfcStore.pset_template_file.by_id(int(props.pset_templates))}
+        )
         Data.load(IfcStore.pset_template_file)
         updatePsetTemplates(self, context)
         return {"FINISHED"}
@@ -158,15 +159,19 @@ class EditPsetTemplate(bpy.types.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
-        ifcopenshell.api.run("pset_template.edit_pset_template", IfcStore.pset_template_file, **{
-            "pset_template": IfcStore.pset_template_file.by_id(props.active_pset_template_id),
-            "attributes": {
-                "Name": props.active_pset_template.name,
-                "Description": props.active_pset_template.description,
-                "TemplateType": props.active_pset_template.template_type,
-                "ApplicableEntity": props.active_pset_template.applicable_entity,
+        ifcopenshell.api.run(
+            "pset_template.edit_pset_template",
+            IfcStore.pset_template_file,
+            **{
+                "pset_template": IfcStore.pset_template_file.by_id(props.active_pset_template_id),
+                "attributes": {
+                    "Name": props.active_pset_template.name,
+                    "Description": props.active_pset_template.description,
+                    "TemplateType": props.active_pset_template.template_type,
+                    "ApplicableEntity": props.active_pset_template.applicable_entity,
+                },
             }
-        })
+        )
         Data.load(IfcStore.pset_template_file)
         updatePsetTemplates(self, context)
         bpy.ops.bim.disable_editing_pset_template()
@@ -177,7 +182,6 @@ class EditPsetTemplate(bpy.types.Operator):
 
     def commit(self, data):
         IfcStore.pset_template_file.redo()
-
 
 
 class SavePsetTemplateFile(bpy.types.Operator):
@@ -208,9 +212,11 @@ class AddPropTemplate(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
         pset_template_id = props.active_pset_template_id or int(props.pset_templates)
-        ifcopenshell.api.run("pset_template.add_prop_template", IfcStore.pset_template_file, **{
-            "pset_template": IfcStore.pset_template_file.by_id(pset_template_id)
-        })
+        ifcopenshell.api.run(
+            "pset_template.add_prop_template",
+            IfcStore.pset_template_file,
+            **{"pset_template": IfcStore.pset_template_file.by_id(pset_template_id)}
+        )
         Data.load(IfcStore.pset_template_file)
         return {"FINISHED"}
 
@@ -238,9 +244,11 @@ class RemovePropTemplate(bpy.types.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
-        ifcopenshell.api.run("pset_template.remove_prop_template", IfcStore.pset_template_file, **{
-            "prop_template": IfcStore.pset_template_file.by_id(self.prop_template)
-        })
+        ifcopenshell.api.run(
+            "pset_template.remove_prop_template",
+            IfcStore.pset_template_file,
+            **{"prop_template": IfcStore.pset_template_file.by_id(self.prop_template)}
+        )
         Data.load(IfcStore.pset_template_file)
         return {"FINISHED"}
 
@@ -267,14 +275,18 @@ class EditPropTemplate(bpy.types.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
-        ifcopenshell.api.run("pset_template.edit_prop_template", IfcStore.pset_template_file, **{
-            "prop_template": IfcStore.pset_template_file.by_id(props.active_prop_template_id),
-            "attributes": {
-                "Name": props.active_prop_template.name,
-                "Description": props.active_prop_template.description,
-                "PrimaryMeasureType": props.active_prop_template.primary_measure_type,
+        ifcopenshell.api.run(
+            "pset_template.edit_prop_template",
+            IfcStore.pset_template_file,
+            **{
+                "prop_template": IfcStore.pset_template_file.by_id(props.active_prop_template_id),
+                "attributes": {
+                    "Name": props.active_prop_template.name,
+                    "Description": props.active_prop_template.description,
+                    "PrimaryMeasureType": props.active_prop_template.primary_measure_type,
+                },
             }
-        })
+        )
         Data.load(IfcStore.pset_template_file)
         bpy.ops.bim.disable_editing_prop_template()
         return {"FINISHED"}

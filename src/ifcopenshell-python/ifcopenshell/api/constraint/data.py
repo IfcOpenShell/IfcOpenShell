@@ -15,9 +15,8 @@ class Data:
         cls.is_loaded = False
         cls.products = {}
         cls.objectives = {}
-        cls.metrics ={}
+        cls.metrics = {}
         cls.references = {}
-
 
     @classmethod
     def load(cls, file, product_id=None):

@@ -21,4 +21,4 @@ class Data:
             data = system.get_info()
             del data["OwnerHistory"]
             cls.systems[system.id()] = data
-        cls.is_loaded=True
+        cls.is_loaded = True

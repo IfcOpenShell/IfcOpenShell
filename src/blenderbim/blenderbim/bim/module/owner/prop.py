@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -36,11 +35,13 @@ from bpy.props import (
 _persons_enum = []
 _organisations_enum = []
 
+
 def purge():
     global _persons_enum
     global _organisations_enum
     _persons_enum.clear()
     _organisations_enum.clear()
+
 
 def getPersons(self, context):
     global _persons_enum

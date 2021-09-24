@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -21,6 +20,7 @@ import os
 import bpy
 from . import bcfstore
 from bpy.types import Panel
+
 
 class BIM_PT_bcf(Panel):
     bl_label = "BCF Project"
@@ -231,12 +231,12 @@ class BIM_PT_bcf_metadata(Panel):
         row.operator("bim.add_bcf_document_reference")
 
         layout.label(text="Related Topics:")
-        for index, related_topic in enumerate(topic.related_topics):            
+        for index, related_topic in enumerate(topic.related_topics):
             try:
                 row = layout.row(align=True)
                 op = row.operator(
-                    "bim.view_bcf_topic", 
-                    text=f"Select {bcfxml.topics[related_topic.name.lower()].title}")
+                    "bim.view_bcf_topic", text=f"Select {bcfxml.topics[related_topic.name.lower()].title}"
+                )
                 op.topic_guid = related_topic.name
                 row.operator("bim.remove_bcf_related_topic", icon="X", text="").index = index
             except KeyError:
