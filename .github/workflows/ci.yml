@@ -74,6 +74,7 @@ jobs:
           sudo /usr/bin/python -m pip install xmlschema numpy lxml
           sudo /usr/bin/python -m pip install src/bcf
           sudo /usr/bin/python -m pip install pytest
+          sudo /usr/bin/python -m pip install isodate
 
       - name: Test
         run: |
