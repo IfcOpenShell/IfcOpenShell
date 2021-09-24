@@ -34,7 +34,16 @@ class AddOpening(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
+        self.file = IfcStore.get_file()
         obj = context.scene.objects.get(self.obj, context.active_object)
+        element_id = obj.BIMObjectProperties.ifc_definition_id
+        if not element_id:
+            return {"FINISHED"}
+        element = self.file.by_id(element_id)
+        if element.is_a("IfcOpeningElement"):
+            self.report({"WARNING"}, "An IfcOpeningElement can't be voided")
+            return {"FINISHED"}
+
         opening = bpy.data.objects.get(self.opening)
         if opening is None:
             return {"FINISHED"}
@@ -45,14 +54,12 @@ class AddOpening(bpy.types.Operator):
                 return {"FINISHED"}
             bpy.ops.bim.assign_class(obj=opening.name, ifc_class="IfcOpeningElement", context_id=body_context.id())
 
-        self.file = IfcStore.get_file()
-        element_id = obj.BIMObjectProperties.ifc_definition_id
         ifcopenshell.api.run(
             "void.add_opening",
             self.file,
             **{
                 "opening": self.file.by_id(opening.BIMObjectProperties.ifc_definition_id),
-                "element": self.file.by_id(element_id),
+                "element": element,
             },
         )
         Data.load(self.file, element_id)
