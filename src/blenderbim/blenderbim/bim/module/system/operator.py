@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -20,6 +19,7 @@
 import bpy
 import ifcopenshell.util.attribute
 import ifcopenshell.api
+import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.system.data import Data
 
@@ -48,6 +48,7 @@ class DisableSystemEditingUI(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMSystemProperties.is_editing = False
+        context.scene.BIMSystemProperties.active_system_id = 0
         return {"FINISHED"}
 
 
@@ -85,7 +86,9 @@ class EditSystem(bpy.types.Operator):
                 attributes[attribute.name] = attribute.string_value
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
-            "system.edit_system", self.file, **{"system": self.file.by_id(props.active_system_id), "attributes": attributes}
+            "system.edit_system",
+            self.file,
+            **{"system": self.file.by_id(props.active_system_id), "attributes": attributes}
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_systems()
@@ -120,17 +123,7 @@ class EnableEditingSystem(bpy.types.Operator):
         props = context.scene.BIMSystemProperties
         props.system_attributes.clear()
 
-        data = Data.systems[self.system]
-
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcSystem").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = props.system_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.string_value = "" if new.is_null else data[attribute.name()]
+        blenderbim.bim.helper.import_attributes("IfcSystem", props.system_attributes, Data.systems[self.system])
         props.active_system_id = self.system
         return {"FINISHED"}
 
@@ -145,6 +138,16 @@ class DisableEditingSystem(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ToggleAssigningSystem(bpy.types.Operator):
+    bl_idname = "bim.toggle_assigning_system"
+    bl_label = "Toggle Assigning System"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        context.scene.BIMSystemProperties.is_adding = not context.scene.BIMSystemProperties.is_adding
+        return {"FINISHED"}
+
+
 class AssignSystem(bpy.types.Operator):
     bl_idname = "bim.assign_system"
     bl_label = "Assign System"
@@ -156,17 +159,20 @@ class AssignSystem(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        product = bpy.data.objects.get(self.product) if self.product else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "system.assign_system",
-            self.file,
-            **{
-                "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
-                "system": self.file.by_id(self.system),
-            }
-        )
-        Data.load(IfcStore.get_file())
+        products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
+        for product in products:
+            if not product.BIMObjectProperties.ifc_definition_id:
+                continue
+            ifcopenshell.api.run(
+                "system.assign_system",
+                self.file,
+                **{
+                    "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
+                    "system": self.file.by_id(self.system),
+                }
+            )
+        Data.load(self.file)
         return {"FINISHED"}
 
 
@@ -181,17 +187,23 @@ class UnassignSystem(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        product = bpy.data.objects.get(self.product) if self.product else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "system.unassign_system",
-            self.file,
-            **{
-                "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
-                "system": self.file.by_id(self.system),
-            }
-        )
-        Data.load(IfcStore.get_file())
+        products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
+        for product in products:
+            props = product.BIMObjectProperties
+            if not props.ifc_definition_id:
+                continue
+            if not (props.ifc_definition_id in Data.products and self.system in Data.products[props.ifc_definition_id]):
+                continue
+            ifcopenshell.api.run(
+                "system.unassign_system",
+                self.file,
+                **{
+                    "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
+                    "system": self.file.by_id(self.system),
+                }
+            )
+        Data.load(self.file)
         return {"FINISHED"}
 
 
@@ -202,7 +214,6 @@ class SelectSystemProducts(bpy.types.Operator):
     system: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
         for obj in context.visible_objects:
             obj.select_set(False)
             if not obj.BIMObjectProperties.ifc_definition_id:

@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -40,15 +39,12 @@ class AddOrRemoveElementFromCollection(bpy.types.Operator):
     bl_idname = "bim.add_or_remove_element_from_collection"
     bl_label = "Add or Remove Element From Collection"
     bl_options = {"REGISTER", "UNDO"}
-    operation : bpy.props.EnumProperty(
-        items=(
-            ("+", 'Add', "Add item to collection"),
-            ("-", 'Remove', "Remove item from collection")
-        ),
+    operation: bpy.props.EnumProperty(
+        items=(("+", "Add", "Add item to collection"), ("-", "Remove", "Remove item from collection")),
         default="+",
     )
-    collection_path : bpy.props.StringProperty()
-    selected_item_idx : bpy.props.IntProperty(default=-1)
+    collection_path: bpy.props.StringProperty()
+    selected_item_idx: bpy.props.IntProperty(default=-1)
 
     def execute(self, context):
         # Ugly but I hate using eval()
@@ -281,7 +277,7 @@ class EnableEditingAddress(bpy.types.Operator):
         address.description = data["Description"] or ""
         address.user_defined_purpose = data["UserDefinedPurpose"] or ""
 
-        if data["type"] == "IfcTelecomAddress":            
+        if data["type"] == "IfcTelecomAddress":
             populate_collection(address.telephone_numbers, data.get("TelephoneNumbers", None))
             populate_collection(address.facsimile_numbers, data.get("FacsimileNumbers", None))
             address.pager_number = data["PagerNumber"] or ""

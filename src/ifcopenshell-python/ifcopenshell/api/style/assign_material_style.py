@@ -29,7 +29,7 @@ class Usecase:
             new_items = []
             removed_items = []
             for item in items:
-                if not i.is_a("IfcStyledItem"):
+                if not item.is_a("IfcStyledItem"):
                     continue
                 if self.has_proposed_style(item):
                     return
@@ -63,8 +63,8 @@ class Usecase:
     def get_styled_representation(self, definition_representation):
         representations = [
             r
-            for r in definition_representation.Representations if r.is_a("IfcStyledRepresentation")
-            and r.ContextOfItems == self.settings["context"]
+            for r in definition_representation.Representations
+            if r.is_a("IfcStyledRepresentation") and r.ContextOfItems == self.settings["context"]
         ]
         if representations:
             return representations[0]

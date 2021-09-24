@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -114,7 +113,7 @@ class IfcExporter:
         IfcStore.edited_objs.clear()
 
     def sync_object_placement(self, obj):
-        blender_matrix = np.matrix(obj.matrix_world)
+        blender_matrix = np.array(obj.matrix_world)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if not hasattr(element, "ObjectPlacement"):
             return
@@ -158,7 +157,6 @@ class IfcExporter:
         else:
             parent_collection = obj.users_collection[0]
 
-
         parent_obj = bpy.data.objects.get(parent_collection.name)
         if not parent_obj or not parent_obj.BIMObjectProperties.ifc_definition_id:
             return
@@ -174,6 +172,7 @@ class IfcExporter:
         try:
             # This will throw an exception if the Blender object no longer exists
             foo = obj.name
+            foo
             return False
         except:
             return True
@@ -201,7 +200,6 @@ class IfcExportSettings:
 
     @staticmethod
     def factory(context, output_file, logger):
-        scene_bim = context.scene.BIMProperties
         settings = IfcExportSettings()
         settings.output_file = output_file
         settings.logger = logger

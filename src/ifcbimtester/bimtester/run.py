@@ -88,7 +88,7 @@ class TestRunner:
         logging.basicConfig(level=logging.INFO, format="%(message)s")
         ids_handler = IDSHandler()
         logger.addHandler(ids_handler)
-        ids_file = ifcopenshell.ids.ids(args["feature"])
+        ids_file = ifcopenshell.ids.ids.open(args["feature"])
         ids_file.validate(IfcStore.file, logger)
 
         tmpdir = tempfile.mkdtemp()

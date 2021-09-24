@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -56,9 +55,7 @@ def getPsetNames(self, context):
     if ifc_class not in psetnames:
         psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
         psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
-    assigned_names = [
-        Data.psets[p]["Name"] for p in Data.products[obj.BIMObjectProperties.ifc_definition_id]["psets"]
-    ]
+    assigned_names = [Data.psets[p]["Name"] for p in Data.products[obj.BIMObjectProperties.ifc_definition_id]["psets"]]
     return [p for p in psetnames[ifc_class] if p[0] not in assigned_names]
 
 
@@ -78,6 +75,17 @@ def getTaskQtoNames(self, context):
         psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True)
         qtonames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
     return qtonames[ifc_class]
+
+
+def getResourcePsetNames(self, context):
+    global psetnames
+    rprops = context.scene.BIMResourceProperties
+    rtprops = context.scene.BIMResourceTreeProperties
+    ifc_class = IfcStore.get_file().by_id(rtprops.resources[rprops.active_resource_index].ifc_definition_id).is_a()
+    if ifc_class not in psetnames:
+        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
+    return psetnames[ifc_class]
 
 
 def getResourceQtoNames(self, context):
@@ -147,6 +155,7 @@ class ResourcePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
     properties: CollectionProperty(name="Properties", type=Attribute)
+    pset_name: EnumProperty(items=getResourcePsetNames, name="Pset Name")
     qto_name: EnumProperty(items=getResourceQtoNames, name="Qto Name")
 
 

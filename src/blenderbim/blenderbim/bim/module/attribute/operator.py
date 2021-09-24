@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -119,9 +118,7 @@ class EditAttributes(bpy.types.Operator):
             elif attribute["type"] == "enum":
                 attributes[attribute["name"]] = blender_attribute.enum_value
         product = self.file.by_id(oprops.ifc_definition_id)
-        ifcopenshell.api.run(
-            "attribute.edit_attributes", self.file, **{"product": product, "attributes": attributes}
-        )
+        ifcopenshell.api.run("attribute.edit_attributes", self.file, **{"product": product, "attributes": attributes})
         Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name, obj_type=self.obj_type)
         return {"FINISHED"}

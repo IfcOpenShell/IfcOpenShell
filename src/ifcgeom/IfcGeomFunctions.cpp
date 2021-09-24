@@ -2968,7 +2968,9 @@ namespace {
 			auto result_shape = split.Shape();
 			std::list<TopoDS_Shape> subs;
 			subshapes(result_shape, subs);
-			if (subs.size() == 1 && operands.Size() - 2 > (int)subs.size() && (subs.front().ShapeType() == TopAbs_COMPSOLID || subs.front().ShapeType() == TopAbs_COMPOUND)) {
+
+			// Sometimes there is more nesting of compounds, so when we find a single compound we again try to explode it into a list.
+			if (subs.size() == 1 && (subs.front().ShapeType() == TopAbs_COMPSOLID || subs.front().ShapeType() == TopAbs_COMPOUND)) {
 				auto s = subs.front();
 				subs.clear();
 				subshapes(s, subs);
@@ -3239,6 +3241,13 @@ bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, c
 
 				operands.Append(face);
 			}
+
+			/*
+			// enable this is you want to see how IfcOpenShell has placed the layer surfaces
+			for (auto& x : operands) {
+				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), x, nullptr));
+			}
+			*/
 
 			std::vector<TopoDS_Shape> slices;
 			if (split(*this, it->Shape(), operands, getValue(GV_PRECISION), slices) && slices.size() == styles.size()) {

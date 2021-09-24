@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -26,16 +25,29 @@ classes = (
     operator.EnableEditingResource,
     operator.LoadResources,
     operator.AddResource,
+    operator.AddResourceQuantity,
     operator.EditResource,
     operator.RemoveResource,
+    operator.RemoveResourceQuantity,
     operator.LoadResourceProperties,
     operator.ExpandResource,
     operator.ContractResource,
     operator.AssignResource,
     operator.UnassignResource,
     operator.EnableEditingResourceTime,
+    operator.EnableEditingResourceQuantity,
+    operator.EnableEditingResourceBaseQuantity,
+    operator.EnableEditingResourceCosts,
+    operator.EnableEditingResourceCostValueFormula,
+    operator.EnableEditingResourceCostValue,
     operator.EditResourceTime,
+    operator.EditResourceQuantity,
+    operator.EditResourceCostValue,
+    operator.EditResourceCostValueFormula,
     operator.DisableEditingResourceTime,
+    operator.DisableEditingResourceQuantity,
+    operator.DisableEditingResourceCostValue,
+    operator.CalculateResourceWork,
     prop.Resource,
     prop.BIMResourceProperties,
     prop.BIMResourceTreeProperties,
@@ -47,6 +59,7 @@ classes = (
 def register():
     bpy.types.Scene.BIMResourceProperties = bpy.props.PointerProperty(type=prop.BIMResourceProperties)
     bpy.types.Scene.BIMResourceTreeProperties = bpy.props.PointerProperty(type=prop.BIMResourceTreeProperties)
+
 
 def unregister():
     del bpy.types.Scene.BIMResourceProperties

@@ -1,6 +1,5 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021 Maxim Vasilyev <qwiglydee@gmail.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -35,7 +34,7 @@ from gpu_extras.batch import batch_for_shader
 import blenderbim.bim.module.drawing.helper as helper
 
 
-class BaseDecorator():
+class BaseDecorator:
     # base name of objects to decorate
     basename = "IfcAnnotation/Something"
 
@@ -128,10 +127,12 @@ class BaseDecorator():
 
     def __init__(self):
         # NB: libcode param doesn't work
-        self.shader = GPUShader(vertexcode=self.VERT_GLSL,
-                                fragcode=self.FRAG_GLSL,
-                                geocode=self.LIB_GLSL + self.GEOM_GLSL,
-                                defines=self.DEF_GLSL)
+        self.shader = GPUShader(
+            vertexcode=self.VERT_GLSL,
+            fragcode=self.FRAG_GLSL,
+            geocode=self.LIB_GLSL + self.GEOM_GLSL,
+            defines=self.DEF_GLSL,
+        )
 
     def get_objects(self, collection):
         """find relevant objects
@@ -172,7 +173,7 @@ class BaseDecorator():
                 topology.append(1)
                 topology.extend([0] * max(0, cnt - 2))
                 topology.append(2)
-            indices.extend((idx+i, idx+i+1) for i in range(cnt-1))
+            indices.extend((idx + i, idx + i + 1) for i in range(cnt - 1))
             idx += cnt
 
         return vertices, indices, topology
@@ -192,8 +193,7 @@ class BaseDecorator():
         return vertices, indices
 
     def get_editmesh_geom(self, obj):
-        """Parses editmode mesh geometry into line segments
-        """
+        """Parses editmode mesh geometry into line segments"""
         mesh = bmesh.from_edit_mesh(obj.data)
         vertices = []
         indices = []
@@ -201,7 +201,7 @@ class BaseDecorator():
 
         for edge in mesh.edges:
             vertices.extend(edge.verts)
-            indices.append((idx, idx+1))
+            indices.append((idx, idx + 1))
             idx += 2
         vertices = [obj.matrix_world @ v.co for v in vertices]
 
@@ -217,18 +217,18 @@ class BaseDecorator():
         color = context.scene.DocProperties.decorations_colour
 
         fmt = GPUVertFormat()
-        fmt.attr_add(id="pos", comp_type='F32', len=3, fetch_mode='FLOAT')
+        fmt.attr_add(id="pos", comp_type="F32", len=3, fetch_mode="FLOAT")
         if topology:
-            fmt.attr_add(id="topo", comp_type='U8', len=1, fetch_mode='INT')
+            fmt.attr_add(id="topo", comp_type="U8", len=1, fetch_mode="INT")
 
         vbo = GPUVertBuf(len=len(vertices), format=fmt)
         vbo.attr_fill(id="pos", data=vertices)
         if topology:
             vbo.attr_fill(id="topo", data=topology)
 
-        ibo = GPUIndexBuf(type='LINES', seq=indices)
+        ibo = GPUIndexBuf(type="LINES", seq=indices)
 
-        batch = GPUBatch(type='LINES', buf=vbo, elem=ibo)
+        batch = GPUBatch(type="LINES", buf=vbo, elem=ibo)
 
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
@@ -289,7 +289,7 @@ class BaseDecorator():
 
     def format_value(self, context, value):
         unit_system = context.scene.unit_settings.system
-        if unit_system == 'IMPERIAL':
+        if unit_system == "IMPERIAL":
             precision = context.scene.BIMProperties.imperial_precision
             if precision == "NONE":
                 precision = 256
@@ -297,12 +297,12 @@ class BaseDecorator():
                 precision = 1
             elif "/" in precision:
                 precision = int(precision.split("/")[1])
-        elif unit_system == 'METRIC':
+        elif unit_system == "METRIC":
             precision = 3
         else:
             return
 
-        return bpy.utils.units.to_string(unit_system, 'LENGTH', value, precision, split_unit=True)
+        return bpy.utils.units.to_string(unit_system, "LENGTH", value, precision, split_unit=True)
 
 
 class DimensionDecorator(BaseDecorator):
@@ -310,12 +310,16 @@ class DimensionDecorator(BaseDecorator):
     - each edge of a segment with arrow
     - puts metric text next to each segment
     """
+
     basename = "IfcAnnotation/Dimension"
 
-    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
         #define ARROW_ANGLE PI / 12.0
         #define ARROW_SIZE 16.0
     """
+    )
 
     GEOM_GLSL = """
     uniform vec2 winsize;
@@ -392,7 +396,7 @@ class DimensionDecorator(BaseDecorator):
                 continue
             length = (v1 - v0).length
             text = self.format_value(context, length)
-            self.draw_label(context, text, p0 + (dir) * .5, dir)
+            self.draw_label(context, text, p0 + (dir) * 0.5, dir)
 
 
 class EqualityDecorator(DimensionDecorator):
@@ -401,6 +405,7 @@ class EqualityDecorator(DimensionDecorator):
     - augments with arrows on both sides
     - puts 'EQ' label
     """
+
     basename = "IfcAnnotation/Equal"
 
     def draw_labels(self, context, obj, vertices, indices):
@@ -414,7 +419,7 @@ class EqualityDecorator(DimensionDecorator):
             dir = p1 - p0
             if dir.length < 1:
                 continue
-            self.draw_label(context, "EQ", p0 + (dir) * .5, dir)
+            self.draw_label(context, "EQ", p0 + (dir) * 0.5, dir)
 
 
 class LeaderDecorator(BaseDecorator):
@@ -422,12 +427,16 @@ class LeaderDecorator(BaseDecorator):
     - head point with arrow
     - middle points w/out decorations
     """
+
     basename = "IfcAnnotation/Leader"
 
-    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
         #define ARROW_ANGLE PI / 12.0
         #define ARROW_SIZE 16.0
     """
+    )
 
     GEOM_GLSL = """
     uniform vec2 winsize;
@@ -490,13 +499,17 @@ class StairDecorator(BaseDecorator):
     - tail point with circle
     - middle points w/out decorations
     """
+
     basename = "IfcAnnotation/Stair"
 
-    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
         #define CIRCLE_SIZE 8.0
         #define ARROW_ANGLE PI / 3.0
         #define ARROW_SIZE 24.0
     """
+    )
 
     GEOM_GLSL = """
     uniform vec2 winsize;
@@ -572,10 +585,13 @@ class StairDecorator(BaseDecorator):
 class HiddenDecorator(BaseDecorator):
     basename = "IfcAnnotation/Hidden"
 
-    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
         #define DASH_SIZE 16.0
         #define DASH_PATTERN 0x0000FFFFU
     """
+    )
 
     GEOM_GLSL = """
     uniform vec2 winsize;
@@ -639,7 +655,6 @@ class MiscDecorator(HiddenDecorator):
 
 
 class LevelDecorator(BaseDecorator):
-
     def get_splines(self, obj):
         """Iterates through splines
         Args:
@@ -664,10 +679,13 @@ class LevelDecorator(BaseDecorator):
 class PlanLevelDecorator(LevelDecorator):
     basename = "IfcAnnotation/Plan Level"
 
-    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
         #define CIRCLE_SIZE 8.0
         #define CROSS_SIZE 16.0
     """
+    )
 
     GEOM_GLSL = """
     uniform vec2 winsize;
@@ -746,10 +764,13 @@ class PlanLevelDecorator(LevelDecorator):
 class SectionLevelDecorator(LevelDecorator):
     basename = "IfcAnnotation/Section Level"
 
-    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
         #define CALLOUT_GAP 8.0
         #define CALLOUT_SIZE 64.0
     """
+    )
 
     GEOM_GLSL = """
     uniform vec2 winsize;
@@ -828,12 +849,16 @@ class BreakDecorator(BaseDecorator):
 
     Uses first two vertices in verts list.
     """
+
     basename = "IfcAnnotation/Break"
 
-    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
         #define BREAK_LENGTH 32.0
         #define BREAK_WIDTH 16.0
     """
+    )
 
     GEOM_GLSL = """
     uniform vec2 winsize;
@@ -905,11 +930,14 @@ class BreakDecorator(BaseDecorator):
 class GridDecorator(BaseDecorator):
     basename = "IfcGridAxis/"
 
-    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
         #define CIRCLE_SIZE 16.0
         #define DASH_SIZE 48.0
         #define DASH_PATTERN 0x03C0FFFFU
     """
+    )
 
     GEOM_GLSL = """
     uniform vec2 winsize;
@@ -1019,11 +1047,14 @@ class GridDecorator(BaseDecorator):
 class SectionViewDecorator(LevelDecorator):
     basename = "IfcAnnotation/Section"
 
-    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
         #define CIRCLE_SIZE 8.0
         #define TRIANGLE_L 32.0
         #define TRIANGLE_W 16.0
     """
+    )
 
     GEOM_GLSL = """
     uniform vec2 winsize;
@@ -1118,7 +1149,7 @@ class SectionViewDecorator(LevelDecorator):
         self.draw_lines(context, obj, verts, [(0, 1)])
 
 
-class DecorationsHandler():
+class DecorationsHandler:
     decorators_classes = [
         DimensionDecorator,
         EqualityDecorator,
@@ -1130,7 +1161,7 @@ class DecorationsHandler():
         SectionLevelDecorator,
         StairDecorator,
         BreakDecorator,
-        SectionViewDecorator
+        SectionViewDecorator,
     ]
 
     installed = None
@@ -1140,12 +1171,12 @@ class DecorationsHandler():
         if cls.installed:
             cls.uninstall()
         handler = cls()
-        cls.installed = SpaceView3D.draw_handler_add(handler, (context,), 'WINDOW', 'POST_PIXEL')
+        cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_PIXEL")
 
     @classmethod
     def uninstall(cls):
         try:
-            SpaceView3D.draw_handler_remove(cls.installed, 'WINDOW')
+            SpaceView3D.draw_handler_remove(cls.installed, "WINDOW")
         except ValueError:
             pass
         cls.installed = None

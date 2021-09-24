@@ -28,8 +28,10 @@ Pipfile.lock
 
 # gettext binary translation files
 *.mo
+
 # Vim
 *.swp
+*.swo
 
 # Flask
 instance/*
@@ -49,3 +51,9 @@ Pipfile.lock
 # Database
 *.db
 
+# PyTest
+htmlcov
+.coverage
+
+# Blender
+*.blend1

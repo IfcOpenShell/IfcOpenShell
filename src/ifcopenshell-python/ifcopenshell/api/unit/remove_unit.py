@@ -2,7 +2,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.element
 
 
-class Usecase():
+class Usecase:
     def __init__(self, file, **settings):
         self.file = file
         self.settings = {"unit": None}

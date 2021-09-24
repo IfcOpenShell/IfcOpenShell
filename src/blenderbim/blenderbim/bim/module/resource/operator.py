@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -19,14 +18,15 @@
 
 import bpy
 import json
+import time
+import isodate
 import ifcopenshell.api
-from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.resource.data import Data
 import blenderbim.bim.helper
 import blenderbim.bim.module.sequence.helper as helper
-import time
 from datetime import datetime
-import isodate
+from blenderbim.bim.ifc import IfcStore
+from ifcopenshell.api.resource.data import Data
+from ifcopenshell.api.unit.data import Data as UnitData
 
 
 class LoadResources(bpy.types.Operator):
@@ -93,7 +93,6 @@ class EnableEditingResource(bpy.types.Operator):
                 new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
-
 
 
 class LoadResourceProperties(bpy.types.Operator):
@@ -301,7 +300,9 @@ class EnableEditingResourceTime(bpy.types.Operator):
 
         data = Data.resource_times[resource_time_id]
 
-        blenderbim.bim.helper.import_attributes("IfcResourceTime", props.resource_time_attributes, data, self.import_attributes)
+        blenderbim.bim.helper.import_attributes(
+            "IfcResourceTime", props.resource_time_attributes, data, self.import_attributes
+        )
         props.active_resource_time_id = resource_time_id
         props.active_resource_id = self.resource
         props.editing_resource_type = "USAGE"
@@ -319,7 +320,9 @@ class EnableEditingResourceTime(bpy.types.Operator):
                 return True
 
     def add_resource_time(self):
-        resource_time = ifcopenshell.api.run("resource.add_resource_time", self.file, resource=self.file.by_id(self.resource))
+        resource_time = ifcopenshell.api.run(
+            "resource.add_resource_time", self.file, resource=self.file.by_id(self.resource)
+        )
         Data.load(self.file)
         return resource_time
 
@@ -345,7 +348,9 @@ class EditResourceTime(bpy.types.Operator):
 
     def _execute(self, context):
         self.props = context.scene.BIMResourceProperties
-        attributes = blenderbim.bim.helper.export_attributes(self.props.resource_time_attributes, self.export_attributes)
+        attributes = blenderbim.bim.helper.export_attributes(
+            self.props.resource_time_attributes, self.export_attributes
+        )
 
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -365,9 +370,310 @@ class EditResourceTime(bpy.types.Operator):
                 return True
             attributes[prop.name] = helper.parse_datetime(prop.string_value)
             return True
-        elif prop.name =="LevelingDelay" or "Work" in prop.name:
+        elif prop.name == "LevelingDelay" or "Work" in prop.name:
             if prop.is_null:
                 attributes[prop.name] = None
                 return True
             attributes[prop.name] = helper.parse_duration(prop.string_value)
             return True
+
+
+class CalculateResourceWork(bpy.types.Operator):
+    bl_idname = "bim.calculate_resource_work"
+    bl_label = "Calculate Resource Work"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run("resource.calculate_resource_work", self.file, resource=self.file.by_id(self.resource))
+        Data.load(self.file)
+        bpy.ops.bim.load_resources()
+        return {"FINISHED"}
+
+
+class EnableEditingResourceCosts(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_resource_costs"
+    bl_label = "Enable Editing Resource Costs"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMResourceProperties
+        props.active_resource_id = self.resource
+        props.editing_resource_type = "COSTS"
+        bpy.ops.bim.disable_editing_resource_cost_value()
+        return {"FINISHED"}
+
+
+class DisableEditingResourceCostValue(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_resource_cost_value"
+    bl_label = "Disable Editing Resource Cost Value"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMResourceProperties
+        props.active_cost_value_id = 0
+        props.cost_value_editing_type = ""
+        return {"FINISHED"}
+
+
+class DisableEditingResourceCostValue(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_resource_cost_value"
+    bl_label = "Disable Editing Resource Cost Value"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMResourceProperties
+        props.active_cost_value_id = 0
+        props.cost_value_editing_type = ""
+        return {"FINISHED"}
+
+
+class EnableEditingResourceCostValueFormula(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_resource_cost_value_formula"
+    bl_label = "Enable Editing Resource Cost Value Formula"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_value: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMResourceProperties
+        self.props.cost_value_attributes.clear()
+        self.props.active_cost_value_id = self.cost_value
+        self.props.cost_value_editing_type = "FORMULA"
+        self.props.cost_value_formula = Data.cost_values[self.cost_value]["Formula"]
+        return {"FINISHED"}
+
+
+class EnableEditingResourceCostValue(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_resource_cost_value"
+    bl_label = "Enable Editing Resource Cost Value"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_value: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMResourceProperties
+        self.props.cost_value_attributes.clear()
+        self.props.active_cost_value_id = self.cost_value
+        self.props.cost_value_editing_type = "ATTRIBUTES"
+        data = Data.cost_values[self.cost_value]
+
+        blenderbim.bim.helper.import_attributes(
+            data["type"],
+            self.props.cost_value_attributes,
+            data,
+            lambda name, prop, data: self.import_attributes(name, prop, data, context),
+        )
+        return {"FINISHED"}
+
+    def import_attributes(self, name, prop, data, context):
+        if name == "AppliedValue":
+            # TODO: for now, only support simple IfcValues (which are effectively IfcMonetaryMeasure)
+            prop = self.props.cost_value_attributes.add()
+            prop.data_type = "float"
+            prop.name = "AppliedValue"
+            prop.is_optional = True
+            prop.float_value = 0.0 if prop.is_null else data[name]
+            return True
+        elif name == "UnitBasis":
+            prop = self.props.cost_value_attributes.add()
+            prop.name = "UnitBasisValue"
+            prop.data_type = "float"
+            prop.is_null = data["UnitBasis"] is None
+            prop.is_optional = True
+            if data["UnitBasis"]:
+                prop.float_value = data["UnitBasis"]["ValueComponent"] or 0
+            else:
+                prop.float_value = 0
+
+            prop = self.props.cost_value_attributes.add()
+            prop.name = "UnitBasisUnit"
+            prop.data_type = "enum"
+            prop.is_null = prop.is_optional = False
+            units = {}
+            for unit_id, unit in UnitData.units.items():
+                if unit.get("UnitType", None) in [
+                    "AREAUNIT",
+                    "LENGTHUNIT",
+                    "TIMEUNIT",
+                    "VOLUMEUNIT",
+                    "MASSUNIT",
+                    "USERDEFINED",
+                ]:
+                    if unit["type"] == "IfcContextDependentUnit":
+                        units[unit_id] = f"{unit['UnitType']} / {unit['Name']}"
+                    else:
+                        name = unit["Name"]
+                        if unit.get("Prefix", None):
+                            name = f"(unit['Prefix']) {name}"
+                        units[unit_id] = f"{unit['UnitType']} / {name}"
+            prop.enum_items = json.dumps(units)
+            if data["UnitBasis"] and data["UnitBasis"]["UnitComponent"]:
+                prop.enum_value = str(data["UnitBasis"]["UnitComponent"])
+            return True
+
+
+class EditResourceCostValueFormula(bpy.types.Operator):
+    bl_idname = "bim.edit_resource_cost_value_formula"
+    bl_label = "Edit Resource Cost Value Formula"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_value: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        props = context.scene.BIMResourceProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.edit_cost_value_formula",
+            self.file,
+            **{"cost_value": self.file.by_id(self.cost_value), "formula": props.cost_value_formula},
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.disable_editing_resource_cost_value()
+        return {"FINISHED"}
+
+
+class EditResourceCostValue(bpy.types.Operator):
+    bl_idname = "bim.edit_resource_cost_value"
+    bl_label = "Edit Resource Cost Value"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_value: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        props = context.scene.BIMResourceProperties
+        attributes = blenderbim.bim.helper.export_attributes(
+            props.cost_value_attributes, lambda attributes, prop: self.export_attributes(attributes, prop, context)
+        )
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.edit_cost_value",
+            self.file,
+            **{"cost_value": self.file.by_id(self.cost_value), "attributes": attributes},
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.disable_editing_resource_cost_value()
+        return {"FINISHED"}
+
+    def export_attributes(self, attributes, prop, context):
+        if prop.name == "UnitBasisValue":
+            if prop.is_null:
+                attributes["UnitBasis"] = None
+                return True
+            attributes["UnitBasis"] = {
+                "ValueComponent": prop.float_value or 1,
+                "UnitComponent": IfcStore.get_file().by_id(
+                    int(context.scene.BIMResourceProperties.cost_value_attributes.get("UnitBasisUnit").enum_value)
+                ),
+            }
+            return True
+        if prop.name == "UnitBasisUnit":
+            return True
+
+
+class EnableEditingResourceBaseQuantity(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_resource_base_quantity"
+    bl_label = "Enable Editing Resource Quantity"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMResourceProperties
+        props.active_resource_id = self.resource
+        props.editing_resource_type = "QUANTITY"
+        return {"FINISHED"}
+
+
+class AddResourceQuantity(bpy.types.Operator):
+    bl_idname = "bim.add_resource_quantity"
+    bl_label = "Add Resource Quantity"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty()
+    ifc_class: bpy.props.StringProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "resource.add_resource_quantity",
+            self.file,
+            resource=self.file.by_id(self.resource),
+            ifc_class=self.ifc_class,
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class RemoveResourceQuantity(bpy.types.Operator):
+    bl_idname = "bim.remove_resource_quantity"
+    bl_label = "Remove Resource Quantity"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "resource.remove_resource_quantity",
+            self.file,
+            resource=self.file.by_id(self.resource),
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class EnableEditingResourceQuantity(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_resource_quantity"
+    bl_label = "Enable Editing Resource Quantity"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMResourceProperties
+        self.props.quantity_attributes.clear()
+        self.props.is_editing_quantity = True
+        data = Data.resources[self.resource]["BaseQuantity"]
+        blenderbim.bim.helper.import_attributes(data["type"], self.props.quantity_attributes, data)
+        return {"FINISHED"}
+
+
+class DisableEditingResourceQuantity(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_resource_quantity"
+    bl_label = "Disable Editing Resource Quantity"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMResourceProperties
+        props.is_editing_quantity = False
+        return {"FINISHED"}
+
+
+class EditResourceQuantity(bpy.types.Operator):
+    bl_idname = "bim.edit_resource_quantity"
+    bl_label = "Edit Resource Quantity"
+    bl_options = {"REGISTER", "UNDO"}
+    physical_quantity: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        props = context.scene.BIMResourceProperties
+        attributes = blenderbim.bim.helper.export_attributes(props.quantity_attributes)
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "resource.edit_resource_quantity",
+            self.file,
+            **{"physical_quantity": self.file.by_id(self.physical_quantity), "attributes": attributes},
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.disable_editing_resource_quantity()
+        return {"FINISHED"}

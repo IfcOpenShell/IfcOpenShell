@@ -16,3 +16,6 @@ API Documentation
 
 .. automodule:: ifcopenshell.validate
    :members:
+
+.. automodule:: ifcopenshell.ids
+   :members:

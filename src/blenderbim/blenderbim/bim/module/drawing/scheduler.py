@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -27,7 +26,11 @@ from odf.style import Style
 
 class Scheduler:
     def schedule(self, infile, outfile):
-        self.svg = svgwrite.Drawing(outfile, debug=False, id="root",)
+        self.svg = svgwrite.Drawing(
+            outfile,
+            debug=False,
+            id="root",
+        )
         self.padding = 1
         self.margin = 1
         doc = load(infile)

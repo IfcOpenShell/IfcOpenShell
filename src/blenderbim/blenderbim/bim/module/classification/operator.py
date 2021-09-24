@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -76,6 +75,7 @@ class EnableEditingClassification(bpy.types.Operator):
             new.name = attribute.name()
             new.is_null = classification_data[attribute.name()] is None
             new.is_optional = attribute.optional()
+            new.data_type = "string"
             if attribute.name() == "ReferenceTokens":
                 new.string_value = "" if new.is_null else json.dumps(classification_data[attribute.name()])
             else:
@@ -162,6 +162,7 @@ class EnableEditingClassificationReference(bpy.types.Operator):
             new.name = attribute.name()
             new.is_null = reference_data[attribute.name()] is None
             new.is_optional = attribute.optional()
+            new.data_type = "string"
             new.string_value = "" if new.is_null else reference_data[attribute.name()]
         props.active_reference_id = self.reference
         return {"FINISHED"}

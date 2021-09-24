@@ -41,13 +41,16 @@ class ReportGenerator:
             return
 
         for scenario in feature["elements"]:
-            scenario_data = self.process_scenario(scenario)
+            scenario_data = self.process_scenario(scenario, feature)
             if scenario_data:
                 data["scenarios"].append(scenario_data)
 
         data["total_passes"] = sum([s["total_passes"] for s in data["scenarios"]])
         data["total_steps"] = sum([s["total_steps"] for s in data["scenarios"]])
-        data["pass_rate"] = round((data["total_passes"] / data["total_steps"]) * 100)
+        try:
+            data["pass_rate"] = round((data["total_passes"] / data["total_steps"]) * 100)
+        except ZeroDivisionError:
+            data["pass_rate"] = 0
 
         data.update(self.get_template_strings())
 
@@ -57,7 +60,7 @@ class ReportGenerator:
             ) as template:
                 out.write(pystache.render(template.read(), data))
 
-    def process_scenario(self, scenario):
+    def process_scenario(self, scenario, feature):
         if len(scenario["steps"]) == 0:
             print("Scenario '{}' in feature '{}' has no steps.".format(scenario["name"], feature["name"]))
             return

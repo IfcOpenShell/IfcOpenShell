@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -105,7 +104,7 @@ class BIM_PT_object_constraints(Panel):
                 constraint = Data.objectives[constraint_id]
                 icon = "LIGHT"
             except:
-                pass # Metric not implemented
+                pass  # Metric not implemented
             row = self.layout.row(align=True)
             row.label(text=constraint.get("Name") or "Unnamed")
             row.operator("bim.unassign_constraint", text="", icon="X").constraint = constraint_id

@@ -46,11 +46,14 @@ class Usecase:
             name = dummy_profile.attribute_name(i)
             if "Radius" in name and name != "RoundingRadius":
                 dummy_profile[i] = None
-        dummy_solid = self.dummy.create_entity("IfcExtrudedAreaSolid", **{
-            "SweptArea": dummy_profile,
-            "ExtrudedDirection": self.dummy.createIfcDirection((0., 0., 1.)),
-            "Depth": 1
-        })
+        dummy_solid = self.dummy.create_entity(
+            "IfcExtrudedAreaSolid",
+            **{
+                "SweptArea": dummy_profile,
+                "ExtrudedDirection": self.dummy.createIfcDirection((0.0, 0.0, 1.0)),
+                "Depth": 1,
+            }
+        )
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
         shape = ifcopenshell.geom.create_shape(self.settings_2d, dummy_solid)
@@ -77,61 +80,61 @@ class Usecase:
     def get_bottom_left(self, shape):
         v = shape.verts
         x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i+1] for i in range(0, len(v), 3)]
+        y = [v[i + 1] for i in range(0, len(v), 3)]
         width = max(x) - min(x)
         height = max(y) - min(y)
-        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((-width/2, height/2, 0.)))
+        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((-width / 2, height / 2, 0.0)))
 
     def get_bottom_centre(self, shape):
         v = shape.verts
-        y = [v[i+1] for i in range(0, len(v), 3)]
+        y = [v[i + 1] for i in range(0, len(v), 3)]
         height = max(y) - min(y)
-        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0., height/2, 0.)))
+        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0.0, height / 2, 0.0)))
 
     def get_bottom_right(self, shape):
         v = shape.verts
         x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i+1] for i in range(0, len(v), 3)]
+        y = [v[i + 1] for i in range(0, len(v), 3)]
         width = max(x) - min(x)
         height = max(y) - min(y)
-        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((width/2, height/2, 0.)))
+        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((width / 2, height / 2, 0.0)))
 
     def get_mid_depth_left(self, shape):
         v = shape.verts
         x = [v[i] for i in range(0, len(v), 3)]
         width = max(x) - min(x)
-        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((-width/2, 0., 0.)))
+        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((-width / 2, 0.0, 0.0)))
 
     def get_mid_depth_centre(self, shape):
-        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0., 0., 0.)))
+        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)))
 
     def get_mid_depth_right(self, shape):
         v = shape.verts
         x = [v[i] for i in range(0, len(v), 3)]
         width = max(x) - min(x)
-        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((width/2, 0., 0.)))
+        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((width / 2, 0.0, 0.0)))
 
     def get_top_left(self, shape):
         v = shape.verts
         x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i+1] for i in range(0, len(v), 3)]
+        y = [v[i + 1] for i in range(0, len(v), 3)]
         width = max(x) - min(x)
         height = max(y) - min(y)
-        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((-width/2, -height/2, 0.)))
+        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((-width / 2, -height / 2, 0.0)))
 
     def get_top_centre(self, shape):
         v = shape.verts
-        y = [v[i+1] for i in range(0, len(v), 3)]
+        y = [v[i + 1] for i in range(0, len(v), 3)]
         height = max(y) - min(y)
-        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0., -height/2, 0.)))
+        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0.0, -height / 2, 0.0)))
 
     def get_top_right(self, shape):
         v = shape.verts
         x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i+1] for i in range(0, len(v), 3)]
+        y = [v[i + 1] for i in range(0, len(v), 3)]
         width = max(x) - min(x)
         height = max(y) - min(y)
-        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((width/2, -height/2, 0.)))
+        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((width / 2, -height / 2, 0.0)))
 
     def update_representation(self, element):
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")

@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -26,7 +25,8 @@ classes = (
     operator.EditCostSchedule,
     operator.EditCostItem,
     operator.EditCostItemQuantity,
-    operator.EditCostValue,
+    operator.EditCostItemValue,
+    operator.EditCostItemValueFormula,
     operator.EnableEditingCostSchedule,
     operator.EnableEditingCostItems,
     operator.EnableEditingCostItem,
@@ -34,6 +34,7 @@ classes = (
     operator.EnableEditingCostItemQuantity,
     operator.EnableEditingCostItemValues,
     operator.EnableEditingCostItemValue,
+    operator.EnableEditingCostItemValueFormula,
     operator.DisableEditingCostItem,
     operator.DisableEditingCostSchedule,
     operator.DisableEditingCostItemQuantity,
@@ -63,6 +64,7 @@ classes = (
     operator.LoadScheduleOfRates,
     operator.ExpandCostItemRate,
     operator.ContractCostItemRate,
+    operator.CalculateCostItemResourceValue,
     prop.CostItem,
     prop.CostItemQuantity,
     prop.CostItemType,

@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -128,11 +127,6 @@ class QuantifyObjects(bpy.types.Operator):
                 product=self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
                 name=props.qto_name,
             )
-            ifcopenshell.api.run(
-                "pset.edit_qto",
-                self.file,
-                qto=qto,
-                properties={props.prop_name: result}
-            )
+            ifcopenshell.api.run("pset.edit_qto", self.file, qto=qto, properties={props.prop_name: result})
             PsetData.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}

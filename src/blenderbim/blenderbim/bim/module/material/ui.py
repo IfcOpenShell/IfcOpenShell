@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -258,6 +257,8 @@ class BIM_PT_object_material(Panel):
         if self.product_data["type"] == "IfcMaterialList":
             setattr(op, "list_item_set", self.material_set_id)
         setattr(op, self.set_item_name, item["id"])
+        if hasattr(op, f"{self.set_item_name}_index"):
+            setattr(op, f"{self.set_item_name}_index", index)
 
     def draw_read_only_set_ui(self):
         if (

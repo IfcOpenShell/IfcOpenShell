@@ -29,6 +29,6 @@ class Data:
                 "GlobalId": data["GlobalId"],
                 "Name": data["Name"],
                 "Description": data["Description"],
-                "PrimaryMeasureType": data["PrimaryMeasureType"]
+                "PrimaryMeasureType": data["PrimaryMeasureType"],
             }
         cls.is_loaded = True

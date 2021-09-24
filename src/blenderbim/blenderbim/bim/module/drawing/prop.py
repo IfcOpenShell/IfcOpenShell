@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -54,7 +53,7 @@ def purge():
     vector_styles_enum = []
 
 
-def getDiagramScales(self, context):
+def get_diagram_scales(self, context):
     global diagram_scales_enum
     if (
         len(diagram_scales_enum) < 1
@@ -271,15 +270,16 @@ class DocProperties(PropertyGroup):
 
     @property
     def active_schedule(self):
-        return self.schedules[self.active_schedule_index]   
-    
+        return self.schedules[self.active_schedule_index]
+
     @property
     def active_drawing(self):
-        return self.drawings[self.active_drawing_index]    
-        
+        return self.drawings[self.active_drawing_index]
+
     @property
     def active_sheet(self):
         return self.sheets[self.active_sheet_index]
+
 
 class BIMCameraProperties(PropertyGroup):
     view_name: StringProperty(name="View Name")
@@ -294,7 +294,7 @@ class BIMCameraProperties(PropertyGroup):
         name="Target View",
         default="PLAN_VIEW",
     )
-    diagram_scale: EnumProperty(items=getDiagramScales, name="Drawing Scale")
+    diagram_scale: EnumProperty(items=get_diagram_scales, name="Drawing Scale")
     custom_diagram_scale: StringProperty(name="Custom Scale")
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)

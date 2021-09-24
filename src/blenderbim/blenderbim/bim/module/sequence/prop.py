@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -205,15 +204,15 @@ def updateTaskDuration(self, context):
     bpy.ops.bim.load_task_properties()
 
 
-def updateVisualisationStart(self, context):
-    updateVisualisationStartFinish(self, context, "visualisation_start")
+def update_visualisation_start(self, context):
+    update_visualisation_start_finish(self, context, "visualisation_start")
 
 
-def updateVisualisationFinish(self, context):
-    updateVisualisationStartFinish(self, context, "visualisation_finish")
+def update_visualisation_finish(self, context):
+    update_visualisation_start_finish(self, context, "visualisation_finish")
 
 
-def updateVisualisationStartFinish(self, context, startfinish):
+def update_visualisation_start_finish(self, context, startfinish):
     def canonicalise_time(time):
         if not time:
             return "-"
@@ -317,8 +316,8 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_sequence_id: IntProperty(name="Active Sequence Id")
     sequence_attributes: CollectionProperty(name="Sequence Attributes", type=Attribute)
     time_lag_attributes: CollectionProperty(name="Time Lag Attributes", type=Attribute)
-    visualisation_start: StringProperty(name="Visualisation Start", update=updateVisualisationStart)
-    visualisation_finish: StringProperty(name="Visualisation Finish", update=updateVisualisationFinish)
+    visualisation_start: StringProperty(name="Visualisation Start", update=update_visualisation_start)
+    visualisation_finish: StringProperty(name="Visualisation Finish", update=update_visualisation_finish)
     speed_multiplier: FloatProperty(name="Speed Multiplier", default=10000)
     speed_animation_duration: StringProperty(name="Speed Animation Duration", default="PT1S")
     speed_animation_frames: IntProperty(name="Speed Animation Frames", default=24)
@@ -389,3 +388,10 @@ class BIMWorkCalendarProperties(PropertyGroup):
 class DatePickerProperties(PropertyGroup):
     display_date: StringProperty()
     selected_date: StringProperty()
+
+
+class BIMDateTextProperties(PropertyGroup):
+    start_frame: IntProperty(name="Start Frame")
+    total_frames: IntProperty(name="Total Frames")
+    start: StringProperty(name="Start")
+    finish: StringProperty(name="Finish")

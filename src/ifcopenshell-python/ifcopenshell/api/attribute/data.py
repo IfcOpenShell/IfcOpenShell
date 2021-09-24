@@ -37,12 +37,14 @@ class Data:
             if data_type == "enum":
                 enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
 
-            cls.products[product_id].append({
-                "name": attribute.name(),
-                "value": value,
-                "type": data_type,
-                "enum_items": enum_items,
-                "list_type": list_type,
-                "is_optional": attribute.optional(),
-                "is_null": getattr(product, attribute.name()) is None
-            })
+            cls.products[product_id].append(
+                {
+                    "name": attribute.name(),
+                    "value": value,
+                    "type": data_type,
+                    "enum_items": enum_items,
+                    "list_type": list_type,
+                    "is_optional": attribute.optional(),
+                    "is_null": getattr(product, attribute.name()) is None,
+                }
+            )

@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -43,7 +42,7 @@ def purge():
     ifcpatchrecipes_enum = []
 
 
-def getIfcPatchRecipes(self, context):
+def get_ifcpatch_recipes(self, context):
     global ifcpatchrecipes_enum
     if len(ifcpatchrecipes_enum) < 1:
         ifcpatchrecipes_enum.clear()
@@ -53,15 +52,16 @@ def getIfcPatchRecipes(self, context):
             if f == "__init__":
                 continue
             docs = ifcpatch.extract_docs(f, "Patcher", "__init__", ("src", "file", "logger", "args"))
-            ifcpatchrecipes_enum.append((f, f, docs.get("description","") if docs else ""))
+            ifcpatchrecipes_enum.append((f, f, docs.get("description", "") if docs else ""))
     return ifcpatchrecipes_enum
 
+
 def update_ifc_patch_recipe(self, context):
-    bpy.ops.bim.update_ifc_patch_arguments(recipe = self.ifc_patch_recipes)
+    bpy.ops.bim.update_ifc_patch_arguments(recipe=self.ifc_patch_recipes)
 
 
 class BIMPatchProperties(PropertyGroup):
-    ifc_patch_recipes: EnumProperty(items=getIfcPatchRecipes, name="Recipes", update=update_ifc_patch_recipe)
+    ifc_patch_recipes: EnumProperty(items=get_ifcpatch_recipes, name="Recipes", update=update_ifc_patch_recipe)
     ifc_patch_input: StringProperty(default="", name="IFC Patch Input IFC")
     ifc_patch_output: StringProperty(default="", name="IFC Patch Output IFC")
     ifc_patch_args: StringProperty(default="", name="Arguments")

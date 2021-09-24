@@ -1,4 +1,4 @@
-class Usecase():
+class Usecase:
     def __init__(self, file, **settings):
         self.file = file
         self.settings = {"profile": None, "attributes": {}}

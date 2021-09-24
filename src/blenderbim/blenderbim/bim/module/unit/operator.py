@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -223,7 +222,6 @@ class AddContextDependentUnit(bpy.types.Operator):
         return {"FINISHED"}
 
 
-
 class EnableEditingUnit(bpy.types.Operator):
     bl_idname = "bim.enable_editing_unit"
     bl_label = "Enable Editing Unit"
@@ -236,14 +234,15 @@ class EnableEditingUnit(bpy.types.Operator):
         data = Data.units[self.unit]
         blenderbim.bim.helper.import_attributes(
             data["type"],
-            props.unit_attributes, 
-            data, 
-            lambda name, prop, data: self.import_attributes(name, prop, data, context))
+            props.unit_attributes,
+            data,
+            lambda name, prop, data: self.import_attributes(name, prop, data, context),
+        )
         props.active_unit_id = self.unit
         return {"FINISHED"}
 
     def import_attributes(self, name, prop, data, context):
-        if name == "Dimensions":
+        if name == "Dimensions" and data["type"] != "IfcSIUnit":
             new = context.scene.BIMUnitProperties.unit_attributes.add()
             new.name = name
             new.is_null = data[name] is None

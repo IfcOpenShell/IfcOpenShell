@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -40,6 +39,7 @@ classes = (
     ui.BIM_PT_material_psets,
     ui.BIM_PT_task_qtos,
     ui.BIM_PT_resource_qtos,
+    ui.BIM_PT_resource_psets,
     ui.BIM_PT_profile_psets,
     ui.BIM_PT_work_schedule_psets,
 )
