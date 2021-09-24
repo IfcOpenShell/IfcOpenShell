@@ -129,7 +129,7 @@ class AddFilling(bpy.types.Operator):
         self.file = IfcStore.get_file()
         element_id = obj.BIMObjectProperties.ifc_definition_id
         opening_id = opening.BIMObjectProperties.ifc_definition_id
-        if not element_id or not opening_id:
+        if not element_id or not opening_id or element_id == opening_id:
             return {"FINISHED"}
         ifcopenshell.api.run(
             "void.add_filling",
@@ -155,10 +155,11 @@ class RemoveFilling(bpy.types.Operator):
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "void.remove_filling", self.file, **{"element": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
-        )
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        element_id = obj.BIMObjectProperties.ifc_definition_id
+        if not element_id:
+            return {"FINISHED"}
+        ifcopenshell.api.run("void.remove_filling", self.file, **{"element": self.file.by_id(element_id)})
+        Data.load(self.file, element_id)
         return {"FINISHED"}
 
 
