@@ -69,7 +69,7 @@ class settings(ifcopenshell_wrapper.SerializerSettings):
                 self.set(settings.DISABLE_TRIANGULATION, value)
                 self.use_python_opencascade = value
             else:
-                ifcopenshell_wrapper.settings.set(self, *args)
+                ifcopenshell_wrapper.SerializerSettings.set(self, *args)
 
 
 # Make sure people are able to use python's platform agnostic paths
