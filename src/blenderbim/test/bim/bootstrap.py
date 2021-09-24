@@ -264,6 +264,14 @@ def the_object_name_is_not_voided_by_void(name, void):
             assert False, "A void was found"
 
 
+def the_void_name_is_filled_by_filling(name, filling):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    if any(rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings):
+        return True
+    assert False, f"Filling was not found"
+
+
 def the_object_name_should_display_as_mode(name, mode):
     assert the_object_name_exists(name).display_type == mode
 
@@ -317,6 +325,7 @@ definitions = {
     'the object "(.*)" should display as "(.*)"': the_object_name_should_display_as_mode,
     'the object "(.*)" has "([0-9]+)" vertices': the_object_name_has_number_vertices,
     'the object "(.*)" is at "(.*)"': the_object_name_is_at_location,
+    'the object "(.*)" is filled by "(.*)"': the_void_name_is_filled_by_filling,
 }
 
 

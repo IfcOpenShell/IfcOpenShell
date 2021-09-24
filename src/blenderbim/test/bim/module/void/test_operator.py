@@ -113,3 +113,25 @@ class TestRemoveOpening(test.bim.bootstrap.NewFile):
         And I delete the selected objects
         Then the object "Cube" is not an IFC element
         """
+
+
+class TestAddFilling(test.bim.bootstrap.NewFile):
+    @test.bim.bootstrap.scenario
+    def test_adding_a_filling(self):
+        return """
+        Given an empty IFC project
+        Given I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
+        And I press "bim.assign_class"
+        And I add a cube
+        And the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcDoor"
+        And I press "bim.assign_class"
+        And the object "IfcOpeningElement/Cube" is selected
+        And I press "bim.add_filling(opening='IfcOpeningElement/Cube', obj='IfcDoor/Cube')"
+        Then the object "IfcOpeningElement/Cube" is an "IfcOpeningElement"
+        And the object "IfcOpeningElement/Cube" should display as "WIRE"
+        And the object "IfcDoor/Cube" is an "IfcDoor"
+        And the void "IfcOpeningElement/Cube" is filled by "Cube"
+        """
