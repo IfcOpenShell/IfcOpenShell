@@ -269,14 +269,14 @@ def the_void_name_is_filled_by_filling(name, filling):
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     if any(rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings):
         return True
-    assert False, f"No filling found"
+    assert False, "No filling found"
 
 
 def the_void_name_is_not_filled_by_filling(name, filling):
     ifc = IfcStore.get_file()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     if any(rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings):
-        assert False, f"A filling was found"
+        assert False, "A filling was found"
 
 
 def the_object_name_should_display_as_mode(name, mode):
