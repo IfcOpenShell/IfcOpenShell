@@ -1000,7 +1000,7 @@ void IfcParse::IfcFile::unregister_inverse(unsigned id_from, const IfcParse::ent
 		e = e->supertype();
 	}
 
-	std::vector<int>& ids = byref_excl[{inst->data().id(), e->index_in_schema(), attribute_index}];
+	std::vector<int>& ids = byref_excl[{inst->data().id(), from_entity->index_in_schema(), attribute_index}];
 	std::vector<int>::iterator it = std::find(ids.begin(), ids.end(), id_from);
 	if (it == ids.end()) {
 		// @todo inverses also need to be populated when multiple instances are added to a new file.
