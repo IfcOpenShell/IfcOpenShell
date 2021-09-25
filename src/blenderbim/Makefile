@@ -102,17 +102,6 @@ endif
 	cd dist/working && mv occ_utils.py ../blenderbim/libs/site/packages/ifcopenshell/geom/occ_utils.py
 	rm -rf dist/working
 
-	# Provides IfcConvert for construction documentation
-	mkdir dist/working
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.0-81ad689-$(PLATFORM)64.zip
-	cd dist/working && unzip IfcConvert*
-ifeq ($(PLATFORM), win)
-	cp -r dist/working/IfcConvert.exe dist/blenderbim/libs/
-else
-	cp -r dist/working/IfcConvert dist/blenderbim/libs/
-endif
-	rm -rf dist/working
-
 	# Provides dependencies that are part of IfcOpenShell
 	mkdir dist/working
 	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/archive/v0.7.0.zip
