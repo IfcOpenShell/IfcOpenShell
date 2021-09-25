@@ -32,6 +32,9 @@ from mathutils import Vector
 webbrowser.open = lambda x: True
 
 
+variables = {"cwd": os.getcwd()}
+
+
 class NewFile:
     @pytest.fixture(autouse=True)
     def setup(self):
@@ -280,7 +283,12 @@ def the_object_name_is_at_location(name, location):
     ).length < 0.1, f"Object is at {obj_location}"
 
 
+def the_variable_key_is_value(key, value):
+    variables[key] = eval(value)
+
+
 definitions = {
+    'the variable "(.*)" is "(.*)"': the_variable_key_is_value,
     "an empty IFC project": an_empty_ifc_project,
     "I add a cube": i_add_a_cube,
     'I add a cube of size "([0-9]+)" at "(.*)"': i_add_a_cube_of_size_size_at_location,
@@ -324,7 +332,8 @@ definitions = {
 def run(scenario):
     keywords = ["Given", "When", "Then", "And", "But"]
     for line in scenario.split("\n"):
-        line = line.replace("{cwd}", os.getcwd())
+        for key, value in variables.items():
+            line = line.replace("{" + key + "}", str(value))
         for keyword in keywords:
             line = line.replace(keyword, "")
         line = line.strip()
