@@ -325,6 +325,7 @@ definitions = {
     'the object "(.*)" should display as "(.*)"': the_object_name_should_display_as_mode,
     'the object "(.*)" has "([0-9]+)" vertices': the_object_name_has_number_vertices,
     'the object "(.*)" is at "(.*)"': the_object_name_is_at_location,
+    "nothing interesting happens": lambda: None,
 }
 
 

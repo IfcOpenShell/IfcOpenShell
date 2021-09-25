@@ -18,6 +18,8 @@
 
 import bpy
 import ifcopenshell.api
+import blenderbim.bim.tool
+import blenderbim.core.context
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.context.data import Data
 
@@ -34,16 +36,12 @@ class AddSubcontext(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "context.add_context",
-            self.file,
-            **{
-                "context": self.context or context.scene.BIMProperties.available_contexts,
-                "subcontext": self.subcontext or context.scene.BIMProperties.available_subcontexts,
-                "target_view": self.target_view or context.scene.BIMProperties.available_target_views,
-            },
-        )
+        blenderbim.core.context.AddContext(
+            blenderbim.bim.tool.Ifc,
+            context=self.context or context.scene.BIMProperties.available_contexts,
+            subcontext=self.subcontext or context.scene.BIMProperties.available_subcontexts,
+            target_view=self.target_view or context.scene.BIMProperties.available_target_views,
+        ).execute()
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -59,8 +57,8 @@ class RemoveSubcontext(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "context.remove_context", self.file, **{"context": self.file.by_id(self.ifc_definition_id)}
-        )
-        Data.load(IfcStore.get_file())
+        blenderbim.core.context.RemoveContext(
+            blenderbim.bim.tool.Ifc, context=self.file.by_id(self.ifc_definition_id)
+        ).execute()
+        Data.load(self.file)
         return {"FINISHED"}
