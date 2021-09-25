@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2021 Nathan Hild <nathan.hild@gmail.com>
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -15,15 +15,3 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
-
-import subprocess
-import sys
-
-py_exec = str(sys.executable)
-# Ensure pip is installed
-subprocess.call([py_exec, "-m", "ensurepip", "--user"])
-# Update pip
-subprocess.call([py_exec, "-m", "pip", "install", "--upgrade", "pip"])
-# Install packages
-subprocess.call([py_exec, "-m", "pip", "install", f"--target={py_exec[:-14]}" + "lib", "pytest"])
-subprocess.call([py_exec, "-m", "pip", "install", f"--target={py_exec[:-14]}" + "lib", "pytest-blender"])

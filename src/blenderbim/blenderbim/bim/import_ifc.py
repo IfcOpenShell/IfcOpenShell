@@ -601,7 +601,7 @@ class IfcImporter:
                     )
                 )
                 checkpoint = time.time()
-                #self.update_progress(((total / approx_total_products) * progress_range) + start_progress)
+                # self.update_progress(((total / approx_total_products) * progress_range) + start_progress)
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.guid)
@@ -1149,7 +1149,7 @@ class IfcImporter:
 
         container = ifcopenshell.util.element.get_container(element)
         if container:
-            if element.is_a("IfcGrid"): # TODO: refactor into a more holistic collection mode feature
+            if element.is_a("IfcGrid"):  # TODO: refactor into a more holistic collection mode feature
                 grid_collection = bpy.data.collections.get(obj.name)
                 if grid_collection:  # Just in case we run into invalid grids from Revit
                     self.collections[container.GlobalId].children.link(grid_collection)

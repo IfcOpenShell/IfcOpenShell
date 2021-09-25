@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2021 Nathan Hild <nathan.hild@gmail.com>
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -16,14 +16,27 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import subprocess
-import sys
 
-py_exec = str(sys.executable)
-# Ensure pip is installed
-subprocess.call([py_exec, "-m", "ensurepip", "--user"])
-# Update pip
-subprocess.call([py_exec, "-m", "pip", "install", "--upgrade", "pip"])
-# Install packages
-subprocess.call([py_exec, "-m", "pip", "install", f"--target={py_exec[:-14]}" + "lib", "pytest"])
-subprocess.call([py_exec, "-m", "pip", "install", f"--target={py_exec[:-14]}" + "lib", "pytest-blender"])
+class AddContext:
+    def __init__(self, ifc, context=None, subcontext=None, target_view=None):
+        self.ifc = ifc
+        self.context = context
+        self.subcontext = subcontext
+        self.target_view = target_view
+
+    def execute(self):
+        return self.ifc.run(
+            "context.add_context",
+            context=self.context,
+            subcontext=self.subcontext,
+            target_view=self.target_view,
+        )
+
+
+class RemoveContext:
+    def __init__(self, ifc, context=None):
+        self.ifc = ifc
+        self.context = context
+
+    def execute(self):
+        self.ifc.run("context.remove_context", context=self.context)
