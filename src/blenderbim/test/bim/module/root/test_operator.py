@@ -24,7 +24,7 @@ class TestAssignClass(test.bim.bootstrap.NewFile):
     def test_assigning_a_class_to_a_cube(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
@@ -37,7 +37,7 @@ class TestAssignClass(test.bim.bootstrap.NewFile):
     def test_assigning_a_type_class_to_a_cube(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
@@ -51,7 +51,7 @@ class TestAssignClass(test.bim.bootstrap.NewFile):
     def test_assigning_a_spatial_class_to_a_cube(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_product" to "IfcSpatialElement"
         And I set "scene.BIMRootProperties.ifc_class" to "IfcBuilding"
@@ -65,7 +65,7 @@ class TestAssignClass(test.bim.bootstrap.NewFile):
     def test_assigning_an_opening_class_to_a_cube(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
         And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
@@ -80,7 +80,7 @@ class TestAssignClass(test.bim.bootstrap.NewFile):
     def test_assigning_a_class_to_a_cube_in_a_collection(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And the object "Cube" is placed in the collection "IfcBuildingStorey/My Storey"
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
@@ -94,7 +94,7 @@ class TestCopyClass(test.bim.bootstrap.NewFile):
     def test_copying_a_wall(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
@@ -118,7 +118,7 @@ class TestCopyClass(test.bim.bootstrap.NewFile):
     def test_copying_an_opening(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"

@@ -24,7 +24,7 @@ class TestAddOpening(test.bim.bootstrap.NewFile):
     def test_adding_an_opening(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
@@ -44,15 +44,16 @@ class TestRemoveOpening(test.bim.bootstrap.NewFile):
     def test_removing_an_opening_manually(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
         And I add a cube of size "1" at "1,0,0"
-        And the object "IfcWall/Cube" is selected
-        And additionally the object "Cube" is selected
+        And the object "Cube" is selected
+        And additionally the object "IfcWall/Cube" is selected
         And I press "bim.add_opening(opening='Cube', obj='IfcWall/Cube')"
-        And I press "bim.remove_opening(opening_id=97, obj='IfcWall/Cube')"
+        And the variable "opening_id" is "IfcStore.get_file().by_type('IfcOpeningElement')[0].id()"
+        And I press "bim.remove_opening(opening_id={opening_id}, obj='IfcWall/Cube')"
         Then the object "IfcWall/Cube" has no boolean difference by "IfcOpeningElement/Cube"
         And the object "IfcWall/Cube" is not voided by "Cube"
         And the object "Cube" is not an IFC element
@@ -62,7 +63,7 @@ class TestRemoveOpening(test.bim.bootstrap.NewFile):
     def test_removing_a_non_dynamic_opening_manually(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
@@ -74,7 +75,8 @@ class TestRemoveOpening(test.bim.bootstrap.NewFile):
         And I press "bim.switch_representation(ifc_definition_id=86, should_reload=True)"
         Then the object "IfcWall/Cube" has no boolean difference by "IfcOpeningElement/Cube"
         And the object "IfcWall/Cube" has "16" vertices
-        When I press "bim.remove_opening(opening_id=97, obj='IfcWall/Cube')"
+        And the variable "opening_id" is "IfcStore.get_file().by_type('IfcOpeningElement')[0].id()"
+        When I press "bim.remove_opening(opening_id={opening_id}, obj='IfcWall/Cube')"
         Then the object "IfcWall/Cube" has "8" vertices
         And the object "Cube" is not an IFC element
         """
@@ -83,7 +85,7 @@ class TestRemoveOpening(test.bim.bootstrap.NewFile):
     def test_removing_an_opening_using_deletion(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
@@ -101,7 +103,7 @@ class TestRemoveOpening(test.bim.bootstrap.NewFile):
     def test_removing_an_opening_indirectly_by_deleting_its_building_element(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
         And I press "bim.assign_class"
