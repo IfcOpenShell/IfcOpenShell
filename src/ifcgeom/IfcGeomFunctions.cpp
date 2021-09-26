@@ -1941,7 +1941,9 @@ IfcGeom::BRepElement* IfcGeom::Kernel::create_brep_for_representation_and_produc
 		
 	gp_Trsf trsf;
 	try {
-		convert(product->ObjectPlacement(),trsf);
+		if (product->ObjectPlacement()) {
+			convert(product->ObjectPlacement(), trsf);
+		}
 	} catch (const std::exception& e) {
 		Logger::Error(e);
 	} catch (...) {
@@ -2205,7 +2207,9 @@ IfcGeom::BRepElement* IfcGeom::Kernel::create_brep_for_processed_representation(
 		
 	gp_Trsf trsf;
 	try {
-		convert(product->ObjectPlacement(),trsf);
+		if (product->ObjectPlacement()) {
+			convert(product->ObjectPlacement(), trsf);
+		}
 	} catch (const std::exception& e) {
 		Logger::Error(e);
 	} catch (...) {
@@ -2608,8 +2612,10 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 	}
 
 	gp_Trsf local;
-	if (!convert(wall->ObjectPlacement(), local)) {
-		return false;
+	if (wall->ObjectPlacement()) {
+		if (!convert(wall->ObjectPlacement(), local)) {
+			return false;
+		}
 	}
 	local.Invert();
 
@@ -2710,9 +2716,11 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		const IfcSchema::IfcProduct* other_wall = it->second;
 
 		gp_Trsf other;
-		if (!convert(other_wall->ObjectPlacement(), other)) {
-			Logger::Error("Failed to convert placement", other_wall);
-			continue;
+		if (other_wall->ObjectPlacement()) {
+			if (!convert(other_wall->ObjectPlacement(), other)) {
+				Logger::Error("Failed to convert placement", other_wall);
+				continue;
+			}
 		}
 
 		IfcSchema::IfcRepresentation* axis_representation = find_representation(other_wall, "Axis");
