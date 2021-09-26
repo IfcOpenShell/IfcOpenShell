@@ -6872,7 +6872,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: positive_length_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcPositiveLengthMeasure : public  IfcLengthMeasure, public  IfcHatchLineDistanceSelect, public  IfcMeasureValue, public  IfcSizeSelect, public  IfcValue {
+class IFC_PARSE_API IfcPositiveLengthMeasure : public  IfcLengthMeasure, public  IfcHatchLineDistanceSelect {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -6886,7 +6886,7 @@ public:
 /// NOTE Corresponding STEP name: positive_plane_angle_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcPositivePlaneAngleMeasure : public  IfcPlaneAngleMeasure, public  IfcMeasureValue, public  IfcValue {
+class IFC_PARSE_API IfcPositivePlaneAngleMeasure : public  IfcPlaneAngleMeasure {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -7505,7 +7505,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcNormalisedRatioMeasure : public  IfcRatioMeasure, public  IfcColourOrFactor, public  IfcMeasureValue, public  IfcSizeSelect, public  IfcValue {
+class IFC_PARSE_API IfcNormalisedRatioMeasure : public  IfcRatioMeasure, public  IfcColourOrFactor {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
@@ -7519,7 +7519,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: positive_ratio_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcPositiveRatioMeasure : public  IfcRatioMeasure, public  IfcMeasureValue, public  IfcSizeSelect, public  IfcValue {
+class IFC_PARSE_API IfcPositiveRatioMeasure : public  IfcRatioMeasure {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
