@@ -18,6 +18,7 @@
 ###############################################################################
 
 import operator
+import itertools
 
 import codegen
 import templates
@@ -48,11 +49,11 @@ class Header(codegen.Base):
                 select_super_types[str(nm).lower()].append(name)
             write(templates.select, name=name)
 
-        def get_select_super_types(nm):
+        def get_select_super_types(nm, bases=[]):
             x = list(select_super_types[nm.lower()])
             for y in x:
                 x.extend(get_select_super_types(y))
-            return sorted(set(x))
+            return sorted(set(x) - set(itertools.chain.from_iterable(map(get_select_super_types, bases))))
 
         for name, type in mapping.schema.enumerations.items():
             short_name = name[:-4] if name.endswith("Enum") else name
@@ -70,11 +71,15 @@ class Header(codegen.Base):
                 superclass = mapping.simple_type_parent(name)
 
                 superclasses = []
+                all_superclasses = []
                 if superclass is not None:
                     superclasses.append(superclass)
+                    while superclass:
+                        all_superclasses.append(superclass)
+                        superclass = mapping.simple_type_parent(superclass)
                 else:
                     superclasses.append("IfcUtil::IfcBaseType")
-                superclasses.extend(get_select_super_types(name))
+                superclasses.extend(get_select_super_types(name, bases=all_superclasses))
                 
                 is_emitted = lambda nm: nm == "IfcUtil::IfcBaseType" or nm in mapping.schema.selects or nm.lower() in emitted_simpletypes
                 if not all(map(is_emitted, superclasses)):
@@ -84,9 +89,9 @@ class Header(codegen.Base):
 
                 emitted_simpletypes.add(name.lower())
 
-                superclass = create_supertype_statement(superclasses)
+                superclass_statement = create_supertype_statement(superclasses)
 
-                write(templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass)
+                write(templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass_statement)
 
         class_definitions = []
 
@@ -134,8 +139,14 @@ class Header(codegen.Base):
                     if len(inverse):
                         inverse += "\n"
 
+                    all_supertypes = []
+                    tt = type
+                    while len(tt.supertypes):
+                        all_supertypes.append(tt.supertypes[0])
+                        tt = mapping.schema.entities[tt.supertypes[0]]
+
                     supertypes = list(type.supertypes) if len(type.supertypes) else ["IfcUtil::IfcBaseEntity"]
-                    supertypes.extend(get_select_super_types(name))
+                    supertypes.extend(get_select_super_types(name, bases=all_supertypes))
                     supertypes = list(map(case_normalize, supertypes))
                     superclass = create_supertype_statement(supertypes)
                     
