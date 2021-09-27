@@ -276,7 +276,7 @@ def the_object_name_is_not_voided(name):
     ifc = IfcStore.get_file()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     if any(element.HasOpenings):
-        assert False, "An opening"
+        assert False, "An opening was found"
 
 
 def the_object_name_is_not_a_void(name):
