@@ -109,6 +109,28 @@ class TestAddOpening(test.bim.bootstrap.NewFile):
         And the object "IfcWall/Cube" is not voided
         """
 
+    @test.bim.bootstrap.scenario
+    def test_adding_an_opening_to_element_b_with_a_void_that_already_voids_element_a(self):
+        """An opening can legally void at most one element"""
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+        And I press "bim.assign_class"
+        And I add a cube
+        And I press "bim.add_opening(opening='Cube', obj='IfcWall/Cube')"
+        And I add a cube
+        And the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+        And I press "bim.assign_class"
+        And I press "bim.add_opening(opening='IfcOpeningElement/Cube', obj='IfcWall/Cube.001')"
+        Then the object "IfcWall/Cube" is not voided
+        And the object "IfcWall/Cube" has no boolean difference by "IfcOpeningElement/Cube"  
+        And the object "IfcWall/Cube.001" is voided by "Cube"
+        And the object "IfcWall/Cube.001" has a boolean difference by "IfcOpeningElement/Cube"  
+        """
+
 
 class TestRemoveOpening(test.bim.bootstrap.NewFile):
     @test.bim.bootstrap.scenario
