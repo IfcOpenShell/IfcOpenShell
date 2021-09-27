@@ -291,6 +291,28 @@ class TestAddFilling(test.bim.bootstrap.NewFile):
         And the object "IfcDoor/Cube" is an "IfcDoor"
         """
 
+    @test.bim.bootstrap.scenario
+    def test_adding_a_filling_on_opening_b_when_the_filling_alread_fills_element_a(self):
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
+        And I press "bim.assign_class"
+        And I add a cube
+        And the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcDoor"
+        And I press "bim.assign_class"
+        And I press "bim.add_filling(opening='IfcOpeningElement/Cube', obj='IfcDoor/Cube')"
+        And I add a cube
+        And the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
+        And I press "bim.assign_class"
+        And I press "bim.add_filling(opening='IfcOpeningElement/Cube.001', obj='IfcDoor/Cube')"
+        Then the void "IfcOpeningElement/Cube" is not filled by "Cube"
+        And the void "IfcOpeningElement/Cube.001" is filled by "Cube"
+        """
+
 
 class TestRemoveFilling(test.bim.bootstrap.NewFile):
     @test.bim.bootstrap.scenario
