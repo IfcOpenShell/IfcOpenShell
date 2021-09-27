@@ -85,16 +85,14 @@ class BIM_PT_voids(Panel):
                 row.label(text=opening["Name"], icon="SELECT_SUBTRACT")
             op = row.operator("bim.remove_opening", icon="X", text="")
             op.opening_id = opening_id
-        try:
+        if props.ifc_definition_id in Data.openings:
             for filling_id in Data.openings[props.ifc_definition_id]["HasFillings"]:
                 if filling_id not in Data.fillings:
                     continue
                 row = self.layout.row(align=True)
                 row.label(text=Data.fillings[filling_id]["Name"], icon="SELECT_INTERSECT")
                 op = row.operator("bim.remove_filling", icon="X", text="")
-                op.obj = IfcStore.id_map[filling_id].name    
-        except KeyError:
-            pass
+                op.obj = IfcStore.get_element(filling_id).name
 
         if props.ifc_definition_id not in Data.fillings:
             row = self.layout.row(align=True)
