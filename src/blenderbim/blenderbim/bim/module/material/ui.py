@@ -52,6 +52,8 @@ class BIM_PT_object_material(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not context.active_object:
+            return False
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False

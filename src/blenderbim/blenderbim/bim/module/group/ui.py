@@ -77,6 +77,8 @@ class BIM_PT_object_groups(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not context.active_object:
+            return False
         return IfcStore.get_file() and context.active_object.BIMObjectProperties.ifc_definition_id
 
     def draw(self, context):

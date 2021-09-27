@@ -32,6 +32,8 @@ class BIM_PT_class(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not context.active_object:
+            return False
         return IfcStore.get_file()
 
     def draw(self, context):
