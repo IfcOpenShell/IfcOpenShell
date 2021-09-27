@@ -36,6 +36,8 @@ class AddOpening(bpy.types.Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         obj = context.scene.objects.get(self.obj, context.active_object)
+        if obj is None:
+            return {"FINISHED"}
         element_id = obj.BIMObjectProperties.ifc_definition_id
         if not element_id:
             return {"FINISHED"}

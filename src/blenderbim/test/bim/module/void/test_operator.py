@@ -38,6 +38,77 @@ class TestAddOpening(test.bim.bootstrap.NewFile):
         And the object "IfcWall/Cube" is voided by "Cube"
         """
 
+    @test.bim.bootstrap.scenario
+    def test_adding_an_opening_on_an_opening(self):
+        """An opening can't legally be voided by another opening"""
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
+        And I press "bim.assign_class"
+        And I add a cube
+        And the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
+        And I press "bim.assign_class"
+        And the object "IfcOpeningElement/Cube" is selected
+        And additionally the object "IfcOpeningElement/Cube.001" is selected
+        And I press "bim.add_opening(opening='IfcOpeningElement/Cube', obj='IfcOpeningElement/Cube.001')"
+        Then the object "IfcOpeningElement/Cube" is an "IfcOpeningElement"
+        And the object "IfcOpeningElement/Cube" should display as "WIRE"
+        And the object "IfcOpeningElement/Cube" is not a void
+        Then the object "IfcOpeningElement/Cube.001" is an "IfcOpeningElement"
+        And the object "IfcOpeningElement/Cube.001" should display as "WIRE"
+        Then the object "IfcOpeningElement/Cube.001" has no boolean difference by "IfcOpeningElement/Cube"
+        And the object "IfcOpeningElement/Cube.001" is not voided by "Cube"
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_adding_an_opening_on_a_null_object(self):
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
+        And I press "bim.assign_class"
+        And I deselect all objects
+        And I press "bim.add_opening(opening='IfcOpeningElement/Cube')"
+        Then the object "IfcOpeningElement/Cube" is an "IfcOpeningElement"
+        And the object "IfcOpeningElement/Cube" should display as "WIRE"
+        And the object "IfcOpeningElement/Cube" is not a void
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_adding_an_opening_on_a_non_ifc_object(self):
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
+        And I press "bim.assign_class"
+        And I add a cube
+        And the object "Cube" is selected
+        And I press "bim.add_opening(opening='IfcOpeningElement/Cube', obj='Cube')"
+        Then the object "IfcOpeningElement/Cube" is an "IfcOpeningElement"
+        And the object "IfcOpeningElement/Cube" should display as "WIRE"
+        And the object "IfcOpeningElement/Cube" is not a void
+        And the object "Cube" is not an IFC element
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_adding_an_opening_with_a_null_object(self):
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+        And I press "bim.assign_class"
+        And I deselect all objects
+        And I press "bim.add_opening(obj='IfcWall/Cube')"
+        Then the object "IfcWall/Cube" is an "IfcWall"
+        And the object "IfcWall/Cube" is not voided
+        """
+
 
 class TestRemoveOpening(test.bim.bootstrap.NewFile):
     @test.bim.bootstrap.scenario
@@ -284,7 +355,6 @@ class TestRemoveFilling(test.bim.bootstrap.NewFile):
         And I press "bim.add_filling(opening='IfcOpeningElement/Cube', obj='IfcDoor/Cube')"
         And the object "IfcOpeningElement/Cube" is selected
         And I delete the selected objects
-        Then the object "IfcOpeningElement/Cube" is an "IfcOpeningElement "
-        And the object "IfcDoor/Cube" is an "IfcDoor"
+        Then the object "IfcDoor/Cube" is an "IfcDoor"
         And the object "IfcDoor/Cube" is not a filling
         """
