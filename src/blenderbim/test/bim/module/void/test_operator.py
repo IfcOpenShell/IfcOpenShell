@@ -318,7 +318,7 @@ class TestRemoveFilling(test.bim.bootstrap.NewFile):
         return """
         Given an empty IFC project
         And I press "bim.remove_filling()"
-        Then an IFC file exists
+        Then nothing interesting happens
         """
 
     @test.bim.bootstrap.scenario
