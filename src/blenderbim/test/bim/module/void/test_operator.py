@@ -122,7 +122,7 @@ class TestAddFilling(test.bim.bootstrap.NewFile):
     def test_adding_a_filling(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
         And I press "bim.assign_class"
@@ -138,13 +138,73 @@ class TestAddFilling(test.bim.bootstrap.NewFile):
         And the void "IfcOpeningElement/Cube" is filled by "Cube"
         """
 
+    @test.bim.bootstrap.scenario
+    def test_adding_a_filling_on_null_object(self):
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcDoor"
+        And I press "bim.assign_class"
+        And the object "IfcDoor/Cube" is selected
+        And I press "bim.add_filling(obj='IfcDoor/Cube')"
+        Then the object "IfcDoor/Cube" is an "IfcDoor"
+        And the object "IfcDoor/Cube" is not a filling
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_adding_a_filling_on_itself(self):
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
+        And I press "bim.assign_class"
+        And the object "IfcOpeningElement/Cube" is selected
+        And I press "bim.add_filling(opening='IfcOpeningElement/Cube', obj='IfcOpeningElement/Cube')"
+        Then the object "IfcOpeningElement/Cube" is an "IfcOpeningElement"
+        And the void "IfcOpeningElement/Cube" is not filled by "Cube"
+        And the object "IfcOpeningElement/Cube" is not a filling
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_adding_a_filling_with_a_non_ifc_object(self):
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
+        And I press "bim.assign_class"
+        And I add a cube
+        And the object "IfcOpeningElement/Cube" is selected
+        And I press "bim.add_filling(opening='IfcOpeningElement/Cube', obj='Cube')"
+        Then the object "Cube" is not an IFC element
+        And the object "IfcOpeningElement/Cube" is an "IfcOpeningElement"
+        And the void "IfcOpeningElement/Cube" is not filled by "Cube"
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_adding_a_filling_on_a_non_ifc_object(self):
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcDoor"
+        And I press "bim.assign_class"
+        And I add a cube
+        And the object "Cube" is selected
+        And I press "bim.add_filling(opening='Cube', obj='IfcDoor/Cube')"
+        Then the object "Cube" is not an IFC element
+        And the object "IfcDoor/Cube" is an "IfcDoor"
+        """
+
 
 class TestRemoveFilling(test.bim.bootstrap.NewFile):
     @test.bim.bootstrap.scenario
     def test_removing_a_filling(self):
         return """
         Given an empty IFC project
-        Given I add a cube
+        And I add a cube
         When the object "Cube" is selected
         And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
         And I press "bim.assign_class"
@@ -157,4 +217,74 @@ class TestRemoveFilling(test.bim.bootstrap.NewFile):
         Then the object "IfcOpeningElement/Cube" is an "IfcOpeningElement"
         And the object "IfcDoor/Cube" is an "IfcDoor"
         And the void "IfcOpeningElement/Cube" is not filled by "Cube"
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_removing_a_filling_which_is_not_an_ifc_object(self):
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I press "bim.remove_filling(obj='Cube')"
+        Then the object "Cube" is not an IFC element
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_removing_a_filling_which_is_not_a_filling(self):
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcDoor"
+        And I press "bim.assign_class"
+        And I press "bim.remove_filling(obj='IfcDoor/Cube')"
+        Then the object "IfcDoor/Cube" is an "IfcDoor"
+        And the object "IfcDoor/Cube" is not a filling
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_removing_a_filling_which_is_null(self):
+        return """
+        Given an empty IFC project
+        And I press "bim.remove_filling()"
+        Then an IFC file exists
+        """
+
+    @test.bim.bootstrap.scenario
+    def test_removing_a_filling_using_deletion_on_the_filling(self):
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
+        And I press "bim.assign_class"
+        And I add a cube
+        And the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcDoor"
+        And I press "bim.assign_class"
+        And I press "bim.add_filling(opening='IfcOpeningElement/Cube', obj='IfcDoor/Cube')"
+        And the object "IfcDoor/Cube" is selected
+        And I delete the selected objects
+        Then the object "IfcOpeningElement/Cube" is an "IfcOpeningElement"
+        And the void "IfcOpeningElement/Cube" is not filled by "Cube"
+        """    
+
+    @test.bim.bootstrap.scenario
+    def test_removing_a_filling_using_deletion_on_the_opening(self):
+        return """
+        Given an empty IFC project
+        And I add a cube
+        When the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcOpeningElement"
+        And I press "bim.assign_class"
+        And I add a cube
+        And the object "Cube" is selected
+        And I set "scene.BIMRootProperties.ifc_class" to "IfcDoor"
+        And I press "bim.assign_class"
+        And I press "bim.add_filling(opening='IfcOpeningElement/Cube', obj='IfcDoor/Cube')"
+        And the object "IfcOpeningElement/Cube" is selected
+        And I delete the selected objects
+        Then the object "IfcOpeningElement/Cube" is an "IfcOpeningElement "
+        And the object "IfcDoor/Cube" is an "IfcDoor"
+        And the object "IfcDoor/Cube" is not a filling
         """

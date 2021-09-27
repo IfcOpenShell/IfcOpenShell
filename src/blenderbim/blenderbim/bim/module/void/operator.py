@@ -161,6 +161,8 @@ class RemoveFilling(bpy.types.Operator):
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        if not obj:
+            return {"FINISHED"}
         self.file = IfcStore.get_file()
         element_id = obj.BIMObjectProperties.ifc_definition_id
         if not element_id:
