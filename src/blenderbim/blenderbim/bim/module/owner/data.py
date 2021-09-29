@@ -20,7 +20,60 @@ import bpy
 import blenderbim.tool as tool
 
 
-class PeopleData:
+class RolesAddressesData:
+    @classmethod
+    def get_roles(cls, parent):
+        results = []
+        for role in parent.Roles or []:
+            results.append(
+                {
+                    "id": role.id(),
+                    "is_editing": bpy.context.scene.BIMOwnerProperties.active_role_id == role.id(),
+                    "label": role.UserDefinedRole or role.Role,
+                    "props": bpy.context.scene.BIMOwnerProperties.role_attributes,
+                }
+            )
+        return results
+
+    @classmethod
+    def get_addresses(cls, parent):
+        results = []
+        for address in parent.Addresses or []:
+            results.append(
+                {
+                    "id": address.id(),
+                    "is_editing": bpy.context.scene.BIMOwnerProperties.active_address_id == address.id(),
+                    "label": address.is_a(),
+                    "props": bpy.context.scene.BIMOwnerProperties.address_attributes,
+                    "list_attributes": cls.get_address_list_attributes(address),
+                }
+            )
+        return results
+
+    @classmethod
+    def get_address_list_attributes(cls, address):
+        results = []
+        props = bpy.context.scene.BIMOwnerProperties
+        if address.is_a("IfcPostalAddress"):
+            names = ["AddressLines"]
+        elif address.is_a("IfcTelecomAddress"):
+            names = ["TelephoneNumbers", "FacsimileNumbers", "ElectronicMailAddresses", "MessagingIDs"]
+        for name in names:
+            if name == "AddressLines":
+                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.address_lines)]
+            elif name == "TelephoneNumbers":
+                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.telephone_numbers)]
+            elif name == "FacsimileNumbers":
+                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.facsimile_numbers)]
+            elif name == "ElectronicMailAddresses":
+                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.electronic_mail_addresses)]
+            elif name == "MessagingIDs":
+                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.messaging_ids)]
+            results.append({"name": name, "items": items})
+        return results
+
+
+class PeopleData(RolesAddressesData):
     data = {}
     is_loaded = False
 
@@ -41,8 +94,8 @@ class PeopleData:
                     "is_editing": cls.get_person_is_editing(person),
                     "is_engaged": bool(person.EngagedIn),
                     "list_attributes": cls.get_person_list_attributes(person),
-                    "roles": cls.get_person_roles(person),
-                    "addresses": cls.get_person_addresses(person),
+                    "roles": cls.get_roles(person),
+                    "addresses": cls.get_addresses(person),
                 }
             )
         return people
@@ -77,53 +130,29 @@ class PeopleData:
             results.append({"name": name, "items": items})
         return results
 
-    @classmethod
-    def get_person_roles(cls, person):
-        results = []
-        for role in person.Roles or []:
-            results.append(
-                {
-                    "id": role.id(),
-                    "is_editing": bpy.context.scene.BIMOwnerProperties.active_role_id == role.id(),
-                    "label": role.UserDefinedRole or role.Role,
-                    "props": bpy.context.scene.BIMOwnerProperties.role_attributes,
-                }
-            )
-        return results
+
+class OrganisationsData(RolesAddressesData):
+    data = {}
+    is_loaded = False
 
     @classmethod
-    def get_person_addresses(cls, person):
-        results = []
-        for address in person.Addresses or []:
-            results.append(
-                {
-                    "id": address.id(),
-                    "is_editing": bpy.context.scene.BIMOwnerProperties.active_address_id == address.id(),
-                    "label": address.is_a(),
-                    "props": bpy.context.scene.BIMOwnerProperties.address_attributes,
-                    "list_attributes": cls.get_address_list_attributes(address),
-                }
-            )
-        return results
+    def load(cls):
+        cls.data = {"organisations": cls.get_organisations()}
+        cls.is_loaded = True
 
     @classmethod
-    def get_address_list_attributes(cls, address):
-        results = []
-        props = bpy.context.scene.BIMOwnerProperties
-        if address.is_a("IfcPostalAddress"):
-            names = ["AddressLines"]
-        elif address.is_a("IfcTelecomAddress"):
-            names = ["TelephoneNumbers", "FacsimileNumbers", "ElectronicMailAddresses", "MessagingIDs"]
-        for name in names:
-            if name == "AddressLines":
-                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.address_lines)]
-            elif name == "TelephoneNumbers":
-                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.telephone_numbers)]
-            elif name == "FacsimileNumbers":
-                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.facsimile_numbers)]
-            elif name == "ElectronicMailAddresses":
-                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.electronic_mail_addresses)]
-            elif name == "MessagingIDs":
-                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.messaging_ids)]
-            results.append({"name": name, "items": items})
-        return results
+    def get_organisations(cls):
+        organisations = []
+        for organisation in tool.Ifc().get().by_type("IfcOrganization"):
+            organisations.append(
+                {
+                    "id": organisation.id(),
+                    "props": bpy.context.scene.BIMOwnerProperties.organisation_attributes,
+                    "name": organisation.Name,
+                    "is_editing": bpy.context.scene.BIMOwnerProperties.active_organisation_id == organisation.id(),
+                    "is_engaged": bool(organisation.Engages),
+                    "roles": cls.get_roles(organisation),
+                    "addresses": cls.get_addresses(organisation),
+                }
+            )
+        return organisations

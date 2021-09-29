@@ -18,7 +18,7 @@
 
 
 import blenderbim.core.owner as subject
-from test.core.bootstrap import ifc, blender, person_editor, role_editor, address_editor
+from test.core.bootstrap import ifc, blender, person_editor, role_editor, address_editor, organisation_editor
 
 
 class TestAddPerson:
@@ -147,3 +147,37 @@ class TestRemoveAddressAttribute:
     def test_run(self, address_editor):
         address_editor.remove_attribute("name", "id").should_be_called()
         subject.remove_address_attribute(address_editor, name="name", id="id")
+
+
+class TestAddOrganisation:
+    def test_run(self, ifc):
+        ifc.run("owner.add_organisation").should_be_called().will_return("organisation")
+        assert subject.add_organisation(ifc) == "organisation"
+
+
+class TestRemoveOrganisation:
+    def test_run(self, ifc):
+        ifc.run("owner.remove_organisation", organisation="organisation").should_be_called()
+        subject.remove_organisation(ifc, organisation="organisation")
+
+
+class TestEnableEditingOrganisation:
+    def test_run(self, organisation_editor):
+        organisation_editor.set_organisation("organisation").should_be_called()
+        organisation_editor.import_attributes().should_be_called()
+        subject.enable_editing_organisation(organisation_editor, organisation="organisation")
+
+
+class TestDisableEditingOrganisation:
+    def test_run(self, organisation_editor):
+        organisation_editor.clear_organisation().should_be_called()
+        subject.disable_editing_organisation(organisation_editor)
+
+
+class TestEditOrganisation:
+    def test_run(self, ifc, organisation_editor):
+        organisation_editor.get_organisation().should_be_called().will_return("organisation")
+        organisation_editor.export_attributes().should_be_called().will_return("attributes")
+        ifc.run("owner.edit_organisation", organisation="organisation", attributes="attributes").should_be_called()
+        organisation_editor.clear_organisation().should_be_called()
+        subject.edit_organisation(ifc, organisation_editor)

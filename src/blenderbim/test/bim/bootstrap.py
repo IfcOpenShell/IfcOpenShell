@@ -95,6 +95,7 @@ def additionally_the_object_name_is_selected(name):
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
 
+
 def i_deselect_all_objects():
     bpy.context.view_layer.objects.active = None
     bpy.ops.object.select_all(action="DESELECT")
@@ -346,7 +347,7 @@ definitions = {
     'I add a cube of size "([0-9]+)" at "(.*)"': i_add_a_cube_of_size_size_at_location,
     'the object "(.*)" is selected': the_object_name_is_selected,
     'additionally the object "(.*)" is selected': additionally_the_object_name_is_selected,
-    'I deselect all objects': i_deselect_all_objects,
+    "I deselect all objects": i_deselect_all_objects,
     'I am on frame "([0-9]+)"': i_am_on_frame_number,
     'I set "(.*)" to "(.*)"': i_set_prop_to_value,
     '"(.*)" is "(.*)"': prop_is_value,
