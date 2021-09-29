@@ -17,26 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class AddContext:
-    def __init__(self, ifc, context=None, subcontext=None, target_view=None):
-        self.ifc = ifc
-        self.context = context
-        self.subcontext = subcontext
-        self.target_view = target_view
-
-    def execute(self):
-        return self.ifc.run(
-            "context.add_context",
-            context=self.context,
-            subcontext=self.subcontext,
-            target_view=self.target_view,
-        )
+def add_context(ifc, context=None, subcontext=None, target_view=None):
+    return ifc.run("context.add_context", context=context, subcontext=subcontext, target_view=target_view)
 
 
-class RemoveContext:
-    def __init__(self, ifc, context=None):
-        self.ifc = ifc
-        self.context = context
-
-    def execute(self):
-        self.ifc.run("context.remove_context", context=self.context)
+def remove_context(ifc, context=None):
+    ifc.run("context.remove_context", context=context)

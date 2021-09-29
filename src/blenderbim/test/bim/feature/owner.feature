@@ -1,3 +1,4 @@
+@owner
 Feature: Owner
     Covers ownership history, people, organisations, roles, and addresses.
 
