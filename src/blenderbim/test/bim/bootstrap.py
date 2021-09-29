@@ -40,9 +40,10 @@ class NewFile:
     def setup(self):
         IfcStore.purge()
         bpy.ops.wm.read_homefile(app_template="")
-        while bpy.data.objects:
-            bpy.data.objects.remove(bpy.data.objects[0])
-        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+        if bpy.data.objects:
+            while bpy.data.objects:
+                bpy.data.objects.remove(bpy.data.objects[0])
+            bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
 
 
 class NewIfc:
@@ -83,7 +84,7 @@ def i_add_a_cube_of_size_size_at_location(size, location):
 
 
 def the_object_name_is_selected(name):
-    bpy.ops.object.select_all(action="DESELECT")
+    i_deselect_all_objects()
     additionally_the_object_name_is_selected(name)
 
 
@@ -93,6 +94,10 @@ def additionally_the_object_name_is_selected(name):
         assert False, 'The object "{name}" could not be selected'
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
+
+def i_deselect_all_objects():
+    bpy.context.view_layer.objects.active = None
+    bpy.ops.object.select_all(action="DESELECT")
 
 
 def i_am_on_frame_number(number):
@@ -278,6 +283,42 @@ def the_object_name_is_not_voided_by_void(name, void):
             assert False, "A void was found"
 
 
+def the_object_name_is_not_voided(name):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    if any(element.HasOpenings):
+        assert False, "An opening was found"
+
+
+def the_object_name_is_not_a_void(name):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    if any(element.VoidsElements):
+        assert False, "A void was found"
+
+
+def the_void_name_is_filled_by_filling(name, filling):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    if any(rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings):
+        return True
+    assert False, "No filling found"
+
+
+def the_void_name_is_not_filled_by_filling(name, filling):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    if any(rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings):
+        assert False, "A filling was found"
+
+
+def the_object_name_is_not_a_filling(name):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    if any(element.FillsVoids):
+        assert False, "A filling was found"
+
+
 def the_object_name_should_display_as_mode(name, mode):
     assert the_object_name_exists(name).display_type == mode
 
@@ -305,6 +346,7 @@ definitions = {
     'I add a cube of size "([0-9]+)" at "(.*)"': i_add_a_cube_of_size_size_at_location,
     'the object "(.*)" is selected': the_object_name_is_selected,
     'additionally the object "(.*)" is selected': additionally_the_object_name_is_selected,
+    'I deselect all objects': i_deselect_all_objects,
     'I am on frame "([0-9]+)"': i_am_on_frame_number,
     'I set "(.*)" to "(.*)"': i_set_prop_to_value,
     '"(.*)" is "(.*)"': prop_is_value,
@@ -333,10 +375,15 @@ definitions = {
     'the object "(.*)" has no boolean difference by "(.*)"': the_object_name1_has_no_boolean_difference_by_name2,
     'the object "(.*)" is voided by "(.*)"': the_object_name_is_voided_by_void,
     'the object "(.*)" is not voided by "(.*)"': the_object_name_is_not_voided_by_void,
+    'the object "(.*)" is not a void': the_object_name_is_not_a_void,
+    'the object "(.*)" is not voided': the_object_name_is_not_voided,
     'the object "(.*)" should display as "(.*)"': the_object_name_should_display_as_mode,
     'the object "(.*)" has "([0-9]+)" vertices': the_object_name_has_number_vertices,
     'the object "(.*)" is at "(.*)"': the_object_name_is_at_location,
     "nothing interesting happens": lambda: None,
+    'the void "(.*)" is filled by "(.*)"': the_void_name_is_filled_by_filling,
+    'the void "(.*)" is not filled by "(.*)"': the_void_name_is_not_filled_by_filling,
+    'the object "(.*)" is not a filling': the_object_name_is_not_a_filling,
 }
 
 

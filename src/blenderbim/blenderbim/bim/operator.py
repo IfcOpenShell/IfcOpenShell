@@ -663,11 +663,17 @@ class OverrideDelete(bpy.types.Operator):
         return context.window_manager.invoke_confirm(self, event)
 
     def _execute(self, context):
+        file = IfcStore.get_file()
         for obj in context.selected_objects:
             if obj.BIMObjectProperties.ifc_definition_id:
-                element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+                element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)                
+                if element.FillsVoids:
+                    self.delete_filling_element(element)
                 if element.is_a("IfcOpeningElement"):
-                    self.delete_opening_element(element)
+                    if element.VoidsElements:
+                        self.delete_opening_element(element)
+                    # for rel in element.HasFillings:                            
+                    #     self.delete_filling_element(rel.RelatedBuildingElement)
                 elif element.HasOpenings:
                     for rel in element.HasOpenings:
                         self.delete_opening_element(rel.RelatedOpeningElement)
@@ -677,3 +683,7 @@ class OverrideDelete(bpy.types.Operator):
     def delete_opening_element(self, element):
         obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
         bpy.ops.bim.remove_opening(opening_id=element.id(), obj=obj.name)
+
+    def delete_filling_element(self, element):
+        obj = IfcStore.get_element(element.id())
+        bpy.ops.bim.remove_filling(obj=obj.name)
