@@ -16,17 +16,31 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
-from blenderbim.bim.ifc import IfcStore
+import abc
 
 
-class Ifc:
+class RoleEditor(abc.ABC):
     @classmethod
-    def run(cls, command, **kwargs):
-        return ifcopenshell.api.run(command, IfcStore.get_file(), **kwargs)
+    @abc.abstractmethod
+    def set_role(cls, role):
+        pass
 
-
-class Blender:
     @classmethod
-    def get_ifc(cls):
-        return "ifc"
+    @abc.abstractmethod
+    def import_attributes(cls):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def clear_role(cls):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def get_role(cls):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def export_attributes(cls):
+        pass

@@ -16,15 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import abc
 
-class Ifc:
+
+class Ifc(abc.ABC):
     @classmethod
+    @abc.abstractmethod
     def run(cls, command, **kwargs):
-        """Runs an operation on the active IFC dataset"""
-        pass
-
-
-class Blender:
-    @classmethod
-    def get_ifc(cls):
         pass

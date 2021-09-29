@@ -17,10 +17,12 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.bim.helper
+import blenderbim.tool as tool
+from blenderbim.bim.module.owner.data import PeopleData
 from bpy.types import Panel
 from ifcopenshell.api.owner.data import Data
 from blenderbim.bim.ifc import IfcStore
-from .operator import AddOrRemoveElementFromCollection
 
 
 def draw_string_collection(layout, owner, collection_name):
@@ -31,12 +33,12 @@ def draw_string_collection(layout, owner, collection_name):
             row = draw_prop_on_new_row(
                 column, collection[i], "name", align=True, text=f"{owner.bl_rna.properties[collection_name].name}"
             )
-            add_op = row.operator(AddOrRemoveElementFromCollection.bl_idname, icon="ADD", text="")
+            add_op = row.operator("bim.add_or_remove_element_from_collection", icon="ADD", text="")
             add_op.operation = "+"
             add_op.collection_path = collection.path_from_id()
         else:
             row = draw_prop_on_new_row(column, collection[i], "name", align=True, text=f"#{i + 1}")
-            rem_op = row.operator(AddOrRemoveElementFromCollection.bl_idname, icon="REMOVE", text="")
+            rem_op = row.operator("bim.add_or_remove_element_from_collection", icon="REMOVE", text="")
             rem_op.operation = "-"
             rem_op.collection_path = collection.path_from_id()
             rem_op.selected_item_idx = i
@@ -116,7 +118,7 @@ def draw_addresses_ui(box, assigned_object_id, addresses, file, context):
             row.operator("bim.remove_address", icon="X", text="").address_id = address_id
 
 
-class BIM_PT_people(Panel):
+class BIM_PT_people(bpy.types.Panel):
     bl_label = "IFC People"
     bl_idname = "BIM_PT_people"
     bl_options = {"DEFAULT_CLOSED"}
@@ -126,47 +128,102 @@ class BIM_PT_people(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc().get()
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not PeopleData.is_loaded:
+            PeopleData.load()
 
-        self.file = IfcStore.get_file()
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
-        props = context.scene.BIMOwnerProperties
 
         row = self.layout.row()
         row.operator("bim.add_person", icon="ADD")
 
-        for person_id, person in Data.people.items():
-            if props.active_person_id == person_id:
-                blender_person = props.person
-                box = self.layout.box()
-                row = draw_prop_on_new_row(box, blender_person, "name", align=True, icon="USER", text="")
-                row.operator("bim.edit_person", icon="CHECKMARK", text="")
-                row.operator("bim.disable_editing_person", icon="CANCEL", text="")
-                draw_prop_on_new_row(box, blender_person, "family_name")
-                draw_prop_on_new_row(box, blender_person, "given_name")
-                draw_string_collection(box, blender_person, "middle_names")
-                draw_string_collection(box, blender_person, "prefix_titles")
-                draw_string_collection(box, blender_person, "suffix_titles")
-                draw_roles_ui(box, person_id, person["Roles"], context)
-                draw_addresses_ui(box, person_id, person["Addresses"], self.file, context)
+        for person in PeopleData.data["people"]:
+            self.draw_person(person)
+
+    def draw_person(self, person):
+        if person["is_editing"]:
+            box = self.layout.box()
+            row = box.row(align=True)
+            row.operator("bim.edit_person", icon="CHECKMARK")
+            row.operator("bim.disable_editing_person", icon="CANCEL", text="")
+            blenderbim.bim.helper.draw_attributes(person["props"], box)
+
+            for attribute in person["list_attributes"]:
+                row = box.row(align=True)
+                row.label(text=attribute["name"])
+                op = row.operator("bim.add_person_attribute", icon="ADD", text="")
+                op.name = attribute["name"]
+
+                for item in attribute["items"]:
+                    row = box.row(align=True)
+                    row.prop(item["prop"], "name", text="")
+                    op = row.operator("bim.remove_person_attribute", icon="REMOVE", text="")
+                    op.name = attribute["name"]
+                    op.id = item["id"]
+
+            self.draw_roles(box, person)
+            self.draw_addresses(box, person)
+        else:
+            row = self.layout.row(align=True)
+            row.label(text=person["name"])
+            row.operator("bim.enable_editing_person", icon="GREASEPENCIL", text="").person = person["id"]
+            if not person["is_engaged"]:
+                row.operator("bim.remove_person", icon="X", text="").person = person["id"]
+
+    def draw_roles(self, box, person):
+        row = box.row(align=True)
+        row.label(text="Roles")
+        op = row.operator("bim.add_role", icon="ADD", text="")
+        op.parent = person["id"]
+
+        for role in person["roles"]:
+            if role["is_editing"]:
+                row = box.row(align=True)
+                row.operator("bim.edit_role", icon="CHECKMARK")
+                row.operator("bim.disable_editing_role", icon="CANCEL", text="")
+                blenderbim.bim.helper.draw_attributes(role["props"], box)
             else:
-                row = self.layout.row(align=True)
-                name = person["Id"] if self.file.schema == "IFC2X3" else person["Identification"]
-                name = name or "*"
-                if person["GivenName"] or person["FamilyName"]:
-                    full_name = "{} {}".format(person["GivenName"] or "", person["FamilyName"] or "").strip()
-                    name += f" ({full_name})"
-                row.label(text=name)
-                if person["Roles"]:
-                    row.label(text=", ".join([Data.roles[r]["Role"] for r in person["Roles"]]))
-                row.operator("bim.enable_editing_person", icon="GREASEPENCIL", text="").person_id = person_id
-                if not person["is_engaged"]:
-                    row.operator("bim.remove_person", icon="X", text="").person_id = person_id
+                row = box.row(align=True)
+                row.label(text=role["label"])
+                row.operator("bim.enable_editing_role", icon="GREASEPENCIL", text="").role = role["id"]
+                row.operator("bim.remove_role", icon="X", text="").role = role["id"]
+
+    def draw_addresses(self, box, person):
+        row = box.row(align=True)
+        row.label(text="Addresses")
+        op = row.operator("bim.add_address", icon="LINK_BLEND", text="")
+        op.parent = person["id"]
+        op.ifc_class = "IfcTelecomAddress"
+        op = row.operator("bim.add_address", icon="APPEND_BLEND", text="")
+        op.parent = person["id"]
+        op.ifc_class = "IfcPostalAddress"
+
+        for address in person["addresses"]:
+            if address["is_editing"]:
+                row = box.row(align=True)
+                row.operator("bim.edit_address", icon="CHECKMARK")
+                row.operator("bim.disable_editing_address", icon="CANCEL", text="")
+                blenderbim.bim.helper.draw_attributes(address["props"], box)
+                for attribute in address["list_attributes"]:
+                    row = box.row(align=True)
+                    row.label(text=attribute["name"])
+                    op = row.operator("bim.add_address_attribute", icon="ADD", text="")
+                    op.name = attribute["name"]
+
+                    for item in attribute["items"]:
+                        row = box.row(align=True)
+                        row.prop(item["prop"], "name", text="")
+                        op = row.operator("bim.remove_address_attribute", icon="REMOVE", text="")
+                        op.name = attribute["name"]
+                        op.id = item["id"]
+            else:
+                row = box.row(align=True)
+                row.label(text=address["label"])
+                row.operator("bim.enable_editing_address", icon="GREASEPENCIL", text="").address = address["id"]
+                row.operator("bim.remove_address", icon="X", text="").address = address["id"]
 
 
 class BIM_PT_organisations(Panel):

@@ -21,11 +21,7 @@ import ifcopenshell
 import ifcopenshell.api
 import blenderbim.bim.schema
 import blenderbim.bim.handler
-from blenderbim.bim.module.pset_template.prop import (
-    updatePsetTemplateFiles, 
-    updatePsetTemplates,
-    getPsetTemplates
-)
+from blenderbim.bim.module.pset_template.prop import updatePsetTemplateFiles, updatePsetTemplates, getPsetTemplates
 from ifcopenshell.api.pset_template.data import Data
 from blenderbim.bim.ifc import IfcStore
 
