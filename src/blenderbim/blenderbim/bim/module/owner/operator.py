@@ -18,8 +18,19 @@
 
 import bpy
 import ifcopenshell.api
+import blenderbim.tool as tool
+import blenderbim.core.owner as core
+import blenderbim.bim.module.owner.data
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.owner.data import Data
+
+
+# TODO: Just testing
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.module.owner.data.PeopleData.is_loaded = False
+        return {"FINISHED"}
 
 
 def flatten_collection(collection):
@@ -59,317 +70,190 @@ class AddOrRemoveElementFromCollection(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingPerson(bpy.types.Operator):
+class EnableEditingPerson(bpy.types.Operator, Operator):
     bl_idname = "bim.enable_editing_person"
     bl_label = "Enable Editing Person"
     bl_options = {"REGISTER", "UNDO"}
-    person_id: bpy.props.IntProperty()
+    person: bpy.props.IntProperty()
 
-    def execute(self, context):
-        self.file = IfcStore.get_file()
-        props = context.scene.BIMOwnerProperties
-        props.active_person_id = self.person_id
-        data = Data.people[self.person_id]
-        name = data["Id"] if self.file.schema == "IFC2X3" else data["Identification"]
-        person = props.person
-        person.name = name or ""
-        person.family_name = data["FamilyName"] or ""
-        person.given_name = data["GivenName"] or ""
-        populate_collection(person.middle_names, data.get("MiddleNames", None))
-        populate_collection(person.prefix_titles, data.get("PrefixTitles", None))
-        populate_collection(person.suffix_titles, data.get("SuffixTitles", None))
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.enable_editing_person(tool.PersonEditor(), person=tool.Ifc().get().by_id(self.person))
 
 
-class DisableEditingPerson(bpy.types.Operator):
+class DisableEditingPerson(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_editing_person"
     bl_label = "Disable Editing Person"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        context.scene.BIMOwnerProperties.active_person_id = 0
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.disable_editing_person(tool.PersonEditor())
 
 
-class AddPerson(bpy.types.Operator):
+class AddPerson(bpy.types.Operator, Operator):
     bl_idname = "bim.add_person"
     bl_label = "Add Person"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        ifcopenshell.api.run("owner.add_person", IfcStore.get_file())
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.add_person(tool.Ifc())
 
 
-class EditPerson(bpy.types.Operator):
+class EditPerson(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_person"
     bl_label = "Edit Person"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        props = context.scene.BIMOwnerProperties
-        person = props.person
-        attributes = {
-            "Identification": person.name or None,
-            "FamilyName": person.family_name or None,
-            "GivenName": person.given_name or None,
-            "MiddleNames": flatten_collection(person.middle_names),
-            "PrefixTitles": flatten_collection(person.prefix_titles),
-            "SuffixTitles": flatten_collection(person.suffix_titles),
-        }
-        if self.file.schema == "IFC2X3":
-            attributes["Id"] = attributes["Identification"]
-            del attributes["Identification"]
-        ifcopenshell.api.run(
-            "owner.edit_person",
-            self.file,
-            **{"person": self.file.by_id(props.active_person_id), "attributes": attributes}
-        )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.disable_editing_person()
-        return {"FINISHED"}
+        core.edit_person(tool.Ifc(), tool.PersonEditor())
 
 
-class RemovePerson(bpy.types.Operator):
+class RemovePerson(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_person"
     bl_label = "Remove Person"
     bl_options = {"REGISTER", "UNDO"}
-    person_id: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    person: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("owner.remove_person", self.file, **{"person": self.file.by_id(self.person_id)})
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.remove_person(tool.Ifc(), person=tool.Ifc().get().by_id(self.person))
 
 
-class EnableEditingRole(bpy.types.Operator):
+class AddPersonAttribute(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_person_attribute"
+    bl_label = "Add Person Attribute"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.add_person_attribute(tool.PersonEditor(), name=self.name)
+
+
+class RemovePersonAttribute(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_person_attribute"
+    bl_label = "Remove Person Attribute"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
+    id: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.remove_person_attribute(tool.PersonEditor(), name=self.name, id=self.id)
+
+
+class EnableEditingRole(bpy.types.Operator, Operator):
     bl_idname = "bim.enable_editing_role"
     bl_label = "Enable Editing Role"
     bl_options = {"REGISTER", "UNDO"}
-    role_id: bpy.props.IntProperty()
+    role: bpy.props.IntProperty()
 
-    def execute(self, context):
-        self.file = IfcStore.get_file()
-        props = context.scene.BIMOwnerProperties
-        props.active_role_id = self.role_id
-        data = Data.roles[self.role_id]
-        props.role.name = data["Role"]
-        props.role.user_defined_role = data["UserDefinedRole"] or ""
-        props.role.description = data["Description"] or ""
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.enable_editing_role(tool.RoleEditor(), role=tool.Ifc().get().by_id(self.role))
 
 
-class DisableEditingRole(bpy.types.Operator):
+class DisableEditingRole(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_editing_role"
     bl_label = "Disable Editing Role"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        context.scene.BIMOwnerProperties.active_role_id = 0
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.disable_editing_role(tool.RoleEditor())
 
 
-class AddRole(bpy.types.Operator):
+class AddRole(bpy.types.Operator, Operator):
     bl_idname = "bim.add_role"
     bl_label = "Add Role"
     bl_options = {"REGISTER", "UNDO"}
-    assigned_object_id: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    parent: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "owner.add_role", self.file, **{"assigned_object": self.file.by_id(self.assigned_object_id)}
-        )
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.add_role(tool.Ifc(), parent=tool.Ifc().get().by_id(self.parent))
 
 
-class EditRole(bpy.types.Operator):
+class EditRole(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_role"
     bl_label = "Edit Role"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        props = context.scene.BIMOwnerProperties
-        attributes = {
-            "Role": props.role.name,
-            "UserDefinedRole": props.role.user_defined_role if props.role.name == "USERDEFINED" else None,
-            "Description": props.role.description or None,
-        }
-        ifcopenshell.api.run(
-            "owner.edit_role", self.file, **{"role": self.file.by_id(props.active_role_id), "attributes": attributes}
-        )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.disable_editing_role()
-        return {"FINISHED"}
+        core.edit_role(tool.Ifc(), tool.RoleEditor())
 
 
-class RemoveRole(bpy.types.Operator):
+class RemoveRole(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_role"
     bl_label = "Remove Role"
     bl_options = {"REGISTER", "UNDO"}
-    role_id: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    role: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("owner.remove_role", self.file, **{"role": self.file.by_id(self.role_id)})
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.remove_role(tool.Ifc(), role=tool.Ifc().get().by_id(self.role))
 
 
-class AddAddress(bpy.types.Operator):
+class AddAddress(bpy.types.Operator, Operator):
     bl_idname = "bim.add_address"
     bl_label = "Add Address"
     bl_options = {"REGISTER", "UNDO"}
-    assigned_object_id: bpy.props.IntProperty()
+    parent: bpy.props.IntProperty()
     ifc_class: bpy.props.StringProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    def _execute(self, context):
+        core.add_address(tool.Ifc(), parent=tool.Ifc().get().by_id(self.parent), ifc_class=self.ifc_class)
+
+
+class AddAddressAttribute(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_address_attribute"
+    bl_label = "Add Address Attribute"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "owner.add_address",
-            self.file,
-            **{"assigned_object": self.file.by_id(self.assigned_object_id), "ifc_class": self.ifc_class}
-        )
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.add_address_attribute(tool.AddressEditor, name=self.name)
 
 
-class EnableEditingAddress(bpy.types.Operator):
+class RemoveAddressAttribute(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_address_attribute"
+    bl_label = "Remove Address Attribute"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
+    id: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.remove_address_attribute(tool.AddressEditor, name=self.name, id=self.id)
+
+
+class EnableEditingAddress(bpy.types.Operator, Operator):
     bl_idname = "bim.enable_editing_address"
     bl_label = "Enable Editing Address"
     bl_options = {"REGISTER", "UNDO"}
-    address_id: bpy.props.IntProperty()
+    address: bpy.props.IntProperty()
 
-    def execute(self, context):
-        self.file = IfcStore.get_file()
-        props = context.scene.BIMOwnerProperties
-        props.active_address_id = self.address_id
-        data = Data.addresses[self.address_id]
-        address = props.address
-        address.name = data["type"]
-        address.purpose = data["Purpose"] or "None"
-        address.description = data["Description"] or ""
-        address.user_defined_purpose = data["UserDefinedPurpose"] or ""
-
-        if data["type"] == "IfcTelecomAddress":
-            populate_collection(address.telephone_numbers, data.get("TelephoneNumbers", None))
-            populate_collection(address.facsimile_numbers, data.get("FacsimileNumbers", None))
-            address.pager_number = data["PagerNumber"] or ""
-            populate_collection(address.electronic_mail_addresses, data.get("ElectronicMailAddresses", None))
-            address.www_home_page_url = data["WWWHomePageURL"] or ""
-            if self.file.schema != "IFC2X3":
-                populate_collection(address.messaging_ids, data.get("MessagingIDs", None))
-        elif data["type"] == "IfcPostalAddress":
-            address.internal_location = data["InternalLocation"] or ""
-            populate_collection(address.address_lines, data.get("AddressLines", None))
-            address.postal_box = data["PostalBox"] or ""
-            address.town = data["Town"] or ""
-            address.region = data["Region"] or ""
-            address.postal_code = data["PostalCode"] or ""
-            address.country = data["Country"] or ""
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.enable_editing_address(tool.AddressEditor(), address=tool.Ifc().get().by_id(self.address))
 
 
-class DisableEditingAddress(bpy.types.Operator):
+class DisableEditingAddress(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_editing_address"
     bl_label = "Disable Editing Address"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        context.scene.BIMOwnerProperties.active_address_id = 0
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.disable_editing_address(tool.AddressEditor())
 
 
-class EditAddress(bpy.types.Operator):
+class EditAddress(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_address"
     bl_label = "Edit Address"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        props = context.scene.BIMOwnerProperties
-        attributes = {
-            "Purpose": props.address.purpose,
-            "UserDefinedPurpose": props.address.user_defined_purpose
-            if props.address.purpose == "USERDEFINED"
-            else None,
-            "Description": props.address.description or None,
-        }
-        address = self.file.by_id(props.active_address_id)
-        if address.is_a("IfcTelecomAddress"):
-            attributes.update(
-                {
-                    "TelephoneNumbers": flatten_collection(props.address.telephone_numbers),
-                    "FacsimileNumbers": flatten_collection(props.address.facsimile_numbers),
-                    "PagerNumber": props.address.pager_number or None,
-                    "ElectronicMailAddresses": flatten_collection(props.address.electronic_mail_addresses),
-                    "WWWHomePageURL": props.address.www_home_page_url or None,
-                    "MessagingIDs": flatten_collection(props.address.messaging_ids),
-                }
-            )
-            if self.file.schema == "IFC2X3":
-                del attributes["MessagingIDs"]
-        elif address.is_a("IfcPostalAddress"):
-            attributes.update(
-                {
-                    "InternalLocation": props.address.internal_location or None,
-                    "AddressLines": flatten_collection(props.address.address_lines),
-                    "PostalBox": props.address.postal_box or None,
-                    "Town": props.address.town or None,
-                    "Region": props.address.region or None,
-                    "PostalCode": props.address.postal_code or None,
-                    "Country": props.address.country or None,
-                }
-            )
-        ifcopenshell.api.run("owner.edit_address", self.file, **{"address": address, "attributes": attributes})
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.disable_editing_address()
-        return {"FINISHED"}
+        core.edit_address(tool.Ifc, tool.AddressEditor)
 
 
-class RemoveAddress(bpy.types.Operator):
+class RemoveAddress(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_address"
     bl_label = "Remove Address"
     bl_options = {"REGISTER", "UNDO"}
-    address_id: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    address: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("owner.remove_address", self.file, **{"address": self.file.by_id(self.address_id)})
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.remove_address(tool.Ifc(), address=tool.Ifc().get().by_id(self.address))
 
 
 class EnableEditingOrganisation(bpy.types.Operator):

@@ -35,25 +35,25 @@ def blender():
     prophet.verify()
 
 
-def subject(sus):
-    def decorate(cls):
-        cls.sus = sus
-        return cls
+@pytest.fixture
+def person_editor():
+    prophet = Prophecy(blenderbim.core.tool.PersonEditor)
+    yield prophet
+    prophet.verify()
 
-    return decorate
+
+@pytest.fixture
+def role_editor():
+    prophet = Prophecy(blenderbim.core.tool.RoleEditor)
+    yield prophet
+    prophet.verify()
 
 
-class Spec:
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        self.subject = None
-
-    def construct_with(self, *args, **kwargs):
-        self.subject = self.sus(*args, **kwargs)
-        return self.subject
-
-    def predict(self, cls):
-        return Prophecy(cls)
+@pytest.fixture
+def address_editor():
+    prophet = Prophecy(blenderbim.core.tool.AddressEditor)
+    yield prophet
+    prophet.verify()
 
 
 class Prophecy:
@@ -66,10 +66,12 @@ class Prophecy:
 
     def __getattr__(self, attr):
         if not hasattr(self.subject, attr):
-            raise AttributeError(f"Prophecy has no attribute {attr}")
+            raise AttributeError(f"Prophecy {self.subject} has no attribute {attr}")
 
         def decorate(*args, **kwargs):
             call = {"name": attr, "args": args, "kwargs": kwargs}
+            # Ensure that signature is valid
+            getattr(self.subject, attr)(*args, **kwargs)
             try:
                 key = json.dumps(call, sort_keys=True)
                 self.calls.append(call)
@@ -81,23 +83,25 @@ class Prophecy:
 
         return decorate
 
-    def should(self):
+    def should_be_called(self, number=None):
         self.should_call = self.calls.pop()
-        return self
-
-    def be_called(self, number=None):
         self.predictions.append({"type": "SHOULD_BE_CALLED", "number": number, "call": self.should_call})
         return self
 
-    def return_with(self, value):
+    def will_return(self, value):
         key = json.dumps(self.should_call, sort_keys=True)
         self.return_values[key] = value
         return self
 
     def verify(self):
+        predicted_calls = []
         for prediction in self.predictions:
+            predicted_calls.append(prediction["call"])
             if prediction["type"] == "SHOULD_BE_CALLED":
                 self.verify_should_be_called(prediction)
+        for call in self.calls:
+            if call not in predicted_calls:
+                raise Exception(f"Unpredicted call: {call}")
 
     def verify_should_be_called(self, prediction):
         if prediction["number"]:
@@ -106,4 +110,4 @@ class Prophecy:
                 raise Exception(f"Called {count}: {prediction}")
         else:
             if prediction["call"] not in self.calls:
-                raise Exception("Not called", prediction)
+                raise Exception(f"{self.subject} was not called with {prediction['call']['name']}: {prediction}")

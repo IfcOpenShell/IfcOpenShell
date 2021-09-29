@@ -436,6 +436,7 @@ endif
 .PHONY: test
 test:
 	make test-core
+	make test-tool
 	make test-bim
 
 .PHONY: test-core
@@ -445,6 +446,10 @@ test-core:
 .PHONY: test-bim
 test-bim:
 	pytest test/bim
+
+.PHONY: test-tool
+test-tool:
+	pytest test/tool
 
 .PHONY: qa
 qa:

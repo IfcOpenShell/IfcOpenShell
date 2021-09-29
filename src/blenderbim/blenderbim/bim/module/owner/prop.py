@@ -67,71 +67,6 @@ def getOrganisations(self, context):
     return _organisations_enum
 
 
-class Address(PropertyGroup):
-    name: StringProperty(name="Name", default="IfcPostalAddress")  # Stores IfcPostalAddress or IfcTelecomAddress
-    purpose: EnumProperty(
-        items=[
-            ("None", "None", ""),
-            ("OFFICE", "OFFICE", "An office address."),
-            ("SITE", "SITE", "A site address."),
-            ("HOME", "HOME", "A home address."),
-            ("DISTRIBUTIONPOINT", "DISTRIBUTIONPOINT", "A postal distribution point address."),
-            ("USERDEFINED", "USERDEFINED", "A user defined address type to be provided."),
-        ],
-        name="Purpose",
-    )
-    description: StringProperty(name="Description")
-    user_defined_purpose: StringProperty(name="Custom Purpose")
-
-    internal_location: StringProperty(name="Internal Location")
-    address_lines: CollectionProperty(type=StrProperty, name="Address")
-    postal_box: StringProperty(name="Postal Box")
-    town: StringProperty(name="Town")
-    region: StringProperty(name="Region")
-    postal_code: StringProperty(name="Postal Code")
-    country: StringProperty(name="Country")
-
-    telephone_numbers: CollectionProperty(type=StrProperty, name="Telephone Numbers")
-    facsimile_numbers: CollectionProperty(type=StrProperty, name="Facsimile Numbers")
-    pager_number: StringProperty(name="Pager Number")
-    electronic_mail_addresses: CollectionProperty(type=StrProperty, name="Emails")
-    www_home_page_url: StringProperty(name="Website")
-    messaging_ids: CollectionProperty(type=StrProperty, name="IMs")
-
-
-class Role(PropertyGroup):
-    name: EnumProperty(
-        items=[
-            ("SUPPLIER", "SUPPLIER", ""),
-            ("MANUFACTURER", "MANUFACTURER", ""),
-            ("CONTRACTOR", "CONTRACTOR", ""),
-            ("SUBCONTRACTOR", "SUBCONTRACTOR", ""),
-            ("ARCHITECT", "ARCHITECT", ""),
-            ("STRUCTURALENGINEER", "STRUCTURALENGINEER", ""),
-            ("COSTENGINEER", "COSTENGINEER", ""),
-            ("CLIENT", "CLIENT", ""),
-            ("BUILDINGOWNER", "BUILDINGOWNER", ""),
-            ("BUILDINGOPERATOR", "BUILDINGOPERATOR", ""),
-            ("MECHANICALENGINEER", "MECHANICALENGINEER", ""),
-            ("ELECTRICALENGINEER", "ELECTRICALENGINEER", ""),
-            ("PROJECTMANAGER", "PROJECTMANAGER", ""),
-            ("FACILITIESMANAGER", "FACILITIESMANAGER", ""),
-            ("CIVILENGINEER", "CIVILENGINEER", ""),
-            ("COMMISSIONINGENGINEER", "COMMISSIONINGENGINEER", ""),
-            ("ENGINEER", "ENGINEER", ""),
-            ("OWNER", "OWNER", ""),
-            ("CONSULTANT", "CONSULTANT", ""),
-            ("CONSTRUCTIONMANAGER", "CONSTRUCTIONMANAGER", ""),
-            ("FIELDCONSTRUCTIONMANAGER", "FIELDCONSTRUCTIONMANAGER", ""),
-            ("RESELLER", "RESELLER", ""),
-            ("USERDEFINED", "USERDEFINED", ""),
-        ],
-        name="Name",
-    )
-    user_defined_role: StringProperty(name="Custom Role")
-    description: StringProperty(name="Description")
-
-
 class Organisation(PropertyGroup):
     identification: StringProperty(name="Identification")
     name: StringProperty(name="Name")
@@ -149,12 +84,21 @@ class Person(PropertyGroup):
 
 class BIMOwnerProperties(PropertyGroup):
     person: PointerProperty(type=Person)
+    person_attributes: CollectionProperty(name="Person Attributes", type=Attribute)
+    middle_names: CollectionProperty(type=StrProperty, name="Middle Names")
+    prefix_titles: CollectionProperty(type=StrProperty, name="Prefixes")
+    suffix_titles: CollectionProperty(type=StrProperty, name="Suffixes")
     active_person_id: IntProperty(name="Active Person Id")
     organisation: PointerProperty(type=Organisation)
     active_organisation_id: IntProperty(name="Active Organisation Id")
-    role: PointerProperty(type=Role)
     active_role_id: IntProperty(name="Active Role Id")
-    address: PointerProperty(type=Address)
+    role_attributes: CollectionProperty(name="Role Attributes", type=Attribute)
     active_address_id: IntProperty(name="Active Address Id")
+    address_attributes: CollectionProperty(name="Address Attributes", type=Attribute)
+    address_lines: CollectionProperty(type=StrProperty, name="Address")
+    telephone_numbers: CollectionProperty(type=StrProperty, name="Telephone Numbers")
+    facsimile_numbers: CollectionProperty(type=StrProperty, name="Facsimile Numbers")
+    electronic_mail_addresses: CollectionProperty(type=StrProperty, name="Emails")
+    messaging_ids: CollectionProperty(type=StrProperty, name="IMs")
     user_person: EnumProperty(items=getPersons, name="Person")
     user_organisation: EnumProperty(items=getOrganisations, name="Organisation")
