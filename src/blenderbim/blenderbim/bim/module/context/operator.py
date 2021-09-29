@@ -17,9 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.api
-import blenderbim.bim.tool
-import blenderbim.core.context
+import blenderbim.tool as tool
+import blenderbim.core.context as core
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.context.data import Data
 
@@ -36,12 +35,12 @@ class AddSubcontext(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        blenderbim.core.context.AddContext(
-            blenderbim.bim.tool.Ifc,
+        core.add_context(
+            tool.Ifc(),
             context=self.context or context.scene.BIMProperties.available_contexts,
             subcontext=self.subcontext or context.scene.BIMProperties.available_subcontexts,
             target_view=self.target_view or context.scene.BIMProperties.available_target_views,
-        ).execute()
+        )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -57,8 +56,6 @@ class RemoveSubcontext(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        blenderbim.core.context.RemoveContext(
-            blenderbim.bim.tool.Ifc, context=self.file.by_id(self.ifc_definition_id)
-        ).execute()
+        core.remove_context(tool.Ifc(), context=self.file.by_id(self.ifc_definition_id))
         Data.load(self.file)
         return {"FINISHED"}

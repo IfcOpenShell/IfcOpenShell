@@ -16,23 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.core.context
-from test.core.bootstrap import Spec, subject, ifc, blender
+import blenderbim.core.context as subject
+from test.core.bootstrap import ifc
 
 
-@subject(blenderbim.core.context.AddContext)
-class TestAddContext(Spec):
+class TestAddContext:
     def test_adding_a_context(self, ifc):
-        self.construct_with(ifc, context="Model", subcontext="Body", target_view="MODEL_VIEW")
         ifc.run(
             "context.add_context", context="Model", subcontext="Body", target_view="MODEL_VIEW"
-        ).should().be_called().return_with("context")
-        assert self.subject.execute() == "context"
+        ).should_be_called().will_return("context")
+        assert subject.add_context(ifc, context="Model", subcontext="Body", target_view="MODEL_VIEW") == "context"
 
 
-@subject(blenderbim.core.context.RemoveContext)
-class TestRemoveContext(Spec):
+class TestRemoveContext:
     def test_removing_a_context(self, ifc):
-        self.construct_with(ifc, context="context")
-        ifc.run("context.remove_context", context="context").should().be_called()
-        self.subject.execute()
+        ifc.run("context.remove_context", context="context").should_be_called()
+        subject.remove_context(ifc, context="context")
