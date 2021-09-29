@@ -20,10 +20,8 @@ import subprocess
 import sys
 
 py_exec = str(sys.executable)
-# Ensure pip is installed
 subprocess.call([py_exec, "-m", "ensurepip", "--user"])
-# Update pip
 subprocess.call([py_exec, "-m", "pip", "install", "--upgrade", "pip"])
-# Install packages
-subprocess.call([py_exec, "-m", "pip", "install", f"--target={py_exec[:-14]}" + "lib", "pytest"])
-subprocess.call([py_exec, "-m", "pip", "install", f"--target={py_exec[:-14]}" + "lib", "pytest-blender"])
+subprocess.call([py_exec, "-m", "pip", "install", "pytest"])
+subprocess.call([py_exec, "-m", "pip", "install", "pytest-blender"])
+subprocess.call([py_exec, "-m", "pip", "install", "pytest-bdd"])
