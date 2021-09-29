@@ -32,7 +32,7 @@ from mathutils import Vector
 webbrowser.open = lambda x: True
 
 
-variables = {"cwd": os.getcwd()}
+variables = {"cwd": os.getcwd(), "ifc": "IfcStore.get_file()"}
 
 
 class NewFile:
@@ -44,6 +44,17 @@ class NewFile:
             while bpy.data.objects:
                 bpy.data.objects.remove(bpy.data.objects[0])
             bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+
+
+class NewIfc:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        IfcStore.purge()
+        bpy.ops.wm.read_homefile(app_template="")
+        while bpy.data.objects:
+            bpy.data.objects.remove(bpy.data.objects[0])
+        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+        bpy.ops.bim.create_project()
 
 
 def scenario(function):

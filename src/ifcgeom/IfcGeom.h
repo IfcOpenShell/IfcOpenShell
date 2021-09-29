@@ -353,13 +353,13 @@ public:
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
 	bool convert_wire_to_faces(const TopoDS_Wire& wire, TopoDS_Compound& face);
 	bool convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire);
-	bool convert_shapes(const IfcUtil::IfcBaseClass* L, IfcRepresentationShapeItems& result);
-	IfcGeom::ShapeType shape_type(const IfcUtil::IfcBaseClass* L);
-	bool convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
+	bool convert_shapes(const IfcUtil::IfcBaseInterface* L, IfcRepresentationShapeItems& result);
+	IfcGeom::ShapeType shape_type(const IfcUtil::IfcBaseInterface* L);
+	bool convert_shape(const IfcUtil::IfcBaseInterface* L, TopoDS_Shape& result);
 	bool flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& shapes, TopoDS_Shape& result, bool fuse);
-	bool convert_wire(const IfcUtil::IfcBaseClass* L, TopoDS_Wire& result);
-	bool convert_curve(const IfcUtil::IfcBaseClass* L, Handle(Geom_Curve)& result);
-	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
+	bool convert_wire(const IfcUtil::IfcBaseInterface* L, TopoDS_Wire& result);
+	bool convert_curve(const IfcUtil::IfcBaseInterface* L, Handle(Geom_Curve)& result);
+	bool convert_face(const IfcUtil::IfcBaseInterface* L, TopoDS_Shape& result);
 	bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
 	bool convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
 	void assert_closed_wire(TopoDS_Wire& wire);
@@ -426,7 +426,7 @@ public:
 	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_Trsf&);
 	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);
 	
-	bool is_identity_transform(IfcUtil::IfcBaseClass*);
+	bool is_identity_transform(IfcUtil::IfcBaseInterface*);
 
 	IfcSchema::IfcRelVoidsElement::list::ptr find_openings(IfcSchema::IfcProduct* product);
 
@@ -434,13 +434,11 @@ public:
 
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
-    template <typename P, typename PP>
-    IfcGeom::BRepElement<P, PP>* create_brep_for_representation_and_product(
+    IfcGeom::BRepElement* create_brep_for_representation_and_product(
         const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
 
-	template <typename P, typename PP>
-    IfcGeom::BRepElement<P, PP>* create_brep_for_processed_representation(
-        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P, PP>*);
+    IfcGeom::BRepElement* create_brep_for_processed_representation(
+        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement*);
 
 	const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct*);
 	IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
@@ -452,8 +450,8 @@ public:
 		std::vector<IfcSchema::IfcPresentationStyle*> prs_styles;
 
 #ifdef SCHEMA_HAS_IfcStyleAssignmentSelect
-		IfcEntityList::ptr style_assignments = si->Styles();
-		for (IfcEntityList::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+		aggregate_of_instance::ptr style_assignments = si->Styles();
+		for (aggregate_of_instance::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
 			
 			// Using IfcPresentationStyleAssignment is deprecated, use the direct assignment of a subtype of IfcPresentationStyle instead.
 			auto style_k = (*kt)->as<IfcSchema::IfcPresentationStyle>();
@@ -498,8 +496,8 @@ public:
 			if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
 				IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
 				if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
-					IfcEntityList::ptr styles_elements = surface_style->Styles();
-					for (IfcEntityList::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
+					aggregate_of_instance::ptr styles_elements = surface_style->Styles();
+					for (aggregate_of_instance::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
 						if ((*mt)->declaration().is(T::Class())) {
 							return std::make_pair(surface_style, (T*) *mt);
 						}
@@ -543,11 +541,11 @@ public:
 	virtual void setValue(GeomValue var, double value);
 	virtual double getValue(GeomValue var) const;
 
-	virtual IfcGeom::BRepElement<double>* convert(
+	virtual IfcGeom::BRepElement* convert(
 		const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
 		IfcUtil::IfcBaseClass* product)
 	{
-		return create_brep_for_representation_and_product<double, double>(settings, (IfcSchema::IfcRepresentation*) representation, (IfcSchema::IfcProduct*) product);
+		return create_brep_for_representation_and_product(settings, representation->as<IfcSchema::IfcRepresentation>(), product->as<IfcSchema::IfcProduct>());
 	}
 
 	virtual IfcRepresentationShapeItems convert(IfcUtil::IfcBaseClass* item) {

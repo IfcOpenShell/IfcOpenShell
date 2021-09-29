@@ -28,22 +28,56 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <atomic>
+
 class Argument;
-class IfcEntityList;
+class aggregate_of_instance;
 
 namespace IfcUtil {
 
-	class IFC_PARSE_API IfcBaseClass {
-    protected:
+	class IFC_PARSE_API IfcBaseInterface {
+	protected:
+		static bool is_null(const IfcBaseInterface* not_this) {
+			return !not_this;
+		}
+
+	public:
+		virtual const IfcEntityInstanceData& data() const = 0;
+		virtual IfcEntityInstanceData& data() = 0;
+		virtual const IfcParse::declaration& declaration() const = 0;
+
+		template <class T>
+		T* as() {
+			// @todo: do not allow this to be null in the first place
+			if (is_null(this)) {
+				return static_cast<T*>(0);
+			}
+			return dynamic_cast<T*>(this);
+		}
+
+		template <class T>
+		const T* as() const {
+			if (is_null(this)) {
+				return static_cast<const T*>(0);
+			}
+			return dynamic_cast<const T*>(this);
+		}
+	};
+
+	class IFC_PARSE_API IfcBaseClass : public virtual IfcBaseInterface {
+	private:
+		uint32_t identity_;
+		static std::atomic_uint32_t counter_;
+
+	protected:
 		IfcEntityInstanceData* data_;
 
 		static bool is_null(const IfcBaseClass* not_this) {
 			return !not_this;
-		}
-        
+		}        
 	public:
-        IfcBaseClass() : data_(0) {}
-		IfcBaseClass(IfcEntityInstanceData* d) : data_(d) {}
+        IfcBaseClass() : identity_(counter_++), data_(0) {}
+		IfcBaseClass(IfcEntityInstanceData* d) : identity_(counter_++), data_(d) {}
 		virtual ~IfcBaseClass() { delete data_; }
         
         const IfcEntityInstanceData& data() const { return *data_; }
@@ -52,26 +86,7 @@ namespace IfcUtil {
         
         virtual const IfcParse::declaration& declaration() const = 0;
 
-		template <class T>
-		T* as() {
-			// @todo: do not allow this to be null in the first place
-			if (is_null(this)) {
-				return static_cast<T*>(0);
-			}
-			return declaration().is(T::Class())
-				? static_cast<T*>(this)
-				: static_cast<T*>(0);
-		}
-
-		template <class T>
-		const T* as() const {
-			if (is_null(this)) {
-				return static_cast<const T*>(0);
-			}
-			return declaration().is(T::Class())
-				? static_cast<const T*>(this)
-				: static_cast<const T*>(0);
-		}
+		uint32_t identity() const { return identity_; }
 	};
 
 	class IFC_PARSE_API IfcLateBoundEntity : public IfcBaseClass {
@@ -95,7 +110,7 @@ namespace IfcUtil {
 
 		Argument* get(const std::string& name) const;
 
-		boost::shared_ptr<IfcEntityList> get_inverse(const std::string& a) const;
+		boost::shared_ptr<aggregate_of_instance> get_inverse(const std::string& a) const;
 	};
 
 	// TODO: Investigate whether these should be template classes instead

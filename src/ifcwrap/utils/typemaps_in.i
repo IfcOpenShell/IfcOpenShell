@@ -161,9 +161,9 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 	}
 }
 
-%typemap(in) IfcEntityList::ptr {
+%typemap(in) aggregate_of_instance::ptr {
 	if (PySequence_Check($input)) {
-		$1 = IfcEntityList::ptr(new IfcEntityList());
+		$1 = aggregate_of_instance::ptr(new aggregate_of_instance());
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			IfcUtil::IfcBaseClass* inst = cast_pyobject<IfcUtil::IfcBaseClass*>(element);
@@ -178,9 +178,9 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 	}
 }
 
-%typemap(in) IfcEntityListList::ptr {
+%typemap(in) aggregate_of_aggregate_of_instance::ptr {
 	if (PySequence_Check($input)) {
-		$1 = IfcEntityListList::ptr(new IfcEntityListList());
+		$1 = aggregate_of_aggregate_of_instance::ptr(new aggregate_of_aggregate_of_instance());
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			if (PySequence_Check(element)) {
@@ -217,6 +217,17 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 	$1 = new gp_Pnt(ds[0], ds[1], ds[2]);
 }
 
+%typemap(in) const gp_Dir& {
+	if (!check_aggregate_of_type($input, get_python_type<double>())) {
+		SWIG_exception(SWIG_TypeError, "<Direction> type needs a python sequence of 3 floats");
+	}
+	std::vector<double> ds = python_sequence_as_vector<double>($input);
+	if (ds.size() != 3) {
+		SWIG_exception(SWIG_TypeError, "<Direction> type needs a python sequence of 3 floats");
+	}
+	$1 = new gp_Dir(ds[0], ds[1], ds[2]);
+}
+
 %typemap(in) const Bnd_Box& {
 	if (!check_aggregate_of_aggregate_of_type($input, get_python_type<double>())) {
 		SWIG_exception(SWIG_TypeError, "<AABB> type needs a python sequence of 2 x 3 floats");
@@ -237,6 +248,62 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
    $1 = check_aggregate_of_type($input, get_python_type<double>());
 }
 
+%typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) const gp_Dir& {
+   $1 = check_aggregate_of_type($input, get_python_type<double>());
+}
+
 %typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) const Bnd_Box& {
    $1 = check_aggregate_of_aggregate_of_type($input, get_python_type<double>());
 }
+
+%typemap(in) boost::logic::tribool {
+	if (PyBool_Check($input)) {
+		$1 = $input == Py_True;
+	} else if (PyUnicode_Check($input)) {
+		// we already checked the value of the string in the typecheck typemap
+		$1 = boost::logic::indeterminate;
+	} else {
+		SWIG_exception(SWIG_TypeError, "Logical needs boolean or \"UNKOWN\"");
+	}
+}
+
+%typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) boost::logic::tribool {
+    $1 = PyBool_Check($input);
+	if (!$1 && PyUnicode_Check($input)) {
+		PyObject * ascii = PyUnicode_AsEncodedString(result, "UTF-8", "strict");
+		if (ascii) {
+			$1 = strcmp(PyBytes_AS_STRING(ascii), "UNKNOWN") == 0;
+			Py_DECREF(ascii);
+		}	
+	}
+}
+
+%define CREATE_OPTIONAL_TYPEMAP_IN(template_type, express_name, python_name)
+
+	%typemap(in) const boost::optional<template_type>& {
+		if ($input == Py_None) {
+			(*$1) = boost::none;
+		} else if ($input->ob_type != get_python_type<template_type>()) {
+			SWIG_exception(SWIG_TypeError, "Optional " #express_name " needs a " #python_name " or None");
+		} else {
+			(*$1) = cast_pyobject<template_type>($input);
+		}
+	}
+
+	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) const boost::optional<template_type>& {
+		$1 = ($input == Py_None || $input->ob_type == get_python_type<template_type>()) ? 1 : 0;
+	}
+
+	%typemap(arginit) const boost::optional<template_type>& {
+		$1 = new boost::optional<template_type>();
+	}
+
+	%typemap(freearg) const boost::optional<template_type>& {
+		delete $1;
+	}
+
+%enddef
+
+CREATE_OPTIONAL_TYPEMAP_IN(int, integer, int)
+CREATE_OPTIONAL_TYPEMAP_IN(double, real, float)
+CREATE_OPTIONAL_TYPEMAP_IN(std::string, string, str)

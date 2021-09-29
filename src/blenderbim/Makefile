@@ -93,57 +93,46 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-$(PYNUMBER)-v0.6.0-721fe47-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-$(PYNUMBER)-v0.7.0-9853d3d-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcblender*
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/blenderbim/libs/site/packages/
 
 	# See bug #812
-	cd dist/working && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/blenderbim/occ_utils.py
+	cd dist/working && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.7.0/src/blenderbim/occ_utils.py
 	cd dist/working && mv occ_utils.py ../blenderbim/libs/site/packages/ifcopenshell/geom/occ_utils.py
-	rm -rf dist/working
-
-	# Provides IfcConvert for construction documentation
-	mkdir dist/working
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.6.0-81ad689-$(PLATFORM)64.zip
-	cd dist/working && unzip IfcConvert*
-ifeq ($(PLATFORM), win)
-	cp -r dist/working/IfcConvert.exe dist/blenderbim/libs/
-else
-	cp -r dist/working/IfcConvert dist/blenderbim/libs/
-endif
 	rm -rf dist/working
 
 	# Provides dependencies that are part of IfcOpenShell
 	mkdir dist/working
-	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/archive/v0.6.0.zip
-	cd dist/working && unzip v0.6.0.zip
+	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/archive/v0.7.0.zip
+	cd dist/working && unzip v0.7.0.zip
 	# IfcOpenBot sometimes lags behind, so we hotfix the Python utilities
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/util/* dist/blenderbim/libs/site/packages/ifcopenshell/util/
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/api/* dist/blenderbim/libs/site/packages/ifcopenshell/api/
-	cp dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/entity_instance.py dist/blenderbim/libs/site/packages/ifcopenshell/
-	cp dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/file.py dist/blenderbim/libs/site/packages/ifcopenshell/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/util/* dist/blenderbim/libs/site/packages/ifcopenshell/util/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/api/* dist/blenderbim/libs/site/packages/ifcopenshell/api/
+	cp dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/entity_instance.py dist/blenderbim/libs/site/packages/ifcopenshell/
+	cp dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/file.py dist/blenderbim/libs/site/packages/ifcopenshell/
 	# Provides bcf functionality
-	cp -r dist/working/IfcOpenShell-0.6.0/src/bcf/src/bcf dist/blenderbim/libs/site/packages/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/bcf/src/bcf dist/blenderbim/libs/site/packages/
 	# Provides IFCClash functionality
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcclash/ifcclash dist/blenderbim/libs/site/packages/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcclash/ifcclash dist/blenderbim/libs/site/packages/
 	# Provides BIMTester functionality
 	cd dist/working && python -m venv env
 	cd dist/working && . env/bin/activate && pip install pybabel
 	cd dist/working && . env/bin/activate && pip install babel
-	cd dist/working && . env/bin/activate && ./env/bin/pybabel compile -d ./IfcOpenShell-0.6.0/src/ifcbimtester/bimtester/locale/
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcbimtester/bimtester dist/blenderbim/libs/site/packages/
+	cd dist/working && . env/bin/activate && ./env/bin/pybabel compile -d ./IfcOpenShell-0.7.0/src/ifcbimtester/bimtester/locale/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcbimtester/bimtester dist/blenderbim/libs/site/packages/
 	# Provides IFCCOBie functionality
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifccobie/* dist/blenderbim/libs/site/packages/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifccobie/* dist/blenderbim/libs/site/packages/
 	# Provides IFCDiff functionality
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcdiff/* dist/blenderbim/libs/site/packages/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcdiff/* dist/blenderbim/libs/site/packages/
 	# Provides IFCCSV functionality
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifccsv/* dist/blenderbim/libs/site/packages/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifccsv/* dist/blenderbim/libs/site/packages/
 	# Provides IFCPatch functionality
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcpatch/ifcpatch dist/blenderbim/libs/site/packages/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcpatch/ifcpatch dist/blenderbim/libs/site/packages/
 	# Provides IFC4D functionality
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifc4d/ifc4d dist/blenderbim/libs/site/packages/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifc4d/ifc4d dist/blenderbim/libs/site/packages/
 	# Provides IFC5D functionality
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifc5d/ifc5d dist/blenderbim/libs/site/packages/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifc5d/ifc5d dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Provides Mustache templating in construction documentation
@@ -350,8 +339,8 @@ endif
 	cd dist/working && tar -xzvf behave*
 	cd dist/working/behave-1.2.6/ && cp -r behave ../../blenderbim/libs/site/packages/
 	# See bug #1294
-	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/patch/model_core.patch
-	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/patch/runner_util.patch
+	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.7.0/src/ifcbimtester/patch/model_core.patch
+	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.7.0/src/ifcbimtester/patch/runner_util.patch
 	cd dist/working/ && patch ../blenderbim/libs/site/packages/behave/model_core.py < model_core.patch
 	cd dist/working/ && patch ../blenderbim/libs/site/packages/behave/runner_util.py < runner_util.patch
 	rm -rf dist/working
@@ -447,6 +436,7 @@ endif
 .PHONY: test
 test:
 	make test-core
+	make test-tool
 	make test-bim
 
 .PHONY: test-core
@@ -456,6 +446,10 @@ test-core:
 .PHONY: test-bim
 test-bim:
 	pytest test/bim
+
+.PHONY: test-tool
+test-tool:
+	pytest test/tool
 
 .PHONY: qa
 qa:

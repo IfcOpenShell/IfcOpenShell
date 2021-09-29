@@ -74,17 +74,6 @@ class Implementation(codegen.Base):
             write_attr = lambda str, **kwargs: attributes.append(str % kwargs)
             for arg in constructor_arguments:
                 if not arg["is_inherited"] and not arg["is_derived"]:
-                    if arg["is_optional"]:
-                        write_attr(
-                            templates.const_function,
-                            class_name=name,
-                            schema_name=schema_name,
-                            schema_name_upper=schema_name_upper,
-                            name="has%s" % arg["name"],
-                            arguments="",
-                            return_type="bool",
-                            body=templates.optional_attr_stmt % {"index": arg["index"] - 1},
-                        )
 
                     def find_template(arg):
                         simple = mapping.schema.is_simpletype(arg["list_instance_type"])
@@ -103,6 +92,15 @@ class Implementation(codegen.Base):
                         else:
                             return templates.get_attr_stmt
 
+                    null_check = ''
+                    if arg["is_optional"]:
+                        attr_check = "if(!data_->getArgument(%d) || data_->getArgument(%d)->isNull()) { return %%s; }" % (arg["index"] - 1, arg["index"] - 1) 
+                        if "boost::optional" in arg["full_type"]:
+                            null_check = attr_check % "boost::none"
+                        else:
+                            null_check = attr_check % "nullptr"
+                    
+
                     tmpl = find_template(arg)
                     write_attr(
                         templates.const_function,
@@ -111,12 +109,15 @@ class Implementation(codegen.Base):
                         arguments="",
                         schema_name=schema_name,
                         schema_name_upper=schema_name_upper,
-                        return_type=arg["non_optional_type"],
+                        return_type=arg["full_type"],
                         body=tmpl
                         % {
                             "index": arg["index"] - 1,
-                            "type": arg["non_optional_type"].replace("::Value", ""),
+                            "type": arg["full_type"].replace("::Value", ""),
+                            "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
+                            "non_optional_type_no_pointer": arg["non_optional_type"].replace("::Value", "").replace("*", ""),
                             "list_instance_type": arg["list_instance_type"],
+                            "null_check": null_check
                         },
                     )
 
@@ -136,12 +137,17 @@ class Implementation(codegen.Base):
                         templates.function,
                         class_name=name,
                         name="set%s" % arg["name"],
-                        arguments="%s v" % arg["non_optional_type"],
+                        arguments="%s v" % arg["full_type"],
                         return_type="void",
                         schema_name=schema_name,
                         schema_name_upper=schema_name_upper,
                         body=tmpl
-                        % {"index": arg["index"] - 1, "type": arg["non_optional_type"].replace("::Value", "")},
+                        % {
+                            "index": arg["index"] - 1, 
+                            "type": arg["full_type"].replace("::Value", ""),
+                            "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
+                            "star_if_optional": "*" if "boost::optional" in arg["full_type"] else ""
+                        },
                     )
 
                 if arg["is_derived"]:

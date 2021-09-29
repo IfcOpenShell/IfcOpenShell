@@ -1,4 +1,4 @@
-%typemap(out) IfcEntityList::ptr {
+%typemap(out) aggregate_of_instance::ptr {
 	const unsigned size = $1 ? $1->size() : 0;
 	$result = PyTuple_New(size);
 	for (unsigned i = 0; i < size; ++i) {
@@ -22,7 +22,7 @@
 	} else if ($1->as_aggregation_type()) {
 		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_aggregation_type()), SWIGTYPE_p_IfcParse__aggregation_type, 0);
 	} else {
-		throw std::runtime_error("unexpected parameter type");
+		$result = SWIG_Py_Void();
 	}
 }
 
@@ -49,6 +49,10 @@
 		break; }
 		case IfcUtil::Argument_BOOL: {
 			bool v = arg;
+			$result = pythonize(v);
+		break; }
+		case IfcUtil::Argument_LOGICAL: {
+			boost::logic::tribool v = arg;
 			$result = pythonize(v);
 		break; }
 		case IfcUtil::Argument_DOUBLE: {
@@ -81,7 +85,7 @@
 			$result = pythonize(v);
 		break; }
 		case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
-			IfcEntityList::ptr v = arg;
+			aggregate_of_instance::ptr v = arg;
 			$result = pythonize(v);
 		break; }
 		case IfcUtil::Argument_AGGREGATE_OF_BINARY: {
@@ -97,7 +101,7 @@
 			$result = pythonize_vector2(v);
 		break; }
 		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
-			IfcEntityListList::ptr v = arg;
+			aggregate_of_aggregate_of_instance::ptr v = arg;
 			$result = pythonize(v);
 		break; }
 		case IfcUtil::Argument_EMPTY_AGGREGATE: {

@@ -41,7 +41,9 @@ jobs:
           python3-all-dev python3-pip \
           swig libpcre3-dev libxml2-dev \
           libtbb-dev nlohmann-json3-dev \
-          liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev
+          liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev \
+          libhdf5-dev libcgal-dev
+          
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1
 
@@ -64,6 +66,12 @@ jobs:
                "-DSCHEMA_VERSIONS=2x3;4" \
                -DGLTF_SUPPORT=On \
                -DJSON_INCLUDE_DIR=/usr/include \
+               -DCGAL_INCLUDE_DIR=/usr/include \
+               -DGMP_INCLUDE_DIR=/usr/include \
+               -DMPFR_INCLUDE_DIR=/usr/include \
+               -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
+               -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
+               -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
              ../cmake
           sudo make -j $(nproc)
           sudo make install
@@ -74,6 +82,7 @@ jobs:
           sudo /usr/bin/python -m pip install xmlschema numpy lxml
           sudo /usr/bin/python -m pip install src/bcf
           sudo /usr/bin/python -m pip install pytest
+          sudo /usr/bin/python -m pip install isodate
 
       - name: Test
         run: |

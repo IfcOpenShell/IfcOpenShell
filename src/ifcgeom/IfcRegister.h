@@ -88,6 +88,7 @@ SHAPE(IfcHalfSpaceSolid);
 SHAPE(IfcSurfaceOfLinearExtrusion);
 SHAPE(IfcSurfaceOfRevolution);
 SHAPE(IfcBlock);
+SHAPE(IfcBoundingBox);
 SHAPE(IfcRectangularPyramid);
 SHAPE(IfcRightCircularCylinder);
 SHAPE(IfcRightCircularCone);
@@ -98,6 +99,7 @@ SHAPE(IfcRectangularTrimmedSurface);
 SHAPE(IfcSurfaceCurveSweptAreaSolid);
 SHAPE(IfcSweptDiskSolid);
 
+FACE(IfcAnnotationFillArea);
 FACE(IfcArbitraryProfileDefWithVoids);
 FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcRoundedRectangleProfileDef);

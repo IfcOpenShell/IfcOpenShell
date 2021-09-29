@@ -157,7 +157,7 @@ size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end) {
 	return j["accessors"].size() - 1;
 }
 
-void GltfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
+void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 	if (o->geometry().material_ids().empty()) {
 		return;
 	}

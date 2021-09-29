@@ -28,6 +28,7 @@
 
 #include "../serializers/ColladaSerializer.h"
 #include "../serializers/GltfSerializer.h"
+#include "../serializers/HdfSerializer.h"
 #include "../serializers/IgesSerializer.h"
 #include "../serializers/StepSerializer.h"
 #include "../serializers/WavefrontObjSerializer.h"
@@ -104,6 +105,9 @@ void print_usage(bool suggest_help = true)
         << "  .igs   IGES           Initial Graphics Exchange Specification\n"
         << "  .xml   XML            Property definitions and decomposition tree\n"
         << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
+#ifdef WITH_HDF5
+		<< "  .h5    HDF            Hierarchical Data Format storing positions, normals and indices\n"
+#endif
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
 		<< "\n"
         << "If no output filename given, <input>" << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
@@ -656,8 +660,15 @@ int main(int argc, char** argv) {
 	);
 
     path_t output_temp_filename = output_filename + IfcUtil::path::from_utf8(TEMP_FILE_EXTENSION);
+	
+	std::vector<path_t> tokens;
+	split(tokens, output_filename, boost::is_any_of("."));
+	std::vector<path_t>::iterator tok_iter;
+	path_t ext = *(tokens.end() - 1);
+	path_t dot;
+	dot = '.';	
+	path_t output_extension = dot + ext;
 
-	path_t output_extension = output_filename.substr(output_filename.size()-4);
 	boost::to_lower(output_extension);
 
 	IfcParse::IfcFile* ifc_file = 0;
@@ -669,6 +680,7 @@ int main(int argc, char** argv) {
 		STP = IfcUtil::path::from_utf8(".stp"),
 		IGS = IfcUtil::path::from_utf8(".igs"),
 		SVG = IfcUtil::path::from_utf8(".svg"),
+		HDF = IfcUtil::path::from_utf8(".h5"),
 		XML = IfcUtil::path::from_utf8(".xml"),
 		IFC = IfcUtil::path::from_utf8(".ifc");
 
@@ -766,9 +778,6 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES,                weld_vertices);
 	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS,                   orient_shells);
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS,           convert_back_units);
-#if OCC_VERSION_HEX < 0x60900
-	settings.set(IfcGeom::IteratorSettings::FASTER_BOOLEANS,              merge_boolean_operands);
-#endif
 	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
 	settings.set(IfcGeom::IteratorSettings::DISABLE_BOOLEAN_RESULT, disable_boolean_results);
 	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
@@ -826,7 +835,15 @@ int main(int argc, char** argv) {
 	} else if (output_extension == SVG) {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
-	} else {
+	}
+#ifdef WITH_HDF5
+	else if (output_extension == HDF) {
+		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
+	}
+#endif
+	
+	else {
         cerr_ << "[Error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log(!quiet);
 		print_usage();
@@ -910,7 +927,7 @@ int main(int argc, char** argv) {
 				return EXIT_FAILURE;
 			}
 
-			IfcGeom::Iterator<real_t> tmp_context_iterator(settings, ifc_file, filter_funcs, num_threads);
+			IfcGeom::Iterator tmp_context_iterator(settings, ifc_file, filter_funcs, num_threads);
 			
 			time_t start, end;
 			time(&start);
@@ -951,7 +968,7 @@ int main(int argc, char** argv) {
         Logger::Notice(msg.str());
     }
 
-	IfcGeom::Iterator<real_t> context_iterator(settings, ifc_file, filter_funcs, num_threads);
+	IfcGeom::Iterator context_iterator(settings, ifc_file, filter_funcs, num_threads);
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
@@ -1067,15 +1084,16 @@ int main(int argc, char** argv) {
 	size_t num_created = 0;
 	
 	do {
-        IfcGeom::Element<real_t> *geom_object = context_iterator.get();
+		
+        IfcGeom::Element* geom_object = context_iterator.get();
 
 		if (is_tesselated)
 		{
-			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
+			serializer->write(static_cast<const IfcGeom::TriangulationElement*>(geom_object));
 		}
 		else
 		{
-			serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
+			serializer->write(static_cast<const IfcGeom::BRepElement*>(geom_object));
 		}
 
         if (!no_progress) {
@@ -1429,7 +1447,7 @@ namespace latebound_access {
 
 void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
 	{
-		auto delete_reversed = [&f](const IfcEntityList::ptr& insts) {
+		auto delete_reversed = [&f](const aggregate_of_instance::ptr& insts) {
 			if (!insts) {
 				return;
 			}
@@ -1482,7 +1500,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
 	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 
-	IfcGeom::Iterator<double> context_iterator(settings, &f);
+	IfcGeom::Iterator context_iterator(settings, &f);
 
 	if (!context_iterator.initialize()) {
 		return;
@@ -1515,7 +1533,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	latebound_access::set(ownerhist, "CreationDate", (int)time(0));
 
 	IfcUtil::IfcBaseClass* quantity = nullptr;
-	IfcEntityList::ptr objects;
+	aggregate_of_instance::ptr objects;
 	boost::shared_ptr<IfcGeom::Representation::BRep> previous_geometry_pointer;
 
 	for (;; ++num_created) {
@@ -1523,7 +1541,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		if (num_created) {
 			has_more = context_iterator.next();
 		}
-		IfcGeom::BRepElement<double>* geom_object = nullptr;
+		IfcGeom::BRepElement* geom_object = nullptr;
 		if (has_more) {
 			geom_object = context_iterator.get_native();
 		}
@@ -1542,7 +1560,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				break;
 			}
 
-			IfcEntityList::ptr quantities(new IfcEntityList);
+			aggregate_of_instance::ptr quantities(new aggregate_of_instance);
 
 			double a, b, c;
 			if (geom_object->geometry().calculate_surface_area(a)) {
@@ -1570,7 +1588,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 			latebound_access::set(quantity_complex, "Name", std::string("Shape Validation Properties"));
 			quantities->push(quantity_complex);
 
-			IfcEntityList::ptr quantities_2(new IfcEntityList);
+			aggregate_of_instance::ptr quantities_2(new aggregate_of_instance);
 
 			for (auto& part : geom_object->geometry()) {				
 				auto quantity_count = latebound_access::create(f, "IfcQuantityCount");
@@ -1589,7 +1607,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				latebound_access::set(quantity, "Quantities", quantities);
 			}
 
-			objects.reset(new IfcEntityList);
+			objects.reset(new aggregate_of_instance);
 			objects->push(geom_object->product());
 		}
 

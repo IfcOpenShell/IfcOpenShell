@@ -137,7 +137,7 @@ public:
 		SH_NONE, SH_FULL, SH_LEFT
 	};
 protected:
-	std::ofstream svg_file;
+	stream_or_filename svg_file;
 	double xmin, ymin, xmax, ymax;
 	boost::optional<std::vector<section_data>> section_data_;
 	boost::optional<std::vector<section_data>> deferred_section_data_;
@@ -183,9 +183,9 @@ protected:
 	void draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name);
 
 public:
-	SvgSerializer(const std::string& out_filename, const SerializerSettings& settings)
+	SvgSerializer(const stream_or_filename& out_filename, const SerializerSettings& settings)
 		: GeometrySerializer(settings)
-		, svg_file(IfcUtil::path::from_utf8(out_filename).c_str())
+		, svg_file(out_filename)
 		, xmin(+std::numeric_limits<double>::infinity())
 		, ymin(+std::numeric_limits<double>::infinity())
 		, xmax(-std::numeric_limits<double>::infinity())
@@ -193,6 +193,7 @@ public:
 		, with_section_heights_from_storey_(false)
 		, print_space_names_(false)
 		, print_space_areas_(false)
+		, storey_height_display_(SH_NONE)
 		, draw_door_arcs_(false)
 		, is_floor_plan_(true)
 		, auto_section_(false)
@@ -217,8 +218,8 @@ public:
     void writeHeader();
 	void doWriteHeader();
     bool ready();
-    void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
-    void write(const IfcGeom::BRepElement<real_t>* o);
+    void write(const IfcGeom::TriangulationElement* /*o*/) {}
+    void write(const IfcGeom::BRepElement* o);
     void write(path_object& p, const TopoDS_Wire& wire, boost::optional<std::vector<double>> dash_array=boost::none);
 	void write(const geometry_data& data);
     path_object& start_path(const gp_Pln& p, IfcUtil::IfcBaseEntity* storey, const std::string& id);
@@ -292,15 +293,20 @@ public:
 	void setDrawingCenter(double x, double y) {
 		center_x_ = x; center_y_ = y;
 	}
-    std::string nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* elem);
+    std::string nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element* elem);
 	std::string nameElement(const IfcUtil::IfcBaseEntity* elem);
 	std::string idElement(const IfcUtil::IfcBaseEntity* elem);
-	std::string object_id(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* o) {
+	std::string object_id(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element* o) {
 		if (storey) {
 			return idElement(storey) + "-" + GeometrySerializer::object_id(o);
 		} else {
 			return GeometrySerializer::object_id(o);
 		}
+	}
+
+	void addDrawing(const gp_Pnt& pos, const gp_Dir& dir, const gp_Dir& ref, const std::string& name, bool include_projection) {
+		deferred_section_data_.emplace();
+		deferred_section_data_->push_back(vertical_section{ gp_Pln(gp_Ax3(pos, dir, ref)), name, true });
 	}
 
 protected:

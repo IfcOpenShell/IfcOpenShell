@@ -32,8 +32,17 @@
 #include <mutex>
 #include <iostream>
 #include <algorithm>
+#include <ctime>
+#include <iomanip>
 
 namespace {
+
+	std::string get_time() {
+		std::ostringstream oss;
+		time_t now = time(nullptr);
+		oss << std::put_time(localtime(&now), "%F %T");
+		return oss.str();
+	}
 	
 	template <typename T>
 	struct severity_strings {
@@ -47,8 +56,9 @@ namespace {
 	const std::array<std::basic_string<wchar_t>, 4> severity_strings<wchar_t>::value = { L"Debug", L"Notice", L"Warning", L"Error" };
 	
 	template <typename T>
-	void plain_text_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+	void plain_text_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
 		os << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
+		os << "[" << get_time().c_str() << "] ";
 		if (current_product) {
             std::string global_id = *((IfcUtil::IfcBaseEntity*)*current_product)->get("GlobalId");
 			os << "{" << global_id.c_str() << "} ";
@@ -71,10 +81,11 @@ namespace {
 	}
 
 	template <typename T>
-	void json_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+	void json_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
 		boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type> > pt;
 		
 		// @todo this is crazy
+		static const typename T::char_type time_string[] = { 't', 'i', 'm', 'e', 0 };
 		static const typename T::char_type level_string[] = { 'l', 'e', 'v', 'e', 'l', 0 };
 		static const typename T::char_type product_string[] = { 'p', 'r', 'o', 'd', 'u', 'c', 't', 0 };
 		static const typename T::char_type message_string[] = { 'm', 'e', 's', 's', 'a', 'g', 'e', 0 };
@@ -88,6 +99,9 @@ namespace {
 		if (instance) {
 			pt.put(instance_string, string_as<typename T::char_type>(instance->data().toString()));
 		}
+
+		pt.put(time_string, string_as<typename T::char_type>(get_time()));
+
 		boost::property_tree::write_json(os, pt, false);
 	}
 }
@@ -117,7 +131,7 @@ void Logger::SetOutput(std::wostream* l1, std::wostream* l2) {
 	}
 }
 
-void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
 	static std::mutex m;
 	std::lock_guard<std::mutex> lk(m);
 
@@ -141,7 +155,7 @@ void Logger::Message(Logger::Severity type, const std::string& message, const If
 	}
 }
 
-void Logger::Message(Logger::Severity type, const std::exception& exception, const IfcUtil::IfcBaseClass* instance) {
+void Logger::Message(Logger::Severity type, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance) {
 	Message(type, std::string(exception.what()), instance);
 }
 

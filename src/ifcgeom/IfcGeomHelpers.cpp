@@ -176,8 +176,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement3D* l, gp_Trsf& 
 	}
 
 	IfcGeom::Kernel::convert((const IfcSchema::IfcCartesianPoint*) l->Location(), o);
-	const bool hasAxis = l->hasAxis();
-	const bool hasRef = l->hasRefDirection();
+	const bool hasAxis = !!l->Axis();
+	const bool hasRef = !!l->RefDirection();
 
 	if (hasAxis != hasRef) {
 		Logger::Warning("Axis and RefDirection should be specified together", l);
@@ -221,7 +221,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis1Placement* l, gp_Ax1& ax)
 	}
 
 	IfcGeom::Kernel::convert((const IfcSchema::IfcCartesianPoint*) l->Location(),o);
-	if ( l->hasAxis() ) IfcGeom::Kernel::convert(l->Axis(), axis);
+	if ( l->Axis() ) IfcGeom::Kernel::convert(l->Axis(), axis);
 	ax = gp_Ax1(o, axis);
 	CACHE(IfcAxis1Placement,l,ax)
 	return true;
@@ -234,9 +234,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCartesianTransformationOperato
 	gp_Dir axis1 (1.,0.,0.);
 	gp_Dir axis2 (0.,1.,0.);
 	gp_Dir axis3 (0.,0.,1.);
-	if ( l->hasAxis1() ) IfcGeom::Kernel::convert(l->Axis1(),axis1);
-	if ( l->hasAxis2() ) IfcGeom::Kernel::convert(l->Axis2(),axis2);
-	if ( l->hasAxis3() ) IfcGeom::Kernel::convert(l->Axis3(),axis3);
+	if ( l->Axis1() ) IfcGeom::Kernel::convert(l->Axis1(),axis1);
+	if ( l->Axis2() ) IfcGeom::Kernel::convert(l->Axis2(),axis2);
+	if ( l->Axis3() ) IfcGeom::Kernel::convert(l->Axis3(),axis3);
 	gp_Ax3 ax3 (origin,axis3,axis1);
 	if ( axis2.Dot(ax3.YDirection()) < 0 ) ax3.YReverse();
 	
@@ -245,8 +245,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCartesianTransformationOperato
 		trsf.Invert();
 	}
 	
-	if (l->hasScale() && !ALMOST_THE_SAME(l->Scale(), 1.)) {
-		trsf.SetScaleFactor(l->Scale());
+	if (l->Scale() && !ALMOST_THE_SAME(*l->Scale(), 1.)) {
+		trsf.SetScaleFactor(*l->Scale());
 	}
 
 	CACHE(IfcCartesianTransformationOperator3D,l,trsf)
@@ -261,8 +261,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCartesianTransformationOperato
 	gp_Dir axis2 (0.,1.,0.);
 	
 	IfcGeom::Kernel::convert(l->LocalOrigin(),origin);
-	if ( l->hasAxis1() ) IfcGeom::Kernel::convert(l->Axis1(),axis1);
-	if ( l->hasAxis2() ) IfcGeom::Kernel::convert(l->Axis2(),axis2);
+	if ( l->Axis1() ) IfcGeom::Kernel::convert(l->Axis1(),axis1);
+	if ( l->Axis2() ) IfcGeom::Kernel::convert(l->Axis2(),axis2);
 	
 	const gp_Pnt2d origin2d(origin.X(), origin.Y());
 	const gp_Dir2d axis12d(axis1.X(), axis1.Y());
@@ -282,7 +282,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCartesianTransformationOperato
 	}
 
 	trsf.Invert();
-	if ( l->hasScale() && !ALMOST_THE_SAME(l->Scale(), 1.) ) trsf.SetScaleFactor(l->Scale());
+	if (l->Scale() && !ALMOST_THE_SAME(*l->Scale(), 1.)) {
+		trsf.SetScaleFactor(*l->Scale());
+	}
 
 	if (is_identity(trsf, getValue(GV_PRECISION))) {
 		trsf = gp_Trsf2d();
@@ -300,16 +302,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCartesianTransformationOperato
 	gp_Dir axis1 (1.,0.,0.);
 	gp_Dir axis2 (0.,1.,0.);
 	gp_Dir axis3 (0.,0.,1.);
-	if ( l->hasAxis1() ) IfcGeom::Kernel::convert(l->Axis1(),axis1);
-	if ( l->hasAxis2() ) IfcGeom::Kernel::convert(l->Axis2(),axis2);
-	if ( l->hasAxis3() ) IfcGeom::Kernel::convert(l->Axis3(),axis3);
+	if ( l->Axis1() ) IfcGeom::Kernel::convert(l->Axis1(),axis1);
+	if ( l->Axis2() ) IfcGeom::Kernel::convert(l->Axis2(),axis2);
+	if ( l->Axis3() ) IfcGeom::Kernel::convert(l->Axis3(),axis3);
 	gp_Ax3 ax3 (origin,axis3,axis1);
 	if ( axis2.Dot(ax3.YDirection()) < 0 ) ax3.YReverse();
 	trsf.SetTransformation(ax3);
 	trsf.Invert();
-	const double scale1 = l->hasScale() ? l->Scale() : 1.0f;
-	const double scale2 = l->hasScale2() ? l->Scale2() : scale1;
-	const double scale3 = l->hasScale3() ? l->Scale3() : scale1;
+	const double scale1 = l->Scale().get_value_or(1.);
+	const double scale2 = l->Scale2().get_value_or(scale1);
+	const double scale3 = l->Scale3().get_value_or(scale1);
 	gtrsf = gp_GTrsf();
 	gtrsf.SetValue(1,1,scale1);
 	gtrsf.SetValue(2,2,scale2);
@@ -333,8 +335,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCartesianTransformationOperato
 	gp_Dir axis2 (0.,1.,0.);
 	
 	IfcGeom::Kernel::convert(l->LocalOrigin(),origin);
-	if ( l->hasAxis1() ) IfcGeom::Kernel::convert(l->Axis1(),axis1);
-	if ( l->hasAxis2() ) IfcGeom::Kernel::convert(l->Axis2(),axis2);
+	if ( l->Axis1() ) IfcGeom::Kernel::convert(l->Axis1(),axis1);
+	if ( l->Axis2() ) IfcGeom::Kernel::convert(l->Axis2(),axis2);
 
 	const gp_Pnt2d origin2d(origin.X(), origin.Y());
 	const gp_Dir2d axis12d(axis1.X(), axis1.Y());
@@ -350,8 +352,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCartesianTransformationOperato
 
 	trsf.Invert();
 	
-	const double scale1 = l->hasScale() ? l->Scale() : 1.0f;
-	const double scale2 = l->hasScale2() ? l->Scale2() : scale1;
+	const double scale1 = l->Scale().get_value_or(1.);
+	const double scale2 = l->Scale2().get_value_or(scale1);
 	gtrsf = gp_GTrsf2d();
 	gtrsf.SetValue(1,1,scale1);
 	gtrsf.SetValue(2,2,scale2);
@@ -377,8 +379,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPlane* pln, gp_Pln& plane) {
 	}
 
 	IfcGeom::Kernel::convert((const IfcSchema::IfcCartesianPoint*) l->Location(),o);
-	bool hasRef = l->hasRefDirection();
-	if ( l->hasAxis() ) IfcGeom::Kernel::convert(l->Axis(),axis);
+	bool hasRef = !!l->RefDirection();
+	if ( l->Axis() ) IfcGeom::Kernel::convert(l->Axis(),axis);
 	if ( hasRef ) IfcGeom::Kernel::convert(l->RefDirection(),refDirection);
 	gp_Ax3 ax3;
 	if ( hasRef ) ax3 = gp_Ax3(o,axis,refDirection);
@@ -399,8 +401,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement2D* l, gp_Trsf2d
 	}
 
 	IfcGeom::Kernel::convert((const IfcSchema::IfcCartesianPoint*) l->Location(),P);
-	if ( l->hasRefDirection() )
-		IfcGeom::Kernel::convert(l->RefDirection(),V);
+	if (l->RefDirection()) {
+		IfcGeom::Kernel::convert(l->RefDirection(), V);
+	}
 
 	gp_Ax2d axis(gp_Pnt2d(P.X(),P.Y()), gp_Dir2d(V.X(),V.Y()));
 	
@@ -426,11 +429,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& t
 	for (;;) {
 		gp_Trsf trsf2;
 		IfcSchema::IfcAxis2Placement* relplacement = current->RelativePlacement();
-		if ( relplacement->declaration().is(IfcSchema::IfcAxis2Placement3D::Class()) ) {
-			IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)relplacement,trsf2);
+		if (relplacement->as<IfcSchema::IfcAxis2Placement3D>()) {
+			IfcGeom::Kernel::convert(relplacement->as<IfcSchema::IfcAxis2Placement3D>(),trsf2);
 			trsf.PreMultiply(trsf2);
 		}
-		if ( current->hasPlacementRelTo() ) {
+		if ( current->PlacementRelTo() ) {
 			IfcSchema::IfcObjectPlacement* parent = current->PlacementRelTo();
 			IfcSchema::IfcProduct::list::ptr parentPlaces = parent->PlacesObject();
 			bool parentPlacesType = false;
@@ -441,7 +444,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& t
 
 			if ( parentPlacesType ) break;
 			else if ( parent->declaration().is(IfcSchema::IfcLocalPlacement::Class()) )
-				current = (IfcSchema::IfcLocalPlacement*)current->PlacementRelTo();
+				current = current->PlacementRelTo()->as<IfcSchema::IfcLocalPlacement>();
 			else break;
 		} else break;
 	}

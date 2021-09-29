@@ -53,7 +53,11 @@ if has_occ:
 
 # Subclass the settings module to provide an additional
 # setting to enable pythonOCC when available
-class settings(ifcopenshell_wrapper.settings):
+
+# nb: we just subclass serializer settings, so in python
+# we do not differentiate between the two setting types
+
+class settings(ifcopenshell_wrapper.SerializerSettings):
     if has_occ:
         USE_PYTHON_OPENCASCADE = -1
 
@@ -65,15 +69,11 @@ class settings(ifcopenshell_wrapper.settings):
                 self.set(settings.DISABLE_TRIANGULATION, value)
                 self.use_python_opencascade = value
             else:
-                ifcopenshell_wrapper.settings.set(self, *args)
+                ifcopenshell_wrapper.SerializerSettings.set(self, *args)
 
-
-# Assert templated precision to match Python's internal float type
-assert ifcopenshell_wrapper.iterator_double_precision.mantissa_size() == sys.float_info.mant_dig
-_iterator = ifcopenshell_wrapper.iterator_double_precision
 
 # Make sure people are able to use python's platform agnostic paths
-class iterator(_iterator):
+class iterator(ifcopenshell_wrapper.Iterator):
     def __init__(self, settings, file_or_filename, num_threads=1, include=None, exclude=None):
         self.settings = settings
         if isinstance(file_or_filename, file):
@@ -97,23 +97,22 @@ class iterator(_iterator):
                 if not all(inst.is_a("IfcProduct") for inst in include_or_exclude):
                     raise ValueError("include and exclude need to be an aggregate of IfcProduct")
 
-                initializer = ifcopenshell_wrapper.construct_iterator_double_precision_with_include_exclude_globalid
+                initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude_id
 
-                decode_unicode = lambda x: x.encode("ascii") if x.__class__.__name__ == "unicode" else x
-                include_or_exclude = list(map(decode_unicode, map(operator.attrgetter("GlobalId"), include_or_exclude)))
+                include_or_exclude = [i.id() for i in include_or_exclude]
             else:
-                initializer = ifcopenshell_wrapper.construct_iterator_double_precision_with_include_exclude
+                initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude
 
             self.this = initializer(
                 self.settings, file_or_filename, include_or_exclude, include is not None, num_threads
             )
         else:
-            _iterator.__init__(self, settings, file_or_filename, num_threads)
+            ifcopenshell_wrapper.Iterator.__init__(self, settings, file_or_filename, num_threads)
 
     if has_occ:
 
         def get(self):
-            return wrap_shape_creation(self.settings, _iterator.get(self))
+            return wrap_shape_creation(self.settings, ifcopenshell_wrapper.Iterator.get(self))
 
     def __iter__(self):
         if self.initialize():
@@ -241,3 +240,26 @@ def make_shape_function(fn):
 
 serialise = make_shape_function(ifcopenshell_wrapper.serialise)
 tesselate = make_shape_function(ifcopenshell_wrapper.tesselate)
+
+def wrap_buffer_creation(fn):
+    """    
+    Python does not have automatic casts. The C++ serializers accept a stream_or_filename
+    which in C++ can be automatically constructed from a filename string. In Python we
+    have to implement this cast/construction explicitly.
+    """
+    
+    def transform_string(v):
+        if isinstance(v, str):
+            return ifcopenshell_wrapper.buffer(v)
+        else:
+            return v
+    def inner(*args):
+        return fn(*map(transform_string, args))
+    return inner
+
+
+serializers = type('serializers', (), {
+    'obj': wrap_buffer_creation(ifcopenshell_wrapper.WaveFrontOBJSerializer),
+    'svg': wrap_buffer_creation(ifcopenshell_wrapper.SvgSerializer),
+    'buffer': ifcopenshell_wrapper.buffer
+})

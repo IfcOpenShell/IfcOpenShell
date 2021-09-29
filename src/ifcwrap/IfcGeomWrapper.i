@@ -17,7 +17,9 @@
  *                                                                              *
  ********************************************************************************/
 
-%rename("settings") IteratorSettings;
+%rename("buffer") stream_or_filename;
+
+%ignore stream_or_filename::stream;
 
 // This is only used for RGB colours, hence the size of 3
 %typemap(out) const double* {
@@ -38,6 +40,24 @@
 
 %ignore IfcGeom::impl::tree::selector;
 
+// Using RTTI return a more specialized type of Element
+// Note that these elements are not to be owned by SWIG/Python as they will be freed automatically upon the next iteration
+// except for the IfcGeom::Element instances which are returned by Iterator::getObject() calls
+%typemap(out) IfcGeom::Element* {
+	IfcGeom::SerializedElement* serialized_elem = dynamic_cast<IfcGeom::SerializedElement*>($1);
+	IfcGeom::TriangulationElement* triangulation_elem = dynamic_cast<IfcGeom::TriangulationElement*>($1);
+	IfcGeom::BRepElement* brep_elem = dynamic_cast<IfcGeom::BRepElement*>($1);
+	if (triangulation_elem) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_IfcGeom__TriangulationElement, 0);
+	} else if (serialized_elem) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_IfcGeom__SerializedElement, 0);
+	} else if (brep_elem) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr(brep_elem), SWIGTYPE_p_IfcGeom__BRepElement, 0);
+	} else {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), SWIGTYPE_p_IfcGeom__Element, SWIG_POINTER_OWN);
+	}
+}
+
 %include "../ifcgeom/ifc_geom_api.h"
 %include "../ifcgeom/IfcGeomIteratorSettings.h"
 %include "../ifcgeom/IfcGeomElement.h"
@@ -45,21 +65,27 @@
 %include "../ifcgeom/IfcGeomRepresentation.h"
 %include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
+%include "../serializers/GeometrySerializer.h"
+%include "../serializers/SvgSerializer.h"
+%include "../serializers/WavefrontObjSerializer.h"
+
+%template(ray_intersection_results) std::vector<IfcGeom::ray_intersection_result>;
+
 // A Template instantantation should be defined before it is used as a base class. 
 // But frankly I don't care as most methods are subtlely different anyway.
 %include "../ifcgeom/IfcGeomTree.h"
 
 %extend IfcGeom::tree {
 
-	static IfcEntityList::ptr vector_to_list(const std::vector<IfcUtil::IfcBaseEntity*>& ps) {
-		IfcEntityList::ptr r(new IfcEntityList);
+	static aggregate_of_instance::ptr vector_to_list(const std::vector<IfcUtil::IfcBaseEntity*>& ps) {
+		aggregate_of_instance::ptr r(new aggregate_of_instance);
 		for (std::vector<IfcUtil::IfcBaseEntity*>::const_iterator it = ps.begin(); it != ps.end(); ++it) {
 			r->push(*it);
 		}
 		return r;
 	}
 
-	IfcEntityList::ptr select_box(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend=-1.e-5) const {
+	aggregate_of_instance::ptr select_box(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend=-1.e-5) const {
 		if (!e->declaration().is("IfcProduct")) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
@@ -67,17 +93,17 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select_box(const gp_Pnt& p) const {
+	aggregate_of_instance::ptr select_box(const gp_Pnt& p) const {
 		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select_box(p);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select_box(const Bnd_Box& b, bool completely_within = false) const {
+	aggregate_of_instance::ptr select_box(const Bnd_Box& b, bool completely_within = false) const {
 		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select_box(b, completely_within);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend = 0.0) const {
+	aggregate_of_instance::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend = 0.0) const {
 		if (!e->declaration().is("IfcProduct")) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
@@ -85,12 +111,12 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select(const gp_Pnt& p, double extend=0.0) const {
+	aggregate_of_instance::ptr select(const gp_Pnt& p, double extend=0.0) const {
 		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select(p, extend);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select(const std::string& shape_serialization, bool completely_within = false, double extend = -1.e-5) const {
+	aggregate_of_instance::ptr select(const std::string& shape_serialization, bool completely_within = false, double extend = -1.e-5) const {
 		std::stringstream stream(shape_serialization);
 		BRepTools_ShapeSet shapes;
 		shapes.Read(stream);
@@ -102,57 +128,48 @@
 
 }
 
-// Using RTTI return a more specialized type of Element
-// Note that these elements are not to be owned by SWIG/Python as they will be freed automatically upon the next iteration
-// except for the IfcGeom::Element instances which are returned by Iterator::getObject() calls
-%typemap(out) IfcGeom::Element<double>* {
-	IfcGeom::SerializedElement<double>* serialized_elem = dynamic_cast<IfcGeom::SerializedElement<double>*>($1);
-	IfcGeom::TriangulationElement<double>* triangulation_elem = dynamic_cast<IfcGeom::TriangulationElement<double>*>($1);
-	if (triangulation_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_IfcGeom__TriangulationElementT_double_double_t, 0);
-	} else if (serialized_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_IfcGeom__SerializedElementT_double_double_t, 0);
-	} else {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), SWIGTYPE_p_IfcGeom__ElementT_double_double_t, SWIG_POINTER_OWN);
-	}
-}
-
 // A visitor
 %{
 struct ShapeRTTI : public boost::static_visitor<PyObject*>
 {
-    PyObject* operator()(IfcGeom::Element<double>* elem) const {
-		IfcGeom::SerializedElement<double>* serialized_elem = dynamic_cast<IfcGeom::SerializedElement<double>*>(elem);
-		IfcGeom::TriangulationElement<double>* triangulation_elem = dynamic_cast<IfcGeom::TriangulationElement<double>*>(elem);
+    PyObject* operator()(IfcGeom::Element* elem) const {
+		IfcGeom::SerializedElement* serialized_elem = dynamic_cast<IfcGeom::SerializedElement*>(elem);
+		IfcGeom::TriangulationElement* triangulation_elem = dynamic_cast<IfcGeom::TriangulationElement*>(elem);
+		IfcGeom::BRepElement* brep_elem = dynamic_cast<IfcGeom::BRepElement*>(elem);
 		if (triangulation_elem) {
-			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_IfcGeom__TriangulationElementT_double_double_t, SWIG_POINTER_OWN);
+			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_IfcGeom__TriangulationElement, SWIG_POINTER_OWN);
 		} else if (serialized_elem) {
-			return SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_IfcGeom__SerializedElementT_double_double_t, SWIG_POINTER_OWN);
+			return SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_IfcGeom__SerializedElement, SWIG_POINTER_OWN);
+		} else if (brep_elem) {
+			return SWIG_NewPointerObj(SWIG_as_voidptr(brep_elem), SWIGTYPE_p_IfcGeom__BRepElement, SWIG_POINTER_OWN);
 		} else {
-			throw std::runtime_error("Invalid element encountered");
+			return SWIG_Py_Void();
 		}
 	}
     PyObject* operator()(IfcGeom::Representation::Representation* representation) const {
 		IfcGeom::Representation::Serialization* serialized_representation = dynamic_cast<IfcGeom::Representation::Serialization*>(representation);
-		IfcGeom::Representation::Triangulation<double>* triangulated_representation = dynamic_cast<IfcGeom::Representation::Triangulation<double>*>(representation);
+		IfcGeom::Representation::Triangulation* triangulated_representation = dynamic_cast<IfcGeom::Representation::Triangulation*>(representation);
+		IfcGeom::Representation::BRep* brep_representation = dynamic_cast<IfcGeom::Representation::BRep*>(representation);
 		if (serialized_representation) {
 			return SWIG_NewPointerObj(SWIG_as_voidptr(serialized_representation), SWIGTYPE_p_IfcGeom__Representation__Serialization, SWIG_POINTER_OWN);
 		} else if (triangulated_representation) {
-			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulated_representation), SWIGTYPE_p_IfcGeom__Representation__TriangulationT_double_t, SWIG_POINTER_OWN);
+			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulated_representation), SWIGTYPE_p_IfcGeom__Representation__Triangulation, SWIG_POINTER_OWN);
+		} else if (brep_representation) {
+			return SWIG_NewPointerObj(SWIG_as_voidptr(brep_representation), SWIGTYPE_p_IfcGeom__Representation__BRep, SWIG_POINTER_OWN);
 		} else {
-			throw std::runtime_error("Invalid element encountered");
+			return SWIG_Py_Void();
 		}
 	}
 };
 %}
 
 // Note that these elements ARE to be owned by SWIG/Python
-%typemap(out) boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> {
+%typemap(out) boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> {
 	// See which type is set and return appropriate
 	$result = boost::apply_visitor(ShapeRTTI(), $1);
 }
 
-%extend IfcGeom::IteratorSettings {
+%extend SerializerSettings {
 	%pythoncode %{
 
 	old_init = __init__
@@ -166,7 +183,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		def d():
 			import numbers
 			for x in dir(self):
-				if x.isupper() and x not in {"NUM_SETTINGS", "USE_PYTHON_OPENCASCADE"}:
+				if x.isupper() and x not in {"NUM_SETTINGS", "USE_PYTHON_OPENCASCADE", "DEFAULT_PRECISION"}:
 					v = getattr(self, x)
 					if isinstance(v, numbers.Integral):
 						yield x
@@ -183,57 +200,31 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 // I couldn't get the vector<string> typemap to be applied when %extending Iterator constructor.
 // anyway it does not matter as SWIG generates C code without actual constructors
 %inline %{
-	template <typename T>
-	IfcGeom::Iterator<T>* construct_iterator_with_include_exclude_(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		IfcGeom::entity_filter ef{ include, false, elems_set };
-		return new IfcGeom::Iterator<T>(settings, file, {ef}, num_threads);
+		return new IfcGeom::Iterator(settings, file, {ef}, num_threads);
 	}
 
-	template <typename T>
-	IfcGeom::Iterator<T>* construct_iterator_with_include_exclude_globalid_(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude_globalid(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		IfcGeom::attribute_filter af;
 		af.attribute_name = "GlobalId";
 		af.populate(elems_set);
 		af.include = include;
-		return new IfcGeom::Iterator<T>(settings, file, {af}, num_threads);
+		return new IfcGeom::Iterator(settings, file, {af}, num_threads);
 	}
 
-	IfcGeom::Iterator<float>* construct_iterator_single_precision_with_include_exclude(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
-		return construct_iterator_with_include_exclude_<float>(settings, file, elems, include, num_threads);
-	}
-
-	IfcGeom::Iterator<double>* construct_iterator_double_precision_with_include_exclude(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
-		return construct_iterator_with_include_exclude_<double>(settings, file, elems, include, num_threads);
-	}
-
-	IfcGeom::Iterator<float>* construct_iterator_single_precision_with_include_exclude_globalid(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
-		return construct_iterator_with_include_exclude_globalid_<float>(settings, file, elems, include, num_threads);
-	}
-
-	IfcGeom::Iterator<double>* construct_iterator_double_precision_with_include_exclude_globalid(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
-		return construct_iterator_with_include_exclude_globalid_<double>(settings, file, elems, include, num_threads);
+	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<int> elems, bool include, int num_threads) {
+		std::set<int> elems_set(elems.begin(), elems.end());
+		IfcGeom::instance_id_filter af(include, false, elems_set);
+		return new IfcGeom::Iterator(settings, file, {af}, num_threads);
 	}
 %}
 
-%ignore construct_iterator_with_include_exclude_;
-%newobject construct_iterator_single_precision_with_include_exclude;
-%newobject construct_iterator_double_precision_with_include_exclude;
-%newobject construct_iterator_single_precision_with_include_exclude_globalid;
-%newobject construct_iterator_double_precision_with_include_exclude_globalid;
-
-%extend IfcGeom::Iterator<float> {
-	static int mantissa_size() {
-		return std::numeric_limits<float>::digits;
-	}
-};
-
-%extend IfcGeom::Iterator<double> {
-	static int mantissa_size() {
-		return std::numeric_limits<double>::digits;
-	}
-};
+%newobject construct_iterator_with_include_exclude;
+%newobject construct_iterator_with_include_exclude_globalid;
+%newobject construct_iterator_with_include_exclude_id;
 
 %extend IfcGeom::Representation::Triangulation {
 	%pythoncode %{
@@ -248,14 +239,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 // Specialized accessors follow later, for otherwise property definitions
 // would appear before templated getter functions are defined.
-%extend IfcGeom::Representation::Triangulation<float> {
-	%pythoncode %{
-        # Hide the getters with read-only property implementations
-        verts = property(verts)
-        normals = property(normals)
-	%}
-};
-%extend IfcGeom::Representation::Triangulation<double> {
+%extend IfcGeom::Representation::Triangulation {
 	%pythoncode %{
         # Hide the getters with read-only property implementations
         verts = property(verts)
@@ -339,7 +323,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 %{
 	template <typename Schema>
-	static boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> helper_fn_create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
+	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> helper_fn_create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
 		IfcParse::IfcFile* file = instance->data().file;
 			
 		IfcGeom::Kernel kernel(file);
@@ -360,7 +344,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		
 			typename Schema::IfcProduct* product = (typename Schema::IfcProduct*) instance;
 
-			if (!representation && !product->hasRepresentation()) {
+			if (!representation && !product->Representation()) {
 				throw IfcParse::IfcException("Representation is NULL");
 			}
 			
@@ -372,17 +356,17 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				// First, try to find a representation based on the settings
 				for (typename Schema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
 					typename Schema::IfcRepresentation* rep = *it;
-					if (!rep->hasRepresentationIdentifier()) {
+					if (!rep->RepresentationIdentifier()) {
 						continue;
 					}
 					if (!settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
-						if (rep->RepresentationIdentifier() == "Body") {
+						if (*rep->RepresentationIdentifier() == "Body") {
 							ifc_representation = rep;
 							break;
 						}
 					}
 					if (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES)) {
-						if (rep->RepresentationIdentifier() == "Plan" || rep->RepresentationIdentifier() == "Axis") {
+						if (*rep->RepresentationIdentifier() == "Plan" || *rep->RepresentationIdentifier() == "Axis") {
 							ifc_representation = rep;
 							break;
 						}
@@ -397,7 +381,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					typename Schema::IfcRepresentationContext* context = rep->ContextOfItems();
 					
 					// TODO: Remove redundancy with IfcGeomIterator.h
-					if (context->hasContextType()) {
+					if (context->ContextType()) {
 						std::set<std::string> context_types;
 						if (!settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
 							context_types.insert("model");
@@ -409,7 +393,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 							context_types.insert("plan");
 						}			
 
-						std::string context_type_lc = context->ContextType();
+						std::string context_type_lc = *context->ContextType();
 						for (std::string::iterator c = context_type_lc.begin(); c != context_type_lc.end(); ++c) {
 							*c = tolower(*c);
 						}
@@ -429,16 +413,16 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				}
 			}
 
-			IfcGeom::BRepElement<double>* brep = kernel.convert(settings, ifc_representation, product);
+			IfcGeom::BRepElement* brep = kernel.convert(settings, ifc_representation, product);
 			if (!brep) {
 				throw IfcParse::IfcException("Failed to process shape");
 			}
 			if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
-				IfcGeom::SerializedElement<double>* serialization = new IfcGeom::SerializedElement<double>(*brep);
+				IfcGeom::SerializedElement* serialization = new IfcGeom::SerializedElement(*brep);
 				delete brep;
 				return serialization;
 			} else if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
-				IfcGeom::TriangulationElement<double>* triangulation = new IfcGeom::TriangulationElement<double>(*brep);
+				IfcGeom::TriangulationElement* triangulation = new IfcGeom::TriangulationElement(*brep);
 				delete brep;
 				return triangulation;
 			} else {
@@ -459,7 +443,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 						if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
 							return new IfcGeom::Representation::Serialization(brep);
 						} else if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
-							return new IfcGeom::Representation::Triangulation<double>(brep);
+							return new IfcGeom::Representation::Triangulation(brep);
 						}
 					} catch (...) {
 						throw IfcParse::IfcException("Error during shape serialization");
@@ -469,12 +453,12 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				throw IfcParse::IfcException("Invalid additional representation specified");
 			}
 		}
-		return boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*>();
+		return boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*>();
 	}
 %}
 
 %inline %{
-	static boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
+	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
 		const std::string& schema_name = instance->declaration().schema()->name();
 
 		#ifdef HAS_SCHEMA_2x3
@@ -532,14 +516,41 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	}
 %}
 
-namespace IfcGeom {
-	%template(iterator_double_precision) Iterator<double>;
-	%template(element_double_precision) Element<double>;
-	%template(triangulation_element_double_precision) TriangulationElement<double>;
-	%template(serialized_element_double_precision) SerializedElement<double>;
-	%template(transformation_double_precision) Transformation<double>;
-	%template(matrix_double_precision) Matrix<double>;
-	namespace Representation {
-		%template(triangulation_double_precision) Triangulation<double>;
-	};
-};
+%ignore svgfill::svg_to_line_segments;
+%ignore svgfill::line_segments_to_polygons;
+
+%template(svg_line_segments) std::vector<std::array<svgfill::point_2, 2>>;
+%template(svg_groups_of_line_segments) std::vector<std::vector<std::array<svgfill::point_2, 2>>>;
+%template(svg_point) std::array<double, 2>;
+%template(line_segment) std::array<svgfill::point_2, 2>;
+%template(svg_polygons) std::vector<svgfill::polygon_2>;
+%template(svg_groups_of_polygons) std::vector<std::vector<svgfill::polygon_2>>;
+%template(svg_loop) std::vector<std::array<double, 2>>;
+%template(svg_loops) std::vector<std::vector<std::array<double, 2>>>;
+
+%naturalvar svgfill::polygon_2::boundary;
+%naturalvar svgfill::polygon_2::inner_boundaries;
+%naturalvar svgfill::polygon_2::point_inside;
+
+%include "../svgfill/src/svgfill.h"
+
+%inline %{
+	std::vector<std::vector<svgfill::line_segment_2>> svg_to_line_segments(const std::string& data, const boost::optional<std::string>& class_name) {
+		std::vector<std::vector<svgfill::line_segment_2>> r;
+		if (svgfill::svg_to_line_segments(data, class_name, r)) {
+			return r;
+		} else {
+			throw std::runtime_error("Failed to read SVG");
+		}
+	}
+
+	std::vector<std::vector<svgfill::polygon_2>> line_segments_to_polygons(svgfill::solver s, double eps, const std::vector<std::vector<svgfill::line_segment_2>>& segments) {
+		std::vector<std::vector<svgfill::polygon_2>> r;
+		if (svgfill::line_segments_to_polygons(s, eps, segments, r)) {
+			return r;
+		} else {
+			throw std::runtime_error("Failed to read SVG");
+		}
+	}
+%}
+

@@ -29,6 +29,8 @@
 
 #include "../ifcparse/IfcHierarchyHelper.h"
 
+using namespace std::string_literals;
+
 template <typename Schema>
 typename Schema::IfcAxis2Placement3D* IfcHierarchyHelper<Schema>::addPlacement3d(
 	double ox, double oy, double oz,
@@ -97,7 +99,7 @@ template <typename Schema>
 typename Schema::IfcProject* IfcHierarchyHelper<Schema>::addProject(typename Schema::IfcOwnerHistory* owner_hist) {
 	typename Schema::IfcRepresentationContext::list::ptr rep_contexts (new typename Schema::IfcRepresentationContext::list);
 
-	IfcEntityList::ptr units (new IfcEntityList);
+	aggregate_of_instance::ptr units (new aggregate_of_instance);
 	typename Schema::IfcDimensionalExponents* dimexp = new typename Schema::IfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0);
 	typename Schema::IfcSIUnit* unit1 = new typename Schema::IfcSIUnit(Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT, 
 		Schema::IfcSIPrefix::IfcSIPrefix_MILLI, Schema::IfcSIUnitName::IfcSIUnitName_METRE);
@@ -129,10 +131,10 @@ typename Schema::IfcProject* IfcHierarchyHelper<Schema>::addProject(typename Sch
 
 template <typename Schema>
 void IfcHierarchyHelper<Schema>::relatePlacements(typename Schema::IfcProduct* parent, typename Schema::IfcProduct* product) {
-	typename Schema::IfcObjectPlacement* place = product->hasObjectPlacement() ? product->ObjectPlacement() : 0;
+	typename Schema::IfcObjectPlacement* place = product->ObjectPlacement();
 	if (place && place->declaration().is(Schema::IfcLocalPlacement::Class())) {
 		typename Schema::IfcLocalPlacement* local_place = (typename Schema::IfcLocalPlacement*) place;
-		if (parent->hasObjectPlacement()) {
+		if (parent->ObjectPlacement()) {
 			local_place->setPlacementRelTo(parent->ObjectPlacement());
 		}
 	}
@@ -384,20 +386,22 @@ template <typename Schema>
 void IfcHierarchyHelper<Schema>::clipRepresentation(typename Schema::IfcRepresentation* rep, 
 	typename Schema::IfcAxis2Placement3D* place, bool agree) 
 {
-	if (rep->RepresentationIdentifier() != "Body") return;
+	if (!rep->RepresentationIdentifier() || *rep->RepresentationIdentifier() != "Body") return;
 	typename Schema::IfcPlane* plane = new typename Schema::IfcPlane(place);
 	typename Schema::IfcHalfSpaceSolid* half_space = new typename Schema::IfcHalfSpaceSolid(plane, agree);
 	addEntity(plane);
 	addEntity(half_space);
-	rep->setRepresentationType("Clipping");		
+	rep->setRepresentationType("Clipping"s);		
 	typename Schema::IfcRepresentationItem::list::ptr items = rep->Items();
 	typename Schema::IfcRepresentationItem::list::ptr new_items (new typename Schema::IfcRepresentationItem::list);
 	for (typename Schema::IfcRepresentationItem::list::it i = items->begin(); i != items->end(); ++i) {
-		typename Schema::IfcRepresentationItem* item = *i;
-		typename Schema::IfcBooleanClippingResult* clip = new typename Schema::IfcBooleanClippingResult(
-			Schema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE, item, half_space);
-		addEntity(clip);
-		new_items->push(clip);
+		auto item = dynamic_cast<typename Schema::IfcBooleanOperand*>(*i);
+		if (item) {
+			typename Schema::IfcBooleanClippingResult* clip = new typename Schema::IfcBooleanClippingResult(
+				Schema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE, item, half_space);
+			addEntity(clip);
+			new_items->push(clip);
+		}
 	}
 	rep->setItems(new_items);
 }
@@ -412,7 +416,7 @@ typename Schema::IfcSurfaceStyle* getSurfaceStyle(IfcHierarchyHelper<Schema>& fi
       : new typename Schema::IfcSurfaceStyleRendering(colour, 1.0 - a, 0, 0, 0, 0,
          0, 0, Schema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT);
 
-   IfcEntityList::ptr styles(new IfcEntityList());
+   aggregate_of_instance::ptr styles(new aggregate_of_instance());
    styles->push(rendering);
    typename Schema::IfcSurfaceStyle* surface_style = new typename Schema::IfcSurfaceStyle(
       boost::none, Schema::IfcSurfaceSide::IfcSurfaceSide_BOTH, styles);
@@ -428,7 +432,7 @@ template<typename Schema>
 typename Schema::IfcPresentationStyleAssignment* addStyleAssignment_2x3(IfcHierarchyHelper<Schema>& file, double r, double g, double b, double a = 1.0)
 {
    auto surface_style = getSurfaceStyle<Schema>(file, r, g, b, a);
-   IfcEntityList::ptr surface_styles(new IfcEntityList());
+   aggregate_of_instance::ptr surface_styles(new aggregate_of_instance());
    surface_styles->push(surface_style);
    typename Schema::IfcPresentationStyleAssignment* style_assignment =
       new typename Schema::IfcPresentationStyleAssignment(surface_styles);
@@ -502,7 +506,7 @@ Ifc2x3::IfcStyledItem* create_styled_item(Ifc2x3::IfcRepresentationItem* item, I
 
 #ifdef HAS_SCHEMA_4
 Ifc4::IfcStyledItem* create_styled_item(Ifc4::IfcRepresentationItem* item, Ifc4::IfcPresentationStyleAssignment* style_assignment) {
-	IfcEntityList::ptr style_assignments(new IfcEntityList);
+	aggregate_of_instance::ptr style_assignments(new aggregate_of_instance);
 	style_assignments->push(style_assignment);
 	return new Ifc4::IfcStyledItem(item, style_assignments, boost::none);
 }
@@ -510,7 +514,7 @@ Ifc4::IfcStyledItem* create_styled_item(Ifc4::IfcRepresentationItem* item, Ifc4:
 
 #ifdef HAS_SCHEMA_4x1
 Ifc4x1::IfcStyledItem* create_styled_item(Ifc4x1::IfcRepresentationItem* item, Ifc4x1::IfcPresentationStyleAssignment* style_assignment) {
-	IfcEntityList::ptr style_assignments(new IfcEntityList);
+	aggregate_of_instance::ptr style_assignments(new aggregate_of_instance);
 	style_assignments->push(style_assignment);
 	return new Ifc4x1::IfcStyledItem(item, style_assignments, boost::none);
 }
@@ -518,7 +522,7 @@ Ifc4x1::IfcStyledItem* create_styled_item(Ifc4x1::IfcRepresentationItem* item, I
 
 #ifdef HAS_SCHEMA_4x2
 Ifc4x2::IfcStyledItem* create_styled_item(Ifc4x2::IfcRepresentationItem* item, Ifc4x2::IfcPresentationStyleAssignment* style_assignment) {
-	IfcEntityList::ptr style_assignments(new IfcEntityList);
+	aggregate_of_instance::ptr style_assignments(new aggregate_of_instance);
 	style_assignments->push(style_assignment);
 	return new Ifc4x2::IfcStyledItem(item, style_assignments, boost::none);
 }
@@ -526,7 +530,7 @@ Ifc4x2::IfcStyledItem* create_styled_item(Ifc4x2::IfcRepresentationItem* item, I
 
 #ifdef HAS_SCHEMA_4x3_rc1
 Ifc4x3_rc1::IfcStyledItem* create_styled_item(Ifc4x3_rc1::IfcRepresentationItem* item, Ifc4x3_rc1::IfcPresentationStyleAssignment* style_assignment) {
-	IfcEntityList::ptr style_assignments(new IfcEntityList);
+	aggregate_of_instance::ptr style_assignments(new aggregate_of_instance);
 	style_assignments->push(style_assignment);
 	return new Ifc4x3_rc1::IfcStyledItem(item, style_assignments, boost::none);
 }
@@ -534,7 +538,7 @@ Ifc4x3_rc1::IfcStyledItem* create_styled_item(Ifc4x3_rc1::IfcRepresentationItem*
 
 #ifdef HAS_SCHEMA_4x3_rc2
 Ifc4x3_rc2::IfcStyledItem* create_styled_item(Ifc4x3_rc2::IfcRepresentationItem* item, Ifc4x3_rc2::IfcPresentationStyleAssignment* style_assignment) {
-   IfcEntityList::ptr style_assignments(new IfcEntityList);
+   aggregate_of_instance::ptr style_assignments(new aggregate_of_instance);
    style_assignments->push(style_assignment);
    return new Ifc4x3_rc2::IfcStyledItem(item, style_assignments, boost::none);
 }
@@ -542,7 +546,7 @@ Ifc4x3_rc2::IfcStyledItem* create_styled_item(Ifc4x3_rc2::IfcRepresentationItem*
 
 #ifdef HAS_SCHEMA_4x3_rc3
 Ifc4x3_rc3::IfcStyledItem* create_styled_item(Ifc4x3_rc3::IfcRepresentationItem* item, Ifc4x3_rc3::IfcPresentationStyle* style) {
-   boost::shared_ptr<IfcTemplatedEntityList<Ifc4x3_rc3::IfcPresentationStyle>> styles(new IfcTemplatedEntityList<Ifc4x3_rc3::IfcPresentationStyle>());
+   boost::shared_ptr<aggregate_of<Ifc4x3_rc3::IfcPresentationStyle>> styles(new aggregate_of<Ifc4x3_rc3::IfcPresentationStyle>());
    styles->push(style);
    return new Ifc4x3_rc3::IfcStyledItem(item, styles, boost::none);
 }
@@ -550,7 +554,7 @@ Ifc4x3_rc3::IfcStyledItem* create_styled_item(Ifc4x3_rc3::IfcRepresentationItem*
 
 #ifdef HAS_SCHEMA_4x3_rc4
 Ifc4x3_rc4::IfcStyledItem* create_styled_item(Ifc4x3_rc4::IfcRepresentationItem* item, Ifc4x3_rc4::IfcPresentationStyle* style) {
-   boost::shared_ptr<IfcTemplatedEntityList<Ifc4x3_rc4::IfcPresentationStyle>> styles(new IfcTemplatedEntityList<Ifc4x3_rc4::IfcPresentationStyle>());
+   boost::shared_ptr<aggregate_of<Ifc4x3_rc4::IfcPresentationStyle>> styles(new aggregate_of<Ifc4x3_rc4::IfcPresentationStyle>());
    styles->push(style);
    return new Ifc4x3_rc4::IfcStyledItem(item, styles, boost::none);
 }
@@ -824,7 +828,7 @@ typename Schema::IfcProductDefinitionShape* IfcHierarchyHelper<Schema>::addMappe
 	typename Schema::IfcRepresentationItem::list::ptr items(new typename Schema::IfcRepresentationItem::list);
 	items->push(item);
 	typename Schema::IfcRepresentation* new_rep = new typename Schema::IfcShapeRepresentation(rep->ContextOfItems(), boost::none, std::string("MappedRepresentation"), items);
-	if (rep->hasRepresentationIdentifier()) {
+	if (rep->RepresentationIdentifier()) {
 		new_rep->setRepresentationIdentifier(rep->RepresentationIdentifier());
 	}	
 	addEntity(item);
@@ -859,6 +863,23 @@ typename Schema::IfcShapeRepresentation* IfcHierarchyHelper<Schema>::addEmptyRep
 	return shape_rep;
 }
 
+namespace {
+	template <typename T, typename U>
+	void push_back_to_maybe_optional(T& t, U* u) {
+		t->push(u);
+	}
+
+	// In IFC4 the IfcContext.RepresentationContexts has been made optional, so we need
+	// some boiler plate to push back to a list that might be optional.
+	template <typename T, typename U>
+	void push_back_to_maybe_optional(boost::optional<boost::shared_ptr<T>>& t, U* u) {
+		if (!t) {
+			t = boost::shared_ptr<T>(new T);
+		}
+		(*t)->push(u);
+	}
+}
+
 template <typename Schema>
 typename Schema::IfcGeometricRepresentationContext* IfcHierarchyHelper<Schema>::getRepresentationContext(const std::string& s) {
 	typename std::map<std::string, typename Schema::IfcGeometricRepresentationContext*>::const_iterator it = contexts.find(s);
@@ -868,11 +889,12 @@ typename Schema::IfcGeometricRepresentationContext* IfcHierarchyHelper<Schema>::
 		if (!project) {
 			project = addProject();
 		}
-		typename Schema::IfcRepresentationContext::list::ptr project_contexts = project->RepresentationContexts();
+		auto project_contexts = project->RepresentationContexts();
 		typename Schema::IfcGeometricRepresentationContext* context = new typename Schema::IfcGeometricRepresentationContext(
 			boost::none, s, 3, 1e-5, addPlacement3d(), addDoublet<typename Schema::IfcDirection>(0, 1));
 		addEntity(context);
-		project_contexts->push(context);
+		push_back_to_maybe_optional(project_contexts, context);
+		
 		project->setRepresentationContexts(project_contexts);
 		return contexts[s] = context;
 	}

@@ -33,7 +33,7 @@ namespace IfcGeom
     public:
         /// Enumeration of setting identifiers. These settings define the
         /// behaviour of various aspects of IfcOpenShell.
-        enum Setting
+        enum Setting : uint64_t
         {
             /// Specifies whether vertices are welded, meaning that the coordinates
             /// vector will only contain unique xyz-triplets. This results in a 
@@ -56,55 +56,50 @@ namespace IfcGeom
             /// Specifies whether to sew IfcConnectedFaceSets (open and closed shells) to
             /// TopoDS_Shells or whether to keep them as a loose collection of faces.
             SEW_SHELLS = 1 << 4,
-            /// Specifies whether to compose IfcOpeningElements into a single compound
-            /// in order to speed up the processing of opening subtractions.
-            FASTER_BOOLEANS = 1 << 5,
             /// Disables the subtraction of IfcOpeningElement representations from
             /// the related building element representations.
-            DISABLE_OPENING_SUBTRACTIONS = 1 << 6,
+            DISABLE_OPENING_SUBTRACTIONS = 1 << 5,
             /// Disables the triangulation of the topological representations. Useful if
             /// the client application understands Open Cascade's native format.
-            DISABLE_TRIANGULATION = 1 << 7,
+            DISABLE_TRIANGULATION = 1 << 6,
             /// Applies default materials to entity instances without a surface style.
-            APPLY_DEFAULT_MATERIALS = 1 << 8,
+            APPLY_DEFAULT_MATERIALS = 1 << 7,
             /// Specifies whether to include subtypes of IfcCurve.
-            INCLUDE_CURVES = 1 << 9,
+            INCLUDE_CURVES = 1 << 8,
             /// Specifies whether to exclude subtypes of IfcSolidModel and IfcSurface.
-            EXCLUDE_SOLIDS_AND_SURFACES = 1 << 10,
+            EXCLUDE_SOLIDS_AND_SURFACES = 1 << 9,
             /// Disables computation of normals. Saves time and file size and is useful
             /// in instances where you're going to recompute normals for the exported
             /// model in other modelling application in any case.
-            NO_NORMALS = 1 << 11,
+            NO_NORMALS = 1 << 10,
             /// Generates UVs by using simple box projection. Requires normals.
             /// Applicable for OBJ and DAE output.
-            GENERATE_UVS = 1 << 12,
+            GENERATE_UVS = 1 << 11,
             /// Specifies whether to slice representations according to associated IfcLayerSets.
-            APPLY_LAYERSETS = 1 << 13,
+            APPLY_LAYERSETS = 1 << 12,
 			/// Search for a parent of type IfcBuildingStorey for each representation
-			SEARCH_FLOOR = 1 << 14,
+			SEARCH_FLOOR = 1 << 13,
 			///
-			SITE_LOCAL_PLACEMENT = 1 << 15,
+			SITE_LOCAL_PLACEMENT = 1 << 14,
 			///
-			BUILDING_LOCAL_PLACEMENT = 1 << 16,
+			BUILDING_LOCAL_PLACEMENT = 1 << 15,
 			///
-			VALIDATE_QUANTITIES = 1 << 17,
+			VALIDATE_QUANTITIES = 1 << 16,
 			/// Assigns the first layer material to the entire product
-			LAYERSET_FIRST = 1 << 18,
+			LAYERSET_FIRST = 1 << 17,
 			/// Adds arrow heads to edge segments to signify edge direction
-			EDGE_ARROWS = 1 << 19,
+			EDGE_ARROWS = 1 << 18,
 			/// Disables the evaluation of IfcBooleanResult and simply returns FirstOperand
-			DISABLE_BOOLEAN_RESULT = 1 << 20,
+			DISABLE_BOOLEAN_RESULT = 1 << 19,
 			// Disables wire intersection checks
-			NO_WIRE_INTERSECTION_CHECK = 1 << 21,
+			NO_WIRE_INTERSECTION_CHECK = 1 << 20,
 			// Set wire intersection tolerance to 0
-			NO_WIRE_INTERSECTION_TOLERANCE = 1 << 22,
+			NO_WIRE_INTERSECTION_TOLERANCE = 1 << 21,
 			// Sets kernel precision factor to 1
-			STRICT_TOLERANCE = 1 << 23,
+			STRICT_TOLERANCE = 1 << 22,
 			/// Number of different setting flags.
-			NUM_SETTINGS = 24,
+			NUM_SETTINGS = 23,
         };
-        /// Used to store logical OR combination of setting flags.
-        typedef unsigned SettingField;
 
         IteratorSettings()
             : settings_(WELD_VERTICES) // OR options that default to true here
@@ -117,6 +112,7 @@ namespace IfcGeom
         double deflection_tolerance() const { return deflection_tolerance_; }
 		double angular_tolerance() const { return angular_tolerance_; }
 		double force_space_transparency() const { return force_space_transparency_; }
+		std::set<int> context_ids() const { return context_ids_; }
 
         void set_deflection_tolerance(double value)
         {
@@ -135,17 +131,21 @@ namespace IfcGeom
 
 		void force_space_transparency(double value) {
 			force_space_transparency_ = value;
-		}		
+		}
+
+		void set_context_ids(std::vector<int> value) {
+			context_ids_ = std::set<int>(value.begin(), value.end());
+		}
 
         /// Get boolean value for a single settings or for a combination of settings.
-        bool get(SettingField setting) const
+        bool get(unsigned setting) const
         {
             /// @todo If unknown setting value/combination: throw IfcParse::IfcException("Invalid IteratorSetting")?
             return (settings_ & setting) != 0;
         }
 
         /// Set boolean value for a single settings or for a combination of settings.
-        void set(SettingField setting, bool value)
+        void set(unsigned setting, bool value)
         {
             /// @todo If unknown setting value/combination: throw IfcParse::IfcException("Invalid IteratorSetting")?
             if (value) {
@@ -161,8 +161,9 @@ namespace IfcGeom
         std::array<double,4> rotation = std::array<double,4>{0.0, 0.0, 0.0, 1.0};
 
     protected:
-        SettingField settings_;
+		unsigned settings_;
         double deflection_tolerance_, angular_tolerance_, force_space_transparency_;
+		std::set<int> context_ids_;
     };
 
     class IFC_GEOM_API ElementSettings : public IteratorSettings

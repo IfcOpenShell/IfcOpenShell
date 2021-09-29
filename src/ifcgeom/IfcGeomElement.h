@@ -32,10 +32,9 @@
 
 namespace IfcGeom {
 
-	template <typename P>
 	class Matrix {
 	private:
-		std::vector<P> _data;
+		std::vector<double> _data;
 	public:
 		Matrix(const ElementSettings& settings, const gp_Trsf& trsf) {
 			// Convert the gp_Trsf into a 4x3 Matrix
@@ -49,19 +48,18 @@ namespace IfcGeom {
                     const double matrix_value = i == 4 && settings.get(IteratorSettings::CONVERT_BACK_UNITS)
 						? trsf_value / settings.unit_magnitude()
 						: trsf_value;
-					_data.push_back(static_cast<P>(matrix_value));
+					_data.push_back(static_cast<double>(matrix_value));
 				}
 			}
 		}
-		const std::vector<P>& data() const { return _data; }
+		const std::vector<double>& data() const { return _data; }
 	};
 
-	template <typename P>
 	class Transformation {
 	private:
 		ElementSettings settings_;
 		gp_Trsf trsf_;
-		Matrix<P> matrix_;
+		Matrix matrix_;
 	public:
 		Transformation(const ElementSettings& settings, const gp_Trsf& trsf)
 			: settings_(settings)
@@ -69,7 +67,7 @@ namespace IfcGeom {
 			, matrix_(settings, trsf) 
 		{}
 		const gp_Trsf& data() const { return trsf_; }
-		const Matrix<P>& matrix() const { return matrix_; }
+		const Matrix& matrix() const { return matrix_; }
 
 		Transformation inverted() const {
 			return Transformation(settings_, trsf_.Inverted());
@@ -80,7 +78,6 @@ namespace IfcGeom {
 		}
 	};
 
-	template <typename P = double, typename PP = P>
 	class Element {
 	private:
 		int _id;
@@ -90,17 +87,17 @@ namespace IfcGeom {
 		std::string _guid;
 		std::string _context;
 		std::string _unique_id;
-		Transformation<PP> _transformation;
+		Transformation _transformation;
         IfcUtil::IfcBaseEntity* product_;
-		std::vector<const IfcGeom::Element<P, PP>*> _parents;
+		std::vector<const IfcGeom::Element*> _parents;
 	public:
 
-		friend bool operator == (const Element<P, PP> & element1, const Element<P, PP> & element2) {
+		friend bool operator == (const Element& element1, const Element& element2) {
 			return element1.id() == element2.id();
 		}
 
 		// Use the id to compare, or the elevation is the elements are IfcBuildingStoreys and the elevation is set
-		friend bool operator < (const Element<P, PP> & element1, const Element<P, PP> & element2) {
+		friend bool operator < (const Element& element1, const Element& element2) {
 			if (element1.type() == "IfcBuildingStorey" && element2.type() == "IfcBuildingStorey") {
 				size_t attr_index = element1.product()->declaration().attribute_index("Elevation");
 				Argument* elev_attr1 = element1.product()->data().getArgument(attr_index);
@@ -124,10 +121,10 @@ namespace IfcGeom {
 		const std::string& guid() const { return _guid; }
 		const std::string& context() const { return _context; }
 		const std::string& unique_id() const { return _unique_id; }
-		const Transformation<PP>& transformation() const { return _transformation; }
+		const Transformation& transformation() const { return _transformation; }
         IfcUtil::IfcBaseEntity* product() const { return product_; }
-		const std::vector<const IfcGeom::Element<P, PP>*> parents() const { return _parents; }
-		void SetParents(std::vector<const IfcGeom::Element<P, PP>*> newparents) { _parents = newparents; }
+		const std::vector<const IfcGeom::Element*> parents() const { return _parents; }
+		void SetParents(std::vector<const IfcGeom::Element*> newparents) { _parents = newparents; }
 
 		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type,
             const std::string& guid, const std::string& context, const gp_Trsf& trsf, IfcUtil::IfcBaseEntity* product)
@@ -159,17 +156,16 @@ namespace IfcGeom {
 		virtual ~Element() {}
 	};
 
-	template <typename P = double, typename PP = P>
-	class BRepElement : public Element<P, PP> {
+	class BRepElement : public Element {
 	private:
-		boost::shared_ptr<Representation::BRep> _geometry;
+		boost::shared_ptr<IfcGeom::Representation::BRep> _geometry;
 	public:
-		const boost::shared_ptr<Representation::BRep>& geometry_pointer() const { return _geometry; }
-		const Representation::BRep& geometry() const { return *_geometry; }
+		const boost::shared_ptr<IfcGeom::Representation::BRep>& geometry_pointer() const { return _geometry; }
+		const IfcGeom::Representation::BRep& geometry() const { return *_geometry; }
 		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid,
-            const std::string& context, const gp_Trsf& trsf, const boost::shared_ptr<Representation::BRep>& geometry,
+            const std::string& context, const gp_Trsf& trsf, const boost::shared_ptr<IfcGeom::Representation::BRep>& geometry,
 			IfcUtil::IfcBaseEntity* product)
-			: Element<P, PP>(geometry->settings() ,id, parent_id, name, type, guid, context, trsf, product)
+			: Element(geometry->settings() ,id, parent_id, name, type, guid, context, trsf, product)
 			, _geometry(geometry)
 		{}
 
@@ -184,19 +180,18 @@ namespace IfcGeom {
 		BRepElement& operator=(const BRepElement& other);		
 	};
 
-	template <typename P = double, typename PP = P>
-	class TriangulationElement : public Element<P, PP> {
+	class TriangulationElement : public Element {
 	private:
-		boost::shared_ptr< Representation::Triangulation<P> > _geometry;
+		boost::shared_ptr< IfcGeom::Representation::Triangulation > _geometry;
 	public:
-		const Representation::Triangulation<P>& geometry() const { return *_geometry; }
-		const boost::shared_ptr< Representation::Triangulation<P> >& geometry_pointer() const { return _geometry; }
-		TriangulationElement(const BRepElement<P, PP>& shape_model)
-			: Element<P, PP>(shape_model)
-			, _geometry(boost::shared_ptr<Representation::Triangulation<P> >(new Representation::Triangulation<P>(shape_model.geometry())))
+		const IfcGeom::Representation::Triangulation& geometry() const { return *_geometry; }
+		const boost::shared_ptr< IfcGeom::Representation::Triangulation>& geometry_pointer() const { return _geometry; }
+		TriangulationElement(const IfcGeom::BRepElement& shape_model)
+			: Element(shape_model)
+			, _geometry(boost::shared_ptr<IfcGeom::Representation::Triangulation>(new IfcGeom::Representation::Triangulation(shape_model.geometry())))
 		{}
-		TriangulationElement(const Element<P, PP>& element, const boost::shared_ptr<Representation::Triangulation<P> >& geometry)
-			: Element<P, PP>(element)
+		TriangulationElement(const IfcGeom::Element& element, const boost::shared_ptr<IfcGeom::Representation::Triangulation>& geometry)
+			: Element(element)
 			, _geometry(geometry)
 		{}
 	private:
@@ -204,15 +199,14 @@ namespace IfcGeom {
 		TriangulationElement& operator=(const TriangulationElement& other);
 	};
 
-	template <typename P = double, typename PP = P>
-	class SerializedElement : public Element<P, PP> {
+	class SerializedElement : public Element {
 	private:
-		Representation::Serialization* _geometry;
+		IfcGeom::Representation::Serialization* _geometry;
 	public:
-		const Representation::Serialization& geometry() const { return *_geometry; }
-		SerializedElement(const BRepElement<P, PP>& shape_model)
-			: Element<P, PP>(shape_model)
-			, _geometry(new Representation::Serialization(shape_model.geometry()))
+		const IfcGeom::Representation::Serialization& geometry() const { return *_geometry; }
+		SerializedElement(const BRepElement& shape_model)
+			: Element(shape_model)
+			, _geometry(new IfcGeom::Representation::Serialization(shape_model.geometry()))
 		{}
 		virtual ~SerializedElement() {
 			delete _geometry;
