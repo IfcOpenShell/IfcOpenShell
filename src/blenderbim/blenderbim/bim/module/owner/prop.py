@@ -67,30 +67,14 @@ def getOrganisations(self, context):
     return _organisations_enum
 
 
-class Organisation(PropertyGroup):
-    identification: StringProperty(name="Identification")
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-
-
-class Person(PropertyGroup):
-    name: StringProperty(name="Identification")
-    family_name: StringProperty(name="Family Name")
-    given_name: StringProperty(name="Given Name")
-    middle_names: CollectionProperty(type=StrProperty, name="Middle Names")
-    prefix_titles: CollectionProperty(type=StrProperty, name="Prefixes")
-    suffix_titles: CollectionProperty(type=StrProperty, name="Suffixes")
-
-
 class BIMOwnerProperties(PropertyGroup):
-    person: PointerProperty(type=Person)
     person_attributes: CollectionProperty(name="Person Attributes", type=Attribute)
     middle_names: CollectionProperty(type=StrProperty, name="Middle Names")
     prefix_titles: CollectionProperty(type=StrProperty, name="Prefixes")
     suffix_titles: CollectionProperty(type=StrProperty, name="Suffixes")
     active_person_id: IntProperty(name="Active Person Id")
-    organisation: PointerProperty(type=Organisation)
     active_organisation_id: IntProperty(name="Active Organisation Id")
+    organisation_attributes: CollectionProperty(name="Organisation Attributes", type=Attribute)
     active_role_id: IntProperty(name="Active Role Id")
     role_attributes: CollectionProperty(name="Role Attributes", type=Attribute)
     active_address_id: IntProperty(name="Active Address Id")

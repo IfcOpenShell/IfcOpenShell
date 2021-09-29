@@ -56,6 +56,13 @@ def address_editor():
     prophet.verify()
 
 
+@pytest.fixture
+def organisation_editor():
+    prophet = Prophecy(blenderbim.core.tool.OrganisationEditor)
+    yield prophet
+    prophet.verify()
+
+
 class Prophecy:
     def __init__(self, cls):
         self.subject = cls

@@ -16,9 +16,31 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.core.tool.ifc import Ifc
-from blenderbim.core.tool.blender import Blender
-from blenderbim.core.tool.person_editor import PersonEditor
-from blenderbim.core.tool.role_editor import RoleEditor
-from blenderbim.core.tool.address_editor import AddressEditor
-from blenderbim.core.tool.organisation_editor import OrganisationEditor
+import abc
+
+
+class OrganisationEditor(abc.ABC):
+    @classmethod
+    @abc.abstractmethod
+    def set_organisation(cls, organisation):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def import_attributes(cls):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def clear_organisation(cls):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def get_organisation(cls):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def export_attributes(cls):
+        pass

@@ -382,7 +382,7 @@ class TestRemoveFilling(test.bim.bootstrap.NewFile):
         And I delete the selected objects
         Then the object "IfcOpeningElement/Cube" is an "IfcOpeningElement"
         And the void "IfcOpeningElement/Cube" is not filled by "Cube"
-        """    
+        """
 
     @test.bim.bootstrap.scenario
     def test_removing_a_filling_using_deletion_on_the_opening(self):

@@ -98,3 +98,26 @@ def add_address_attribute(address_editor, name=None):
 
 def remove_address_attribute(address_editor, name=None, id=None):
     address_editor.remove_attribute(name, id)
+
+
+def add_organisation(ifc):
+    return ifc.run("owner.add_organisation")
+
+
+def remove_organisation(ifc, organisation=None):
+    ifc.run("owner.remove_organisation", organisation=organisation)
+
+
+def enable_editing_organisation(organisation_editor, organisation=None):
+    organisation_editor.set_organisation(organisation)
+    organisation_editor.import_attributes()
+
+
+def disable_editing_organisation(organisation_editor):
+    organisation_editor.clear_organisation()
+
+
+def edit_organisation(ifc, organisation_editor):
+    organisation = organisation_editor.get_organisation()
+    ifc.run("owner.edit_organisation", organisation=organisation, attributes=organisation_editor.export_attributes())
+    organisation_editor.clear_organisation()

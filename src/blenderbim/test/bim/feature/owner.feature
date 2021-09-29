@@ -165,3 +165,38 @@ Scenario: Edit address
     And I press "bim.enable_editing_address(address={address})"
     And I press "bim.edit_address()"
     Then nothing happens
+
+Scenario: Add organisation
+    Given an empty IFC project
+    When I press "bim.add_organisation"
+    Then nothing happens
+
+Scenario: Enable editing organisation
+    Given an empty IFC project
+    When I press "bim.add_organisation"
+    And the variable "organisation" is "{ifc}.by_type('IfcOrganization')[0].id()"
+    And I press "bim.enable_editing_organisation(organisation={organisation})"
+    Then "scene.BIMOwnerProperties.active_organisation_id" is "{organisation}"
+
+Scenario: Disable editing organisation
+    Given an empty IFC project
+    When I press "bim.add_organisation"
+    And the variable "organisation" is "{ifc}.by_type('IfcOrganization')[0].id()"
+    And I press "bim.enable_editing_organisation(organisation={organisation})"
+    And I press "bim.disable_editing_organisation"
+    Then "scene.BIMOwnerProperties.active_organisation_id" is "0"
+
+Scenario: Edit organisation
+    Given an empty IFC project
+    When I press "bim.add_organisation"
+    And the variable "organisation" is "{ifc}.by_type('IfcOrganization')[0].id()"
+    And I press "bim.enable_editing_organisation(organisation={organisation})"
+    And I press "bim.edit_organisation"
+    Then "scene.BIMOwnerProperties.active_organisation_id" is "0"
+
+Scenario: Remove organisation
+    Given an empty IFC project
+    When I press "bim.add_organisation"
+    And the variable "organisation" is "{ifc}.by_type('IfcOrganization')[0].id()"
+    And I press "bim.remove_organisation(organisation={organisation})"
+    Then nothing happens
