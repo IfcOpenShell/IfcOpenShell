@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.bim.helper
 import blenderbim.tool as tool
 from blenderbim.bim.module.context.data import ContextData
 
@@ -41,21 +42,45 @@ class BIM_PT_context(bpy.types.Panel):
 
         row = self.layout.row(align=True)
         row.prop(props, "contexts", text="")
-        row.prop(props, "subcontexts", text="")
-        row.prop(props, "target_views", text="")
-        op = row.operator("bim.add_subcontext", icon="ADD", text="")
-        op.context = props.contexts
-        op.subcontext = props.subcontexts
-        op.target_view = props.target_views
+        op = row.operator("bim.add_context", icon="ADD", text="")
+        op.context_type = props.contexts
+        op.context_identifier = ""
+        op.target_view = ""
+        op.parent = 0
 
-        for context in ContextData.data["contexts"]:
+        for ifc_context in ContextData.data["contexts"]:
             box = self.layout.box()
-            row = box.row(align=True)
-            row.label(text=context["context_type"])
-            row.operator("bim.remove_subcontext", icon="X", text="").context = context["id"]
-            for subcontext in context["subcontexts"]:
+
+            if ifc_context["is_editing"]:
                 row = box.row(align=True)
-                row.label(text=subcontext["context_type"])
-                row.label(text=subcontext["context_identifier"])
-                row.label(text=subcontext["target_view"])
-                row.operator("bim.remove_subcontext", icon="X", text="").context = subcontext["id"]
+                row.operator("bim.edit_context", icon="CHECKMARK")
+                row.operator("bim.disable_editing_context", icon="CANCEL", text="")
+                blenderbim.bim.helper.draw_attributes(ifc_context["props"], box)
+            else:
+                row = box.row(align=True)
+                row.label(text=ifc_context["context_type"])
+                row.operator("bim.enable_editing_context", icon="GREASEPENCIL", text="").context = ifc_context["id"]
+                row.operator("bim.remove_context", icon="X", text="").context = ifc_context["id"]
+
+            row = box.row(align=True)
+            row.prop(props, "subcontexts", text="")
+            row.prop(props, "target_views", text="")
+            op = row.operator("bim.add_context", icon="ADD", text="")
+            op.context_type = ifc_context["context_type"]
+            op.context_identifier = props.subcontexts
+            op.target_view = props.target_views
+            op.parent = ifc_context["id"]
+
+            for subcontext in ifc_context["subcontexts"]:
+                if subcontext["is_editing"]:
+                    row = box.row(align=True)
+                    row.operator("bim.edit_context", icon="CHECKMARK")
+                    row.operator("bim.disable_editing_context", icon="CANCEL", text="")
+                    blenderbim.bim.helper.draw_attributes(subcontext["props"], box)
+                else:
+                    row = box.row(align=True)
+                    row.label(text=subcontext["context_type"])
+                    row.label(text=subcontext["context_identifier"])
+                    row.label(text=subcontext["target_view"])
+                    row.operator("bim.enable_editing_context", icon="GREASEPENCIL", text="").context = subcontext["id"]
+                    row.operator("bim.remove_context", icon="X", text="").context = subcontext["id"]

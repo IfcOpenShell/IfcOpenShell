@@ -63,6 +63,13 @@ def organisation_editor():
     prophet.verify()
 
 
+@pytest.fixture
+def context_editor():
+    prophet = Prophecy(blenderbim.core.tool.ContextEditor)
+    yield prophet
+    prophet.verify()
+
+
 class Prophecy:
     def __init__(self, cls):
         self.subject = cls
