@@ -26,6 +26,8 @@ import ifcopenshell.api
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import blenderbim.bim.handler
+import blenderbim.tool as tool
+import blenderbim.core.context as context_core
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 
@@ -65,11 +67,21 @@ class CreateProject(bpy.types.Operator):
 
         bpy.ops.bim.assign_class(obj=project.name, ifc_class="IfcProject")
         bpy.ops.bim.assign_unit()
-        bpy.ops.bim.add_subcontext(context="Model")
-        bpy.ops.bim.add_subcontext(context="Model", subcontext="Body", target_view="MODEL_VIEW")
-        bpy.ops.bim.add_subcontext(context="Model", subcontext="Box", target_view="MODEL_VIEW")
-        bpy.ops.bim.add_subcontext(context="Plan")
-        bpy.ops.bim.add_subcontext(context="Plan", subcontext="Annotation", target_view="PLAN_VIEW")
+
+        # TODO: refactor
+        model = context_core.add_context(
+            tool.Ifc, context_type="Model", context_identifier="", target_view="", parent=0
+        )
+        context_core.add_context(
+            tool.Ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        context_core.add_context(
+            tool.Ifc, context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent=model
+        )
+        plan = context_core.add_context(tool.Ifc, context_type="Plan", context_identifier="", target_view="", parent=0)
+        context_core.add_context(
+            tool.Ifc, context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan
+        )
 
         context.scene.BIMProperties.contexts = str(
             ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW").id()

@@ -226,9 +226,7 @@ class EnableEditingOrganisation(bpy.types.Operator, Operator):
     organisation: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.enable_editing_organisation(
-            tool.OrganisationEditor, organisation=tool.Ifc.get().by_id(self.organisation)
-        )
+        core.enable_editing_organisation(tool.OrganisationEditor, organisation=tool.Ifc.get().by_id(self.organisation))
 
 
 class DisableEditingOrganisation(bpy.types.Operator, Operator):

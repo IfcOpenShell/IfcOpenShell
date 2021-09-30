@@ -1,3 +1,22 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
+import bpy
 import blenderbim.tool as tool
 
 
@@ -15,7 +34,13 @@ class ContextData:
         results = []
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             results.append(
-                {"id": context.id(), "context_type": context.ContextType, "subcontexts": cls.get_subcontexts(context)}
+                {
+                    "id": context.id(),
+                    "context_type": context.ContextType,
+                    "subcontexts": cls.get_subcontexts(context),
+                    "is_editing": bpy.context.scene.BIMContextProperties.active_context_id == context.id(),
+                    "props": bpy.context.scene.BIMContextProperties.context_attributes,
+                }
             )
         return results
 
@@ -29,6 +54,8 @@ class ContextData:
                     "context_type": subcontext.ContextType,
                     "context_identifier": subcontext.ContextIdentifier,
                     "target_view": subcontext.TargetView,
+                    "is_editing": bpy.context.scene.BIMContextProperties.active_context_id == subcontext.id(),
+                    "props": bpy.context.scene.BIMContextProperties.context_attributes,
                 }
             )
         return results

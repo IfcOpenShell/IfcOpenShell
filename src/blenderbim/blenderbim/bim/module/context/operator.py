@@ -31,23 +31,58 @@ class Operator:
         return {"FINISHED"}
 
 
-class AddSubcontext(bpy.types.Operator, Operator):
-    bl_idname = "bim.add_subcontext"
+class AddContext(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_context"
     bl_label = "Add Subcontext"
     bl_options = {"REGISTER", "UNDO"}
-    context: bpy.props.StringProperty()
-    subcontext: bpy.props.StringProperty()
+    context_type: bpy.props.StringProperty()
+    context_identifier: bpy.props.StringProperty()
     target_view: bpy.props.StringProperty()
+    parent: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.add_context(tool.Ifc, context=self.context, subcontext=self.subcontext, target_view=self.target_view)
+        core.add_context(
+            tool.Ifc,
+            context_type=self.context_type,
+            context_identifier=self.context_identifier,
+            target_view=self.target_view,
+            parent=tool.Ifc.get().by_id(self.parent) if self.parent else None,
+        )
 
 
-class RemoveSubcontext(bpy.types.Operator, Operator):
-    bl_idname = "bim.remove_subcontext"
+class RemoveContext(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_context"
     bl_label = "Remove Context"
     bl_options = {"REGISTER", "UNDO"}
     context: bpy.props.IntProperty()
 
     def _execute(self, context):
         core.remove_context(tool.Ifc, context=tool.Ifc.get().by_id(self.context))
+
+
+class EnableEditingContext(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_context"
+    bl_label = "Enable Editing Context"
+    bl_options = {"REGISTER", "UNDO"}
+    context: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.enable_editing_context(tool.ContextEditor, context=tool.Ifc.get().by_id(self.context))
+
+
+class DisableEditingContext(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_context"
+    bl_label = "Disable Editing Context"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disable_editing_context(tool.ContextEditor)
+
+
+class EditContext(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_context"
+    bl_label = "Edit Context"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.edit_context(tool.Ifc, tool.ContextEditor)
