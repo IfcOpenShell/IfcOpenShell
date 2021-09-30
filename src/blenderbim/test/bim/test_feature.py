@@ -42,6 +42,17 @@ def an_empty_ifc_project():
     bpy.ops.bim.create_project()
 
 
+@when("I add a cube")
+@given("I add a cube")
+def i_add_a_cube():
+    bpy.ops.mesh.primitive_cube_add()
+
+
+@when(parsers.parse('I add a cube of size "{size}" at "{location}"'))
+def i_add_a_cube_of_size_size_at_location(size, location):
+    bpy.ops.mesh.primitive_cube_add(size=float(size), location=[float(co) for co in location.split(",")])
+
+
 @when(parsers.parse('I press "{operator}"'))
 def i_press_operator(operator):
     operator = replace_variables(operator)
@@ -51,6 +62,45 @@ def i_press_operator(operator):
         exec(f"bpy.ops.{operator}()")
 
 
+@when("I deselect all objects")
+def i_deselect_all_objects():
+    bpy.context.view_layer.objects.active = None
+    bpy.ops.object.select_all(action="DESELECT")
+
+
+@when(parsers.parse('the object "{name}" is selected'))
+def the_object_name_is_selected(name):
+    i_deselect_all_objects()
+    additionally_the_object_name_is_selected(name)
+
+
+@when(parsers.parse('additionally the object "{name}" is selected'))
+def additionally_the_object_name_is_selected(name):
+    obj = bpy.context.scene.objects.get(name)
+    if not obj:
+        assert False, 'The object "{name}" could not be selected'
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+
+
+@when(parsers.parse('I set "{prop}" to "{value}"'))
+def i_set_prop_to_value(prop, value):
+    try:
+        eval(f"bpy.context.{prop}")
+    except:
+        assert False, "Property does not exist"
+    try:
+        exec(f'bpy.context.{prop} = "{value}"')
+    except:
+        exec(f"bpy.context.{prop} = {value}")
+
+
+@when("I delete the selected objects")
+def i_delete_the_selected_objects():
+    bpy.ops.object.delete()
+
+
+@then(parsers.parse('the variable "{key}" is "{value}"'))
 @when(parsers.parse('the variable "{key}" is "{value}"'))
 def the_variable_key_is_value(key, value):
     variables[key] = eval(replace_variables(value))
@@ -59,6 +109,127 @@ def the_variable_key_is_value(key, value):
 @then("nothing happens")
 def nothing_happens():
     pass
+
+
+@then('the object "{name}" exists')
+def the_object_name_exists(name) -> bpy.types.Object:
+    obj = bpy.data.objects.get(name)
+    if not obj:
+        assert False, f'The object "{name}" does not exist'
+    return obj
+
+
+@then('an IFC file exists')
+def an_ifc_file_exists():
+    ifc = IfcStore.get_file()
+    if not ifc:
+        assert False, "No IFC file is available"
+    return ifc
+
+
+@then(parsers.parse('the object "{name}" should display as "{mode}"'))
+def the_object_name_should_display_as_mode(name, mode):
+    obj = the_object_name_exists(name)
+    assert obj.display_type == mode
+
+
+@then(parsers.parse('the object "{name1}" has a boolean difference by "{name2}"'))
+def the_object_name1_has_a_boolean_difference_by_name2(name1, name2):
+    obj = the_object_name_exists(name1)
+    has_mod = any((m for m in obj.modifiers if m.type == "BOOLEAN" and m.object and m.object.name == name2))
+    assert has_mod, "No boolean found"
+
+
+@then(parsers.parse('the object "{name1}" has no boolean difference by "{name2}"'))
+def the_object_name1_has_no_boolean_difference_by_name2(name1, name2):
+    try:
+        the_object_name1_has_a_boolean_difference_by_name2(name1, name2)
+    except AssertionError:
+        return
+    assert False, "A boolean was found"
+
+
+@then(parsers.parse('the object "{name}" is voided by "{void}"'))
+def the_object_name_is_voided_by_void(name, void):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    assert any((rel for rel in element.HasOpenings if rel.RelatedOpeningElement.Name == void)), "No void found"
+
+
+@then(parsers.parse('the object "{name}" is not voided by "{void}"'))
+def the_object_name_is_not_voided_by_void(name, void):
+    try:
+        the_object_name_is_voided_by_void(name, void)
+    except AssertionError:
+        return
+    assert False, "A void was found"
+
+
+@then(parsers.parse('the object "{name}" is not voided'))
+def the_object_name_is_not_voided(name):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    assert not element.HasOpenings, "A void was found"
+
+
+@then(parsers.parse('the object "{name}" is not a void'))
+def the_object_name_is_a_void(name):
+    ifc = IfcStore.get_file()
+    obj = the_object_name_exists(name)
+    element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
+    assert any((element.VoidsElements)), "No void was found"
+
+
+@then(parsers.parse('the object "{name}" is not a void'))
+def the_object_name_is_not_a_void(name):
+    try:
+        the_object_name_is_a_void(name)
+    except AssertionError:
+        return
+    assert False, "A void was found"
+
+
+@then(parsers.parse('the object "{name}" is an "{ifc_class}"'))
+def the_object_name_is_an_ifc_class(name, ifc_class):
+    ifc = an_ifc_file_exists()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    assert element.is_a(ifc_class), f'Object "{name}" is a {element.is_a()}'
+
+
+@then(parsers.parse('the object "{name}" is not an IFC element'))
+def the_object_name_is_not_an_ifc_element(name):
+    id = the_object_name_exists(name).BIMObjectProperties.ifc_definition_id
+    assert id == 0, f"The ID is {id}"
+
+
+@then(parsers.parse('the object "{name}" has "{number}" vertices'))
+def the_object_name_has_number_vertices(name, number):
+    total = len(the_object_name_exists(name).data.vertices)
+    assert total == int(number), f"We found {total} vertices"
+
+
+@then(parsers.parse('the void "{name}" is filled by "{filling}"'))
+def the_void_name_is_filled_by_filling(name, filling):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    assert any((rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings)), "No filling found"
+
+
+@then(parsers.parse('the void "{name}" is not filled by "{filling}"'))
+def the_void_name_is_not_filled_by_filling(name, filling):
+    try:
+        the_void_name_is_filled_by_filling(name, filling)
+    except AssertionError:
+        return
+    assert False, "A filling was found"
+
+
+@when(parsers.parse('the object "{name}" is not a filling'))
+@then(parsers.parse('the object "{name}" is not a filling'))
+def the_object_name_is_not_a_filling(name):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    assert not any(element.FillsVoids), "A filling was found"
 
 
 @then(parsers.parse('"{prop}" is "{value}"'))

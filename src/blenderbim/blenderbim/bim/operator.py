@@ -650,7 +650,7 @@ class OverrideDelete(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object is not None
+        return len(context.selected_objects) > 0
 
     def execute(self, context):
         if IfcStore.get_file():
