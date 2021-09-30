@@ -120,7 +120,8 @@ Scenario: Remove a non dynamic opening manually
     And additionally the object "Cube" is selected
     And I press "bim.add_opening(opening='Cube', obj='IfcWall/Cube')"
     And the object "IfcWall/Cube" is selected
-    And I press "bim.switch_representation(ifc_definition_id=86, should_reload=True)"
+    And the variable "representation" is "IfcStore.get_file().by_type('IfcWall')[0].Representation.Representations[1].id()"
+    And I press "bim.switch_representation(ifc_definition_id={representation}, should_reload=True)"
     Then the object "IfcWall/Cube" has no boolean difference by "IfcOpeningElement/Cube"
     And the object "IfcWall/Cube" has "16" vertices
     And the variable "opening_id" is "IfcStore.get_file().by_type('IfcOpeningElement')[0].id()"
