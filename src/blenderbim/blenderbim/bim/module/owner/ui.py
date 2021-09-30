@@ -19,16 +19,7 @@
 import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
-from blenderbim.bim.module.owner.data import PeopleData, OrganisationsData
-from bpy.types import Panel
-from ifcopenshell.api.owner.data import Data
-from blenderbim.bim.ifc import IfcStore
-
-
-def draw_prop_on_new_row(layout, owner, attribute, align=False, **kwargs):
-    row = layout.row(align=align)
-    row.prop(owner, attribute, **kwargs)
-    return row
+from blenderbim.bim.module.owner.data import PeopleData, OrganisationsData, OwnerData
 
 
 def draw_roles(box, parent):
@@ -95,7 +86,7 @@ class BIM_PT_people(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc().get()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not PeopleData.is_loaded:
@@ -141,7 +132,7 @@ class BIM_PT_people(bpy.types.Panel):
                 row.operator("bim.remove_person", icon="X", text="").person = person["id"]
 
 
-class BIM_PT_organisations(Panel):
+class BIM_PT_organisations(bpy.types.Panel):
     bl_label = "IFC Organisations"
     bl_idname = "BIM_PT_organisations"
     bl_options = {"DEFAULT_CLOSED"}
@@ -151,7 +142,7 @@ class BIM_PT_organisations(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not OrganisationsData.is_loaded:
@@ -185,7 +176,7 @@ class BIM_PT_organisations(Panel):
                 row.operator("bim.remove_organisation", icon="X", text="").organisation = organisation["id"]
 
 
-class BIM_PT_owner(Panel):
+class BIM_PT_owner(bpy.types.Panel):
     bl_label = "IFC Owner History"
     bl_idname = "BIM_PT_owner"
     bl_options = {"DEFAULT_CLOSED"}
@@ -195,22 +186,24 @@ class BIM_PT_owner(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not OwnerData.is_loaded:
+            OwnerData.load()
 
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
         props = context.scene.BIMOwnerProperties
 
-        if not Data.people:
+        if not OwnerData.data["user_person"]:
             self.layout.label(text="No people found.")
         else:
-            draw_prop_on_new_row(self.layout, props, "user_person")
+            row = self.layout.row()
+            row.prop(props, "user_person")
 
-        if not Data.organisations:
+        if not OwnerData.data["user_organisation"]:
             self.layout.label(text="No organisations found.")
         else:
-            draw_prop_on_new_row(self.layout, props, "user_organisation")
+            row = self.layout.row()
+            row.prop(props, "user_organisation")

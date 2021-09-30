@@ -17,18 +17,19 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, operator
+from . import ui, prop, operator
 
 classes = (
     operator.AddSubcontext,
     operator.RemoveSubcontext,
+    prop.BIMContextProperties,
     ui.BIM_PT_context,
 )
 
 
 def register():
-    pass
+    bpy.types.Scene.BIMContextProperties = bpy.props.PointerProperty(type=prop.BIMContextProperties)
 
 
 def unregister():
-    pass
+    del bpy.types.Scene.BIMContextProperties
