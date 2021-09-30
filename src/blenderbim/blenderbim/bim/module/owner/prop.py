@@ -18,8 +18,7 @@
 
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.owner.data import Data
+from blenderbim.bim.module.owner.data import OwnerData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -32,47 +31,25 @@ from bpy.props import (
     CollectionProperty,
 )
 
-_persons_enum = []
-_organisations_enum = []
+
+def get_user_person(self, context):
+    if not OwnerData.is_loaded:
+        OwnerData.load()
+    return OwnerData.data["user_person"]
 
 
-def purge():
-    global _persons_enum
-    global _organisations_enum
-    _persons_enum.clear()
-    _organisations_enum.clear()
-
-
-def getPersons(self, context):
-    global _persons_enum
-    if not Data.is_loaded:
-        Data.load(IfcStore.get_file())
-    _persons_enum.clear()
-    for ifc_id, person in Data.people.items():
-        if "Id" in person:
-            identifier = person["Id"] or ""
-        else:
-            identifier = person["Identification"] or ""
-        _persons_enum.append((str(ifc_id), identifier, ""))
-    return _persons_enum
-
-
-def getOrganisations(self, context):
-    global _organisations_enum
-    if not Data.is_loaded:
-        Data.load(IfcStore.get_file())
-    _organisations_enum.clear()
-    for ifc_id, organisation in Data.organisations.items():
-        _organisations_enum.append((str(ifc_id), organisation["Name"], ""))
-    return _organisations_enum
+def get_user_organisation(self, context):
+    if not OwnerData.is_loaded:
+        OwnerData.load()
+    return OwnerData.data["user_organisation"]
 
 
 class BIMOwnerProperties(PropertyGroup):
+    active_person_id: IntProperty(name="Active Person Id")
     person_attributes: CollectionProperty(name="Person Attributes", type=Attribute)
     middle_names: CollectionProperty(type=StrProperty, name="Middle Names")
     prefix_titles: CollectionProperty(type=StrProperty, name="Prefixes")
     suffix_titles: CollectionProperty(type=StrProperty, name="Suffixes")
-    active_person_id: IntProperty(name="Active Person Id")
     active_organisation_id: IntProperty(name="Active Organisation Id")
     organisation_attributes: CollectionProperty(name="Organisation Attributes", type=Attribute)
     active_role_id: IntProperty(name="Active Role Id")
@@ -84,5 +61,5 @@ class BIMOwnerProperties(PropertyGroup):
     facsimile_numbers: CollectionProperty(type=StrProperty, name="Facsimile Numbers")
     electronic_mail_addresses: CollectionProperty(type=StrProperty, name="Emails")
     messaging_ids: CollectionProperty(type=StrProperty, name="IMs")
-    user_person: EnumProperty(items=getPersons, name="Person")
-    user_organisation: EnumProperty(items=getOrganisations, name="Organisation")
+    user_person: EnumProperty(items=get_user_person, name="Person")
+    user_organisation: EnumProperty(items=get_user_organisation, name="Organisation")

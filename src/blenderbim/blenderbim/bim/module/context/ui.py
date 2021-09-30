@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from bpy.types import Panel
-from ifcopenshell.api.context.data import Data
-from blenderbim.bim.ifc import IfcStore
+import bpy
+import blenderbim.tool as tool
+from blenderbim.bim.module.context.data import ContextData
 
 
-class BIM_PT_context(Panel):
+class BIM_PT_context(bpy.types.Panel):
     bl_label = "IFC Geometric Representation Contexts"
     bl_idname = "BIM_PT_context"
     bl_options = {"DEFAULT_CLOSED"}
@@ -31,28 +31,31 @@ class BIM_PT_context(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not ContextData.is_loaded:
+            ContextData.load()
 
-        props = context.scene.BIMProperties
+        props = context.scene.BIMContextProperties
 
         row = self.layout.row(align=True)
-        row.prop(props, "available_contexts", text="")
-        row.prop(props, "available_subcontexts", text="")
-        row.prop(props, "available_target_views", text="")
-        row.operator("bim.add_subcontext", icon="ADD", text="")
+        row.prop(props, "contexts", text="")
+        row.prop(props, "subcontexts", text="")
+        row.prop(props, "target_views", text="")
+        op = row.operator("bim.add_subcontext", icon="ADD", text="")
+        op.context = props.contexts
+        op.subcontext = props.subcontexts
+        op.target_view = props.target_views
 
-        for ifc_definition_id, context in Data.contexts.items():
+        for context in ContextData.data["contexts"]:
             box = self.layout.box()
             row = box.row(align=True)
-            row.label(text=context["ContextType"])
-            row.operator("bim.remove_subcontext", icon="X", text="").ifc_definition_id = ifc_definition_id
-            for ifc_definition_id2, subcontext in context["HasSubContexts"].items():
+            row.label(text=context["context_type"])
+            row.operator("bim.remove_subcontext", icon="X", text="").context = context["id"]
+            for subcontext in context["subcontexts"]:
                 row = box.row(align=True)
-                row.label(text=subcontext["ContextType"])
-                row.label(text=subcontext["ContextIdentifier"])
-                row.label(text=subcontext["TargetView"])
-                row.operator("bim.remove_subcontext", icon="X", text="").ifc_definition_id = ifc_definition_id2
+                row.label(text=subcontext["context_type"])
+                row.label(text=subcontext["context_identifier"])
+                row.label(text=subcontext["target_view"])
+                row.operator("bim.remove_subcontext", icon="X", text="").context = subcontext["id"]

@@ -85,7 +85,7 @@ class PeopleData(RolesAddressesData):
     @classmethod
     def get_people(cls):
         people = []
-        for person in tool.Ifc().get().by_type("IfcPerson"):
+        for person in tool.Ifc.get().by_type("IfcPerson"):
             people.append(
                 {
                     "id": person.id(),
@@ -102,7 +102,7 @@ class PeopleData(RolesAddressesData):
 
     @classmethod
     def get_person_name(cls, person):
-        if tool.Ifc().get_schema() == "IFC2X3":
+        if tool.Ifc.get_schema() == "IFC2X3":
             name = person.Id
         else:
             name = person.Identification
@@ -143,7 +143,7 @@ class OrganisationsData(RolesAddressesData):
     @classmethod
     def get_organisations(cls):
         organisations = []
-        for organisation in tool.Ifc().get().by_type("IfcOrganization"):
+        for organisation in tool.Ifc.get().by_type("IfcOrganization"):
             organisations.append(
                 {
                     "id": organisation.id(),
@@ -156,3 +156,21 @@ class OrganisationsData(RolesAddressesData):
                 }
             )
         return organisations
+
+
+class OwnerData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"user_person": cls.get_user_person(), "user_organisation": cls.get_user_organisation()}
+        cls.is_loaded = True
+
+    @classmethod
+    def get_user_person(cls):
+        return [(str(p.id()), p[0] or "Unnamed", "") for p in tool.Ifc.get().by_type("IfcPerson")]
+
+    @classmethod
+    def get_user_organisation(cls):
+        return [(str(p.id()), p[0] or "Unnamed", "") for p in tool.Ifc.get().by_type("IfcOrganization")]

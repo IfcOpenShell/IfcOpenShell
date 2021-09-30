@@ -19,11 +19,19 @@
 import bpy
 import blenderbim.tool as tool
 import blenderbim.core.context as core
+import blenderbim.bim.module.context.data
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.context.data import Data
 
 
-class AddSubcontext(bpy.types.Operator):
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.module.context.data.ContextData.is_loaded = False
+        return {"FINISHED"}
+
+
+class AddSubcontext(bpy.types.Operator, Operator):
     bl_idname = "bim.add_subcontext"
     bl_label = "Add Subcontext"
     bl_options = {"REGISTER", "UNDO"}
@@ -31,31 +39,15 @@ class AddSubcontext(bpy.types.Operator):
     subcontext: bpy.props.StringProperty()
     target_view: bpy.props.StringProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        core.add_context(
-            tool.Ifc(),
-            context=self.context or context.scene.BIMProperties.available_contexts,
-            subcontext=self.subcontext or context.scene.BIMProperties.available_subcontexts,
-            target_view=self.target_view or context.scene.BIMProperties.available_target_views,
-        )
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+        core.add_context(tool.Ifc, context=self.context, subcontext=self.subcontext, target_view=self.target_view)
 
 
-class RemoveSubcontext(bpy.types.Operator):
+class RemoveSubcontext(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_subcontext"
     bl_label = "Remove Context"
     bl_options = {"REGISTER", "UNDO"}
-    ifc_definition_id: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    context: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        core.remove_context(tool.Ifc(), context=self.file.by_id(self.ifc_definition_id))
-        Data.load(self.file)
-        return {"FINISHED"}
+        core.remove_context(tool.Ifc, context=tool.Ifc.get().by_id(self.context))
