@@ -116,5 +116,4 @@ class TestExportAttributes(test.bim.bootstrap.NewFile):
             "UserDefinedTargetView": "UserDefinedTargetView",
             "ContextIdentifier": None,
             "ContextType": None,
-            "CoordinateSpaceDimension": None,
         }
