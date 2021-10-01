@@ -23,3 +23,4 @@ from blenderbim.core.tool.role_editor import RoleEditor
 from blenderbim.core.tool.address_editor import AddressEditor
 from blenderbim.core.tool.organisation_editor import OrganisationEditor
 from blenderbim.core.tool.context_editor import ContextEditor
+from blenderbim.core.tool.owner import Owner

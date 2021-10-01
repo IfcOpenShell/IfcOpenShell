@@ -164,7 +164,12 @@ class OwnerData:
 
     @classmethod
     def load(cls):
-        cls.data = {"user_person": cls.get_user_person(), "user_organisation": cls.get_user_organisation()}
+        cls.data = {
+            "user_person": cls.get_user_person(),
+            "user_organisation": cls.get_user_organisation(),
+            "can_add_user": cls.can_add_user(),
+            "users": cls.get_users(),
+        }
         cls.is_loaded = True
 
     @classmethod
@@ -174,3 +179,18 @@ class OwnerData:
     @classmethod
     def get_user_organisation(cls):
         return [(str(p.id()), p[0] or "Unnamed", "") for p in tool.Ifc.get().by_type("IfcOrganization")]
+
+    @classmethod
+    def can_add_user(cls):
+        return tool.Ifc.get().by_type("IfcPerson") and tool.Ifc.get().by_type("IfcOrganization")
+
+    @classmethod
+    def get_users(cls):
+        results = []
+        for user in tool.Ifc.get().by_type("IfcPersonAndOrganization"):
+            results.append({
+                "id": user.id(),
+                "label": "{} ({})".format(user.ThePerson[0] or "Unnamed", user.TheOrganization[0] or "Unnamed"),
+                "is_active": bpy.context.scene.BIMOwnerProperties.active_user_id == user.id(),
+            })
+        return results

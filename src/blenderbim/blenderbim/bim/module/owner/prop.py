@@ -63,3 +63,4 @@ class BIMOwnerProperties(PropertyGroup):
     messaging_ids: CollectionProperty(type=StrProperty, name="IMs")
     user_person: EnumProperty(items=get_user_person, name="Person")
     user_organisation: EnumProperty(items=get_user_organisation, name="Organisation")
+    active_user_id: IntProperty(name="Active User Id")

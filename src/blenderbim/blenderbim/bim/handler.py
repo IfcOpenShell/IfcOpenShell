@@ -20,6 +20,8 @@ import bpy
 import json
 import addon_utils
 import ifcopenshell.api.owner.settings
+import blenderbim.tool as tool
+import blenderbim.core.owner as core_owner
 from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
@@ -228,16 +230,7 @@ def setDefaultProperties(scene):
     bpy.msgbus.subscribe_rna(
         key=active_object_key, owner=global_subscription_owner, args=(), notify=active_object_callback
     )
-    ifcopenshell.api.owner.settings.get_person = (
-        lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
-        if get_user_person(None, None) and bpy.context.scene.BIMOwnerProperties.user_person
-        else None
-    )
-    ifcopenshell.api.owner.settings.get_organisation = (
-        lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_organisation))
-        if get_user_organisation(None, None) and bpy.context.scene.BIMOwnerProperties.user_organisation
-        else None
-    )
+    ifcopenshell.api.owner.settings.get_user = lambda ifc: core_owner.get_user(tool.Owner)
     ifcopenshell.api.owner.settings.get_application = get_application
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()

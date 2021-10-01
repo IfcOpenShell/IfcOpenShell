@@ -18,7 +18,7 @@
 
 
 import blenderbim.core.owner as subject
-from test.core.bootstrap import ifc, blender, person_editor, role_editor, address_editor, organisation_editor
+from test.core.bootstrap import ifc, blender, person_editor, role_editor, address_editor, organisation_editor, owner
 
 
 class TestAddPerson:
@@ -181,3 +181,41 @@ class TestEditOrganisation:
         ifc.run("owner.edit_organisation", organisation="organisation", attributes="attributes").should_be_called()
         organisation_editor.clear_organisation().should_be_called()
         subject.edit_organisation(ifc, organisation_editor)
+
+
+class TestAddPersonAndOrganisation:
+    def test_run(self, ifc):
+        ifc.run(
+            "owner.add_person_and_organisation", person="person", organisation="organisation"
+        ).should_be_called().will_return("person_and_organisation")
+        assert (
+            subject.add_person_and_organisation(ifc, person="person", organisation="organisation")
+            == "person_and_organisation"
+        )
+
+
+class TestRemovePersonAndOrganisation:
+    def test_run(self, ifc, owner):
+        owner.get_user().should_be_called().will_return("user")
+        ifc.run(
+            "owner.remove_person_and_organisation", person_and_organisation="person_and_organisation"
+        ).should_be_called()
+        subject.remove_person_and_organisation(ifc, owner, person_and_organisation="person_and_organisation")
+
+    def test_clearing_the_active_user_if_you_remove_it(self, ifc, owner):
+        owner.get_user().should_be_called().will_return("user")
+        owner.clear_user().should_be_called()
+        ifc.run("owner.remove_person_and_organisation", person_and_organisation="user").should_be_called()
+        subject.remove_person_and_organisation(ifc, owner, person_and_organisation="user")
+
+
+class TestSetUser:
+    def test_run(self, owner):
+        owner.set_user("person_and_organisation").should_be_called()
+        subject.set_user(owner, user="person_and_organisation")
+
+
+class TestGetUser:
+    def test_run(self, owner):
+        owner.get_user().should_be_called().will_return("person_and_organisation")
+        assert subject.get_user(owner) == "person_and_organisation"

@@ -207,3 +207,19 @@ class BIM_PT_owner(bpy.types.Panel):
         else:
             row = self.layout.row()
             row.prop(props, "user_organisation")
+
+        if OwnerData.data["can_add_user"]:
+            row = self.layout.row()
+            op = row.operator("bim.add_person_and_organisation", icon="ADD")
+            op.person = int(props.user_person)
+            op.organisation = int(props.user_organisation)
+
+        for user in OwnerData.data["users"]:
+            row = self.layout.row(align=True)
+            if user["is_active"]:
+                row.label(text=user["label"], icon="USER")
+            else:
+                row.label(text=user["label"])
+            row.operator("bim.set_user", icon="KEYFRAME_HLT", text="").user = user["id"]
+            op = row.operator("bim.remove_person_and_organisation", icon="X", text="")
+            op.person_and_organisation = user["id"]

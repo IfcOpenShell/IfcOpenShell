@@ -10,7 +10,7 @@ Scenario: Add person
 Scenario: Remove person
     Given an empty IFC project
     When I press "bim.add_person"
-    And the variable "person" is "{ifc}.by_type('IfcPerson')[0].id()"
+    And the variable "person" is "{ifc}.by_type('IfcPerson')[-1].id()"
     And I press "bim.remove_person(person={person})"
     Then nothing happens
 
@@ -198,6 +198,38 @@ Scenario: Edit organisation
 Scenario: Remove organisation
     Given an empty IFC project
     When I press "bim.add_organisation"
-    And the variable "organisation" is "{ifc}.by_type('IfcOrganization')[0].id()"
+    And the variable "organisation" is "{ifc}.by_type('IfcOrganization')[-1].id()"
     And I press "bim.remove_organisation(organisation={organisation})"
+    Then nothing happens
+
+Scenario: Add person and organisation
+    Given an empty IFC project
+    When I press "bim.add_person"
+    And I press "bim.add_organisation"
+    And the variable "person" is "{ifc}.by_type('IfcPerson')[0].id()"
+    And the variable "organisation" is "{ifc}.by_type('IfcOrganization')[0].id()"
+    And I press "bim.add_person_and_organisation(person={person}, organisation={organisation})"
+    Then nothing happens
+
+Scenario: Remove person and organisation
+    Given an empty IFC project
+    When I press "bim.add_person"
+    And I press "bim.add_organisation"
+    And the variable "person" is "{ifc}.by_type('IfcPerson')[-1].id()"
+    And the variable "organisation" is "{ifc}.by_type('IfcOrganization')[-1].id()"
+    And I press "bim.add_person_and_organisation(person={person}, organisation={organisation})"
+    # Note: these are set to -1 temporarily to prevent crashing due to bug #1747
+    And the variable "pno" is "{ifc}.by_type('IfcPersonAndOrganization')[-1].id()"
+    And I press "bim.remove_person_and_organisation(person_and_organisation={pno})"
+    Then nothing happens
+
+Scenario: Set user
+    Given an empty IFC project
+    When I press "bim.add_person"
+    And I press "bim.add_organisation"
+    And the variable "person" is "{ifc}.by_type('IfcPerson')[0].id()"
+    And the variable "organisation" is "{ifc}.by_type('IfcOrganization')[0].id()"
+    And I press "bim.add_person_and_organisation(person={person}, organisation={organisation})"
+    And the variable "user" is "{ifc}.by_type('IfcPersonAndOrganization')[0].id()"
+    And I press "bim.set_user(user={user})"
     Then nothing happens
