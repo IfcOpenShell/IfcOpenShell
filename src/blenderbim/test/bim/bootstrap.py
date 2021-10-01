@@ -44,6 +44,7 @@ class NewFile:
             while bpy.data.objects:
                 bpy.data.objects.remove(bpy.data.objects[0])
             bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+        blenderbim.bim.handler.setDefaultProperties(None)
 
 
 class NewIfc:
@@ -54,6 +55,7 @@ class NewIfc:
         while bpy.data.objects:
             bpy.data.objects.remove(bpy.data.objects[0])
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+        blenderbim.bim.handler.setDefaultProperties(None)
         bpy.ops.bim.create_project()
 
 

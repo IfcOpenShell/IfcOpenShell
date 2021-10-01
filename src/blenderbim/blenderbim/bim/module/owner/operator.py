@@ -264,3 +264,38 @@ class RemoveOrganisation(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.remove_organisation(tool.Ifc, tool.Ifc.get().by_id(self.organisation))
+
+
+class AddPersonAndOrganisation(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_person_and_organisation"
+    bl_label = "Add Person And Organisation"
+    bl_options = {"REGISTER", "UNDO"}
+    person: bpy.props.IntProperty()
+    organisation: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.add_person_and_organisation(
+            tool.Ifc, person=tool.Ifc.get().by_id(self.person), organisation=tool.Ifc.get().by_id(self.organisation)
+        )
+
+
+class RemovePersonAndOrganisation(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_person_and_organisation"
+    bl_label = "Remove Person And Organisation"
+    bl_options = {"REGISTER", "UNDO"}
+    person_and_organisation: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.remove_person_and_organisation(
+            tool.Ifc, tool.Owner, person_and_organisation=tool.Ifc.get().by_id(self.person_and_organisation)
+        )
+
+
+class SetUser(bpy.types.Operator, Operator):
+    bl_idname = "bim.set_user"
+    bl_label = "set_user"
+    bl_options = {"REGISTER", "UNDO"}
+    user: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.set_user(tool.Owner, user=tool.Ifc.get().by_id(self.user))

@@ -70,6 +70,13 @@ def context_editor():
     prophet.verify()
 
 
+@pytest.fixture
+def owner():
+    prophet = Prophecy(blenderbim.core.tool.Owner)
+    yield prophet
+    prophet.verify()
+
+
 class Prophecy:
     def __init__(self, cls):
         self.subject = cls

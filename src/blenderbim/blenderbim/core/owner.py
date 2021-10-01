@@ -121,3 +121,21 @@ def edit_organisation(ifc, organisation_editor):
     organisation = organisation_editor.get_organisation()
     ifc.run("owner.edit_organisation", organisation=organisation, attributes=organisation_editor.export_attributes())
     organisation_editor.clear_organisation()
+
+
+def add_person_and_organisation(ifc, person=None, organisation=None):
+    return ifc.run("owner.add_person_and_organisation", person=person, organisation=organisation)
+
+
+def remove_person_and_organisation(ifc, owner, person_and_organisation):
+    if owner.get_user() == person_and_organisation:
+        owner.clear_user()
+    ifc.run("owner.remove_person_and_organisation", person_and_organisation=person_and_organisation)
+
+
+def set_user(owner, user=None):
+    owner.set_user(user)
+
+
+def get_user(owner):
+    return owner.get_user()

@@ -28,7 +28,7 @@ class Usecase:
             elif inverse.is_a("IfcPersonAndOrganization"):
                 ifcopenshell.api.run("owner.remove_person_and_organisation", self.file, person_and_organisation=inverse)
             elif inverse.is_a("IfcActor"):
-                ifcopenshell.api.run("owner.remove_actor", self.file, actor=inverse)
+                ifcopenshell.api.run("root.remove_product", self.file, product=inverse)
             elif inverse.is_a("IfcResourceLevelRelationship"):
                 if inverse.RelatedResourceObjects == (self.settings["person"],):
                     self.file.remove(inverse)
