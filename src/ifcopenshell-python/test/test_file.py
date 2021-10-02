@@ -191,7 +191,12 @@ class TestFile(test.bootstrap.IFC4):
     def test_getting_inverse_references_of_an_element(self):
         owner = self.file.createIfcOwnerHistory()
         element = self.file.createIfcWall(OwnerHistory=owner)
-        assert self.file.get_inverse(owner) == [element]
+        assert self.file.get_inverse(owner) == {element}
+
+    def test_getting_multiple_inverses_if_an_element_is_referenced_twice_by_the_same_element(self):
+        user = self.file.createIfcPersonAndOrganization()
+        owner = self.file.createIfcOwnerHistory(OwningUser=user, LastModifyingUser=user)
+        assert self.file.get_inverse(user, allow_duplicate=True) == [owner, owner]
 
     def test_removing_an_element(self):
         element = self.file.createIfcWall(GlobalId="global_id")
