@@ -378,7 +378,7 @@ class file(object):
 
         return [entity_instance(e, self) for e in fn(inst.wrapped_data, max_levels)]
 
-    def get_inverse(self, inst):
+    def get_inverse(self, inst, allow_duplicate=False):
         """Return a list of entities that reference this entity
 
         :param inst: The entity instance to get inverse relationships
@@ -386,7 +386,10 @@ class file(object):
         :returns: A list of ifcopenshell.entity_instance.entity_instance objects
         :rtype: list
         """
-        return [entity_instance(e, self) for e in self.wrapped_data.get_inverse(inst.wrapped_data)]
+        inverses = [entity_instance(e, self) for e in self.wrapped_data.get_inverse(inst.wrapped_data)]
+        if allow_duplicate:
+            return inverses
+        return set(inverses)
 
     def remove(self, inst):
         """Deletes an IFC object in the file.
