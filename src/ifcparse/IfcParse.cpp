@@ -2031,10 +2031,13 @@ void IfcFile::process_deletion_() {
 					case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
 						aggregate_of_instance::ptr instance_list = *attr;
 						if (instance_list->contains(entity)) {
-							instance_list->remove(entity);
-
 							IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-							copy->set(instance_list);
+							instance_list->remove(entity);
+							if (!instance_list->size() && related_instance->declaration().as_entity()->attribute_by_index(i)->optional()) {
+								copy->set(boost::blank());
+							} else {
+								copy->set(instance_list);
+							}
 							related_instance->data().setArgument(i, copy);
 						} }
 																		 break;
