@@ -2034,6 +2034,7 @@ void IfcFile::process_deletion_() {
 							IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
 							instance_list->remove(entity);
 							if (!instance_list->size() && related_instance->declaration().as_entity()->attribute_by_index(i)->optional()) {
+								// @todo we can also check the lower bound of the attribute type before setting to null.
 								copy->set(boost::blank());
 							} else {
 								copy->set(instance_list);
