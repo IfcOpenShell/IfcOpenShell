@@ -19,13 +19,13 @@
 import bpy
 import ifcopenshell
 import test.bim.bootstrap
-import blenderbim.core.tool.ifc
-from blenderbim.tool import Ifc as subject
+import blenderbim.core.tool
+from blenderbim.tool.ifc import Ifc as subject
 
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.ifc.Ifc)
+        assert isinstance(subject(), blenderbim.core.tool.Ifc)
 
 
 class TestSet(test.bim.bootstrap.NewFile):
@@ -64,7 +64,7 @@ class TestGetSchema(test.bim.bootstrap.NewFile):
         assert subject.get_schema() == "IFC4"
 
 
-class TestGetElement(test.bim.bootstrap.NewFile):
+class TestGetEntity(test.bim.bootstrap.NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
@@ -88,3 +88,56 @@ class TestGetElement(test.bim.bootstrap.NewFile):
         obj = bpy.data.objects.new("Object", None)
         obj.BIMObjectProperties.ifc_definition_id = 1
         assert subject.get_entity(obj) is None
+
+
+class TestGetObject(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        element = ifc.createIfcWall()
+        obj = bpy.data.objects.new("Object", None)
+        subject.link(element, obj)
+        assert subject.get_object(element) == obj
+
+
+class TestLink(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        element = ifc.createIfcWall()
+        obj = bpy.data.objects.new("Object", None)
+        subject.link(element, obj)
+        assert subject.get_entity(obj) == element
+        assert subject.get_object(element) == obj
+
+
+class TestUnlink(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        element = ifc.createIfcWall()
+        obj = bpy.data.objects.new("Object", None)
+        subject.link(element, obj)
+        subject.unlink(element, obj)
+        assert subject.get_entity(obj) is None
+        assert subject.get_object(element) is None
+
+    def test_unlinking_using_an_object(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        element = ifc.createIfcWall()
+        obj = bpy.data.objects.new("Object", None)
+        subject.link(element, obj)
+        subject.unlink(obj=obj)
+        assert subject.get_entity(obj) is None
+        assert subject.get_object(element) is None
+
+    def test_unlinking_using_an_element(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        element = ifc.createIfcWall()
+        obj = bpy.data.objects.new("Object", None)
+        subject.link(element, obj)
+        subject.unlink(element=element)
+        assert subject.get_entity(obj) is None
+        assert subject.get_object(element) is None

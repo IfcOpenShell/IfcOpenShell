@@ -2,7 +2,7 @@ import bpy
 import blenderbim.core.tool
 import blenderbim.tool as tool
 
-class Owner(blenderbim.core.tool.owner.Owner):
+class Owner(blenderbim.core.tool.Owner):
     @classmethod
     def set_user(cls, user):
         bpy.context.scene.BIMOwnerProperties.active_user_id = user.id()

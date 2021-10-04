@@ -22,7 +22,7 @@ import blenderbim.tool as tool
 import blenderbim.bim.helper
 
 
-class RoleEditor(blenderbim.core.tool.role_editor.RoleEditor):
+class RoleEditor(blenderbim.core.tool.RoleEditor):
     @classmethod
     def set_role(cls, role):
         bpy.context.scene.BIMOwnerProperties.active_role_id = role.id()

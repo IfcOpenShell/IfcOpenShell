@@ -23,7 +23,7 @@ import blenderbim.bim.helper
 import blenderbim.tool as tool
 
 
-class OrganisationEditor(blenderbim.core.tool.organisation_editor.OrganisationEditor):
+class OrganisationEditor(blenderbim.core.tool.OrganisationEditor):
     @classmethod
     def set_organisation(cls, organisation):
         bpy.context.scene.BIMOwnerProperties.active_organisation_id = organisation.id()

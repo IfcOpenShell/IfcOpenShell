@@ -5,7 +5,7 @@ import blenderbim.tool as tool
 import numpy as np
 
 
-class Surveyor(blenderbim.core.tool.surveyor.Surveyor):
+class Surveyor(blenderbim.core.tool.Surveyor):
     @classmethod
     def get_absolute_matrix(cls, obj):
         matrix = np.array(obj.matrix_world)

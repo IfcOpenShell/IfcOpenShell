@@ -8,7 +8,7 @@ from blenderbim.tool.owner import Owner as subject
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.owner.Owner)
+        assert isinstance(subject(), blenderbim.core.tool.Owner)
 
 
 class TestSetUser(test.bim.bootstrap.NewFile):

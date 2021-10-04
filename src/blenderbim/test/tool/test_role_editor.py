@@ -26,7 +26,7 @@ from blenderbim.tool.role_editor import RoleEditor as subject
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.role_editor.RoleEditor)
+        assert isinstance(subject(), blenderbim.core.tool.RoleEditor)
 
 
 class TestSetRole(test.bim.bootstrap.NewFile):
