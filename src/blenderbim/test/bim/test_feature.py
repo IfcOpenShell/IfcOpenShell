@@ -42,8 +42,8 @@ def an_empty_ifc_project():
     bpy.ops.bim.create_project()
 
 
-@when("I add a cube")
 @given("I add a cube")
+@when("I add a cube")
 def i_add_a_cube():
     bpy.ops.mesh.primitive_cube_add()
 
@@ -53,6 +53,7 @@ def i_add_a_cube_of_size_size_at_location(size, location):
     bpy.ops.mesh.primitive_cube_add(size=float(size), location=[float(co) for co in location.split(",")])
 
 
+@given(parsers.parse('I press "{operator}"'))
 @when(parsers.parse('I press "{operator}"'))
 def i_press_operator(operator):
     operator = replace_variables(operator)
@@ -68,6 +69,7 @@ def i_deselect_all_objects():
     bpy.ops.object.select_all(action="DESELECT")
 
 
+@given(parsers.parse('the object "{name}" is selected'))
 @when(parsers.parse('the object "{name}" is selected'))
 def the_object_name_is_selected(name):
     i_deselect_all_objects()
@@ -83,6 +85,7 @@ def additionally_the_object_name_is_selected(name):
     obj.select_set(True)
 
 
+@given(parsers.parse('I set "{prop}" to "{value}"'))
 @when(parsers.parse('I set "{prop}" to "{value}"'))
 def i_set_prop_to_value(prop, value):
     try:

@@ -19,40 +19,72 @@
 import bpy
 import ifcopenshell
 import test.bim.bootstrap
+import blenderbim.core.tool.ifc
 from blenderbim.tool import Ifc as subject
+
+
+class TestImplementsTool(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        assert isinstance(subject(), blenderbim.core.tool.ifc.Ifc)
 
 
 class TestSet(test.bim.bootstrap.NewFile):
     def test_setting_an_ifc_data(self):
         ifc = ifcopenshell.file()
-        subject().set(ifc)
-        assert subject().get() == ifc
+        subject.set(ifc)
+        assert subject.get() == ifc
 
 
 class TestGet(test.bim.bootstrap.NewFile):
     def test_getting_an_ifc_dataset_from_a_ifc_spf_filepath(self):
-        assert subject().get() is None
+        assert subject.get() is None
         bpy.context.scene.BIMProperties.ifc_file = "test/files/basic.ifc"
-        result = subject().get()
+        result = subject.get()
         assert isinstance(result, ifcopenshell.file)
 
     def test_getting_the_active_ifc_dataset_regardless_of_ifc_path(self):
         bpy.context.scene.BIMProperties.ifc_file = "test/files/basic.ifc"
         ifc = ifcopenshell.file()
-        subject().set(ifc)
-        assert subject().get() == ifc
+        subject.set(ifc)
+        assert subject.get() == ifc
 
 
 class TestRun(test.bim.bootstrap.NewFile):
     def test_running_a_command_on_the_active_ifc_dataset(self):
         ifc = ifcopenshell.file()
-        subject().set(ifc)
-        wall = subject().run("root.create_entity", ifc_class="IfcWall")
-        assert subject().get().by_type("IfcWall")[0] == wall
+        subject.set(ifc)
+        wall = subject.run("root.create_entity", ifc_class="IfcWall")
+        assert subject.get().by_type("IfcWall")[0] == wall
 
 
 class TestGetSchema(test.bim.bootstrap.NewFile):
     def test_getting_the_schema_version_identifier(self):
         ifc = ifcopenshell.file(schema="IFC4")
-        subject().set(ifc)
-        assert subject().get_schema() == "IFC4"
+        subject.set(ifc)
+        assert subject.get_schema() == "IFC4"
+
+
+class TestGetElement(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        element = ifc.createIfcWall()
+        obj.BIMObjectProperties.ifc_definition_id = element.id()
+        assert subject.get_entity(obj) == element
+
+    def test_attempting_to_get_an_unlinked_object(self):
+        obj = bpy.data.objects.new("Object", None)
+        assert subject.get_entity(obj) is None
+
+    def test_attempting_without_a_file(self):
+        obj = bpy.data.objects.new("Object", None)
+        obj.BIMObjectProperties.ifc_definition_id = 1
+        assert subject.get_entity(obj) is None
+
+    def test_attempting_to_get_an_invalidly_linked_object(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        obj.BIMObjectProperties.ifc_definition_id = 1
+        assert subject.get_entity(obj) is None

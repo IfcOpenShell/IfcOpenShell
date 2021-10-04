@@ -24,3 +24,8 @@ class Ifc(abc.ABC):
     @abc.abstractmethod
     def run(cls, command, **kwargs):
         pass
+
+    @classmethod
+    @abc.abstractmethod
+    def get_entity(cls, obj):
+        pass

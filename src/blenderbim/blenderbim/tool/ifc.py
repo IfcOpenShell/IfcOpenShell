@@ -22,7 +22,7 @@ import blenderbim.core.tool
 from blenderbim.bim.ifc import IfcStore
 
 
-class Ifc:
+class Ifc(blenderbim.core.tool.ifc.Ifc):
     @classmethod
     def run(cls, command, **kwargs):
         return ifcopenshell.api.run(command, IfcStore.get_file(), **kwargs)
@@ -38,3 +38,13 @@ class Ifc:
     @classmethod
     def get_schema(cls):
         return IfcStore.get_file().schema
+
+    @classmethod
+    def get_entity(cls, obj):
+        ifc = IfcStore.get_file()
+        props = getattr(obj, "BIMObjectProperties", None)
+        if ifc and props and props.ifc_definition_id:
+            try:
+                return IfcStore.get_file().by_id(props.ifc_definition_id)
+            except:
+                pass
