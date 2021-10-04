@@ -26,7 +26,7 @@ from blenderbim.tool.context_editor import ContextEditor as subject
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.context_editor.ContextEditor)
+        assert isinstance(subject(), blenderbim.core.tool.ContextEditor)
 
 
 class TestSetContext(test.bim.bootstrap.NewFile):

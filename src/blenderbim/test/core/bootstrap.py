@@ -78,8 +78,36 @@ def owner():
 
 
 @pytest.fixture
+def voider():
+    prophet = Prophecy(blenderbim.core.tool.Voider)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def selector():
+    prophet = Prophecy(blenderbim.core.tool.Selector)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def surveyor():
     prophet = Prophecy(blenderbim.core.tool.Surveyor)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def collector():
+    prophet = Prophecy(blenderbim.core.tool.Collector)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def container():
+    prophet = Prophecy(blenderbim.core.tool.Container)
     yield prophet
     prophet.verify()
 

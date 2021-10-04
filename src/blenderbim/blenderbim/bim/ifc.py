@@ -202,6 +202,14 @@ class IfcStore:
             except:
                 pass
 
+        if obj is None:
+            try:
+                potential_obj = IfcStore.id_map[element.id()]
+                potential_obj.name
+                obj = potential_obj
+            except:
+                pass
+
         try:
             if element:
                 del IfcStore.id_map[element.id()]

@@ -26,7 +26,7 @@ from blenderbim.tool.organisation_editor import OrganisationEditor as subject
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.organisation_editor.OrganisationEditor)
+        assert isinstance(subject(), blenderbim.core.tool.OrganisationEditor)
 
 
 class TestSetOrganisation(test.bim.bootstrap.NewFile):

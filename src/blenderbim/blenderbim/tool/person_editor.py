@@ -23,7 +23,7 @@ import blenderbim.bim.helper
 import blenderbim.tool as tool
 
 
-class PersonEditor(blenderbim.core.tool.person_editor.PersonEditor):
+class PersonEditor(blenderbim.core.tool.PersonEditor):
     @classmethod
     def set_person(cls, person):
         bpy.context.scene.BIMOwnerProperties.active_person_id = person.id()

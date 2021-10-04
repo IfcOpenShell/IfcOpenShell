@@ -1,16 +1,17 @@
 import bpy
+import numpy as np
 import ifcopenshell
 import ifcopenshell.api
-import blenderbim.tool as tool
+
 import test.bim.bootstrap
-import blenderbim.core.tool.surveyor
-import numpy as np
+import blenderbim.core.tool
+import blenderbim.tool as tool
 from blenderbim.tool import Surveyor as subject
 
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.surveyor.Surveyor)
+        assert isinstance(subject(), blenderbim.core.tool.Surveyor)
 
 
 class TestGetGlobalMatrix(test.bim.bootstrap.NewFile):

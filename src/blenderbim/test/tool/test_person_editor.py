@@ -26,7 +26,7 @@ from blenderbim.tool.person_editor import PersonEditor as subject
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.person_editor.PersonEditor)
+        assert isinstance(subject(), blenderbim.core.tool.PersonEditor)
 
 
 class TestSetPerson(test.bim.bootstrap.NewFile):

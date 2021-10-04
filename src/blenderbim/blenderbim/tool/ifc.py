@@ -22,7 +22,7 @@ import blenderbim.core.tool
 from blenderbim.bim.ifc import IfcStore
 
 
-class Ifc(blenderbim.core.tool.ifc.Ifc):
+class Ifc(blenderbim.core.tool.Ifc):
     @classmethod
     def run(cls, command, **kwargs):
         return ifcopenshell.api.run(command, IfcStore.get_file(), **kwargs)
@@ -48,3 +48,15 @@ class Ifc(blenderbim.core.tool.ifc.Ifc):
                 return IfcStore.get_file().by_id(props.ifc_definition_id)
             except:
                 pass
+
+    @classmethod
+    def get_object(cls, element):
+        return IfcStore.get_element(element.id())
+
+    @classmethod
+    def link(cls, element, obj):
+        IfcStore.link_element(element, obj)
+
+    @classmethod
+    def unlink(cls, element=None, obj=None):
+        IfcStore.unlink_element(element, obj)
