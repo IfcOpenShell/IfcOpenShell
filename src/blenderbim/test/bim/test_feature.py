@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import ifcopenshell
 from blenderbim.bim.ifc import IfcStore
 from pytest_bdd import scenarios, given, when, then, parsers
 
@@ -36,10 +37,21 @@ def replace_variables(value):
 def an_empty_ifc_project():
     IfcStore.purge()
     bpy.ops.wm.read_homefile(app_template="")
-    while bpy.data.objects:
-        bpy.data.objects.remove(bpy.data.objects[0])
-    bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+    if len(bpy.data.objects) > 0:
+        while bpy.data.objects:
+            bpy.data.objects.remove(bpy.data.objects[0])
+        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
     bpy.ops.bim.create_project()
+
+
+@when("I load a new pset template file")
+def i_load_a_new_pset_template_file():
+    IfcStore.pset_template_path = os.path.join(
+        bpy.context.scene.BIMProperties.data_dir,
+        "pset",
+        bpy.context.scene.BIMPsetTemplateProperties.pset_template_files + ".ifc",
+    )
+    IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
 
 
 @given("I add a cube")
