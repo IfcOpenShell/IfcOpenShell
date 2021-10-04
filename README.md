@@ -151,14 +151,14 @@ Usage examples
 
 **Invoking IfcConvert from the command line**
 
-    $ wget ftp://ftp.dds.no/pub/ifc/Munkerud/Munkerud_hus6_BE.zip
-    $ unzip Munkerud_hus6_BE.zip
-    $ ./IfcConvert Munkerud_hus6_BE.ifc
-    $ less Munkerud_hus6_BE.obj
+    $ wget -O duplex.zip https://portal.nibs.org/files/wl/\?id=4DsTgHFQAcOXzFetxbpRCECPbbfUqpgo
+    $ unzip duplex.zip
+    $ ./IfcConvert Duplex_A_20110907_optimized.ifc
+    $ less Duplex_A_20110907_optimized.obj
 
 **Using the IfcOpenShell Python interface**
 
-    $ wget -O duplex.zip https://portal.nibs.org/files/wl/?id=4DsTgHFQAcOXzFetxbpRCECPbbfUqpgo
+    $ wget -O duplex.zip https://portal.nibs.org/files/wl/\?id=4DsTgHFQAcOXzFetxbpRCECPbbfUqpgo
     $ unzip duplex.zip
     $ python
     >>> import ifcopenshell
