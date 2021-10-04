@@ -77,6 +77,13 @@ def owner():
     prophet.verify()
 
 
+@pytest.fixture
+def surveyor():
+    prophet = Prophecy(blenderbim.core.tool.Surveyor)
+    yield prophet
+    prophet.verify()
+
+
 class Prophecy:
     def __init__(self, cls):
         self.subject = cls
