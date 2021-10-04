@@ -184,7 +184,9 @@ class Data:
         del rel_data["OwnerHistory"]
         rel_data["RelatingStructuralMember"] = rel.RelatingStructuralMember.id()
         rel_data["RelatedStructuralConnection"] = rel.RelatedStructuralConnection.id()
-        del rel_data["ConditionCoordinateSystem"]  # TODO: consider orientation
+        rel_data["ConditionCoordinateSystem"] = (
+            rel_data["ConditionCoordinateSystem"].id() if rel_data["ConditionCoordinateSystem"] is not None else None
+        )  # TODO: consider orientation
 
         if rel.is_a("IfcRelConnectsWithEccentricity"):
             rel_data["ConnectionConstraint"] = rel.ConnectionConstraint.id()  # TODO
@@ -226,9 +228,6 @@ class Data:
 
     @classmethod
     def load_structural_member(cls, product_id):
-        cls.connects_structural_activities = {}
-        cls.connects_structural_members = {}
-
         member = cls._file.by_id(product_id)
         data = member.get_info()
 
