@@ -156,6 +156,11 @@ class AssignClass(bpy.types.Operator):
             or product.is_a("IfcContext")
         ):
             self.place_in_spatial_collection(obj, context)
+        elif product.is_a("IfcStructuralItem"):
+            if product.is_a("IfcStructuralMember"):
+                self.place_in_structural_items_collection(obj, context, structural_collection="Members")
+            elif product.is_a("IfcStructuralConnection"):
+                self.place_in_structural_items_collection(obj, context, structural_collection="Connections")
         else:
             self.assign_potential_spatial_container(obj)
         context.view_layer.objects.active = obj
@@ -200,6 +205,25 @@ class AssignClass(bpy.types.Operator):
             bpy.ops.bim.assign_object(related_object=obj.name, relating_object=parent_collection.name)
         else:
             context.scene.collection.children.link(collection)
+
+    def place_in_structural_items_collection(self, obj, context, structural_collection):
+        for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
+            if not [c for c in project.children if "StructuralItems" in c.name]:
+                members = bpy.data.collections.new("Members")
+                connections = bpy.data.collections.new("Connections")
+                items = bpy.data.collections.new("StructuralItems")
+                items.children.link(members)
+                items.children.link(connections)
+                project.collection.children.link(items)
+
+            for coll in [c for c in project.children if "StructuralItems" in c.name]:
+                for collection in [c for c in coll.children if structural_collection in c.name]:
+                    for user_collection in obj.users_collection:
+                        user_collection.objects.unlink(obj)
+                    collection.collection.objects.link(obj)
+                    break
+                break
+            break
 
     def assign_potential_spatial_container(self, obj):
         for collection in obj.users_collection:
