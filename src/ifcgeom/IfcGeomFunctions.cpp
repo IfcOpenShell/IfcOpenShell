@@ -105,7 +105,6 @@
 #include <ShapeFix_Shell.hxx>
 
 #include <ShapeAnalysis_Curve.hxx>
-#include <ShapeAnalysis_Wire.hxx>
 #include <ShapeAnalysis_Surface.hxx>
 #include <ShapeAnalysis_ShapeTolerance.hxx>
 
