@@ -105,7 +105,7 @@ FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcRoundedRectangleProfileDef);
 FACE(IfcRectangleHollowProfileDef);
 FACE(IfcRectangleProfileDef);
-FACE(IfcTrapeziumProfileDef)
+FACE(IfcTrapeziumProfileDef);
 FACE(IfcCShapeProfileDef);
 // IfcAsymmetricIShapeProfileDef included
 FACE(IfcIShapeProfileDef);
@@ -138,7 +138,7 @@ WIRE(IfcCompositeCurve);
 WIRE(IfcTrimmedCurve);
 WIRE(IfcArbitraryOpenProfileDef);
 #ifdef SCHEMA_HAS_IfcIndexedPolyCurve
-WIRE(IfcIndexedPolyCurve)
+WIRE(IfcIndexedPolyCurve);
 #endif
 
 CURVE(IfcCircle);
