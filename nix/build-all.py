@@ -68,51 +68,51 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 
-PROJECT_NAME="IfcOpenShell"
+PROJECT_NAME = "IfcOpenShell"
 if os.getenv("USE_CURRENT_PYTHON_VERSION"):
-    PYTHON_VERSIONS=[platform.python_version()]
+    PYTHON_VERSIONS = [platform.python_version()]
 else:
-    PYTHON_VERSIONS=["3.6.13", "3.7.10", "3.8.8", "3.9.2"]
-JSON_VERSION="v3.6.1"
-OCE_VERSION="0.18"
-OCCT_VERSION="7.5.3"
-BOOST_VERSION="1.71.0"
-PCRE_VERSION="8.41"
-LIBXML2_VERSION="2.9.9"
-SWIG_VERSION="3.0.12"
-OPENCOLLADA_VERSION="v1.6.68"
-HDF5_VERSION="1.8.22"
+    PYTHON_VERSIONS = ["3.6.14", "3.7.12", "3.8.12", "3.9.7", "3.10.0"]
+JSON_VERSION = "v3.6.1"
+OCE_VERSION = "0.18"
+OCCT_VERSION = "7.5.3"
+BOOST_VERSION = "1.71.0"
+PCRE_VERSION = "8.41"
+LIBXML2_VERSION = "2.9.9"
+SWIG_VERSION = "3.0.12"
+OPENCOLLADA_VERSION = "v1.6.68"
+HDF5_VERSION = "1.8.22"
 
-GMP_VERSION="6.1.2"
-MPFR_VERSION="3.1.5"
-CGAL_VERSION="5.2"
+GMP_VERSION = "6.1.2"
+MPFR_VERSION = "3.1.5"
+CGAL_VERSION = "5.2"
 
 # binaries
-cp="cp"
-bash="bash"
-uname="uname"
-git="git"
-bunzip2="bunzip2"
-tar="tar"
-cc="cc"
-cplusplus="c++"
-autoconf="autoconf"
-automake="automake"
-yacc="yacc"
-make="make"
-date = "date"
-curl="curl"
-wget="wget"
-strip="strip"
+cp = "cp"
+bash = "bash"
+uname = "uname"
+git = "git"
+bunzip2 = "bunzip2"
+tar = "tar"
+cc = "cc"
+cplusplus = "c++"
+autoconf = "autoconf"
+automake = "automake"
+yacc = "yacc"
+make = "make"
+date  =  "date"
+curl = "curl"
+wget = "wget"
+strip = "strip"
 
 # Helper function for coloured printing
 
-NO_COLOR="\033[0m" # <ref>http://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux</ref>
-BLACK_ON_WHITE="\033[0;30;107m"
-RED="\033[31m"
-GREEN="\033[32m"
-YELLOW="\033[33m"
-MAGENTA="\033[35m"
+NO_COLOR = "\033[0m" # <ref>http://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux</ref>
+BLACK_ON_WHITE = "\033[0;30;107m"
+RED = "\033[31m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+MAGENTA = "\033[35m"
 
 def cecho(message, color=NO_COLOR):
     """Logs message `message` in color `color`."""
@@ -145,19 +145,18 @@ TARGET_ARCH = os.getenv("TARGET_ARCH", sp.check_output([uname, "-m"], encoding="
 
 CMAKE_DIR = os.path.realpath(os.path.join("..", "cmake"))
 
-try:
-    DEPS_DIR = os.environ["DEPS_DIR"]
-except KeyError:
-    path = ["..", "build", sp.check_output(uname, encoding="utf-8").strip(), TARGET_ARCH]
-    if TOOLSET:
-        path.append(TOOLSET)
-        
-    DEPS_DIR = os.path.realpath(os.path.join(*path))
+
+path = ["..", "build", sp.check_output(uname, encoding="utf-8").strip(), TARGET_ARCH]
+if TOOLSET:
+    path.append(TOOLSET)
+DEFAULT_DEPS_DIR = os.path.realpath(os.path.join(*path))
+
+DEPS_DIR = os.getenv("DEPS_DIR", DEFAULT_DEPS_DIR)
 
 if not os.path.exists(DEPS_DIR):
     os.makedirs(DEPS_DIR)
 
-BUILD_CFG=os.getenv("BUILD_CFG", "RelWithDebInfo")
+BUILD_CFG = os.getenv("BUILD_CFG", "RelWithDebInfo")
 
 
 # Print build configuration information
@@ -188,12 +187,12 @@ cecho(""" - How many compiler processes may be run in parallel.
 """)
 
 dependency_tree = {
-    'IfcParse': ('boost',  'libxml2', 'hdf5'),
-    'IfcGeom': ('IfcParse',  'occ', 'OpenCOLLADA', 'json', 'cgal'),
-    'IfcConvert': ('IfcGeom', ),
-    'OpenCOLLADA': ('libxml2',  'pcre'),
+    'IfcParse': ('boost', 'libxml2', 'hdf5'),
+    'IfcGeom': ('IfcParse', 'occ', 'json', 'cgal'),
+    'IfcConvert': ('IfcGeom',),
+    'OpenCOLLADA': ('libxml2', 'pcre'),
     'IfcGeomServer': ('IfcGeom',),
-    'IfcOpenShell-Python': ('python',  'swig',  'IfcGeom'),
+    'IfcOpenShell-Python': ('python', 'swig', 'IfcGeom'),
     'swig': ('pcre',),
     'boost': (),
     'libxml2': (),
@@ -428,7 +427,7 @@ if TARGET_ARCH == "i686" and run([uname, "-m"]).strip() == "x86_64":
         ADDITIONAL_ARGS = ["-m32", "-arch i386"]
     else:
         ADDITIONAL_ARGS = ["-m32"]
-    BOOST_ADDRESS_MODEL  = ["architecture=x86", "address-model=32"]
+    BOOST_ADDRESS_MODEL = ["architecture=x86", "address-model=32"]
 
 if get_os() == "Darwin":
     ADDITIONAL_ARGS = [f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
@@ -436,9 +435,9 @@ if get_os() == "Darwin":
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
 
-CXXFLAGS=os.environ.get("CXXFLAGS", "")
-CFLAGS=os.environ.get("CFLAGS", "")
-LDFLAGS=os.environ.get("LDFLAGS", "")
+CXXFLAGS = os.environ.get("CXXFLAGS", "")
+CFLAGS = os.environ.get("CFLAGS", "")
+LDFLAGS = os.environ.get("LDFLAGS", "")
 
 ADDITIONAL_ARGS_STR = " ".join(ADDITIONAL_ARGS)
 if sp.call([bash, "-c", "ld --gc-sections 2>&1 | grep -- --gc-sections &> /dev/null"]) != 0:
@@ -582,44 +581,28 @@ if "OpenCOLLADA" in targets:
 
 if "python" in targets:
     # Python should not be built with -fvisibility=hidden, from experience that introduces segfaults
-    OLD_CXX_FLAGS=os.environ["CXXFLAGS"]
-    OLD_C_FLAGS=os.environ["CFLAGS"]
-    os.environ["CXXFLAGS"]=CXXFLAGS_MINIMAL
-    os.environ["CFLAGS"]=CFLAGS_MINIMAL
+    OLD_CXX_FLAGS = os.environ["CXXFLAGS"]
+    OLD_C_FLAGS = os.environ["CFLAGS"]
+    os.environ["CXXFLAGS"] = CXXFLAGS_MINIMAL
+    os.environ["CFLAGS"] = CFLAGS_MINIMAL
 
     # On OSX a dynamic python library is built or it would not be compatible
     # with the system python because of some threading initialization
-    PYTHON_CONFIGURE_ARGS=[]
+    PYTHON_CONFIGURE_ARGS = []
     if get_os() == "Darwin":
-        PYTHON_CONFIGURE_ARGS=["--disable-static", "--enable-shared"]
+        PYTHON_CONFIGURE_ARGS = ["--disable-static", "--enable-shared"]
 
-    def get_python_unicode_confs(py_ver):
-        if py_ver < "3.3":
-            return [("--enable-unicode=ucs2",""), ("--enable-unicode=ucs4","u")]
-        else: return [("","")]
+    for PYTHON_VERSION in PYTHON_VERSIONS:
+        build_dependency(
+            f"python-{PYTHON_VERSION}",
+            "autoconf",
+            PYTHON_CONFIGURE_ARGS,
+            f"http://www.python.org/ftp/python/{PYTHON_VERSION}/",
+            f"Python-{PYTHON_VERSION}.tgz"
+        )
 
-    def PYTHON_VERSION_CONFS():
-        for v in PYTHON_VERSIONS:
-            for unicode_conf, abi_tag in get_python_unicode_confs(v):
-                yield v, unicode_conf, abi_tag
-
-    for PYTHON_VERSION, unicode_conf, abi_tag in PYTHON_VERSION_CONFS():
-        try:
-            build_dependency(
-                f"python-{PYTHON_VERSION}{abi_tag}",
-                "autoconf",
-                PYTHON_CONFIGURE_ARGS + [unicode_conf],
-                f"http://www.python.org/ftp/python/{PYTHON_VERSION}/",
-                f"Python-{PYTHON_VERSION}.tgz"
-            )
-        except Exception as e:
-            pyver2 = PYTHON_VERSION[:PYTHON_VERSION.rfind('.')]
-            if os.path.exists(f"{DEPS_DIR}/install/python-{PYTHON_VERSION}{abi_tag}/bin/python{pyver2}"):
-                print("Installation partially failed")
-            else: raise e
-
-    os.environ["CXXFLAGS"]=OLD_CXX_FLAGS
-    os.environ["CFLAGS"]=OLD_C_FLAGS
+    os.environ["CXXFLAGS"] = OLD_CXX_FLAGS
+    os.environ["CFLAGS"] = OLD_C_FLAGS
 
 if "boost" in targets:
     str_concat = lambda prefix: lambda postfix: "" if postfix.strip() == "" else "=".join((prefix, postfix.strip()))
@@ -654,7 +637,7 @@ if "cgal" in targets:
     )
     
     build_dependency(
-        name="mpfr-%s" % (MPFR_VERSION,),
+        name=f"mpfr-{MPFR_VERSION}",
         mode="autoconf",
         build_tool_args=["--disable-shared", f"--with-gmp={DEPS_DIR}/install/gmp-{GMP_VERSION}"],
         download_url=f"http://www.mpfr.org/mpfr-{MPFR_VERSION}/",
@@ -662,7 +645,7 @@ if "cgal" in targets:
     )
     
     build_dependency(
-        name="cgal-{CGAL_VERSION}",
+        name=f"cgal-{CGAL_VERSION}",
         mode="cmake",
         build_tool_args=[
             f"-DGMP_LIBRARIES={DEPS_DIR}/install/gmp-{GMP_VERSION}/lib/libgmp.a",
@@ -695,18 +678,18 @@ logger.info("\rConfiguring executables...")
 
 OFF_ON = ["OFF", "ON"]
 
-exec_args=[
-    "-DBUILD_IFCGEOM="                +OFF_ON["IfcGeom" in targets],
-    "-DBUILD_GEOMSERVER="             +OFF_ON["IfcGeomServer" in targets],
-    "-DBUILD_CONVERT="                +OFF_ON["IfcConvert" in targets],
+exec_args = [
+    "-DBUILD_IFCGEOM="                 +OFF_ON["IfcGeom" in targets],
+    "-DBUILD_GEOMSERVER="              +OFF_ON["IfcGeomServer" in targets],
+    "-DBUILD_CONVERT="                 +OFF_ON["IfcConvert" in targets],
     "-DBUILD_IFCPYTHON="               "OFF",
     "-DCMAKE_INSTALL_PREFIX="          f"{DEPS_DIR}/install/ifcopenshell",
 ]
 
-cmake_args=[
+cmake_args = [
     "-DUSE_MMAP="                      "OFF",
     "-DBUILD_EXAMPLES="                "OFF",
-    "-DBUILD_SHARED_LIBS="            +OFF_ON[not BUILD_STATIC],
+    "-DBUILD_SHARED_LIBS="             +OFF_ON[not BUILD_STATIC],
     "-DBOOST_ROOT="                    f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
     "-DGLTF_SUPPORT="                  "ON",
     "-DJSON_INCLUDE_DIR="              f"{DEPS_DIR}/install/json",
@@ -729,6 +712,7 @@ if "occ" in targets and USE_OCCT:
         "-DOCC_INCLUDE_DIR="           +occ_include_dir,
         "-DOCC_LIBRARY_DIR="           +occ_library_dir
     ])
+
 elif "occ" in targets:
     occ_include_dir =                  f"{DEPS_DIR}/install/oce-{OCE_VERSION}/include/oce"
     occ_library_dir =                  f"{DEPS_DIR}/install/oce-{OCE_VERSION}/lib"
@@ -741,6 +725,10 @@ if "OpenCOLLADA" in targets:
     cmake_args.extend([
         "-DOPENCOLLADA_INCLUDE_DIR="   f"{DEPS_DIR}/install/OpenCOLLADA/include/opencollada",
         "-DOPENCOLLADA_LIBRARY_DIR="   f"{DEPS_DIR}/install/OpenCOLLADA/lib/opencollada"
+    ])
+else:
+    cmake_args.extend([
+        "-DCOLLADA_SUPPORT="           "Off",
     ])
 
 if "pcre" in targets:
@@ -772,16 +760,15 @@ if "IfcOpenShell-Python" in targets:
     # On OSX the actual Python library is not linked against.
     ADDITIONAL_ARGS = ""
     if get_os() == "Darwin":
-        ADDITIONAL_ARGS="-Wl,-flat_namespace,-undefined,suppress"
+        ADDITIONAL_ARGS = "-Wl,-flat_namespace,-undefined,suppress"
 
     os.environ["CXXFLAGS"] = f"{CXXFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
     os.environ["CFLAGS"] = f"{CFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
     os.environ["LDFLAGS"] = f"{LDFLAGS} {ADDITIONAL_ARGS}"
 
-    for PYTHON_VERSION, _, TAG in PYTHON_VERSION_CONFS():
+    for PYTHON_VERSION in PYTHON_VERSIONS:
         logger.info(f"\rConfiguring python {PYTHON_VERSION}{TAG} wrapper...")
 
-        # python_dir = os.path.join(IFCOS_DIR, f"python-{PYTHON_VERSION}{TAG}")
         python_dir = os.path.join(IFCOS_DIR, "pythonwrapper")
         if not os.path.exists(python_dir):
             os.makedirs(python_dir)
@@ -790,9 +777,9 @@ if "IfcOpenShell-Python" in targets:
         if os.path.exists(cache_path):
             os.unlink(cache_path)
 
-        PYTHON_LIBRARY=run([bash, "-c", f"ls    {DEPS_DIR}/install/python-{PYTHON_VERSION}{TAG}/lib/libpython*.*"])
-        PYTHON_INCLUDE=run([bash, "-c", f"ls -d {DEPS_DIR}/install/python-{PYTHON_VERSION}{TAG}/include/python*"])
-        PYTHON_EXECUTABLE=os.path.join(DEPS_DIR, "install", f"python-{PYTHON_VERSION}{TAG}", "bin", f"python{PYTHON_VERSION[0]}")
+        PYTHON_LIBRARY = run([bash, "-c", f"ls    {DEPS_DIR}/install/python-{PYTHON_VERSION}/lib/libpython*.*"])
+        PYTHON_INCLUDE = run([bash, "-c", f"ls -d {DEPS_DIR}/install/python-{PYTHON_VERSION}/include/python*"])
+        PYTHON_EXECUTABLE = os.path.join(DEPS_DIR, "install", f"python-{PYTHON_VERSION}", "bin", f"python{PYTHON_VERSION[0]}")
         os.environ["PYTHON_LIBRARY_BASENAME"] = os.path.basename(PYTHON_LIBRARY)
 
         run_cmake("",
@@ -804,7 +791,7 @@ if "IfcOpenShell-Python" in targets:
                 "-DCMAKE_INSTALL_PREFIX="    f"{DEPS_DIR}/install/ifcopenshell/tmp",
             ], cmake_dir=CMAKE_DIR, cwd=python_dir)
         
-        logger.info(f"\rBuilding python {PYTHON_VERSION}{TAG} wrapper...   ")
+        logger.info(f"\rBuilding python {PYTHON_VERSION} wrapper...   ")
 
         run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "_ifcopenshell_wrapper"], cwd=python_dir)
         run([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
@@ -815,6 +802,6 @@ if "IfcOpenShell-Python" in targets:
             # TODO: This symbol name depends on the Python version?
             run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
 
-        run([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{PYTHON_VERSION}{TAG}")])
+        run([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{PYTHON_VERSION}")])
 
 logger.info("\rBuilt IfcOpenShell...\n\n")
