@@ -6,7 +6,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.placement
 
 
-class TestEditObjectPlacement(test.bootstrap.IFC4):
+class TestAssignContainer(test.bootstrap.IFC4):
     def test_assigning_a_container(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -88,3 +88,13 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         subelement.ObjectPlacement = placement
         ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
         assert subelement.ObjectPlacement == placement
+
+    def test_removing_aggregation_if_it_exists(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.run("unit.assign_unit", self.file)
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        aggregate = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=aggregate)
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        assert not ifcopenshell.util.element.get_aggregate(subelement)
