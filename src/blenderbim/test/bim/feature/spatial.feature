@@ -1,0 +1,30 @@
+@spatial
+Feature: Spatial
+    Covers spatial containment management.
+
+Scenario: Enable editing container
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    When I press "bim.enable_editing_container"
+    Then nothing happens
+
+Scenario: Disable editing container
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I press "bim.enable_editing_container"
+    When I press "bim.disable_editing_container"
+    Then nothing happens
+
+Scenario: Assign container
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And I press "bim.enable_editing_container"
+    And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
+    When I press "bim.assign_container(structure={site})"
+    Then the object "IfcWall/Cube" is in the collection "IfcSite/My Site"

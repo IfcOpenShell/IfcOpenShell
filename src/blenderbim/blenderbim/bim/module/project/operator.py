@@ -27,8 +27,8 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import blenderbim.bim.handler
 import blenderbim.tool as tool
-import blenderbim.core.context as core_context
-import blenderbim.core.owner as core_owner
+import blenderbim.core.context
+import blenderbim.core.owner
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 
@@ -58,10 +58,10 @@ class CreateProject(bpy.types.Operator):
         )
         self.file = IfcStore.get_file()
 
-        person = core_owner.add_person(tool.Ifc)
-        organisation = core_owner.add_organisation(tool.Ifc)
-        user = core_owner.add_person_and_organisation(tool.Ifc, person=person, organisation=organisation)
-        core_owner.set_user(tool.Owner, user=user)
+        person = blenderbim.core.owner.add_person(tool.Ifc)
+        organisation = blenderbim.core.owner.add_organisation(tool.Ifc)
+        user = blenderbim.core.owner.add_person_and_organisation(tool.Ifc, person=person, organisation=organisation)
+        blenderbim.core.owner.set_user(tool.Owner, user=user)
 
         project = bpy.data.objects.new(self.get_name("IfcProject", "My Project"), None)
         site = bpy.data.objects.new(self.get_name("IfcSite", "My Site"), None)
@@ -71,17 +71,19 @@ class CreateProject(bpy.types.Operator):
         bpy.ops.bim.assign_class(obj=project.name, ifc_class="IfcProject")
         bpy.ops.bim.assign_unit()
 
-        model = core_context.add_context(
+        model = blenderbim.core.context.add_context(
             tool.Ifc, context_type="Model", context_identifier="", target_view="", parent=0
         )
-        core_context.add_context(
+        blenderbim.core.context.add_context(
             tool.Ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
         )
-        core_context.add_context(
+        blenderbim.core.context.add_context(
             tool.Ifc, context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent=model
         )
-        plan = core_context.add_context(tool.Ifc, context_type="Plan", context_identifier="", target_view="", parent=0)
-        core_context.add_context(
+        plan = blenderbim.core.context.add_context(
+            tool.Ifc, context_type="Plan", context_identifier="", target_view="", parent=0
+        )
+        blenderbim.core.context.add_context(
             tool.Ifc, context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan
         )
 

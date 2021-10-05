@@ -18,6 +18,8 @@
 
 from blenderbim.tool.address_editor import AddressEditor
 from blenderbim.tool.blender import Blender
+from blenderbim.tool.collector import Collector
+from blenderbim.tool.container import Container
 from blenderbim.tool.context_editor import ContextEditor
 from blenderbim.tool.ifc import Ifc
 from blenderbim.tool.organisation_editor import OrganisationEditor
@@ -25,4 +27,3 @@ from blenderbim.tool.owner import Owner
 from blenderbim.tool.person_editor import PersonEditor
 from blenderbim.tool.role_editor import RoleEditor
 from blenderbim.tool.surveyor import Surveyor
-from blenderbim.tool.container import Container

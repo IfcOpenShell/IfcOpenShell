@@ -22,6 +22,8 @@ import ifcopenshell.api
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 import blenderbim.bim.handler
+import blenderbim.core.spatial
+import blenderbim.tool as tool
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
 
@@ -236,8 +238,13 @@ class AssignClass(bpy.types.Operator):
                     continue
                 elif self.file.schema == "IFC2X3" and not element.is_a("IfcSpatialStructureElement"):
                     continue
-                bpy.ops.bim.assign_container(
-                    relating_structure=spatial_obj.BIMObjectProperties.ifc_definition_id, related_element=obj.name
+                blenderbim.core.spatial.assign_container(
+                    tool.Ifc,
+                    tool.Collector,
+                    tool.Container,
+                    tool.Surveyor,
+                    structure_obj=spatial_obj,
+                    element_obj=obj,
                 )
                 break
 

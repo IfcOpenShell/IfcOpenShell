@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from pytest_bdd import scenarios, given, when, then, parsers
 
@@ -103,8 +104,9 @@ def i_delete_the_selected_objects():
     bpy.ops.object.delete()
 
 
-@then(parsers.parse('the variable "{key}" is "{value}"'))
+@given(parsers.parse('the variable "{key}" is "{value}"'))
 @when(parsers.parse('the variable "{key}" is "{value}"'))
+@then(parsers.parse('the variable "{key}" is "{value}"'))
 def the_variable_key_is_value(key, value):
     variables[key] = eval(replace_variables(value))
 
@@ -122,7 +124,7 @@ def the_object_name_exists(name) -> bpy.types.Object:
     return obj
 
 
-@then('an IFC file exists')
+@then("an IFC file exists")
 def an_ifc_file_exists():
     ifc = IfcStore.get_file()
     if not ifc:
@@ -255,3 +257,8 @@ def prop_is_value(prop, value):
     if not is_value:
         actual_value = eval(f"bpy.context.{prop}")
         assert False, f"Value is {actual_value}"
+
+
+@then(parsers.parse('the object "{name}" is in the collection "{collection}"'))
+def the_object_name_is_in_the_collection_collection(name, collection):
+    assert collection in [c.name for c in the_object_name_exists(name).users_collection]

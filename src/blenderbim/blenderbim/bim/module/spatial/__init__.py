@@ -30,7 +30,7 @@ classes = (
     prop.BIMSpatialProperties,
     prop.BIMObjectSpatialProperties,
     ui.BIM_PT_spatial,
-    ui.BIM_UL_spatial_elements,
+    ui.BIM_UL_containers,
 )
 
 
