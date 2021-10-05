@@ -21,15 +21,14 @@ import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.owner as core
 import blenderbim.bim.module.owner.data
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 
 
 class Operator:
     def execute(self, context):
         IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.module.owner.data.PeopleData.is_loaded = False
-        blenderbim.bim.module.owner.data.OrganisationsData.is_loaded = False
-        blenderbim.bim.module.owner.data.OwnerData.is_loaded = False
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 

@@ -20,6 +20,12 @@ import bpy
 import blenderbim.tool as tool
 
 
+def refresh():
+    PeopleData.is_loaded = False
+    OrganisationsData.is_loaded = False
+    OwnerData.is_loaded = False
+
+
 class RolesAddressesData:
     @classmethod
     def get_roles(cls, parent):

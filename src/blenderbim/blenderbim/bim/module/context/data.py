@@ -20,6 +20,10 @@ import bpy
 import blenderbim.tool as tool
 
 
+def refresh():
+    ContextData.is_loaded = False
+
+
 class ContextData:
     data = {}
     is_loaded = False
