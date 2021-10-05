@@ -83,6 +83,11 @@ class Container(abc.ABC):
     def disable_editing(cls, obj):
         pass
 
+    @classmethod
+    @abc.abstractmethod
+    def import_containers(cls, parent=None):
+        pass
+
 
 class ContextEditor(abc.ABC):
     @classmethod

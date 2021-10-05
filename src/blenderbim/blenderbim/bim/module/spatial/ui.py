@@ -19,6 +19,7 @@
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.spatial.data import Data
+from blenderbim.bim.module.spatial.data import SpatialData
 
 
 class BIM_PT_spatial(Panel):
@@ -44,44 +45,36 @@ class BIM_PT_spatial(Panel):
         return True
 
     def draw(self, context):
-        oprops = context.active_object.BIMObjectProperties
-        sprops = context.scene.BIMSpatialProperties
-        props = context.active_object.BIMObjectSpatialProperties
-        if not oprops.ifc_definition_id:
-            return
-        if oprops.ifc_definition_id not in Data.products:
-            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
+        if not SpatialData.is_loaded:
+            SpatialData.load()
 
-        if props.is_editing:
+        if SpatialData.data["is_editing"]:
             row = self.layout.row(align=True)
-            if sprops.active_decomposes_parent_id:
+            if SpatialData.data["parent_container_id"]:
                 op = row.operator("bim.change_spatial_level", text="", icon="FRAME_PREV")
-                op.parent_id = sprops.active_decomposes_parent_id
-            row.operator("bim.assign_container", icon="CHECKMARK")
+                op.parent = SpatialData.data["parent_container_id"]
+            row.operator("bim.assign_container", icon="CHECKMARK").structure = SpatialData.data["container_id"]
             row.operator("bim.copy_to_container", icon="COPYDOWN", text="")
             row.operator("bim.disable_editing_container", icon="CANCEL", text="")
 
-            self.layout.template_list(
-                "BIM_UL_spatial_elements", "", sprops, "spatial_elements", sprops, "active_spatial_element_index"
-            )
+            self.layout.template_list("BIM_UL_containers", *SpatialData.data["container_list_settings"])
         else:
             row = self.layout.row(align=True)
-            name = "{}/{}".format(
-                Data.products[oprops.ifc_definition_id]["type"], Data.products[oprops.ifc_definition_id]["Name"]
-            )
-            if name == "None/None":
-                name = "This object is not spatially contained"
-            row.label(text=name)
-            row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
-            row.operator("bim.remove_container", icon="X", text="")
+            if SpatialData.data["is_contained"]:
+                row.label(text=SpatialData.data["label"])
+                row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
+                row.operator("bim.remove_container", icon="X", text="")
+            else:
+                row.label(text="This object is not spatially contained")
+                row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
 
 
-class BIM_UL_spatial_elements(UIList):
+class BIM_UL_containers(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             if item.has_decomposition:
                 op = layout.operator("bim.change_spatial_level", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
-                op.parent_id = item.ifc_definition_id
+                op.parent = item.ifc_definition_id
             layout.label(text=item.name)
             layout.label(text=item.long_name)
             layout.prop(
