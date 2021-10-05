@@ -19,7 +19,7 @@
 import blenderbim.core
 
 
-def assign_container(ifc, collector, container, surveyor, structure_obj=None, element_obj=None):
+def assign_container(ifc, collector, container, structure_obj=None, element_obj=None):
     if not container.can_contain(structure_obj, element_obj):
         return
     rel = ifc.run(
@@ -27,7 +27,6 @@ def assign_container(ifc, collector, container, surveyor, structure_obj=None, el
         product=ifc.get_entity(element_obj),
         relating_structure=ifc.get_entity(structure_obj),
     )
-    blenderbim.core.geometry.edit_object_placement(ifc, surveyor, obj=element_obj)
     container.disable_editing(element_obj)
     collector.assign(element_obj)
     return rel
