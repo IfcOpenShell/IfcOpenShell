@@ -100,7 +100,7 @@ autoconf = "autoconf"
 automake = "automake"
 yacc = "yacc"
 make = "make"
-date  =  "date"
+date = "date"
 curl = "curl"
 wget = "wget"
 strip = "strip"
@@ -280,6 +280,7 @@ BOOST_LOCATION = f"https://boostorg.jfrog.io/artifactory/main/release/{BOOST_VER
 
 # Helper functions
 
+
 def run_autoconf(arg1, configure_args, cwd):
     configure_path = os.path.realpath(os.path.join(cwd, "..", "configure"))
     if not os.path.exists(configure_path):
@@ -288,12 +289,14 @@ def run_autoconf(arg1, configure_args, cwd):
     prefix = os.path.realpath(f"{DEPS_DIR}/install/{arg1}")
     run(["/bin/sh", "../configure"] + configure_args + [f"--prefix={prefix}"], cwd=cwd)
 
+
 def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     if cmake_dir is None:
         P = ".."
     else:
         P = cmake_dir
     run(["cmake", P] + cmake_args + [f"-DCMAKE_BUILD_TYPE={BUILD_CFG}"], cwd=cwd)
+
 
 def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
     """Lazily clones the `git` repository denoted by `clone_url` into
@@ -767,7 +770,7 @@ if "IfcOpenShell-Python" in targets:
     os.environ["LDFLAGS"] = f"{LDFLAGS} {ADDITIONAL_ARGS}"
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
-        logger.info(f"\rConfiguring python {PYTHON_VERSION}{TAG} wrapper...")
+        logger.info(f"\rConfiguring python {PYTHON_VERSION} wrapper...")
 
         python_dir = os.path.join(IFCOS_DIR, "pythonwrapper")
         if not os.path.exists(python_dir):
