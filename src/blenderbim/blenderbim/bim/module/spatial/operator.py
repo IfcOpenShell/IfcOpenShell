@@ -46,7 +46,6 @@ class AssignContainer(bpy.types.Operator, Operator):
                 tool.Ifc,
                 tool.Collector,
                 tool.Container,
-                tool.Surveyor,
                 structure_obj=structure_obj,
                 element_obj=element_obj,
             )

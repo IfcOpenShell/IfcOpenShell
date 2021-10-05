@@ -17,24 +17,22 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.core.spatial as subject
-from test.core.bootstrap import ifc, collector, container, surveyor
+from test.core.bootstrap import ifc, collector, container
 
 
 class TestAssignContainer:
-    def test_run(self, ifc, collector, container, surveyor):
+    def test_run(self, ifc, collector, container):
         container.can_contain("structure_obj", "element_obj").should_be_called().will_return(True)
         ifc.get_entity("structure_obj").should_be_called().will_return("structure")
         ifc.get_entity("element_obj").should_be_called().will_return("element")
         ifc.run(
             "spatial.assign_container", product="element", relating_structure="structure"
         ).should_be_called().will_return("rel")
-        surveyor.get_absolute_matrix("element_obj").should_be_called().will_return("matrix")
-        ifc.run("geometry.edit_object_placement", product="element", matrix="matrix").should_be_called()
         container.disable_editing("element_obj").should_be_called()
         collector.assign("element_obj").should_be_called()
         assert (
             subject.assign_container(
-                ifc, collector, container, surveyor, structure_obj="structure_obj", element_obj="element_obj"
+                ifc, collector, container, structure_obj="structure_obj", element_obj="element_obj"
             )
             == "rel"
         )

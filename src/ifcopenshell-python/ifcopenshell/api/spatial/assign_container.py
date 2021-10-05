@@ -45,7 +45,8 @@ class Usecase:
                 }
             )
 
-        if getattr(self.settings["product"], "ObjectPlacement", None):
+        placement = getattr(self.settings["product"], "ObjectPlacement", None)
+        if placement and placement.is_a("IfcLocalPlacement"):
             ifcopenshell.api.run(
                 "geometry.edit_object_placement",
                 self.file,
