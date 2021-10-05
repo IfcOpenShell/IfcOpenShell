@@ -21,6 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.core.spatial as core
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.spatial.data import SpatialData
 
@@ -28,7 +29,7 @@ from blenderbim.bim.module.spatial.data import SpatialData
 class Operator:
     def execute(self, context):
         IfcStore.execute_ifc_operator(self, context)
-        SpatialData.is_loaded = False
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 

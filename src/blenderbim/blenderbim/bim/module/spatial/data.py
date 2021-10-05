@@ -21,6 +21,10 @@ import blenderbim.tool as tool
 import ifcopenshell.util.element
 
 
+def refresh():
+    SpatialData.is_loaded = False
+
+
 class SpatialData:
     data = {}
     is_loaded = False
@@ -33,6 +37,7 @@ class SpatialData:
             "container_id": cls.get_container_id(),
             "container_list_settings": cls.get_container_list_settings(),
             "is_contained": cls.is_contained(),
+            "is_directly_contained": cls.is_directly_contained(),
             "label": cls.get_label(),
         }
         cls.is_loaded = True
@@ -68,4 +73,11 @@ class SpatialData:
     def get_label(cls):
         container = ifcopenshell.util.element.get_container(tool.Ifc.get_entity(bpy.context.active_object))
         if container:
-            return f"{container.is_a()}/{container.Name or ''}"
+            label = f"{container.is_a()}/{container.Name or ''}"
+            if not cls.is_directly_contained():
+                label += "*"
+            return label
+
+    @classmethod
+    def is_directly_contained(cls):
+        return bool(getattr(tool.Ifc.get_entity(bpy.context.active_object), "ContainedInStructure"))

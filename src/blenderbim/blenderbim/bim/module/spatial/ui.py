@@ -63,7 +63,8 @@ class BIM_PT_spatial(Panel):
             if SpatialData.data["is_contained"]:
                 row.label(text=SpatialData.data["label"])
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
-                row.operator("bim.remove_container", icon="X", text="")
+                if SpatialData.data["is_directly_contained"]:
+                    row.operator("bim.remove_container", icon="X", text="")
             else:
                 row.label(text="This object is not spatially contained")
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")

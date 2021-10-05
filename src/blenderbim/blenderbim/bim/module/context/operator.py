@@ -20,6 +20,7 @@ import bpy
 import blenderbim.tool as tool
 import blenderbim.core.context as core
 import blenderbim.bim.module.context.data
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.context.data import Data
 
@@ -27,7 +28,7 @@ from ifcopenshell.api.context.data import Data
 class Operator:
     def execute(self, context):
         IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.module.context.data.ContextData.is_loaded = False
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
