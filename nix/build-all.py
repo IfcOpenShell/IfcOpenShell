@@ -69,8 +69,10 @@ ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 
 PROJECT_NAME="IfcOpenShell"
-PYTHON_VERSIONS=["3.6.13", "3.7.10", "3.8.8", "3.9.2"]
-PYTHON_VERSIONS=[platform.python_version()]
+if os.getenv("USE_CURRENT_PYTHON_VERSION"):
+    PYTHON_VERSIONS=[platform.python_version()]
+else:
+    PYTHON_VERSIONS=["3.6.13", "3.7.10", "3.8.8", "3.9.2"]
 JSON_VERSION="v3.6.1"
 OCE_VERSION="0.18"
 OCCT_VERSION="7.5.3"
@@ -114,10 +116,10 @@ MAGENTA="\033[35m"
 
 def cecho(message, color=NO_COLOR):
     """Logs message `message` in color `color`."""
-    logger.info("%s%s\033[0m" % (color, message))
+    logger.info(f"{color}{message}\033[0m")
 
 def which(cmd):
-    for path in os.environ["PATH"].split(":"):
+    for path in os.getenv("PATH").split(":"):
         if os.path.exists(path) and cmd in os.listdir(path):
             return cmd
     return None
@@ -136,17 +138,12 @@ if get_os() == "Darwin":
     # C++11 features used in OCCT 7+ need a more recent stdlib
     TOOLSET = "10.9" if USE_OCCT else "10.6"
 
-try:
-    IFCOS_NUM_BUILD_PROCS = os.environ["IFCOS_NUM_BUILD_PROCS"]
-except KeyError:
-    IFCOS_NUM_BUILD_PROCS=multiprocessing.cpu_count() + 1
 
-try:
-    TARGET_ARCH = os.environ["TARGET_ARCH"]
-except KeyError:
-    TARGET_ARCH = sp.check_output([uname, "-m"], encoding="utf-8").strip()
+IFCOS_NUM_BUILD_PROCS = os.getenv("IFCOS_NUM_BUILD_PROCS", multiprocessing.cpu_count() + 1)
 
-CMAKE_DIR=os.path.realpath(os.path.join("..", "cmake"))
+TARGET_ARCH = os.getenv("TARGET_ARCH", sp.check_output([uname, "-m"], encoding="utf-8").strip())
+
+CMAKE_DIR = os.path.realpath(os.path.join("..", "cmake"))
 
 try:
     DEPS_DIR = os.environ["DEPS_DIR"]
@@ -160,36 +157,33 @@ except KeyError:
 if not os.path.exists(DEPS_DIR):
     os.makedirs(DEPS_DIR)
 
-try:
-    BUILD_CFG=os.environ["BUILD_CFG"]
-except KeyError:
-    BUILD_CFG="RelWithDebInfo"
+BUILD_CFG=os.getenv("BUILD_CFG", "RelWithDebInfo")
 
 
 # Print build configuration information
 
-cecho ("""This script fetches and builds %s and its dependencies
-""" % (PROJECT_NAME,), BLACK_ON_WHITE)
+cecho (f"""This script fetches and builds {PROJECT_NAME} and its dependencies
+""", BLACK_ON_WHITE)
 cecho("""Script configuration:
 
 """, GREEN)
-cecho("""* Target Architecture    = %s""" % (TARGET_ARCH,), MAGENTA)
+cecho(f"""* Target Architecture    = {TARGET_ARCH}""", MAGENTA)
 cecho(" - Whether 32-bit (i686) or 64-bit (x86_64) will be built.")
-cecho("""* USE_OCCT               = %r""" % (USE_OCCT,), MAGENTA)
+cecho(f"""* USE_OCCT               = {USE_OCCT}""", MAGENTA)
 if USE_OCCT:
     cecho(" - Compiling against official Open Cascade")
 else:
     cecho(" - Compiling against Open Cascade Community Edition")
-cecho("* Dependency Directory   = %s" % (DEPS_DIR,), MAGENTA)
-cecho(" - The directory where %s dependencies are installed." % (PROJECT_NAME,))
-cecho("* Build Config Type      = %s" % (BUILD_CFG,), MAGENTA)
+cecho(f"* Dependency Directory   = {DEPS_DIR}", MAGENTA)
+cecho(f" - The directory where {PROJECT_NAME} dependencies are installed.")
+cecho(f"* Build Config Type      = {BUILD_CFG}", MAGENTA)
 cecho(""" - The used build configuration type for the dependencies.
    Defaults to RelWithDebInfo if not specified.""")
 
 if BUILD_CFG == "MinSizeRel":
     cecho("     WARNING: MinSizeRel build can suffer from a significant performance loss.", RED)
 
-cecho("* IFCOS_NUM_BUILD_PROCS  = %s" % (IFCOS_NUM_BUILD_PROCS,), MAGENTA)
+cecho(f"* IFCOS_NUM_BUILD_PROCS  = {IFCOS_NUM_BUILD_PROCS}", MAGENTA)
 cecho(""" - How many compiler processes may be run in parallel.
 """)
 
@@ -292,7 +286,8 @@ def run_autoconf(arg1, configure_args, cwd):
     if not os.path.exists(configure_path):
         run([bash, "./autogen.sh"], cwd=os.path.realpath(os.path.join(cwd, ".."))) # only run autogen.sh in the directory it is located and use cwd to achieve that in order to not mess up things
     # Using `sh` over `bash` fixes issues with building swig 
-    run(["/bin/sh", "../configure"] + configure_args + ["--prefix=%s" % (os.path.realpath("%s/install/%s" % (DEPS_DIR, arg1)),)], cwd=cwd)
+    prefix = os.path.realpath(f"{DEPS_DIR}/install/{arg1}")
+    run(["/bin/sh", "../configure"] + configure_args + [f"--prefix={prefix}"], cwd=cwd)
 
 def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     if cmake_dir is None:
@@ -355,7 +350,7 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
     download_dir = os.path.join(build_dir, download_name)
     
     if os.path.isdir(download_dir):
-        extract_dir_name=download_name
+        extract_dir_name = download_name
         extract_dir = os.path.join(build_dir, extract_dir_name)
     else:
         download_tarfile_path = os.path.join(build_dir, download_name)
@@ -367,10 +362,10 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
             raise RuntimeError("fix source for new download type")
         download_tarfile = tarfile.open(name=download_tarfile_path, mode=f"r:{compr}")
         # tarfile seriously doesn't have a function to retrieve the root directory more easily
-        extract_dir_name= os.path.commonprefix([x for x in download_tarfile.getnames() if x != "."])
+        extract_dir_name = os.path.commonprefix([x for x in download_tarfile.getnames() if x != "."])
         #run([tar, "--exclude=\"*/*\"", "-tf", download_name], cwd=build_dir).strip() no longer works
         if extract_dir_name is None:
-            extract_dir_name= run([bash, "-c", f"tar -tf {download_name} 2> /dev/null | head -n 1 | cut -f1 -d /"], cwd=build_dir)
+            extract_dir_name = run([bash, "-c", f"tar -tf {download_name} 2> /dev/null | head -n 1 | cut -f1 -d /"], cwd=build_dir)
         extract_dir = os.path.join(build_dir, extract_dir_name)
         if not os.path.exists(extract_dir):
             run([tar, "-xf", download_name], cwd=build_dir)
@@ -426,17 +421,17 @@ cecho("Collecting dependencies:", GREEN)
 # Set compiler flags for 32bit builds on 64bit system
 # TODO: This is untested
 
-ADDITIONAL_ARGS=[]
-BOOST_ADDRESS_MODEL=[]
+ADDITIONAL_ARGS = []
+BOOST_ADDRESS_MODEL = []
 if TARGET_ARCH == "i686" and run([uname, "-m"]).strip() == "x86_64":
     if get_os() == "Darwin":
-        ADDITIONAL_ARGS=["-m32", "-arch i386"]
+        ADDITIONAL_ARGS = ["-m32", "-arch i386"]
     else:
-        ADDITIONAL_ARGS=["-m32"]
-    BOOST_ADDRESS_MODEL=["architecture=x86", "address-model=32"]
+        ADDITIONAL_ARGS = ["-m32"]
+    BOOST_ADDRESS_MODEL  = ["architecture=x86", "address-model=32"]
 
 if get_os() == "Darwin":
-    ADDITIONAL_ARGS=[f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
+    ADDITIONAL_ARGS = [f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
 
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
@@ -445,26 +440,27 @@ CXXFLAGS=os.environ.get("CXXFLAGS", "")
 CFLAGS=os.environ.get("CFLAGS", "")
 LDFLAGS=os.environ.get("LDFLAGS", "")
 
+ADDITIONAL_ARGS_STR = " ".join(ADDITIONAL_ARGS)
 if sp.call([bash, "-c", "ld --gc-sections 2>&1 | grep -- --gc-sections &> /dev/null"]) != 0:
-    CXXFLAGS_MINIMAL="%s %s %s" % (CXXFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
-    CFLAGS_MINIMAL="%s %s %s" % (CFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
+    CXXFLAGS_MINIMAL = f"{CXXFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
+    CFLAGS_MINIMAL = f"{CFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
     if BUILD_STATIC:
-        CXXFLAGS="%s %s -fdata-sections -ffunction-sections -fvisibility=hidden -fvisibility-inlines-hidden %s" % (CXXFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
-        CFLAGS="%s   %s -fdata-sections -ffunction-sections -fvisibility=hidden %s"% (CFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
+        CXXFLAGS = f"{CXXFLAGS} {PIC} -fdata-sections -ffunction-sections -fvisibility=hidden -fvisibility-inlines-hidden {ADDITIONAL_ARGS_STR}"
+        CFLAGS = f"{CFLAGS}   {PIC} -fdata-sections -ffunction-sections -fvisibility=hidden {ADDITIONAL_ARGS_STR}"
     else:
-        CXXFLAGS=CXXFLAGS_MINIMAL
-        CFLAGS=CFLAGS_MINIMAL
-    LDFLAGS="%s  -Wl,--gc-sections %s" % (LDFLAGS, str.join(" ", ADDITIONAL_ARGS))
+        CXXFLAGS = CXXFLAGS_MINIMAL
+        CFLAGS = CFLAGS_MINIMAL
+    LDFLAGS = f"{LDFLAGS}  -Wl,--gc-sections {ADDITIONAL_ARGS_STR}"
 else:
-    CXXFLAGS_MINIMAL="%s %s %s" % (CXXFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
-    CFLAGS_MINIMAL="%s   %s %s" % (CFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
+    CXXFLAGS_MINIMAL = f"{CXXFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
+    CFLAGS_MINIMAL = f"{CFLAGS}   {PIC} {ADDITIONAL_ARGS_STR}"
     if BUILD_STATIC:
-        CXXFLAGS="%s %s -fvisibility=hidden -fvisibility-inlines-hidden %s" % (CXXFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
-        CFLAGS="%s   %s -fvisibility=hidden -fvisibility-inlines-hidden %s" % (CFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
+        CXXFLAGS = f"{CXXFLAGS} {PIC} -fvisibility=hidden -fvisibility-inlines-hidden {ADDITIONAL_ARGS_STR}"
+        CFLAGS = f"{CFLAGS}   {PIC} -fvisibility=hidden -fvisibility-inlines-hidden {ADDITIONAL_ARGS_STR}"
     else:
         CXXFLAGS=CXXFLAGS_MINIMAL
         CFLAGS=CFLAGS_MINIMAL
-    LDFLAGS="%s %s" % (LDFLAGS, str.join(" ", ADDITIONAL_ARGS))
+    LDFLAGS = f"{LDFLAGS} {ADDITIONAL_ARGS_STR}"
     
 os.environ["CXXFLAGS"] = CXXFLAGS
 os.environ["CFLAGS"] = CFLAGS
@@ -476,14 +472,13 @@ os.environ["LDFLAGS"] = LDFLAGS
 
 if 'hdf5' in targets:
     HDF5_MAJOR = ".".join(HDF5_VERSION.split(".")[:-1])
-    get_os_result = get_os()
     build_dependency(
         name=f"hdf5-{HDF5_VERSION}",
         mode="ctest",
         build_tool_args=[],
         download_url=f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{HDF5_MAJOR}/hdf5-{HDF5_VERSION}/src/",
         download_name=f"CMake-hdf5-{HDF5_VERSION}.tar.gz",
-        ctest_result=f"HDF5-{HDF5_VERSION}-{get_os_result}",
+        ctest_result=f"HDF5-{HDF5_VERSION}-{get_os()}",
         ctest_result_path=f"HDF_Group/HDF5/{HDF5_VERSION}"
     )
 
