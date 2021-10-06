@@ -26,6 +26,10 @@ class Usecase:
         if decomposes and decomposes == is_decomposed_by:
             return
 
+        container = ifcopenshell.util.element.get_container(self.settings["product"], should_get_direct=True)
+        if container:
+            ifcopenshell.api.run("spatial.remove_container", self.file, product=self.settings["product"])
+
         if decomposes:
             related_objects = list(decomposes.RelatedObjects)
             related_objects.remove(self.settings["product"])
@@ -50,4 +54,15 @@ class Usecase:
                     "RelatingObject": self.settings["relating_object"],
                 }
             )
+
+        placement = getattr(self.settings["product"], "ObjectPlacement", None)
+        if placement and placement.is_a("IfcLocalPlacement"):
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement",
+                self.file,
+                product=self.settings["product"],
+                matrix=ifcopenshell.util.placement.get_local_placement(self.settings["product"].ObjectPlacement),
+                is_si=False,
+            )
+
         return is_decomposed_by

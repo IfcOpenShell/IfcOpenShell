@@ -10,8 +10,11 @@ class TestAssignContainer(test.bootstrap.IFC4):
     def test_assigning_a_container(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        rel = ifcopenshell.api.run(
+            "spatial.assign_container", self.file, product=subelement, relating_structure=element
+        )
         assert ifcopenshell.util.element.get_container(subelement) == element
+        assert rel.is_a("IfcRelContainedInSpatialStructure")
 
     def test_doing_nothing_if_the_container_is_already_assigned(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
