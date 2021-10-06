@@ -262,3 +262,8 @@ def prop_is_value(prop, value):
 @then(parsers.parse('the object "{name}" is in the collection "{collection}"'))
 def the_object_name_is_in_the_collection_collection(name, collection):
     assert collection in [c.name for c in the_object_name_exists(name).users_collection]
+
+
+@then(parsers.parse('the collection "{name1}" is in the collection "{name2}"'))
+def the_collection_name1_is_in_the_collection_name2(name1, name2):
+    assert bpy.data.collections.get(name2).children.get(name1)

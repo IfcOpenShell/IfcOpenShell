@@ -267,8 +267,6 @@ class BIMObjectProperties(PropertyGroup):
     )
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
-    relating_object: PointerProperty(name="Aggregate", type=bpy.types.Object)
-    is_editing_aggregate: BoolProperty(name="Is Editing Aggregate")
     psets: CollectionProperty(name="Psets", type=PsetQto)
     qtos: CollectionProperty(name="Qtos", type=PsetQto)
 

@@ -32,10 +32,7 @@ class SpatialData:
     @classmethod
     def load(cls):
         cls.data = {
-            "is_editing": bpy.context.active_object.BIMObjectSpatialProperties.is_editing,
             "parent_container_id": cls.get_parent_container_id(),
-            "container_id": cls.get_container_id(),
-            "container_list_settings": cls.get_container_list_settings(),
             "is_contained": cls.is_contained(),
             "is_directly_contained": cls.is_directly_contained(),
             "label": cls.get_label(),
@@ -51,19 +48,6 @@ class SpatialData:
         if container.is_a("IfcProject"):
             return
         return container.Decomposes[0].RelatingObject.id()
-
-    @classmethod
-    def get_container_id(cls):
-        props = bpy.context.scene.BIMSpatialProperties
-        try:
-            return props.containers[props.active_container_index].ifc_definition_id
-        except:
-            return 0
-
-    @classmethod
-    def get_container_list_settings(cls):
-        props = bpy.context.scene.BIMSpatialProperties
-        return ["", props, "containers", props, "active_container_id"]
 
     @classmethod
     def is_contained(cls):

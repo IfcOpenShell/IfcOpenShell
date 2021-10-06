@@ -55,3 +55,47 @@ class TestAssign(NewFile):
         subject.assign(wall_obj)
         assert len(wall_obj.users_collection) == 1
         assert "IfcProject" in wall_obj.users_collection[0].name
+
+    def test_in_decomposition_mode_spatial_elements_are_placed_in_a_collection_of_the_same_name(self):
+        bpy.ops.bim.create_project()
+        space_obj = bpy.data.objects.new("IfcSpace/Name", None)
+        space_element = tool.Ifc.get().createIfcSpace()
+        tool.Ifc.link(space_element, space_obj)
+        bpy.context.scene.collection.objects.link(space_obj)
+        ifcopenshell.api.run(
+            "aggregate.assign_object",
+            tool.Ifc.get(),
+            relating_object=tool.Ifc.get().by_type("IfcSite")[0],
+            product=space_element,
+        )
+        subject.assign(space_obj)
+        assert len(space_obj.users_collection) == 1
+        assert space_obj.users_collection[0].name == space_obj.name
+
+    def test_in_decomposition_mode_aggregates_are_placed_in_a_collection_of_the_same_name(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcElementAssembly/Name", None)
+        element = tool.Ifc.get().createIfcElementAssembly()
+        subelement_obj = bpy.data.objects.new("IfcBeam/Name", None)
+        subelement = tool.Ifc.get().createIfcBeam()
+        tool.Ifc.link(element, element_obj)
+        bpy.context.scene.collection.objects.link(element_obj)
+        ifcopenshell.api.run(
+            "aggregate.assign_object",
+            tool.Ifc.get(),
+            relating_object=element,
+            product=subelement,
+        )
+        subject.assign(element_obj)
+        assert len(element_obj.users_collection) == 1
+        assert element_obj.users_collection[0].name == element_obj.name
+
+    def test_in_decomposition_mode_projects_are_placed_in_a_collection_of_the_same_name(self):
+        tool.Ifc.set(ifcopenshell.file())
+        element_obj = bpy.data.objects.new("IfcProject/Name", None)
+        element = tool.Ifc.get().createIfcProject()
+        tool.Ifc.link(element, element_obj)
+        bpy.context.scene.collection.objects.link(element_obj)
+        subject.assign(element_obj)
+        assert len(element_obj.users_collection) == 1
+        assert element_obj.users_collection[0].name == element_obj.name

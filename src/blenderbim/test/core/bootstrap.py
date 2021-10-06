@@ -36,6 +36,13 @@ def blender():
 
 
 @pytest.fixture
+def aggregator():
+    prophet = Prophecy(blenderbim.core.tool.Aggregator)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def person_editor():
     prophet = Prophecy(blenderbim.core.tool.PersonEditor)
     yield prophet

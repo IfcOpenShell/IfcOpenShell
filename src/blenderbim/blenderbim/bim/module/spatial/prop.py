@@ -32,10 +32,6 @@ from bpy.props import (
 )
 
 
-def update_active_container_index(self, context):
-    SpatialData.is_loaded = False
-
-
 class SpatialElement(PropertyGroup):
     name: StringProperty(name="Name")
     long_name: StringProperty(name="Long Name")
@@ -46,7 +42,7 @@ class SpatialElement(PropertyGroup):
 
 class BIMSpatialProperties(PropertyGroup):
     containers: CollectionProperty(name="Containers", type=SpatialElement)
-    active_container_index: IntProperty(name="Active Container Index", update=update_active_container_index)
+    active_container_index: IntProperty(name="Active Container Index")
     active_container_id: IntProperty(name="Active Container Id")
 
 

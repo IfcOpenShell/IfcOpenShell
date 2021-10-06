@@ -18,7 +18,6 @@
 
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.spatial.data import Data
 from blenderbim.bim.module.spatial.data import SpatialData
 
 
@@ -38,26 +37,26 @@ class BIM_PT_spatial(Panel):
             return False
         if not IfcStore.get_element(oprops.ifc_definition_id):
             return False
-        if oprops.ifc_definition_id not in Data.products:
-            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
-        if not Data.products[oprops.ifc_definition_id]:
-            return False
         return True
 
     def draw(self, context):
         if not SpatialData.is_loaded:
             SpatialData.load()
 
-        if SpatialData.data["is_editing"]:
+        props = context.scene.BIMSpatialProperties
+        osprops = context.active_object.BIMObjectSpatialProperties
+
+        if osprops.is_editing:
             row = self.layout.row(align=True)
             if SpatialData.data["parent_container_id"]:
                 op = row.operator("bim.change_spatial_level", text="", icon="FRAME_PREV")
                 op.parent = SpatialData.data["parent_container_id"]
-            row.operator("bim.assign_container", icon="CHECKMARK").structure = SpatialData.data["container_id"]
+            op = row.operator("bim.assign_container", icon="CHECKMARK")
+            op.structure = props.containers[props.active_container_index].ifc_definition_id
             row.operator("bim.copy_to_container", icon="COPYDOWN", text="")
             row.operator("bim.disable_editing_container", icon="CANCEL", text="")
 
-            self.layout.template_list("BIM_UL_containers", *SpatialData.data["container_list_settings"])
+            self.layout.template_list("BIM_UL_containers", "", props, "containers", props, "active_container_id")
         else:
             row = self.layout.row(align=True)
             if SpatialData.data["is_contained"]:

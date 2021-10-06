@@ -56,6 +56,23 @@ class AddressEditor(abc.ABC):
         pass
 
 
+class Aggregator(abc.ABC):
+    @classmethod
+    @abc.abstractmethod
+    def enable_editing(cls, obj):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def disable_editing(cls, obj):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def can_aggregate(cls, relating_object, related_object):
+        pass
+
+
 class Blender(abc.ABC):
     pass
 

@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from blenderbim.tool.address_editor import AddressEditor
+from blenderbim.tool.aggregator import Aggregator
 from blenderbim.tool.blender import Blender
 from blenderbim.tool.collector import Collector
 from blenderbim.tool.container import Container
