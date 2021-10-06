@@ -94,9 +94,16 @@ class CreateProject(bpy.types.Operator):
         bpy.ops.bim.assign_class(obj=site.name, ifc_class="IfcSite")
         bpy.ops.bim.assign_class(obj=building.name, ifc_class="IfcBuilding")
         bpy.ops.bim.assign_class(obj=building_storey.name, ifc_class="IfcBuildingStorey")
-        bpy.ops.bim.assign_object(related_object=site.name, relating_object=project.name)
-        bpy.ops.bim.assign_object(related_object=building.name, relating_object=site.name)
-        bpy.ops.bim.assign_object(related_object=building_storey.name, relating_object=building.name)
+
+        blenderbim.core.aggregate.assign_object(
+            tool.Ifc, tool.Aggregator, tool.Collector, relating_obj=project, related_obj=site
+        )
+        blenderbim.core.aggregate.assign_object(
+            tool.Ifc, tool.Aggregator, tool.Collector, relating_obj=site, related_obj=building
+        )
+        blenderbim.core.aggregate.assign_object(
+            tool.Ifc, tool.Aggregator, tool.Collector, relating_obj=building, related_obj=building_storey
+        )
 
         context.view_layer.objects.active = active_object
         return {"FINISHED"}
