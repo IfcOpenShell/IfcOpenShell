@@ -74,18 +74,18 @@ if os.getenv("USE_CURRENT_PYTHON_VERSION"):
 else:
     PYTHON_VERSIONS = ["3.6.14", "3.7.12", "3.8.12", "3.9.7", "3.10.0"]
 JSON_VERSION = "v3.6.1"
-OCE_VERSION = "0.18"
+OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.5.3"
-BOOST_VERSION = "1.71.0"
-PCRE_VERSION = "8.41"
-LIBXML2_VERSION = "2.9.9"
-SWIG_VERSION = "3.0.12"
+BOOST_VERSION = "1.77.0"
+PCRE_VERSION = "8.45"
+LIBXML2_VERSION = "2.9.11"
+SWIG_VERSION = "4.0.2"
 OPENCOLLADA_VERSION = "v1.6.68"
-HDF5_VERSION = "1.8.22"
+HDF5_VERSION = "1.12.1"
 
 GMP_VERSION = "6.1.2"
-MPFR_VERSION = "3.1.5"
-CGAL_VERSION = "5.2"
+MPFR_VERSION = "3.1.5" # latest is 4.1.0
+CGAL_VERSION = "5.3"
 
 # binaries
 cp = "cp"
@@ -141,12 +141,9 @@ if get_os() == "Darwin":
 
 IFCOS_NUM_BUILD_PROCS = os.getenv("IFCOS_NUM_BUILD_PROCS", multiprocessing.cpu_count() + 1)
 
-TARGET_ARCH = os.getenv("TARGET_ARCH", sp.check_output([uname, "-m"], encoding="utf-8").strip())
-
 CMAKE_DIR = os.path.realpath(os.path.join("..", "cmake"))
 
-
-path = ["..", "build", sp.check_output(uname, encoding="utf-8").strip(), TARGET_ARCH]
+path = ["..", "build", sp.check_output(uname, encoding="utf-8").strip()]
 if TOOLSET:
     path.append(TOOLSET)
 DEFAULT_DEPS_DIR = os.path.realpath(os.path.join(*path))
@@ -166,8 +163,6 @@ cecho (f"""This script fetches and builds {PROJECT_NAME} and its dependencies
 cecho("""Script configuration:
 
 """, GREEN)
-cecho(f"""* Target Architecture    = {TARGET_ARCH}""", MAGENTA)
-cecho(" - Whether 32-bit (i686) or 64-bit (x86_64) will be built.")
 cecho(f"""* USE_OCCT               = {USE_OCCT}""", MAGENTA)
 if USE_OCCT:
     cecho(" - Compiling against official Open Cascade")
@@ -425,12 +420,6 @@ cecho("Collecting dependencies:", GREEN)
 
 ADDITIONAL_ARGS = []
 BOOST_ADDRESS_MODEL = []
-if TARGET_ARCH == "i686" and run([uname, "-m"]).strip() == "x86_64":
-    if get_os() == "Darwin":
-        ADDITIONAL_ARGS = ["-m32", "-arch i386"]
-    else:
-        ADDITIONAL_ARGS = ["-m32"]
-    BOOST_ADDRESS_MODEL = ["architecture=x86", "address-model=32"]
 
 if get_os() == "Darwin":
     ADDITIONAL_ARGS = [f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
@@ -793,7 +782,7 @@ if "IfcOpenShell-Python" in targets:
                 "-DSWIG_EXECUTABLE="         f"{DEPS_DIR}/install/swig/bin/swig",
                 "-DCMAKE_INSTALL_PREFIX="    f"{DEPS_DIR}/install/ifcopenshell/tmp",
             ], cmake_dir=CMAKE_DIR, cwd=python_dir)
-        
+
         logger.info(f"\rBuilding python {PYTHON_VERSION} wrapper...   ")
 
         run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "_ifcopenshell_wrapper"], cwd=python_dir)
@@ -804,6 +793,10 @@ if "IfcOpenShell-Python" in targets:
         if get_os() != "Darwin":
             # TODO: This symbol name depends on the Python version?
             run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
+
+        if PYTHON_VERSION == platform.python_version():
+            # copy module in site-package
+            pass
 
         run([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{PYTHON_VERSION}")])
 
