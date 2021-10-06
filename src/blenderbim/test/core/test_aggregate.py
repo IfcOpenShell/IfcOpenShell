@@ -29,3 +29,12 @@ class TestAssignObject:
             subject.assign_object(ifc, aggregator, collector, relating_obj="relating_obj", related_obj="related_obj")
             == "rel"
         )
+
+
+class TestUnassignObject:
+    def test_run(self, ifc, collector):
+        ifc.get_entity("related_obj").should_be_called().will_return("related_object")
+        ifc.run("aggregate.unassign_object", product="related_object").should_be_called().will_return("rel")
+        collector.assign("relating_obj").should_be_called()
+        collector.assign("related_obj").should_be_called()
+        assert subject.unassign_object(ifc, collector, relating_obj="relating_obj", related_obj="related_obj") == "rel"

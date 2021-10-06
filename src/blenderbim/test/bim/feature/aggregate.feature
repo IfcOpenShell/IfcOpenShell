@@ -23,6 +23,18 @@ Scenario: Assign object
     And the variable "related_object" is "tool.Ifc.get().by_type('IfcBuildingStorey')[0].id()"
     When I press "bim.assign_object(relating_object={relating_object}, related_object={related_object})"
     Then the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
-    Then the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
-    Then the collection "IfcBuildingStorey/My Storey" is in the collection "IfcSite/My Site"
+    And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
+    And the collection "IfcBuildingStorey/My Storey" is in the collection "IfcSite/My Site"
 
+Scenario: Unassign object
+    Given an empty IFC project
+    And the object "IfcBuildingStorey/My Storey" is selected
+    And I press "bim.enable_editing_aggregate"
+    And the variable "relating_object" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
+    And the variable "related_object" is "tool.Ifc.get().by_type('IfcBuildingStorey')[0].id()"
+    And I press "bim.assign_object(relating_object={relating_object}, related_object={related_object})"
+    And the object "IfcBuildingStorey/My Storey" is selected
+    When I press "bim.unassign_object(relating_object={relating_object}, related_object={related_object})"
+    Then the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
+    And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
+    And the collection "IfcBuildingStorey/My Storey" is in the collection "IfcProject/My Project"

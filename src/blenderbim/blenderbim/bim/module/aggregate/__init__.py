@@ -21,6 +21,7 @@ from . import ui, prop, operator
 
 classes = (
     operator.AssignObject,
+    operator.UnassignObject,
     operator.EnableEditingAggregate,
     operator.DisableEditingAggregate,
     operator.AddAggregate,

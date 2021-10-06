@@ -99,3 +99,21 @@ class TestAssign(NewFile):
         subject.assign(element_obj)
         assert len(element_obj.users_collection) == 1
         assert element_obj.users_collection[0].name == element_obj.name
+
+    def test_in_decomposition_mode_existing_collections_are_reassigned_to_the_correct_place_in_the_hierarchy(self):
+        bpy.ops.bim.create_project()
+        space_obj = bpy.data.objects.new("IfcSpace/Name", None)
+        space_element = tool.Ifc.get().createIfcSpace()
+        tool.Ifc.link(space_element, space_obj)
+        space_collection = bpy.data.collections.new("IfcSpace/Name")
+        bpy.context.scene.collection.children.link(space_collection)
+        space_collection.objects.link(space_obj)
+        ifcopenshell.api.run(
+            "aggregate.assign_object",
+            tool.Ifc.get(),
+            relating_object=tool.Ifc.get().by_type("IfcSite")[0],
+            product=space_element,
+        )
+        subject.assign(space_obj)
+        assert bpy.context.scene.collection.children.find(space_collection.name) == -1
+        assert bpy.data.collections.get("IfcSite/My Site").children.find(space_collection.name) != -1

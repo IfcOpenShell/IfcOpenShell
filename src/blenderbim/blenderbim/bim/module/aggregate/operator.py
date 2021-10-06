@@ -47,6 +47,22 @@ class AssignObject(bpy.types.Operator, Operator):
         )
 
 
+class UnassignObject(bpy.types.Operator, Operator):
+    bl_idname = "bim.unassign_object"
+    bl_label = "Unassign Object"
+    bl_options = {"REGISTER", "UNDO"}
+    relating_object: bpy.props.IntProperty()
+    related_object: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.unassign_object(
+            tool.Ifc,
+            tool.Collector,
+            relating_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object)),
+            related_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.related_object)),
+        )
+
+
 class EnableEditingAggregate(bpy.types.Operator, Operator):
     bl_idname = "bim.enable_editing_aggregate"
     bl_label = "Enable Editing Aggregate"

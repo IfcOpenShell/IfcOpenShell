@@ -13,7 +13,11 @@ class AggregateData:
 
     @classmethod
     def load(cls):
-        cls.data = {"has_aggregate": cls.has_aggregate(), "label": cls.get_label()}
+        cls.data = {
+            "has_aggregate": cls.has_aggregate(),
+            "label": cls.get_label(),
+            "relating_object_id": cls.get_relating_object_id(),
+        }
         cls.is_loaded = True
 
     @classmethod
@@ -25,3 +29,9 @@ class AggregateData:
         aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(bpy.context.active_object))
         if aggregate:
             return f"{aggregate.is_a()}/{aggregate.Name or ''}"
+
+    @classmethod
+    def get_relating_object_id(cls):
+        aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(bpy.context.active_object))
+        if aggregate:
+            return aggregate.id()
