@@ -57,7 +57,7 @@ import shutil
 import tarfile
 import multiprocessing
 import platform
-
+import sysconfig
 
 from urllib.request import urlretrieve
 
@@ -69,7 +69,8 @@ ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 
 PROJECT_NAME = "IfcOpenShell"
-if os.getenv("USE_CURRENT_PYTHON_VERSION"):
+USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
+if USE_CURRENT_PYTHON_VERSION:
     PYTHON_VERSIONS = [platform.python_version()]
 else:
     PYTHON_VERSIONS = ["3.6.14", "3.7.12", "3.8.12", "3.9.7", "3.10.0"]
@@ -90,7 +91,6 @@ CGAL_VERSION = "5.3"
 # binaries
 cp = "cp"
 bash = "bash"
-uname = "uname"
 git = "git"
 bunzip2 = "bunzip2"
 tar = "tar"
@@ -124,17 +124,13 @@ def which(cmd):
             return cmd
     return None
 
-def get_os():
-    ret_value = sp.check_output([uname, "-s"], encoding="utf-8").strip()
-    return ret_value
-
 
 # Set defaults for missing empty environment variables
 
 USE_OCCT = os.environ.get("USE_OCCT", "true").lower() == "true"
 
 TOOLSET = None
-if get_os() == "Darwin":
+if platform.system() == "Darwin":
     # C++11 features used in OCCT 7+ need a more recent stdlib
     TOOLSET = "10.9" if USE_OCCT else "10.6"
 
@@ -143,7 +139,7 @@ IFCOS_NUM_BUILD_PROCS = os.getenv("IFCOS_NUM_BUILD_PROCS", multiprocessing.cpu_c
 
 CMAKE_DIR = os.path.realpath(os.path.join("..", "cmake"))
 
-path = ["..", "build", sp.check_output(uname, encoding="utf-8").strip()]
+path = ["..", "build", platform.system()]
 if TOOLSET:
     path.append(TOOLSET)
 DEFAULT_DEPS_DIR = os.path.realpath(os.path.join(*path))
@@ -421,7 +417,7 @@ cecho("Collecting dependencies:", GREEN)
 ADDITIONAL_ARGS = []
 BOOST_ADDRESS_MODEL = []
 
-if get_os() == "Darwin":
+if platform.system() == "Darwin":
     ADDITIONAL_ARGS = [f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
 
 # If the linker supports GC sections, set it up to reduce binary file size
@@ -469,7 +465,7 @@ if 'hdf5' in targets:
         build_tool_args=[],
         download_url=f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{HDF5_MAJOR}/hdf5-{HDF5_VERSION}/src/",
         download_name=f"CMake-hdf5-{HDF5_VERSION}.tar.gz",
-        ctest_result=f"HDF5-{HDF5_VERSION}-{get_os()}",
+        ctest_result=f"HDF5-{HDF5_VERSION}-{platform.system()}",
         ctest_result_path=f"HDF_Group/HDF5/{HDF5_VERSION}"
     )
 
@@ -581,7 +577,7 @@ if "python" in targets:
     # On OSX a dynamic python library is built or it would not be compatible
     # with the system python because of some threading initialization
     PYTHON_CONFIGURE_ARGS = []
-    if get_os() == "Darwin":
+    if platform.system() == "Darwin":
         PYTHON_CONFIGURE_ARGS = ["--disable-static", "--enable-shared"]
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
@@ -751,7 +747,7 @@ if "IfcOpenShell-Python" in targets:
 
     # On OSX the actual Python library is not linked against.
     ADDITIONAL_ARGS = ""
-    if get_os() == "Darwin":
+    if platform.system() == "Darwin":
         ADDITIONAL_ARGS = "-Wl,-flat_namespace,-undefined,suppress"
 
     os.environ["CXXFLAGS"] = f"{CXXFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
@@ -790,13 +786,21 @@ if "IfcOpenShell-Python" in targets:
 
         module_dir = os.path.dirname(run([PYTHON_EXECUTABLE, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
 
-        if get_os() != "Darwin":
+        if platform.system() != "Darwin":
             # TODO: This symbol name depends on the Python version?
             run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
 
-        if PYTHON_VERSION == platform.python_version():
-            # copy module in site-package
-            pass
+        if USE_CURRENT_PYTHON_VERSION:
+            # copy module in site-package to automatically install it
+            site_package_dir = sysconfig.get_paths()["purelib"]
+            module_dir_name = os.path.basename(os.path.normpath(module_dir))
+            logger.info(f"\rInstalling python module in {site_package_dir}")
+            os.makedirs(os.path.join(site_package_dir, module_dir_name), exist_ok=True)
+            try:
+                run([cp, "-R", module_dir, site_package_dir])
+            except Exception as e:
+                logger.warning(f"Unable to copy python module: {e}\nSkipping this task")
+
 
         run([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{PYTHON_VERSION}")])
 
