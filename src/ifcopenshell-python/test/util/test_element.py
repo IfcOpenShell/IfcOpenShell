@@ -178,6 +178,14 @@ class TestGetContainerIFC4(test.bootstrap.IFC4):
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
         assert ifcopenshell.util.element.get_container(subelement) == building
 
+    def test_getting_nothing_if_we_enforce_only_getting_direct_spatial_containers(self):
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
+        building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        assert ifcopenshell.util.element.get_container(subelement, should_get_direct=True) is None
+
 
 class TestGetDecompositionIFC4(test.bootstrap.IFC4):
     def test_getting_decomposed_subelements_of_an_element(self):

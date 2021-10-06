@@ -60,3 +60,5 @@ class Usecase:
                 matrix=ifcopenshell.util.placement.get_local_placement(self.settings["product"].ObjectPlacement),
                 is_si=False,
             )
+
+        return contains_elements
