@@ -6,7 +6,6 @@ class Usecase:
     def __init__(self, file, **settings):
         self.file = file
         self.settings = {
-            "relating_object": None,
             "product": None,
         }
         for key, value in settings.items():
@@ -14,7 +13,7 @@ class Usecase:
 
     def execute(self):
         for rel in self.settings["product"].Decomposes or []:
-            if not rel.is_a("IfcRelAggregates") or rel.RelatingObject != self.settings["relating_object"]:
+            if not rel.is_a("IfcRelAggregates"):
                 continue
             if len(rel.RelatedObjects) == 1:
                 return self.file.remove(rel)

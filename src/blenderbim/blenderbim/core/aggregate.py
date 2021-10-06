@@ -16,3 +16,10 @@ def assign_object(ifc, aggregator, collector, relating_obj=None, related_obj=Non
     collector.assign(related_obj)
     aggregator.disable_editing(related_obj)
     return rel
+
+
+def unassign_object(ifc, collector, relating_obj=None, related_obj=None):
+    rel = ifc.run("aggregate.unassign_object", product=ifc.get_entity(related_obj))
+    collector.assign(relating_obj)
+    collector.assign(related_obj)
+    return rel
