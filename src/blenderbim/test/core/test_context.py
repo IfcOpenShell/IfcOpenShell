@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.core.context as subject
-from test.core.bootstrap import ifc, context_editor
+from test.core.bootstrap import ifc, context
 
 
 class TestAddContext:
@@ -53,22 +53,22 @@ class TestRemoveContext:
 
 
 class TestEnableEditingContext:
-    def test_run(self, context_editor):
-        context_editor.set_context("context").should_be_called()
-        context_editor.import_attributes().should_be_called()
-        subject.enable_editing_context(context_editor, context="context")
+    def test_run(self, context):
+        context.set_context("context").should_be_called()
+        context.import_attributes().should_be_called()
+        subject.enable_editing_context(context, context="context")
 
 
 class TestDisableEditingContext:
-    def test_run(self, context_editor):
-        context_editor.clear_context().should_be_called()
-        subject.disable_editing_context(context_editor)
+    def test_run(self, context):
+        context.clear_context().should_be_called()
+        subject.disable_editing_context(context)
 
 
 class TestEditContext:
-    def test_run(self, ifc, context_editor):
-        context_editor.get_context().should_be_called().will_return("context")
-        context_editor.export_attributes().should_be_called().will_return("attributes")
+    def test_run(self, ifc, context):
+        context.get_context().should_be_called().will_return("context")
+        context.export_attributes().should_be_called().will_return("attributes")
         ifc.run("context.edit_context", context="context", attributes="attributes").should_be_called()
-        context_editor.clear_context().should_be_called()
-        subject.edit_context(ifc, context_editor)
+        context.clear_context().should_be_called()
+        subject.edit_context(ifc, context)

@@ -15,9 +15,9 @@ class Usecase:
                 setattr(self.settings["style"], key, value)
 
     def edit_surface_colour(self, value):
-        self.settings["style"].SurfaceColour[1] = value[0]
-        self.settings["style"].SurfaceColour[2] = value[1]
-        self.settings["style"].SurfaceColour[3] = value[2]
+        self.settings["style"].SurfaceColour[1] = value["Red"]
+        self.settings["style"].SurfaceColour[2] = value["Green"]
+        self.settings["style"].SurfaceColour[3] = value["Blue"]
 
     def is_colour_or_factor(self, name):
         return name in [
@@ -29,15 +29,15 @@ class Usecase:
         ]
 
     def edit_colour_or_factor(self, name, value):
-        if isinstance(value, (list, tuple)):
+        if isinstance(value, dict):
             attribute = getattr(self.settings["style"], name)
             if not attribute or not attribute.is_a("IfcColourRgb"):
                 colour = self.file.createIfcColourRgb(None, 0, 0, 0)
                 setattr(self.settings["style"], name, colour)
                 attribute = getattr(self.settings["style"], name)
-            attribute[1] = value[0]
-            attribute[2] = value[1]
-            attribute[3] = value[2]
+            attribute[1] = value["Red"]
+            attribute[2] = value["Green"]
+            attribute[3] = value["Blue"]
         else:
             existing_value = getattr(self.settings["style"], name)
             if existing_value and existing_value.id():

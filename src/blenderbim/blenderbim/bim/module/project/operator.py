@@ -96,13 +96,13 @@ class CreateProject(bpy.types.Operator):
         bpy.ops.bim.assign_class(obj=building_storey.name, ifc_class="IfcBuildingStorey")
 
         blenderbim.core.aggregate.assign_object(
-            tool.Ifc, tool.Aggregator, tool.Collector, relating_obj=project, related_obj=site
+            tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=project, related_obj=site
         )
         blenderbim.core.aggregate.assign_object(
-            tool.Ifc, tool.Aggregator, tool.Collector, relating_obj=site, related_obj=building
+            tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=site, related_obj=building
         )
         blenderbim.core.aggregate.assign_object(
-            tool.Ifc, tool.Aggregator, tool.Collector, relating_obj=building, related_obj=building_storey
+            tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=building, related_obj=building_storey
         )
 
         context.view_layer.objects.active = active_object

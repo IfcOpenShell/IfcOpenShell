@@ -68,7 +68,7 @@ class AddRepresentation(bpy.types.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
 
-        bpy.ops.bim.edit_object_placement(obj=obj.name)
+        core.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
 
         if not obj.data:
             return {"FINISHED"}

@@ -22,7 +22,7 @@ import blenderbim.tool as tool
 import blenderbim.core.tool
 
 
-class ContextEditor(blenderbim.core.tool.ContextEditor):
+class Context(blenderbim.core.tool.Context):
     @classmethod
     def set_context(cls, context):
         bpy.context.scene.BIMContextProperties.active_context_id = context.id()
