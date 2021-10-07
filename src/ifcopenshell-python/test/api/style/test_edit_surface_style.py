@@ -11,7 +11,7 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
             "style.edit_surface_style",
             self.file,
             style=style,
-            attributes={"SurfaceColour": [1, 1, 1], "Transparency": 0.5},
+            attributes={"SurfaceColour": {"Red": 1, "Green": 1, "Blue": 1}, "Transparency": 0.5},
         )
         assert style.SurfaceColour == colour
         assert list(colour) == [None, 1, 1, 1]
@@ -26,7 +26,12 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
             "SpecularColour",
         ]:
             style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
-            ifcopenshell.api.run("style.edit_surface_style", self.file, style=style, attributes={attribute: [1, 1, 1]})
+            ifcopenshell.api.run(
+                "style.edit_surface_style",
+                self.file,
+                style=style,
+                attributes={attribute: {"Red": 1, "Green": 1, "Blue": 1}},
+            )
             assert list(getattr(style, attribute)) == [None, 1, 1, 1]
 
     def test_editing_an_existing_colour_to_another_colour(self):
@@ -40,7 +45,12 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
             colour = self.file.createIfcColourRgb(None, 0, 0, 0)
             style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
             setattr(style, attribute, colour)
-            ifcopenshell.api.run("style.edit_surface_style", self.file, style=style, attributes={attribute: [1, 1, 1]})
+            ifcopenshell.api.run(
+                "style.edit_surface_style",
+                self.file,
+                style=style,
+                attributes={attribute: {"Red": 1, "Green": 1, "Blue": 1}},
+            )
             assert list(colour) == [None, 1, 1, 1]
 
     def test_editing_an_existing_colour_to_a_factor(self):
@@ -83,5 +93,10 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
         ]:
             style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
             setattr(style, attribute, self.file.createIfcNormalisedRatioMeasure(0.5))
-            ifcopenshell.api.run("style.edit_surface_style", self.file, style=style, attributes={attribute: [1, 1, 1]})
+            ifcopenshell.api.run(
+                "style.edit_surface_style",
+                self.file,
+                style=style,
+                attributes={attribute: {"Red": 1, "Green": 1, "Blue": 1}},
+            )
             assert list(getattr(style, attribute)) == [None, 1, 1, 1]
