@@ -34,4 +34,4 @@ from bpy.props import (
 
 class BIMStyleProperties(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=Attribute)
-    is_editing_attributes: BoolProperty(name="Is Editing Attributes")
+    is_editing: BoolProperty(name="Is Editing")

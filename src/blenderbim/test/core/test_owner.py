@@ -18,7 +18,7 @@
 
 
 import blenderbim.core.owner as subject
-from test.core.bootstrap import ifc, blender, person_editor, role_editor, address_editor, organisation_editor, owner
+from test.core.bootstrap import ifc, owner
 
 
 class TestAddPerson:
@@ -34,37 +34,37 @@ class TestRemovePerson:
 
 
 class TestEnableEditingPerson:
-    def test_run(self, person_editor):
-        person_editor.set_person("person").should_be_called()
-        person_editor.import_attributes().should_be_called()
-        subject.enable_editing_person(person_editor, person="person")
+    def test_run(self, owner):
+        owner.set_person("person").should_be_called()
+        owner.import_person_attributes().should_be_called()
+        subject.enable_editing_person(owner, person="person")
 
 
 class TestDisableEditingPerson:
-    def test_run(self, person_editor):
-        person_editor.clear_person().should_be_called()
-        subject.disable_editing_person(person_editor)
+    def test_run(self, owner):
+        owner.clear_person().should_be_called()
+        subject.disable_editing_person(owner)
 
 
 class TestEditPerson:
-    def test_run(self, ifc, person_editor):
-        person_editor.get_person().should_be_called().will_return("person")
-        person_editor.export_attributes().should_be_called().will_return("attributes")
+    def test_run(self, ifc, owner):
+        owner.get_person().should_be_called().will_return("person")
+        owner.export_person_attributes().should_be_called().will_return("attributes")
         ifc.run("owner.edit_person", person="person", attributes="attributes").should_be_called()
-        person_editor.clear_person().should_be_called()
-        subject.edit_person(ifc, person_editor)
+        owner.clear_person().should_be_called()
+        subject.edit_person(ifc, owner)
 
 
 class TestAddPersonAttribute:
-    def test_run(self, person_editor):
-        person_editor.add_attribute("name").should_be_called()
-        subject.add_person_attribute(person_editor, name="name")
+    def test_run(self, owner):
+        owner.add_person_attribute("name").should_be_called()
+        subject.add_person_attribute(owner, name="name")
 
 
 class TestRemovePersonAttribute:
-    def test_run(self, person_editor):
-        person_editor.remove_attribute("name", "id").should_be_called()
-        subject.remove_person_attribute(person_editor, name="name", id="id")
+    def test_run(self, owner):
+        owner.remove_person_attribute("name", "id").should_be_called()
+        subject.remove_person_attribute(owner, name="name", id="id")
 
 
 class TestAddRole:
@@ -80,25 +80,25 @@ class TestRemoveRole:
 
 
 class TestEnableEditingRole:
-    def test_run(self, role_editor):
-        role_editor.set_role("role").should_be_called()
-        role_editor.import_attributes().should_be_called()
-        subject.enable_editing_role(role_editor, role="role")
+    def test_run(self, owner):
+        owner.set_role("role").should_be_called()
+        owner.import_role_attributes().should_be_called()
+        subject.enable_editing_role(owner, role="role")
 
 
 class TestDisableEditingRole:
-    def test_run(self, role_editor):
-        role_editor.clear_role().should_be_called()
-        subject.disable_editing_role(role_editor)
+    def test_run(self, owner):
+        owner.clear_role().should_be_called()
+        subject.disable_editing_role(owner)
 
 
 class TestEditRole:
-    def test_run(self, ifc, role_editor):
-        role_editor.export_attributes().should_be_called().will_return("attributes")
-        role_editor.get_role().should_be_called().will_return("role")
+    def test_run(self, ifc, owner):
+        owner.export_role_attributes().should_be_called().will_return("attributes")
+        owner.get_role().should_be_called().will_return("role")
         ifc.run("owner.edit_role", role="role", attributes="attributes").should_be_called()
-        role_editor.clear_role().should_be_called()
-        subject.edit_role(ifc, role_editor)
+        owner.clear_role().should_be_called()
+        subject.edit_role(ifc, owner)
 
 
 class TestAddAddress:
@@ -116,37 +116,37 @@ class TestRemoveAddress:
 
 
 class TestEnableEditingAddress:
-    def test_run(self, address_editor):
-        address_editor.set_address("address").should_be_called()
-        address_editor.import_attributes().should_be_called()
-        subject.enable_editing_address(address_editor, address="address")
+    def test_run(self, owner):
+        owner.set_address("address").should_be_called()
+        owner.import_address_attributes().should_be_called()
+        subject.enable_editing_address(owner, address="address")
 
 
 class TestDisableEditingAddress:
-    def test_run(self, address_editor):
-        address_editor.clear_address().should_be_called()
-        subject.disable_editing_address(address_editor)
+    def test_run(self, owner):
+        owner.clear_address().should_be_called()
+        subject.disable_editing_address(owner)
 
 
 class TestEditAddress:
-    def test_run(self, ifc, address_editor):
-        address_editor.get_address().should_be_called().will_return("address")
-        address_editor.export_attributes().should_be_called().will_return("attributes")
+    def test_run(self, ifc, owner):
+        owner.get_address().should_be_called().will_return("address")
+        owner.export_address_attributes().should_be_called().will_return("attributes")
         ifc.run("owner.edit_address", address="address", attributes="attributes").should_be_called()
-        address_editor.clear_address().should_be_called()
-        subject.edit_address(ifc, address_editor)
+        owner.clear_address().should_be_called()
+        subject.edit_address(ifc, owner)
 
 
 class TestAddAddressAttribute:
-    def test_run(self, address_editor):
-        address_editor.add_attribute("name").should_be_called()
-        subject.add_address_attribute(address_editor, name="name")
+    def test_run(self, owner):
+        owner.add_address_attribute("name").should_be_called()
+        subject.add_address_attribute(owner, name="name")
 
 
 class TestRemoveAddressAttribute:
-    def test_run(self, address_editor):
-        address_editor.remove_attribute("name", "id").should_be_called()
-        subject.remove_address_attribute(address_editor, name="name", id="id")
+    def test_run(self, owner):
+        owner.remove_address_attribute("name", "id").should_be_called()
+        subject.remove_address_attribute(owner, name="name", id="id")
 
 
 class TestAddOrganisation:
@@ -162,25 +162,25 @@ class TestRemoveOrganisation:
 
 
 class TestEnableEditingOrganisation:
-    def test_run(self, organisation_editor):
-        organisation_editor.set_organisation("organisation").should_be_called()
-        organisation_editor.import_attributes().should_be_called()
-        subject.enable_editing_organisation(organisation_editor, organisation="organisation")
+    def test_run(self, owner):
+        owner.set_organisation("organisation").should_be_called()
+        owner.import_organisation_attributes().should_be_called()
+        subject.enable_editing_organisation(owner, organisation="organisation")
 
 
 class TestDisableEditingOrganisation:
-    def test_run(self, organisation_editor):
-        organisation_editor.clear_organisation().should_be_called()
-        subject.disable_editing_organisation(organisation_editor)
+    def test_run(self, owner):
+        owner.clear_organisation().should_be_called()
+        subject.disable_editing_organisation(owner)
 
 
 class TestEditOrganisation:
-    def test_run(self, ifc, organisation_editor):
-        organisation_editor.get_organisation().should_be_called().will_return("organisation")
-        organisation_editor.export_attributes().should_be_called().will_return("attributes")
+    def test_run(self, ifc, owner):
+        owner.get_organisation().should_be_called().will_return("organisation")
+        owner.export_organisation_attributes().should_be_called().will_return("attributes")
         ifc.run("owner.edit_organisation", organisation="organisation", attributes="attributes").should_be_called()
-        organisation_editor.clear_organisation().should_be_called()
-        subject.edit_organisation(ifc, organisation_editor)
+        owner.clear_organisation().should_be_called()
+        subject.edit_organisation(ifc, owner)
 
 
 class TestAddPersonAndOrganisation:

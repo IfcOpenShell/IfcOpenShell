@@ -31,15 +31,15 @@ def remove_context(ifc, context=None):
     ifc.run("context.remove_context", context=context)
 
 
-def enable_editing_context(context_editor, context=None):
-    context_editor.set_context(context)
-    context_editor.import_attributes()
+def enable_editing_context(context_tool, context=None):
+    context_tool.set_context(context)
+    context_tool.import_attributes()
 
 
-def disable_editing_context(context_editor):
-    context_editor.clear_context()
+def disable_editing_context(context):
+    context.clear_context()
 
 
-def edit_context(ifc, context_editor):
-    ifc.run("context.edit_context", context=context_editor.get_context(), attributes=context_editor.export_attributes())
-    disable_editing_context(context_editor)
+def edit_context(ifc, context):
+    ifc.run("context.edit_context", context=context.get_context(), attributes=context.export_attributes())
+    disable_editing_context(context)

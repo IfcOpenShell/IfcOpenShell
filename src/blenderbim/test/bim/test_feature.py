@@ -49,6 +49,11 @@ def i_add_a_cube():
     bpy.ops.mesh.primitive_cube_add()
 
 
+@given("I add a material")
+def i_add_a_material():
+    bpy.context.active_object.active_material = bpy.data.materials.new("Material")
+
+
 @when(parsers.parse('I add a cube of size "{size}" at "{location}"'))
 def i_add_a_cube_of_size_size_at_location(size, location):
     bpy.ops.mesh.primitive_cube_add(size=float(size), location=[float(co) for co in location.split(",")])

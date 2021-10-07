@@ -204,7 +204,13 @@ class AssignClass(bpy.types.Operator):
         collection.objects.link(obj)
         if parent_collection:
             parent_collection.children.link(collection)
-            bpy.ops.bim.assign_object(related_object=obj.name, relating_object=parent_collection.name)
+            blenderbim.core.aggregate.assign_object(
+                tool.Ifc,
+                tool.Aggregator,
+                tool.Collector,
+                relating_obj=bpy.data.objects.get(parent_collection.name),
+                related_obj=obj,
+            )
         else:
             context.scene.collection.children.link(collection)
 

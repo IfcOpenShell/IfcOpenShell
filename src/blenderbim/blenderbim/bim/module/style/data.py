@@ -17,31 +17,27 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.core.tool
 import blenderbim.tool as tool
-import blenderbim.bim.helper
 
 
-class RoleEditor(blenderbim.core.tool.RoleEditor):
-    @classmethod
-    def set_role(cls, role):
-        bpy.context.scene.BIMOwnerProperties.active_role_id = role.id()
+def refresh():
+    StyleAttributesData.is_loaded = False
 
-    @classmethod
-    def import_attributes(cls):
-        role = cls.get_role()
-        props = bpy.context.scene.BIMOwnerProperties
-        props.role_attributes.clear()
-        blenderbim.bim.helper.import_attributes("IfcActorRole", props.role_attributes, role.get_info())
+
+class StyleAttributesData:
+    data = {}
+    is_loaded = False
 
     @classmethod
-    def clear_role(cls):
-        bpy.context.scene.BIMOwnerProperties.active_role_id = 0
+    def load(cls):
+        cls.data = {"attributes": cls.get_attributes()}
 
     @classmethod
-    def get_role(cls):
-        return tool.Ifc().get().by_id(bpy.context.scene.BIMOwnerProperties.active_role_id)
-
-    @classmethod
-    def export_attributes(cls):
-        return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMOwnerProperties.role_attributes)
+    def get_attributes(cls):
+        style = tool.Ifc.get().by_id(bpy.context.active_object.active_material.BIMMaterialProperties.ifc_style_id)
+        results = []
+        for name, value in style.get_info().items():
+            if name in ["id", "type", "Styles"]:
+                continue
+            results.append({"name": name, "value": str(value)})
+        return results

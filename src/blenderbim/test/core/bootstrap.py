@@ -36,43 +36,15 @@ def blender():
 
 
 @pytest.fixture
-def aggregator():
-    prophet = Prophecy(blenderbim.core.tool.Aggregator)
+def aggregate():
+    prophet = Prophecy(blenderbim.core.tool.Aggregate)
     yield prophet
     prophet.verify()
 
 
 @pytest.fixture
-def person_editor():
-    prophet = Prophecy(blenderbim.core.tool.PersonEditor)
-    yield prophet
-    prophet.verify()
-
-
-@pytest.fixture
-def role_editor():
-    prophet = Prophecy(blenderbim.core.tool.RoleEditor)
-    yield prophet
-    prophet.verify()
-
-
-@pytest.fixture
-def address_editor():
-    prophet = Prophecy(blenderbim.core.tool.AddressEditor)
-    yield prophet
-    prophet.verify()
-
-
-@pytest.fixture
-def organisation_editor():
-    prophet = Prophecy(blenderbim.core.tool.OrganisationEditor)
-    yield prophet
-    prophet.verify()
-
-
-@pytest.fixture
-def context_editor():
-    prophet = Prophecy(blenderbim.core.tool.ContextEditor)
+def context():
+    prophet = Prophecy(blenderbim.core.tool.Context)
     yield prophet
     prophet.verify()
 
@@ -94,6 +66,13 @@ def voider():
 @pytest.fixture
 def selector():
     prophet = Prophecy(blenderbim.core.tool.Selector)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def style():
+    prophet = Prophecy(blenderbim.core.tool.Style)
     yield prophet
     prophet.verify()
 

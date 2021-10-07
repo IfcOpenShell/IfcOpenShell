@@ -40,7 +40,7 @@ class AssignObject(bpy.types.Operator, Operator):
     def _execute(self, context):
         core.assign_object(
             tool.Ifc,
-            tool.Aggregator,
+            tool.Aggregate,
             tool.Collector,
             relating_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object)),
             related_obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.related_object)),
@@ -69,7 +69,7 @@ class EnableEditingAggregate(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.enable_editing_aggregate(tool.Aggregator, obj=context.active_object)
+        core.enable_editing_aggregate(tool.Aggregate, obj=context.active_object)
 
 
 class DisableEditingAggregate(bpy.types.Operator, Operator):
@@ -78,7 +78,7 @@ class DisableEditingAggregate(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.disable_editing_aggregate(tool.Aggregator, obj=context.active_object)
+        core.disable_editing_aggregate(tool.Aggregate, obj=context.active_object)
 
 
 class AddAggregate(bpy.types.Operator):
