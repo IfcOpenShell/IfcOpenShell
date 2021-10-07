@@ -32,9 +32,9 @@ def interface(cls):
 
 @interface
 class Aggregate:
-    def enable_editing(cls, obj): pass
-    def disable_editing(cls, obj): pass
     def can_aggregate(cls, relating_object, related_object): pass
+    def disable_editing(cls, obj): pass
+    def enable_editing(cls, obj): pass
 
 
 @interface
@@ -49,58 +49,58 @@ class Collector:
 @interface
 class Container:
     def can_contain(cls, structure_obj, element_obj): pass
-    def enable_editing(cls, obj): pass
     def disable_editing(cls, obj): pass
+    def enable_editing(cls, obj): pass
     def import_containers(cls, parent=None): pass
 
 
 @interface
 class Context:
-    def set_context(cls, context): pass
-    def import_attributes(cls): pass
     def clear_context(cls): pass
-    def get_context(cls): pass
     def export_attributes(cls): pass
+    def get_context(cls): pass
+    def import_attributes(cls): pass
+    def set_context(cls, context): pass
 
 
 @interface
 class Ifc:
-    def run(cls, command, **kwargs): pass
     def get(cls): pass
     def get_entity(cls, obj): pass
     def link(cls, element, obj): pass
+    def run(cls, command, **kwargs): pass
     def unlink(cls, element=None, obj=None): pass
 
 
 @interface
 class Owner:
-    def set_user(cls, user): pass
-    def get_user(cls): pass
-    def clear_user(cls): pass
     def add_address_attribute(cls, name): pass
+    def add_person_attribute(cls, name): pass
     def clear_address(cls): pass
+    def clear_organisation(cls): pass
+    def clear_person(cls): pass
+    def clear_role(cls): pass
+    def clear_user(cls): pass
     def export_address_attributes(cls): pass
+    def export_organisation_attributes(cls): pass
+    def export_person_attributes(cls): pass
+    def export_role_attributes(cls): pass
     def get_address(cls): pass
+    def get_organisation(cls): pass
+    def get_person(cls): pass
+    def get_role(cls): pass
+    def get_user(cls): pass
     def import_address_attributes(cls): pass
+    def import_organisation_attributes(cls): pass
+    def import_person_attributes(cls): pass
+    def import_role_attributes(cls): pass
     def remove_address_attribute(cls, name, id): pass
+    def remove_person_attribute(cls, name, id): pass
     def set_address(cls, address): pass
     def set_organisation(cls, organisation): pass
-    def import_organisation_attributes(cls): pass
-    def clear_organisation(cls): pass
-    def get_organisation(cls): pass
-    def export_organisation_attributes(cls): pass
     def set_person(cls, person): pass
-    def import_person_attributes(cls): pass
-    def clear_person(cls): pass
-    def export_person_attributes(cls): pass
-    def get_person(cls): pass
-    def add_person_attribute(cls, name): pass
-    def remove_person_attribute(cls, name, id): pass
     def set_role(cls, role): pass
-    def import_role_attributes(cls): pass
-    def clear_role(cls): pass
-    def get_role(cls): pass
-    def export_role_attributes(cls): pass
+    def set_user(cls, user): pass
 
 
 @interface
@@ -133,6 +133,6 @@ class Surveyor:
 @interface
 class Voider:
     def can_void(cls, opening, element): pass
-    def void(cls, opening_obj, building_obj): pass
-    def unvoid(cls, opening_obj): pass
     def set_void_display(cls, opening_obj): pass
+    def unvoid(cls, opening_obj): pass
+    def void(cls, opening_obj, building_obj): pass
