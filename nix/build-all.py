@@ -70,10 +70,8 @@ logger.addHandler(ch)
 
 PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
-if USE_CURRENT_PYTHON_VERSION:
-    PYTHON_VERSIONS = [platform.python_version()]
-else:
-    PYTHON_VERSIONS = ["3.6.14", "3.7.12", "3.8.12", "3.9.7", "3.10.0"]
+
+PYTHON_VERSIONS = ["3.6.14", "3.7.12", "3.8.12", "3.9.7", "3.10.0"]
 JSON_VERSION = "v3.6.1"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.5.3"
@@ -567,7 +565,7 @@ if "OpenCOLLADA" in targets:
         revision=OPENCOLLADA_VERSION
     )
 
-if "python" in targets:
+if "python" in targets and not USE_CURRENT_PYTHON_VERSION:
     # Python should not be built with -fvisibility=hidden, from experience that introduces segfaults
     OLD_CXX_FLAGS = os.environ["CXXFLAGS"]
     OLD_C_FLAGS = os.environ["CFLAGS"]
@@ -653,7 +651,7 @@ if "cgal" in targets:
     
 cecho("Building IfcOpenShell:", GREEN)
 
-IFCOS_DIR=os.path.join(DEPS_DIR, "build", "ifcopenshell")
+IFCOS_DIR = os.path.join(DEPS_DIR, "build", "ifcopenshell")
 if os.path.exists(IFCOS_DIR):
     shutil.rmtree(IFCOS_DIR)
 os.makedirs(IFCOS_DIR)
@@ -744,7 +742,6 @@ run([make, f"-j{IFCOS_NUM_BUILD_PROCS}"], cwd=executables_dir)
 run([make, "install/strip" if BUILD_CFG == "Release" else "install"], cwd=executables_dir)
 
 if "IfcOpenShell-Python" in targets:
-
     # On OSX the actual Python library is not linked against.
     ADDITIONAL_ARGS = ""
     if platform.system() == "Darwin":
@@ -754,54 +751,50 @@ if "IfcOpenShell-Python" in targets:
     os.environ["CFLAGS"] = f"{CFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
     os.environ["LDFLAGS"] = f"{LDFLAGS} {ADDITIONAL_ARGS}"
 
-    for PYTHON_VERSION in PYTHON_VERSIONS:
-        logger.info(f"\rConfiguring python {PYTHON_VERSION} wrapper...")
+    python_dir = os.path.join(IFCOS_DIR, "pythonwrapper")
+    os.makedirs(python_dir, exist_ok=True)
 
-        python_dir = os.path.join(IFCOS_DIR, "pythonwrapper")
-        if not os.path.exists(python_dir):
-            os.makedirs(python_dir)
+    def compile_python_wrapper(python_version, python_library, python_include, python_executable):
+        logger.info(f"\rConfiguring python {python_version} wrapper...")
 
         cache_path = os.path.join(python_dir, "CMakeCache.txt")
         if os.path.exists(cache_path):
-            os.unlink(cache_path)
+            os.remove(cache_path)
 
-        PYTHON_LIBRARY = run([bash, "-c", f"ls    {DEPS_DIR}/install/python-{PYTHON_VERSION}/lib/libpython*.*"])
-        PYTHON_INCLUDE = run([bash, "-c", f"ls -d {DEPS_DIR}/install/python-{PYTHON_VERSION}/include/python*"])
-        PYTHON_EXECUTABLE = os.path.join(DEPS_DIR, "install", f"python-{PYTHON_VERSION}", "bin", f"python{PYTHON_VERSION[0]}")
-        os.environ["PYTHON_LIBRARY_BASENAME"] = os.path.basename(PYTHON_LIBRARY)
+        os.environ["python_library_BASENAME"] = os.path.basename(python_library)
 
         run_cmake("",
             cmake_args + [
-                "-DPYTHON_LIBRARY="          +PYTHON_LIBRARY,
-                "-DPYTHON_EXECUTABLE="       +PYTHON_EXECUTABLE,
-                "-DPYTHON_INCLUDE_DIR="      +PYTHON_INCLUDE,
+                "-Dpython_library="          +python_library,
+                "-Dpython_executable="       +python_executable,
+                "-Dpython_include_DIR="      +python_include,
                 "-DSWIG_EXECUTABLE="         f"{DEPS_DIR}/install/swig/bin/swig",
                 "-DCMAKE_INSTALL_PREFIX="    f"{DEPS_DIR}/install/ifcopenshell/tmp",
             ], cmake_dir=CMAKE_DIR, cwd=python_dir)
 
-        logger.info(f"\rBuilding python {PYTHON_VERSION} wrapper...   ")
+        logger.info(f"\rBuilding python {python_version} wrapper...   ")
 
         run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "_ifcopenshell_wrapper"], cwd=python_dir)
         run([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
 
-        module_dir = os.path.dirname(run([PYTHON_EXECUTABLE, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
+        module_dir = os.path.dirname(run([python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
 
         if platform.system() != "Darwin":
             # TODO: This symbol name depends on the Python version?
             run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
-
-        if USE_CURRENT_PYTHON_VERSION:
-            # copy module in site-package to automatically install it
-            site_package_dir = sysconfig.get_paths()["purelib"]
-            module_dir_name = os.path.basename(os.path.normpath(module_dir))
-            logger.info(f"\rInstalling python module in {site_package_dir}")
-            os.makedirs(os.path.join(site_package_dir, module_dir_name), exist_ok=True)
-            try:
-                run([cp, "-R", module_dir, site_package_dir])
-            except Exception as e:
-                logger.warning(f"Unable to copy python module: {e}\nSkipping this task")
+        return module_dir
 
 
-        run([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{PYTHON_VERSION}")])
+    if USE_CURRENT_PYTHON_VERSION:
+        python_info = sysconfig.get_paths()
+        compile_python_wrapper(platform.python_version(), python_info["purelib"], python_info["include"], sys.executable)
+    else:
+        for python_version in PYTHON_VERSIONS:
+            python_library = run([bash, "-c", f"ls    {DEPS_DIR}/install/python-{python_version}/lib/libpython*.*"])
+            python_include = run([bash, "-c", f"ls -d {DEPS_DIR}/install/python-{python_version}/include/python*"])
+            python_executable = os.path.join(DEPS_DIR, "install", f"python-{python_version}", "bin", f"python{python_version[0]}")
+
+            module_dir = compile_python_wrapper(python_version, python_library, python_include, python_executable)
+            run([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{python_version}")])
 
 logger.info("\rBuilt IfcOpenShell...\n\n")
