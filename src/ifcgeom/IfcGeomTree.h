@@ -338,7 +338,7 @@ namespace IfcGeom {
 				for (; it.More(); it.Next(), ++git) {
 					std::unique_ptr<IfcGeom::Material> adaptor;					
 					if (git->hasStyle()) {
-						adaptor.reset(new Material(&git->Style()));
+						adaptor.reset(new Material(git->StylePtr()));
 					} else {
 						adaptor.reset(new Material(IfcGeom::get_default_style(elem->type())));
 					}

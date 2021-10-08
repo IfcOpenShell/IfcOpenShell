@@ -288,9 +288,9 @@ private:
 	MAKE_TYPE_NAME(Cache) cache;
 #endif
 
-	std::map<int, SurfaceStyle> style_cache;
+	std::map<int, std::shared_ptr<const SurfaceStyle>> style_cache;
 
-	const SurfaceStyle* internalize_surface_style(const std::pair<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*>& shading_style);
+	std::shared_ptr<const SurfaceStyle> internalize_surface_style(const std::pair<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*>& shading_style);
 
 public:
 	MAKE_TYPE_NAME(Kernel)()
@@ -364,9 +364,9 @@ public:
 	bool convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
 	void assert_closed_wire(TopoDS_Wire& wire);
 
-	bool convert_layerset(const IfcSchema::IfcProduct*, std::vector<Handle_Geom_Surface>&, std::vector<const SurfaceStyle*>&, std::vector<double>&);
-	bool apply_layerset(const IfcRepresentationShapeItems&, const std::vector<Handle_Geom_Surface>&, const std::vector<const SurfaceStyle*>&, IfcRepresentationShapeItems&);
-	bool apply_folded_layerset(const IfcRepresentationShapeItems&, const std::vector< std::vector<Handle_Geom_Surface> >&, const std::vector<const SurfaceStyle*>&, IfcRepresentationShapeItems&);
+	bool convert_layerset(const IfcSchema::IfcProduct*, std::vector<Handle_Geom_Surface>&, std::vector<std::shared_ptr<const SurfaceStyle>>&, std::vector<double>&);
+	bool apply_layerset(const IfcRepresentationShapeItems&, const std::vector<Handle_Geom_Surface>&, const std::vector<std::shared_ptr<const SurfaceStyle>>&, IfcRepresentationShapeItems&);
+	bool apply_folded_layerset(const IfcRepresentationShapeItems&, const std::vector< std::vector<Handle_Geom_Surface> >&, const std::vector<std::shared_ptr<const SurfaceStyle>>&, IfcRepresentationShapeItems&);
 	bool fold_layers(const IfcSchema::IfcWall*, const IfcRepresentationShapeItems&, const std::vector<Handle_Geom_Surface>&, const std::vector<double>&, std::vector< std::vector<Handle_Geom_Surface> >&);
 
 	bool split_solid_by_surface(const TopoDS_Shape&, const Handle_Geom_Surface&, TopoDS_Shape&, TopoDS_Shape&);
@@ -443,8 +443,8 @@ public:
 	const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct*);
 	IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
 	IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation*);
-	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem*);
-	const SurfaceStyle* get_style(const IfcSchema::IfcMaterial*);
+	std::shared_ptr<const SurfaceStyle> get_style(const IfcSchema::IfcRepresentationItem*);
+	std::shared_ptr<const SurfaceStyle> get_style(const IfcSchema::IfcMaterial*);
 	
 	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> _get_surface_style(const IfcSchema::IfcStyledItem* si) {
 		std::vector<IfcSchema::IfcPresentationStyle*> prs_styles;

@@ -19,6 +19,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#include "../ifcgeom_schema_agnostic/Kernel.h"
+
 #include <string>
 #include <fstream>
 #include <cstdio>

@@ -30,7 +30,7 @@ bool IfcGeom::Kernel::convert_shapes(const IfcBaseInterface* l, IfcRepresentatio
 	if (shape_type(l) != ST_SHAPELIST) {
 		TopoDS_Shape shp;
 		if (convert_shape(l, shp)) {
-			const IfcGeom::SurfaceStyle* style = nullptr;
+			std::shared_ptr<const IfcGeom::SurfaceStyle> style;
 			if (l->as<IfcSchema::IfcRepresentationItem>()) {
 				style = get_style(l->as<IfcSchema::IfcRepresentationItem>());
 			}

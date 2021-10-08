@@ -777,11 +777,25 @@ namespace IfcGeom {
 
 				Logger::SetProduct(product);
 
+				bool read_from_cache = false;
 				BRepElement* element;
-				if (ifcproduct_iterator == ifcproducts->begin() || !geometry_reuse_ok_for_current_representation_) {
-					element = kernel.create_brep_for_representation_and_product(settings, representation, product);
-				} else {
-					element = kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
+
+#ifdef WITH_HDF5
+				if (cache_) {
+					auto from_cache = cache_->read(*ifc_file, product->GlobalId(), representation->data().id());
+					if (from_cache) {
+						read_from_cache = true;
+						element = (BRepElement*) from_cache;
+					}
+				}
+#endif
+
+				if (!read_from_cache) {
+					if (ifcproduct_iterator == ifcproducts->begin() || !geometry_reuse_ok_for_current_representation_) {
+						element = kernel.create_brep_for_representation_and_product(settings, representation, product);
+					} else {
+						element = kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
+					}
 				}
 
 				Logger::SetProduct(boost::none);
@@ -790,6 +804,12 @@ namespace IfcGeom {
 					_nextShape();
 					continue;
 				}
+
+#ifdef WITH_HDF5
+				if (cache_ && !read_from_cache) {
+					cache_->write(element);
+				}
+#endif
 
 				return element;
 			}
@@ -1003,14 +1023,42 @@ namespace IfcGeom {
                         Logger::Message(Logger::LOG_ERROR, "Getting a serialized element from model failed.");
 					}
 				} else if (!settings.get(IteratorSettings::DISABLE_TRIANGULATION)) {
-					try {
-						if (ifcproduct_iterator == ifcproducts->begin() || !geometry_reuse_ok_for_current_representation_) {
-							next_triangulation = new TriangulationElement(*next_shape_model);
-						} else {
-							next_triangulation = new TriangulationElement(*next_shape_model, current_triangulation->geometry_pointer());
+
+					bool read_from_cache = false;
+
+#ifdef WITH_HDF5
+					if (cache_) {
+						// the part before the hyphen is the representation id
+						auto gid2 = next_shape_model->geometry().id();
+						auto hyphen = gid2.find("-");
+						if (hyphen != std::string::npos) {
+							gid2 = gid2.substr(0, hyphen);
 						}
-					} catch (...) {
-                        Logger::Message(Logger::LOG_ERROR, "Getting a triangulation element from model failed.");
+
+						auto from_cache = cache_->read(*ifc_file, next_shape_model->guid(), boost::lexical_cast<int>(gid2), HdfSerializer::READ_TRIANGULATION);
+						if (from_cache) {
+							read_from_cache = true;
+							next_triangulation = (TriangulationElement*)from_cache;
+						}
+					}
+#endif
+
+					if (!read_from_cache) {
+						try {
+							if (ifcproduct_iterator == ifcproducts->begin() || !geometry_reuse_ok_for_current_representation_) {
+								next_triangulation = new TriangulationElement(*next_shape_model);
+							} else {
+								next_triangulation = new TriangulationElement(*next_shape_model, current_triangulation->geometry_pointer());
+							}
+
+#ifdef WITH_HDF5
+							if (cache_) {
+								cache_->write(next_triangulation);
+							}
+#endif
+						} catch (...) {
+							Logger::Message(Logger::LOG_ERROR, "Getting a triangulation element from model failed.");
+						}
 					}
 				}
 			}

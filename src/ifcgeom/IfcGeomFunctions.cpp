@@ -907,7 +907,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 			}
 
 		}
-		cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), it3->Placement(), entity_shape, &it3->Style()));
+		cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), it3->Placement(), entity_shape, it3->StylePtr()));
 	}
 
 	return true;
@@ -1123,7 +1123,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 				continue;
 			}
 
-			cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), result, &it3->Style()));
+			cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), result, it3->StylePtr()));
 
 			// For manifold first operands we're not even going to try if processing
 			// as loose faces gives a better result.
@@ -1848,7 +1848,7 @@ IfcGeom::BRepElement* IfcGeom::Kernel::create_brep_for_representation_and_produc
 				std::vector<double> thickness;
 				std::vector<Handle_Geom_Surface> layers;
 				std::vector< std::vector<Handle_Geom_Surface> > folded_layers;
-				std::vector<const SurfaceStyle*> styles;
+				std::vector<std::shared_ptr<const SurfaceStyle>> styles;
 				if (convert_layerset(product, layers, styles, thickness)) {
 
 					IfcSchema::IfcRelAssociates::list::ptr associations = product->HasAssociations();
@@ -1889,7 +1889,7 @@ IfcGeom::BRepElement* IfcGeom::Kernel::create_brep_for_representation_and_produc
 
 	const IfcSchema::IfcMaterial* single_material = get_single_material_association(product);
 	if (single_material) {
-		const IfcGeom::SurfaceStyle* s = get_style(single_material);
+		auto s = get_style(single_material);
 		for (IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++it) {
 			if (!it->hasStyle() && s) {
 				it->setStyle(s);
@@ -1917,8 +1917,8 @@ IfcGeom::BRepElement* IfcGeom::Kernel::create_brep_for_representation_and_produc
 		for (auto& s : shapes) {
 			if (s.hasStyle()) {
 				for (auto& p : style_cache) {
-					if (&p.second == &s.Style()) {
-						p.second.Transparency() = settings.force_space_transparency();
+					if (p.second == s.StylePtr()) {
+						std::const_pointer_cast<IfcGeom::SurfaceStyle>(p.second)->Transparency() = settings.force_space_transparency();
 					}
 				}
 			}
@@ -2303,7 +2303,7 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 	return std::pair<std::string, double>(unit_name, unit_magnitude);
 }
 
-bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std::vector<Handle_Geom_Surface>& surfaces, std::vector<const SurfaceStyle*>& styles, std::vector<double>& thicknesses) {
+bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std::vector<Handle_Geom_Surface>& surfaces, std::vector<std::shared_ptr<const SurfaceStyle>>& styles, std::vector<double>& thicknesses) {
 	IfcSchema::IfcMaterialLayerSetUsage* usage = 0;
 	Handle_Geom_Surface reference_surface;
 
@@ -3063,7 +3063,7 @@ namespace {
 #endif
 }
 
-bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& items, const std::vector< std::vector<Handle_Geom_Surface> >& surfaces, const std::vector<const SurfaceStyle*>& styles, IfcRepresentationShapeItems& result) {
+bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& items, const std::vector< std::vector<Handle_Geom_Surface> >& surfaces, const std::vector<std::shared_ptr<const SurfaceStyle>>& styles, IfcRepresentationShapeItems& result) {
 	Bnd_Box bb;
 	TopoDS_Shape input;
 	flatten_shape_list(items, input, false);
@@ -3148,8 +3148,8 @@ bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& i
 		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a,b;
 			if (split_solid_by_shell(it->Shape(), shells.First(), a, b)) {
-				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), b, styles[0] ? styles[0] : &it->Style()));
-				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), a, styles[1] ? styles[1] : &it->Style()));
+				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), b, !!styles[0] ? styles[0] : it->StylePtr()));
+				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), a, !!styles[1] ? styles[1] : it->StylePtr()));
 			} else {
 				continue;
 			}
@@ -3168,7 +3168,7 @@ bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& i
 			std::vector<TopoDS_Shape> slices;
 			if (split(*this, it->Shape(), shells, getValue(GV_PRECISION), slices) && slices.size() == styles.size()) {
 				for (size_t i = 0; i < slices.size(); ++i) {
-					result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), slices[i], styles[i] ? styles[i] : &it->Style()));
+					result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), slices[i], !!styles[i] ? styles[i] : it->StylePtr()));
 				}
 			} else {
 				return false;
@@ -3181,7 +3181,7 @@ bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& i
 
 }
 
-bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<const SurfaceStyle*>& styles, IfcRepresentationShapeItems& result) {
+bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<std::shared_ptr<const SurfaceStyle>>& styles, IfcRepresentationShapeItems& result) {
 	if (surfaces.size() < 3) {
 
 		return false;
@@ -3191,8 +3191,8 @@ bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, c
 		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a,b;
 			if (split_solid_by_surface(it->Shape(), surfaces[1], a, b)) {
-				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), b, styles[0] ? styles[0] : &it->Style()));
-				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), a, styles[1] ? styles[1] : &it->Style()));
+				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), b, !!styles[0] ? styles[0] : it->StylePtr()));
+				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), a, !!styles[1] ? styles[1] : it->StylePtr()));
 			} else {
 				continue;
 			}
@@ -3259,7 +3259,7 @@ bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, c
 			std::vector<TopoDS_Shape> slices;
 			if (split(*this, it->Shape(), operands, getValue(GV_PRECISION), slices) && slices.size() == styles.size()) {
 				for (size_t i = 0; i < slices.size(); ++i) {
-					result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), slices[i], styles[i] ? styles[i] : &it->Style()));
+					result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), slices[i], !!styles[i] ? styles[i] : it->StylePtr()));
 				}
 			} else {
 				return false;

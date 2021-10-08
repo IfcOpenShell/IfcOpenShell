@@ -99,7 +99,7 @@ namespace IfcGeom {
 		boost::optional<int>& Id() { return id; }
 	};
 
-	IFC_GEOM_API const SurfaceStyle* get_default_style(const std::string& ifc_type);
+	IFC_GEOM_API std::shared_ptr<const IfcGeom::SurfaceStyle> get_default_style(const std::string& ifc_type);
 
 	IFC_GEOM_API SurfaceStyle& update_default_style(const std::string& ifc_type);
 

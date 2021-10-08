@@ -4,6 +4,7 @@
 #include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
+#include "../serializers/HdfSerializer.h"
 
 #include <gp_XYZ.hxx>
 
@@ -34,7 +35,11 @@ IteratorFactoryImplementation& iterator_implementations();
 namespace IfcGeom {
 
 	class IteratorImplementation {
+	protected:
+		HdfSerializer* cache_ = nullptr;
 	public:
+		void set_cache(HdfSerializer* cache) { cache_ = cache; }
+
 		virtual bool initialize() = 0;
 		virtual void compute_bounds(bool with_geometry) = 0;
 		virtual const gp_XYZ& bounds_min() const = 0;

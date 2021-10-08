@@ -17,8 +17,8 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef HdfSERIALIZER_H
-#define HdfSERIALIZER_H
+#ifndef HDFSERIALIZER_H
+#define HDFSERIALIZER_H
 
 #ifdef WITH_HDF5
 
@@ -30,31 +30,88 @@
 
 #include "../serializers/GeometrySerializer.h"
 
+#define USE_BINARY
 
 class HdfSerializer : public GeometrySerializer {
+public:
+	enum read_type { READ_BREP, READ_TRIANGULATION };
+
 private:
 	const std::string hdf_filename;
 	unsigned int vcount_total;
 	H5::H5File file;
-	std::set<std::string> guids;
-	const H5std_string  DATASET_NAME_POSITIONS;
-	const H5std_string  DATASET_NAME_NORMALS;
-	const H5std_string  DATASET_NAME_INDICES;
-	const H5std_string  DATASET_NAME_OCCT;
+	SerializerSettings settings_;
 
-	
+	static const H5std_string DATASET_NAME_POSITIONS;
+	static const H5std_string DATASET_NAME_UVCOORDS;
+	static const H5std_string DATASET_NAME_NORMALS;
+	static const H5std_string DATASET_NAME_INDICES;
+	static const H5std_string DATASET_NAME_EDGES;
+	static const H5std_string DATASET_NAME_MATERIAL_IDS;
+	static const H5std_string DATASET_NAME_MATERIALS;
+	static const H5std_string DATASET_NAME_OCCT;
+	static const H5std_string DATASET_NAME_PLACEMENT;	
+
+	static const H5std_string GROUP_NAME_MESH;
+
+	struct surface_style_serialization {
+		const char* name;
+		const char* original_name;
+		// 0 if unset
+		unsigned int id;
+		// nan if unset
+		double diffuse[3];
+		double specular[3];
+		double transparency;
+		double specularity;
+	};
+
+	struct brep_element {
+		int id;
+		double matrix[4][4];
+#ifdef USE_BINARY
+		hvl_t shape_serialization;
+#else
+		const char* shape_serialization;
+#endif
+		surface_style_serialization surface_style;
+	};
+
+	H5::CompType compound;
+	H5::CompType style_compound;
+	H5::StrType str_type;
+	H5::ArrayType double4x4, double3;
+	H5::DataType shape_type;
+
+private:
+
+	H5::Group createRepresentationGroup(const H5::Group& element_group, const std::string& gid);
+	void read_surface_style(surface_style_serialization& sss, std::shared_ptr<IfcGeom::SurfaceStyle>& style_ptr);
+	void write_style(surface_style_serialization& data, const IfcGeom::SurfaceStyle& s);
+
 public:
 	HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings);
 	virtual ~HdfSerializer() {}
 	bool ready();
 	void writeHeader();
+
+	H5::Group write(const IfcGeom::Element* o);
 	void write(const IfcGeom::BRepElement* o);
-	void write(const IfcGeom::TriangulationElement* /*o*/) {}
+	void write(const IfcGeom::TriangulationElement* o);
+
+	const IfcGeom::Element* read(IfcParse::IfcFile& f, const std::string& guid, unsigned int representation_id, read_type rt = READ_BREP);
+	
 	void finalize() {}
 	bool isTesselated() const { return false; }
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(IfcParse::IfcFile*) {}
 };
+
+#else
+
+// We just define something here so that the symbol exists and the Iterator class
+// methods don't need to look so different
+class HdfSerializer {};
 
 #endif
 

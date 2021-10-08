@@ -25,106 +25,594 @@
 
 #include "../ifcparse/utils.h"
 
+#include <BRepTools_ShapeSet.hxx>
+#include <BinTools_ShapeSet.hxx>
 #include <boost/lexical_cast.hpp>
+
 #include <iomanip>
+#include <numeric>
+#include <functional>
 
+#ifdef USE_BINARY
+#define write_shape write_binary
+#define read_shape read_binary
+#else
+#define write_shape write_text
+#define read_shape read_text
+#endif
 
+herr_t print_stack(hid_t, void*) {
+	/*
+	// For debugging: when using IfcConvert on Windows with wcout,
+	// it's difficult to get console output of HDF5 stack traces.
+	auto f = fopen("temp.txt", "w");
+	H5Eprint(estack, f);
+	fclose(f);
+	*/
+	return 0;
+}
 
 HdfSerializer::HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings)
 	: GeometrySerializer(settings)
 	, hdf_filename(hdf_filename)
-	, DATASET_NAME_POSITIONS("Positions")
-	, DATASET_NAME_NORMALS("Normals")
-	, DATASET_NAME_INDICES("Indices")
-	, DATASET_NAME_OCCT("OCCT Text")
-
+	, settings_(settings)
 {
-	guids = {};
+	H5E_auto2_t fn = &print_stack;
+	H5::Exception::setAutoPrint(fn, nullptr);
+
+	try {
+		file = H5::H5File(hdf_filename, H5F_ACC_RDWR | H5F_ACC_CREAT);
+	} catch (H5::Exception&) {
+		file = H5::H5File(hdf_filename, H5F_ACC_TRUNC);
+	}
+
+	str_type = H5::StrType(H5::PredType::C_S1, H5T_VARIABLE);
+
+#ifdef USE_BINARY
+	auto uint_type = H5::PredType::NATIVE_UINT8;
+	shape_type = H5::VarLenType(&uint_type);
+#else
+	shape_type = str_type;
+#endif
+
+	hsize_t     dims_3[1]{ 3 };
+	double3 = H5::ArrayType(H5::PredType::NATIVE_DOUBLE, 1, dims_3);
+
+	style_compound = H5::CompType(sizeof(surface_style_serialization));
+	style_compound.insertMember("name", HOFFSET(surface_style_serialization, name), str_type);
+	style_compound.insertMember("original_name", HOFFSET(surface_style_serialization, original_name), str_type);
+	style_compound.insertMember("id", HOFFSET(surface_style_serialization, id), H5::PredType::NATIVE_INT);
+	style_compound.insertMember("diffuse", HOFFSET(surface_style_serialization, diffuse), double3);
+	style_compound.insertMember("specular", HOFFSET(surface_style_serialization, specular), double3);
+	style_compound.insertMember("transparency", HOFFSET(surface_style_serialization, transparency), H5::PredType::NATIVE_DOUBLE);
+	style_compound.insertMember("specularity", HOFFSET(surface_style_serialization, specularity), H5::PredType::NATIVE_DOUBLE);
+
+	hsize_t     dims_4x4[2]{ 4, 4 };
+	double4x4 = H5::ArrayType(H5::PredType::NATIVE_DOUBLE, 2, dims_4x4);
+
+	compound = H5::CompType(sizeof(brep_element));
+	compound.insertMember("id", HOFFSET(brep_element, id), H5::PredType::NATIVE_INT);
+	compound.insertMember("matrix", HOFFSET(brep_element, matrix), double4x4);
+	compound.insertMember("shape_serialization", HOFFSET(brep_element, shape_serialization), shape_type);
+	compound.insertMember("surface_style_id", HOFFSET(brep_element, surface_style), style_compound);
 }
 
-
 bool HdfSerializer::ready() {
-	//todo: check whether the file exists
 	return true;
 }
 
 void HdfSerializer::writeHeader() {
-	const H5std_string  FILE_NAME(hdf_filename);
-	file = H5::H5File(FILE_NAME, H5F_ACC_TRUNC);
+}
 
+namespace {
+	template <typename T>
+	H5::DataType h5_datatype_for_cpp();
+
+	template <>
+	H5::DataType h5_datatype_for_cpp<int>() {
+		return H5::PredType::NATIVE_INT;
+	}
+
+	template <>
+	H5::DataType h5_datatype_for_cpp<double>() {
+		return H5::PredType::NATIVE_DOUBLE;
+	}
+
+	template <>
+	H5::DataType h5_datatype_for_cpp<std::string>() {
+		return H5::StrType(H5::PredType::C_S1, H5T_VARIABLE);
+	}
+
+	template <typename T>
+	void do_read(H5::Attribute& attr, T& val) {
+		attr.read(h5_datatype_for_cpp<T>(), &val);
+	}
+
+	template <>
+	void do_read(H5::Attribute& attr, std::string& val) {
+		attr.read(h5_datatype_for_cpp<std::string>(), val);
+	}
+
+	template <typename T>
+	T read_scalar_attribute(H5::H5Object& l, const std::string& name) {
+		auto attr = l.openAttribute(name);
+		auto space = attr.getSpace();
+		int rank = space.getSimpleExtentNdims();
+		// A scalar dataspace, H5S_SCALAR, has a single element, though that
+		// element may be of a complex datatype, such as a compound or array
+		// datatype. By convention, the rank of a scalar dataspace is always
+		// 0 (zero); 
+		if (rank != 0) {
+			throw std::runtime_error("Invalid");
+		}
+		T val;
+		do_read<T>(attr, val);
+		return val;
+	}
+}
+
+#include <BinTools.hxx>
+
+namespace {
+	// https://github.com/FreeCAD/FreeCAD/blob/master/src/Mod/Part/App/TopoShape.cpp
+	TopoDS_Shape read_binary(const hvl_t& vlen) {
+		std::string s((char*)vlen.p, (size_t)vlen.len);
+		std::istringstream str(s);
+		BinTools_ShapeSet theShapeSet;
+		theShapeSet.Read(str);
+		Standard_Integer shapeId = 0, locId = 0, orient = 0;
+		BinTools::GetInteger(str, shapeId);
+		if (shapeId <= 0 || shapeId > theShapeSet.NbShapes()) {
+			throw std::runtime_error("");
+		}
+
+		BinTools::GetInteger(str, locId);
+		BinTools::GetInteger(str, orient);
+		TopAbs_Orientation anOrient = static_cast<TopAbs_Orientation>(orient);
+
+		TopoDS_Shape shp = theShapeSet.Shape(shapeId);
+		shp.Location(theShapeSet.Locations().Location(locId));
+		shp.Orientation(anOrient);
+
+		return shp;
+	}
+
+	// https://github.com/FreeCAD/FreeCAD/blob/master/src/Mod/Part/App/TopoShape.cpp
+	void write_binary(TopoDS_Shape shp, std::string& s) {
+		std::ostringstream out;
+
+		BinTools_ShapeSet theShapeSet;
+		
+		Standard_Integer shapeId = theShapeSet.Add(shp);
+		Standard_Integer locId = theShapeSet.Locations().Index(shp.Location());
+		Standard_Integer orient = static_cast<int>(shp.Orientation());
+
+		theShapeSet.Write(out);
+		BinTools::PutInteger(out, shapeId);
+		BinTools::PutInteger(out, locId);
+		BinTools::PutInteger(out, orient);
+
+		s = out.str();
+	}
+
+	TopoDS_Shape read_text(const std::string& s) {
+		std::stringstream stream(s);
+		BRep_Builder B;
+		TopoDS_Shape shp;
+		BRepTools::Read(shp, stream, B);
+		return shp;
+	}
+
+	void write_text(TopoDS_Shape shp, std::string& out) {
+		std::stringstream sstream;
+		BRepTools::Write(shp, sstream);
+		out = sstream.str();
+	}
+}
+
+namespace {
+	template <typename T>
+	std::vector<T> read_dataset(const H5::Group& group, const std::string& name) {
+		auto ds = group.openDataSet(name);
+		auto space = ds.getSpace();
+		int rank = space.getSimpleExtentNdims();
+		std::vector<hsize_t> dims(rank);
+		space.getSimpleExtentDims(dims.data(), NULL);
+		const hsize_t total = std::accumulate(dims.begin(), dims.end(), 1U, std::multiplies<hsize_t>());
+		std::vector<T> result(total);
+		ds.read(result.data(), h5_datatype_for_cpp<T>());
+		return result;
+	}
+}
+
+void HdfSerializer::read_surface_style(surface_style_serialization& s, std::shared_ptr<IfcGeom::SurfaceStyle>& style_ptr) {
+	if (strlen(s.name) || s.id) {
+		if (strlen(s.name) && s.id) {
+			style_ptr = std::make_shared<IfcGeom::SurfaceStyle>(s.id, s.name);
+		} else if (strlen(s.name)) {
+			style_ptr = std::make_shared<IfcGeom::SurfaceStyle>(s.name);
+		} else if (s.id) {
+			style_ptr = std::make_shared<IfcGeom::SurfaceStyle>(s.id);
+		}
+		auto& gss = *style_ptr;
+
+		if (s.diffuse[0] == s.diffuse[0]) {
+			gss.Diffuse().emplace(s.diffuse[0], s.diffuse[1], s.diffuse[2]);
+		}
+		if (s.specular[0] == s.specular[0]) {
+			gss.Specular().emplace(s.specular[0], s.specular[1], s.specular[2]);
+		}
+		if (s.transparency == s.transparency) {
+			gss.Transparency() = s.transparency;
+		}
+		if (s.specularity == s.specularity) {
+			gss.Specularity() = s.specularity;
+		}
+	}
+
+}
+
+
+const IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& guid, unsigned int representation_id, read_type rt) {
+	if (!H5Lexists(file.getId(), guid.c_str(), H5P_DEFAULT)) {
+		return nullptr;
+	}
+
+	auto representation_id_str = std::to_string(representation_id);
+
+	auto element_group = file.openGroup(guid);
+	if (!H5Lexists(element_group.getId(), representation_id_str.c_str(), H5P_DEFAULT)) {
+		return nullptr;
+	}
+  
+	int id = read_scalar_attribute<int>(element_group, "id");
+	int parent_id = read_scalar_attribute<int>(element_group, "parent_id");
+	std::string type = read_scalar_attribute<std::string>(element_group, "type");
+	std::string name = read_scalar_attribute<std::string>(element_group, "name");
+	std::string context = read_scalar_attribute<std::string>(element_group, "context");
+	std::string unique_id = read_scalar_attribute<std::string>(element_group, "unique_id");
+
+	gp_Trsf trsf;
+	auto placeds = element_group.openDataSet(DATASET_NAME_PLACEMENT);
+	double m44[4][4];
+	placeds.read(m44, H5::PredType::NATIVE_DOUBLE);
+	trsf.SetValues(
+		m44[0][0], m44[0][1], m44[0][2], m44[0][3],
+		m44[1][0], m44[1][1], m44[1][2], m44[1][3],
+		m44[2][0], m44[2][1], m44[2][2], m44[2][3]
+	);
+
+	auto representation_group = element_group.openGroup(std::to_string(representation_id));
+	std::string geom_id = read_scalar_attribute<std::string>(representation_group, "geom_id");
+
+	IfcGeom::ElementSettings element_settings(settings_, f.getUnit("LENGTHUNIT").second, type);
+	auto inst = f.instance_by_id(id)->as<IfcUtil::IfcBaseEntity>();
+
+	if (rt == READ_BREP) {
+		auto brepDataset = representation_group.openDataSet(DATASET_NAME_OCCT);
+
+		std::vector<brep_element> parts;
+		{
+			auto space = brepDataset.getSpace();
+			int rank = space.getSimpleExtentNdims();
+
+			if (rank != 1) {
+				return nullptr;
+			}
+
+			std::vector<hsize_t> dims(rank);
+			space.getSimpleExtentDims(dims.data(), NULL);
+
+			parts.resize(dims[0]);
+			brepDataset.read(parts.data(), compound);
+		}
+
+		IfcGeom::IfcRepresentationShapeItems shapes;
+		for (auto& part : parts) {
+			TopoDS_Shape shp = read_shape(part.shape_serialization);
+
+			gp_GTrsf trsf(gp_Mat(
+				part.matrix[0][0], part.matrix[0][1], part.matrix[0][2],
+				part.matrix[1][0], part.matrix[1][1], part.matrix[1][2],
+				part.matrix[2][0], part.matrix[2][1], part.matrix[2][2]
+			), gp_XYZ(
+				part.matrix[3][0], part.matrix[3][1], part.matrix[3][2]
+			));
+
+			std::shared_ptr<IfcGeom::SurfaceStyle> style_ptr;
+			read_surface_style(part.surface_style, style_ptr);
+			
+			shapes.push_back(IfcGeom::IfcRepresentationShapeItem(part.id, trsf, shp, style_ptr));
+		}
+
+		auto geometry = boost::shared_ptr<IfcGeom::Representation::BRep>(new IfcGeom::Representation::BRep(element_settings, geom_id, shapes));
+
+		return new IfcGeom::BRepElement(id, parent_id, name, type, guid, context, trsf, geometry, inst);
+	} else {
+
+		H5::Group meshGroup;
+		try {
+			meshGroup = representation_group.openGroup(GROUP_NAME_MESH);
+		} catch (H5::Exception&) {
+			return nullptr;
+		}
+
+		auto verts = read_dataset<double>(meshGroup, DATASET_NAME_POSITIONS);
+		auto faces = read_dataset<int>(meshGroup, DATASET_NAME_INDICES);
+		auto edges = read_dataset<int>(meshGroup, DATASET_NAME_EDGES);
+		auto normals = read_dataset<double>(meshGroup, DATASET_NAME_NORMALS);
+		auto uvcoords = read_dataset<double>(meshGroup, DATASET_NAME_UVCOORDS);
+		auto material_ids = read_dataset<int>(meshGroup, DATASET_NAME_MATERIAL_IDS);
+
+		std::vector<surface_style_serialization> surface_styles;
+
+		{
+			auto ds = meshGroup.openDataSet(DATASET_NAME_MATERIALS);
+			auto space = ds.getSpace();
+			int rank = space.getSimpleExtentNdims();
+
+			if (rank != 1) {
+				return nullptr;
+			}
+
+			std::vector<hsize_t> dims(rank);
+			space.getSimpleExtentDims(dims.data(), NULL);
+
+			surface_styles.resize(dims[0]);
+			ds.read(surface_styles.data(), style_compound);
+		}
+
+		std::vector<std::shared_ptr<IfcGeom::SurfaceStyle>> surface_style_ptrs(surface_styles.size());
+
+		for (size_t i = 0; i < surface_styles.size(); ++i) {
+			read_surface_style(surface_styles[i], surface_style_ptrs[i]);
+		}
+
+		auto rep = boost::shared_ptr<IfcGeom::Representation::Triangulation>(new IfcGeom::Representation::Triangulation(
+			element_settings,
+			geom_id,
+			verts,
+			faces,
+			edges,
+			normals,
+			uvcoords,
+			material_ids,
+			surface_style_ptrs
+		));
+
+		return new IfcGeom::TriangulationElement(
+			IfcGeom::Element(
+				element_settings,
+				id,
+				parent_id,
+				name,
+				type,
+				guid,
+				context,
+				trsf,
+				inst
+			),
+			rep			
+		);		
+	}
+}
+
+namespace {
+	std::array<std::array<double, 4>, 4> gtrsf_to_matrix(const gp_GTrsf& trsf) {
+		std::array<std::array<double, 4>, 4> arr;
+
+		for (int i = 1; i < 5; ++i) {
+			for (int j = 1; j < 4; ++j) {
+				arr[i-1][j-1] = trsf.Value(j, i);
+			}
+			arr[i - 1][3] = i == 4 ? 1.0 : 0.0;
+		}
+
+		return arr;
+	}
+}
+
+H5::Group HdfSerializer::write(const IfcGeom::Element* o) {
+	try {
+		return file.openGroup(o->guid());
+	} catch (H5::Exception&) {}
+
+	H5::Group element_group = file.createGroup(o->guid());
+
+	typedef std::string const & (IfcGeom::Element::*string_member_fun)(void) const;
+	typedef int (IfcGeom::Element::*int_member_fun)(void) const;
+
+	static const std::vector<std::pair<const char* const, string_member_fun>> data_pairs_string = {
+		{"type", &IfcGeom::Element::type},
+		{"name", &IfcGeom::Element::name },
+		{"guid", &IfcGeom::Element::guid },
+		{"context", &IfcGeom::Element::context },
+		{"unique_id", &IfcGeom::Element::unique_id }
+	};
+
+	static const std::vector<std::pair<const char* const, int_member_fun>> data_pairs_int = {
+		{"id", &IfcGeom::Element::id},
+		{"parent_id", &IfcGeom::Element::parent_id },
+	};
+
+	H5::DataSpace attrdspace(H5S_SCALAR);
+
+	for (auto& p : data_pairs_string) {
+		H5::Attribute att = element_group.createAttribute(p.first, str_type, attrdspace);
+		att.write(str_type, ((*o).*(p.second))());
+	}
+
+	for (auto& p : data_pairs_int) {
+		H5::Attribute att = element_group.createAttribute(p.first, H5::PredType::NATIVE_INT, attrdspace);
+		int value = ((*o).*(p.second))();
+		att.write(H5::PredType::NATIVE_INT, &value);
+	}
+
+	hsize_t     dims_4x4[2]{ 4, 4 };
+	H5::DataSpace dataspace_4x4(2, dims_4x4);
+
+	auto placement_dataset = element_group.createDataSet(DATASET_NAME_PLACEMENT, H5::PredType::NATIVE_DOUBLE, dataspace_4x4);
+	const std::vector<double>& m43 = o->transformation().matrix().data();
+	double m44[4][4] = {
+		{ m43[0], m43[3], m43[6], m43[9] },
+		{ m43[1], m43[4], m43[7], m43[10] },
+		{ m43[2], m43[5], m43[8], m43[11] },
+		{ 0, 0, 0, 1 }
+	};
+	placement_dataset.write(m44, H5::PredType::NATIVE_DOUBLE);
+
+	return element_group;
+}
+
+H5::Group HdfSerializer::createRepresentationGroup(const H5::Group& element_group, const std::string& gid) {
+	// the part before the hyphen is the representation id
+	auto gid2 = gid;
+	auto hyphen = gid2.find("-");
+	if (hyphen != std::string::npos) {
+		gid2 = gid2.substr(0, hyphen);
+	}
+
+	H5::Group representation_group;
+	try {
+		representation_group = element_group.openGroup(gid2);
+	} catch (H5::Exception&) {
+		representation_group = element_group.createGroup(gid2);
+
+		H5::DataSpace attrdspace(H5S_SCALAR);
+		{
+			H5::Attribute att = representation_group.createAttribute("geom_id", str_type, attrdspace);
+			std::string value = gid;
+			att.write(str_type, value);
+		}
+	}
+	return representation_group;
+}
+
+void HdfSerializer::write_style(surface_style_serialization& data, const IfcGeom::SurfaceStyle& s) {
+	data.name = s.Name().c_str();
+	data.original_name = s.original_name().c_str();
+	data.id = s.Id().get_value_or(0);
+	if (s.Diffuse()) {
+		data.diffuse[0] = s.Diffuse()->R();
+		data.diffuse[1] = s.Diffuse()->G();
+		data.diffuse[2] = s.Diffuse()->B();
+	}
+	if (s.Specular()) {
+		data.specular[0] = s.Specular()->R();
+		data.specular[1] = s.Specular()->G();
+		data.specular[2] = s.Specular()->B();
+	}
+	if (s.Transparency()) {
+		data.transparency = *s.Transparency();
+	}
+	if (s.Specularity()) {
+		data.specularity = *s.Specularity();
+	}
 }
 
 
 void HdfSerializer::write(const IfcGeom::BRepElement* o) {
+	static auto nan = std::numeric_limits<double>::quiet_NaN();
 
-	std::string guid = o->guid();
+	auto element_group = write((const IfcGeom::Element*)o);	
 
-	H5::Group elementGroup;
+	H5::Group representation_group = createRepresentationGroup(element_group, o->geometry().id());
 
-	H5::Group meshGroup;
-	H5::DataSet positionsDataset;
-	H5::DataSet normalsDataset;
-	H5::DataSet indicesDataset;
+	std::list<std::string> brep_strings;
+	size_t num_parts = std::distance(o->geometry().begin(), o->geometry().end());
+	brep_element* parts = new brep_element[num_parts];
+	size_t i = 0;
+	for (auto it = o->geometry().begin(); it != o->geometry().end(); ++it, ++i) {
+		parts[i].id = it->ItemId();
+		std::array<std::array<double, 4>, 4> arr = gtrsf_to_matrix(it->Placement());
+		for (int j = 0; j < 4; ++j) {
+			std::copy(arr[j].begin(), arr[j].end(), parts[i].matrix[j]);
+		}
 
-	H5::Group OCCTGroup;
-	H5::DataSet OCCTDataset;
-	
-	const IfcGeom::Representation::BRep& brepmesh = o->geometry();
-	const IfcGeom::Representation::Serialization serialization(brepmesh);
-	std::string brep_data = serialization.brep_data();
-
-	const IfcGeom::TriangulationElement triangular_element(*o);
-	const IfcGeom::Representation::Triangulation& mesh = triangular_element.geometry();
-	const int vcount = (int)mesh.verts().size() / 3;
-	const int fcount = (int)mesh.faces().size() / 3;
-	const bool isyup = settings().get(SerializerSettings::USE_Y_UP);
-
-	std::string value = o->type();
-
-	if (fcount > 0) {
-
-		guids.insert(guid);
-		elementGroup = file.createGroup(guid);
-
-		meshGroup = elementGroup.createGroup("Triangle Mesh");
-		OCCTGroup = elementGroup.createGroup("OCCT Data");
-
-		H5::StrType str_type(0, H5T_VARIABLE);
-		H5:: DataSpace attrdspace(H5S_SCALAR);
-		H5::Attribute att = elementGroup.createAttribute("IFC entity type", str_type, attrdspace);
-		att.write(str_type, value);
-
-		const int   RANK = 2;
-		hsize_t     dimsf[2];
-		dimsf[0] = vcount;
-		dimsf[1] = 3;
-		H5::DataSpace dataspace(RANK, dimsf);
-
-		hsize_t     dimsfaces[2];
-		dimsfaces[0] = fcount;
-		dimsfaces[1] = 3;
-		H5::DataSpace face_dataspace(RANK, dimsfaces);
-
-		const int RANK_OCCT = 1;
-		hsize_t     dimsocct[2];
-		dimsocct[0] = 1;
-		dimsfaces[1] = 1;
-		H5::DataSpace occt_dataspace(RANK_OCCT, dimsocct);
-		OCCTDataset = OCCTGroup.createDataSet(DATASET_NAME_OCCT, str_type, occt_dataspace);
-		OCCTDataset.write(brep_data, str_type);
-
-		indicesDataset = meshGroup.createDataSet(DATASET_NAME_INDICES, H5::PredType::NATIVE_INT, face_dataspace);
-		positionsDataset = meshGroup.createDataSet(DATASET_NAME_POSITIONS, H5::PredType::NATIVE_DOUBLE, dataspace);
-		normalsDataset = meshGroup.createDataSet(DATASET_NAME_NORMALS, H5::PredType::NATIVE_DOUBLE, dataspace);
-
-		positionsDataset.write(mesh.verts().data(), H5::PredType::NATIVE_DOUBLE);
-		normalsDataset.write(mesh.normals().data(), H5::PredType::NATIVE_DOUBLE);
-		indicesDataset.write(mesh.faces().data(), H5::PredType::NATIVE_INT);
+		brep_strings.emplace_back();
+		write_shape(it->Shape(), brep_strings.back());
 		
+		parts[i].surface_style = { "", "", 0, {nan,nan,nan}, {nan,nan,nan}, nan, nan };
+		if (it->hasStyle()) {
+			auto& s = it->Style();
+			write_style(parts[i].surface_style, s);
+		}
 
+#ifdef USE_BINARY
+		const auto& s = brep_strings.back();
+		parts[i].shape_serialization.p = new char[s.size()];
+		memcpy(parts[i].shape_serialization.p, s.c_str(), s.size());
+		parts[i].shape_serialization.len = s.size();
+#else
+		parts[i].shape_serialization = brep_strings.back().c_str();
+#endif
+	}
 
-	
+	hsize_t     dimsp[1]{ num_parts };
+	H5::DataSpace dataspace_parts(1, dimsp);
+
+	auto brepDataset = representation_group.createDataSet(DATASET_NAME_OCCT, compound, dataspace_parts);
+	brepDataset.write(parts, compound);
+}
+
+namespace {
+
+	template <typename T>
+	void write_dataset(const H5::Group& group, const std::string& name, const std::vector<T>& ts, size_t stride) {
+		hsize_t d[2]{ ts.size() / stride, stride };
+		H5::DataSpace dataspace(stride == 1 ? 1 : 2, d);
+		auto dt = h5_datatype_for_cpp<T>();
+
+		auto ds = group.createDataSet(name, dt, dataspace);
+		ds.write(ts.data(), dt);
+	}
+
+}
+
+void HdfSerializer::write(const IfcGeom::TriangulationElement* o) {
+	auto element_group = write((const IfcGeom::Element*)o);
+
+	const auto& mesh = o->geometry();
+	H5::Group representation_group = createRepresentationGroup(element_group, o->geometry().id());
+	H5::Group meshGroup = representation_group.createGroup(GROUP_NAME_MESH);
+
+	write_dataset(meshGroup, DATASET_NAME_POSITIONS, mesh.verts(), 3);
+	write_dataset(meshGroup, DATASET_NAME_INDICES, mesh.faces(), 3);
+	write_dataset(meshGroup, DATASET_NAME_EDGES, mesh.edges(), 2);
+	write_dataset(meshGroup, DATASET_NAME_NORMALS, mesh.normals(), 2);
+	write_dataset(meshGroup, DATASET_NAME_UVCOORDS, mesh.uvs(), 2);
+	write_dataset(meshGroup, DATASET_NAME_MATERIAL_IDS, mesh.material_ids(), 1);
+
+	{
+		auto& ts = mesh.materials();
+		hsize_t d[2] { ts.size() };
+		H5::DataSpace dataspace(1, d);
+		const auto& dt = style_compound;
+
+		std::vector<surface_style_serialization> data;
+		data.reserve(ts.size());
+		for (auto& m : ts) {
+			data.emplace_back();
+			write_style(data.back(), m.get_style());
+		}
+
+		auto ds = meshGroup.createDataSet(DATASET_NAME_MATERIALS, dt, dataspace);
+		ds.write(data.data(), dt);
 	}
 }
+
+
+const H5std_string HdfSerializer::DATASET_NAME_POSITIONS = "positions";
+const H5std_string HdfSerializer::DATASET_NAME_UVCOORDS = "uvcoords";
+const H5std_string HdfSerializer::DATASET_NAME_NORMALS = "normals";
+const H5std_string HdfSerializer::DATASET_NAME_INDICES = "indices";
+const H5std_string HdfSerializer::DATASET_NAME_EDGES = "edges";
+const H5std_string HdfSerializer::DATASET_NAME_MATERIAL_IDS = "material_ids";
+const H5std_string HdfSerializer::DATASET_NAME_MATERIALS = "materials";
+const H5std_string HdfSerializer::DATASET_NAME_OCCT = "brep";
+const H5std_string HdfSerializer::DATASET_NAME_PLACEMENT = "placement";
+
+const H5std_string HdfSerializer::GROUP_NAME_MESH = "mesh";
+
 
 #endif
