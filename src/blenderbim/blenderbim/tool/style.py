@@ -103,6 +103,7 @@ class Style(blenderbim.core.tool.Style):
 
     @classmethod
     def import_surface_attributes(cls, style, obj):
+        obj.BIMStyleProperties.attributes.clear()
         blenderbim.bim.helper.import_attributes2(style, obj.BIMStyleProperties.attributes)
 
     @classmethod
