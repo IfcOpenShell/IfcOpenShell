@@ -27,6 +27,7 @@
 #include <boost/optional.hpp>
 
 #include <sstream>
+#include <memory>
 
 namespace IfcGeom {
 	class IFC_GEOM_API SurfaceStyle {
