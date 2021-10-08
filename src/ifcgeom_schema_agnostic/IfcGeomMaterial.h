@@ -21,6 +21,7 @@
 #define IFCGEOMMATERIAL_H
 
 #include <string>
+#include <memory>
 
 #include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
 
