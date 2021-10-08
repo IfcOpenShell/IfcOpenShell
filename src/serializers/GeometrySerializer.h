@@ -21,7 +21,6 @@
 #define GEOMETRYSERIALIZER_H
 
 #include "../serializers/Serializer.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 #include "../ifcgeom/IfcGeomElement.h"
 
 class SerializerSettings : public IfcGeom::IteratorSettings

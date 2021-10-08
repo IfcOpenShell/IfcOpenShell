@@ -137,6 +137,8 @@ namespace IfcGeom {
 		const Element* get_object(int id) { return implementation_->get_object(id); }
 
 		IfcUtil::IfcBaseClass* create() { return implementation_->create(); }
+
+		void set_cache(HdfSerializer* cache) { return implementation_->set_cache(cache); }
 	};
 }
 

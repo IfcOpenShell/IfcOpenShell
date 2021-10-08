@@ -28,11 +28,11 @@ namespace IfcGeom {
 
 	class IFC_GEOM_API Material {
 	private:
-		const IfcGeom::SurfaceStyle* style;
+		std::shared_ptr<const IfcGeom::SurfaceStyle> style;
 	public:
-		explicit Material(const IfcGeom::SurfaceStyle* style = 0); // TODO default constructor for vector?
-		// Material(const Material& other);
-		// Material& operator=(const Material& other);
+		Material();
+		explicit Material(const std::shared_ptr<const IfcGeom::SurfaceStyle>&);
+
 		bool hasDiffuse() const;
 		bool hasSpecular() const;
 		bool hasTransparency() const;
@@ -44,6 +44,8 @@ namespace IfcGeom {
 		const std::string &name() const;
 		const std::string &original_name() const;
 		bool operator==(const Material& other) const;
+
+		const IfcGeom::SurfaceStyle& get_style() const;
 	};
 
 }
