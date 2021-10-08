@@ -124,7 +124,7 @@ namespace IfcGeom {
 			// when read from serialization, the element needs to take ownership of the styles,
 			// the material vector is constructor off of this.
 			// @todo this can be improved
-			std::vector<std::shared_ptr<SurfaceStyle>> styles_;
+			std::vector<std::shared_ptr<IfcGeom::SurfaceStyle>> styles_;
 
 		public:
 			const std::string& id() const { return id_; }
@@ -364,7 +364,7 @@ namespace IfcGeom {
 				const std::vector<double>& normals,
 				const std::vector<double>& uvs,
 				const std::vector<int>& material_ids,
-				const std::vector<std::shared_ptr<SurfaceStyle>>& styles)
+				const std::vector<std::shared_ptr<IfcGeom::SurfaceStyle>>& styles)
 				: Representation(settings)
 				, id_(id)
 				, _verts(verts)
