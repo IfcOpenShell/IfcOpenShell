@@ -453,10 +453,10 @@ if(HDF5_SUPPORT)
     	# debian default
     	
         SET(HDF5_LIBRARIES
-            /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.a
-            /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.a
-            /usr/lib/x86_64-linux-gnu/libsz.a
-            /usr/lib/x86_64-linux-gnu/libaec.a
+            /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.so
+            /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.so
+            /usr/lib/x86_64-linux-gnu/libsz.so
+            /usr/lib/x86_64-linux-gnu/libaec.so
             z dl
         )
     endif()
