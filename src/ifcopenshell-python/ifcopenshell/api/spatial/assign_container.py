@@ -20,6 +20,12 @@ class Usecase:
         if contains_elements and contained_in_structure and contained_in_structure[0] == contains_elements[0]:
             return
 
+        aggregate = ifcopenshell.util.element.get_aggregate(self.settings["product"])
+        if aggregate:
+            ifcopenshell.api.run(
+                "aggregate.unassign_object", self.file, relating_object=aggregate, product=self.settings["product"]
+            )
+
         if contained_in_structure:
             related_elements = list(contained_in_structure[0].RelatedElements)
             related_elements.remove(self.settings["product"])
@@ -45,7 +51,8 @@ class Usecase:
                 }
             )
 
-        if getattr(self.settings["product"], "ObjectPlacement", None):
+        placement = getattr(self.settings["product"], "ObjectPlacement", None)
+        if placement and placement.is_a("IfcLocalPlacement"):
             ifcopenshell.api.run(
                 "geometry.edit_object_placement",
                 self.file,
@@ -53,3 +60,5 @@ class Usecase:
                 matrix=ifcopenshell.util.placement.get_local_placement(self.settings["product"].ObjectPlacement),
                 is_si=False,
             )
+
+        return contains_elements

@@ -25,26 +25,26 @@ def remove_person(ifc, person=None):
     ifc.run("owner.remove_person", person=person)
 
 
-def enable_editing_person(person_editor, person=None):
-    person_editor.set_person(person)
-    person_editor.import_attributes()
+def enable_editing_person(owner, person=None):
+    owner.set_person(person)
+    owner.import_person_attributes()
 
 
-def disable_editing_person(person_editor):
-    person_editor.clear_person()
+def disable_editing_person(owner):
+    owner.clear_person()
 
 
-def edit_person(ifc, person_editor):
-    ifc.run("owner.edit_person", person=person_editor.get_person(), attributes=person_editor.export_attributes())
-    disable_editing_person(person_editor)
+def edit_person(ifc, owner):
+    ifc.run("owner.edit_person", person=owner.get_person(), attributes=owner.export_person_attributes())
+    disable_editing_person(owner)
 
 
-def add_person_attribute(person_editor, name=None):
-    person_editor.add_attribute(name)
+def add_person_attribute(owner, name=None):
+    owner.add_person_attribute(name)
 
 
-def remove_person_attribute(person_editor, name=None, id=None):
-    person_editor.remove_attribute(name, id)
+def remove_person_attribute(owner, name=None, id=None):
+    owner.remove_person_attribute(name, id)
 
 
 def add_role(ifc, parent=None):
@@ -55,18 +55,18 @@ def remove_role(ifc, role=None):
     ifc.run("owner.remove_role", role=role)
 
 
-def enable_editing_role(role_editor, role=None):
-    role_editor.set_role(role)
-    role_editor.import_attributes()
+def enable_editing_role(owner, role=None):
+    owner.set_role(role)
+    owner.import_role_attributes()
 
 
-def disable_editing_role(role_editor):
-    role_editor.clear_role()
+def disable_editing_role(owner):
+    owner.clear_role()
 
 
-def edit_role(ifc, role_editor):
-    ifc.run("owner.edit_role", role=role_editor.get_role(), attributes=role_editor.export_attributes())
-    role_editor.clear_role()
+def edit_role(ifc, owner):
+    ifc.run("owner.edit_role", role=owner.get_role(), attributes=owner.export_role_attributes())
+    owner.clear_role()
 
 
 def add_address(ifc, parent=None, ifc_class="IfcPostalAddress"):
@@ -77,27 +77,27 @@ def remove_address(ifc, address=None):
     ifc.run("owner.remove_address", address=address)
 
 
-def enable_editing_address(address_editor, address=None):
-    address_editor.set_address(address)
-    address_editor.import_attributes()
+def enable_editing_address(owner, address=None):
+    owner.set_address(address)
+    owner.import_address_attributes()
 
 
-def disable_editing_address(address_editor):
-    address_editor.clear_address()
+def disable_editing_address(owner):
+    owner.clear_address()
 
 
-def edit_address(ifc, address_editor):
-    address = address_editor.get_address()
-    ifc.run("owner.edit_address", address=address, attributes=address_editor.export_attributes())
-    address_editor.clear_address()
+def edit_address(ifc, owner):
+    address = owner.get_address()
+    ifc.run("owner.edit_address", address=address, attributes=owner.export_address_attributes())
+    owner.clear_address()
 
 
-def add_address_attribute(address_editor, name=None):
-    address_editor.add_attribute(name)
+def add_address_attribute(owner, name=None):
+    owner.add_address_attribute(name)
 
 
-def remove_address_attribute(address_editor, name=None, id=None):
-    address_editor.remove_attribute(name, id)
+def remove_address_attribute(owner, name=None, id=None):
+    owner.remove_address_attribute(name, id)
 
 
 def add_organisation(ifc):
@@ -108,19 +108,19 @@ def remove_organisation(ifc, organisation=None):
     ifc.run("owner.remove_organisation", organisation=organisation)
 
 
-def enable_editing_organisation(organisation_editor, organisation=None):
-    organisation_editor.set_organisation(organisation)
-    organisation_editor.import_attributes()
+def enable_editing_organisation(owner, organisation=None):
+    owner.set_organisation(organisation)
+    owner.import_organisation_attributes()
 
 
-def disable_editing_organisation(organisation_editor):
-    organisation_editor.clear_organisation()
+def disable_editing_organisation(owner):
+    owner.clear_organisation()
 
 
-def edit_organisation(ifc, organisation_editor):
-    organisation = organisation_editor.get_organisation()
-    ifc.run("owner.edit_organisation", organisation=organisation, attributes=organisation_editor.export_attributes())
-    organisation_editor.clear_organisation()
+def edit_organisation(ifc, owner):
+    organisation = owner.get_organisation()
+    ifc.run("owner.edit_organisation", organisation=organisation, attributes=owner.export_organisation_attributes())
+    owner.clear_organisation()
 
 
 def add_person_and_organisation(ifc, person=None, organisation=None):

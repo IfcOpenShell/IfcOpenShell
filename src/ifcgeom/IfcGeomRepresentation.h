@@ -121,6 +121,11 @@ namespace IfcGeom {
 			size_t weld_offset_;
 			VertexKeyMap welds;
 
+			// when read from serialization, the element needs to take ownership of the styles,
+			// the material vector is constructor off of this.
+			// @todo this can be improved
+			std::vector<std::shared_ptr<IfcGeom::SurfaceStyle>> styles_;
+
 		public:
 			const std::string& id() const { return id_; }
 			const std::vector<double>& verts() const { return _verts; }
@@ -144,7 +149,7 @@ namespace IfcGeom {
 
 					int surface_style_id = -1;
 					if (iit->hasStyle()) {
-						Material adapter(&iit->Style());
+						Material adapter(iit->StylePtr());
 						std::vector<Material>::const_iterator jt = std::find(_materials.begin(), _materials.end(), adapter);
 						if (jt == _materials.end()) {
 							surface_style_id = (int)_materials.size();
@@ -349,6 +354,32 @@ namespace IfcGeom {
                     BRepTools::Clean(s);
 				}
 			}
+			
+			Triangulation(
+				ElementSettings settings,
+				const std::string& id,
+				const std::vector<double>& verts,
+				const std::vector<int>& faces,
+				const std::vector<int>& edges,
+				const std::vector<double>& normals,
+				const std::vector<double>& uvs,
+				const std::vector<int>& material_ids,
+				const std::vector<std::shared_ptr<IfcGeom::SurfaceStyle>>& styles)
+				: Representation(settings)
+				, id_(id)
+				, _verts(verts)
+				, _faces(faces)
+				, _edges(edges)
+				, _normals(normals)
+				, uvs_(uvs)
+				, _material_ids(material_ids)
+				, styles_(styles)
+			{
+				for (auto& s : styles_) {
+					_materials.push_back(IfcGeom::Material(s));
+				}
+			}
+
 			virtual ~Triangulation() {}
 
             /// Generates UVs for a single mesh using box projection.

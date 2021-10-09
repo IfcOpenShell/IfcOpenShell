@@ -209,6 +209,7 @@ int main(int argc, char** argv) {
 	path_t filter_filename;
 	path_t default_material_filename;
 	path_t log_file;
+	path_t cache_file;
 	std::string log_format;
 
     po::options_description generic_options("Command line options");
@@ -218,6 +219,9 @@ int main(int argc, char** argv) {
 		("version", "display version information")
 		("verbose,v", po::value(&vcounter)->zero_tokens(), "more verbose log messages")
 		("quiet,q", "less status and progress output")
+#ifdef WITH_HDF5
+		("cache", "cache geometry creation. Use --cache-file to specify cache file path.")
+#endif
 		("stderr-progress", "output progress to stderr stream")
 		("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
 		("no-progress", "suppress possible progress bar type of prints that use carriage return")
@@ -230,8 +234,12 @@ int main(int argc, char** argv) {
 		("mmap", "use memory-mapped file for input")
 #endif
 		("input-file", new po::typed_value<path_t, char_t>(0), "input IFC file")
-		("output-file", new po::typed_value<path_t, char_t>(0), "output geometry file");
-	
+		("output-file", new po::typed_value<path_t, char_t>(0), "output geometry file")
+#ifdef WITH_HDF5
+		("cache-file", new po::typed_value<path_t, char_t>(&cache_file), "geometry cache file")
+#endif
+		;
+
 	po::options_description ifc_options("IFC options");
 	ifc_options.add_options()
 		("calculate-quantities", "Calculate or fix the physical quantity definitions "
@@ -680,6 +688,7 @@ int main(int argc, char** argv) {
 		STP = IfcUtil::path::from_utf8(".stp"),
 		IGS = IfcUtil::path::from_utf8(".igs"),
 		SVG = IfcUtil::path::from_utf8(".svg"),
+		CACHE = IfcUtil::path::from_utf8(".cache"),
 		HDF = IfcUtil::path::from_utf8(".h5"),
 		XML = IfcUtil::path::from_utf8(".xml"),
 		IFC = IfcUtil::path::from_utf8(".ifc");
@@ -969,6 +978,18 @@ int main(int argc, char** argv) {
     }
 
 	IfcGeom::Iterator context_iterator(settings, ifc_file, filter_funcs, num_threads);
+
+#ifdef WITH_HDF5
+	std::unique_ptr<HdfSerializer> cache;
+	if (vmap.count("cache-file") || vmap.count("cache")) {
+		if (!vmap.count("cache-file")) {
+			cache_file = input_filename + CACHE + HDF;
+		}
+		cache.reset(new HdfSerializer(IfcUtil::path::to_utf8(cache_file), settings));
+		context_iterator.set_cache(cache.get());
+	}
+#endif
+
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.

@@ -16,12 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.core.tool.ifc import Ifc
-from blenderbim.core.tool.blender import Blender
-from blenderbim.core.tool.person_editor import PersonEditor
-from blenderbim.core.tool.role_editor import RoleEditor
-from blenderbim.core.tool.address_editor import AddressEditor
-from blenderbim.core.tool.organisation_editor import OrganisationEditor
-from blenderbim.core.tool.context_editor import ContextEditor
-from blenderbim.core.tool.owner import Owner
-from blenderbim.core.tool.surveyor import Surveyor
+import bpy
+from blenderbim.bim.prop import StrProperty, Attribute
+from blenderbim.bim.module.spatial.data import SpatialData
+from bpy.types import PropertyGroup
+from bpy.props import (
+    PointerProperty,
+    StringProperty,
+    EnumProperty,
+    BoolProperty,
+    IntProperty,
+    FloatProperty,
+    FloatVectorProperty,
+    CollectionProperty,
+)
+
+
+class BIMObjectAggregateProperties(PropertyGroup):
+    is_editing: BoolProperty(name="Is Editing")
+    relating_object: PointerProperty(name="Aggregate", type=bpy.types.Object)

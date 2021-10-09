@@ -20,6 +20,7 @@ import bpy
 import blenderbim.tool as tool
 import blenderbim.core.context as core
 import blenderbim.bim.module.context.data
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.context.data import Data
 
@@ -27,7 +28,7 @@ from ifcopenshell.api.context.data import Data
 class Operator:
     def execute(self, context):
         IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.module.context.data.ContextData.is_loaded = False
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -67,7 +68,7 @@ class EnableEditingContext(bpy.types.Operator, Operator):
     context: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.enable_editing_context(tool.ContextEditor, context=tool.Ifc.get().by_id(self.context))
+        core.enable_editing_context(tool.Context, context=tool.Ifc.get().by_id(self.context))
 
 
 class DisableEditingContext(bpy.types.Operator, Operator):
@@ -76,7 +77,7 @@ class DisableEditingContext(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.disable_editing_context(tool.ContextEditor)
+        core.disable_editing_context(tool.Context)
 
 
 class EditContext(bpy.types.Operator, Operator):
@@ -85,4 +86,4 @@ class EditContext(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_context(tool.Ifc, tool.ContextEditor)
+        core.edit_context(tool.Ifc, tool.Context)

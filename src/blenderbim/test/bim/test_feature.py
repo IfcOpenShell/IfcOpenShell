@@ -19,6 +19,7 @@
 import os
 import bpy
 import ifcopenshell
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from pytest_bdd import scenarios, given, when, then, parsers
 
@@ -58,6 +59,11 @@ def i_load_a_new_pset_template_file():
 @when("I add a cube")
 def i_add_a_cube():
     bpy.ops.mesh.primitive_cube_add()
+
+
+@given("I add a material")
+def i_add_a_material():
+    bpy.context.active_object.active_material = bpy.data.materials.new("Material")
 
 
 @when(parsers.parse('I add a cube of size "{size}" at "{location}"'))
@@ -115,8 +121,9 @@ def i_delete_the_selected_objects():
     bpy.ops.object.delete()
 
 
-@then(parsers.parse('the variable "{key}" is "{value}"'))
+@given(parsers.parse('the variable "{key}" is "{value}"'))
 @when(parsers.parse('the variable "{key}" is "{value}"'))
+@then(parsers.parse('the variable "{key}" is "{value}"'))
 def the_variable_key_is_value(key, value):
     variables[key] = eval(replace_variables(value))
 
@@ -134,7 +141,7 @@ def the_object_name_exists(name) -> bpy.types.Object:
     return obj
 
 
-@then('an IFC file exists')
+@then("an IFC file exists")
 def an_ifc_file_exists():
     ifc = IfcStore.get_file()
     if not ifc:
@@ -267,3 +274,13 @@ def prop_is_value(prop, value):
     if not is_value:
         actual_value = eval(f"bpy.context.{prop}")
         assert False, f"Value is {actual_value}"
+
+
+@then(parsers.parse('the object "{name}" is in the collection "{collection}"'))
+def the_object_name_is_in_the_collection_collection(name, collection):
+    assert collection in [c.name for c in the_object_name_exists(name).users_collection]
+
+
+@then(parsers.parse('the collection "{name1}" is in the collection "{name2}"'))
+def the_collection_name1_is_in_the_collection_name2(name1, name2):
+    assert bpy.data.collections.get(name2).children.get(name1)

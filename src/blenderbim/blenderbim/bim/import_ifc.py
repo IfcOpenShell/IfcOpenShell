@@ -632,6 +632,8 @@ class IfcImporter:
 
         self.create_curve_products(self.file.by_type("IfcStructuralCurveMember"))
         self.create_curve_products(self.file.by_type("IfcStructuralCurveConnection"))
+        self.create_curve_products(self.file.by_type("IfcStructuralSurfaceMember"))
+        self.create_curve_products(self.file.by_type("IfcStructuralSurfaceConnection"))
         self.create_structural_point_connections()
 
     def create_structural_point_connections(self):

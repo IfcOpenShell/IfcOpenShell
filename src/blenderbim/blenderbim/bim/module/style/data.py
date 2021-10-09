@@ -16,31 +16,28 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import abc
+import bpy
+import blenderbim.tool as tool
 
 
-class RoleEditor(abc.ABC):
-    @classmethod
-    @abc.abstractmethod
-    def set_role(cls, role):
-        pass
+def refresh():
+    StyleAttributesData.is_loaded = False
 
-    @classmethod
-    @abc.abstractmethod
-    def import_attributes(cls):
-        pass
+
+class StyleAttributesData:
+    data = {}
+    is_loaded = False
 
     @classmethod
-    @abc.abstractmethod
-    def clear_role(cls):
-        pass
+    def load(cls):
+        cls.data = {"attributes": cls.get_attributes()}
 
     @classmethod
-    @abc.abstractmethod
-    def get_role(cls):
-        pass
-
-    @classmethod
-    @abc.abstractmethod
-    def export_attributes(cls):
-        pass
+    def get_attributes(cls):
+        style = tool.Ifc.get().by_id(bpy.context.active_object.active_material.BIMMaterialProperties.ifc_style_id)
+        results = []
+        for name, value in style.get_info().items():
+            if name in ["id", "type", "Styles"]:
+                continue
+            results.append({"name": name, "value": str(value)})
+        return results

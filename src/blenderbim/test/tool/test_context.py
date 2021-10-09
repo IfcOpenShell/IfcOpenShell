@@ -21,12 +21,12 @@ import ifcopenshell
 import test.bim.bootstrap
 import blenderbim.core.tool
 import blenderbim.tool as tool
-from blenderbim.tool.context_editor import ContextEditor as subject
+from blenderbim.tool.context import Context as subject
 
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.context_editor.ContextEditor)
+        assert isinstance(subject(), blenderbim.core.tool.Context)
 
 
 class TestSetContext(test.bim.bootstrap.NewFile):

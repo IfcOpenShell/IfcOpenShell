@@ -114,6 +114,7 @@ def active_object_callback():
         stored_obj = IfcStore.get_element(obj.BIMObjectProperties.ifc_definition_id)
         if stored_obj and stored_obj != obj:
             bpy.ops.bim.copy_class(obj=obj.name)
+    refresh_ui_data()
 
 
 def subscribe_to(object, data_path, callback):
@@ -135,9 +136,20 @@ def subscribe_to(object, data_path, callback):
     )
 
 
+def refresh_ui_data():
+    from blenderbim.bim import modules
+
+    for name, value in modules.items():
+        try:
+            getattr(value, "data").refresh()
+        except AttributeError:
+            pass
+
+
 def purge_module_data():
     from blenderbim.bim import modules
 
+    refresh_ui_data()
     for name, value in modules.items():
         try:
             getattr(getattr(getattr(ifcopenshell.api, name), "data"), "Data").purge()

@@ -20,6 +20,12 @@ import bpy
 import blenderbim.tool as tool
 
 
+def refresh():
+    PeopleData.is_loaded = False
+    OrganisationsData.is_loaded = False
+    OwnerData.is_loaded = False
+
+
 class RolesAddressesData:
     @classmethod
     def get_roles(cls, parent):
@@ -188,9 +194,11 @@ class OwnerData:
     def get_users(cls):
         results = []
         for user in tool.Ifc.get().by_type("IfcPersonAndOrganization"):
-            results.append({
-                "id": user.id(),
-                "label": "{} ({})".format(user.ThePerson[0] or "Unnamed", user.TheOrganization[0] or "Unnamed"),
-                "is_active": bpy.context.scene.BIMOwnerProperties.active_user_id == user.id(),
-            })
+            results.append(
+                {
+                    "id": user.id(),
+                    "label": "{} ({})".format(user.ThePerson[0] or "Unnamed", user.TheOrganization[0] or "Unnamed"),
+                    "is_active": bpy.context.scene.BIMOwnerProperties.active_user_id == user.id(),
+                }
+            )
         return results

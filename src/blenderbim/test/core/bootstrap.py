@@ -36,36 +36,15 @@ def blender():
 
 
 @pytest.fixture
-def person_editor():
-    prophet = Prophecy(blenderbim.core.tool.PersonEditor)
+def aggregate():
+    prophet = Prophecy(blenderbim.core.tool.Aggregate)
     yield prophet
     prophet.verify()
 
 
 @pytest.fixture
-def role_editor():
-    prophet = Prophecy(blenderbim.core.tool.RoleEditor)
-    yield prophet
-    prophet.verify()
-
-
-@pytest.fixture
-def address_editor():
-    prophet = Prophecy(blenderbim.core.tool.AddressEditor)
-    yield prophet
-    prophet.verify()
-
-
-@pytest.fixture
-def organisation_editor():
-    prophet = Prophecy(blenderbim.core.tool.OrganisationEditor)
-    yield prophet
-    prophet.verify()
-
-
-@pytest.fixture
-def context_editor():
-    prophet = Prophecy(blenderbim.core.tool.ContextEditor)
+def context():
+    prophet = Prophecy(blenderbim.core.tool.Context)
     yield prophet
     prophet.verify()
 
@@ -78,8 +57,43 @@ def owner():
 
 
 @pytest.fixture
+def voider():
+    prophet = Prophecy(blenderbim.core.tool.Voider)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def selector():
+    prophet = Prophecy(blenderbim.core.tool.Selector)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def style():
+    prophet = Prophecy(blenderbim.core.tool.Style)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def surveyor():
     prophet = Prophecy(blenderbim.core.tool.Surveyor)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def collector():
+    prophet = Prophecy(blenderbim.core.tool.Collector)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def container():
+    prophet = Prophecy(blenderbim.core.tool.Container)
     yield prophet
     prophet.verify()
 

@@ -17,20 +17,22 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, operator
+from . import ui, prop, operator
 
 classes = (
     operator.AssignObject,
+    operator.UnassignObject,
     operator.EnableEditingAggregate,
     operator.DisableEditingAggregate,
     operator.AddAggregate,
+    prop.BIMObjectAggregateProperties,
     ui.BIM_PT_aggregate,
 )
 
 
 def register():
-    pass
+    bpy.types.Object.BIMObjectAggregateProperties = bpy.props.PointerProperty(type=prop.BIMObjectAggregateProperties)
 
 
 def unregister():
-    pass
+    del bpy.types.Object.BIMObjectAggregateProperties

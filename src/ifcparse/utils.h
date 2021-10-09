@@ -37,7 +37,7 @@ namespace IfcUtil {
 		IFC_PARSE_API bool delete_file(const std::string& filename);
 		IFC_PARSE_API bool rename_file(const std::string& old_filename, const std::string& new_filename);
 		
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && defined(_UNICODE)
 
 		/// Uses windows.h string conversion functions
 		IFC_PARSE_API std::string to_utf8(const std::wstring& str);

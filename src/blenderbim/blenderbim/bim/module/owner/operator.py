@@ -21,15 +21,14 @@ import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.owner as core
 import blenderbim.bim.module.owner.data
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 
 
 class Operator:
     def execute(self, context):
         IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.module.owner.data.PeopleData.is_loaded = False
-        blenderbim.bim.module.owner.data.OrganisationsData.is_loaded = False
-        blenderbim.bim.module.owner.data.OwnerData.is_loaded = False
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -40,7 +39,7 @@ class EnableEditingPerson(bpy.types.Operator, Operator):
     person: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.enable_editing_person(tool.PersonEditor, person=tool.Ifc.get().by_id(self.person))
+        core.enable_editing_person(tool.Owner, person=tool.Ifc.get().by_id(self.person))
 
 
 class DisableEditingPerson(bpy.types.Operator, Operator):
@@ -49,7 +48,7 @@ class DisableEditingPerson(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.disable_editing_person(tool.PersonEditor)
+        core.disable_editing_person(tool.Owner)
 
 
 class AddPerson(bpy.types.Operator, Operator):
@@ -67,7 +66,7 @@ class EditPerson(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_person(tool.Ifc, tool.PersonEditor)
+        core.edit_person(tool.Ifc, tool.Owner)
 
 
 class RemovePerson(bpy.types.Operator, Operator):
@@ -87,7 +86,7 @@ class AddPersonAttribute(bpy.types.Operator, Operator):
     name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.add_person_attribute(tool.PersonEditor, name=self.name)
+        core.add_person_attribute(tool.Owner, name=self.name)
 
 
 class RemovePersonAttribute(bpy.types.Operator, Operator):
@@ -98,7 +97,7 @@ class RemovePersonAttribute(bpy.types.Operator, Operator):
     id: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_person_attribute(tool.PersonEditor, name=self.name, id=self.id)
+        core.remove_person_attribute(tool.Owner, name=self.name, id=self.id)
 
 
 class EnableEditingRole(bpy.types.Operator, Operator):
@@ -108,7 +107,7 @@ class EnableEditingRole(bpy.types.Operator, Operator):
     role: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.enable_editing_role(tool.RoleEditor, role=tool.Ifc.get().by_id(self.role))
+        core.enable_editing_role(tool.Owner, role=tool.Ifc.get().by_id(self.role))
 
 
 class DisableEditingRole(bpy.types.Operator, Operator):
@@ -117,7 +116,7 @@ class DisableEditingRole(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.disable_editing_role(tool.RoleEditor)
+        core.disable_editing_role(tool.Owner)
 
 
 class AddRole(bpy.types.Operator, Operator):
@@ -136,7 +135,7 @@ class EditRole(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_role(tool.Ifc, tool.RoleEditor)
+        core.edit_role(tool.Ifc, tool.Owner)
 
 
 class RemoveRole(bpy.types.Operator, Operator):
@@ -167,7 +166,7 @@ class AddAddressAttribute(bpy.types.Operator, Operator):
     name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.add_address_attribute(tool.AddressEditor, name=self.name)
+        core.add_address_attribute(tool.Owner, name=self.name)
 
 
 class RemoveAddressAttribute(bpy.types.Operator, Operator):
@@ -178,7 +177,7 @@ class RemoveAddressAttribute(bpy.types.Operator, Operator):
     id: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_address_attribute(tool.AddressEditor, name=self.name, id=self.id)
+        core.remove_address_attribute(tool.Owner, name=self.name, id=self.id)
 
 
 class EnableEditingAddress(bpy.types.Operator, Operator):
@@ -188,7 +187,7 @@ class EnableEditingAddress(bpy.types.Operator, Operator):
     address: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.enable_editing_address(tool.AddressEditor, address=tool.Ifc.get().by_id(self.address))
+        core.enable_editing_address(tool.Owner, address=tool.Ifc.get().by_id(self.address))
 
 
 class DisableEditingAddress(bpy.types.Operator, Operator):
@@ -197,7 +196,7 @@ class DisableEditingAddress(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.disable_editing_address(tool.AddressEditor)
+        core.disable_editing_address(tool.Owner)
 
 
 class EditAddress(bpy.types.Operator, Operator):
@@ -206,7 +205,7 @@ class EditAddress(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_address(tool.Ifc, tool.AddressEditor)
+        core.edit_address(tool.Ifc, tool.Owner)
 
 
 class RemoveAddress(bpy.types.Operator, Operator):
@@ -226,7 +225,7 @@ class EnableEditingOrganisation(bpy.types.Operator, Operator):
     organisation: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.enable_editing_organisation(tool.OrganisationEditor, organisation=tool.Ifc.get().by_id(self.organisation))
+        core.enable_editing_organisation(tool.Owner, organisation=tool.Ifc.get().by_id(self.organisation))
 
 
 class DisableEditingOrganisation(bpy.types.Operator, Operator):
@@ -235,7 +234,7 @@ class DisableEditingOrganisation(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.disable_editing_organisation(tool.OrganisationEditor)
+        core.disable_editing_organisation(tool.Owner)
 
 
 class AddOrganisation(bpy.types.Operator, Operator):
@@ -253,7 +252,7 @@ class EditOrganisation(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_organisation(tool.Ifc, tool.OrganisationEditor)
+        core.edit_organisation(tool.Ifc, tool.Owner)
 
 
 class RemoveOrganisation(bpy.types.Operator, Operator):
