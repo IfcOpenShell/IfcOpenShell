@@ -136,6 +136,34 @@ If all worked out correctly you can now use IfcOpenShell. See the examples below
 **6)** Install the project if wanted:
 
     $ sudo make install
+    
+### Installing on MacOS Using Homebrew
+
+**1)** Install all dependencies using [Homebrew](https://brew.sh/)
+
+```{shell}
+$ brew install boost swig cmake ftgl cgal gmp libaec opencascade
+```
+
+**2)** Clone the git repo and its submodules
+```{shell}
+$ git clone --recurse-submodules https://github.com/IfcOpenShell/IfcOpenShell.git 
+```
+**3)** Build IfcOpenShell with flags for Homebrew dependencies (```/usr/local/```)
+```{shell}
+$ cd /path/to/IfcOpenShell
+$ mkdir build && cd build
+$ cmake ../cmake -DOCC_LIBRARY_DIR=/usr/local/lib/ \
+      -DOCC_INCLUDE_DIR=/usr/local/include/opencascade/ \
+      -DCOLLADA_SUPPORT=0 \
+      -DCGAL_INCLUDE_DIR=/usr/local/include/ \
+      -DGMP_LIBRARY_DIR=/usr/local/lib/ \
+      -DMPFR_LIBRARY_DIR=/usr/local/lib/
+      
+$ make -j -lboost_options
+```
+
+Note: Make sure to compile using XCode, rather than a ```brew``` installed C/C++ compiler.
 
 Installing IfcOpenShell with Conda
 ----------------------------------
@@ -151,14 +179,14 @@ Usage examples
 
 **Invoking IfcConvert from the command line**
 
-    $ wget ftp://ftp.dds.no/pub/ifc/Munkerud/Munkerud_hus6_BE.zip
-    $ unzip Munkerud_hus6_BE.zip
-    $ ./IfcConvert Munkerud_hus6_BE.ifc
-    $ less Munkerud_hus6_BE.obj
+    $ wget -O duplex.zip https://portal.nibs.org/files/wl/\?id=4DsTgHFQAcOXzFetxbpRCECPbbfUqpgo
+    $ unzip duplex.zip
+    $ ./IfcConvert Duplex_A_20110907_optimized.ifc
+    $ less Duplex_A_20110907_optimized.obj
 
 **Using the IfcOpenShell Python interface**
 
-    $ wget -O duplex.zip https://portal.nibs.org/files/wl/?id=4DsTgHFQAcOXzFetxbpRCECPbbfUqpgo
+    $ wget -O duplex.zip https://portal.nibs.org/files/wl/\?id=4DsTgHFQAcOXzFetxbpRCECPbbfUqpgo
     $ unzip duplex.zip
     $ python
     >>> import ifcopenshell

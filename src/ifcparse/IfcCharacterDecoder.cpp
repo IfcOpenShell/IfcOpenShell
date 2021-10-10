@@ -52,7 +52,6 @@ using boost::locale::conv::utf_to_utf;
 #define THIRD_SOLIDUS						(1 << 18)
 #define ENDEXTENDED_X						(1 << 19)
 #define ENDEXTENDED_0						(1 << 20)
-#define FOURTH_SOLIDUS						(1 << 21)
 #define IGNORED_DIRECTIVE					(1 << 22)
 #define ENCOUNTERED_HEX                     (1 << 23) 
 
@@ -69,7 +68,7 @@ using boost::locale::conv::utf_to_utf;
 #define EXPECTS_ENDEXTENDED_X(S)			(S & THIRD_SOLIDUS)
 #define EXPECTS_ENDEXTENDED_0(S)			(S & ENDEXTENDED_X)
 
-#define IS_VALID_ALPHABET_DEFINITION(C)		(C >= 0x40 && C <= 0x4A)
+#define IS_VALID_ALPHABET_DEFINITION(C)		(C >= 0x41 && C <= 0x49)
 #define IS_HEXADECIMAL(C)					((C >= 0x30 && C <= 0x39 ) || (C >= 0x41 && C <= 0x46 ))
 #define HEX_TO_INT(C)						((C >= 0x30 && C <= 0x39 ) ? C - 0x30 : (C+10) - 0x41)
 #define CLEAR_HEX(C)						(C &= ~(HEX(1)|HEX(2)|HEX(3)|HEX(4)|HEX(5)|HEX(6)|HEX(7)|HEX(8)))

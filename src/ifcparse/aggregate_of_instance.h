@@ -27,12 +27,12 @@
 #include <set>
 
 template <class T>
-class IfcTemplatedEntityList;
+class aggregate_of;
 
-class IFC_PARSE_API IfcEntityList {
+class IFC_PARSE_API aggregate_of_instance {
 	std::vector<IfcUtil::IfcBaseClass*> ls;
 public:
-	typedef boost::shared_ptr<IfcEntityList> ptr;
+	typedef boost::shared_ptr<aggregate_of_instance> ptr;
 	typedef std::vector<IfcUtil::IfcBaseClass*>::const_iterator it;
 	void push(IfcUtil::IfcBaseClass* l);
 	void push(const ptr& l);
@@ -50,23 +50,23 @@ public:
 		return r;
 	}
 	void remove(IfcUtil::IfcBaseClass*);
-	IfcEntityList::ptr filtered(const std::set<const IfcParse::declaration*>& entities);
-	IfcEntityList::ptr unique();
+	aggregate_of_instance::ptr filtered(const std::set<const IfcParse::declaration*>& entities);
+	aggregate_of_instance::ptr unique();
 };
 
 template <class T>
-class IfcTemplatedEntityList {
+class aggregate_of {
 	std::vector<T*> ls;
 public:
-	typedef boost::shared_ptr< IfcTemplatedEntityList<T> > ptr;
+	typedef boost::shared_ptr< aggregate_of<T> > ptr;
 	typedef typename std::vector<T*>::const_iterator it;
 	void push(T* t) { if (t) { ls.push_back(t); } }
 	void push(ptr t) { if (t) { for (typename T::list::it it = t->begin(); it != t->end(); ++it) push(*it); } }
 	it begin() { return ls.begin(); }
 	it end() { return ls.end(); }
 	unsigned int size() const { return (unsigned int)ls.size(); }
-	IfcEntityList::ptr generalize() {
-		IfcEntityList::ptr r(new IfcEntityList());
+	aggregate_of_instance::ptr generalize() {
+		aggregate_of_instance::ptr r(new aggregate_of_instance());
 		for (it i = begin(); i != end(); ++i) r->push(*i);
 		return r;
 	}
@@ -87,18 +87,18 @@ public:
 };
 
 template <class T>
-class IfcTemplatedEntityListList;
+class aggregate_of_aggregate_of;
 
-class IFC_PARSE_API IfcEntityListList {
+class IFC_PARSE_API aggregate_of_aggregate_of_instance {
 	std::vector< std::vector<IfcUtil::IfcBaseClass*> > ls;
 public:
-	typedef boost::shared_ptr< IfcEntityListList > ptr;
+	typedef boost::shared_ptr< aggregate_of_aggregate_of_instance > ptr;
 	typedef std::vector< std::vector<IfcUtil::IfcBaseClass*> >::const_iterator outer_it;
 	typedef std::vector<IfcUtil::IfcBaseClass*>::const_iterator inner_it;
 	void push(const std::vector<IfcUtil::IfcBaseClass*>& l) {
 		ls.push_back(l);
 	}
-	void push(const IfcEntityList::ptr& l) {
+	void push(const aggregate_of_instance::ptr& l) {
 		if (l) {
 			std::vector<IfcUtil::IfcBaseClass*> li;
 			for (std::vector<IfcUtil::IfcBaseClass*>::const_iterator jt = l->begin(); jt != l->end(); ++jt) {
@@ -127,8 +127,8 @@ public:
 		return false;
 	}
 	template <class U>
-	typename IfcTemplatedEntityListList<U>::ptr as() {
-		typename IfcTemplatedEntityListList<U>::ptr r(new IfcTemplatedEntityListList<U>);
+	typename aggregate_of_aggregate_of<U>::ptr as() {
+		typename aggregate_of_aggregate_of<U>::ptr r(new aggregate_of_aggregate_of<U>);
 		const bool all = !U::Class().as_entity();
 		for (outer_it outer = begin(); outer != end(); ++outer) {
 			const std::vector<IfcUtil::IfcBaseClass*>& from = *outer;
@@ -143,10 +143,10 @@ public:
 };
 
 template <class T>
-class IfcTemplatedEntityListList {
+class aggregate_of_aggregate_of {
 	std::vector< std::vector<T*> > ls;
 public:
-	typedef typename boost::shared_ptr< IfcTemplatedEntityListList<T> > ptr;
+	typedef typename boost::shared_ptr< aggregate_of_aggregate_of<T> > ptr;
 	typedef typename std::vector< std::vector<T*> >::const_iterator outer_it;
 	typedef typename std::vector<T*>::const_iterator inner_it;
 	void push(const std::vector<T*>& t) { ls.push_back(t); }
@@ -169,8 +169,8 @@ public:
 		}
 		return false;
 	}
-	IfcEntityListList::ptr generalize() {
-		IfcEntityListList::ptr r(new IfcEntityListList());
+	aggregate_of_aggregate_of_instance::ptr generalize() {
+		aggregate_of_aggregate_of_instance::ptr r(new aggregate_of_aggregate_of_instance());
 		for (outer_it outer = begin(); outer != end(); ++outer) {
 			const std::vector<T*>& from = *outer;
 			std::vector<IfcUtil::IfcBaseClass*> to;

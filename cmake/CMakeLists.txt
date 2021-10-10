@@ -18,10 +18,15 @@
 ################################################################################
 
 cmake_minimum_required(VERSION 3.1.3)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)  # not necessary, but encouraged
 
-project (IfcOpenShell VERSION 0.6.0)
+project (IfcOpenShell VERSION 0.7.0)
+
+cmake_policy(SET CMP0048 NEW)
+cmake_policy(SET CMP0074 NEW)
+cmake_policy(SET CMP0078 OLD)
+cmake_policy(SET CMP0086 NEW)
 
 # use extra version to make pre-release using eg semver
 set( EXTRA_VERSION "-alpha.3")
@@ -37,7 +42,6 @@ endforeach()
 OPTION(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
 OPTION(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
-OPTION(IFCCONVERT_DOUBLE_PRECISION "IfcConvert: Use double precision floating-point numbers." ON)
 OPTION(BUILD_PACKAGE "" OFF)
 OPTION(BUILD_IFCGEOM "Build IfcGeom." ON)
 OPTION(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
@@ -45,11 +49,12 @@ OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)
 OPTION(BUILD_EXAMPLES "Build example applications." ON)
 OPTION(BUILD_GEOMSERVER "Build IfcGeomServer executable." ON)
 OPTION(BUILD_CONVERT "Build IfcConvert executable." ON)
+OPTION(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
 if (${HAS_MAX})
-OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." ON)
+OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 endif()
 if (${BUILD_CONVERT})
 OPTION(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
@@ -117,6 +122,18 @@ UNIFY_ENVVARS_AND_CACHE(LIBXML2_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(LIBXML2_LIBRARIES)
 UNIFY_ENVVARS_AND_CACHE(PCRE_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
+UNIFY_ENVVARS_AND_CACHE(HDF5_INCLUDE_DIR)
+UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARY_DIR)
+UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARIES)
+UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
+UNIFY_ENVVARS_AND_CACHE(BOOST_LIBRARYDIR)
+
+UNIFY_ENVVARS_AND_CACHE(CGAL_INCLUDE_DIR)
+UNIFY_ENVVARS_AND_CACHE(CGAL_LIBRARY_DIR)
+UNIFY_ENVVARS_AND_CACHE(GMP_INCLUDE_DIR)
+UNIFY_ENVVARS_AND_CACHE(GMP_LIBRARY_DIR)
+UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
+UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
 
 if (GLTF_SUPPORT AND BUILD_CONVERT)
 UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
@@ -146,7 +163,7 @@ ENDMACRO()
 # runtime, when doing running conda-build we pick what conda prepared for us.
 IF(WIN32 AND ("$ENV{CONDA_BUILD}" STREQUAL ""))
 	SET(Boost_USE_STATIC_LIBS ON)
-	SET(Boost_USE_STATIC_RUNTIME ON)
+	SET(Boost_USE_STATIC_RUNTIME OFF)
 	SET(Boost_USE_MULTITHREADED ON)
     # Disable Boost's autolinking as the libraries to be linked to are supplied
     # already by CMake, and wrong libraries would be asked for when code is
@@ -178,14 +195,17 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
+# libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
+find_package(LibXml2 REQUIRED)
+
 if (IFCXML_SUPPORT)
-    find_package(LibXml2 REQUIRED)
     add_definitions(-DWITH_IFCXML)
 endif()
 
 FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
+
 
 # Usage:
 # set(SOME_LIRARIES foo bar)
@@ -250,6 +270,9 @@ ENDIF()
 SET(OPENCASCADE_LIBRARY_NAMES
     TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
     TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset TKHLR
+    
+    # @todo investigate the exact conditions when this is necessary
+    TKBin
 )
 
 IF("${OCC_LIBRARY_DIR}" STREQUAL "")
@@ -316,7 +339,7 @@ endif()
 
 endif(BUILD_IFCGEOM)
 
-IF(COLLADA_SUPPORT AND BUILD_CONVERT)
+IF(COLLADA_SUPPORT)
 	# Find OpenCOLLADA
 	IF("${OPENCOLLADA_INCLUDE_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No OpenCOLLADA include directory specified")
@@ -394,6 +417,53 @@ IF(COLLADA_SUPPORT AND BUILD_CONVERT)
 	ENDIF()
 ENDIF()
 
+if(HDF5_SUPPORT)
+    IF("${HDF5_INCLUDE_DIR}" STREQUAL "")
+		MESSAGE(STATUS "No HDF5 include directory specified")
+	ElSE()
+		SET(HDF5_INCLUDE_DIR "${HDF5_INCLUDE_DIR}" CACHE FILEPATH "HDF5 header files")
+	ENDIF()
+	
+    IF("${HDF5_LIBRARY_DIR}" STREQUAL "")
+		MESSAGE(STATUS "No HDF5 library directory specified")
+	ElSE()
+		SET(HDF5_LIBRARY_DIR "${HDF5_LIBRARY_DIR}" CACHE FILEPATH "HDF5 library files")
+	ENDIF()
+
+    if (HDF5_LIBRARY_DIR)
+    	# result of the HDF5 ctest package
+    	
+        if (WIN32)
+        	set(zlib_post lib)
+        	set(lib_ext lib)
+        else()
+        	set(lib_ext a)
+        endif()
+        
+        SET(HDF5_LIBRARIES 
+            "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
+            "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
+            "${HDF5_LIBRARY_DIR}/libz${zlib_post}.${lib_ext}"
+            "${HDF5_LIBRARY_DIR}/libsz.${lib_ext}"
+            "${HDF5_LIBRARY_DIR}/libaec.${lib_ext}"
+        )
+    endif()
+    
+    if (NOT HDF5_LIBRARIES)
+    	# debian default
+    	
+        SET(HDF5_LIBRARIES
+            /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.so
+            /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.so
+            /usr/lib/x86_64-linux-gnu/libsz.so
+            /usr/lib/x86_64-linux-gnu/libaec.so
+            z dl
+        )
+    endif()
+    
+    add_definitions(-DWITH_HDF5)
+endif()
+
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
 ENDIF()
@@ -422,6 +492,14 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
 endif()
 
 IF(MSVC)
+	# warning due to virtual inheritance
+	ADD_DEFINITIONS(-wd4250)
+	# warning due to select definitions in the schema being redundant
+	ADD_DEFINITIONS(-wd4584)
+	
+	# didn't work well on ifcopenbot, @todo make configurable
+	# add_definitions(/MP)
+
     # Enable solution folders (free VS versions prior to 2012 don't support solution folders)
     if (MSVC_VERSION GREATER 1600)
         set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -447,18 +525,18 @@ IF(MSVC)
     endif()
 	# Link against the static VC runtime
     # TODO Make this configurable
-	IF("$ENV{CONDA_BUILD}" STREQUAL "")
-	FOREACH(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
-			CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-			CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-		IF(${flag} MATCHES "/MD")
-			STRING(REGEX REPLACE "/MD" "/MT" ${flag} "${${flag}}")
-		ENDIF()
-		IF(${flag} MATCHES "/MDd")
-			STRING(REGEX REPLACE "/MDd" "/MTd" ${flag} "${${flag}}")
-		ENDIF()
-	ENDFOREACH()
-	ENDIF()
+	# IF("$ENV{CONDA_BUILD}" STREQUAL "")
+	# FOREACH(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
+			# CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+			# CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+		# IF(${flag} MATCHES "/MD")
+			# STRING(REGEX REPLACE "/MD" "/MT" ${flag} "${${flag}}")
+		# ENDIF()
+		# IF(${flag} MATCHES "/MDd")
+			# STRING(REGEX REPLACE "/MDd" "/MTd" ${flag} "${${flag}}")
+		# ENDIF()
+	# ENDFOREACH()
+	# ENDIF()
 ElSE()
     add_definitions(-Wall -Wextra)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -476,12 +554,8 @@ ElSE()
     endif()
 ENDIF()
 
-if (IFCCONVERT_DOUBLE_PRECISION)
-    SET(CONVERT_PRECISION "-DIFCCONVERT_DOUBLE_PRECISION")
-endif()
-
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
-	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR}
+	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
 )
 
 function(files_for_ifc_version IFC_VERSION RESULT_NAME)
@@ -657,13 +731,13 @@ set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
 foreach(s ${SCHEMA_VERSIONS})
 	add_library(Serializers_ifc${s} STATIC ${SERIALIZERS_S_FILES})
 	set_target_properties(Serializers_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s} ${CONVERT_PRECISION}")
-	TARGET_LINK_LIBRARIES(Serializers_ifc${s} IfcGeom ${OPENCASCADE_LIBRARIES})
+	TARGET_LINK_LIBRARIES(Serializers_ifc${s} IfcGeom ${OPENCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
 endforeach()
 
 add_library(Serializers ${SERIALIZERS_FILES})
 set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS ${CONVERT_PRECISION}" VERSION "0.6.0" SOVERSION "0.6")
 
-TARGET_LINK_LIBRARIES(Serializers ${SERIALIZER_SCHEMA_LIBRARIES})
+TARGET_LINK_LIBRARIES(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
 
 # IfcConvert
 file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
@@ -672,7 +746,7 @@ set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
 ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
 set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS "${CONVERT_PRECISION}")
 
-TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES})
 
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     # Only set RPATHs when building shared libraries (i.e. IfcParse and
@@ -710,6 +784,34 @@ INSTALL(TARGETS IfcGeomServer
 
 endif()
 
+find_package (Git)
+if (GIT_FOUND)
+	message("git found: ${GIT_EXECUTABLE} with version ${GIT_VERSION_STRING}")
+	execute_process(
+		COMMAND ${GIT_EXECUTABLE} show -s --pretty=%D HEAD
+		OUTPUT_VARIABLE git_branches
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+	string(REPLACE ", " ";" git_branch_list "${git_branches}")
+	string(REPLACE " -> " ";" git_branch_list "${git_branch_list}")
+	foreach(git_branch_candidate IN ITEMS ${git_branch_list})
+		if (NOT git_branch_candidate MATCHES "/")
+			if (NOT git_branch_candidate MATCHES "^HEAD$")
+				set(git_branch ${git_branch_candidate})
+			endif()
+		endif()
+	endforeach()
+	execute_process(
+		COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+		OUTPUT_VARIABLE git_sha
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+	message(STATUS "IfcOpenShell branch ${git_branch}")
+	message(STATUS "IfcOpenShell commit ${git_sha}")
+	add_definitions(-DIFCOPENSHELL_BRANCH=${git_branch})
+	add_definitions(-DIFCOPENSHELL_COMMIT=${git_sha})
+endif()
+
 # Documentation
 IF(BUILD_DOCUMENTATION)
 	set(CMAKE_MODULE_PATH "../docs/cmake")
@@ -727,6 +829,8 @@ ENDIF()
 IF(BUILD_IFCMAX)
 	ADD_SUBDIRECTORY(../src/ifcmax ifcmax)
 ENDIF()
+
+ADD_SUBDIRECTORY(../src/svgfill svgfill)
 
 # CMake installation targets
 INSTALL(FILES ${IFCPARSE_H_FILES}

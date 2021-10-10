@@ -22,10 +22,13 @@ from . import ui, prop, operator
 classes = (
     operator.AddCsvAttribute,
     operator.RemoveCsvAttribute,
+    operator.RemoveAllCsvAttributes,
     operator.ExportIfcCsv,
     operator.ImportIfcCsv,
     operator.EyedropIfcCsv,
     operator.SelectCsvIfcFile,
+    operator.ImportCsvAttributes,
+    operator.ExportCsvAttributes,
     prop.CsvProperties,
     ui.BIM_PT_ifccsv,
 )

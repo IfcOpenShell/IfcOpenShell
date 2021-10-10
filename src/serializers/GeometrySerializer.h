@@ -20,20 +20,13 @@
 #ifndef GEOMETRYSERIALIZER_H
 #define GEOMETRYSERIALIZER_H
 
-#ifdef IFCCONVERT_DOUBLE_PRECISION
-typedef double real_t;
-#else
-typedef float real_t;
-#endif
-
 #include "../serializers/Serializer.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 #include "../ifcgeom/IfcGeomElement.h"
 
 class SerializerSettings : public IfcGeom::IteratorSettings
 {
 public:
-    enum Setting
+    enum Setting : uint64_t
     {
         /// Use entity names instead of unique IDs for naming elements.
         /// Applicable for OBJ, DAE, and SVG output.
@@ -70,21 +63,57 @@ public:
     enum { DEFAULT_PRECISION = 15 };
 };
 
+class stream_or_filename {
+private:
+	std::shared_ptr<std::ofstream> ofs_;
+	std::shared_ptr<std::ostringstream> oss_;
+	boost::optional<std::string> filename_;
+
+public:
+	std::ostream& stream;
+
+	stream_or_filename(const std::string& fn)
+		: ofs_(new std::ofstream(IfcUtil::path::from_utf8(fn).c_str()))
+		, stream(*ofs_)
+	{}
+
+	stream_or_filename()
+		: oss_(new std::ostringstream)
+		, stream(*oss_)
+	{}
+
+	std::string get_value() const {
+		return oss_->str();
+	}
+
+	boost::optional<std::string> filename() const {
+		return filename_;
+	}
+
+	bool is_ready() {
+		if (ofs_) {
+			return ofs_->is_open();
+		} else {
+			return true;
+		}
+	}
+};
+
 class GeometrySerializer : public Serializer {
 public:
     GeometrySerializer(const SerializerSettings& settings) : settings_(settings) {}
 	virtual ~GeometrySerializer() {} 
 
 	virtual bool isTesselated() const = 0;
-	virtual void write(const IfcGeom::TriangulationElement<real_t>* o) = 0;
-	virtual void write(const IfcGeom::BRepElement<real_t>* o) = 0;
+	virtual void write(const IfcGeom::TriangulationElement* o) = 0;
+	virtual void write(const IfcGeom::BRepElement* o) = 0;
 	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
 
     const SerializerSettings& settings() const { return settings_; }
     SerializerSettings& settings() { return settings_; }
 
     /// Returns ID for the object depending on the used setting.
-    virtual std::string object_id(const IfcGeom::Element<real_t>* o)
+    virtual std::string object_id(const IfcGeom::Element* o)
     {
         if (settings_.get(SerializerSettings::USE_ELEMENT_GUIDS)) return o->guid();
         if (settings_.get(SerializerSettings::USE_ELEMENT_NAMES)) return o->name();

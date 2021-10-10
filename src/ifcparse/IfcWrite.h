@@ -31,6 +31,7 @@
 #include <boost/variant.hpp>
 #include <boost/optional.hpp>
 #include <boost/dynamic_bitset.hpp>
+// #include <boost/logic/tribool.hpp>
 
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/is_base_of.hpp>
@@ -72,6 +73,8 @@ namespace IfcWrite {
 			int, 
 			// A boolean argument, it will serialize to either .T. or .F.
 			bool, 
+			// A logical argument, it will serialize to either .T. or .F. or .U.
+			boost::logic::tribool,
 			// A floating point argument, e.g. 12.3
 			double,
 			// A character string argument, e.g. 'IfcOpenShell'
@@ -103,7 +106,7 @@ namespace IfcWrite {
 			// An aggregate of entity instances. It will either serialize to
 			// e.g. (#1,#2,#3) or datatype identifier for simple types,
 			// e.g. (IFCREAL(1.2),IFCINTEGER(3.))
-			IfcEntityList::ptr,
+			aggregate_of_instance::ptr,
 
 			// AGGREGATES OF AGGREGATES:
 			empty_aggregate_of_aggregate_t,
@@ -112,7 +115,7 @@ namespace IfcWrite {
 			// An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
 			std::vector< std::vector<double> >,
 			// An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
-			IfcEntityListList::ptr
+			aggregate_of_aggregate_of_instance::ptr
 		> container;
 	public:
 
@@ -132,16 +135,18 @@ namespace IfcWrite {
 		}
 
 		// Overload to detect null values
-		void set(const IfcEntityList::ptr& v);
+		void set(const aggregate_of_instance::ptr& v);
 
 		// Overload to detect null values
-		void set(const IfcEntityListList::ptr& v);
+		void set(const aggregate_of_aggregate_of_instance::ptr& v);
 
 		// Overload to detect null values
 		void set(IfcUtil::IfcBaseClass*const & v);
 		
 		operator int() const;
 		operator bool() const;
+		operator boost::logic::tribool() const;
+
 		operator double() const;
 		operator std::string() const;
 		operator boost::dynamic_bitset<>() const;
@@ -151,11 +156,11 @@ namespace IfcWrite {
 		operator std::vector<double>() const;
 		operator std::vector<std::string>() const;
 		operator std::vector<boost::dynamic_bitset<> >() const;
-		operator IfcEntityList::ptr() const;
+		operator aggregate_of_instance::ptr() const;
 
 		operator std::vector< std::vector<int> >() const;
 		operator std::vector< std::vector<double> >() const;
-		operator IfcEntityListList::ptr() const;
+		operator aggregate_of_aggregate_of_instance::ptr() const;
 
 		bool isNull() const;
 		Argument* operator [] (unsigned int i) const;

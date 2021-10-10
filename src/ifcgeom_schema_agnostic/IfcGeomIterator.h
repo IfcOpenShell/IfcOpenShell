@@ -70,7 +70,6 @@
 
 namespace IfcGeom {
 
-	template <typename P = double, typename PP = P>
 	class IFC_GEOM_API Iterator {
 	private:
 		Iterator(const Iterator&); // N/I
@@ -80,7 +79,7 @@ namespace IfcGeom {
 		IfcGeom::IteratorSettings settings_;
 		std::vector<IfcGeom::filter_t> filters_;
 
-		IteratorImplementation<P, PP>* implementation_;
+		IteratorImplementation* implementation_;
 
 	public:
 		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, int num_threads = 1)
@@ -88,20 +87,20 @@ namespace IfcGeom {
 			, settings_(settings)
 		{
 			try {
-				implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file, filters_, num_threads);
+				implementation_ = iterator_implementations().construct(file_->schema()->name(), settings, file, filters_, num_threads);
 			} catch (const std::exception& e) {
 				Logger::Error(e);
 				implementation_ = nullptr;
 			}
 		}
 
-		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, size_t num_threads = 1)
+		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads = 1)
 			: file_(file)
 			, settings_(settings)
 			, filters_(filters)
 		{
 			try {
-				implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file, filters_, num_threads);
+				implementation_ = iterator_implementations().construct(file_->schema()->name(), settings, file, filters_, num_threads);
 			} catch (const std::exception& e) {
 				Logger::Error(e);
 				implementation_ = nullptr;
@@ -131,13 +130,15 @@ namespace IfcGeom {
 
 		IfcUtil::IfcBaseClass* next() const { return implementation_->next(); }
 
-		Element<P, PP>* get() { return implementation_->get(); }
+		Element* get() { return implementation_->get(); }
 
-		BRepElement<P, PP>* get_native() { return implementation_->get_native(); }
+		BRepElement* get_native() { return implementation_->get_native(); }
 
-		const Element<P, PP>* get_object(int id) { return implementation_->get_object(id); }
+		const Element* get_object(int id) { return implementation_->get_object(id); }
 
 		IfcUtil::IfcBaseClass* create() { return implementation_->create(); }
+
+		void set_cache(HdfSerializer* cache) { return implementation_->set_cache(cache); }
 	};
 }
 

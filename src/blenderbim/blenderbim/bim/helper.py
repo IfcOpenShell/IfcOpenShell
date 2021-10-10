@@ -51,32 +51,42 @@ def draw_attribute(attribute, layout, copy_operator=None):
 
 def import_attributes(ifc_class, props, data, callback=None):
     for attribute in IfcStore.get_schema().declaration_by_name(ifc_class).all_attributes():
-        data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-        if isinstance(data_type, tuple) or data_type == "entity":
-            callback(attribute.name(), None, data) if callback else None
-            continue
-        new = props.add()
-        new.name = attribute.name()
-        new.is_null = data[attribute.name()] is None
-        new.is_optional = attribute.optional()
-        new.data_type = data_type if isinstance(data_type, str) else ""
-        is_handled_by_callback = callback(attribute.name(), new, data) if callback else None
-        if is_handled_by_callback:
-            pass  # Our job is done
-        elif is_handled_by_callback is False:
-            props.remove(len(props) - 1)
-        elif data_type == "string":
-            new.string_value = "" if new.is_null else data[attribute.name()]
-        elif data_type == "boolean":
-            new.bool_value = False if new.is_null else data[attribute.name()]
-        elif data_type == "integer":
-            new.int_value = 0 if new.is_null else data[attribute.name()]
-        elif data_type == "float":
-            new.float_value = 0.0 if new.is_null else data[attribute.name()]
-        elif data_type == "enum":
-            new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-            if data[attribute.name()]:
-                new.enum_value = data[attribute.name()]
+        import_attribute(attribute, props, data, callback=callback)
+
+
+# A more elegant attribute importer signature, intended to supersede import_attributes
+def import_attributes2(element, props, callback=None):
+    for attribute in element.wrapped_data.declaration().as_entity().all_attributes():
+        import_attribute(attribute, props, element.get_info(), callback=callback)
+
+
+def import_attribute(attribute, props, data, callback=None):
+    data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+    if isinstance(data_type, tuple) or data_type == "entity":
+        callback(attribute.name(), None, data) if callback else None
+        return
+    new = props.add()
+    new.name = attribute.name()
+    new.is_null = data[attribute.name()] is None
+    new.is_optional = attribute.optional()
+    new.data_type = data_type if isinstance(data_type, str) else ""
+    is_handled_by_callback = callback(attribute.name(), new, data) if callback else None
+    if is_handled_by_callback:
+        pass  # Our job is done
+    elif is_handled_by_callback is False:
+        props.remove(len(props) - 1)
+    elif data_type == "string":
+        new.string_value = "" if new.is_null else data[attribute.name()]
+    elif data_type == "boolean":
+        new.bool_value = False if new.is_null else data[attribute.name()]
+    elif data_type == "integer":
+        new.int_value = 0 if new.is_null else data[attribute.name()]
+    elif data_type == "float":
+        new.float_value = 0.0 if new.is_null else data[attribute.name()]
+    elif data_type == "enum":
+        new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
+        if data[attribute.name()]:
+            new.enum_value = data[attribute.name()]
 
 
 def export_attributes(props, callback=None):

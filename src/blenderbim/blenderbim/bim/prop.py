@@ -39,9 +39,6 @@ from bpy.props import (
 cwd = os.path.dirname(os.path.realpath(__file__))
 
 materialpsetnames_enum = []
-contexts_enum = []
-subcontexts_enum = []
-target_views_enum = []
 
 
 def getAttributeEnumValues(self, context):
@@ -97,47 +94,6 @@ def getContexts(self, context):
                 )
             )
     return results
-
-
-def getSubcontexts(self, context):
-    global subcontexts_enum
-    subcontexts_enum.clear()
-    # TODO: allow override of generated subcontexts?
-    subcontexts = [
-        "Annotation",
-        "Axis",
-        "Box",
-        "FootPrint",
-        "Reference",
-        "Body",
-        "Clearance",
-        "CoG",
-        "Profile",
-        "SurveyPoints",
-        "Lighting",
-    ]
-    for subcontext in subcontexts:
-        subcontexts_enum.append((subcontext, subcontext, ""))
-    return subcontexts_enum
-
-
-def getTargetViews(self, context):
-    global target_views_enum
-    target_views_enum.clear()
-    target_views = [
-        "GRAPH_VIEW",
-        "SKETCH_VIEW",
-        "MODEL_VIEW",
-        "PLAN_VIEW",
-        "REFLECTED_PLAN_VIEW",
-        "SECTION_VIEW",
-        "ELEVATION_VIEW",
-        "USERDEFINED",
-        "NOTDEFINED",
-    ]
-    for target_view in target_views:
-        target_views_enum.append((target_view, target_view, ""))
-    return target_views_enum
 
 
 class StrProperty(PropertyGroup):
@@ -225,9 +181,6 @@ class BIMProperties(PropertyGroup):
     export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")
     last_transaction: StringProperty(name="Last Transaction")
     contexts: EnumProperty(items=getContexts, name="Contexts")
-    available_contexts: EnumProperty(items=[("Model", "Model", ""), ("Plan", "Plan", "")], name="Available Contexts")
-    available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
-    available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
     section_plane_colour: FloatVectorProperty(
         name="Temporary Section Cutaway Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0
@@ -314,8 +267,6 @@ class BIMObjectProperties(PropertyGroup):
     )
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
-    relating_object: PointerProperty(name="Aggregate", type=bpy.types.Object)
-    is_editing_aggregate: BoolProperty(name="Is Editing Aggregate")
     psets: CollectionProperty(name="Psets", type=PsetQto)
     qtos: CollectionProperty(name="Qtos", type=PsetQto)
 

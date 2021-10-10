@@ -26,6 +26,9 @@ import ifcopenshell.api
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import blenderbim.bim.handler
+import blenderbim.tool as tool
+import blenderbim.core.context
+import blenderbim.core.owner
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 
@@ -55,8 +58,10 @@ class CreateProject(bpy.types.Operator):
         )
         self.file = IfcStore.get_file()
 
-        bpy.ops.bim.add_person()
-        bpy.ops.bim.add_organisation()
+        person = blenderbim.core.owner.add_person(tool.Ifc)
+        organisation = blenderbim.core.owner.add_organisation(tool.Ifc)
+        user = blenderbim.core.owner.add_person_and_organisation(tool.Ifc, person=person, organisation=organisation)
+        blenderbim.core.owner.set_user(tool.Owner, user=user)
 
         project = bpy.data.objects.new(self.get_name("IfcProject", "My Project"), None)
         site = bpy.data.objects.new(self.get_name("IfcSite", "My Site"), None)
@@ -65,11 +70,22 @@ class CreateProject(bpy.types.Operator):
 
         bpy.ops.bim.assign_class(obj=project.name, ifc_class="IfcProject")
         bpy.ops.bim.assign_unit()
-        bpy.ops.bim.add_subcontext(context="Model")
-        bpy.ops.bim.add_subcontext(context="Model", subcontext="Body", target_view="MODEL_VIEW")
-        bpy.ops.bim.add_subcontext(context="Model", subcontext="Box", target_view="MODEL_VIEW")
-        bpy.ops.bim.add_subcontext(context="Plan")
-        bpy.ops.bim.add_subcontext(context="Plan", subcontext="Annotation", target_view="PLAN_VIEW")
+
+        model = blenderbim.core.context.add_context(
+            tool.Ifc, context_type="Model", context_identifier="", target_view="", parent=0
+        )
+        blenderbim.core.context.add_context(
+            tool.Ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        blenderbim.core.context.add_context(
+            tool.Ifc, context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent=model
+        )
+        plan = blenderbim.core.context.add_context(
+            tool.Ifc, context_type="Plan", context_identifier="", target_view="", parent=0
+        )
+        blenderbim.core.context.add_context(
+            tool.Ifc, context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan
+        )
 
         context.scene.BIMProperties.contexts = str(
             ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW").id()
@@ -78,9 +94,16 @@ class CreateProject(bpy.types.Operator):
         bpy.ops.bim.assign_class(obj=site.name, ifc_class="IfcSite")
         bpy.ops.bim.assign_class(obj=building.name, ifc_class="IfcBuilding")
         bpy.ops.bim.assign_class(obj=building_storey.name, ifc_class="IfcBuildingStorey")
-        bpy.ops.bim.assign_object(related_object=site.name, relating_object=project.name)
-        bpy.ops.bim.assign_object(related_object=building.name, relating_object=site.name)
-        bpy.ops.bim.assign_object(related_object=building_storey.name, relating_object=building.name)
+
+        blenderbim.core.aggregate.assign_object(
+            tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=project, related_obj=site
+        )
+        blenderbim.core.aggregate.assign_object(
+            tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=site, related_obj=building
+        )
+        blenderbim.core.aggregate.assign_object(
+            tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=building, related_obj=building_storey
+        )
 
         context.view_layer.objects.active = active_object
         return {"FINISHED"}
@@ -377,7 +400,7 @@ class AppendLibraryElement(bpy.types.Operator):
         self.import_type_materials(element, ifc_importer)
         self.import_type_styles(element, ifc_importer)
         ifc_importer.create_type_product(element)
-        ifc_importer.place_objects_in_spatial_tree()
+        ifc_importer.place_objects_in_collections()
 
     def import_type_materials(self, element, ifc_importer):
         for rel in element.HasAssociations:
@@ -569,6 +592,7 @@ class LoadProjectElements(bpy.types.Operator):
             settings.elements = self.get_whitelist_elements()
         elif self.props.filter_mode == "BLACKLIST":
             settings.elements = self.get_blacklist_elements()
+        settings.collection_mode = self.props.collection_mode
         settings.should_use_cpu_multiprocessing = self.props.should_use_cpu_multiprocessing
         settings.should_merge_by_class = self.props.should_merge_by_class
         settings.should_merge_by_material = self.props.should_merge_by_material

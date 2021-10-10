@@ -53,7 +53,7 @@ def local2global(matrix, eastings, northings, orthogonal_height, x_axis_abscissa
     x /= np.linalg.norm(x)
     y = np.cross(np.array([0, 0, 1]), x)
     intermediate = (
-        np.matrix(
+        np.array(
             [
                 [x[0], y[0], 0, 0],
                 [x[1], y[1], 0, 0],
@@ -81,7 +81,7 @@ def global2local(matrix, eastings, northings, orthogonal_height, x_axis_abscissa
     result[2, 3] = (result[2, 3] - orthogonal_height) / scale
     return (
         np.linalg.inv(
-            np.matrix(
+            np.array(
                 [
                     [x[0], y[0], 0, 0],
                     [x[1], y[1], 0, 0],

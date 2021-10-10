@@ -21,7 +21,7 @@ import ifcopenshell
 import ifcopenshell.api
 import blenderbim.bim.schema
 import blenderbim.bim.handler
-from blenderbim.bim.module.pset_template.prop import updatePsetTemplateFiles, updatePsetTemplates
+from blenderbim.bim.module.pset_template.prop import updatePsetTemplateFiles, updatePsetTemplates, getPsetTemplates
 from ifcopenshell.api.pset_template.data import Data
 from blenderbim.bim.ifc import IfcStore
 
@@ -59,6 +59,11 @@ class RemovePsetTemplate(bpy.types.Operator):
     bl_label = "Remove Pset Template"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMPsetTemplateProperties
+        return bool(getPsetTemplates(props, context))
+
     def execute(self, context):
         IfcStore.begin_transaction(self)
         IfcStore.pset_template_file.begin_transaction()
@@ -92,6 +97,11 @@ class EnableEditingPsetTemplate(bpy.types.Operator):
     bl_idname = "bim.enable_editing_pset_template"
     bl_label = "Enable Editing Pset Template"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMPsetTemplateProperties
+        return bool(getPsetTemplates(props, context))
 
     def execute(self, context):
         props = context.scene.BIMPsetTemplateProperties

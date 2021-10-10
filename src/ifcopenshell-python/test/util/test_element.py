@@ -51,6 +51,11 @@ class TestGetQuantitiesIFC4(test.bootstrap.IFC4):
 
 
 class TestGetPropertiesIFC4(test.bootstrap.IFC4):
+    def test_getting_no_properties_when_none_are_available(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="name")
+        assert ifcopenshell.util.element.get_properties(pset.HasProperties) == {}
+
     def test_getting_single_properties_from_a_list_of_properties(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="name")
@@ -172,6 +177,14 @@ class TestGetContainerIFC4(test.bootstrap.IFC4):
         ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
         assert ifcopenshell.util.element.get_container(subelement) == building
+
+    def test_getting_nothing_if_we_enforce_only_getting_direct_spatial_containers(self):
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
+        building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        assert ifcopenshell.util.element.get_container(subelement, should_get_direct=True) is None
 
 
 class TestGetDecompositionIFC4(test.bootstrap.IFC4):

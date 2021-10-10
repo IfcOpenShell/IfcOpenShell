@@ -20,10 +20,12 @@ import bpy
 import json
 import addon_utils
 import ifcopenshell.api.owner.settings
+import blenderbim.tool as tool
+import blenderbim.core.owner as core_owner
 from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.owner.prop import getPersons, getOrganisations
+from blenderbim.bim.module.owner.prop import get_user_person, get_user_organisation
 from ifcopenshell.api.attribute.data import Data as AttributeData
 from ifcopenshell.api.material.data import Data as MaterialData
 from ifcopenshell.api.style.data import Data as StyleData
@@ -112,6 +114,7 @@ def active_object_callback():
         stored_obj = IfcStore.get_element(obj.BIMObjectProperties.ifc_definition_id)
         if stored_obj and stored_obj != obj:
             bpy.ops.bim.copy_class(obj=obj.name)
+    refresh_ui_data()
 
 
 def subscribe_to(object, data_path, callback):
@@ -133,9 +136,20 @@ def subscribe_to(object, data_path, callback):
     )
 
 
+def refresh_ui_data():
+    from blenderbim.bim import modules
+
+    for name, value in modules.items():
+        try:
+            getattr(value, "data").refresh()
+        except AttributeError:
+            pass
+
+
 def purge_module_data():
     from blenderbim.bim import modules
 
+    refresh_ui_data()
     for name, value in modules.items():
         try:
             getattr(getattr(getattr(ifcopenshell.api, name), "data"), "Data").purge()
@@ -228,16 +242,7 @@ def setDefaultProperties(scene):
     bpy.msgbus.subscribe_rna(
         key=active_object_key, owner=global_subscription_owner, args=(), notify=active_object_callback
     )
-    ifcopenshell.api.owner.settings.get_person = (
-        lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
-        if getPersons(None, None) and bpy.context.scene.BIMOwnerProperties.user_person
-        else None
-    )
-    ifcopenshell.api.owner.settings.get_organisation = (
-        lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_organisation))
-        if getOrganisations(None, None) and bpy.context.scene.BIMOwnerProperties.user_organisation
-        else None
-    )
+    ifcopenshell.api.owner.settings.get_user = lambda ifc: core_owner.get_user(tool.Owner)
     ifcopenshell.api.owner.settings.get_application = get_application
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()

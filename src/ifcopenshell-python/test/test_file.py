@@ -191,12 +191,50 @@ class TestFile(test.bootstrap.IFC4):
     def test_getting_inverse_references_of_an_element(self):
         owner = self.file.createIfcOwnerHistory()
         element = self.file.createIfcWall(OwnerHistory=owner)
-        assert self.file.get_inverse(owner) == [element]
+        assert self.file.get_inverse(owner) == {element}
+
+    def test_getting_multiple_inverses_if_an_element_is_referenced_twice_by_the_same_element(self):
+        user = self.file.createIfcPersonAndOrganization()
+        owner = self.file.createIfcOwnerHistory(OwningUser=user, LastModifyingUser=user)
+        assert self.file.get_inverse(user, allow_duplicate=True) == [owner, owner]
 
     def test_removing_an_element(self):
         element = self.file.createIfcWall(GlobalId="global_id")
         self.file.remove(element)
         assert len(list(self.file)) == 0
+
+    def test_removing_an_element_and_its_references_are_cleared(self):
+        history = self.file.createIfcOwnerHistory()
+        element = self.file.createIfcWall(GlobalId="global_id", OwnerHistory=history)
+        self.file.remove(history)
+        assert element.OwnerHistory is None
+
+    def test_removing_an_element_and_its_references_are_cleared_regardless_of_cardinality(self):
+        wall = self.file.createIfcWall(GlobalId="global_id")
+        rel = self.file.createIfcRelAggregates(RelatingObject=wall)
+        self.file.remove(wall)
+        assert rel.RelatingObject == None
+
+    def test_removing_an_element_and_its_aggregate_references_are_modified(self):
+        person = self.file.createIfcPerson()
+        role = self.file.createIfcActorRole()
+        role2 = self.file.createIfcActorRole()
+        person.Roles = [role, role2]
+        self.file.remove(role)
+        assert person.Roles == (role2,)
+
+    def test_removing_an_element_and_optional_empty_aggregate_references_are_set_to_null(self):
+        person = self.file.createIfcPerson()
+        role = self.file.createIfcActorRole()
+        person.Roles = [role]
+        self.file.remove(role)
+        assert person.Roles is None
+
+    def test_removing_an_element_and_mandatory_empty_aggregate_references_remain_regardless_of_cardinality(self):
+        wall = self.file.createIfcWall(GlobalId="global_id")
+        rel = self.file.createIfcRelAggregates(RelatedObjects=[wall])
+        self.file.remove(wall)
+        assert rel.RelatedObjects == tuple()
 
     def test_batched_removing_an_element(self):
         element = self.file.createIfcWall(GlobalId="global_id")

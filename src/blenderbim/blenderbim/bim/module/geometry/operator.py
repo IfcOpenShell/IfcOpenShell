@@ -24,6 +24,8 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import logging
 import ifcopenshell.api
+import blenderbim.core.geometry as core
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 from ifcopenshell.api.geometry.data import Data
@@ -32,46 +34,22 @@ from ifcopenshell.api.void.data import Data as VoidData
 from mathutils import Vector
 
 
-class EditObjectPlacement(bpy.types.Operator):
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        return {"FINISHED"}
+
+
+class EditObjectPlacement(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_object_placement"
     bl_label = "Edit Object Placement"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
         objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        self.file = IfcStore.get_file()
-        # TODO: determine how to deal with this module dependency
-        props = context.scene.BIMGeoreferenceProperties
         for obj in objs:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            matrix = np.array(obj.matrix_world)
-            if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "OBJECT_PLACEMENT":
-                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-                # TODO: np.array? Why not matrix?
-                matrix = np.array(
-                    ifcopenshell.util.geolocation.local2global(
-                        np.matrix(obj.matrix_world),
-                        float(props.blender_eastings) * unit_scale,
-                        float(props.blender_northings) * unit_scale,
-                        float(props.blender_orthogonal_height) * unit_scale,
-                        float(props.blender_x_axis_abscissa),
-                        float(props.blender_x_axis_ordinate),
-                    )
-                )
-            ifcopenshell.api.run(
-                "geometry.edit_object_placement",
-                self.file,
-                **{
-                    "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                    "matrix": matrix,
-                },
-            )
-        return {"FINISHED"}
+            core.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
 
 
 class AddRepresentation(bpy.types.Operator):
@@ -90,7 +68,7 @@ class AddRepresentation(bpy.types.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
 
-        bpy.ops.bim.edit_object_placement(obj=obj.name)
+        core.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
 
         if not obj.data:
             return {"FINISHED"}

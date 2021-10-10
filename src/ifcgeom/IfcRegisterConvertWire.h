@@ -1,6 +1,6 @@
 ﻿#include "IfcRegisterUndef.h"
 #define WIRE(T) \
-	if ( l->declaration().is(IfcSchema::T::Class()) ) return convert((IfcSchema::T*)l,r);
+	if (l->as<IfcSchema::T>()) return convert(l->as<IfcSchema::T>(), r);
 #include "IfcRegisterDef.h"
 
 #include "IfcRegister.h"

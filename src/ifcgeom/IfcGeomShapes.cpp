@@ -142,7 +142,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = l->hasPosition();
+	has_position = l->Position() != nullptr;
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
@@ -206,7 +206,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = l->hasPosition();
+	has_position = l->Position() != nullptr;
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
@@ -308,7 +308,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfLinearExtrusion* l, T
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptSurface_Position_IS_OPTIONAL
-	has_position = l->hasPosition();
+	has_position = l->Position() != nullptr;
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
@@ -343,7 +343,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfRevolution* l, TopoDS
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptSurface_Position_IS_OPTIONAL
-	has_position = l->hasPosition();
+	has_position = l->Position() != nullptr;
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
@@ -372,7 +372,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = l->hasPosition();
+	has_position = l->Position() != nullptr;
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
@@ -434,9 +434,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, IfcRepresentationShapeItems& shape) {
 	TopoDS_Shape s;
-	const SurfaceStyle* collective_style = get_style(l);
+	auto collective_style = get_style(l);
 	if (convert_shape(l->Outer(),s) ) {
-		const SurfaceStyle* indiv_style = get_style(l->Outer());
+		auto indiv_style = get_style(l->Outer());
 
 		IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
 		if (l->declaration().is(IfcSchema::IfcFacetedBrepWithVoids::Class())) {
@@ -466,10 +466,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, IfcRepre
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, IfcRepresentationShapeItems& shapes) {
 	bool part_success = false;
 	IfcSchema::IfcConnectedFaceSet::list::ptr facesets = l->FbsmFaces();
-	const SurfaceStyle* collective_style = get_style(l);
+	auto collective_style = get_style(l);
 	for( IfcSchema::IfcConnectedFaceSet::list::it it = facesets->begin(); it != facesets->end(); ++ it ) {
 		TopoDS_Shape s;
-		const SurfaceStyle* shell_style = get_style(*it);
+		auto shell_style = get_style(*it);
 		if (convert_shape(*it,s)) {
 			shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, shell_style ? shell_style : collective_style));
 			part_success |= true;
@@ -526,11 +526,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace* l, 
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, IfcRepresentationShapeItems& shapes) {
-	IfcEntityList::ptr shells = l->SbsmBoundary();
-	const SurfaceStyle* collective_style = get_style(l);
-	for( IfcEntityList::it it = shells->begin(); it != shells->end(); ++ it ) {
+	aggregate_of_instance::ptr shells = l->SbsmBoundary();
+	auto collective_style = get_style(l);
+	for( aggregate_of_instance::it it = shells->begin(); it != shells->end(); ++ it ) {
 		TopoDS_Shape s;
-		const SurfaceStyle* shell_style = 0;
+		decltype(collective_style) shell_style;
 		if ((*it)->declaration().is(IfcSchema::IfcRepresentationItem::Class())) {
 			shell_style = get_style((IfcSchema::IfcRepresentationItem*)*it);
 		}
@@ -845,7 +845,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentati
 	}
 	gtrsf.Multiply(trsf);
 
-	const IfcGeom::SurfaceStyle* mapped_item_style = get_style(l);
+	auto mapped_item_style = get_style(l);
 	
 	const size_t previous_size = shapes.size();
 	bool b = convert_shapes(map->MappedRepresentation(), shapes);
@@ -890,12 +890,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 	const bool include_curves = getValue(GV_DIMENSIONALITY) != +1;
 	const bool include_solids_and_surfaces = getValue(GV_DIMENSIONALITY) != -1;
 
-	IfcEntityList::ptr elements = l->Elements();
+	aggregate_of_instance::ptr elements = l->Elements();
 	if ( !elements->size() ) return false;
 	bool part_succes = false;
-	const IfcGeom::SurfaceStyle* parent_style = get_style(l);
-	for (IfcEntityList::it it = elements->begin(); it != elements->end(); ++it) {
-		IfcSchema::IfcGeometricSetSelect* element = *it;
+	auto parent_style = get_style(l);
+	for (aggregate_of_instance::it it = elements->begin(); it != elements->end(); ++it) {
+		auto element = *it;
 		TopoDS_Shape s;
 		if (shape_type(element) == ST_SHAPELIST) {
 			IfcRepresentationShapeItems items;
@@ -917,7 +917,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 		}
 
 		part_succes = true;
-		const IfcGeom::SurfaceStyle* style = 0;
+		decltype(parent_style) style = 0;
 		if (element->declaration().is(IfcSchema::IfcPoint::Class())) {
 			style = get_style((IfcSchema::IfcPoint*) element);
 		}
@@ -943,6 +943,20 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBlock* l, TopoDS_Shape& shape)
 
 	// IfcCsgPrimitive3D.Position has unit scale factor
 	shape = builder.Solid().Moved(trsf);
+
+	return true;
+}
+
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcBoundingBox* l, TopoDS_Shape& shape) {
+	const double dx = l->XDim() * getValue(GV_LENGTH_UNIT);
+	const double dy = l->YDim() * getValue(GV_LENGTH_UNIT);
+	const double dz = l->ZDim() * getValue(GV_LENGTH_UNIT);
+
+	gp_Pnt corner;
+	IfcGeom::Kernel::convert(l->Corner(), corner);
+	BRepPrimAPI_MakeBox builder(corner, dx, dy, dz);
+
+	shape = builder.Solid();
 
 	return true;
 }
@@ -1092,7 +1106,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = l->hasPosition();
+	has_position = l->Position() != nullptr;
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
@@ -1526,13 +1540,23 @@ namespace {
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shape& shape) {
 	TopoDS_Wire wire, section1, section2;
 
-	bool hasInnerRadius = l->hasInnerRadius();
+	bool hasInnerRadius = !!l->InnerRadius();
 
 	if (!convert_wire(l->Directrix(), wire)) {
 		return false;
 	}
+	
+	// Start- EndParam became optional in IFC4
+#ifdef SCHEMA_IfcSweptDiskSolid_StartParam_IS_OPTIONAL
+	auto sp = l->StartParam();
+	auto ep = l->EndParam();
+#else
+	boost::optional<double> sp, ep;
+	sp = l->StartParam();
+	ep = l->EndParam();
+#endif
 
-	if (count(wire, TopAbs_EDGE) == 1) {
+	if (count(wire, TopAbs_EDGE) == 1 && sp && ep) {
 		TopoDS_Vertex v0, v1;
 		TopExp::Vertices(wire, v0, v1);
 		if (v0.IsSame(v1)) {
@@ -1543,7 +1567,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 			if ((crv->DynamicType() == STANDARD_TYPE(Geom_Circle)) ||
 				(crv->DynamicType() == STANDARD_TYPE(Geom_Ellipse))) 
 			{
-				BRepBuilderAPI_MakeEdge me(crv, l->StartParam(), l->EndParam());
+				BRepBuilderAPI_MakeEdge me(crv, *sp, *ep);
 				if (me.IsDone()) {
 					auto e2 = me.Edge();
 					BRep_Builder B;
@@ -1569,7 +1593,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 
 	if (hasInnerRadius) {
 		// Subtraction of pipes with small radii is unstable.
-		r2 = l->InnerRadius() * getValue(GV_LENGTH_UNIT);
+		r2 = *l->InnerRadius() * getValue(GV_LENGTH_UNIT);
 	}
 
 	if (r2 > getValue(GV_PRECISION) * 10.) {
@@ -1666,7 +1690,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 	faceset_helper<
 		std::vector<double>,
 		std::vector<int>
-	> helper(this, coord_list, indices, l->hasClosed() ? l->Closed() : false);
+	> helper(this, coord_list, indices, l->Closed().get_value_or(false));
 
 	TopTools_ListOfShape faces;
 
@@ -1722,7 +1746,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
 	faceset_helper<
 		std::vector<double>,
 		std::vector<int>
-	> helper(this, coord_list, indices, pfs->hasClosed() ? pfs->Closed() : false);
+	> helper(this, coord_list, indices, pfs->Closed().get_value_or(false));
 
 	TopTools_ListOfShape faces;
 

@@ -19,6 +19,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#include "../ifcgeom_schema_agnostic/Kernel.h"
+
 #include <string>
 #include <fstream>
 #include <cstdio>
@@ -339,7 +341,7 @@ SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, const s
 }
 
 namespace {
-	boost::optional<std::pair<IfcUtil::IfcBaseEntity*, double>> storey_elevation_from_element(const IfcGeom::BRepElement<real_t>* o) {
+	boost::optional<std::pair<IfcUtil::IfcBaseEntity*, double>> storey_elevation_from_element(const IfcGeom::BRepElement* o) {
 		for (const auto& p : o->parents()) {
 			if (p->type() == "IfcBuildingStorey") {
 				try {
@@ -454,7 +456,7 @@ namespace {
 				if (!pset->get("Name")->isNull()) {
 					pset_name = (std::string) *pset->get("Name");
 				}
-				IfcEntityList::ptr props = *pset->get("HasProperties");
+				aggregate_of_instance::ptr props = *pset->get("HasProperties");
 				for (auto& prop : *props) {
 					if (prop->declaration().is("IfcPropertySingleValue")) {
 						std::string name = *((IfcUtil::IfcBaseEntity*) prop)->get("Name");
@@ -476,12 +478,12 @@ namespace {
 		auto refs = item->get_inverse("StyledByItem");
 		for (auto& ref : *refs) {
 			if (ref->declaration().is("IfcStyledItem")) {
-				IfcEntityList::ptr styles = *((IfcUtil::IfcBaseEntity*)ref)->get("Styles");
+				aggregate_of_instance::ptr styles = *((IfcUtil::IfcBaseEntity*)ref)->get("Styles");
 				for (auto& s_ : *styles) {
 					auto s = (IfcUtil::IfcBaseEntity*) s_;
 					std::vector<IfcUtil::IfcBaseEntity*> pss;
 					if (s->declaration().is("IfcPresentationStyleAssignment")) {
-						IfcEntityList::ptr pstyles = *s->get("Styles");
+						aggregate_of_instance::ptr pstyles = *s->get("Styles");
 						for (auto& ssss : *pstyles) {
 							pss.push_back((IfcUtil::IfcBaseEntity*) ssss);
 						}
@@ -503,7 +505,7 @@ namespace {
 	}
 }
 
-void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
+void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 
 	boost::optional<std::string> object_type;
 	if (!brep_obj->product()->get("ObjectType")->isNull()) {
@@ -516,8 +518,11 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	for (auto& x : brep_obj->geometry()) {
 		dash_arrays.emplace_back();
 
-		auto item = (IfcUtil::IfcBaseEntity*) this->file->instance_by_id(x.ItemId());
-		auto curve_style_name = get_curve_style_name(item);
+		boost::optional<std::string> curve_style_name;
+		if (file) {
+			auto item = (IfcUtil::IfcBaseEntity*) this->file->instance_by_id(x.ItemId());
+			curve_style_name = get_curve_style_name(item);
+		}		
 		
 		if (curve_style_name && 
 			(boost::starts_with(*curve_style_name, "LINE_") ||
@@ -668,7 +673,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	// @todo is it correct to call nameElement() here with a single storey (what if this element spans multiple?)
 	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
 
-	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_ || elevation_ref_guid_) {
+	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_ || elevation_ref_guid_ || deferred_section_data_) {
 		element_buffer_.push_back(data);
 	}
 
@@ -766,7 +771,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		boost::optional<std::string> operation_type;
 
 		try {
-			IfcEntityList::ptr rels;
+			aggregate_of_instance::ptr rels;
 			if (data.product->declaration().schema()->name() == "IFC2X3") {
 				rels = data.product->get_inverse("IsDefinedBy");
 			} else {
@@ -1269,7 +1274,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 				}
 				
-				if (data.product->declaration().is("IfcBuildingStorey") && storey_height_display_ != SH_NONE && wires->Length() == 1 && IfcGeom::Kernel::count(wire, TopAbs_EDGE) == 1) {
+				if (file && data.product->declaration().is("IfcBuildingStorey") && storey_height_display_ != SH_NONE && wires->Length() == 1 && IfcGeom::Kernel::count(wire, TopAbs_EDGE) == 1) {
 					
 					std::string elev_str;
 
@@ -1679,7 +1684,10 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 		}
 	}
 
-	auto annotations = file->instances_by_type("IfcAnnotation");
+	aggregate_of_instance::ptr annotations;
+	if (file) {
+		annotations = file->instances_by_type("IfcAnnotation");
+	}
 	if (annotations) {
 		for (auto& ann_ : *annotations) {
 			auto ann = (IfcUtil::IfcBaseEntity*) ann_;
@@ -1823,13 +1831,13 @@ void SvgSerializer::finalize() {
 				gp_Pnt((xmin + xmax) / 2., (ymin + ymax) / 2., 0.),
 				gp_Dir(-1, 0, 0),
 				gp_Dir(0, -1, 0)));
-			deferred_section_data_->push_back(vertical_section{ pln , "Section North South", false });
+			deferred_section_data_->push_back(vertical_section{ pln , "Section North South", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
 				gp_Pnt((xmin + xmax) / 2., (ymin + ymax) / -2., 0.),
 				gp_Dir(0, -1, 0),
-				gp_Dir(-1, 0, 0)));
+				gp_Dir(1, 0, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Section East West", true });
 		}
 	}
@@ -1837,28 +1845,28 @@ void SvgSerializer::finalize() {
 	if (auto_elevation_) {
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt(0., -(ymin - 10.), 0.),
+				gp_Pnt(0., -(ymin - 0.1), 0.),
 				gp_Dir(0, 1, 0),
-				gp_Dir(1, 0, 0)));
+				gp_Dir(-1, 0, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation South", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt(xmax + 10., 0., 0.),
+				gp_Pnt(xmax + 0.1, 0., 0.),
 				gp_Dir(1, 0, 0),
 				gp_Dir(0, 1, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation East", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt(0., -(ymax + 10.), 0.),
+				gp_Pnt(0., -(ymax + 0.1), 0.),
 				gp_Dir(0, -1, 0),
-				gp_Dir(-1, 0, 0)));
+				gp_Dir(1, 0, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation North", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt(xmin - 10., 0., 0.),
+				gp_Pnt(xmin - 0.1, 0., 0.),
 				gp_Dir(-1, 0, 0),
 				gp_Dir(0, -1, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation West", true });
@@ -1905,8 +1913,8 @@ void SvgSerializer::finalize() {
 
 			addTextAnnotations({ nullptr, drawing_name });
 
-			if (storey_height_display_ != SH_NONE && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
-				auto storeys = this->file->instances_by_type("IfcBuildingStorey");
+			if (file && storey_height_display_ != SH_NONE && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
+				auto storeys = file->instances_by_type("IfcBuildingStorey");
 				if (storeys) {
 					const double lu = file->getUnit("LENGTHUNIT").second;
 					for (auto& s : *storeys) {
@@ -1923,6 +1931,16 @@ void SvgSerializer::finalize() {
 
 							double x0, y0, z0, x1, y1, z1;
 							bnd_.Get(x0, y0, z0, x1, y1, z1);
+
+							// @todo this is a hack in order to get the auto elevations (which are 0.1 offset from
+							// the global bounding box) to include the storey height symbols.
+							x0 -= 0.2;
+							y0 -= 0.2;
+							z0 -= 0.2;
+
+							x1 += 0.2;
+							y1 += 0.2;
+							z1 += 0.2;
 
 							const double shll = storey_height_line_length_.get_value_or(2.);
 
@@ -1963,15 +1981,15 @@ void SvgSerializer::finalize() {
 	for (it = paths.begin(); it != paths.end(); ++it) {
 		if (!previous || it->first != *previous) {
 			if (previous) {
-				svg_file << "    </g>\n";
+				svg_file.stream << "    </g>\n";
 			}
 			std::ostringstream oss;
 			if (it->first.first) {
-				svg_file << "    <g " << nameElement(it->first.first) << " " << writeMetadata(drawing_metadata[it->first]) << ">\n";
+				svg_file.stream << "    <g " << nameElement(it->first.first) << " " << writeMetadata(drawing_metadata[it->first]) << ">\n";
 			} else {
 				auto n = it->first.second;
 				IfcUtil::escape_xml(n);
-				svg_file << "    <g " << namespace_prefix_  << "name=\"" << n << "\" class=\"section\" " << writeMetadata(drawing_metadata[it->first]) << ">\n";
+				svg_file.stream << "    <g " << namespace_prefix_  << "name=\"" << n << "\" class=\"section\" " << writeMetadata(drawing_metadata[it->first]) << ">\n";
 			}
 		}
 
@@ -1981,18 +1999,18 @@ void SvgSerializer::finalize() {
 			continue;
 		}
 
-		svg_file << "        <g " << it->second.first << ">\n";
+		svg_file.stream << "        <g " << it->second.first << ">\n";
 		std::vector<util::string_buffer>::const_iterator jt;
 		for (jt = it->second.second.begin(); jt != it->second.second.end(); ++jt) {
-			svg_file << jt->str();
+			svg_file.stream << jt->str();
 		}
-		svg_file << "        </g>\n";
+		svg_file.stream << "        </g>\n";
 	}
 	
 	if (previous) {
-		svg_file << "    </g>\n";
+		svg_file.stream << "    </g>\n";
 	}
-	svg_file << "</svg>" << std::endl;
+	svg_file.stream << "</svg>" << std::endl;
 }
 
 void SvgSerializer::writeHeader() {
@@ -2001,18 +2019,18 @@ void SvgSerializer::writeHeader() {
 }
 
 void SvgSerializer::doWriteHeader() {
-	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"";
+	svg_file.stream << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"";
 	if (use_namespace_) {
-		svg_file << " xmlns:ifc=\"http://www.ifcopenshell.org/ns\"";
+		svg_file.stream << " xmlns:ifc=\"http://www.ifcopenshell.org/ns\"";
 	}
 	if (scale_ && size_) {
-		svg_file << 
+		svg_file.stream << 
 			" width=\"" << size_->first << "mm\""
 			" height=\"" << size_->second << "mm\"" <<
 			" viewBox=\"0 0 " << size_->first << " " << size_->second << "\"";
 	}
 		
-	svg_file << ">\n"
+	svg_file.stream << ">\n"
 		"    <defs>\n"
 		"        <marker id=\"arrowend\" markerWidth=\"10\" markerHeight=\"7\" refX=\"10\" refY=\"3.5\" orient=\"auto\">\n"
 		"          <polygon points=\"0 0, 10 3.5, 0 7\" />\n"
@@ -2023,7 +2041,7 @@ void SvgSerializer::doWriteHeader() {
 		"    </defs>\n";
 
 	if (!no_css_) {
-		svg_file <<
+		svg_file.stream <<
 			"    <style type=\"text/css\" >\n"
 			"    <![CDATA[\n"
 			"        path {\n"
@@ -2050,7 +2068,7 @@ void SvgSerializer::doWriteHeader() {
 			//       (pt)  (px)  (in)  (mm)
 			// approx 12 / 0.75 / 96 * 25.4
 
-			svg_file <<
+			svg_file.stream <<
 				"        text {\n"
 				"            font-size: 2;\n" //  (reduced to two).
 				"        }\n"
@@ -2059,7 +2077,7 @@ void SvgSerializer::doWriteHeader() {
 				"        }\n";
 		}
 
-		svg_file <<
+		svg_file.stream <<
 			"    ]]>\n"
 			"    </style>\n";
 	}
@@ -2076,7 +2094,7 @@ return oss.str();
 	}
 }
 
-std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* elem) {
+std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element* elem) {
 	auto n = elem->name();
 	IfcUtil::escape_xml(n);
 
@@ -2131,7 +2149,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcBuilding"));
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcSite"));
 		for (auto it = to_derive_from.begin(); it != to_derive_from.end(); ++it) {
-			IfcEntityList::ptr insts = f->instances_by_type(*it);
+			aggregate_of_instance::ptr insts = f->instances_by_type(*it);
 			if (insts) {
 				for (auto jt = insts->begin(); jt != insts->end(); ++jt) {
 					IfcUtil::IfcBaseEntity* product = (IfcUtil::IfcBaseEntity*) *jt;
@@ -2157,6 +2175,10 @@ void SvgSerializer::setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey) {
 }
 
 void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
+	if (!file) {
+		Logger::Error("No file specified");
+		return;
+	}
 	with_section_heights_from_storey_ = true;
 	section_data_.emplace();
 	auto storeys = file->instances_by_type("IfcBuildingStorey");
@@ -2202,7 +2224,7 @@ namespace {
 std::string SvgSerializer::writeMetadata(const drawing_meta& m) {
 	gp_Trsf trsf;
 	trsf.SetTransformation(m.pln_3d.Position(), gp::XOY());
-	auto m43 = IfcGeom::Matrix<real_t>(IfcGeom::ElementSettings(IfcGeom::IteratorSettings(), 1., ""), trsf).data();
+	auto m43 = IfcGeom::Matrix(IfcGeom::ElementSettings(IfcGeom::IteratorSettings(), 1., ""), trsf).data();
 	std::array<std::array<double, 4>, 4> m4 = {{
 		{{ (double)m43[0], (double)m43[3], (double)m43[6], (double)m43[9] }},
 		{{ (double)m43[1], (double)m43[4], (double)m43[7], (double)m43[10] }},

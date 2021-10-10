@@ -32,11 +32,31 @@ from mathutils import Vector
 webbrowser.open = lambda x: True
 
 
+variables = {"cwd": os.getcwd(), "ifc": "IfcStore.get_file()"}
+
+
 class NewFile:
     @pytest.fixture(autouse=True)
     def setup(self):
         IfcStore.purge()
         bpy.ops.wm.read_homefile(app_template="")
+        if bpy.data.objects:
+            while bpy.data.objects:
+                bpy.data.objects.remove(bpy.data.objects[0])
+            bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+        blenderbim.bim.handler.setDefaultProperties(None)
+
+
+class NewIfc:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        IfcStore.purge()
+        bpy.ops.wm.read_homefile(app_template="")
+        while bpy.data.objects:
+            bpy.data.objects.remove(bpy.data.objects[0])
+        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+        blenderbim.bim.handler.setDefaultProperties(None)
+        bpy.ops.bim.create_project()
 
 
 def scenario(function):
@@ -66,7 +86,7 @@ def i_add_a_cube_of_size_size_at_location(size, location):
 
 
 def the_object_name_is_selected(name):
-    bpy.ops.object.select_all(action="DESELECT")
+    i_deselect_all_objects()
     additionally_the_object_name_is_selected(name)
 
 
@@ -76,6 +96,15 @@ def additionally_the_object_name_is_selected(name):
         assert False, 'The object "{name}" could not be selected'
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
+
+
+def i_deselect_all_objects():
+    bpy.context.view_layer.objects.active = None
+    bpy.ops.object.select_all(action="DESELECT")
+
+
+def i_am_on_frame_number(number):
+    bpy.context.scene.frame_set(int(number))
 
 
 def i_set_prop_to_value(prop, value):
@@ -99,7 +128,11 @@ def prop_is_value(prop, value):
             exec(f"assert bpy.context.{prop} == {value}")
             is_value = True
         except:
-            pass
+            try:
+                exec(f"assert list(bpy.context.{prop}) == {value}")
+                is_value = True
+            except:
+                pass
     if not is_value:
         actual_value = eval(f"bpy.context.{prop}")
         assert False, f"Value is {actual_value}"
@@ -114,6 +147,10 @@ def i_press_operator(operator):
         exec(f"bpy.ops.{operator}")
     else:
         exec(f"bpy.ops.{operator}()")
+
+
+def i_rename_the_object_name1_to_name2(name1, name2):
+    the_object_name_exists(name1).name = name2
 
 
 def the_object_name_exists(name):
@@ -157,6 +194,10 @@ def the_object_name_is_in_the_collection_collection(name, collection):
 
 def the_object_name_is_not_in_the_collection_collection(name, collection):
     assert collection not in [c.name for c in the_object_name_exists(name).users_collection]
+
+
+def the_object_name_has_a_body_of_value(name, value):
+    assert the_object_name_exists(name).data.body == value
 
 
 def the_collection_name1_is_in_the_collection_name2(name1, name2):
@@ -245,6 +286,42 @@ def the_object_name_is_not_voided_by_void(name, void):
             assert False, "A void was found"
 
 
+def the_object_name_is_not_voided(name):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    if any(element.HasOpenings):
+        assert False, "An opening was found"
+
+
+def the_object_name_is_not_a_void(name):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    if any(element.VoidsElements):
+        assert False, "A void was found"
+
+
+def the_void_name_is_filled_by_filling(name, filling):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    if any(rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings):
+        return True
+    assert False, "No filling found"
+
+
+def the_void_name_is_not_filled_by_filling(name, filling):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    if any(rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings):
+        assert False, "A filling was found"
+
+
+def the_object_name_is_not_a_filling(name):
+    ifc = IfcStore.get_file()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    if any(element.FillsVoids):
+        assert False, "A filling was found"
+
+
 def the_object_name_should_display_as_mode(name, mode):
     assert the_object_name_exists(name).display_type == mode
 
@@ -256,25 +333,36 @@ def the_object_name_has_number_vertices(name, number):
 
 def the_object_name_is_at_location(name, location):
     obj_location = the_object_name_exists(name).location
-    assert (obj_location - Vector([float(co) for co in location.split(",")])).length < 0.1, f"Object is at {obj_location}"
+    assert (
+        obj_location - Vector([float(co) for co in location.split(",")])
+    ).length < 0.1, f"Object is at {obj_location}"
+
+
+def the_variable_key_is_value(key, value):
+    variables[key] = eval(value)
 
 
 definitions = {
+    'the variable "(.*)" is "(.*)"': the_variable_key_is_value,
     "an empty IFC project": an_empty_ifc_project,
     "I add a cube": i_add_a_cube,
     'I add a cube of size "([0-9]+)" at "(.*)"': i_add_a_cube_of_size_size_at_location,
     'the object "(.*)" is selected': the_object_name_is_selected,
     'additionally the object "(.*)" is selected': additionally_the_object_name_is_selected,
+    "I deselect all objects": i_deselect_all_objects,
+    'I am on frame "([0-9]+)"': i_am_on_frame_number,
     'I set "(.*)" to "(.*)"': i_set_prop_to_value,
     '"(.*)" is "(.*)"': prop_is_value,
     'I enable "(.*)"': i_enable_prop,
     'I press "(.*)"': i_press_operator,
+    'I rename the object "(.*)" to "(.*)"': i_rename_the_object_name1_to_name2,
     'the object "(.*)" exists': the_object_name_exists,
     'the object "(.*)" does not exist': the_object_name_does_not_exist,
     'the object "(.*)" is an "(.*)"': the_object_name_is_an_ifc_class,
     'the object "(.*)" is not an IFC element': the_object_name_is_not_an_ifc_element,
     'the object "(.*)" is in the collection "(.*)"': the_object_name_is_in_the_collection_collection,
     'the object "(.*)" is not in the collection "(.*)"': the_object_name_is_not_in_the_collection_collection,
+    'the object "(.*)" has a body of "(.*)"': the_object_name_has_a_body_of_value,
     'the collection "(.*)" is in the collection "(.*)"': the_collection_name1_is_in_the_collection_name2,
     'the collection "(.*)" is not in the collection "(.*)"': the_collection_name1_is_not_in_the_collection_name2,
     "an IFC file exists": an_ifc_file_exists,
@@ -290,9 +378,15 @@ definitions = {
     'the object "(.*)" has no boolean difference by "(.*)"': the_object_name1_has_no_boolean_difference_by_name2,
     'the object "(.*)" is voided by "(.*)"': the_object_name_is_voided_by_void,
     'the object "(.*)" is not voided by "(.*)"': the_object_name_is_not_voided_by_void,
+    'the object "(.*)" is not a void': the_object_name_is_not_a_void,
+    'the object "(.*)" is not voided': the_object_name_is_not_voided,
     'the object "(.*)" should display as "(.*)"': the_object_name_should_display_as_mode,
     'the object "(.*)" has "([0-9]+)" vertices': the_object_name_has_number_vertices,
     'the object "(.*)" is at "(.*)"': the_object_name_is_at_location,
+    "nothing interesting happens": lambda: None,
+    'the void "(.*)" is filled by "(.*)"': the_void_name_is_filled_by_filling,
+    'the void "(.*)" is not filled by "(.*)"': the_void_name_is_not_filled_by_filling,
+    'the object "(.*)" is not a filling': the_object_name_is_not_a_filling,
 }
 
 
@@ -300,7 +394,8 @@ definitions = {
 def run(scenario):
     keywords = ["Given", "When", "Then", "And", "But"]
     for line in scenario.split("\n"):
-        line = line.replace("{cwd}", os.getcwd())
+        for key, value in variables.items():
+            line = line.replace("{" + key + "}", str(value))
         for keyword in keywords:
             line = line.replace(keyword, "")
         line = line.strip()

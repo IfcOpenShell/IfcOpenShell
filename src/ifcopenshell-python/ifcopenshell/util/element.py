@@ -41,7 +41,7 @@ def get_quantities(quantities):
 
 def get_properties(properties):
     results = {}
-    for prop in properties:
+    for prop in properties or []:
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
         elif prop.is_a("IfcComplexProperty"):
@@ -78,12 +78,16 @@ def get_material(element, should_skip_usage=False):
         return get_material(relating_type, should_skip_usage)
 
 
-def get_container(element):
-    aggregate = get_aggregate(element)
-    if aggregate:
-        return get_container(aggregate)
-    if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
-        return element.ContainedInStructure[0].RelatingStructure
+def get_container(element, should_get_direct=False):
+    if should_get_direct:
+        if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
+            return element.ContainedInStructure[0].RelatingStructure
+    else:
+        aggregate = get_aggregate(element)
+        if aggregate:
+            return get_container(aggregate, should_get_direct)
+        if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
+            return element.ContainedInStructure[0].RelatingStructure
 
 
 def get_decomposition(element):

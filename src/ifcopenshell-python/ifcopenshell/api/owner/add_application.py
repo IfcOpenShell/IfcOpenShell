@@ -6,7 +6,7 @@ class Usecase:
         self.file = file
         self.settings = {
             "application_developer": None,
-            "version": "0.6.0",
+            "version": ifcopenshell.version,
             "application_full_name": "IfcOpenShell",
             "application_identifier": "IfcOpenShell",
         }
@@ -27,11 +27,11 @@ class Usecase:
         )
 
     def create_application_organisation(self):
-        return self.file.create_entity(
+        result = self.file.create_entity(
             "IfcOrganization",
             **{
                 "Name": "IfcOpenShell",
-                "Description": "IfcOpenShell is an open source (LGPL) software library that helps users and software developers to work with the IFC file format.",
+                "Description": "IfcOpenShell is an open source software library that helps users and software developers to work with IFC data.",
                 "Roles": [
                     self.file.create_entity("IfcActorRole", **{"Role": "USERDEFINED", "UserDefinedRole": "CONTRIBUTOR"})
                 ],
@@ -41,28 +41,11 @@ class Usecase:
                         **{
                             "Purpose": "USERDEFINED",
                             "UserDefinedPurpose": "WEBPAGE",
-                            "Description": "The main webpage of the software collection.",
                             "WWWHomePageURL": "https://ifcopenshell.org",
-                        },
-                    ),
-                    self.file.create_entity(
-                        "IfcTelecomAddress",
-                        **{
-                            "Purpose": "USERDEFINED",
-                            "UserDefinedPurpose": "WEBPAGE",
-                            "Description": "The BlenderBIM Add-on webpage of the software collection.",
-                            "WWWHomePageURL": "https://blenderbim.org",
-                        },
-                    ),
-                    self.file.create_entity(
-                        "IfcTelecomAddress",
-                        **{
-                            "Purpose": "USERDEFINED",
-                            "UserDefinedPurpose": "REPOSITORY",
-                            "Description": "The source code repository of the software collection.",
-                            "WWWHomePageURL": "https://github.com/IfcOpenShell/IfcOpenShell.git",
                         },
                     ),
                 ],
             },
         )
+        result[0] = "IfcOpenShell"
+        return result

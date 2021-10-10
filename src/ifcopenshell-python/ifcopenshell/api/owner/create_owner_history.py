@@ -11,13 +11,11 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        self.settings["person"] = ifcopenshell.api.owner.settings.get_person(self.file)
-        self.settings["organisation"] = ifcopenshell.api.owner.settings.get_organisation(self.file)
+        user = ifcopenshell.api.owner.settings.get_user(self.file)
         application = ifcopenshell.api.owner.settings.get_application(self.file)
         if self.file.schema != "IFC2X3":
-            if not self.settings["person"] or not self.settings["organisation"] or not application:
+            if not user or not application:
                 return
-        user = self.get_user()
         return self.file.create_entity(
             "IfcOwnerHistory",
             **{
@@ -30,16 +28,4 @@ class Usecase:
                 "LastModifyingApplication": application,
                 "CreationDate": int(time.time()),
             },
-        )
-
-    def get_user(self):
-        for element in self.file.by_type("IfcPersonAndOrganization"):
-            if (
-                element.ThePerson == self.settings["person"]
-                and element.TheOrganization == self.settings["organisation"]
-            ):
-                return element
-        return self.file.create_entity(
-            "IfcPersonAndOrganization",
-            **{"ThePerson": self.settings["person"], "TheOrganization": self.settings["organisation"]},
         )

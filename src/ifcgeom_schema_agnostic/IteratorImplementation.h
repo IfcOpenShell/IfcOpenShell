@@ -4,6 +4,7 @@
 #include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
+#include "../serializers/HdfSerializer.h"
 
 #include <gp_XYZ.hxx>
 
@@ -13,54 +14,32 @@
 #include <string>
 
 namespace IfcGeom {
-	template <typename P, typename PP>
 	class IteratorImplementation;
 
-	template <typename P, typename PP>
 	class Element;
 
-	template <typename P, typename PP>
 	class BRepElement;
 }
 
-typedef boost::function4<IfcGeom::IteratorImplementation<float, float>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&, int> iterator_float_float_fn;
-typedef boost::function4<IfcGeom::IteratorImplementation<float, double>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&, int> iterator_float_double_fn;
-typedef boost::function4<IfcGeom::IteratorImplementation<double, double>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&, int> iterator_double_double_fn;
+typedef boost::function4<IfcGeom::IteratorImplementation*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&, int> iterator_fn;
 
-template <typename P, typename PP>
-struct get_factory_type {};
-
-template <>
-struct get_factory_type<float, float> {
-	typedef iterator_float_float_fn type;
-};
-
-template <>
-struct get_factory_type<float, double> {
-	typedef iterator_float_double_fn type;
-};
-
-template <>
-struct get_factory_type<double, double> {
-	typedef iterator_double_double_fn type;
-};
-
-template <typename P, typename PP>
-class IFC_GEOM_API IteratorFactoryImplementation : public std::map<std::string, typename get_factory_type<P, PP>::type> {
+class IFC_GEOM_API IteratorFactoryImplementation : public std::map<std::string, iterator_fn> {
 public:
 	IteratorFactoryImplementation();
-	void bind(const std::string& schema_name, typename get_factory_type<P, PP>::type fn);
-	IfcGeom::IteratorImplementation<P, PP>* construct(const std::string& schema_name, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&, int);
+	void bind(const std::string& schema_name, iterator_fn fn);
+	IfcGeom::IteratorImplementation* construct(const std::string& schema_name, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&, int);
 };
 
-template <typename P, typename PP>
-IteratorFactoryImplementation<P, PP>& iterator_implementations();
+IteratorFactoryImplementation& iterator_implementations();
 
 namespace IfcGeom {
 
-	template <typename P, typename PP>
 	class IteratorImplementation {
+	protected:
+		HdfSerializer* cache_ = nullptr;
 	public:
+		void set_cache(HdfSerializer* cache) { cache_ = cache; }
+
 		virtual bool initialize() = 0;
 		virtual void compute_bounds(bool with_geometry) = 0;
 		virtual const gp_XYZ& bounds_min() const = 0;
@@ -70,9 +49,9 @@ namespace IfcGeom {
 		virtual double getUnitMagnitude() const = 0;
 		virtual IfcParse::IfcFile* file() const = 0;
 		virtual IfcUtil::IfcBaseClass* next() = 0;
-		virtual Element<P, PP>* get() = 0;
-		virtual BRepElement<P, PP>* get_native() = 0;
-		virtual const Element<P, PP>* get_object(int id) = 0;
+		virtual Element* get() = 0;
+		virtual BRepElement* get_native() = 0;
+		virtual const Element* get_object(int id) = 0;
 		virtual IfcUtil::IfcBaseClass* create() = 0;
 	};
 

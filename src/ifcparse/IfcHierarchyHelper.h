@@ -67,19 +67,19 @@ namespace {
 		return t->RelatingStructure();
 	}
 
-	IfcEntityList::ptr get_children_of_relation(Ifc2x3::IfcRelContainedInSpatialStructure* t) {
+	aggregate_of_instance::ptr get_children_of_relation(Ifc2x3::IfcRelContainedInSpatialStructure* t) {
 		return t->RelatedElements()->generalize();
 	}
 
-	IfcEntityList::ptr get_children_of_relation(Ifc2x3::IfcRelAggregates* t) {
+	aggregate_of_instance::ptr get_children_of_relation(Ifc2x3::IfcRelAggregates* t) {
 		return t->RelatedObjects()->generalize();
 	}
 
-	void set_children_of_relation(Ifc2x3::IfcRelContainedInSpatialStructure* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(Ifc2x3::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
 		t->setRelatedElements(cs->as<Ifc2x3::IfcProduct>());
 	}
 
-	void set_children_of_relation(Ifc2x3::IfcRelAggregates* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(Ifc2x3::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
 		t->setRelatedObjects(cs->as<Ifc2x3::IfcObjectDefinition>());
 	}
 #endif
@@ -89,19 +89,19 @@ namespace {
 		return t->RelatingStructure();
 	}
 
-	IfcEntityList::ptr get_children_of_relation(Ifc4::IfcRelContainedInSpatialStructure* t) {
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4::IfcRelContainedInSpatialStructure* t) {
 		return t->RelatedElements()->generalize();
 	}
 
-	IfcEntityList::ptr get_children_of_relation(Ifc4::IfcRelAggregates* t) {
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4::IfcRelAggregates* t) {
 		return t->RelatedObjects()->generalize();
 	}
 
-	void set_children_of_relation(Ifc4::IfcRelContainedInSpatialStructure* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(Ifc4::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
 		t->setRelatedElements(cs->as<Ifc4::IfcProduct>());
 	}
 
-	void set_children_of_relation(Ifc4::IfcRelAggregates* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(Ifc4::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
 		t->setRelatedObjects(cs->as<Ifc4::IfcObjectDefinition>());
 	}
 #endif
@@ -111,19 +111,19 @@ namespace {
 		return t->RelatingStructure();
 	}
 
-	IfcEntityList::ptr get_children_of_relation(Ifc4x1::IfcRelContainedInSpatialStructure* t) {
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x1::IfcRelContainedInSpatialStructure* t) {
 		return t->RelatedElements()->generalize();
 	}
 
-	IfcEntityList::ptr get_children_of_relation(Ifc4x1::IfcRelAggregates* t) {
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x1::IfcRelAggregates* t) {
 		return t->RelatedObjects()->generalize();
 	}
 
-	void set_children_of_relation(Ifc4x1::IfcRelContainedInSpatialStructure* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(Ifc4x1::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
 		t->setRelatedElements(cs->as<Ifc4x1::IfcProduct>());
 	}
 
-	void set_children_of_relation(Ifc4x1::IfcRelAggregates* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(Ifc4x1::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
 		t->setRelatedObjects(cs->as<Ifc4x1::IfcObjectDefinition>());
 	}
 #endif
@@ -133,19 +133,19 @@ namespace {
 		return t->RelatingStructure();
 	}
 
-	IfcEntityList::ptr get_children_of_relation(Ifc4x2::IfcRelContainedInSpatialStructure* t) {
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x2::IfcRelContainedInSpatialStructure* t) {
 		return t->RelatedElements()->generalize();
 	}
 
-	IfcEntityList::ptr get_children_of_relation(Ifc4x2::IfcRelAggregates* t) {
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x2::IfcRelAggregates* t) {
 		return t->RelatedObjects()->generalize();
 	}
 
-	void set_children_of_relation(Ifc4x2::IfcRelContainedInSpatialStructure* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(Ifc4x2::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
 		t->setRelatedElements(cs->as<Ifc4x2::IfcProduct>());
 	}
 
-	void set_children_of_relation(Ifc4x2::IfcRelAggregates* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(Ifc4x2::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
 		t->setRelatedObjects(cs->as<Ifc4x2::IfcObjectDefinition>());
 	}
 #endif
@@ -155,19 +155,19 @@ namespace {
 		return t->RelatingStructure();
 	}
 
-	IfcEntityList::ptr get_children_of_relation(Ifc4x3_rc1::IfcRelContainedInSpatialStructure* t) {
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc1::IfcRelContainedInSpatialStructure* t) {
 		return t->RelatedElements()->generalize();
 	}
 
-	IfcEntityList::ptr get_children_of_relation(Ifc4x3_rc1::IfcRelAggregates* t) {
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc1::IfcRelAggregates* t) {
 		return t->RelatedObjects()->generalize();
 	}
 
-	void set_children_of_relation(Ifc4x3_rc1::IfcRelContainedInSpatialStructure* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(Ifc4x3_rc1::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
 		t->setRelatedElements(cs->as<Ifc4x3_rc1::IfcProduct>());
 	}
 
-	void set_children_of_relation(Ifc4x3_rc1::IfcRelAggregates* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(Ifc4x3_rc1::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
 		t->setRelatedObjects(cs->as<Ifc4x3_rc1::IfcObjectDefinition>());
 	}
 #endif
@@ -177,19 +177,19 @@ namespace {
 		return t->RelatingStructure();
 	}
 
-	IfcEntityList::ptr get_children_of_relation(Ifc4x3_rc2::IfcRelContainedInSpatialStructure* t) {
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc2::IfcRelContainedInSpatialStructure* t) {
 		return t->RelatedElements()->generalize();
 	}
 
-	IfcEntityList::ptr get_children_of_relation(Ifc4x3_rc2::IfcRelAggregates* t) {
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc2::IfcRelAggregates* t) {
 		return t->RelatedObjects()->generalize();
 	}
 
-	void set_children_of_relation(Ifc4x3_rc2::IfcRelContainedInSpatialStructure* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(Ifc4x3_rc2::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
 		t->setRelatedElements(cs->as<Ifc4x3_rc2::IfcProduct>());
 	}
 
-	void set_children_of_relation(Ifc4x3_rc2::IfcRelAggregates* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(Ifc4x3_rc2::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
 		t->setRelatedObjects(cs->as<Ifc4x3_rc2::IfcObjectDefinition>());
 	}
 #endif
@@ -199,19 +199,19 @@ namespace {
       return t->RelatingStructure();
    }
 
-   IfcEntityList::ptr get_children_of_relation(Ifc4x3_rc3::IfcRelContainedInSpatialStructure* t) {
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc3::IfcRelContainedInSpatialStructure* t) {
       return t->RelatedElements()->generalize();
    }
 
-   IfcEntityList::ptr get_children_of_relation(Ifc4x3_rc3::IfcRelAggregates* t) {
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc3::IfcRelAggregates* t) {
       return t->RelatedObjects()->generalize();
    }
 
-   void set_children_of_relation(Ifc4x3_rc3::IfcRelContainedInSpatialStructure* t, IfcEntityList::ptr& cs) {
+   void set_children_of_relation(Ifc4x3_rc3::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
       t->setRelatedElements(cs->as<Ifc4x3_rc3::IfcProduct>());
    }
 
-   void set_children_of_relation(Ifc4x3_rc3::IfcRelAggregates* t, IfcEntityList::ptr& cs) {
+   void set_children_of_relation(Ifc4x3_rc3::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
       t->setRelatedObjects(cs->as<Ifc4x3_rc3::IfcObjectDefinition>());
    }
 #endif
@@ -221,19 +221,19 @@ namespace {
       return t->RelatingStructure();
    }
 
-   IfcEntityList::ptr get_children_of_relation(Ifc4x3_rc4::IfcRelContainedInSpatialStructure* t) {
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc4::IfcRelContainedInSpatialStructure* t) {
       return t->RelatedElements()->generalize();
    }
 
-   IfcEntityList::ptr get_children_of_relation(Ifc4x3_rc4::IfcRelAggregates* t) {
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc4::IfcRelAggregates* t) {
       return t->RelatedObjects()->generalize();
    }
 
-   void set_children_of_relation(Ifc4x3_rc4::IfcRelContainedInSpatialStructure* t, IfcEntityList::ptr& cs) {
+   void set_children_of_relation(Ifc4x3_rc4::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
       t->setRelatedElements(cs->as<Ifc4x3_rc4::IfcProduct>());
    }
 
-   void set_children_of_relation(Ifc4x3_rc4::IfcRelAggregates* t, IfcEntityList::ptr& cs) {
+   void set_children_of_relation(Ifc4x3_rc4::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
       t->setRelatedObjects(cs->as<Ifc4x3_rc4::IfcObjectDefinition>());
    }
 #endif
@@ -244,13 +244,13 @@ namespace {
 		);
 	}
 
-	IfcEntityList::ptr get_children_of_relation(IfcUtil::IfcBaseClass* t) {
+	aggregate_of_instance::ptr get_children_of_relation(IfcUtil::IfcBaseClass* t) {
 		return *t->data().getArgument(
 			t->declaration().as_entity()->attribute_index("RelatedElements")
 			);
 	}	
 
-	void set_children_of_relation(IfcUtil::IfcBaseClass* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(IfcUtil::IfcBaseClass* t, aggregate_of_instance::ptr& cs) {
 		IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument;
 		attr->set(cs);
 		t->data().setArgument(
@@ -309,7 +309,7 @@ public:
 			T* rel = *i;
             try {
                 if (get_parent_of_relation(rel) == relating_object) {
-                    IfcEntityList::ptr products = get_children_of_relation(rel);
+                    aggregate_of_instance::ptr products = get_children_of_relation(rel);
                     products->push(related_object);
                     set_children_of_relation(rel, products);
                     found = true;
@@ -329,7 +329,7 @@ public:
 				owner_hist = addOwnerHistory();
 			}
 
-			IfcEntityList::ptr related_objects (new IfcEntityList);
+			aggregate_of_instance::ptr related_objects (new aggregate_of_instance);
 			related_objects->push(related_object);
 
 			IfcEntityInstanceData* data = new IfcEntityInstanceData(&T::Class());
@@ -488,7 +488,7 @@ inline void IfcHierarchyHelper::addRelatedObject <typename Schema::IfcRelContain
 		if (! owner_hist) {
 			owner_hist = addOwnerHistory();
 		}
-		typename Schema::IfcProduct::list::ptr related_objects (new IfcTemplatedEntityList<typename Schema::IfcProduct>());
+		typename Schema::IfcProduct::list::ptr related_objects (new aggregate_of<typename Schema::IfcProduct>());
 		related_objects->push((typename Schema::IfcProduct*)related_object);
 		typename Schema::IfcRelContainedInSpatialStructure* t = new typename Schema::IfcRelContainedInSpatialStructure(IfcParse::IfcGlobalId(), owner_hist, 
 			boost::none, boost::none, related_objects, (typename Schema::IfcSpatialStructureElement*)relating_structure);
@@ -520,7 +520,7 @@ inline void IfcHierarchyHelper::addRelatedObject <typename Schema::IfcRelDefines
 		if (! owner_hist) {
 			owner_hist = addOwnerHistory();
 		}
-		typename Schema::IfcObject::list::ptr related_objects (new IfcTemplatedEntityList<typename Schema::IfcObject>());
+		typename Schema::IfcObject::list::ptr related_objects (new aggregate_of<typename Schema::IfcObject>());
 		related_objects->push((typename Schema::IfcObject*)related_object);
 		typename Schema::IfcRelDefinesByType* t = new typename Schema::IfcRelDefinesByType(IfcParse::IfcGlobalId(), owner_hist, 
 			boost::none, boost::none, related_objects, (typename Schema::IfcTypeObject*)relating_type);

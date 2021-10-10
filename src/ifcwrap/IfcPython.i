@@ -48,6 +48,7 @@
 %}
 
 %include "std_array.i"
+%include "std_vector.i"
 %include "std_string.i"
 %include "exception.i"
 
@@ -77,6 +78,9 @@
 	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 	#include "../ifcgeom_schema_agnostic/Serialization.h"
 	#include "../ifcgeom/IfcGeomTree.h"
+
+	#include "../serializers/SvgSerializer.h"
+	#include "../serializers/WavefrontObjSerializer.h"
 	
 #ifdef HAS_SCHEMA_2x3
 	#include "../ifcparse/Ifc2x3.h"
@@ -108,6 +112,8 @@
 	#include "../ifcparse/IfcSchema.h"
 	#include "../ifcparse/utils.h"
 
+	#include "../svgfill/src/svgfill.h"
+
 	#include <BRepTools_ShapeSet.hxx>
 %}
 
@@ -124,6 +130,9 @@
 	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 	#include "../ifcgeom_schema_agnostic/Serialization.h"
 	#include "../ifcgeom/IfcGeomTree.h"
+
+	#include "../serializers/SvgSerializer.h"
+	#include "../serializers/WavefrontObjSerializer.h"
 	
 #ifdef HAS_SCHEMA_2x3
 	#include "../ifcparse/Ifc2x3.h"
@@ -148,6 +157,8 @@
 	#include "../ifcparse/IfcFile.h"
 	#include "../ifcparse/IfcSchema.h"
 	#include "../ifcparse/utils.h"
+
+	#include "../svgfill/src/svgfill.h"
 
 	#include <BRepTools_ShapeSet.hxx>
 %}

@@ -34,7 +34,18 @@ class AddOpening(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
+        self.file = IfcStore.get_file()
         obj = context.scene.objects.get(self.obj, context.active_object)
+        if obj is None:
+            return {"FINISHED"}
+        element_id = obj.BIMObjectProperties.ifc_definition_id
+        if not element_id:
+            return {"FINISHED"}
+        element = self.file.by_id(element_id)
+        if element.is_a("IfcOpeningElement"):
+            self.report({"WARNING"}, "An IfcOpeningElement can't be voided")
+            return {"FINISHED"}
+
         opening = bpy.data.objects.get(self.opening)
         if opening is None:
             return {"FINISHED"}
@@ -45,31 +56,38 @@ class AddOpening(bpy.types.Operator):
                 return {"FINISHED"}
             bpy.ops.bim.assign_class(obj=opening.name, ifc_class="IfcOpeningElement", context_id=body_context.id())
 
-        self.file = IfcStore.get_file()
-        element_id = obj.BIMObjectProperties.ifc_definition_id
+        # If the IfcOpeningElement aleady voids another object, remove the boolean modifier
+        opening_element = self.file.by_id(opening.BIMObjectProperties.ifc_definition_id)
+        if opening_element.VoidsElements:
+            other_obj = IfcStore.get_element(opening_element.VoidsElements[0].RelatingBuildingElement.id())
+            try:
+                modifier = next(m for m in other_obj.modifiers if m.type == "BOOLEAN" and m.object == opening)
+                other_obj.modifiers.remove(modifier)
+            except StopIteration:
+                pass
+
         ifcopenshell.api.run(
             "void.add_opening",
             self.file,
             **{
-                "opening": self.file.by_id(opening.BIMObjectProperties.ifc_definition_id),
-                "element": self.file.by_id(element_id),
+                "opening": opening_element,
+                "element": element,
             },
         )
-        Data.load(IfcStore.get_file(), element_id)
+        Data.load(self.file, element_id)
 
-        has_modifier = False
-
-        for modifier in obj.modifiers:
-            if modifier.type == "BOOLEAN" and modifier.object and modifier.object == opening:
-                has_modifier = True
-                break
-
-        if not has_modifier:
+        try:
+            modifier = next(m for m in obj.modifiers if m.type == "BOOLEAN" and m.object == opening)
+        except StopIteration:
             modifier = obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-            modifier.operation = "DIFFERENCE"
             modifier.object = opening
+        finally:
+            modifier.operation = "DIFFERENCE"
             modifier.solver = "EXACT"
             modifier.use_self = True
+            modifier.operand_type = "OBJECT"
+
+        context.view_layer.objects.active = obj
         return {"FINISHED"}
 
 
@@ -129,15 +147,18 @@ class AddFilling(bpy.types.Operator):
             return {"FINISHED"}
         self.file = IfcStore.get_file()
         element_id = obj.BIMObjectProperties.ifc_definition_id
+        opening_id = opening.BIMObjectProperties.ifc_definition_id
+        if not element_id or not opening_id or element_id == opening_id:
+            return {"FINISHED"}
         ifcopenshell.api.run(
             "void.add_filling",
             self.file,
             **{
-                "opening": self.file.by_id(opening.BIMObjectProperties.ifc_definition_id),
+                "opening": self.file.by_id(opening_id),
                 "element": self.file.by_id(element_id),
             },
         )
-        Data.load(IfcStore.get_file(), element_id)
+        Data.load(self.file, element_id)
         return {"FINISHED"}
 
 
@@ -152,11 +173,14 @@ class RemoveFilling(bpy.types.Operator):
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        if not obj:
+            return {"FINISHED"}
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "void.remove_filling", self.file, **{"element": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
-        )
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        element_id = obj.BIMObjectProperties.ifc_definition_id
+        if not element_id:
+            return {"FINISHED"}
+        ifcopenshell.api.run("void.remove_filling", self.file, **{"element": self.file.by_id(element_id)})
+        Data.load(self.file, element_id)
         return {"FINISHED"}
 
 

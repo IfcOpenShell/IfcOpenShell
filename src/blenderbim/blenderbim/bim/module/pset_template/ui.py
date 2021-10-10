@@ -19,6 +19,9 @@
 import bpy
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.pset_template.prop import (
+    getPsetTemplates,
+)
 from ifcopenshell.api.pset_template.data import Data
 
 
@@ -40,7 +43,7 @@ class BIM_PT_pset_template(Panel):
 
         row = layout.row(align=True)
 
-        if props.pset_templates:
+        if bool(getPsetTemplates(props, context)):
             row.prop(props, "pset_templates", text="", icon="COPY_ID")
         else:
             row.label(text="No Pset Templates", icon="COPY_ID")

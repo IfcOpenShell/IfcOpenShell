@@ -6,12 +6,15 @@ import ifcopenshell.util.element
 import ifcopenshell.util.placement
 
 
-class TestEditObjectPlacement(test.bootstrap.IFC4):
+class TestAssignContainer(test.bootstrap.IFC4):
     def test_assigning_a_container(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        rel = ifcopenshell.api.run(
+            "spatial.assign_container", self.file, product=subelement, relating_structure=element
+        )
         assert ifcopenshell.util.element.get_container(subelement) == element
+        assert rel.is_a("IfcRelContainedInSpatialStructure")
 
     def test_doing_nothing_if_the_container_is_already_assigned(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
@@ -76,4 +79,25 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
             "geometry.edit_object_placement", self.file, product=subelement, matrix=matrix1.copy(), is_si=False
         )
         ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element2)
+        assert subelement.ObjectPlacement.PlacementRelTo.PlacesObject[0] == element2
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), matrix1)
+
+    def test_not_updating_placement_if_placement_is_not_relative(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.run("unit.assign_unit", self.file)
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        placement = self.file.createIfcGridPlacement()
+        subelement.ObjectPlacement = placement
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        assert subelement.ObjectPlacement == placement
+
+    def test_removing_aggregation_if_it_exists(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.run("unit.assign_unit", self.file)
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        aggregate = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=aggregate)
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        assert not ifcopenshell.util.element.get_aggregate(subelement)

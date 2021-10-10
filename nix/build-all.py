@@ -49,15 +49,11 @@
 #          $ brew install git bison autoconf automake freetype libffi cmake   #
 #                                                                             #
 ###############################################################################
-
-from __future__ import print_function
-
 import logging
 import os
 import sys
 import subprocess as sp
 import shutil
-import time
 import tarfile
 import multiprocessing
 
@@ -79,25 +75,20 @@ ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 
 PROJECT_NAME="IfcOpenShell"
-PYTHON_VERSIONS=["2.7.16", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2", "3.7.3", "3.8.6", "3.9.1"]
+PYTHON_VERSIONS=["2.7.18", "3.5.5", "3.6.13", "3.7.10", "3.8.8", "3.9.2"]
 JSON_VERSION="v3.6.1"
 OCE_VERSION="0.18"
-# OCCT_VERSION="7.1.0"
-# OCCT_HASH="89aebde"
-# OCCT_VERSION="7.2.0"
-# OCCT_HASH="88af392"
-OCCT_VERSION="7.3.0p3"
+OCCT_VERSION="7.5.3"
 BOOST_VERSION="1.71.0"
-#PCRE_VERSION="8.39"
 PCRE_VERSION="8.41"
-#LIBXML2_VERSION="2.9.3"
 LIBXML2_VERSION="2.9.9"
 SWIG_VERSION="3.0.12"
-#SWIG_VERSION="4.0.0"
-#OPENCOLLADA_VERSION="v1.6.63"
 OPENCOLLADA_VERSION="v1.6.68"
+HDF5_VERSION="1.8.22"
 
-
+GMP_VERSION="6.1.2"
+MPFR_VERSION="3.1.5"
+CGAL_VERSION="5.2"
 
 # binaries
 cp="cp"
@@ -158,13 +149,6 @@ if get_os() == "Darwin":
     # C++11 features used in OCCT 7+ need a more recent stdlib
     TOOLSET = "10.9" if USE_OCCT else "10.6"
 
-# python 3.4 doesn't seem to build anymore on recent versions of clang
-if get_os() == "Darwin":
-    try:
-        PYTHON_VERSIONS.remove("3.4.6")
-    except ValueError as e:
-        pass
-   
 try:
     IFCOS_NUM_BUILD_PROCS = os.environ["IFCOS_NUM_BUILD_PROCS"]
 except KeyError:
@@ -223,9 +207,9 @@ cecho(""" - How many compiler processes may be run in parallel.
 """)
 
 dependency_tree = {
-    'IfcParse': ('boost',  'libxml2'),
-    'IfcGeom': ('IfcParse',  'occ'),
-    'IfcConvert': ('IfcGeom',  'OpenCOLLADA', 'json'),
+    'IfcParse': ('boost',  'libxml2', 'hdf5'),
+    'IfcGeom': ('IfcParse',  'occ', 'OpenCOLLADA', 'json', 'cgal'),
+    'IfcConvert': ('IfcGeom', ),
     'OpenCOLLADA': ('libxml2',  'pcre'),
     'IfcGeomServer': ('IfcGeom',),
     'IfcOpenShell-Python': ('python',  'swig',  'IfcGeom'),
@@ -235,7 +219,9 @@ dependency_tree = {
     'python': (),
     'occ': (),
     'pcre': (),
-    'json': ()
+    'json': (),
+    'hdf5': (),
+    'cgal': ()
 }
 
 def v(dep):
@@ -348,7 +334,7 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
         run([git, "checkout", revision], cwd=target_dir)
 
 
-def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, patch=None, additional_files={}, no_append_name=False):
+def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, patch=None, additional_files={}, no_append_name=False, **kwargs):
     """Handles building of dependencies with different tools (which are
     distinguished with the `mode` argument. `build_tool_args` is expected to be
     a list which is necessary in order to not mess up quoting of compiler and
@@ -393,7 +379,8 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         else:
             raise RuntimeError("fix source for new download type")
         download_tarfile = tarfile.open(name=download_tarfile_path, mode="r:%s" % (compr,))
-        extract_dir_name= os.path.commonprefix(download_tarfile.getnames()) # tarfile seriously doesn't have a function to retrieve the root directory more easily
+        # tarfile seriously doesn't have a function to retrieve the root directory more easily
+        extract_dir_name= os.path.commonprefix([x for x in download_tarfile.getnames() if x != "."])
         #run([tar, "--exclude=\"*/*\"", "-tf", download_name], cwd=build_dir).strip() no longer works
         if extract_dir_name is None:
             extract_dir_name= run([bash, "-c", "tar -tf %s 2> /dev/null | head -n 1 | cut -f1 -d /" % (download_name,)], cwd=build_dir)
@@ -412,8 +399,15 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
             except Exception as e:
                 # Assert that the patch has already been applied
                 run(["patch", "-p1", "--batch", "--reverse", "--dry-run", "-i", patch_abs], cwd=extract_dir)
-            
-    if mode != "bjam":
+    
+    if mode == "ctest":
+        run(["ctest", "-S", "HDF5config.cmake,BUILD_GENERATOR=Unix", "-C", BUILD_CFG, "-V", "-O", "hdf5.log"], cwd=extract_dir)
+        run([tar, "-xf", kwargs["ctest_result"] + ".tar.gz"], cwd=os.path.join(extract_dir, 'build'))
+        shutil.copytree(
+            os.path.join(extract_dir, "build", kwargs["ctest_result"], kwargs["ctest_result_path"]),
+            os.path.join(DEPS_DIR, "install", name)
+        )
+    elif mode != "bjam":
         extract_build_dir = os.path.join(extract_dir, "build")
         if os.path.exists(extract_build_dir):
             shutil.rmtree(extract_build_dir)
@@ -492,6 +486,19 @@ os.environ["LDFLAGS"] = LDFLAGS
 # Some dependencies need a more recent CMake version than most distros provide
 # @tfk: this is no longer needed
 # build_dependency(name="cmake-%s" % (CMAKE_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://cmake.org/files/v%s" % (CMAKE_VERSION_2,), download_name="cmake-%s.tar.gz" % (CMAKE_VERSION,))
+
+if 'hdf5' in targets:
+    HDF5_MAJOR=".".join(HDF5_VERSION.split(".")[:-1])
+    get_os_result = get_os()
+    build_dependency(
+        name="hdf5-{HDF5_VERSION}".format(**locals()),
+        mode="ctest",
+        build_tool_args=[],
+        download_url="https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{HDF5_MAJOR}/hdf5-{HDF5_VERSION}/src/".format(**locals()),
+        download_name="CMake-hdf5-{HDF5_VERSION}.tar.gz".format(**locals()),
+        ctest_result="HDF5-{HDF5_VERSION}-{get_os_result}".format(**locals()),
+        ctest_result_path="HDF_Group/HDF5/{HDF5_VERSION}".format(**locals())
+    )
 
 if "json" in targets:
     json_url = "https://github.com/nlohmann/json/releases/download/{JSON_VERSION}/json.hpp".format(**locals())
@@ -655,6 +662,42 @@ if "boost" in targets:
         download_name="boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2".format(**locals())
     )
     
+if "cgal" in targets:
+    build_dependency(
+        name="gmp-%s" % (GMP_VERSION,),
+        mode="autoconf",
+        build_tool_args=["--disable-shared", "--with-pic"],
+        download_url="https://ftp.gnu.org/gnu/gmp/",
+        download_name="gmp-{GMP_VERSION}.tar.bz2".format(**locals())
+    )
+    
+    build_dependency(
+        name="mpfr-%s" % (MPFR_VERSION,),
+        mode="autoconf",
+        build_tool_args=["--disable-shared", "--with-gmp={DEPS_DIR}/install/gmp-{GMP_VERSION}".format(**locals())],
+        download_url="http://www.mpfr.org/mpfr-{MPFR_VERSION}/".format(**locals()),
+        download_name="mpfr-{MPFR_VERSION}.tar.bz2".format(**locals())
+    )
+    
+    build_dependency(
+        name="cgal-{CGAL_VERSION}".format(**locals()),
+        mode="cmake",
+        build_tool_args=[
+            "-DGMP_LIBRARIES=%s/install/gmp-%s/lib/libgmp.a" % (DEPS_DIR, GMP_VERSION),
+            "-DGMP_INCLUDE_DIR=%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION),
+            "-DMPFR_LIBRARIES=%s/install/mpfr-%s/lib/libmpfr.a" % (DEPS_DIR, MPFR_VERSION),
+            "-DMPFR_INCLUDE_DIR=%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION),
+            "-DBoost_INCLUDE_DIR=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION),
+            "-DCMAKE_INSTALL_PREFIX=%s/install/cgal-%s/" % (DEPS_DIR, CGAL_VERSION),
+            "-DCGAL_HEADER_ONLY=On",            
+            "-DBUILD_SHARED_LIBS=Off"
+        ],
+        download_url="https://github.com/CGAL/cgal.git",
+        download_name="cgal",
+        download_tool=download_tool_git,
+        revision="v{CGAL_VERSION}".format(**locals())
+    )
+    
 cecho("Building IfcOpenShell:", GREEN)
 
 IFCOS_DIR=os.path.join(DEPS_DIR, "build", "ifcopenshell")
@@ -670,20 +713,32 @@ logger.info("\rConfiguring executables...")
 
 OFF_ON = ["OFF", "ON"]
 
-cmake_args=[
-    "-DUSE_MMAP="                      "OFF",
-    "-DBUILD_EXAMPLES="                "OFF",
-    "-DBUILD_IFCPYTHON="               "OFF",
-    "-DBUILD_SHARED_LIBS="            +OFF_ON[not BUILD_STATIC],
+exec_args=[
     "-DBUILD_IFCGEOM="                +OFF_ON["IfcGeom" in targets],
     "-DBUILD_GEOMSERVER="             +OFF_ON["IfcGeomServer" in targets],
     "-DBUILD_CONVERT="                +OFF_ON["IfcConvert" in targets],
+    "-DBUILD_IFCPYTHON="               "OFF",
     "-DCMAKE_INSTALL_PREFIX="          "{DEPS_DIR}/install/ifcopenshell".format(**locals()),
+]
+
+cmake_args=[
+    "-DUSE_MMAP="                      "OFF",
+    "-DBUILD_EXAMPLES="                "OFF",
+    "-DBUILD_SHARED_LIBS="            +OFF_ON[not BUILD_STATIC],
     "-DBOOST_ROOT="                    "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
     "-DGLTF_SUPPORT="                  "ON",
     "-DJSON_INCLUDE_DIR="              "{DEPS_DIR}/install/json".format(**locals()),
-    "-DBoost_NO_BOOST_CMAKE="          "On"
+    "-DBoost_NO_BOOST_CMAKE="          "On",
 ]
+
+if "cgal" in targets:
+    cmake_args.extend([
+        "-DCGAL_INCLUDE_DIR="          "{DEPS_DIR}/install/cgal-{CGAL_VERSION}/include".format(**locals()),
+        "-DGMP_INCLUDE_DIR="           "{DEPS_DIR}/install/gmp-{GMP_VERSION}/include".format(**locals()),
+        "-DGMP_LIBRARY_DIR="           "{DEPS_DIR}/install/gmp-{GMP_VERSION}/lib".format(**locals()),
+        "-DMPFR_INCLUDE_DIR="          "{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include".format(**locals()),
+        "-DMPFR_LIBRARY_DIR="          "{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib".format(**locals()),
+    ])
 
 if "occ" in targets and USE_OCCT:
     occ_include_dir =                  "{DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade".format(**locals())
@@ -717,7 +772,13 @@ if "libxml2" in targets:
         "-DLIBXML2_LIBRARIES="         "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals())
     ])
 
-run_cmake("", cmake_args, cmake_dir=CMAKE_DIR, cwd=executables_dir)
+if "hdf5" in targets:
+    cmake_args.extend([
+        "-DHDF5_INCLUDE_DIR="          "{DEPS_DIR}/install/hdf5-{HDF5_VERSION}/include".format(**locals()),
+        "-DHDF5_LIBRARY_DIR="          "{DEPS_DIR}/install/hdf5-{HDF5_VERSION}/lib".format(**locals())
+    ])
+
+run_cmake("", exec_args + cmake_args, cmake_dir=CMAKE_DIR, cwd=executables_dir)
 
 logger.info("\rBuilding executables...   ")
 
@@ -753,19 +814,12 @@ if "IfcOpenShell-Python" in targets:
         os.environ["PYTHON_LIBRARY_BASENAME"]=os.path.basename(PYTHON_LIBRARY)
 
         run_cmake("",
-            cmake_args=[
-                "-DBUILD_SHARED_LIBS="       "OFF" if BUILD_STATIC else "ON",
-                "-DBOOST_ROOT="              "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
-                "-DOCC_INCLUDE_DIR="         +occ_include_dir,
-                "-DOCC_LIBRARY_DIR="         +occ_library_dir,
+            cmake_args + [
                 "-DPYTHON_LIBRARY="          +PYTHON_LIBRARY,
                 "-DPYTHON_EXECUTABLE="       +PYTHON_EXECUTABLE,
                 "-DPYTHON_INCLUDE_DIR="      +PYTHON_INCLUDE,
                 "-DSWIG_EXECUTABLE="         "{DEPS_DIR}/install/swig/bin/swig".format(**locals()),
                 "-DCMAKE_INSTALL_PREFIX="    "{DEPS_DIR}/install/ifcopenshell/tmp".format(**locals()),
-                "-DLIBXML2_INCLUDE_DIR="     "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2".format(**locals()),
-                "-DLIBXML2_LIBRARIES="       "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
-                "-DCOLLADA_SUPPORT=OFF"
             ], cmake_dir=CMAKE_DIR, cwd=python_dir)
         
         logger.info("\rBuilding python %s%s wrapper...   " % (PYTHON_VERSION, TAG))
@@ -773,7 +827,7 @@ if "IfcOpenShell-Python" in targets:
         run([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,), "_ifcopenshell_wrapper"], cwd=python_dir)
         run([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
 
-        module_dir = os.path.dirname(run([PYTHON_EXECUTABLE, "-c", "from __future__ import print_function; import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
+        module_dir = os.path.dirname(run([PYTHON_EXECUTABLE, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
 
         if get_os() != "Darwin":
             # TODO: This symbol name depends on the Python version?

@@ -104,7 +104,7 @@ class ImportIFC(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bpy.ops.bim.load_project('INVOKE_DEFAULT')
+        bpy.ops.bim.load_project("INVOKE_DEFAULT")
         return {"FINISHED"}
 
 
@@ -650,7 +650,7 @@ class OverrideDelete(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object is not None
+        return len(context.selected_objects) > 0
 
     def execute(self, context):
         if IfcStore.get_file():
@@ -663,11 +663,17 @@ class OverrideDelete(bpy.types.Operator):
         return context.window_manager.invoke_confirm(self, event)
 
     def _execute(self, context):
+        file = IfcStore.get_file()
         for obj in context.selected_objects:
             if obj.BIMObjectProperties.ifc_definition_id:
-                element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+                element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+                if element.FillsVoids:
+                    self.remove_filling(element)
                 if element.is_a("IfcOpeningElement"):
-                    self.delete_opening_element(element)
+                    for rel in element.HasFillings:
+                        self.remove_filling(rel.RelatedBuildingElement)
+                    if element.VoidsElements:
+                        self.delete_opening_element(element)
                 elif element.HasOpenings:
                     for rel in element.HasOpenings:
                         self.delete_opening_element(rel.RelatedOpeningElement)
@@ -677,3 +683,7 @@ class OverrideDelete(bpy.types.Operator):
     def delete_opening_element(self, element):
         obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
         bpy.ops.bim.remove_opening(opening_id=element.id(), obj=obj.name)
+
+    def remove_filling(self, element):
+        obj = IfcStore.get_element(element.id())
+        bpy.ops.bim.remove_filling(obj=obj.name)
