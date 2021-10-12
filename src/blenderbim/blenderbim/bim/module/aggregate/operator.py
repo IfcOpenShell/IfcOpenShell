@@ -97,5 +97,5 @@ class AddAggregate(bpy.types.Operator):
         aggregate = bpy.data.objects.new("Assembly", None)
         aggregate_collection.objects.link(aggregate)
         bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class="IfcElementAssembly")
-        bpy.ops.bim.assign_object(related_object=obj.name, relating_object=aggregate.name)
+        core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
         return {"FINISHED"}

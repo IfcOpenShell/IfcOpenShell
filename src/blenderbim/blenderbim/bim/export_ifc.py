@@ -27,6 +27,8 @@ import addon_utils
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.placement
+import blenderbim.tool as tool
+import blenderbim.core.style
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -105,7 +107,7 @@ class IfcExporter:
                 continue
             try:
                 if isinstance(obj, bpy.types.Material):
-                    bpy.ops.bim.update_style_colours(material=obj.name)
+                    blenderbim.core.style.update_style_colours(tool.Ifc, tool.Style, obj=obj)
                 else:
                     bpy.ops.bim.update_representation(obj=obj.name)
             except ReferenceError:

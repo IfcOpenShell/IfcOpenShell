@@ -25,6 +25,7 @@ import ifcopenshell.util.representation
 import logging
 import ifcopenshell.api
 import blenderbim.core.geometry as core
+import blenderbim.core.style
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
@@ -108,7 +109,7 @@ class AddRepresentation(bpy.types.Operator):
             return {"FINISHED"}
 
         [
-            bpy.ops.bim.add_style(material=s.material.name)
+            blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=s.material)
             for s in obj.material_slots
             if s.material and not s.material.BIMMaterialProperties.ifc_style_id
         ]

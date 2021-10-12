@@ -98,6 +98,13 @@ def container():
     prophet.verify()
 
 
+@pytest.fixture
+def unit():
+    prophet = Prophecy(blenderbim.core.tool.Unit)
+    yield prophet
+    prophet.verify()
+
+
 class Prophecy:
     def __init__(self, cls):
         self.subject = cls
