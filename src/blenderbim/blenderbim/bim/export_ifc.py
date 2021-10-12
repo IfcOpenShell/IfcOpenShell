@@ -28,6 +28,8 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.placement
 import blenderbim.tool as tool
+import blenderbim.core.aggregate
+import blenderbim.core.spatial
 import blenderbim.core.style
 from blenderbim.bim.ifc import IfcStore
 
@@ -135,7 +137,7 @@ class IfcExporter:
                 float(props.blender_x_axis_ordinate),
             )
         if not np.allclose(ifc_matrix, blender_matrix, atol=0.0001):
-            bpy.ops.bim.edit_object_placement(obj=obj.name)
+            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
 
     def sync_object_container(self, guid, obj):
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
@@ -166,9 +168,13 @@ class IfcExporter:
 
         if parent.is_a("IfcSpatialStructureElement") and not element.is_a("IfcSpatialStructureElement"):
             if parent != ifcopenshell.util.element.get_container(element):
-                bpy.ops.bim.assign_container(relating_structure=parent.id(), related_element=obj.name)
+                blenderbim.core.spatial.assign_container(
+                    tool.Ifc, tool.Collector, tool.Container, structure_obj=parent_obj, element_obj=obj
+                )
         elif parent != ifcopenshell.util.element.get_aggregate(element):
-            bpy.ops.bim.assign_object(relating_object=parent_obj.name, related_object=obj.name)
+            blenderbim.core.aggregate.assign_object(
+                tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=parent_obj, related_obj=obj
+            )
 
     def should_delete(self, obj):
         try:

@@ -305,7 +305,7 @@ class UpdateRepresentation(bpy.types.Operator):
             ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": product})
             return
 
-        bpy.ops.bim.edit_object_placement(obj=obj.name)
+        core.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
 
         old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         context_of_items = old_representation.ContextOfItems
@@ -335,7 +335,7 @@ class UpdateRepresentation(bpy.types.Operator):
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
 
         [
-            bpy.ops.bim.add_style(material=s.material.name)
+            blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=s.material)
             for s in obj.material_slots
             if s.material and not s.material.BIMMaterialProperties.ifc_style_id
         ]

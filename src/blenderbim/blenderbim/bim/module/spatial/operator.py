@@ -43,11 +43,7 @@ class AssignContainer(bpy.types.Operator, Operator):
         structure_obj = tool.Ifc.get_object(tool.Ifc.get().by_id(self.structure))
         for element_obj in context.selected_objects:
             core.assign_container(
-                tool.Ifc,
-                tool.Collector,
-                tool.Container,
-                structure_obj=structure_obj,
-                element_obj=element_obj,
+                tool.Ifc, tool.Collector, tool.Container, structure_obj=structure_obj, element_obj=element_obj
             )
 
 
@@ -127,6 +123,8 @@ class CopyToContainer(bpy.types.Operator):
                 new_obj.data = obj.data.copy()
                 new_obj.matrix_world = container_obj.matrix_world @ local_position
                 bpy.ops.bim.copy_class(obj=new_obj.name)
-                bpy.ops.bim.assign_container(relating_structure=container_id, related_element=new_obj.name)
+                core.assign_container(
+                    tool.Ifc, tool.Collector, tool.Container, structure_obj=container_obj, element_obj=new_obj
+                )
         obj.BIMObjectSpatialProperties.is_editing = False
         return {"FINISHED"}
