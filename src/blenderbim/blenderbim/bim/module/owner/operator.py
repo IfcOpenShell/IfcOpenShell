@@ -292,9 +292,19 @@ class RemovePersonAndOrganisation(bpy.types.Operator, Operator):
 
 class SetUser(bpy.types.Operator, Operator):
     bl_idname = "bim.set_user"
-    bl_label = "set_user"
+    bl_label = "Set User"
     bl_options = {"REGISTER", "UNDO"}
     user: bpy.props.IntProperty()
 
     def _execute(self, context):
         core.set_user(tool.Owner, user=tool.Ifc.get().by_id(self.user))
+
+
+class ClearUser(bpy.types.Operator, Operator):
+    bl_idname = "bim.clear_user"
+    bl_label = "Clear User"
+    bl_options = {"REGISTER", "UNDO"}
+    user: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.clear_user(tool.Owner)
