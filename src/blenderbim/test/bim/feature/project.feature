@@ -275,3 +275,14 @@ Scenario: Unlink IFC
     When I press "bim.unlink_ifc(filepath='{cwd}/test/files/basic.blend')"
     Then "scene.BIMProjectProperties.links.get('{cwd}/test/files/basic.blend')" is "None"
     And "scene.collection.children.get('IfcProject/My Project')" is "None"
+
+Scenario: Export IFC - blank project
+    Given an empty IFC project
+    When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    Then nothing happens
+
+Scenario: Export IFC - with basic contents
+    Given an empty Blender session
+    And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
+    When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    Then nothing happens
