@@ -42,7 +42,7 @@ class BIM_PT_ifccsv(Panel):
             row = layout.row(align=True)
             row.prop(props, "csv_ifc_file")
             row.operator("bim.select_csv_ifc_file", icon="FILE_FOLDER", text="")
-    
+
         row = layout.row(align=True)
         row.prop(props, "ifc_selector")
         row.operator("bim.eyedrop_ifccsv", icon="EYEDROPPER", text="")
@@ -66,8 +66,8 @@ class BIM_PT_ifccsv(Panel):
             row.operator("bim.remove_all_csv_attributes", icon="CANCEL", text="")
             row = layout.row()
             row.operator("bim.export_csv_attributes", icon="EXPORT", text="Create Template")
-        
-        layout.separator()   
+
+        layout.separator()
 
         row = layout.row(align=True)
         row.prop(props, "csv_delimiter")

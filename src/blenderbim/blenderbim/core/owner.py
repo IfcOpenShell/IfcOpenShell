@@ -139,3 +139,7 @@ def set_user(owner, user=None):
 
 def get_user(owner):
     return owner.get_user()
+
+
+def clear_user(owner):
+    owner.clear_user()

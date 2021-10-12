@@ -27,6 +27,7 @@ classes = (
     operator.AddPersonAndOrganisation,
     operator.AddPersonAttribute,
     operator.AddRole,
+    operator.ClearUser,
     operator.DisableEditingAddress,
     operator.DisableEditingOrganisation,
     operator.DisableEditingPerson,

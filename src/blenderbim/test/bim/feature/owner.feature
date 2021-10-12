@@ -233,3 +233,8 @@ Scenario: Set user
     And the variable "user" is "{ifc}.by_type('IfcPersonAndOrganization')[0].id()"
     And I press "bim.set_user(user={user})"
     Then nothing happens
+
+Scenario: Clear user
+    Given an empty IFC project
+    When I press "bim.clear_user(user={user})"
+    Then nothing happens
