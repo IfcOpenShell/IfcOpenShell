@@ -69,7 +69,7 @@ class CreateProject(bpy.types.Operator):
         building_storey = bpy.data.objects.new(self.get_name("IfcBuildingStorey", "My Storey"), None)
 
         bpy.ops.bim.assign_class(obj=project.name, ifc_class="IfcProject")
-        bpy.ops.bim.assign_unit()
+        blenderbim.core.unit.assign_scene_units(tool.Ifc, tool.Unit)
 
         model = blenderbim.core.context.add_context(
             tool.Ifc, context_type="Model", context_identifier="", target_view="", parent=0

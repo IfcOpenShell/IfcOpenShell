@@ -19,7 +19,7 @@
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.unit.data import Data
+from blenderbim.bim.module.unit.data import UnitsData
 
 
 class BIM_PT_units(Panel):
@@ -36,13 +36,13 @@ class BIM_PT_units(Panel):
         return file
 
     def draw(self, context):
-        self.file = IfcStore.get_file()
-        if not Data.is_loaded:
-            Data.load(self.file)
+        if not UnitsData.is_loaded:
+            UnitsData.load()
+
         self.props = context.scene.BIMUnitProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Units Found".format(len(Data.units)), icon="SNAP_GRID")
+        row.label(text="{} Units Found".format(UnitsData.data["total_units"]), icon="SNAP_GRID")
         if self.props.is_editing:
             row.operator("bim.disable_unit_editing_ui", text="", icon="CANCEL")
         else:
@@ -60,10 +60,13 @@ class BIM_PT_units(Panel):
             pass  # TODO
         elif self.props.unit_classes == "IfcSIUnit":
             row.prop(self.props, "named_unit_types", text="")
-            row.operator("bim.add_si_unit", text="", icon="ADD")
+            op = row.operator("bim.add_si_unit", text="", icon="ADD")
+            op.unit_type = self.props.named_unit_types
         elif self.props.unit_classes == "IfcContextDependentUnit":
             row.prop(self.props, "named_unit_types", text="")
-            row.operator("bim.add_context_dependent_unit", text="", icon="ADD")
+            op = row.operator("bim.add_context_dependent_unit", text="", icon="ADD")
+            op.name = "THINGAMAJIG"
+            op.unit_type = self.props.named_unit_types
 
         self.layout.template_list(
             "BIM_UL_units",
@@ -85,8 +88,14 @@ class BIM_UL_units(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         props = context.scene.BIMUnitProperties
         if item:
+            icon = "MOD_MESHDEFORM"
+            if item.ifc_class == "IfcSIUnit":
+                icon = "SNAP_GRID"
+            elif item.ifc_class == "IfcMonetaryUnit":
+                icon = "COPY_ID"
+
             row = layout.row(align=True)
-            row.label(text=item.unit_type or "No Type", icon=item.icon)
+            row.label(text=item.unit_type or "No Type", icon=icon)
             row.label(text=item.name or "Unnamed")
 
             if item.is_assigned:

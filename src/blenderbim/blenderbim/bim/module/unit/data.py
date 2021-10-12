@@ -16,13 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.tool.aggregate import Aggregate
-from blenderbim.tool.blender import Blender
-from blenderbim.tool.collector import Collector
-from blenderbim.tool.container import Container
-from blenderbim.tool.context import Context
-from blenderbim.tool.ifc import Ifc
-from blenderbim.tool.owner import Owner
-from blenderbim.tool.style import Style
-from blenderbim.tool.surveyor import Surveyor
-from blenderbim.tool.unit import Unit
+import blenderbim.tool as tool
+
+
+def refresh():
+    UnitsData.is_loaded = False
+
+
+class UnitsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"total_units": cls.get_total_units()}
+        cls.is_loaded = True
+
+    @classmethod
+    def get_total_units(cls):
+        ifc = tool.Ifc.get()
+        return len(ifc.by_type("IfcDerivedUnit") + ifc.by_type("IfcNamedUnit") + ifc.by_type("IfcMonetaryUnit"))

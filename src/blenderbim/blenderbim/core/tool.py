@@ -131,6 +131,22 @@ class Surveyor:
 
 
 @interface
+class Unit:
+    def clear_active_unit(cls): pass
+    def disable_editing_units(cls): pass
+    def enable_editing_units(cls): pass
+    def export_unit_attributes(cls): pass
+    def get_scene_unit_name(cls, unit_type): pass
+    def get_scene_unit_si_prefix(cls): pass
+    def get_si_name_from_unit_type(cls, unit_type): pass
+    def get_unit_class(cls, unit): pass
+    def import_unit_attributes(cls, unit): pass
+    def import_units(cls): pass
+    def is_scene_unit_metric(cls): pass
+    def set_active_unit(cls, unit): pass
+
+
+@interface
 class Voider:
     def can_void(cls, opening, element): pass
     def set_void_display(cls, opening_obj): pass
