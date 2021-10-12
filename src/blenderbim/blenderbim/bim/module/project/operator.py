@@ -37,6 +37,7 @@ class CreateProject(bpy.types.Operator):
     bl_idname = "bim.create_project"
     bl_label = "Create Project"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Create a new IFC project"
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
