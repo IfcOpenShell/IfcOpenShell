@@ -22,6 +22,7 @@ import ifcopenshell
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from pytest_bdd import scenarios, given, when, then, parsers
+from mathutils import Vector
 
 scenarios("feature")
 
@@ -32,6 +33,16 @@ def replace_variables(value):
     for key, new_value in variables.items():
         value = value.replace("{" + key + "}", str(new_value))
     return value
+
+
+@given("an empty Blender session")
+def an_empty_ifc_project():
+    IfcStore.purge()
+    bpy.ops.wm.read_homefile(app_template="")
+    if len(bpy.data.objects) > 0:
+        while bpy.data.objects:
+            bpy.data.objects.remove(bpy.data.objects[0])
+        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
 
 
 @given("an empty IFC project")
@@ -133,12 +144,19 @@ def nothing_happens():
     pass
 
 
-@then('the object "{name}" exists')
+@then(parsers.parse('the object "{name}" exists'))
 def the_object_name_exists(name) -> bpy.types.Object:
     obj = bpy.data.objects.get(name)
     if not obj:
         assert False, f'The object "{name}" does not exist'
     return obj
+
+
+@then("an IFC file does not exist")
+def an_ifc_file_does_not_exist():
+    ifc = IfcStore.get_file()
+    if ifc:
+        assert False, "An IFC is available"
 
 
 @then("an IFC file exists")
@@ -215,7 +233,7 @@ def the_object_name_is_not_a_void(name):
 def the_object_name_is_an_ifc_class(name, ifc_class):
     ifc = an_ifc_file_exists()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
-    assert element.is_a(ifc_class), f'Object "{name}" is a {element.is_a()}'
+    assert element.is_a(ifc_class), f'Object "{name}" is an {element.is_a()}'
 
 
 @then(parsers.parse('the object "{name}" is not an IFC element'))
@@ -256,6 +274,7 @@ def the_object_name_is_not_a_filling(name):
 
 @then(parsers.parse('"{prop}" is "{value}"'))
 def prop_is_value(prop, value):
+    prop = replace_variables(prop)
     value = replace_variables(value)
     is_value = False
     try:
@@ -284,3 +303,16 @@ def the_object_name_is_in_the_collection_collection(name, collection):
 @then(parsers.parse('the collection "{name1}" is in the collection "{name2}"'))
 def the_collection_name1_is_in_the_collection_name2(name1, name2):
     assert bpy.data.collections.get(name2).children.get(name1)
+
+
+@then(parsers.parse('the object "{name}" does not exist'))
+def the_object_name_does_not_exist(name):
+    assert bpy.data.objects.get(name) is None, "Object exists"
+
+
+@then(parsers.parse('the object "{name}" is at "{location}"'))
+def the_object_name_is_at_location(name, location):
+    obj_location = the_object_name_exists(name).location
+    assert (
+        obj_location - Vector([float(co) for co in location.split(",")])
+    ).length < 0.1, f"Object is at {obj_location}"
