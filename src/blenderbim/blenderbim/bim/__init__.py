@@ -21,7 +21,6 @@ import importlib
 from . import handler, ui, prop, operator
 
 modules = {
-    "lendlease": None,
     "project": None,
     "search": None,
     "bcf": None,
