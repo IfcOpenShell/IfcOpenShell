@@ -535,6 +535,7 @@ class LoadProject(bpy.types.Operator):
     bl_idname = "bim.load_project"
     bl_label = "Load Project"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Load an existing IFC project"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     is_advanced: bpy.props.BoolProperty(name="Enable Advanced Mode", default=False)
