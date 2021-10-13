@@ -90,6 +90,10 @@ class IfcAttributeSetter:
             if property.Name != name:
                 continue
 
+            if value.lower() in ["null", "none"]:
+                property.NominalValue = None
+                continue
+
             # In lieu of loading a map for data casting, we only have four
             # options, which this ugly method will determine.
             if property.NominalValue is None:
