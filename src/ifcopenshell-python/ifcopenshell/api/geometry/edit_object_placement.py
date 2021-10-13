@@ -18,25 +18,30 @@ class Usecase:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
 
         if not self.settings["is_si"]:
-            self.settings["matrix"][0][3] *= self.unit_scale
-            self.settings["matrix"][1][3] *= self.unit_scale
-            self.settings["matrix"][2][3] *= self.unit_scale
+            self.convert_matrix_to_si(self.settings["matrix"])
 
         children_settings = []
         if not self.settings["should_transform_children"]:
             children_settings = self.get_children_settings(self.settings["product"].ObjectPlacement)
 
         placement_rel_to = self.get_placement_rel_to()
-        placement = self.file.createIfcLocalPlacement(placement_rel_to, self.get_relative_placement(placement_rel_to))
+        relative_placement = self.get_relative_placement(placement_rel_to)
+        new_placement = self.file.createIfcLocalPlacement(placement_rel_to, relative_placement)
+
         old_placement = self.settings["product"].ObjectPlacement
+
         if old_placement:
-            self.settings["product"].ObjectPlacement = None
             inverses = self.file.get_inverse(old_placement)
-            for inverse in inverses:
-                ifcopenshell.util.element.replace_attribute(inverse, old_placement, placement)
-            old_placement.PlacementRelTo = None
-            ifcopenshell.util.element.remove_deep(self.file, old_placement)
-        self.settings["product"].ObjectPlacement = placement
+            if len(inverses) == 1:
+                self.settings["product"].ObjectPlacement = None
+                old_placement.PlacementRelTo = None
+                ifcopenshell.util.element.remove_deep(self.file, old_placement)
+            else:
+                for inverse in inverses:
+                    if inverse.is_a("IfcLocalPlacement"):
+                        ifcopenshell.util.element.replace_attribute(inverse, old_placement, new_placement)
+
+        self.settings["product"].ObjectPlacement = new_placement
 
         ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})
 
@@ -44,7 +49,12 @@ class Usecase:
             self.settings = settings
             self.execute()
 
-        return placement
+        return new_placement
+
+    def convert_matrix_to_si(self, matrix):
+        matrix[0][3] *= self.unit_scale
+        matrix[1][3] *= self.unit_scale
+        matrix[2][3] *= self.unit_scale
 
     def get_placement_rel_to(self):
         if getattr(self.settings["product"], "ContainedInStructure", None):
