@@ -12,10 +12,13 @@ class Usecase:
     def execute(self):
         self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema)
         result = ifcopenshell.util.element.copy(self.file, self.settings["product"])
+        self.copy_direct_attributes(result)
         self.copy_indirect_attributes(self.settings["product"], result)
-        # Copying representations is too hard, so for now we just don't do it.
-        self.remove_representations(result)
         return result
+
+    def copy_direct_attributes(self, to_element):
+        self.remove_representations(to_element)
+        self.copy_object_placements(to_element)
 
     def copy_indirect_attributes(self, from_element, to_element):
         for inverse in self.file.get_inverse(from_element):
@@ -46,3 +49,8 @@ class Usecase:
             element.Representation = None
         elif element.is_a("IfcTypeProduct"):
             element.RepresentationMaps = None
+
+    def copy_object_placements(self, element):
+        if not element.is_a("IfcProduct") or not element.ObjectPlacement:
+            return
+        element.ObjectPlacement = ifcopenshell.util.element.copy(self.file, element.ObjectPlacement)
