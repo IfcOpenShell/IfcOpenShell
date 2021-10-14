@@ -205,10 +205,10 @@ class Usecase:
             return self.create_curve3d_representation()
         elif isinstance(self.settings["geometry"], bpy.types.Camera):
             return self.create_camera_block_representation()
-        elif not len(self.settings["geometry"].polygons):
-            return self.create_curve3d_representation()
         elif not len(self.settings["geometry"].edges):
             return self.create_point_cloud_representation()
+        elif not len(self.settings["geometry"].polygons):
+            return self.create_curve3d_representation()
         elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcRectangleProfileDef":
             return self.create_rectangle_extrusion_representation()
         elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcCircleProfileDef":
