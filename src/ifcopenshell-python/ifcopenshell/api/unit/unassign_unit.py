@@ -14,4 +14,5 @@ class Usecase:
         units = units - set(self.settings["units"])
         if units:
             unit_assignment.Units = list(units)
-        return unit_assignment
+            return unit_assignment
+        self.file.remove(unit_assignment)
