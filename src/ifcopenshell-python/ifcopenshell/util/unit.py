@@ -192,8 +192,13 @@ si_conversions = {
     "hour": 3600,
     "day": 86400,
     "btu": 1055.056,
+    "fahrenheit": 1.8,
 }
 
+
+si_offsets = {
+    "fahrenheit": -459.67,
+}
 
 
 imperial_types = {
@@ -233,6 +238,7 @@ imperial_types = {
     "hour": "TIMEUNIT",
     "day": "TIMEUNIT",
     "btu": "ENERGYUNIT",
+    "fahrenheit": "THERMODYNAMICTEMPERATUREUNIT",
 }
 
 
