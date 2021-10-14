@@ -1,4 +1,3 @@
-
 # IfcFM - IFC for facility management
 # Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -277,7 +276,7 @@ class Parser:
             # Hack
             category = None
             if ifc_file == "arch":
-                #if "Data" in psets and "COBie.Type.Category" in psets["Data"]:
+                # if "Data" in psets and "COBie.Type.Category" in psets["Data"]:
                 #    if ":" in psets["Data"]["COBie.Type.Category"]:
                 #        category = psets["Data"]["COBie.Type.Category"].replace(" : ", ":")
                 if "Data" in psets and "Classification.Uniclass.Pr.Number" in psets["Data"]:
@@ -332,7 +331,7 @@ class Parser:
                 else:
                     space = element.ContainedInStructure[0].RelatingStructure
                     if space.is_a("IfcSpace"):
-                       space_name = space.Name
+                        space_name = space.Name
 
                 self.components[name] = {
                     "Name": name,
