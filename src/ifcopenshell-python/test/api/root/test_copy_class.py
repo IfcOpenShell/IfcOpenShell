@@ -23,6 +23,7 @@ class TestCopyClass(test.bootstrap.IFC4):
         new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
         assert subelement.ObjectPlacement.PlacementRelTo == element.ObjectPlacement
         assert subelement.ObjectPlacement.PlacementRelTo != new.ObjectPlacement
+        assert element.ObjectPlacement.RelativePlacement != new.ObjectPlacement.RelativePlacement
 
     def test_copying_psets_so_changing_properties_of_the_new_element_does_not_affect_the_old(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")

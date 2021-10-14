@@ -1042,6 +1042,8 @@ class IfcImporter:
     def create_aggregate_collections(self):
         if self.ifc_import_settings.has_filter:
             rel_aggregates = [e.IsDecomposedBy[0] for e in self.elements if e.IsDecomposedBy]
+            rel_aggregates += [e.Decomposes[0] for e in self.elements if e.Decomposes]
+            rel_aggregates = set(rel_aggregates)
         else:
             rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
 
