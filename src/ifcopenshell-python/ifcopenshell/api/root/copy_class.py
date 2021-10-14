@@ -54,3 +54,6 @@ class Usecase:
         if not element.is_a("IfcProduct") or not element.ObjectPlacement:
             return
         element.ObjectPlacement = ifcopenshell.util.element.copy(self.file, element.ObjectPlacement)
+        element.ObjectPlacement.RelativePlacement = ifcopenshell.util.element.copy_deep(
+            self.file, element.ObjectPlacement.RelativePlacement
+        )

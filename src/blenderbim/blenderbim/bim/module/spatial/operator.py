@@ -104,7 +104,7 @@ class CopyToContainer(bpy.types.Operator):
         self.file = IfcStore.get_file()
         objects = list(bpy.data.objects.get(self.obj, context.selected_objects))
         sprops = context.scene.BIMSpatialProperties
-        container_ids = [c.ifc_definition_id for c in sprops.spatial_elements if c.is_selected]
+        container_ids = [c.ifc_definition_id for c in sprops.containers if c.is_selected]
         for obj in objects:
             container = ifcopenshell.util.element.get_container(
                 self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
