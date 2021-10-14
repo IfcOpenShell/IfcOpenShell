@@ -27,6 +27,8 @@ class Usecase:
                 inverse.RelatingPropertyDefinition = pset
             elif inverse.is_a("IfcRelAggregates") and inverse.RelatingObject == from_element:
                 continue
+            elif inverse.is_a("IfcRelContainedInSpatialStructure") and inverse.RelatingStructure == from_element:
+                continue
             elif inverse.is_a("IfcRelFillsElement"):
                 continue
             else:
