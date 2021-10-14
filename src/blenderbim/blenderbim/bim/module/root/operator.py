@@ -157,7 +157,7 @@ class AssignClass(bpy.types.Operator):
             or product.is_a("IfcProject")
             or product.is_a("IfcContext")
         ):
-            self.place_in_spatial_collection(obj, context)
+            tool.Collector.assign(obj)
         elif product.is_a("IfcStructuralItem"):
             if product.is_a("IfcStructuralMember"):
                 self.place_in_structural_items_collection(obj, context, structural_collection="Members")
@@ -190,29 +190,6 @@ class AssignClass(bpy.types.Operator):
                 collection.collection.objects.link(obj)
                 break
             break
-
-    def place_in_spatial_collection(self, obj, context):
-        for collection in obj.users_collection:
-            if collection.name == obj.name:
-                return
-        parent_collection = None
-        for collection in obj.users_collection:
-            collection.objects.unlink(obj)
-            if "Ifc" in collection.name:
-                parent_collection = collection
-        collection = bpy.data.collections.new(obj.name)
-        collection.objects.link(obj)
-        if parent_collection:
-            parent_collection.children.link(collection)
-            blenderbim.core.aggregate.assign_object(
-                tool.Ifc,
-                tool.Aggregator,
-                tool.Collector,
-                relating_obj=bpy.data.objects.get(parent_collection.name),
-                related_obj=obj,
-            )
-        else:
-            context.scene.collection.children.link(collection)
 
     def place_in_structural_items_collection(self, obj, context, structural_collection):
         for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
@@ -347,26 +324,11 @@ class CopyClass(bpy.types.Operator):
             else:
                 bpy.ops.bim.add_representation(obj=obj.name)
             if result.is_a("IfcSpatialElement") or result.is_a("IfcSpatialStructureElement"):
-                self.place_in_spatial_collection(result, obj)
+                tool.Collector.assign(obj)
             elif result.is_a("IfcOpeningElement"):
                 self.add_opening_modifiers(result, obj)
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
-
-    def place_in_spatial_collection(self, element, obj):
-        aggregate = ifcopenshell.util.element.get_aggregate(element)
-        if not aggregate:
-            return
-        container_obj = IfcStore.get_element(aggregate.id())
-        for collection in obj.users_collection:
-            collection.objects.unlink(obj)
-            if "Ifc" in collection.name:
-                parent_collection = collection
-        for collection in container_obj.users_collection:
-            if collection.name == container_obj.name:
-                new = bpy.data.collections.new(obj.name)
-                new.objects.link(obj)
-                collection.children.link(new)
 
     def add_opening_modifiers(self, result, obj):
         for rel in result.VoidsElements:
