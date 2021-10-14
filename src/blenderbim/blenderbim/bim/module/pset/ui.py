@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from os import truncate
 from bpy.types import Panel
 from ifcopenshell.api.pset.data import Data
 from blenderbim.bim.ifc import IfcStore
@@ -114,6 +115,7 @@ class BIM_PT_object_psets(Panel):
 
     @classmethod
     def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not context.active_object:
             return False
         props = context.active_object.BIMObjectProperties
@@ -125,7 +127,7 @@ class BIM_PT_object_psets(Panel):
             Data.load(IfcStore.get_file(), props.ifc_definition_id)
         if not Data.products[props.ifc_definition_id]:
             return False
-        return True
+        return view_setting in ["Admin", "Basic User"]
 
     def draw(self, context):
         oprops = context.active_object.BIMObjectProperties
@@ -159,6 +161,7 @@ class BIM_PT_object_qtos(Panel):
 
     @classmethod
     def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not context.active_object:
             return False
         props = context.active_object.BIMObjectProperties
@@ -170,7 +173,7 @@ class BIM_PT_object_qtos(Panel):
             Data.load(IfcStore.get_file(), props.ifc_definition_id)
         if not Data.products[props.ifc_definition_id]:
             return False
-        return True
+        return view_setting in ["Admin", "Basic User"]
 
     def draw(self, context):
         oprops = context.active_object.BIMObjectProperties
@@ -199,6 +202,7 @@ class BIM_PT_material_psets(Panel):
 
     @classmethod
     def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not context.active_object:
             return False
         if not context.active_object.active_material:
@@ -213,7 +217,7 @@ class BIM_PT_material_psets(Panel):
             Data.load(IfcStore.get_file(), props.ifc_definition_id)
         if not Data.products[props.ifc_definition_id]:
             return False
-        return True
+        return view_setting in ["Admin"]
 
     def draw(self, context):
         oprops = context.active_object.active_material.BIMObjectProperties
@@ -250,7 +254,6 @@ class BIM_PT_task_qtos(Panel):
         total_tasks = len(context.scene.BIMTaskTreeProperties.tasks)
         if total_tasks > 0 and props.active_task_index < total_tasks:
             return True
-        return False
 
     def draw(self, context):
         props = context.scene.TaskPsetProperties
@@ -283,8 +286,7 @@ class BIM_PT_resource_qtos(Panel):
         props = context.scene.BIMResourceProperties
         total_resources = len(context.scene.BIMResourceTreeProperties.resources)
         if total_resources > 0 and props.active_resource_index < total_resources:
-            return True
-        return False
+            return False
 
     def draw(self, context):
         props = context.scene.ResourcePsetProperties
@@ -317,8 +319,7 @@ class BIM_PT_resource_psets(Panel):
         props = context.scene.BIMResourceProperties
         total_resources = len(context.scene.BIMResourceTreeProperties.resources)
         if total_resources > 0 and props.active_resource_index < total_resources:
-            return True
-        return False
+            return False
 
     def draw(self, context):
         props = context.scene.ResourcePsetProperties

@@ -32,7 +32,10 @@ class BIM_PT_constraints(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        if not IfcStore.get_file():
+            return False
+        return view_setting in ["Admin"]
 
     def draw(self, context):
         if not Data.is_loaded:

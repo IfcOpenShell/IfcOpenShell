@@ -32,11 +32,14 @@ class BIM_PT_representations(Panel):
 
     @classmethod
     def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not context.active_object:
             return False
         if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
             return False
-        return IfcStore.get_file()
+        if not IfcStore.get_file():
+            return False
+        return view_setting in ["Admin"]
 
     def draw(self, context):
         layout = self.layout
@@ -77,12 +80,15 @@ class BIM_PT_mesh(Panel):
 
     @classmethod
     def poll(cls, context):
-        return (
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        if not (
             context.active_object is not None
             and context.active_object.type == "MESH"
             and hasattr(context.active_object.data, "BIMMeshProperties")
             and context.active_object.data.BIMMeshProperties.ifc_definition_id
-        )
+        ):
+            return False
+        return view_setting in ["Admin"]
 
     def draw(self, context):
         if not context.active_object.data:
@@ -180,12 +186,16 @@ class BIM_PT_workarounds(Panel):
 
     @classmethod
     def poll(cls, context):
-        return (
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        if not (
             context.active_object is not None
             and context.active_object.type == "MESH"
             and hasattr(context.active_object.data, "BIMMeshProperties")
             and context.active_object.data.BIMMeshProperties.ifc_definition_id
-        )
+        ):
+            return False
+        return view_setting in ["Admin"]
+
 
     def draw(self, context):
         props = context.scene.BIMGeometryProperties

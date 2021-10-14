@@ -20,7 +20,7 @@ import os
 import bpy
 from . import ifc
 from bpy.types import Panel
-from bpy.props import StringProperty, IntProperty, BoolProperty
+from bpy.props import StringProperty, IntProperty, BoolProperty, EnumProperty
 
 
 class BIM_PT_section_plane(Panel):
@@ -30,6 +30,11 @@ class BIM_PT_section_plane(Panel):
     bl_region_type = "WINDOW"
     bl_context = "output"
 
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting in ["Admin"]
+        
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
@@ -77,6 +82,17 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
+    module_visibility: EnumProperty(
+        items=[
+            ("Admin", "Admin", "Enables access for all modules"),
+            ("Basic User", "Basic User", "Gives the user only access to a basic set of modules"),
+            #Additional roles to be added...
+                #("BIM Manager", "BIM Manager", "blah blah blah"),
+                #("4D Scheduling", "4D Scheduling", "blah blah blah"),
+                #("5D Cost Planning", "5D Cost Planning", "blah blah blah"),
+        ],
+        name="Toggle module visibility"
+    )
 
     def draw(self, context):
         layout = self.layout
@@ -110,7 +126,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "should_hide_empty_props")
         row = layout.row()
         row.prop(self, "should_play_chaching_sound")
-
+        row = layout.row()
+        row.prop(self, "module_visibility")
 
 def ifc_units(self, context):
     scene = context.scene

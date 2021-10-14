@@ -28,6 +28,11 @@ class BIM_PT_lca(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting in ["Admin"]
+        
     def draw(self, context):
         props = context.scene.BIMLCAProperties
         row = self.layout.row()

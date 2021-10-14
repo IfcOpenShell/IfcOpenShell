@@ -89,14 +89,17 @@ class BIM_PT_object_attributes(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-
+    
     @classmethod
     def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not context.active_object:
             return False
         if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
             return False
-        return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
+        if not bool(context.active_object.BIMObjectProperties.ifc_definition_id):
+            return False 
+        return view_setting in ["Admin", "Basic User"]
 
     def draw(self, context):
         draw_ui(context, self.layout, "Object")
@@ -111,12 +114,15 @@ class BIM_PT_material_attributes(Panel):
 
     @classmethod
     def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not IfcStore.get_file():
             return False
         try:
-            return bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id)
+            if not bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id):
+                return False
         except:
             return False
+        return view_setting in ["Admin", "Basic User"]
 
     def draw(self, context):
         draw_ui(context, self.layout, "Material")

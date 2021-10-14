@@ -28,6 +28,11 @@ class BIM_PT_ifccsv(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+    @classmethod
+    def poll(self, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting in ["Admin", "Basic User"]
+        
     def draw(self, context):
         layout = self.layout
 

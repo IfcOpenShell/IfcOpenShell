@@ -27,6 +27,11 @@ class BIM_PT_qa(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting in ["Admin"]
 
     def draw(self, context):
         self.layout.use_property_split = True
