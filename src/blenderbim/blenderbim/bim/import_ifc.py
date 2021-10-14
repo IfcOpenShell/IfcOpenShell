@@ -207,6 +207,8 @@ class IfcImporter:
         self.profile_code("Create project")
         self.process_element_filter()
         self.profile_code("Process element filter")
+        self.process_context_filter()
+        self.profile_code("Process context filter")
         self.create_collections()
         self.profile_code("Create collections")
         self.create_openings_collection()
@@ -265,6 +267,25 @@ class IfcImporter:
         if hasattr(point, "Coordinates"):
             coords = point.Coordinates
         return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
+
+    def process_context_filter(self):
+        # Facetation is to accommodate broken Revit files
+        # See https://forums.buildingsmart.org/t/suggestions-on-how-to-improve-clarity-of-representation-context-usage-in-documentation/3663/6?u=moult
+        self.body_contexts = [
+            c.id()
+            for c in self.file.by_type("IfcGeometricRepresentationSubContext")
+            if c.ContextIdentifier in ["Body", "Facetation"]
+        ]
+        if self.body_contexts:
+            self.settings.set_context_ids(self.body_contexts)
+        self.non_body_contexts = [
+            c.id()
+            for c in self.file.by_type("IfcGeometricRepresentationSubContext")
+            if c.ContextIdentifier not in ["Body", "Facetation"]
+        ]
+        if self.non_body_contexts:
+            self.settings_2d.set_context_ids(self.non_body_contexts)
+
 
     def process_element_filter(self):
         if self.ifc_import_settings.has_filter:
@@ -605,14 +626,16 @@ class IfcImporter:
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.guid)
-                # Facetation is to accommodate broken Revit files
-                # See https://forums.buildingsmart.org/t/suggestions-on-how-to-improve-clarity-of-representation-context-usage-in-documentation/3663/6?u=moult
-                if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.guid):
-                    # We only load a single context, and we prioritise the Body context. See #1290.
-                    pass
-                else:
+                if self.body_contexts:
                     self.create_product(product, shape)
                     results.add(product)
+                else:
+                    if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.guid):
+                        # We only load a single context, and we prioritise the Body context. See #1290.
+                        pass
+                    else:
+                        self.create_product(product, shape)
+                        results.add(product)
             if not iterator.next():
                 break
         print("Done creating geometry")
