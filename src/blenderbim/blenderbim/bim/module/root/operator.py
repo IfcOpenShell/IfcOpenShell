@@ -157,7 +157,7 @@ class AssignClass(bpy.types.Operator):
             or product.is_a("IfcProject")
             or product.is_a("IfcContext")
         ):
-            tool.Collector.assign(obj)
+            self.place_in_spatial_collection(obj, context)
         elif product.is_a("IfcStructuralItem"):
             if product.is_a("IfcStructuralMember"):
                 self.place_in_structural_items_collection(obj, context, structural_collection="Members")
@@ -190,6 +190,29 @@ class AssignClass(bpy.types.Operator):
                 collection.collection.objects.link(obj)
                 break
             break
+
+    def place_in_spatial_collection(self, obj, context):
+        for collection in obj.users_collection:
+            if collection.name == obj.name:
+                return
+        parent_collection = None
+        for collection in obj.users_collection:
+            collection.objects.unlink(obj)
+            if "Ifc" in collection.name:
+                parent_collection = collection
+        collection = bpy.data.collections.new(obj.name)
+        collection.objects.link(obj)
+        if parent_collection:
+            parent_collection.children.link(collection)
+            blenderbim.core.aggregate.assign_object(
+                tool.Ifc,
+                tool.Aggregator,
+                tool.Collector,
+                relating_obj=bpy.data.objects.get(parent_collection.name),
+                related_obj=obj,
+            )
+        else:
+            context.scene.collection.children.link(collection)
 
     def place_in_structural_items_collection(self, obj, context, structural_collection):
         for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
