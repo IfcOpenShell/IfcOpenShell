@@ -53,6 +53,7 @@ classes = (
     ui.BIM_UL_links,
 )
 
+
 def menu_func_export(self, context):
     self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
 
