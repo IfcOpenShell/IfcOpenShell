@@ -34,7 +34,7 @@ class BIM_PT_search(Panel):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not IfcStore.get_file():
             return False
-        return view_setting in ["Admin", "Basic User"]
+        return view_setting.search
         
     def draw(self, context):
         props = context.scene.BIMSearchProperties

@@ -93,6 +93,7 @@ classes = [
     prop.BIMObjectProperties,
     prop.BIMMaterialProperties,
     prop.BIMMeshProperties,
+    prop.ModuleVisibility,
     ui.BIM_PT_section_plane,
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,

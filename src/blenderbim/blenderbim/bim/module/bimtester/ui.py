@@ -31,7 +31,7 @@ class BIM_PT_qa(Panel):
     @classmethod
     def poll(cls, context):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting in ["Admin"]
+        return view_setting.bimtester
 
     def draw(self, context):
         self.layout.use_property_split = True

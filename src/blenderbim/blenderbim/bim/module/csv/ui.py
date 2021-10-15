@@ -31,7 +31,7 @@ class BIM_PT_ifccsv(Panel):
     @classmethod
     def poll(self, context):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting in ["Admin", "Basic User"]
+        return view_setting.csv
         
     def draw(self, context):
         layout = self.layout

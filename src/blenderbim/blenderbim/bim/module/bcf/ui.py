@@ -33,7 +33,7 @@ class BIM_PT_bcf(Panel):
     @classmethod
     def poll(cls, context):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting in ["Admin", "Basic User"]
+        return view_setting.bcf
 
     def draw(self, context):
         layout = self.layout

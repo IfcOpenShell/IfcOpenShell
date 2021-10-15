@@ -37,7 +37,7 @@ class BIM_PT_class(Panel):
             return False
         if not IfcStore.get_file():
             return False
-        return view_setting in ["Admin", "Basic User"]
+        return view_setting.root
 
     def draw(self, context):
         props = context.active_object.BIMObjectProperties

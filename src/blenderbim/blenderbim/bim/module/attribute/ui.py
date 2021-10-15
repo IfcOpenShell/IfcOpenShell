@@ -90,6 +90,7 @@ class BIM_PT_object_attributes(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
     
+
     @classmethod
     def poll(cls, context):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
@@ -99,7 +100,7 @@ class BIM_PT_object_attributes(Panel):
             return False
         if not bool(context.active_object.BIMObjectProperties.ifc_definition_id):
             return False 
-        return view_setting in ["Admin", "Basic User"]
+        return view_setting.attribute
 
     def draw(self, context):
         draw_ui(context, self.layout, "Object")
@@ -122,7 +123,7 @@ class BIM_PT_material_attributes(Panel):
                 return False
         except:
             return False
-        return view_setting in ["Admin", "Basic User"]
+        return view_setting.attribute
 
     def draw(self, context):
         draw_ui(context, self.layout, "Material")

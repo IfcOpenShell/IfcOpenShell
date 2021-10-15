@@ -30,7 +30,7 @@ class BIM_PT_augin(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting in ["Admin"]
+        return view_setting.augin
         
     def draw(self, context):
         layout = self.layout

@@ -38,7 +38,7 @@ class BIM_PT_spatial(Panel):
             return False
         if not IfcStore.get_element(oprops.ifc_definition_id):
             return False
-        return view_setting in ["Admin"]
+        return view_setting.spatial
 
     def draw(self, context):
         if not SpatialData.is_loaded:

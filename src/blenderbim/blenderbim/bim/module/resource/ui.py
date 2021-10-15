@@ -36,7 +36,7 @@ class BIM_PT_resources(Panel):
         file = IfcStore.get_file()
         if not (file and hasattr(file, "schema") and file.schema != "IFC2X3"):
             return False
-        return view_setting in ["Admin"]
+        return view_setting.resource
 
     def draw(self, context):
         self.props = context.scene.BIMResourceProperties
