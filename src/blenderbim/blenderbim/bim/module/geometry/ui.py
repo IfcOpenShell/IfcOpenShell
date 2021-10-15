@@ -103,6 +103,9 @@ class BIM_PT_mesh(Panel):
         op.disable_opening_subtractions = True
 
         row = layout.row()
+        row.operator("bim.copy_representation")
+
+        row = layout.row()
         row.operator("bim.update_representation")
 
         row = layout.row()

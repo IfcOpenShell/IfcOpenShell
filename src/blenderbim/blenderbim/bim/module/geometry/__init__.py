@@ -20,13 +20,14 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.EditObjectPlacement,
     operator.AddRepresentation,
-    operator.SwitchRepresentation,
-    operator.RemoveRepresentation,
-    operator.UpdateRepresentation,
-    operator.UpdateParametricRepresentation,
+    operator.CopyRepresentation,
+    operator.EditObjectPlacement,
     operator.GetRepresentationIfcParameters,
+    operator.RemoveRepresentation,
+    operator.SwitchRepresentation,
+    operator.UpdateParametricRepresentation,
+    operator.UpdateRepresentation,
     prop.BIMGeometryProperties,
     ui.BIM_PT_derived_placements,
     ui.BIM_PT_representations,
