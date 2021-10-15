@@ -498,7 +498,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
         new_active_obj = None
         for obj in context.selected_objects:
             new_obj = obj.copy()
-            new_obj.data = obj.data.copy()
+            if obj.data:
+                new_obj.data = obj.data.copy()
             if obj == context.active_object:
                 new_active_obj = new_obj
             for collection in obj.users_collection:
@@ -514,14 +515,15 @@ class OverrideDuplicateMove(bpy.types.Operator):
         self.new_active_obj = None
         for obj in context.selected_objects:
             new_obj = obj.copy()
-            new_obj.data = obj.data.copy()
+            if obj.data:
+                new_obj.data = obj.data.copy()
             if obj == context.active_object:
                 self.new_active_obj = new_obj
-            # This is the only difference
-            bpy.ops.bim.copy_class(obj=new_obj.name)
             for collection in obj.users_collection:
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
+            # This is the only difference
+            bpy.ops.bim.copy_class(obj=new_obj.name)
         bpy.ops.transform.translate("INVOKE_DEFAULT")
         return {"FINISHED"}
