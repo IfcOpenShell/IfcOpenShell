@@ -64,6 +64,9 @@ class BIM_PT_project(Panel):
         elif pprops.filter_mode in ["WHITELIST", "BLACKLIST"]:
             row = self.layout.row()
             row.prop(pprops, "filter_query")
+        if pprops.filter_mode != "NONE":
+            row = self.layout.row()
+            row.prop(pprops, "should_filter_spatial_elements")
         row = self.layout.row()
         row.prop(pprops, "should_use_cpu_multiprocessing")
         row = self.layout.row()

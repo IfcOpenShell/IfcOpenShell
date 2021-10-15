@@ -22,7 +22,6 @@ class Usecase:
             "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
             "should_force_faceted_brep": False,  # If we should force faceted breps for meshes
             "should_force_triangulation": False,  # If we should force triangulation for meshes
-            "is_point_cloud": False,  # If the geometry is a point cloud
             #  Possible IFC representation classes:
             #  IfcExtrudedAreaSolid/IfcRectangleProfileDef
             #  IfcExtrudedAreaSolid/IfcCircleProfileDef
@@ -206,10 +205,10 @@ class Usecase:
             return self.create_curve3d_representation()
         elif isinstance(self.settings["geometry"], bpy.types.Camera):
             return self.create_camera_block_representation()
+        elif not len(self.settings["geometry"].edges):
+            return self.create_point_cloud_representation()
         elif not len(self.settings["geometry"].polygons):
             return self.create_curve3d_representation()
-        elif self.settings["is_point_cloud"]:
-            return self.create_point_cloud_representation()
         elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcRectangleProfileDef":
             return self.create_rectangle_extrusion_representation()
         elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcCircleProfileDef":
@@ -354,6 +353,29 @@ class Usecase:
                 points.append(points[0])
             results.append(self.file.createIfcPolyline(points))
         return results
+
+    def create_point_cloud_representation(self, is_2d=False):
+        if self.file.schema == "IFC2X3":
+            geometric_set = []
+            for point in self.settings["geometry"].vertices:
+                if is_2d:
+                    geometric_set.append(self.create_cartesian_point(point.co.x, point.co.y))
+                else:
+                    geometric_set.append(self.create_cartesian_point(point.co.x, point.co.y, point.co.z))
+            return self.file.createIfcShapeRepresentation(
+                self.settings["context"],
+                self.settings["context"].ContextIdentifier,
+                "GeometricSet",
+                geometric_set,
+            )
+
+        point_cloud = self.create_cartesian_point_list_from_vertices(self.settings["geometry"].vertices, is_2d)
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "PointCloud",
+            [point_cloud],
+        )
 
     def create_rectangle_extrusion_representation(self):
         helper = Helper(self.file)

@@ -565,53 +565,8 @@ class CopyAttributeToSelection(bpy.types.Operator):
                 a.name() for a in self.schema.declaration_by_name(ifc_class).all_attributes()
             ]
         return self.applicable_attributes_cache[ifc_class]
-
-
-class OverrideDelete(bpy.types.Operator):
-    bl_idname = "object.delete"
-    bl_label = "Delete"
-
-    @classmethod
-    def poll(cls, context):
-        return len(context.selected_objects) > 0
-
-    def execute(self, context):
-        if IfcStore.get_file():
-            return IfcStore.execute_ifc_operator(self, context)
-        for obj in context.selected_objects:
-            bpy.data.objects.remove(obj)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_confirm(self, event)
-
-    def _execute(self, context):
-        file = IfcStore.get_file()
-        for obj in context.selected_objects:
-            if obj.BIMObjectProperties.ifc_definition_id:
-                element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-                if element.FillsVoids:
-                    self.remove_filling(element)
-                if element.is_a("IfcOpeningElement"):
-                    for rel in element.HasFillings:
-                        self.remove_filling(rel.RelatedBuildingElement)
-                    if element.VoidsElements:
-                        self.delete_opening_element(element)
-                elif element.HasOpenings:
-                    for rel in element.HasOpenings:
-                        self.delete_opening_element(rel.RelatedOpeningElement)
-            bpy.data.objects.remove(obj)
-        return {"FINISHED"}
-
-    def delete_opening_element(self, element):
-        obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
-        bpy.ops.bim.remove_opening(opening_id=element.id(), obj=obj.name)
-
-    def remove_filling(self, element):
-        obj = IfcStore.get_element(element.id())
-        bpy.ops.bim.remove_filling(obj=obj.name)
-
-
+      
+      
 class ConfigureVisibility(bpy.types.Operator):
     bl_idname = "bim.configure_visibility"
     bl_label = "Select which modules are available in the UI"

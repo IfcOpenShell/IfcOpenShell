@@ -52,12 +52,13 @@ class BIM_PT_spatial(Panel):
             if SpatialData.data["parent_container_id"]:
                 op = row.operator("bim.change_spatial_level", text="", icon="FRAME_PREV")
                 op.parent = SpatialData.data["parent_container_id"]
-            op = row.operator("bim.assign_container", icon="CHECKMARK")
-            op.structure = props.containers[props.active_container_index].ifc_definition_id
+            if props.active_container_index <= len(props.containers):
+                op = row.operator("bim.assign_container", icon="CHECKMARK")
+                op.structure = props.containers[props.active_container_index].ifc_definition_id
             row.operator("bim.copy_to_container", icon="COPYDOWN", text="")
             row.operator("bim.disable_editing_container", icon="CANCEL", text="")
 
-            self.layout.template_list("BIM_UL_containers", "", props, "containers", props, "active_container_id")
+            self.layout.template_list("BIM_UL_containers", "", props, "containers", props, "active_container_index")
         else:
             row = self.layout.row(align=True)
             if SpatialData.data["is_contained"]:
