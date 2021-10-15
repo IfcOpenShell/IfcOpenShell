@@ -290,9 +290,12 @@ class IfcImporter:
     def process_element_filter(self):
         if self.ifc_import_settings.has_filter:
             self.elements = set(self.ifc_import_settings.elements)
-            self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
         else:
             self.elements = set(self.file.by_type("IfcElement"))
+
+        if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
+            self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
+        else:
             if self.file.schema == "IFC2X3":
                 self.spatial_elements = set(self.file.by_type("IfcSpatialStructureElement"))
             else:
@@ -581,19 +584,17 @@ class IfcImporter:
         print("Done creating geometry")
 
     def create_spatial_elements(self):
-        products = self.create_products(self.spatial_elements)
-        self.spatial_elements -= products
-        products = self.create_curve_products(self.spatial_elements)
-        self.spatial_elements -= products
-        for element in self.spatial_elements:
-            self.create_product(element)
+        self.create_generic_elements(self.spatial_elements)
 
     def create_elements(self):
-        products = self.create_products(self.elements)
-        self.elements -= products
-        products = self.create_curve_products(self.elements)
-        self.elements -= products
-        for element in self.elements:
+        self.create_generic_elements(self.elements)
+
+    def create_generic_elements(self, elements):
+        products = self.create_products(elements)
+        elements -= products
+        products = self.create_curve_products(elements)
+        elements -= products
+        for element in elements:
             self.create_product(element)
 
     def create_products(self, products):
@@ -1438,14 +1439,30 @@ class IfcImportSettings:
         self.should_offset_model = False
         self.model_offset_coordinates = (0, 0, 0)
         self.has_filter = None
-        self.elements = ""
+        self.should_filter_spatial_elements = True
+        self.elements = set()
         self.collection_mode = "DECOMPOSITION"
 
     @staticmethod
     def factory(context, input_file, logger):
         scene_diff = context.scene.DiffProperties
+        props = context.scene.BIMProjectProperties
         settings = IfcImportSettings()
         settings.input_file = input_file
         settings.logger = logger
         settings.diff_file = scene_diff.diff_json_file
+        settings.collection_mode = props.collection_mode
+        settings.should_use_cpu_multiprocessing = props.should_use_cpu_multiprocessing
+        settings.should_merge_by_class = props.should_merge_by_class
+        settings.should_merge_by_material = props.should_merge_by_material
+        settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
+        settings.should_clean_mesh = props.should_clean_mesh
+        settings.deflection_tolerance = props.deflection_tolerance
+        settings.angular_tolerance = props.angular_tolerance
+        settings.should_offset_model = props.should_offset_model
+        settings.model_offset_coordinates = (
+            [float(o) for o in props.model_offset_coordinates.split(",")]
+            if props.model_offset_coordinates
+            else (0, 0, 0)
+        )
         return settings
