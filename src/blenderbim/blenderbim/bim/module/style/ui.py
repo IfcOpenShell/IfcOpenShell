@@ -38,7 +38,7 @@ class BIM_PT_style(Panel):
             and context.active_object.active_material is not None
         ):
             return False
-        return view_setting in ["Admin"]
+        return view_setting.style
 
     def draw(self, context):
         props = context.active_object.active_material.BIMMaterialProperties
@@ -69,7 +69,7 @@ class BIM_PT_style_attributes(Panel):
                 return False
         except:
             return False
-        return view_setting in ["Admin"]
+        return view_setting.style
         
     def draw(self, context):
         if not StyleAttributesData.is_loaded:

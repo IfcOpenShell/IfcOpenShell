@@ -19,8 +19,9 @@
 import os
 import bpy
 from . import ifc
+from . import prop
 from bpy.types import Panel
-from bpy.props import StringProperty, IntProperty, BoolProperty, EnumProperty
+from bpy.props import PointerProperty, StringProperty, IntProperty, BoolProperty, EnumProperty
 
 
 class BIM_PT_section_plane(Panel):
@@ -82,17 +83,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
-    module_visibility: EnumProperty(
-        items=[
-            ("Admin", "Admin", "Enables access for all modules"),
-            ("Basic User", "Basic User", "Gives the user only access to a basic set of modules"),
-            #Additional roles to be added...
-                #("BIM Manager", "BIM Manager", "blah blah blah"),
-                #("4D Scheduling", "4D Scheduling", "blah blah blah"),
-                #("5D Cost Planning", "5D Cost Planning", "blah blah blah"),
-        ],
-        name="Toggle module visibility"
-    )
+    module_visibility: PointerProperty(type=prop.ModuleVisibility)
 
     def draw(self, context):
         layout = self.layout
@@ -127,7 +118,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.prop(self, "should_play_chaching_sound")
         row = layout.row()
-        row.prop(self, "module_visibility")
+        row.operator("bim.configure_visibility")
 
 def ifc_units(self, context):
     scene = context.scene

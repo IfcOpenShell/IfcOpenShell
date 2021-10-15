@@ -36,7 +36,7 @@ class BIM_PT_material(Panel):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not IfcStore.get_file() and context.active_object and context.active_object.active_material:
             return False
-        return view_setting in ["Admin"]
+        return view_setting.material
 
     def draw(self, context):
         row = self.layout.row()
@@ -65,7 +65,7 @@ class BIM_PT_object_material(Panel):
             return False
         if not hasattr(IfcStore.get_file().by_id(props.ifc_definition_id), "HasAssociations"):
             return False
-        return view_setting in ["Admin"]
+        return view_setting.material
 
     def draw(self, context):
         self.file = IfcStore.get_file()
