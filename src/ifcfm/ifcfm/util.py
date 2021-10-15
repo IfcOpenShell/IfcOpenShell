@@ -23,29 +23,37 @@ import ifcopenshell.util.fm
 import ifcopenshell.util.attribute
 
 
-def print_element(declaration, levels=0):
-    if declaration.name() == "IfcCooledBeamType":
-        return
-    if declaration.is_abstract():
-        print("{}{} (abstract)".format("\t\t" * levels, declaration.name()))
+def print_element(declaration):
+    if declaration.name() in ifcopenshell.util.fm.fmhem_excluded_classes:
+        pass
+    elif declaration.is_abstract():
+        pass
     else:
         types = []
         for attribute in declaration.all_attributes():
             if attribute.name() == "PredefinedType":
-                types = ifcopenshell.util.attribute.get_enum_items(attribute)
-        print("{}{}".format("\t\t" * levels, declaration.name()))
+                types = list(ifcopenshell.util.attribute.get_enum_items(attribute))
+                if "NOTDEFINED" in types:
+                    types.remove("NOTDEFINED")
+        print("{}".format(declaration.name()))
         if types:
-            for line in textwrap.wrap(", ".join(types), width=60):
-                print("{}{}".format("\t\t" * (levels + 1), line))
+            for line in textwrap.wrap(", ".join(types), width=70):
+                print("\t\t{}".format(line))
     for subtype in declaration.subtypes():
-        print_element(subtype, levels=levels + 1)
+        print_element(subtype)
 
 
 def print_fmhem_documentation(schema="IFC4"):
+    if schema == "IFC4":
+        classes = ifcopenshell.util.fm.fmhem_classes_ifc4
+    elif schema == "IFC2X3":
+        classes = ifcopenshell.util.fm.fmhem_classes_ifc2x3
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema)
-    for ifc_class in ifcopenshell.util.fm.fmhem_classes:
+    for ifc_class in classes:
         try:
             declaration = schema.declaration_by_name(ifc_class)
             print_element(declaration)
         except:
             pass
+
+print_fmhem_documentation("IFC2X3")
