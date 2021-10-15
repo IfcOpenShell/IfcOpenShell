@@ -31,7 +31,7 @@ class BIM_PT_project(Panel):
     @classmethod
     def poll(cls, context):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting in ["Admin", "Basic User"]
+        return view_setting.project
 
     def draw(self, context):
         self.layout.use_property_decorate = False
@@ -174,7 +174,7 @@ class BIM_PT_project_library(Panel):
     @classmethod
     def poll(cls, context):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting in ["Admin"]
+        return view_setting.project
 
     def draw(self, context):
         self.layout.use_property_decorate = False
@@ -220,7 +220,7 @@ class BIM_PT_links(Panel):
     @classmethod
     def poll(cls, context):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting in ["Admin"]
+        return view_setting.project
         
     def draw(self, context):
         self.props = context.scene.BIMProjectProperties

@@ -35,7 +35,7 @@ class BIM_PT_documents(Panel):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not IfcStore.get_file():
             return False
-        return view_setting in ["Admin"]
+        return view_setting.document
 
     def draw(self, context):
         if not Data.is_loaded:
@@ -90,7 +90,7 @@ class BIM_PT_object_documents(Panel):
             return False
         if not bool(context.active_object.BIMObjectProperties.ifc_definition_id):
             return False
-        return view_setting in ["Admin"]
+        return view_setting.document
 
 
     def draw(self, context):

@@ -31,7 +31,7 @@ class BIM_PT_diff(Panel):
     @classmethod
     def poll(cls, context):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting in ["Admin"]
+        return view_setting.diff
 
     def draw(self, context):
         layout = self.layout

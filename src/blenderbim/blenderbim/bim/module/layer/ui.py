@@ -34,7 +34,7 @@ class BIM_PT_layers(Panel):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not IfcStore.get_file():
             return False
-        return view_setting in ["Admin"]
+        return view_setting.layer
 
     def draw(self, context):
         if not Data.is_loaded:

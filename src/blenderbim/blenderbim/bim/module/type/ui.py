@@ -45,7 +45,7 @@ class BIM_PT_type(Panel):
             return False
         if not Data.products.get(props.ifc_definition_id, None) and not Data.types.get(props.ifc_definition_id, None):
             return False
-        return view_setting in ["Admin"]
+        return view_setting.type
 
     def draw(self, context):
         oprops = context.active_object.BIMObjectProperties

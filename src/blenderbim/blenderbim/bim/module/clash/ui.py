@@ -27,7 +27,11 @@ class BIM_PT_ifcclash(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-
+    
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting.clash
     def draw(self, context):
         layout = self.layout
 
@@ -116,6 +120,11 @@ class BIM_PT_clash_manager(Panel):
     bl_region_type = "UI"
     bl_category = "BlenderBIM"
 
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting.clash
+        
     def draw(self, context):
         layout = self.layout
         props = context.scene.BIMClashProperties

@@ -31,7 +31,7 @@ class BIM_PT_lca(Panel):
     @classmethod
     def poll(cls, context):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting in ["Admin"]
+        return view_setting.lca
         
     def draw(self, context):
         props = context.scene.BIMLCAProperties

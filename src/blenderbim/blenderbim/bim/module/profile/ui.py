@@ -36,7 +36,7 @@ class BIM_PT_profiles(Panel):
         file = IfcStore.get_file()
         if not file:
             return False
-        return view_setting in ["Admin"]
+        return view_setting.profile
 
     def draw(self, context):
         self.file = IfcStore.get_file()

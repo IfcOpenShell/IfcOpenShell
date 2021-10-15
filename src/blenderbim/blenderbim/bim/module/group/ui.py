@@ -33,7 +33,7 @@ class BIM_PT_groups(Panel):
     def poll(cls, context):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not IfcStore.get_file():
-            return view_setting in ["Admin"]
+            return view_setting.group
 
     def draw(self, context):
         if not Data.is_loaded:
@@ -84,7 +84,7 @@ class BIM_PT_object_groups(Panel):
             return False
         if not IfcStore.get_file() and context.active_object.BIMObjectProperties.ifc_definition_id:
             return False
-        return view_setting in ["Admin"]
+        return view_setting.group
 
     def draw(self, context):
         if not Data.is_loaded:

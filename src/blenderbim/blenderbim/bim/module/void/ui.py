@@ -32,11 +32,11 @@ class BIM_PT_voids(Panel):
 
     @classmethod
     def poll(cls, context):
-        
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         file = IfcStore.get_file()
         if not (file and hasattr(file, "schema") and file.schema != "IFC2X3"):
             return False
-        return view_setting in ["Admin"]
+        return view_setting["void"]
 
     @classmethod
     def poll(cls, context):
@@ -47,7 +47,7 @@ class BIM_PT_voids(Panel):
             return False
         if not IfcStore.get_file():
             return False
-        return view_setting in ["Admin"]
+        return view_setting["void"]
 
     def draw(self, context):
         props = context.active_object.BIMObjectProperties

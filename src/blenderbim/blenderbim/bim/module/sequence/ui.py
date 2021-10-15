@@ -106,7 +106,7 @@ class BIM_PT_work_schedules(Panel):
         file = IfcStore.get_file()
         if not (file and hasattr(file, "schema") and file.schema != "IFC2X3"):
             return False
-        return view_setting in ["Admin"]
+        return view_setting.sequence
 
     def draw(self, context):
         self.props = context.scene.BIMWorkScheduleProperties
@@ -558,7 +558,7 @@ class BIM_PT_work_calendars(Panel):
         file = IfcStore.get_file()
         if not (file and hasattr(file, "schema") and file.schema != "IFC2X3"):
             return False
-        return view_setting in ["Admin"]
+        return view_setting.sequence
 
     def draw(self, context):
         if not Data.is_loaded:

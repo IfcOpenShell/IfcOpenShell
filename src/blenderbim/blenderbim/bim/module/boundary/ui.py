@@ -45,7 +45,7 @@ class BIM_PT_boundary(Panel):
             return False
         if IfcStore.get_file().by_id(props.ifc_definition_id).is_a() not in ["IfcSpace", "IfcExternalSpatialElement"]:
             return False
-        return view_setting in ["Admin", "Basic User"]
+        return view_setting.boundary
 
     def draw(self, context):
         self.oprops = context.active_object.BIMObjectProperties

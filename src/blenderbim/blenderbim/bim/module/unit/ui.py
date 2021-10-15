@@ -36,7 +36,7 @@ class BIM_PT_units(Panel):
         file = IfcStore.get_file()
         if not file:
             return False
-        return view_setting in ["Admin", "Basic User"]    
+        return view_setting.unit
 
     def draw(self, context):
         if not UnitsData.is_loaded:

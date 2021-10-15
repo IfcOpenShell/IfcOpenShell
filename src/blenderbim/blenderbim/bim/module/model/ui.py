@@ -30,7 +30,10 @@ class BIM_PT_authoring(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        if not IfcStore.get_file():
+            return False
+        return view_setting.model
 
     def draw(self, context):
         tprops = context.scene.BIMTypeProperties
@@ -83,6 +86,11 @@ class BIM_PT_misc_utilities(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "BlenderBIM"
+
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting.model
 
     def draw(self, context):
         layout = self.layout

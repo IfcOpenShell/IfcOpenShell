@@ -127,7 +127,7 @@ class BIM_PT_object_psets(Panel):
             Data.load(IfcStore.get_file(), props.ifc_definition_id)
         if not Data.products[props.ifc_definition_id]:
             return False
-        return view_setting in ["Admin", "Basic User"]
+        return view_setting.pset
 
     def draw(self, context):
         oprops = context.active_object.BIMObjectProperties
@@ -173,7 +173,7 @@ class BIM_PT_object_qtos(Panel):
             Data.load(IfcStore.get_file(), props.ifc_definition_id)
         if not Data.products[props.ifc_definition_id]:
             return False
-        return view_setting in ["Admin", "Basic User"]
+        return view_setting.pset
 
     def draw(self, context):
         oprops = context.active_object.BIMObjectProperties
@@ -217,7 +217,7 @@ class BIM_PT_material_psets(Panel):
             Data.load(IfcStore.get_file(), props.ifc_definition_id)
         if not Data.products[props.ifc_definition_id]:
             return False
-        return view_setting in ["Admin"]
+        return view_setting.pset
 
     def draw(self, context):
         oprops = context.active_object.active_material.BIMObjectProperties

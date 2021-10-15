@@ -30,7 +30,7 @@ class BIM_PT_covetool(bpy.types.Panel):
     @classmethod
     def poll(self, context):
         view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting in ["Admin"]
+        return view_setting.covetool
 
     def draw(self, context):
         layout = self.layout
