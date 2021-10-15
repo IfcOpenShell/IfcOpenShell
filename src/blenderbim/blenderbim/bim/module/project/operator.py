@@ -586,6 +586,7 @@ class LoadProjectElements(bpy.types.Operator):
         )
         settings = import_ifc.IfcImportSettings.factory(context, context.scene.BIMProperties.ifc_file, logger)
         settings.has_filter = self.props.filter_mode != "NONE"
+        settings.should_filter_spatial_elements = self.props.should_filter_spatial_elements
         if self.props.filter_mode == "DECOMPOSITION":
             settings.elements = self.get_decomposition_elements()
         elif self.props.filter_mode == "IFC_CLASS":
@@ -594,20 +595,6 @@ class LoadProjectElements(bpy.types.Operator):
             settings.elements = self.get_whitelist_elements()
         elif self.props.filter_mode == "BLACKLIST":
             settings.elements = self.get_blacklist_elements()
-        settings.collection_mode = self.props.collection_mode
-        settings.should_use_cpu_multiprocessing = self.props.should_use_cpu_multiprocessing
-        settings.should_merge_by_class = self.props.should_merge_by_class
-        settings.should_merge_by_material = self.props.should_merge_by_material
-        settings.should_merge_materials_by_colour = self.props.should_merge_materials_by_colour
-        settings.should_clean_mesh = self.props.should_clean_mesh
-        settings.deflection_tolerance = self.props.deflection_tolerance
-        settings.angular_tolerance = self.props.angular_tolerance
-        settings.should_offset_model = self.props.should_offset_model
-        settings.model_offset_coordinates = (
-            [float(o) for o in self.props.model_offset_coordinates.split(",")]
-            if self.props.model_offset_coordinates
-            else (0, 0, 0)
-        )
         settings.logger.info("Starting import")
         ifc_importer = import_ifc.IfcImporter(settings)
         ifc_importer.execute()
