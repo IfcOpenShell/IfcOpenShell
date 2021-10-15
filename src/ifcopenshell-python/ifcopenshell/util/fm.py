@@ -54,23 +54,41 @@ cobie_component_classes = [
     "IfcTransportElement",
 ]
 
-fmhem_classes = [
-    "IfcDoorStyle",
-    "IfcWindowStyle",
+fmhem_classes_ifc4 = [
     "IfcDoorType",
     "IfcWindowType",
-    "IfcRoofType",
     "IfcShadingDeviceType",
     "IfcDistributionControlElementType",
     "IfcEnergyConversionDeviceType",
     "IfcFlowControllerType",
-    "IfcJunctionBoxType",
     "IfcFlowMovingDeviceType",
     "IfcFlowStorageDeviceType",
     "IfcFlowTerminalType",
     "IfcFlowTreatmentDeviceType",
     "IfcFurnishingElementType",
     "IfcTransportElementType",
+]
+
+fmhem_classes_ifc2x3 = [
+    "IfcDoorStyle",
+    "IfcWindowStyle",
+    "IfcShadingDeviceType",
+    "IfcDistributionControlElementType",
+    "IfcEnergyConversionDeviceType",
+    "IfcFlowControllerType",
+    "IfcFlowMovingDeviceType",
+    "IfcFlowStorageDeviceType",
+    "IfcFlowTerminalType",
+    "IfcFlowTreatmentDeviceType",
+    "IfcFurnishingElementType",
+    "IfcTransportElementType",
+]
+
+fmhem_excluded_classes = [
+    "IfcCooledBeamType",
+    "IfcBurnerType",
+    "IfcCoilType",
+    "IfcLampType",
 ]
 
 
