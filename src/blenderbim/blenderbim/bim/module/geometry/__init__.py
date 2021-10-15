@@ -24,6 +24,8 @@ classes = (
     operator.CopyRepresentation,
     operator.EditObjectPlacement,
     operator.GetRepresentationIfcParameters,
+    operator.OverrideDelete,
+    operator.OverrideDuplicateMove,
     operator.RemoveRepresentation,
     operator.SwitchRepresentation,
     operator.UpdateParametricRepresentation,

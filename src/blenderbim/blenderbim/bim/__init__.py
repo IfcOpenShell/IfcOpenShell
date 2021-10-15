@@ -83,7 +83,6 @@ classes = [
     operator.SetOverrideColour,
     operator.SetViewportShadowFromSun,
     operator.SnapSpacesTogether,
-    operator.OverrideDelete,
     prop.StrProperty,
     prop.Attribute,
     prop.BIMProperties,
@@ -101,7 +100,6 @@ classes = [
 
 for mod in modules.values():
     classes.extend(mod.classes)
-
 
 
 def on_register(scene):
