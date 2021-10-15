@@ -19,6 +19,7 @@
 import bpy
 import blenderbim.tool as tool
 import ifcopenshell.util.placement
+from mathutils import Vector
 
 
 def refresh():
@@ -31,11 +32,51 @@ class DerivedPlacementsData:
 
     @classmethod
     def load(cls):
+        cls.load_z_values()
+        cls.load_collection()
         cls.data = {
             "is_storey": cls.is_storey(),
-            "storey_height": cls.get_storey_height(),
+            "storey_height": cls.storey_height(),
+            "min_global_z": cls.min_global_z(),
+            "max_global_z": cls.max_global_z(),
+            "has_collection": cls.has_collection(),
+            "min_decomposed_z": cls.min_decomposed_z(),
+            "max_decomposed_z": cls.max_decomposed_z(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def load_z_values(cls):
+        cls.z_values = [
+            (bpy.context.active_object.matrix_world @ Vector(co))[2] for co in bpy.context.active_object.bound_box
+        ]
+
+    @classmethod
+    def load_collection(cls):
+        cls.collection = bpy.data.objects.get(bpy.context.active_object.users_collection[0].name)
+        cls.collection_z = 0
+        if cls.collection:
+            cls.collection_z = cls.collection.matrix_world.translation.z
+
+    @classmethod
+    def has_collection(cls):
+        return bool(cls.collection)
+
+    @classmethod
+    def min_global_z(cls):
+        return "{0:.3f}".format(round(min(cls.z_values), 3))
+
+    @classmethod
+    def max_global_z(cls):
+        return "{0:.3f}".format(round(max(cls.z_values), 3))
+
+    @classmethod
+    def min_decomposed_z(cls):
+        return "{0:.3f}".format(round(min(cls.z_values) - cls.collection_z, 3))
+
+    @classmethod
+    def max_decomposed_z(cls):
+        return "{0:.3f}".format(round(max(cls.z_values) - cls.collection_z, 3))
 
     @classmethod
     def is_storey(cls):
@@ -44,7 +85,7 @@ class DerivedPlacementsData:
             return element.is_a("IfcBuildingStorey")
 
     @classmethod
-    def get_storey_height(cls):
+    def storey_height(cls):
         if not cls.is_storey():
             return
         element = tool.Ifc.get_entity(bpy.context.active_object)
