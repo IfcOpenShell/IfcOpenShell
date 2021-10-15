@@ -684,6 +684,52 @@ class IfcImporter:
             obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, placement_matrix)
             self.link_element(product, obj)
 
+    def create_pointcloud(self, product):
+        items = []
+        for representation in product.Representation.Representations:
+            if representation.RepresentationType == 'PointCloud':
+                items.extend(representation.Items)
+            elif self.file.schema == "IFC2X3" and representation.RepresentationType == 'GeometricSet':
+                items.extend(representation.Items)
+
+        placement_matrix = ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement)
+        vertex_list = []
+        context = None
+        representation = None
+        for item in items:
+            if item.is_a("IfcCartesianPointList"):
+                vertices = [mathutils.Vector(list(coordinates)) * self.unit_scale for coordinates in item.CoordList]
+                vertex_list.extend(vertices)
+            elif item.is_a("IfcCartesianPoint"):
+                vertex = mathutils.Vector(list(item.Coordinates)) * self.unit_scale
+                vertex_list.append(vertex)
+
+        for subelement in self.file.traverse(product.Representation):
+            if subelement.is_a("IfcGeometricRepresentationContext"):
+                context = subelement
+            elif subelement.is_a("IfcRepresentation"):  # not sure what this should be
+                representation = subelement
+
+        if len(vertex_list) == 0 or not context or not representation:
+            return
+
+        mesh_name = f"{context.id()}/{representation.id()}"
+        mesh = bpy.data.meshes.new(mesh_name)
+        mesh.from_pydata(vertex_list, [], [])
+
+        obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
+        obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, placement_matrix)
+        self.link_element(product, obj)
+
+    def is_pointcloud(self, product):
+        if not hasattr(product, 'Representation') or not hasattr(product.Representation, 'Representations'):
+            return False
+
+        for representation in product.Representation.Representations:
+            if representation.RepresentationType == 'PointCloud':
+                return True
+        return False
+
     def create_curve_products(self, products):
         results = set()
         if not products:
@@ -718,6 +764,9 @@ class IfcImporter:
         if element is None:
             return
 
+        if self.is_pointcloud(element):
+            self.create_pointcloud(element)
+            return
         self.ifc_import_settings.logger.info("Creating object %s", element)
 
         if mesh:
