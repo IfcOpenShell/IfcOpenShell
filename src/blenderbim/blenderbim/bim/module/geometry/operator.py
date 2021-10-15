@@ -431,3 +431,97 @@ class CopyRepresentation(bpy.types.Operator, Operator):
             if obj.data:
                 bm.to_mesh(obj.data)
                 bpy.ops.bim.add_representation(obj=obj.name)
+
+
+class OverrideDelete(bpy.types.Operator):
+    bl_idname = "object.delete"
+    bl_label = "Delete"
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) > 0
+
+    def execute(self, context):
+        # Deep magick from the dawn of time
+        if IfcStore.get_file():
+            return IfcStore.execute_ifc_operator(self, context)
+        for obj in context.selected_objects:
+            bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    def _execute(self, context):
+        file = IfcStore.get_file()
+        for obj in context.selected_objects:
+            if obj.BIMObjectProperties.ifc_definition_id:
+                element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+                if element.FillsVoids:
+                    self.remove_filling(element)
+                if element.is_a("IfcOpeningElement"):
+                    for rel in element.HasFillings:
+                        self.remove_filling(rel.RelatedBuildingElement)
+                    if element.VoidsElements:
+                        self.delete_opening_element(element)
+                elif element.HasOpenings:
+                    for rel in element.HasOpenings:
+                        self.delete_opening_element(rel.RelatedOpeningElement)
+            bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+    def delete_opening_element(self, element):
+        obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
+        bpy.ops.bim.remove_opening(opening_id=element.id(), obj=obj.name)
+
+    def remove_filling(self, element):
+        obj = IfcStore.get_element(element.id())
+        bpy.ops.bim.remove_filling(obj=obj.name)
+
+
+class OverrideDuplicateMove(bpy.types.Operator):
+    bl_idname = "object.duplicate_move"
+    bl_label = "Duplicate Objects"
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) > 0
+
+    def execute(self, context):
+        # Deep magick from the dawn of time
+        if IfcStore.get_file():
+            IfcStore.execute_ifc_operator(self, context)
+            if self.new_active_obj:
+                context.view_layer.objects.active = self.new_active_obj
+            return {"FINISHED"}
+
+        new_active_obj = None
+        for obj in context.selected_objects:
+            new_obj = obj.copy()
+            new_obj.data = obj.data.copy()
+            if obj == context.active_object:
+                new_active_obj = new_obj
+            for collection in obj.users_collection:
+                collection.objects.link(new_obj)
+            obj.select_set(False)
+            new_obj.select_set(True)
+        if new_active_obj:
+            context.view_layer.objects.active = new_active_obj
+        bpy.ops.transform.translate("INVOKE_DEFAULT")
+        return {"FINISHED"}
+
+    def _execute(self, context):
+        self.new_active_obj = None
+        for obj in context.selected_objects:
+            new_obj = obj.copy()
+            new_obj.data = obj.data.copy()
+            if obj == context.active_object:
+                self.new_active_obj = new_obj
+            # This is the only difference
+            bpy.ops.bim.copy_class(obj=new_obj.name)
+            for collection in obj.users_collection:
+                collection.objects.link(new_obj)
+            obj.select_set(False)
+            new_obj.select_set(True)
+        bpy.ops.transform.translate("INVOKE_DEFAULT")
+        return {"FINISHED"}
