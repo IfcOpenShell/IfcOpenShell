@@ -20,6 +20,7 @@ import bpy
 from bpy.types import Panel
 from ifcopenshell.api.geometry.data import Data
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.geometry.data import DerivedPlacementsData
 
 
 class BIM_PT_representations(Panel):
@@ -153,6 +154,9 @@ class BIM_PT_derived_placements(Panel):
     bl_parent_id = "OBJECT_PT_transform"
 
     def draw(self, context):
+        if not DerivedPlacementsData.is_loaded:
+            DerivedPlacementsData.load()
+
         z = context.active_object.matrix_world.translation.z
         z_values = [co[2] for co in context.active_object.bound_box]
         row = self.layout.row(align=True)
@@ -171,6 +175,11 @@ class BIM_PT_derived_placements(Panel):
             row = self.layout.row(align=True)
             row.label(text="Max Local Z")
             row.label(text="{0:.3f}".format(max(z_values) + z - collection_z))
+
+        if DerivedPlacementsData.data["is_storey"]:
+            row = self.layout.row(align=True)
+            row.label(text="Storey Height")
+            row.label(text=DerivedPlacementsData.data["storey_height"])
 
 
 class BIM_PT_workarounds(Panel):

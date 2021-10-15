@@ -286,7 +286,6 @@ class IfcImporter:
         if self.non_body_contexts:
             self.settings_2d.set_context_ids(self.non_body_contexts)
 
-
     def process_element_filter(self):
         if self.ifc_import_settings.has_filter:
             self.elements = set(self.ifc_import_settings.elements)
