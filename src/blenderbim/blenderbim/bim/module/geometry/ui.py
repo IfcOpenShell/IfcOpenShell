@@ -20,6 +20,7 @@ import bpy
 from bpy.types import Panel
 from ifcopenshell.api.geometry.data import Data
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.geometry.data import DerivedPlacementsData
 
 
 class BIM_PT_representations(Panel):
@@ -103,6 +104,9 @@ class BIM_PT_mesh(Panel):
         op.disable_opening_subtractions = True
 
         row = layout.row()
+        row.operator("bim.copy_representation")
+
+        row = layout.row()
         row.operator("bim.update_representation")
 
         row = layout.row()
@@ -150,24 +154,28 @@ class BIM_PT_derived_placements(Panel):
     bl_parent_id = "OBJECT_PT_transform"
 
     def draw(self, context):
-        z = context.active_object.matrix_world.translation.z
-        z_values = [co[2] for co in context.active_object.bound_box]
+        if not DerivedPlacementsData.is_loaded:
+            DerivedPlacementsData.load()
+
         row = self.layout.row(align=True)
         row.label(text="Min Global Z")
-        row.label(text="{0:.3f}".format(min(z_values) + z))
+        row.label(text=DerivedPlacementsData.data["min_global_z"])
         row = self.layout.row(align=True)
         row.label(text="Max Global Z")
-        row.label(text="{0:.3f}".format(max(z_values) + z))
+        row.label(text=DerivedPlacementsData.data["max_global_z"])
 
-        collection = bpy.data.objects.get(context.active_object.users_collection[0].name)
-        if collection:
-            collection_z = collection.matrix_world.translation.z
+        if DerivedPlacementsData.data["has_collection"]:
             row = self.layout.row(align=True)
-            row.label(text="Min Local Z")
-            row.label(text="{0:.3f}".format(min(z_values) + z - collection_z))
+            row.label(text="Min Decomposed Z")
+            row.label(text=DerivedPlacementsData.data["min_decomposed_z"])
             row = self.layout.row(align=True)
-            row.label(text="Max Local Z")
-            row.label(text="{0:.3f}".format(max(z_values) + z - collection_z))
+            row.label(text="Max Decomposed Z")
+            row.label(text=DerivedPlacementsData.data["max_decomposed_z"])
+
+        if DerivedPlacementsData.data["is_storey"]:
+            row = self.layout.row(align=True)
+            row.label(text="Storey Height")
+            row.label(text=DerivedPlacementsData.data["storey_height"])
 
 
 class BIM_PT_workarounds(Panel):

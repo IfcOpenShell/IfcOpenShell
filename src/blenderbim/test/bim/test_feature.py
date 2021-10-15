@@ -72,6 +72,12 @@ def i_add_a_cube():
     bpy.ops.mesh.primitive_cube_add()
 
 
+@given("I add an empty")
+@when("I add an empty")
+def i_add_an_empty():
+    bpy.ops.object.empty_add()
+
+
 @given("I add a material")
 def i_add_a_material():
     bpy.context.active_object.active_material = bpy.data.materials.new("Material")
@@ -105,6 +111,7 @@ def the_object_name_is_selected(name):
     additionally_the_object_name_is_selected(name)
 
 
+@given(parsers.parse('additionally the object "{name}" is selected'))
 @when(parsers.parse('additionally the object "{name}" is selected'))
 def additionally_the_object_name_is_selected(name):
     obj = bpy.context.scene.objects.get(name)
