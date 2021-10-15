@@ -17,16 +17,18 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
+import logging
 import numpy as np
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import logging
 import ifcopenshell.api
 import blenderbim.core.geometry as core
 import blenderbim.core.style
 import blenderbim.tool as tool
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 from ifcopenshell.api.geometry.data import Data
@@ -38,6 +40,7 @@ from mathutils import Vector
 class Operator:
     def execute(self, context):
         IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -53,7 +56,7 @@ class EditObjectPlacement(bpy.types.Operator, Operator):
             core.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
 
 
-class AddRepresentation(bpy.types.Operator):
+class AddRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
     bl_options = {"REGISTER", "UNDO"}
@@ -61,9 +64,6 @@ class AddRepresentation(bpy.types.Operator):
     context_id: bpy.props.IntProperty()
     ifc_representation_class: bpy.props.StringProperty()
     profile_set_usage: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
@@ -232,15 +232,12 @@ class SwitchRepresentation(bpy.types.Operator):
                     self.element_obj.modifiers.remove(modifier)
 
 
-class RemoveRepresentation(bpy.types.Operator):
+class RemoveRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_representation"
     bl_label = "Remove Representation"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     representation_id: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -415,3 +412,22 @@ class GetRepresentationIfcParameters(bpy.types.Operator):
                         if element[i]:
                             new.value = element[i]
         return {"FINISHED"}
+
+
+class CopyRepresentation(bpy.types.Operator, Operator):
+    bl_idname = "bim.copy_representation"
+    bl_label = "Copy Representation"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        if not context.active_object:
+            return
+        bm = bmesh.new()
+        bm.from_mesh(context.active_object.data)
+        for obj in context.selected_objects:
+            if obj == context.active_object:
+                continue
+            if obj.data:
+                bm.to_mesh(obj.data)
+                bpy.ops.bim.add_representation(obj=obj.name)

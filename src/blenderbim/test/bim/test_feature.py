@@ -105,6 +105,7 @@ def the_object_name_is_selected(name):
     additionally_the_object_name_is_selected(name)
 
 
+@given(parsers.parse('additionally the object "{name}" is selected'))
 @when(parsers.parse('additionally the object "{name}" is selected'))
 def additionally_the_object_name_is_selected(name):
     obj = bpy.context.scene.objects.get(name)
