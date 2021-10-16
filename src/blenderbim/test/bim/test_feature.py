@@ -302,6 +302,11 @@ def prop_is_value(prop, value):
         assert False, f"Value is {actual_value}"
 
 
+@then(parsers.parse('the object "{name}" has the material "{material}"'))
+def the_object_name_is_in_the_collection_collection(name, material):
+    assert material in [ms.material.name for ms in the_object_name_exists(name).material_slots]
+
+
 @then(parsers.parse('the object "{name}" is in the collection "{collection}"'))
 def the_object_name_is_in_the_collection_collection(name, collection):
     assert collection in [c.name for c in the_object_name_exists(name).users_collection]
