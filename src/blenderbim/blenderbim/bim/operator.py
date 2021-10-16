@@ -122,7 +122,7 @@ class SelectIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_ifc_file"
     bl_label = "Select IFC File"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select a different IFC file"
+    bl_description = "Select a different IFC file."
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
@@ -412,7 +412,7 @@ class ReloadIfcFile(bpy.types.Operator):
     bl_idname = "bim.reload_ifc_file"
     bl_label = "Reload IFC File"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Reload the same IFC file"
+    bl_description = "Reload the same IFC file."
 
     def execute(self, context):
         # TODO: reimplement. See #1222.
