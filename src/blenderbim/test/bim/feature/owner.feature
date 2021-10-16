@@ -1,6 +1,5 @@
 @owner
 Feature: Owner
-    Covers ownership history, people, organisations, roles, and addresses.
 
 Scenario: Add person
     Given an empty IFC project
@@ -232,4 +231,9 @@ Scenario: Set user
     And I press "bim.add_person_and_organisation(person={person}, organisation={organisation})"
     And the variable "user" is "{ifc}.by_type('IfcPersonAndOrganization')[0].id()"
     And I press "bim.set_user(user={user})"
+    Then nothing happens
+
+Scenario: Clear user
+    Given an empty IFC project
+    When I press "bim.clear_user(user={user})"
     Then nothing happens

@@ -39,6 +39,8 @@ classes = (
     operator.EnableEditingHeader,
     operator.DisableEditingHeader,
     operator.EditHeader,
+    operator.ExportIFC,
+    operator.ImportIFC,
     prop.LibraryElement,
     prop.FilterCategory,
     prop.Link,
@@ -52,9 +54,21 @@ classes = (
 )
 
 
+def menu_func_export(self, context):
+    self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
+
+
+def menu_func_import(self, context):
+    self.layout.operator(operator.ImportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcxml)")
+
+
 def register():
     bpy.types.Scene.BIMProjectProperties = bpy.props.PointerProperty(type=prop.BIMProjectProperties)
+    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
+    bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
 
 def unregister():
+    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     del bpy.types.Scene.BIMProjectProperties

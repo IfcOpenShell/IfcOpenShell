@@ -17,15 +17,18 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
+import logging
 import numpy as np
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import logging
 import ifcopenshell.api
 import blenderbim.core.geometry as core
+import blenderbim.core.style
 import blenderbim.tool as tool
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 from ifcopenshell.api.geometry.data import Data
@@ -37,6 +40,7 @@ from mathutils import Vector
 class Operator:
     def execute(self, context):
         IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -52,7 +56,7 @@ class EditObjectPlacement(bpy.types.Operator, Operator):
             core.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
 
 
-class AddRepresentation(bpy.types.Operator):
+class AddRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
     bl_options = {"REGISTER", "UNDO"}
@@ -60,9 +64,6 @@ class AddRepresentation(bpy.types.Operator):
     context_id: bpy.props.IntProperty()
     ifc_representation_class: bpy.props.StringProperty()
     profile_set_usage: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
@@ -108,7 +109,7 @@ class AddRepresentation(bpy.types.Operator):
             return {"FINISHED"}
 
         [
-            bpy.ops.bim.add_style(material=s.material.name)
+            blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=s.material)
             for s in obj.material_slots
             if s.material and not s.material.BIMMaterialProperties.ifc_style_id
         ]
@@ -231,15 +232,12 @@ class SwitchRepresentation(bpy.types.Operator):
                     self.element_obj.modifiers.remove(modifier)
 
 
-class RemoveRepresentation(bpy.types.Operator):
+class RemoveRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_representation"
     bl_label = "Remove Representation"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     representation_id: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -304,7 +302,7 @@ class UpdateRepresentation(bpy.types.Operator):
             ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": product})
             return
 
-        bpy.ops.bim.edit_object_placement(obj=obj.name)
+        core.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
 
         old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         context_of_items = old_representation.ContextOfItems
@@ -334,7 +332,7 @@ class UpdateRepresentation(bpy.types.Operator):
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
 
         [
-            bpy.ops.bim.add_style(material=s.material.name)
+            blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=s.material)
             for s in obj.material_slots
             if s.material and not s.material.BIMMaterialProperties.ifc_style_id
         ]
@@ -413,4 +411,119 @@ class GetRepresentationIfcParameters(bpy.types.Operator):
                         new.index = i
                         if element[i]:
                             new.value = element[i]
+        return {"FINISHED"}
+
+
+class CopyRepresentation(bpy.types.Operator, Operator):
+    bl_idname = "bim.copy_representation"
+    bl_label = "Copy Representation"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        if not context.active_object:
+            return
+        bm = bmesh.new()
+        bm.from_mesh(context.active_object.data)
+        for obj in context.selected_objects:
+            if obj == context.active_object:
+                continue
+            if obj.data:
+                bm.to_mesh(obj.data)
+                bpy.ops.bim.add_representation(obj=obj.name)
+
+
+class OverrideDelete(bpy.types.Operator):
+    bl_idname = "object.delete"
+    bl_label = "Delete"
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) > 0
+
+    def execute(self, context):
+        # Deep magick from the dawn of time
+        if IfcStore.get_file():
+            return IfcStore.execute_ifc_operator(self, context)
+        for obj in context.selected_objects:
+            bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    def _execute(self, context):
+        file = IfcStore.get_file()
+        for obj in context.selected_objects:
+            if obj.BIMObjectProperties.ifc_definition_id:
+                element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+                if element.FillsVoids:
+                    self.remove_filling(element)
+                if element.is_a("IfcOpeningElement"):
+                    for rel in element.HasFillings:
+                        self.remove_filling(rel.RelatedBuildingElement)
+                    if element.VoidsElements:
+                        self.delete_opening_element(element)
+                elif element.HasOpenings:
+                    for rel in element.HasOpenings:
+                        self.delete_opening_element(rel.RelatedOpeningElement)
+            bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+    def delete_opening_element(self, element):
+        obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
+        bpy.ops.bim.remove_opening(opening_id=element.id(), obj=obj.name)
+
+    def remove_filling(self, element):
+        obj = IfcStore.get_element(element.id())
+        bpy.ops.bim.remove_filling(obj=obj.name)
+
+
+class OverrideDuplicateMove(bpy.types.Operator):
+    bl_idname = "object.duplicate_move"
+    bl_label = "Duplicate Objects"
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) > 0
+
+    def execute(self, context):
+        # Deep magick from the dawn of time
+        if IfcStore.get_file():
+            IfcStore.execute_ifc_operator(self, context)
+            if self.new_active_obj:
+                context.view_layer.objects.active = self.new_active_obj
+            return {"FINISHED"}
+
+        new_active_obj = None
+        for obj in context.selected_objects:
+            new_obj = obj.copy()
+            if obj.data:
+                new_obj.data = obj.data.copy()
+            if obj == context.active_object:
+                new_active_obj = new_obj
+            for collection in obj.users_collection:
+                collection.objects.link(new_obj)
+            obj.select_set(False)
+            new_obj.select_set(True)
+        if new_active_obj:
+            context.view_layer.objects.active = new_active_obj
+        bpy.ops.transform.translate("INVOKE_DEFAULT")
+        return {"FINISHED"}
+
+    def _execute(self, context):
+        self.new_active_obj = None
+        for obj in context.selected_objects:
+            new_obj = obj.copy()
+            if obj.data:
+                new_obj.data = obj.data.copy()
+            if obj == context.active_object:
+                self.new_active_obj = new_obj
+            for collection in obj.users_collection:
+                collection.objects.link(new_obj)
+            obj.select_set(False)
+            new_obj.select_set(True)
+            # This is the only difference
+            bpy.ops.bim.copy_class(obj=new_obj.name)
+        bpy.ops.transform.translate("INVOKE_DEFAULT")
         return {"FINISHED"}

@@ -73,6 +73,11 @@ class Ifc:
 
 
 @interface
+class Material:
+    def unlink(cls, obj): pass
+
+
+@interface
 class Owner:
     def add_address_attribute(cls, name): pass
     def add_person_attribute(cls, name): pass
@@ -128,6 +133,22 @@ class Style:
 @interface
 class Surveyor:
     def get_absolute_matrix(cls, obj): pass
+
+
+@interface
+class Unit:
+    def clear_active_unit(cls): pass
+    def disable_editing_units(cls): pass
+    def enable_editing_units(cls): pass
+    def export_unit_attributes(cls): pass
+    def get_scene_unit_name(cls, unit_type): pass
+    def get_scene_unit_si_prefix(cls): pass
+    def get_si_name_from_unit_type(cls, unit_type): pass
+    def get_unit_class(cls, unit): pass
+    def import_unit_attributes(cls, unit): pass
+    def import_units(cls): pass
+    def is_scene_unit_metric(cls): pass
+    def set_active_unit(cls, unit): pass
 
 
 @interface

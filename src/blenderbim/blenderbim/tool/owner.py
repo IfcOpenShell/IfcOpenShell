@@ -30,6 +30,10 @@ class Owner(blenderbim.core.tool.Owner):
     def get_user(cls):
         if bpy.context.scene.BIMOwnerProperties.active_user_id:
             return tool.Ifc.get().by_id(bpy.context.scene.BIMOwnerProperties.active_user_id)
+        elif tool.Ifc.get_schema() == "IFC2X3":
+            users = tool.Ifc.get().by_type("IfcPersonAndOrganization")
+            if users:
+                return users[0]
 
     @classmethod
     def clear_user(cls):

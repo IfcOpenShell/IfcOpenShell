@@ -23,6 +23,8 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.element
 import blenderbim.bim.handler
 import blenderbim.core.spatial
+import blenderbim.core.style
+import blenderbim.core.material
 import blenderbim.tool as tool
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
@@ -315,6 +317,10 @@ class UnlinkObject(bpy.types.Operator):
         for obj in objects:
             if obj.BIMObjectProperties.ifc_definition_id:
                 IfcStore.unlink_element(obj=obj)
+            for material_slot in obj.material_slots:
+                if material_slot.material:
+                    blenderbim.core.style.unlink_style(tool.Style, obj=material_slot.material)
+                    blenderbim.core.material.unlink_material(tool.Material, obj=material_slot.material)
             if "Ifc" in obj.name and "/" in obj.name:
                 obj.name = "/".join(obj.name.split("/")[1:])
         return {"FINISHED"}
@@ -347,26 +353,11 @@ class CopyClass(bpy.types.Operator):
             else:
                 bpy.ops.bim.add_representation(obj=obj.name)
             if result.is_a("IfcSpatialElement") or result.is_a("IfcSpatialStructureElement"):
-                self.place_in_spatial_collection(result, obj)
+                tool.Collector.assign(obj)
             elif result.is_a("IfcOpeningElement"):
                 self.add_opening_modifiers(result, obj)
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
-
-    def place_in_spatial_collection(self, element, obj):
-        aggregate = ifcopenshell.util.element.get_aggregate(element)
-        if not aggregate:
-            return
-        container_obj = IfcStore.get_element(aggregate.id())
-        for collection in obj.users_collection:
-            collection.objects.unlink(obj)
-            if "Ifc" in collection.name:
-                parent_collection = collection
-        for collection in container_obj.users_collection:
-            if collection.name == container_obj.name:
-                new = bpy.data.collections.new(obj.name)
-                new.objects.link(obj)
-                collection.children.link(new)
 
     def add_opening_modifiers(self, result, obj):
         for rel in result.VoidsElements:

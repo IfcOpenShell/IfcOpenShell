@@ -219,3 +219,9 @@ class TestGetUser:
     def test_run(self, owner):
         owner.get_user().should_be_called().will_return("person_and_organisation")
         assert subject.get_user(owner) == "person_and_organisation"
+
+
+class TestClearUser:
+    def test_run(self, owner):
+        owner.clear_user().should_be_called()
+        subject.clear_user(owner)

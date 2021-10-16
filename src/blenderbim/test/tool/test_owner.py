@@ -45,6 +45,16 @@ class TestGetUser(test.bim.bootstrap.NewFile):
         user = tool.Ifc.get().by_type("IfcPersonAndOrganization")[0]
         assert subject.get_user() == user
 
+    def test_falling_back_to_any_available_user_ifc2x3(self):
+        assert subject.get_user() is None
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        user = ifc.createIfcPersonAndOrganization()
+        assert subject.get_user() == user
+        user2 = ifc.createIfcPersonAndOrganization()
+        subject.set_user(user2)
+        assert subject.get_user() == user2
+
 
 class TestClearUser(test.bim.bootstrap.NewFile):
     def test_run(self):

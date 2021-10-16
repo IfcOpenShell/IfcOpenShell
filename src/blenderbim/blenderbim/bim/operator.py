@@ -25,87 +25,10 @@ import logging
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
-from . import export_ifc
 from . import schema
 from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector, Matrix, Euler
 from math import radians
-
-
-class ExportIFC(bpy.types.Operator):
-    bl_idname = "export_ifc.bim"
-    bl_label = "Export IFC"
-    bl_options = {"REGISTER", "UNDO"}
-    filename_ext = ".ifc"
-    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
-    json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
-
-    def invoke(self, context, event):
-        if not IfcStore.get_file():
-            self.report({"ERROR"}, "No IFC project is available for export - create or import a project first.")
-            return {"FINISHED"}
-        if context.scene.BIMProperties.ifc_file:
-            self.filepath = context.scene.BIMProperties.ifc_file
-            return self.execute(context)
-        if not self.filepath:
-            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".ifc")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
-        start = time.time()
-        logger = logging.getLogger("ExportIFC")
-        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
-        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
-            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
-        logging.basicConfig(
-            filename=path_log,
-            filemode="a",
-            level=logging.DEBUG,
-        )
-        extension = self.filepath.split(".")[-1]
-        if extension == "ifczip":
-            output_file = bpy.path.ensure_ext(self.filepath, ".ifczip")
-        elif extension == "ifcjson":
-            output_file = bpy.path.ensure_ext(self.filepath, ".ifcjson")
-        else:
-            output_file = bpy.path.ensure_ext(self.filepath, ".ifc")
-
-        settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
-        settings.json_version = self.json_version
-        settings.json_compact = self.json_compact
-
-        ifc_exporter = export_ifc.IfcExporter(settings)
-        settings.logger.info("Starting export")
-        ifc_exporter.export()
-        settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
-        print("Export finished in {:.2f} seconds".format(time.time() - start))
-        scene = context.scene
-        if not scene.DocProperties.ifc_files:
-            new = scene.DocProperties.ifc_files.add()
-            new.name = output_file
-        if not scene.BIMProperties.ifc_file:
-            scene.BIMProperties.ifc_file = output_file
-        if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
-            bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
-        blenderbim.bim.handler.purge_module_data()
-        return {"FINISHED"}
-
-
-class ImportIFC(bpy.types.Operator):
-    bl_idname = "import_ifc.bim"
-    bl_label = "Import IFC"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        bpy.ops.bim.load_project("INVOKE_DEFAULT")
-        return {"FINISHED"}
 
 
 class OpenUri(bpy.types.Operator):
@@ -644,48 +567,3 @@ class CopyAttributeToSelection(bpy.types.Operator):
                 a.name() for a in self.schema.declaration_by_name(ifc_class).all_attributes()
             ]
         return self.applicable_attributes_cache[ifc_class]
-
-
-class OverrideDelete(bpy.types.Operator):
-    bl_idname = "object.delete"
-    bl_label = "Delete"
-
-    @classmethod
-    def poll(cls, context):
-        return len(context.selected_objects) > 0
-
-    def execute(self, context):
-        if IfcStore.get_file():
-            return IfcStore.execute_ifc_operator(self, context)
-        for obj in context.selected_objects:
-            bpy.data.objects.remove(obj)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_confirm(self, event)
-
-    def _execute(self, context):
-        file = IfcStore.get_file()
-        for obj in context.selected_objects:
-            if obj.BIMObjectProperties.ifc_definition_id:
-                element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-                if element.FillsVoids:
-                    self.remove_filling(element)
-                if element.is_a("IfcOpeningElement"):
-                    for rel in element.HasFillings:
-                        self.remove_filling(rel.RelatedBuildingElement)
-                    if element.VoidsElements:
-                        self.delete_opening_element(element)
-                elif element.HasOpenings:
-                    for rel in element.HasOpenings:
-                        self.delete_opening_element(rel.RelatedOpeningElement)
-            bpy.data.objects.remove(obj)
-        return {"FINISHED"}
-
-    def delete_opening_element(self, element):
-        obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
-        bpy.ops.bim.remove_opening(opening_id=element.id(), obj=obj.name)
-
-    def remove_filling(self, element):
-        obj = IfcStore.get_element(element.id())
-        bpy.ops.bim.remove_filling(obj=obj.name)

@@ -118,3 +118,18 @@ class TestImportContainers(NewFile):
         assert props.containers[0].has_decomposition is True
         assert props.containers[0].ifc_definition_id == tool.Ifc.get().by_type("IfcBuilding")[0].id()
         assert props.active_container_id == site.id()
+
+    def test_importing_sorted_by_z_placement(self):
+        bpy.ops.bim.create_project()
+        building = tool.Ifc.get().by_type("IfcBuilding")[0]
+        storey1 = tool.Ifc.get().by_type("IfcBuildingStorey")[0]
+        storey1.Name = "Higher"
+        bpy.ops.bim.copy_class(obj=tool.Ifc.get_object(storey1).name)
+        storey2 = tool.Ifc.get().by_type("IfcBuildingStorey")[1]
+        storey2.Name = "Lower"
+        storey2.ObjectPlacement.RelativePlacement.Location.Coordinates = (0.0, 0.0, -100.0)
+        subject.import_containers(building)
+        props = bpy.context.scene.BIMSpatialProperties
+        assert len(props.containers) == 2
+        assert props.containers[0].name == "Lower"
+        assert props.containers[1].name == "Higher"

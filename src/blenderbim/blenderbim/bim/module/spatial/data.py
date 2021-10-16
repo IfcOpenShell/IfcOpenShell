@@ -64,4 +64,4 @@ class SpatialData:
 
     @classmethod
     def is_directly_contained(cls):
-        return bool(getattr(tool.Ifc.get_entity(bpy.context.active_object), "ContainedInStructure"))
+        return bool(getattr(tool.Ifc.get_entity(bpy.context.active_object), "ContainedInStructure", False))

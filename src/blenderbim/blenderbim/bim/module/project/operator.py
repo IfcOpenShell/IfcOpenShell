@@ -31,6 +31,7 @@ import blenderbim.core.context
 import blenderbim.core.owner
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
+from blenderbim.bim import export_ifc
 
 
 class CreateProject(bpy.types.Operator):
@@ -70,7 +71,7 @@ class CreateProject(bpy.types.Operator):
         building_storey = bpy.data.objects.new(self.get_name("IfcBuildingStorey", "My Storey"), None)
 
         bpy.ops.bim.assign_class(obj=project.name, ifc_class="IfcProject")
-        bpy.ops.bim.assign_unit()
+        blenderbim.core.unit.assign_scene_units(tool.Ifc, tool.Unit)
 
         model = blenderbim.core.context.add_context(
             tool.Ifc, context_type="Model", context_identifier="", target_view="", parent=0
@@ -144,7 +145,8 @@ class SelectLibraryFile(bpy.types.Operator):
         IfcStore.library_path = self.filepath
         IfcStore.library_file = ifcopenshell.open(self.filepath)
         bpy.ops.bim.refresh_library()
-        context.area.tag_redraw()
+        if context.area:
+            context.area.tag_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -398,6 +400,7 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
         ifc_importer.type_collection = type_collection
+        ifc_importer.material_creator.load_existing_materials()
         self.import_type_materials(element, ifc_importer)
         self.import_type_styles(element, ifc_importer)
         ifc_importer.create_type_product(element)
@@ -586,6 +589,7 @@ class LoadProjectElements(bpy.types.Operator):
         )
         settings = import_ifc.IfcImportSettings.factory(context, context.scene.BIMProperties.ifc_file, logger)
         settings.has_filter = self.props.filter_mode != "NONE"
+        settings.should_filter_spatial_elements = self.props.should_filter_spatial_elements
         if self.props.filter_mode == "DECOMPOSITION":
             settings.elements = self.get_decomposition_elements()
         elif self.props.filter_mode == "IFC_CLASS":
@@ -594,20 +598,6 @@ class LoadProjectElements(bpy.types.Operator):
             settings.elements = self.get_whitelist_elements()
         elif self.props.filter_mode == "BLACKLIST":
             settings.elements = self.get_blacklist_elements()
-        settings.collection_mode = self.props.collection_mode
-        settings.should_use_cpu_multiprocessing = self.props.should_use_cpu_multiprocessing
-        settings.should_merge_by_class = self.props.should_merge_by_class
-        settings.should_merge_by_material = self.props.should_merge_by_material
-        settings.should_merge_materials_by_colour = self.props.should_merge_materials_by_colour
-        settings.should_clean_mesh = self.props.should_clean_mesh
-        settings.deflection_tolerance = self.props.deflection_tolerance
-        settings.angular_tolerance = self.props.angular_tolerance
-        settings.should_offset_model = self.props.should_offset_model
-        settings.model_offset_coordinates = (
-            [float(o) for o in self.props.model_offset_coordinates.split(",")]
-            if self.props.model_offset_coordinates
-            else (0, 0, 0)
-        )
         settings.logger.info("Starting import")
         ifc_importer = import_ifc.IfcImporter(settings)
         ifc_importer.execute()
@@ -729,4 +719,80 @@ class LoadLink(bpy.types.Operator):
                 bpy.data.scenes[0].collection.children.link(child)
         link = context.scene.BIMProjectProperties.links.get(self.filepath)
         link.is_loaded = True
+        return {"FINISHED"}
+
+
+class ExportIFC(bpy.types.Operator):
+    bl_idname = "export_ifc.bim"
+    bl_label = "Export IFC"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".ifc"
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
+    json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
+
+    def invoke(self, context, event):
+        if not IfcStore.get_file():
+            self.report({"ERROR"}, "No IFC project is available for export - create or import a project first.")
+            return {"FINISHED"}
+        if context.scene.BIMProperties.ifc_file:
+            self.filepath = context.scene.BIMProperties.ifc_file
+            return self.execute(context)
+        if not self.filepath:
+            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".ifc")
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        start = time.time()
+        logger = logging.getLogger("ExportIFC")
+        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
+        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
+            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
+        logging.basicConfig(
+            filename=path_log,
+            filemode="a",
+            level=logging.DEBUG,
+        )
+        extension = self.filepath.split(".")[-1]
+        if extension == "ifczip":
+            output_file = bpy.path.ensure_ext(self.filepath, ".ifczip")
+        elif extension == "ifcjson":
+            output_file = bpy.path.ensure_ext(self.filepath, ".ifcjson")
+        else:
+            output_file = bpy.path.ensure_ext(self.filepath, ".ifc")
+
+        settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
+        settings.json_version = self.json_version
+        settings.json_compact = self.json_compact
+
+        ifc_exporter = export_ifc.IfcExporter(settings)
+        settings.logger.info("Starting export")
+        ifc_exporter.export()
+        settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
+        print("Export finished in {:.2f} seconds".format(time.time() - start))
+        scene = context.scene
+        if not scene.DocProperties.ifc_files:
+            new = scene.DocProperties.ifc_files.add()
+            new.name = output_file
+        if not scene.BIMProperties.ifc_file:
+            scene.BIMProperties.ifc_file = output_file
+        if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
+            bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
+        blenderbim.bim.handler.purge_module_data()
+        return {"FINISHED"}
+
+
+class ImportIFC(bpy.types.Operator):
+    bl_idname = "import_ifc.bim"
+    bl_label = "Import IFC"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bpy.ops.bim.load_project("INVOKE_DEFAULT")
         return {"FINISHED"}

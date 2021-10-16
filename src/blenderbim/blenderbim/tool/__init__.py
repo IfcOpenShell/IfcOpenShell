@@ -22,6 +22,8 @@ from blenderbim.tool.collector import Collector
 from blenderbim.tool.container import Container
 from blenderbim.tool.context import Context
 from blenderbim.tool.ifc import Ifc
+from blenderbim.tool.material import Material
 from blenderbim.tool.owner import Owner
 from blenderbim.tool.style import Style
 from blenderbim.tool.surveyor import Surveyor
+from blenderbim.tool.unit import Unit

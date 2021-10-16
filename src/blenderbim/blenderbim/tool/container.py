@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
 
@@ -57,7 +58,17 @@ class Container(blenderbim.core.tool.Container):
         props.active_container_id = parent.id()
 
         for rel in parent.IsDecomposedBy or []:
+            related_objects = []
             for element in rel.RelatedObjects:
+                if element.ObjectPlacement:
+                    related_objects.append(
+                        (element, ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)[2][3])
+                    )
+                else:
+                    related_objects.append((element, float("-inf")))
+            related_objects = sorted(related_objects, key=lambda e: e[1])
+            for element in related_objects:
+                element = element[0]
                 new = props.containers.add()
                 new.name = element.Name or "Unnamed"
                 new.long_name = element.LongName or ""

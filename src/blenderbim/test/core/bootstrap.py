@@ -50,6 +50,13 @@ def context():
 
 
 @pytest.fixture
+def material():
+    prophet = Prophecy(blenderbim.core.tool.Material)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def owner():
     prophet = Prophecy(blenderbim.core.tool.Owner)
     yield prophet
@@ -94,6 +101,13 @@ def collector():
 @pytest.fixture
 def container():
     prophet = Prophecy(blenderbim.core.tool.Container)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def unit():
+    prophet = Prophecy(blenderbim.core.tool.Unit)
     yield prophet
     prophet.verify()
 
