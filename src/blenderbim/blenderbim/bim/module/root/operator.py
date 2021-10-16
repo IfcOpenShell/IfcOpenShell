@@ -23,6 +23,8 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.element
 import blenderbim.bim.handler
 import blenderbim.core.spatial
+import blenderbim.core.style
+import blenderbim.core.material
 import blenderbim.tool as tool
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
@@ -315,6 +317,10 @@ class UnlinkObject(bpy.types.Operator):
         for obj in objects:
             if obj.BIMObjectProperties.ifc_definition_id:
                 IfcStore.unlink_element(obj=obj)
+            for material_slot in obj.material_slots:
+                if material_slot.material:
+                    blenderbim.core.style.unlink_style(tool.Style, obj=material_slot.material)
+                    blenderbim.core.material.unlink_material(tool.Material, obj=material_slot.material)
             if "Ifc" in obj.name and "/" in obj.name:
                 obj.name = "/".join(obj.name.split("/")[1:])
         return {"FINISHED"}
