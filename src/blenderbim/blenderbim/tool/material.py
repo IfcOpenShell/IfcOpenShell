@@ -16,14 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.tool.aggregate import Aggregate
-from blenderbim.tool.blender import Blender
-from blenderbim.tool.collector import Collector
-from blenderbim.tool.container import Container
-from blenderbim.tool.context import Context
-from blenderbim.tool.ifc import Ifc
-from blenderbim.tool.material import Material
-from blenderbim.tool.owner import Owner
-from blenderbim.tool.style import Style
-from blenderbim.tool.surveyor import Surveyor
-from blenderbim.tool.unit import Unit
+import ifcopenshell
+import blenderbim.core.tool
+import blenderbim.tool as tool
+import blenderbim.bim.helper
+
+
+class Material(blenderbim.core.tool.Material):
+    @classmethod
+    def link(cls, material, obj):
+        obj.BIMObjectProperties.ifc_definition_id = material.id()
+
+    @classmethod
+    def unlink(self, obj):
+        obj.BIMObjectProperties.ifc_definition_id = 0

@@ -127,7 +127,7 @@ class TestImportContainers(NewFile):
         bpy.ops.bim.copy_class(obj=tool.Ifc.get_object(storey1).name)
         storey2 = tool.Ifc.get().by_type("IfcBuildingStorey")[1]
         storey2.Name = "Lower"
-        storey2.ObjectPlacement.RelativePlacement.Location.Coordinates = (0., 0., -100.)
+        storey2.ObjectPlacement.RelativePlacement.Location.Coordinates = (0.0, 0.0, -100.0)
         subject.import_containers(building)
         props = bpy.context.scene.BIMSpatialProperties
         assert len(props.containers) == 2

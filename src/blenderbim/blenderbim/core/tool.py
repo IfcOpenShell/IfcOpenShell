@@ -73,6 +73,11 @@ class Ifc:
 
 
 @interface
+class Material:
+    def unlink(cls, obj): pass
+
+
+@interface
 class Owner:
     def add_address_attribute(cls, name): pass
     def add_person_attribute(cls, name): pass

@@ -23,10 +23,19 @@ import ifcopenshell.util.element
 import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
 import blenderbim.bim.helper
+import blenderbim.tool as tool
+import blenderbim.core.material as core
 from blenderbim.bim.module.material.prop import purge as material_prop_purge
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.material.data import Data
 from ifcopenshell.api.profile.data import Data as ProfileData
+
+
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
 
 
 class AssignParameterizedProfile(bpy.types.Operator):
@@ -110,6 +119,15 @@ class RemoveMaterial(bpy.types.Operator):
         obj.BIMObjectProperties.ifc_definition_id = 0
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
+
+
+class UnlinkMaterial(bpy.types.Operator, Operator):
+    bl_idname = "bim.unlink_material"
+    bl_label = "Unlink Material"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.unlink_material(tool.Material, obj=context.active_object.active_material)
 
 
 class AssignMaterial(bpy.types.Operator):

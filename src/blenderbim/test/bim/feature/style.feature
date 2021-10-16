@@ -30,7 +30,7 @@ Scenario: Unlink style
     And I add a material
     And I press "bim.add_style"
     When I press "bim.unlink_style"
-    Then nothing happens
+    Then the material "Material" is not an IFC style
 
 Scenario: Enable editing style
     Given an empty IFC project
