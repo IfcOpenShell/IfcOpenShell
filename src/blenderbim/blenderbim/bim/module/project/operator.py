@@ -129,6 +129,7 @@ class SelectLibraryFile(bpy.types.Operator):
     bl_idname = "bim.select_library_file"
     bl_label = "Select Library File"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select an IFC file that can be used as a library"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
@@ -437,6 +438,7 @@ class EnableEditingHeader(bpy.types.Operator):
     bl_idname = "bim.enable_editing_header"
     bl_label = "Enable Editing Header"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Edit the IFC header file such as Author, Organization, ..."
 
     @classmethod
     def poll(cls, context):
@@ -473,6 +475,7 @@ class EditHeader(bpy.types.Operator):
     bl_idname = "bim.edit_header"
     bl_label = "Edit Header"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Save header informations"
 
     @classmethod
     def poll(cls, context):
@@ -528,6 +531,7 @@ class DisableEditingHeader(bpy.types.Operator):
     bl_idname = "bim.disable_editing_header"
     bl_label = "Disable Editing Header"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Cancel unsaved header informations"
 
     def execute(self, context):
         context.scene.BIMProjectProperties.is_editing = False
@@ -538,7 +542,7 @@ class LoadProject(bpy.types.Operator):
     bl_idname = "bim.load_project"
     bl_label = "Load Project"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Load an existing IFC project."
+    bl_description = "Load an existing IFC project"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     is_advanced: bpy.props.BoolProperty(name="Enable Advanced Mode", default=False)
@@ -655,6 +659,7 @@ class LinkIfc(bpy.types.Operator):
     bl_idname = "bim.link_ifc"
     bl_label = "Link IFC"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Link a Blender file"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.blend;*.blend1", options={"HIDDEN"})
 
@@ -673,6 +678,7 @@ class UnlinkIfc(bpy.types.Operator):
     bl_idname = "bim.unlink_ifc"
     bl_label = "UnLink IFC"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove the selected file from the link list"
     filepath: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -687,6 +693,7 @@ class UnloadLink(bpy.types.Operator):
     bl_idname = "bim.unload_link"
     bl_label = "Unload Link"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Unload the selected linked file"
     filepath: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -705,6 +712,7 @@ class LoadLink(bpy.types.Operator):
     bl_idname = "bim.load_link"
     bl_label = "Load Link"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Load the selected file"
     filepath: bpy.props.StringProperty()
 
     def execute(self, context):
