@@ -145,7 +145,8 @@ class SelectLibraryFile(bpy.types.Operator):
         IfcStore.library_path = self.filepath
         IfcStore.library_file = ifcopenshell.open(self.filepath)
         bpy.ops.bim.refresh_library()
-        context.area.tag_redraw()
+        if context.area:
+            context.area.tag_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -399,6 +400,7 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
         ifc_importer.type_collection = type_collection
+        ifc_importer.material_creator.load_existing_materials()
         self.import_type_materials(element, ifc_importer)
         self.import_type_styles(element, ifc_importer)
         ifc_importer.create_type_product(element)

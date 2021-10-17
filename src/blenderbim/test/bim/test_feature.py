@@ -159,6 +159,14 @@ def the_object_name_exists(name) -> bpy.types.Object:
     return obj
 
 
+@then(parsers.parse('the material "{name}" exists'))
+def the_material_name_exists(name) -> bpy.types.Material:
+    obj = bpy.data.materials.get(name)
+    if not obj:
+        assert False, f'The material "{name}" does not exist'
+    return obj
+
+
 @then("an IFC file does not exist")
 def an_ifc_file_does_not_exist():
     ifc = IfcStore.get_file()
@@ -249,6 +257,18 @@ def the_object_name_is_not_an_ifc_element(name):
     assert id == 0, f"The ID is {id}"
 
 
+@then(parsers.parse('the material "{name}" is not an IFC material'))
+def the_material_name_is_not_an_ifc_material(name):
+    id = the_material_name_exists(name).BIMObjectProperties.ifc_definition_id
+    assert id == 0, f"The ID is {id}"
+
+
+@then(parsers.parse('the material "{name}" is not an IFC style'))
+def the_material_name_is_not_an_ifc_material(name):
+    id = the_material_name_exists(name).BIMMaterialProperties.ifc_style_id
+    assert id == 0, f"The ID is {id}"
+
+
 @then(parsers.parse('the object "{name}" has "{number}" vertices'))
 def the_object_name_has_number_vertices(name, number):
     total = len(the_object_name_exists(name).data.vertices)
@@ -300,6 +320,11 @@ def prop_is_value(prop, value):
     if not is_value:
         actual_value = eval(f"bpy.context.{prop}")
         assert False, f"Value is {actual_value}"
+
+
+@then(parsers.parse('the object "{name}" has the material "{material}"'))
+def the_object_name_is_in_the_collection_collection(name, material):
+    assert material in [ms.material.name for ms in the_object_name_exists(name).material_slots]
 
 
 @then(parsers.parse('the object "{name}" is in the collection "{collection}"'))
