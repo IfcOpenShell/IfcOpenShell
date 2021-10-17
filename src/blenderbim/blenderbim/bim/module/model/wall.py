@@ -71,6 +71,10 @@ class JoinWall(bpy.types.Operator):
     bl_idname = "bim.join_wall"
     bl_label = "Join Wall"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = """ Trim/Extend the selected walls to the last selected wall:
+    'T' mode: Trim/Extend to the virtual projection
+    'L' mode: Chamfer the walls 
+    'V' mode: Chamfer the walls keeping the angle"""
     join_type: bpy.props.StringProperty()
 
     @classmethod
