@@ -24,3 +24,10 @@ def get_local_placement(plc):
     else:
         parent = get_local_placement(plc.PlacementRelTo)
     return np.dot(parent, get_axis2placement(plc.RelativePlacement))
+
+
+def get_storey_elevation(storey):
+    if storey.ObjectPlacement:
+        matrix = get_local_placement(storey.ObjectPlacement)
+        return matrix[2][3]
+    return getattr(storey, "Elevation", 0.0) or 0.0
