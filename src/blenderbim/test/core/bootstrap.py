@@ -57,6 +57,13 @@ def material():
 
 
 @pytest.fixture
+def misc():
+    prophet = Prophecy(blenderbim.core.tool.Misc)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def owner():
     prophet = Prophecy(blenderbim.core.tool.Owner)
     yield prophet

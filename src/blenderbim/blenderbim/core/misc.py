@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -16,22 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-from . import ui, prop, operator
 
-classes = (
-    operator.ResizeToStorey,
-    operator.SetOverrideColour,
-    operator.SetViewportShadowFromSun,
-    operator.SnapSpacesTogether,
-    prop.BIMMiscProperties,
-    ui.BIM_PT_misc_utilities,
-)
-
-
-def register():
-    bpy.types.Scene.BIMMiscProperties = bpy.props.PointerProperty(type=prop.BIMMiscProperties)
-
-
-def unregister():
-    del bpy.types.Scene.BIMMiscProperties
+def resize_to_storey(misc, obj=None):
+    storey = misc.get_object_storey(obj)
+    if not storey:
+        return
+    height = misc.get_storey_height_in_si(storey)
+    if not height:
+        return
+    misc.set_object_origin_to_bottom(obj)
+    misc.move_object_to_elevation(obj, misc.get_storey_elevation_in_si(storey))
+    misc.scale_object_to_height(obj, height)
+    misc.mark_object_as_edited(obj)

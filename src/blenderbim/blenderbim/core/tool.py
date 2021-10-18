@@ -78,6 +78,17 @@ class Material:
 
 
 @interface
+class Misc:
+    def get_object_storey(cls, obj): pass
+    def get_storey_elevation_in_si(cls, storey): pass
+    def get_storey_height_in_si(cls, storey): pass
+    def mark_object_as_edited(cls, obj): pass
+    def move_object_to_elevation(cls, obj, elevation): pass
+    def scale_object_to_height(cls, obj, height): pass
+    def set_object_origin_to_bottom(cls, obj): pass
+
+
+@interface
 class Owner:
     def add_address_attribute(cls, name): pass
     def add_person_attribute(cls, name): pass
