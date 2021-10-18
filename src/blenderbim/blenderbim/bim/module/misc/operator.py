@@ -18,6 +18,8 @@
 
 import bpy
 import blenderbim.bim.handler
+import blenderbim.tool as tool
+import blenderbim.core.misc as core
 from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector, Matrix, Euler
 
@@ -109,3 +111,17 @@ class SnapSpacesTogether(bpy.types.Operator):
                     for v in polygon.vertices:
                         obj.data.vertices[v].co += offset
         return {"FINISHED"}
+
+
+class ResizeToStorey(bpy.types.Operator, Operator):
+    bl_idname = "bim.resize_to_storey"
+    bl_label = "Resize To Storey"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        for obj in context.selected_objects:
+            core.resize_to_storey(tool.Misc, obj=obj)
