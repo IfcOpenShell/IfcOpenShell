@@ -130,6 +130,7 @@ def additionally_the_object_name_is_selected(name):
 @given(parsers.parse('I set "{prop}" to "{value}"'))
 @when(parsers.parse('I set "{prop}" to "{value}"'))
 def i_set_prop_to_value(prop, value):
+    value = replace_variables(value)
     try:
         eval(f"bpy.context.{prop}")
     except:
