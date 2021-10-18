@@ -27,7 +27,7 @@ from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data
 from ifcopenshell.api.cost.data import Data as CostData
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
-
+from . import prop
 
 def get_pset_props(context, obj, obj_type):
     if obj_type == "Object":
@@ -274,18 +274,23 @@ class AddPset(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        props = get_pset_props(context, self.obj, self.obj_type)
-        ifc_definition_id = get_pset_obj_ifc_definition_id(context, self.obj, self.obj_type)
+        selected_objects = context.selected_objects
+        selected_pset = get_pset_props(context, self.obj, self.obj_type).pset_name
 
-        ifcopenshell.api.run(
-            "pset.add_pset",
-            self.file,
-            **{
-                "product": self.file.by_id(ifc_definition_id),
-                "name": props.pset_name,
-            },
-        )
-        Data.load(IfcStore.get_file(), ifc_definition_id)
+        for object in selected_objects:
+            context.view_layer.objects.active = object
+            ifc_definition_id = get_pset_obj_ifc_definition_id(context, object.name, self.obj_type)
+            if f"'{selected_pset}'" in str(prop.getPsetNames("", context)):
+
+                ifcopenshell.api.run(
+                    "pset.add_pset",
+                    self.file,
+                    **{
+                        "product": self.file.by_id(ifc_definition_id),
+                        "name": selected_pset,
+                    },
+                )
+                Data.load(IfcStore.get_file(), ifc_definition_id)
         return {"FINISHED"}
 
 
