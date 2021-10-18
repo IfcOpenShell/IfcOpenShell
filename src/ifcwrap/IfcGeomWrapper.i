@@ -65,7 +65,7 @@
 %include "../ifcgeom/IfcGeomRepresentation.h"
 %include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
-%include "../serializers/GeometrySerializer.h"
+%include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 %include "../serializers/SvgSerializer.h"
 %include "../serializers/WavefrontObjSerializer.h"
 
