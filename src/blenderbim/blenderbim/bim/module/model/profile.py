@@ -25,6 +25,8 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import mathutils.geometry
 import blenderbim.bim.handler
+import blenderbim.tool as tool
+import blenderbim.core.geometry
 from blenderbim.bim.ifc import IfcStore
 from math import pi, degrees, inf
 from mathutils import Vector, Matrix
@@ -169,11 +171,15 @@ class DumbProfileGenerator:
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
         profile_set_usage = ifcopenshell.util.element.get_material(element)
-        bpy.ops.bim.add_representation(
-            obj=obj.name,
-            context_id=ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW").id(),
+        blenderbim.core.geometry.add_representation(
+            tool.Ifc,
+            tool.Geometry,
+            tool.Style,
+            tool.Surveyor,
+            obj=obj,
+            context=ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW"),
             ifc_representation_class="IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage",
-            profile_set_usage=profile_set_usage.id(),
+            profile_set_usage=profile_set_usage,
         )
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         bpy.ops.bim.switch_representation(

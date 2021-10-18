@@ -64,6 +64,22 @@ class Context:
 
 
 @interface
+class Geometry:
+    def does_object_have_mesh_with_faces(cls, obj): pass
+    def duplicate_object_data(cls, obj): pass
+    def get_object_data(cls, obj): pass
+    def get_object_materials_without_styles(cls, obj): pass
+    def get_representation_name(cls, context, representation): pass
+    def get_cartesian_point_coordinate_offset(cls, obj): pass
+    def get_total_representation_items(cls, obj): pass
+    def link(cls, element, obj): pass
+    def rename_object_data(cls, data, name): pass
+    def should_force_faceted_brep(cls): pass
+    def should_force_triangulation(cls): pass
+    def should_use_presentation_style_assignment(cls): pass
+
+
+@interface
 class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass

@@ -83,7 +83,9 @@ class Misc(blenderbim.core.tool.Misc):
         min_z = min([c[2] for c in absolute_bound_box])
         current_absolute_height = max_z - min_z
         scale_factor = height / current_absolute_height
-        obj.matrix_world @= Matrix.Scale(scale_factor, 4, obj.matrix_world.to_quaternion() @ Vector((0, 0, 1)))
+        obj.matrix_world @= Matrix.Scale(
+            scale_factor, 4, obj.matrix_world.inverted().to_quaternion() @ Vector((0, 0, 1))
+        )
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
     @classmethod

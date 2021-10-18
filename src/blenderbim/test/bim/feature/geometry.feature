@@ -11,6 +11,18 @@ Scenario: Edit object placement
     When I press "bim.edit_object_placement"
     Then nothing happens
 
+Scenario: Add representation
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    When the variable "context" is "{ifc}.by_type('IfcGeometricRepresentationSubContext')[-1].id()"
+    And I set "scene.BIMProperties.contexts" to "{context}"
+    And I press "bim.add_representation"
+    Then nothing happens
+
 Scenario: Copy representation
     Given an empty IFC project
     And I add a cube

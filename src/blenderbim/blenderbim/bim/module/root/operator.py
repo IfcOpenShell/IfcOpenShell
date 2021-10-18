@@ -24,6 +24,7 @@ import ifcopenshell.util.element
 import blenderbim.bim.handler
 import blenderbim.core.spatial
 import blenderbim.core.style
+import blenderbim.core.geometry
 import blenderbim.core.material
 import blenderbim.tool as tool
 from ifcopenshell.api.void.data import Data as VoidData
@@ -144,8 +145,18 @@ class AssignClass(bpy.types.Operator):
         IfcStore.link_element(product, obj)
 
         if self.should_add_representation:
-            bpy.ops.bim.add_representation(
-                obj=obj.name, context_id=self.context_id, ifc_representation_class=self.ifc_representation_class
+            ifc_context = self.context_id or int(context.scene.BIMProperties.contexts or "0") or None
+            if ifc_context:
+                ifc_context = tool.Ifc.get().by_id(ifc_context)
+            blenderbim.core.geometry.add_representation(
+                tool.Ifc,
+                tool.Geometry,
+                tool.Style,
+                tool.Surveyor,
+                obj=obj,
+                context=ifc_context,
+                ifc_representation_class=self.ifc_representation_class,
+                profile_set_usage=None,
             )
 
         if product.is_a("IfcElementType"):
@@ -351,7 +362,16 @@ class CopyClass(bpy.types.Operator):
             if relating_type and relating_type.RepresentationMaps:
                 bpy.ops.bim.assign_type(relating_type=relating_type.id(), related_object=obj.name)
             else:
-                bpy.ops.bim.add_representation(obj=obj.name)
+                blenderbim.core.geometry.add_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    tool.Style,
+                    tool.Surveyor,
+                    obj=obj,
+                    context=tool.Ifc.get().by_id(int(context.scene.BIMProperties.contexts)),
+                    ifc_representation_class=None,
+                    profile_set_usage=None,
+                )
             if result.is_a("IfcSpatialElement") or result.is_a("IfcSpatialStructureElement"):
                 tool.Collector.assign(obj)
             elif result.is_a("IfcOpeningElement"):

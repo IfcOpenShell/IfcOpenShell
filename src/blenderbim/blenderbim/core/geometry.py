@@ -16,8 +16,58 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blenderbim.core.style
+
 
 def edit_object_placement(ifc, surveyor, obj=None):
     element = ifc.get_entity(obj)
     if element:
         ifc.run("geometry.edit_object_placement", product=element, matrix=surveyor.get_absolute_matrix(obj))
+
+
+def add_representation(
+    ifc, geometry, style, surveyor, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None
+):
+    element = ifc.get_entity(obj)
+    if not element:
+        return
+
+    edit_object_placement(ifc, surveyor, obj=obj)
+    data = geometry.get_object_data(obj)
+
+    if not data:
+        return
+
+    representation = ifc.run(
+        "geometry.add_representation",
+        context=context,
+        blender_object=obj,
+        geometry=data,
+        coordinate_offset=geometry.get_cartesian_point_coordinate_offset(obj),
+        total_items=geometry.get_total_representation_items(obj),
+        should_force_faceted_brep=geometry.should_force_faceted_brep(),
+        should_force_triangulation=geometry.should_force_triangulation(),
+        ifc_representation_class=ifc_representation_class,
+        profile_set_usage=profile_set_usage,
+    )
+
+    if geometry.does_object_have_mesh_with_faces(obj):
+        styles = [
+            blenderbim.core.style.add_style(ifc, style, obj=material)
+            for material in geometry.get_object_materials_without_styles(obj)
+        ]
+        ifc.run(
+            "style.assign_representation_styles",
+            shape_representation=representation,
+            styles=styles,
+            should_use_presentation_style_assignment=geometry.should_use_presentation_style_assignment(),
+        )
+
+    ifc.run("geometry.assign_representation", product=element, representation=representation)
+
+    data = geometry.duplicate_object_data(obj)
+    name = geometry.get_representation_name(context, representation)
+    geometry.rename_object_data(data, name)
+    geometry.link(representation, data)
+
+    return representation

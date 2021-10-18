@@ -66,87 +66,30 @@ class AddRepresentation(bpy.types.Operator, Operator):
     profile_set_usage: bpy.props.IntProperty()
 
     def _execute(self, context):
+        ifc_context = self.context_id or int(context.scene.BIMProperties.contexts or "0") or None
+        if ifc_context:
+            ifc_context = tool.Ifc.get().by_id(ifc_context)
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
-
-        core.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
-
-        if not obj.data:
-            return {"FINISHED"}
-
-        product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-
-        context_id = self.context_id or int(context.scene.BIMProperties.contexts)
-        context_of_items = self.file.by_id(context_id)
-
-        gprop = context.scene.BIMGeoreferenceProperties
-        coordinate_offset = None
-        if gprop.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT":
-            coordinate_offset = Vector(
-                (
-                    float(gprop.blender_eastings),
-                    float(gprop.blender_northings),
-                    float(gprop.blender_orthogonal_height),
-                )
-            )
-
-        representation_data = {
-            "context": context_of_items,
-            "blender_object": obj,
-            "geometry": obj.data,
-            "coordinate_offset": coordinate_offset,
-            "total_items": max(1, len(obj.material_slots)),
-            "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
-            "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
-            "ifc_representation_class": self.ifc_representation_class,
-            "profile_set_usage": self.file.by_id(self.profile_set_usage) if self.profile_set_usage else None,
-        }
-
-        result = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
-
-        if not result:
-            print("Failed to write shape representation")
-            return {"FINISHED"}
-
-        [
-            blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=s.material)
-            for s in obj.material_slots
-            if s.material and not s.material.BIMMaterialProperties.ifc_style_id
-        ]
-
-        if isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons):
-            ifcopenshell.api.run(
-                "style.assign_representation_styles",
-                self.file,
-                **{
-                    "shape_representation": result,
-                    "styles": [
-                        self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
-                        for s in obj.material_slots
-                        if s.material
-                    ],
-                    "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
-                },
-            )
-        ifcopenshell.api.run(
-            "geometry.assign_representation", self.file, **{"product": product, "representation": result}
+        core.add_representation(
+            tool.Ifc,
+            tool.Geometry,
+            tool.Style,
+            tool.Surveyor,
+            obj=obj,
+            context=ifc_context,
+            ifc_representation_class=self.ifc_representation_class,
+            profile_set_usage=tool.Ifc.get().by_id(self.profile_set_usage) if self.profile_set_usage else None,
         )
-
-        mesh = obj.data.copy()
-        mesh.name = "{}/{}".format(context_id, result.id())
-        mesh.BIMMeshProperties.ifc_definition_id = int(result.id())
-        obj.data = mesh
-        Data.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
-
-        if product.is_a("IfcTypeProduct"):
-            if self.file.schema == "IFC2X3":
-                types = product.ObjectTypeOf
+        Data.load(tool.Ifc.get(), obj.BIMObjectProperties.ifc_definition_id)
+        element = tool.Ifc.get_entity(obj)
+        if element.is_a("IfcTypeProduct"):
+            if tool.Ifc.get_schema() == "IFC2X3":
+                types = element.ObjectTypeOf
             else:
-                types = product.Types
+                types = element.Types
             if types:
                 for element in types[0].RelatedObjects:
-                    Data.load(self.file, element.id())
-        return {"FINISHED"}
+                    Data.load(tool.Ifc.get(), element.id())
 
 
 class SwitchRepresentation(bpy.types.Operator):
@@ -430,7 +373,16 @@ class CopyRepresentation(bpy.types.Operator, Operator):
                 continue
             if obj.data:
                 bm.to_mesh(obj.data)
-                bpy.ops.bim.add_representation(obj=obj.name)
+                core.add_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    tool.Style,
+                    tool.Surveyor,
+                    obj=obj,
+                    context=tool.Ifc.get().by_id(int(context.scene.BIMProperties.contexts)),
+                    ifc_representation_class=None,
+                    profile_set_usage=None,
+                )
 
 
 class OverrideDelete(bpy.types.Operator):
