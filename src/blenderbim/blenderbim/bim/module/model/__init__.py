@@ -34,7 +34,6 @@ classes = (
     prop.BIMModelProperties,
     ui.BIM_PT_authoring,
     ui.BIM_PT_authoring_architectural,
-    ui.BIM_PT_misc_utilities,
     grid.BIM_OT_add_object,
     stair.BIM_OT_add_object,
     door.BIM_OT_add_object,

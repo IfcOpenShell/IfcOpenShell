@@ -20,7 +20,6 @@ import bpy
 import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.owner as core
-import blenderbim.bim.module.owner.data
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 
