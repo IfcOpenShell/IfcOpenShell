@@ -138,7 +138,7 @@ namespace IfcGeom {
 
 		IfcUtil::IfcBaseClass* create() { return implementation_->create(); }
 
-		void set_cache(HdfSerializer* cache) { return implementation_->set_cache(cache); }
+		void set_cache(GeometrySerializer* cache) { return implementation_->set_cache(cache); }
 	};
 }
 

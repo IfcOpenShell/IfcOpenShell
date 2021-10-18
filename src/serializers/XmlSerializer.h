@@ -1,6 +1,6 @@
 #define SCHEMA_METHOD
 
-#include "../serializers/Serializer.h"
+#include "../ifcgeom_schema_agnostic/Serializer.h"
 #include "../ifcparse/IfcFile.h"
 
 #include <boost/function.hpp>
