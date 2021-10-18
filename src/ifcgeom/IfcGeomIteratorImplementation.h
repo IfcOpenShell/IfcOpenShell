@@ -1035,7 +1035,7 @@ namespace IfcGeom {
 							gid2 = gid2.substr(0, hyphen);
 						}
 
-						auto from_cache = cache_->read(*ifc_file, next_shape_model->guid(), boost::lexical_cast<int>(gid2), HdfSerializer::READ_TRIANGULATION);
+						auto from_cache = cache_->read(*ifc_file, next_shape_model->guid(), boost::lexical_cast<int>(gid2), GeometrySerializer::READ_TRIANGULATION);
 						if (from_cache) {
 							read_from_cache = true;
 							next_triangulation = (TriangulationElement*)from_cache;

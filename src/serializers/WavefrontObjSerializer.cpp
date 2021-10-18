@@ -28,7 +28,7 @@
 #include <iomanip>
 
 WaveFrontOBJSerializer::WaveFrontOBJSerializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const SerializerSettings& settings)
-	: GeometrySerializer(settings)
+	: WriteOnlyGeometrySerializer(settings)
 	, obj_stream(obj_filename)
 	, mtl_stream(mtl_filename)
 	, vcount_total(1)

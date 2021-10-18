@@ -22,7 +22,7 @@
 #ifndef SVGSERIALIZER_H
 #define SVGSERIALIZER_H
 
-#include "../serializers/GeometrySerializer.h"
+#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 #include "../serializers/util.h"
 
 #include "../ifcparse/utils.h"
@@ -129,7 +129,7 @@ typedef boost::variant<
 	Handle(HLRBRep_PolyAlgo)
 > hlr_t;
 
-class SvgSerializer : public GeometrySerializer {
+class SvgSerializer : public WriteOnlyGeometrySerializer {
 public:
 	typedef std::pair<std::string, std::vector<util::string_buffer> > path_object;
 	typedef std::vector< boost::shared_ptr<util::string_buffer::float_item> > float_item_list;
@@ -184,7 +184,7 @@ protected:
 
 public:
 	SvgSerializer(const stream_or_filename& out_filename, const SerializerSettings& settings)
-		: GeometrySerializer(settings)
+		: WriteOnlyGeometrySerializer(settings)
 		, svg_file(out_filename)
 		, xmin(+std::numeric_limits<double>::infinity())
 		, ymin(+std::numeric_limits<double>::infinity())

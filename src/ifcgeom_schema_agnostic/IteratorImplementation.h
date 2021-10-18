@@ -1,10 +1,29 @@
+/********************************************************************************
+ *                                                                              *
+ * This file is part of IfcOpenShell.                                           *
+ *                                                                              *
+ * IfcOpenShell is free software: you can redistribute it and/or modify         *
+ * it under the terms of the Lesser GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3.0 of the License, or          *
+ * (at your option) any later version.                                          *
+ *                                                                              *
+ * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+ * Lesser GNU General Public License for more details.                          *
+ *                                                                              *
+ * You should have received a copy of the Lesser GNU General Public License     *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                              *
+ ********************************************************************************/
+
 #ifndef ITERATOR_IMPLEMENTATION_H
 #define ITERATOR_IMPLEMENTATION_H
 
 #include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
+#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
-#include "../serializers/HdfSerializer.h"
 
 #include <gp_XYZ.hxx>
 
@@ -36,9 +55,9 @@ namespace IfcGeom {
 
 	class IteratorImplementation {
 	protected:
-		HdfSerializer* cache_ = nullptr;
+		GeometrySerializer* cache_ = nullptr;
 	public:
-		void set_cache(HdfSerializer* cache) { cache_ = cache; }
+		void set_cache(GeometrySerializer* cache) { cache_ = cache; }
 
 		virtual bool initialize() = 0;
 		virtual void compute_bounds(bool with_geometry) = 0;

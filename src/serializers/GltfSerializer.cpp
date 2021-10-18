@@ -45,7 +45,7 @@ static const uint32_t PRIM_TRIANGLE_STRIP = 5;
 static const uint32_t PRIM_TRIANGLE_FAN = 6;
 
 GltfSerializer::GltfSerializer(const std::string& filename, const SerializerSettings& settings)
-	: GeometrySerializer(settings)
+	: WriteOnlyGeometrySerializer(settings)
 	, filename_(filename)
 	, tmp_filename1_(filename + ".indices.tmp")
 	, tmp_filename2_(filename + ".vertices.tmp")

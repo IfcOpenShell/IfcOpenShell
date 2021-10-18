@@ -22,14 +22,14 @@
 
 #ifdef WITH_GLTF
 
-#include "../serializers/GeometrySerializer.h"
+#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
 #include <map>
 
-class GltfSerializer : public GeometrySerializer {
+class GltfSerializer : public WriteOnlyGeometrySerializer {
 private:
 	std::string filename_, tmp_filename1_, tmp_filename2_;
 	std::ofstream fstream_, tmp_fstream1_, tmp_fstream2_;
