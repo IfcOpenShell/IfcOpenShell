@@ -436,6 +436,8 @@ class CopyRepresentation(bpy.types.Operator, Operator):
 class OverrideDelete(bpy.types.Operator):
     bl_idname = "object.delete"
     bl_label = "Delete"
+    use_global: bpy.props.BoolProperty(default=False)
+    confirm: bpy.props.BoolProperty(default=True)
 
     @classmethod
     def poll(cls, context):
