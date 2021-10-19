@@ -497,7 +497,7 @@ class ConfigureVisibility(bpy.types.Operator):
         grid = layout.column_flow(columns=3)
 
         for operator in dir(bpy.ops.bim):
-            if operator.startswith("change_"):
+            if operator.startswith("toggle_module_"):
                 grid.operator(f"bim.{operator}")
 
     def execute(self, context):

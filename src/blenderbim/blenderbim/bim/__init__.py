@@ -73,8 +73,8 @@ for name in modules.keys():
     modules[name] = importlib.import_module(f"blenderbim.bim.module.{name}")
     nameUpperCase = name[0].upper()+name[1:]
 
-    #generate operators that toggle module state Lines 79->106
-    idname = f"bim.change_{name}_visibility"
+    #generate operators that toggle module state
+    idname = f"bim.toggle_module_{name}"
     
     def func(self, context):
         try:
@@ -89,7 +89,7 @@ for name in modules.keys():
         return {'FINISHED'}
 
     opclass = type(
-        f"BIM_OT_Change_{nameUpperCase}_Visibility",
+        f"BIM_OT_Toggle_Module_{nameUpperCase}",
         (bpy.types.Operator, ),
         {
         "bl_idname": idname, 
