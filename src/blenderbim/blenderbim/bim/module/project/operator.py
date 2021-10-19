@@ -32,6 +32,7 @@ import blenderbim.core.owner
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
+from ifcopenshell.api.context.data import Data as ContextData
 
 
 class CreateProject(bpy.types.Operator):
@@ -76,7 +77,7 @@ class CreateProject(bpy.types.Operator):
         model = blenderbim.core.context.add_context(
             tool.Ifc, context_type="Model", context_identifier="", target_view="", parent=0
         )
-        blenderbim.core.context.add_context(
+        body_context = blenderbim.core.context.add_context(
             tool.Ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
         )
         blenderbim.core.context.add_context(
@@ -89,9 +90,8 @@ class CreateProject(bpy.types.Operator):
             tool.Ifc, context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan
         )
 
-        context.scene.BIMProperties.contexts = str(
-            ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW").id()
-        )
+        ContextData.load(tool.Ifc.get())
+        context.scene.BIMProperties.contexts = str(body_context.id())
 
         bpy.ops.bim.assign_class(obj=site.name, ifc_class="IfcSite")
         bpy.ops.bim.assign_class(obj=building.name, ifc_class="IfcBuilding")
@@ -145,7 +145,8 @@ class SelectLibraryFile(bpy.types.Operator):
         IfcStore.library_path = self.filepath
         IfcStore.library_file = ifcopenshell.open(self.filepath)
         bpy.ops.bim.refresh_library()
-        context.area.tag_redraw()
+        if context.area:
+            context.area.tag_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -399,6 +400,7 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
         ifc_importer.type_collection = type_collection
+        ifc_importer.material_creator.load_existing_materials()
         self.import_type_materials(element, ifc_importer)
         self.import_type_styles(element, ifc_importer)
         ifc_importer.create_type_product(element)

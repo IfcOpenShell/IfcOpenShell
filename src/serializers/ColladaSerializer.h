@@ -43,13 +43,13 @@
 
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
-#include "../serializers/GeometrySerializer.h"
+#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
 
-class ColladaSerializer : public GeometrySerializer
+class ColladaSerializer : public WriteOnlyGeometrySerializer
 {
 	// TODO The vast amount of implement details of ColladaSerializer could be hidden to the cpp file.
 private:
@@ -219,7 +219,7 @@ private:
 	float unit_magnitude;
 public:
     ColladaSerializer(const std::string& dae_filename, const SerializerSettings& settings)
-        : GeometrySerializer(settings)
+        : WriteOnlyGeometrySerializer(settings)
 		, exporter("IfcOpenShell", dae_filename, this, settings.precision >= 15)
     {
         exporter.serializer = this;

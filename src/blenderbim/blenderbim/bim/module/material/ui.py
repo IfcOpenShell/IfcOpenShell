@@ -39,9 +39,10 @@ class BIM_PT_material(Panel):
         return view_setting.material
 
     def draw(self, context):
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         if bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id):
             row.operator("bim.remove_material", icon="X", text="Remove IFC Material")
+            row.operator("bim.unlink_material", icon="UNLINKED", text="")
         else:
             row.operator("bim.add_material", icon="ADD", text="Create IFC Material")
 

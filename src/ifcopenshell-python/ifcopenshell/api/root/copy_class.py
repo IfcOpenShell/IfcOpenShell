@@ -10,7 +10,6 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema)
         result = ifcopenshell.util.element.copy(self.file, self.settings["product"])
         self.copy_direct_attributes(result)
         self.copy_indirect_attributes(self.settings["product"], result)

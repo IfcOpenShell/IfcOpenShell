@@ -28,14 +28,11 @@
 
 #include "H5Cpp.h"
 
-#include "../serializers/GeometrySerializer.h"
+#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 
 #define USE_BINARY
 
 class HdfSerializer : public GeometrySerializer {
-public:
-	enum read_type { READ_BREP, READ_TRIANGULATION };
-
 private:
 	const std::string hdf_filename;
 	unsigned int vcount_total;

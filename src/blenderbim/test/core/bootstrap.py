@@ -50,8 +50,36 @@ def context():
 
 
 @pytest.fixture
+def geometry():
+    prophet = Prophecy(blenderbim.core.tool.Geometry)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def material():
+    prophet = Prophecy(blenderbim.core.tool.Material)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def misc():
+    prophet = Prophecy(blenderbim.core.tool.Misc)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def owner():
     prophet = Prophecy(blenderbim.core.tool.Owner)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def type():
+    prophet = Prophecy(blenderbim.core.tool.Type)
     yield prophet
     prophet.verify()
 

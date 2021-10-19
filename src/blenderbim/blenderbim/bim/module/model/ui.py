@@ -77,29 +77,3 @@ class BIM_PT_authoring_architectural(Panel):
         row = self.layout.row(align=True)
         row.operator("bim.flip_wall", icon="ORIENTATION_NORMAL", text="Flip")
         row.operator("bim.split_wall", icon="MOD_PHYSICS", text="Split")
-
-
-class BIM_PT_misc_utilities(Panel):
-    bl_idname = "BIM_PT_misc_utilities"
-    bl_label = "Miscellaneous"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BlenderBIM"
-
-    @classmethod
-    def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting.model
-
-    def draw(self, context):
-        layout = self.layout
-        props = context.scene.BIMProperties
-
-        row = layout.split(factor=0.2, align=True)
-        row.prop(props, "override_colour", text="")
-        row.operator("bim.set_override_colour")
-        row = layout.row(align=True)
-        row.operator("bim.set_viewport_shadow_from_sun")
-        row = layout.row(align=True)
-        row.operator("bim.snap_spaces_together")

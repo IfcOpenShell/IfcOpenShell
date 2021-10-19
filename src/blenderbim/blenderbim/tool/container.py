@@ -60,12 +60,7 @@ class Container(blenderbim.core.tool.Container):
         for rel in parent.IsDecomposedBy or []:
             related_objects = []
             for element in rel.RelatedObjects:
-                if element.ObjectPlacement:
-                    related_objects.append(
-                        (element, ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)[2][3])
-                    )
-                else:
-                    related_objects.append((element, float("-inf")))
+                related_objects.append((element, ifcopenshell.util.placement.get_storey_elevation(element)))
             related_objects = sorted(related_objects, key=lambda e: e[1])
             for element in related_objects:
                 element = element[0]

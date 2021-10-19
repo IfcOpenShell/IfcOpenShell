@@ -14,6 +14,31 @@ Scenario: Create project
     And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
 
+Scenario: Append library element
+    Given an empty IFC project
+    When I press "bim.select_library_file(filepath='{cwd}/test/files/basic.ifc')"
+    And I press "bim.change_library_element(element_name='IfcTypeProduct')"
+    And I press "bim.change_library_element(element_name='IfcSlabType')"
+    And I press "bim.append_library_element(definition=242, prop_index=0)"
+    Then the object "IfcSlabType/Slab" is an "IfcSlabType"
+    And the object "IfcSlabType/Slab" is in the collection "Types"
+
+Scenario: Append library element - append two elements sharing a material
+    Given an empty IFC project
+    And I press "bim.select_library_file(filepath='{cwd}/test/files/basic.ifc')"
+    And I press "bim.change_library_element(element_name='IfcTypeProduct')"
+    And I press "bim.change_library_element(element_name='IfcSlabType')"
+    And I press "bim.append_library_element(definition=242, prop_index=0)"
+    When I press "bim.rewind_library"
+    And I press "bim.change_library_element(element_name='IfcWallType')"
+    And I press "bim.append_library_element(definition=291, prop_index=0)"
+    Then the object "IfcSlabType/Slab" is an "IfcSlabType"
+    And the object "IfcSlabType/Slab" is in the collection "Types"
+    And the object "IfcWallType/Wall" is an "IfcWallType"
+    And the object "IfcWallType/Wall" is in the collection "Types"
+    And the object "IfcSlabType/Slab" has the material "SurfaceStyle"
+    And the object "IfcWallType/Wall" has the material "SurfaceStyle"
+
 Scenario: Load project
     Given an empty Blender session
     When I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"

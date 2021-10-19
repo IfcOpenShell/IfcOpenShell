@@ -26,6 +26,8 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import mathutils.geometry
 import blenderbim.bim.handler
+import blenderbim.core.type
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
 from ifcopenshell.api.material.data import Data as MaterialData
@@ -792,7 +794,9 @@ class DumbWallGenerator:
             ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef",
         )
 
-        bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
+        blenderbim.core.type.assign_type(
+            tool.Ifc, tool.Geometry, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type
+        )
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer2"})

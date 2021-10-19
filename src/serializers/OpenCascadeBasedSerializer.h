@@ -22,9 +22,9 @@
 
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
-#include "../serializers/GeometrySerializer.h"
+#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 
-class OpenCascadeBasedSerializer : public GeometrySerializer {
+class OpenCascadeBasedSerializer : public WriteOnlyGeometrySerializer {
 	OpenCascadeBasedSerializer(const OpenCascadeBasedSerializer&); //N/A
 	OpenCascadeBasedSerializer& operator =(const OpenCascadeBasedSerializer&); //N/A
 protected:
@@ -32,7 +32,7 @@ protected:
 	const char* getSymbolForUnitMagnitude(float mag);
 public:
 	explicit OpenCascadeBasedSerializer(const std::string& out_filename, const SerializerSettings& settings)
-		: GeometrySerializer(settings)
+		: WriteOnlyGeometrySerializer(settings)
 		, out_filename(out_filename)
 	{}
 	virtual ~OpenCascadeBasedSerializer() {}
