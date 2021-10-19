@@ -17,33 +17,33 @@ BIM will by definition contain a (big) number of submodules or subschemas. Grant
 
 * **Blender**
 
-These considerations must be adapted to the Python API, to the general paradigm we have chosen to access, modify or create IFC data, and to the general philosophy of Blender. There are many ways and places where an add-on creator can choose to present information to the user. BlenderBim currently works that way :
+  These considerations must be adapted to the Python API, to the general paradigm we have chosen to access, modify or create IFC data, and to the general philosophy of Blender. There are many ways and places where an add-on creator can choose to present information to the user. BlenderBim currently works that way :
 
-- Information about the current context is displayed inside the properties editor. We leverage the fact that it is already built around displaying different types of information whether we are in the Scene, Material, Mesh, Object, Curve, Texture, etc. subpanels. It fits really well with the way things are already organized in the IFC classification.
+  - Information about the current context is displayed inside the properties editor. We leverage the fact that it is already built around displaying different types of information whether we are in the Scene, Material, Mesh, Object, Curve, Texture, etc. subpanels. It fits really well with the way things are already organized in the IFC classification.
 
-- Tools to create, modify or delete items are in the dedicated Toolbar (The left one) in the 3D viewport
-
-- Some Misc tools and informations are displayed in the N panel of the 3D viewport . They're shortcuts to things that are already present elsewhere in the UI, but are handy to have when modifying objects or geometry in the Viewport.
-
-- Adding specific Import / Export IFC operators (arguably a bit misleading since BlenderBim does more than import / export in these operations)
+  - Tools to create, modify or delete items are in the dedicated Toolbar (The left one)   in the 3D viewport
+  
+  - Some Misc tools and informations are displayed in the N panel of the 3D viewport .   They're shortcuts to things that are already present elsewhere in the UI, but are   handy to have when modifying objects or geometry in the Viewport.
+  
+  - Adding specific Import / Export IFC operators (arguably a bit misleading since   BlenderBim does more than import / export in these operations)
 
 * **Interface panels**
 
-- The good : Every submodule is visually separated from each other. The user can customize its interface to only show what's relevant to them at any one point by folding in or out panels. Development / Debugging is facilitated because each submodule's interface is separated from the others.
-
-- The bad : Having many interface panels clutters the interface, leading to an overwhelming experience for newcomers especially.
-
-- Proposal : The addon should in the long run provide the user with dynamic UI depending on what's their usecase. Preferably accessed in the Addon Preferences interface, with pre-made options that dynamically enable or disable specific parts of the UI. It should also provide the option to selectively add or remove specific parts of the UI on top of that. Additionally, when it does not make sense to display a specific panel, it should be hidden from the UI. (eg if an object has no IFC Class, it can't be spatially contained, so the IFC Spatial Container panel should be hidden until the user sets the IFC class)
-  In the long term it could also be interesting to think about some kind of tutorial mode where more information is conveyed through the interface for new users.
+  - The good : Every submodule is visually separated from each other. The user can customize its interface to only show what's relevant to them at any one point by folding in or out panels. Development / Debugging is facilitated because each submodule's interface is separated from the others.
+  
+  - The bad : Having many interface panels clutters the interface, leading to an overwhelming experience for newcomers especially.
+  
+  - Proposal : The addon should in the long run provide the user with dynamic UI depending on what's their usecase. Preferably accessed in the Addon Preferences interface, with pre-made options that dynamically enable or disable specific parts of the UI. It should also provide the option to selectively add or remove specific parts of the UI on top of that. Additionally, when it does not make sense to display a specific panel, it should be hidden from the UI. (eg if an object has no IFC Class, it can't be spatially contained, so the IFC Spatial Container panel should be hidden until the user sets the IFC class)
+    In the long term it could also be interesting to think about some kind of tutorial mode where more information is conveyed through the interface for new users.
 
 * **Item Lists**
 
-An item list should provide right off the bat a few features :
-
+  An item list should provide right off the bat a few features :
+  
   - Add a new item.
-
+  
   - Modify an item, whether by adding a button to each item in the list, or adding a button on the list header to modify the selected item.
-
+  
   - Delete an item, whether by adding a button to each item in the list, or adding a button on the list header to delete the selected item.
 
   - Modify an item's name by double-clicking on the field if applicable
@@ -81,7 +81,8 @@ An item list should provide right off the bat a few features :
 Icons
 ^^^^^
 
-* .. image:: https://user-images.githubusercontent.com/25156105/137270452-bf6c03ea-2d3e-4ae3-8121-6799e8beb335.png : `"CANCEL"` 
+* .. image:: https://user-images.githubusercontent.com/25156105/137270452-bf6c03ea-2d3e-4ae3-8121-6799e8beb335.png
+  : `"CANCEL"` 
 When to use : To disable the edition state of a particular item.
 Expected result : A part of the interface showing the item attributes is either shrinked down or hidden. The button is usually replaced by a button to delete this item.
 
@@ -90,14 +91,14 @@ When to use : Deleting a particular item, usually an element of a list.
 Expected result : The interface element referencing the deleted item is hidden from the interface. If the item was in a list, and the deleted element was selected, the next element becomes selected, or if there is no next element, no element is selected.
 
 * .. image:: https://user-images.githubusercontent.com/25156105/137271601-e79012e5-fc61-402e-830c-b34b4ca757a0.png : `"GREASEPENCIL"` 
-When to use : Enable the edition of a particular item.
-Behaviour : Usually only one element of a particular context can be edited at a time.
-Expected result : The interface should either expand or spawn new elements to display the chosen item's editable attributes. If the editem item is part of a list and its interface elements contained an operator to delete it, it is swapped for an operator to disable the edition of that item.
-**Proposal** : Currently all the edition buttons are hidden from the interface when editing a particular item. This results on buttons jumping to the right slightly. My proposal is to instead show but disable the other buttons to prevent interface flicker.
-Current :
-! .. image:: https://user-images.githubusercontent.com/25156105/137273603-f9ac39e5-7616-4fb9-89e2-4dae453e650a.gif
-Proposal :
-! .. image:: https://user-images.githubusercontent.com/25156105/137273329-532d6d59-e39d-483e-980b-b8405062eaa8.gif
+  When to use : Enable the edition of a particular item.
+  Behaviour : Usually only one element of a particular context can be edited at a time.
+  Expected result : The interface should either expand or spawn new elements to display the chosen item's editable attributes. If the editem item is part of a list and its interface elements contained an operator to delete it, it is swapped for an operator to disable the edition of that item.
+  **Proposal** : Currently all the edition buttons are hidden from the interface when editing a particular item. This results on buttons jumping to the right slightly. My proposal is to instead show but disable the other buttons to prevent interface flicker.
+  Current :
+  ! .. image:: https://user-images.githubusercontent.com/25156105/137273603-f9ac39e5-7616-4fb9-89e2-4dae453e650a.gif
+  Proposal :
+  ! .. image:: https://user-images.githubusercontent.com/25156105/137273329-532d6d59-e39d-483e-980b-b8405062eaa8.gif
 
 * .. image:: https://user-images.githubusercontent.com/25156105/137273981-26fa664a-a29e-402e-9d7e-67b8b71c2d5d.png : `"ADD"` 
 When to use : Adding an item to a particular context, either initializing it (eg. adding a coordinate system) or adding an element to a list.
