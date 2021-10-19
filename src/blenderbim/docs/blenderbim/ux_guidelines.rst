@@ -80,11 +80,11 @@ An item list should provide right off the bat a few features :
 Icons
 ^^^^^
 
-* image:: ux_guidelines_img/icon_cancel.png Icon name : `"CANCEL"` 
+* .. image:: ux_guidelines_img/icon_cancel.png Icon name : `"CANCEL"` 
 When to use : To disable the edition state of a particular item.
 Expected result : A part of the interface showing the item attributes is either shrinked down or hidden. The button is usually replaced by a button to delete this item.
 
-* ![image](https://user-images.githubusercontent.com/25156105/137271575-dcae9e56-3c64-4d8b-89b0-6cf103b999f2.png)
+* .. image:: https://user-images.githubusercontent.com/25156105/137271575-dcae9e56-3c64-4d8b-89b0-6cf103b999f2.png
  Icon name : `"X"` 
 When to use : Deleting a particular item, usually an element of a list.
 Expected result : The interface element referencing the deleted item is hidden from the interface. If the item was in a list, and the deleted element was selected, the next element becomes selected, or if there is no next element, no element is selected.
