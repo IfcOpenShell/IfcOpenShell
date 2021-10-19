@@ -142,7 +142,7 @@ Icons
 **Expected result** : A new file browser window should open, with sufficient information provided to the user to know which file type should be loaded in (eg adding a file extension, adding information in the filebrowser UI). When the file is loaded, the interface should expand to show the attributes or informations or new context-sensitive operations provided by the imported file.
 
 **Proposal** : Currently there are some instances where I don't know if the elements are supposed to require an external file, eg 
-
+ 
 .. image:: https://user-images.githubusercontent.com/25156105/137275887-e0f0b694-842b-422f-bc09-cdcefef64107.png
 
 * .. image:: https://user-images.githubusercontent.com/25156105/137276333-4d083f6a-36b9-494f-b0de-ec1d321cbd3d.png
