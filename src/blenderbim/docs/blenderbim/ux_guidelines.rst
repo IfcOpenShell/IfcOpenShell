@@ -80,7 +80,7 @@ An item list should provide right off the bat a few features :
 Icons
 ^^^^^
 
-* image:: https://user-images.githubusercontent.com/25156105/137270452-bf6c03ea-2d3e-4ae3-8121-6799e8beb335.png Icon name : `"CANCEL"` 
+* image:: ux_guidelines_img/icon_cancel.png Icon name : `"CANCEL"` 
 When to use : To disable the edition state of a particular item.
 Expected result : A part of the interface showing the item attributes is either shrinked down or hidden. The button is usually replaced by a button to delete this item.
 
