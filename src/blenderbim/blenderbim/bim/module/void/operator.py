@@ -19,6 +19,8 @@
 import bpy
 import ifcopenshell.api
 import ifcopenshell.util.representation
+import blenderbim.tool as tool
+import blenderbim.core.geometry
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.void.data import Data
 
@@ -120,10 +122,13 @@ class RemoveOpening(bpy.types.Operator):
         ifcopenshell.api.run("void.remove_opening", self.file, **{"opening": self.file.by_id(self.opening_id)})
 
         if not is_modifier_removed:
-            bpy.ops.bim.switch_representation(
-                ifc_definition_id=obj.data.BIMMeshProperties.ifc_definition_id,
+            blenderbim.core.geometry.switch_representation(
+                tool.Geometry,
+                obj=obj,
+                representation=tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id),
                 should_reload=True,
-                should_switch_all_meshes=True,
+                enable_dynamic_voids=False,
+                is_global=True,
             )
 
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)

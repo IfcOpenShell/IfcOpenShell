@@ -65,15 +65,22 @@ class Context:
 
 @interface
 class Geometry:
+    def change_object_data(cls, obj, data, is_global=False): pass
+    def clear_dynamic_voids(cls, obj): pass
+    def create_dynamic_voids(cls, obj): pass
     def does_object_have_mesh_with_faces(cls, obj): pass
     def duplicate_object_data(cls, obj): pass
+    def get_cartesian_point_coordinate_offset(cls, obj): pass
     def get_object_data(cls, obj): pass
     def get_object_materials_without_styles(cls, obj): pass
-    def get_representation_name(cls, context, representation): pass
-    def get_cartesian_point_coordinate_offset(cls, obj): pass
+    def get_representation_data(cls, representation): pass
+    def get_representation_name(cls, representation): pass
     def get_total_representation_items(cls, obj): pass
+    def import_representation(cls, obj, representation, enable_dynamic_voids=False): pass
+    def is_body_representation(cls, representation): pass
     def link(cls, element, obj): pass
-    def rename_object_data(cls, data, name): pass
+    def rename_object(cls, obj, name): pass
+    def resolve_mapped_representation(cls, representation): pass
     def should_force_faceted_brep(cls): pass
     def should_force_triangulation(cls): pass
     def should_use_presentation_style_assignment(cls): pass

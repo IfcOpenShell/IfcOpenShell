@@ -17,13 +17,42 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import logging
+import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import blenderbim.bim.import_ifc
 from mathutils import Vector
 from blenderbim.bim.ifc import IfcStore
 
 
 class Geometry(blenderbim.core.tool.Geometry):
+    @classmethod
+    def change_object_data(cls, obj, data, is_global=False):
+        if is_global:
+            obj.data.user_remap(data)
+        else:
+            obj.data = data
+
+    @classmethod
+    def clear_dynamic_voids(cls, obj):
+        for modifier in obj.modifiers:
+            if modifier.type == "BOOLEAN" and "IfcOpeningElement" in modifier.name:
+                obj.modifiers.remove(modifier)
+
+    @classmethod
+    def create_dynamic_voids(cls, obj):
+        element = tool.Ifc.get_entity(obj)
+        for rel in element.HasOpenings:
+            opening_obj = tool.Ifc.get_object(rel.RelatedOpeningElement)
+            if not opening_obj:
+                continue
+            modifier = obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
+            modifier.operation = "DIFFERENCE"
+            modifier.object = opening_obj
+            modifier.solver = "EXACT"
+            modifier.use_self = True
+
     @classmethod
     def does_object_have_mesh_with_faces(cls, obj):
         return bool(isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons))
@@ -44,8 +73,12 @@ class Geometry(blenderbim.core.tool.Geometry):
         ]
 
     @classmethod
-    def get_representation_name(cls, context, representation):
-        return f"{context.id()}/{representation.id()}"
+    def get_representation_data(cls, representation):
+        return bpy.data.meshes.get(cls.get_representation_name(representation))
+
+    @classmethod
+    def get_representation_name(cls, representation):
+        return f"{representation.ContextOfItems.id()}/{representation.id()}"
 
     @classmethod
     def get_cartesian_point_coordinate_offset(cls, obj):
@@ -64,12 +97,45 @@ class Geometry(blenderbim.core.tool.Geometry):
         return max(1, len(obj.material_slots))
 
     @classmethod
+    def import_representation(cls, obj, representation, enable_dynamic_voids=False):
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        element = tool.Ifc.get_entity(obj)
+        settings = ifcopenshell.geom.settings()
+
+        if representation.ContextOfItems.ContextIdentifier == "Body":
+            if element.is_a("IfcTypeProduct") or enable_dynamic_voids:
+                shape = ifcopenshell.geom.create_shape(settings, representation)
+            else:
+                shape = ifcopenshell.geom.create_shape(settings, element)
+        else:
+            settings.set(settings.INCLUDE_CURVES, True)
+            shape = ifcopenshell.geom.create_shape(settings, representation)
+
+        ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = tool.Ifc.get()
+        mesh = ifc_importer.create_mesh(element, shape)
+        ifc_importer.material_creator.load_existing_materials()
+        ifc_importer.material_creator.create(element, obj, mesh)
+        return mesh
+
+    @classmethod
+    def is_body_representation(cls, representation):
+        return representation.ContextOfItems.ContextIdentifier == "Body"
+
+    @classmethod
     def link(cls, element, obj):
         obj.BIMMeshProperties.ifc_definition_id = element.id()
 
     @classmethod
-    def rename_object_data(cls, data, name):
-        data.name = name
+    def rename_object(cls, obj, name):
+        obj.name = name
+
+    @classmethod
+    def resolve_mapped_representation(cls, representation):
+        if representation.RepresentationType == "MappedRepresentation":
+            return cls.resolve_mapped_representation(representation.Items[0].MappingSource.MappedRepresentation)
+        return representation
 
     @classmethod
     def should_force_faceted_brep(cls):
