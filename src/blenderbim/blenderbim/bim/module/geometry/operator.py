@@ -27,6 +27,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.api
 import blenderbim.core.geometry as core
 import blenderbim.core.style
+import blenderbim.core.root
 import blenderbim.tool as tool
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
@@ -421,6 +422,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
             obj.select_set(False)
             new_obj.select_set(True)
             # This is the only difference
-            bpy.ops.bim.copy_class(obj=new_obj.name)
+            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Root, obj=new_obj)
         bpy.ops.transform.translate("INVOKE_DEFAULT")
+        blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}

@@ -27,9 +27,17 @@ import blenderbim.core.material
 import blenderbim.core.spatial
 import blenderbim.core.style
 import blenderbim.core.type
+import blenderbim.core.root as core
 import blenderbim.tool as tool
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
+
+
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
 
 
 class EnableReassignClass(bpy.types.Operator):
@@ -338,58 +346,14 @@ class UnlinkObject(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CopyClass(bpy.types.Operator):
+class CopyClass(bpy.types.Operator, Operator):
     bl_idname = "bim.copy_class"
     bl_label = "Copy Class"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        if self.obj:
-            objects = [bpy.data.objects.get(self.obj)]
-        else:
-            objects = context.selected_objects
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         for obj in objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            old_element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            result = ifcopenshell.api.run("root.copy_class", self.file, **{"product": old_element})
-            IfcStore.link_element(result, obj)
-            relating_type = ifcopenshell.util.element.get_type(result)
-            if relating_type and relating_type.RepresentationMaps:
-                blenderbim.core.type.assign_type(tool.Ifc, tool.Geometry, tool.Type, element=result, type=relating_type)
-            else:
-                blenderbim.core.geometry.add_representation(
-                    tool.Ifc,
-                    tool.Geometry,
-                    tool.Style,
-                    tool.Surveyor,
-                    obj=obj,
-                    context=tool.Ifc.get().by_id(int(context.scene.BIMProperties.contexts)),
-                    ifc_representation_class=None,
-                    profile_set_usage=None,
-                )
-            if result.is_a("IfcSpatialElement") or result.is_a("IfcSpatialStructureElement"):
-                tool.Collector.assign(obj)
-            elif result.is_a("IfcOpeningElement"):
-                self.add_opening_modifiers(result, obj)
+            core.copy_class(tool.Ifc, tool.Collector, tool.Root, obj=obj)
         blenderbim.bim.handler.purge_module_data()
-        return {"FINISHED"}
-
-    def add_opening_modifiers(self, result, obj):
-        for rel in result.VoidsElements:
-            building_obj = IfcStore.get_element(rel.RelatingBuildingElement.id())
-            try:
-                modifier = next(m for m in obj.modifiers if m.type == "BOOLEAN" and m.object == obj)
-            except StopIteration:
-                modifier = building_obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-                modifier.object = obj
-            finally:
-                modifier.operation = "DIFFERENCE"
-                modifier.solver = "EXACT"
-                modifier.use_self = True
-                modifier.operand_type = "OBJECT"
