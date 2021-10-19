@@ -25,6 +25,8 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import mathutils.geometry
 import blenderbim.bim.handler
+import blenderbim.core.type
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from math import pi, degrees
 from mathutils import Vector, Matrix
@@ -305,7 +307,9 @@ class DumbSlabGenerator:
             ifc_class=ifc_class,
             ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids",
         )
-        bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
+        blenderbim.core.type.assign_type(
+            tool.Ifc, tool.Geometry, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type
+        )
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer3"})

@@ -22,72 +22,41 @@ import ifcopenshell.util.type
 import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.geometry
+import blenderbim.core.type as core
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.type.data import Data
 from ifcopenshell.api.geometry.data import Data as GeometryData
 from ifcopenshell.api.material.data import Data as MaterialData
 
 
-class AssignType(bpy.types.Operator):
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
+
+
+class AssignType(bpy.types.Operator, Operator):
     bl_idname = "bim.assign_type"
     bl_label = "Assign Type"
     bl_options = {"REGISTER", "UNDO"}
     relating_type: bpy.props.IntProperty()
     related_object: bpy.props.StringProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        relating_type = self.relating_type or int(context.active_object.BIMTypeProperties.relating_type)
+        type = tool.Ifc.get().by_id(self.relating_type or int(context.active_object.BIMTypeProperties.relating_type))
         related_objects = (
             [bpy.data.objects.get(self.related_object)]
             if self.related_object
             else context.selected_objects or [context.active_object]
         )
-        for related_object in related_objects:
-            oprops = related_object.BIMObjectProperties
-            ifcopenshell.api.run(
-                "type.assign_type",
-                self.file,
-                **{
-                    "related_object": self.file.by_id(oprops.ifc_definition_id),
-                    "relating_type": self.file.by_id(relating_type),
-                },
-            )
+        for obj in related_objects:
+            core.assign_type(tool.Ifc, tool.Geometry, tool.Type, element=tool.Ifc.get_entity(obj), type=type)
+            oprops = obj.BIMObjectProperties
             Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
             GeometryData.load(IfcStore.get_file(), oprops.ifc_definition_id)
             MaterialData.load(IfcStore.get_file(), oprops.ifc_definition_id)
-            representation_ids = GeometryData.products[oprops.ifc_definition_id]
-            if not representation_ids:
-                pass  # TODO: clear geometry? Make void? Make none type?
-            has_switched = False
-            for representation_id in representation_ids:
-                representation = GeometryData.representations[representation_id]
-                if representation["ContextOfItems"]["ContextIdentifier"] == "Body":
-                    blenderbim.core.geometry.switch_representation(
-                        tool.Geometry,
-                        obj=related_object,
-                        representation=tool.Ifc.get().by_id(representation_id),
-                        should_reload=False,
-                        enable_dynamic_voids=False,
-                        is_global=False,
-                    )
-                    has_switched = True
-            if not has_switched and representation_ids:
-                blenderbim.core.geometry.switch_representation(
-                    tool.Geometry,
-                    obj=related_object,
-                    representation=tool.Ifc.get().by_id(representation_id),
-                    should_reload=False,
-                    enable_dynamic_voids=False,
-                    is_global=False,
-                )
-
-        bpy.ops.bim.disable_editing_type(obj=related_object.name)
-        MaterialData.load(self.file)
-        return {"FINISHED"}
+        MaterialData.load(IfcStore.get_file())
 
 
 class UnassignType(bpy.types.Operator):

@@ -23,6 +23,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
+import blenderbim.core.type
 import blenderbim.core.geometry
 from . import wall, slab, profile
 from blenderbim.bim.ifc import IfcStore
@@ -119,7 +120,13 @@ class AddTypeInstance(bpy.types.Operator):
         collection.objects.link(obj)
         collection_obj = bpy.data.objects.get(collection.name)
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
-        bpy.ops.bim.assign_type(relating_type=int(tprops.relating_type), related_object=obj.name)
+        blenderbim.core.type.assign_type(
+            tool.Ifc,
+            tool.Geometry,
+            tool.Type,
+            element=tool.Ifc.get_entity(obj),
+            type=tool.Ifc.get().by_id(int(tprops.relating_type)),
+        )
 
         if building_obj:
             if instance_class in ["IfcWindow", "IfcDoor"]:

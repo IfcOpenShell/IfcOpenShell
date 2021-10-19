@@ -179,7 +179,7 @@ class TestAddRepresentation:
 
 
 class TestSwitchRepresentation:
-    def test_run(self, ifc, geometry, style, surveyor):
+    def test_switching_to_a_freshly_reloaded_representation(self, geometry):
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return("data")
         geometry.import_representation(
@@ -198,4 +198,33 @@ class TestSwitchRepresentation:
             should_reload=True,
             enable_dynamic_voids=True,
             is_global=True,
+        )
+
+    def test_switching_to_an_existing_representation(self, geometry):
+        geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
+        geometry.get_representation_data("representation").should_be_called().will_return("data")
+        geometry.change_object_data("obj", "data", is_global=True).should_be_called()
+        geometry.is_body_representation("representation").should_be_called().will_return(True)
+        geometry.create_dynamic_voids("obj").should_be_called()
+        subject.switch_representation(
+            geometry,
+            obj="obj",
+            representation="mapped_rep",
+            should_reload=False,
+            enable_dynamic_voids=True,
+            is_global=True,
+        )
+
+    def test_switching_to_non_dynamic_baked_voids(self, geometry):
+        geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
+        geometry.get_representation_data("representation").should_be_called().will_return("data")
+        geometry.change_object_data("obj", "data", is_global=False).should_be_called()
+        geometry.clear_dynamic_voids("obj").should_be_called()
+        subject.switch_representation(
+            geometry,
+            obj="obj",
+            representation="mapped_rep",
+            should_reload=False,
+            enable_dynamic_voids=False,
+            is_global=False,
         )
