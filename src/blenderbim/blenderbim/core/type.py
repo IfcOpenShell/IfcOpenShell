@@ -16,17 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.tool.aggregate import Aggregate
-from blenderbim.tool.blender import Blender
-from blenderbim.tool.collector import Collector
-from blenderbim.tool.container import Container
-from blenderbim.tool.context import Context
-from blenderbim.tool.geometry import Geometry
-from blenderbim.tool.ifc import Ifc
-from blenderbim.tool.material import Material
-from blenderbim.tool.misc import Misc
-from blenderbim.tool.owner import Owner
-from blenderbim.tool.style import Style
-from blenderbim.tool.surveyor import Surveyor
-from blenderbim.tool.type import Type
-from blenderbim.tool.unit import Unit
+import blenderbim.core.geometry
+
+
+def assign_type(ifc, geometry, type_tool, element=None, type=None):
+    ifc.run("type.assign_type", related_object=element, relating_type=type)
+    representation = type_tool.get_body_representation(element)
+    if not representation:
+        representation = type_tool.get_any_representation(element)
+    obj = ifc.get_object(element)
+    if representation:
+        blenderbim.core.geometry.switch_representation(
+            geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=False,
+            enable_dynamic_voids=type_tool.has_dynamic_voids(obj),
+            is_global=False,
+        )
+    type_tool.disable_editing(obj)

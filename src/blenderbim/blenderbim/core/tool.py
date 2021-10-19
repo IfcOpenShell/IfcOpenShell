@@ -90,6 +90,7 @@ class Geometry:
 class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
+    def get_object(cls, obj): pass
     def link(cls, element, obj): pass
     def run(cls, command, **kwargs): pass
     def unlink(cls, element=None, obj=None): pass
@@ -167,6 +168,14 @@ class Style:
 @interface
 class Surveyor:
     def get_absolute_matrix(cls, obj): pass
+
+
+@interface
+class Type:
+    def disable_editing(cls, obj): pass
+    def get_any_representation(cls, element): pass
+    def get_body_representation(cls, element): pass
+    def has_dynamic_voids(cls, obj): pass
 
 
 @interface

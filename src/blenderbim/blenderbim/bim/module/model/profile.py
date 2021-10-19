@@ -26,6 +26,7 @@ import ifcopenshell.util.element
 import mathutils.geometry
 import blenderbim.bim.handler
 import blenderbim.tool as tool
+import blenderbim.core.type
 import blenderbim.core.geometry
 from blenderbim.bim.ifc import IfcStore
 from math import pi, degrees, inf
@@ -169,7 +170,9 @@ class DumbProfileGenerator:
             obj.rotation_euler[2] = math.pi / 2
 
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
+        blenderbim.core.type.assign_type(
+            tool.Ifc, tool.Geometry, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type
+        )
         profile_set_usage = ifcopenshell.util.element.get_material(element)
         blenderbim.core.geometry.add_representation(
             tool.Ifc,

@@ -22,10 +22,11 @@ import ifcopenshell.api
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 import blenderbim.bim.handler
-import blenderbim.core.spatial
-import blenderbim.core.style
 import blenderbim.core.geometry
 import blenderbim.core.material
+import blenderbim.core.spatial
+import blenderbim.core.style
+import blenderbim.core.type
 import blenderbim.tool as tool
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
@@ -360,7 +361,7 @@ class CopyClass(bpy.types.Operator):
             IfcStore.link_element(result, obj)
             relating_type = ifcopenshell.util.element.get_type(result)
             if relating_type and relating_type.RepresentationMaps:
-                bpy.ops.bim.assign_type(relating_type=relating_type.id(), related_object=obj.name)
+                blenderbim.core.type.assign_type(tool.Ifc, tool.Geometry, tool.Type, element=result, type=relating_type)
             else:
                 blenderbim.core.geometry.add_representation(
                     tool.Ifc,

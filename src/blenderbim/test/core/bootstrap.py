@@ -78,6 +78,13 @@ def owner():
 
 
 @pytest.fixture
+def type():
+    prophet = Prophecy(blenderbim.core.tool.Type)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def voider():
     prophet = Prophecy(blenderbim.core.tool.Voider)
     yield prophet
