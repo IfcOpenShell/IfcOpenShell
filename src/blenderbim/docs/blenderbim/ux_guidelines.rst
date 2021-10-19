@@ -8,34 +8,36 @@ Operators
 
 BIM will by definition contain a (big) number of submodules or subschemas. Granting access to the features of these submodules to the users needs to be considered with several things in minds :
 
-  - Ease of use : How do I achieve my goal with the minimal number of clicks ? How many different menu items do I have to go through to get to my goal ? How long do I have to scroll a menu to get to the specific thing I have in mind ?
+- Ease of use : How do I achieve my goal with the minimal number of clicks ? How many different menu items do I have to go through to get to my goal ? How long do I have to scroll a menu to get to the specific thing I have in mind ?
 
-  - Clarity : How long do I have to visually parse the interface to find the item or button I'm looking for ? Are the buttons correctly labeled and are the icons descriptive enough ? If something is forbidden, can I easily know why ? Can I know what a button does before clicking on it ?
+- Clarity : How long do I have to visually parse the interface to find the item or button I'm looking for ? Are the buttons correctly labeled and are the icons descriptive enough ? If something is forbidden, can I easily know why ? Can I know what a button does before clicking on it ?
 
-  - Completeness : I need to have access to all the items that are related to the topic I'm interested in. If it is tied to another submodule, I need to have access to it.
+- Completeness : I need to have access to all the items that are related to the topic I'm interested in. If it is tied to another submodule, I need to have access to it.
 
 
 * **Blender**
+
 These considerations must be adapted to the Python API, to the general paradigm we have chosen to access, modify or create IFC data, and to the general philosophy of Blender. There are many ways and places where an add-on creator can choose to present information to the user. BlenderBim currently works that way :
 
-  - Information about the current context is displayed inside the properties editor. We leverage the fact that it is already built around displaying different types of information whether we are in the Scene, Material, Mesh, Object, Curve, Texture, etc. subpanels. It fits really well with the way things are already organized in the IFC classification.
+- Information about the current context is displayed inside the properties editor. We leverage the fact that it is already built around displaying different types of information whether we are in the Scene, Material, Mesh, Object, Curve, Texture, etc. subpanels. It fits really well with the way things are already organized in the IFC classification.
 
-  - Tools to create, modify or delete items are in the dedicated Toolbar (The left one) in the 3D viewport
+- Tools to create, modify or delete items are in the dedicated Toolbar (The left one) in the 3D viewport
 
-  - Some Misc tools and informations are displayed in the N panel of the 3D viewport . They're shortcuts to things that are already present elsewhere in the UI, but are handy to have when modifying objects or geometry in the Viewport.
+- Some Misc tools and informations are displayed in the N panel of the 3D viewport . They're shortcuts to things that are already present elsewhere in the UI, but are handy to have when modifying objects or geometry in the Viewport.
 
-  - Adding specific Import / Export IFC operators (arguably a bit misleading since BlenderBim does more than import / export in these operations)
+- Adding specific Import / Export IFC operators (arguably a bit misleading since BlenderBim does more than import / export in these operations)
 
 * **Interface panels**
 
-  - The good : Every submodule is visually separated from each other. The user can customize its interface to only show what's relevant to them at any one point by folding in or out panels. Development / Debugging is facilitated because each submodule's interface is separated from the others.
+- The good : Every submodule is visually separated from each other. The user can customize its interface to only show what's relevant to them at any one point by folding in or out panels. Development / Debugging is facilitated because each submodule's interface is separated from the others.
 
-  - The bad : Having many interface panels clutters the interface, leading to an overwhelming experience for newcomers especially.
+- The bad : Having many interface panels clutters the interface, leading to an overwhelming experience for newcomers especially.
 
-  - Proposal : The addon should in the long run provide the user with dynamic UI depending on what's their usecase. Preferably accessed in the Addon Preferences interface, with pre-made options that dynamically enable or disable specific parts of the UI. It should also provide the option to selectively add or remove specific parts of the UI on top of that. Additionally, when it does not make sense to display a specific panel, it should be hidden from the UI. (eg if an object has no IFC Class, it can't be spatially contained, so the IFC Spatial Container panel should be hidden until the user sets the IFC class)
-In the long term it could also be interesting to think about some kind of tutorial mode where more information is conveyed through the interface for new users.
+- Proposal : The addon should in the long run provide the user with dynamic UI depending on what's their usecase. Preferably accessed in the Addon Preferences interface, with pre-made options that dynamically enable or disable specific parts of the UI. It should also provide the option to selectively add or remove specific parts of the UI on top of that. Additionally, when it does not make sense to display a specific panel, it should be hidden from the UI. (eg if an object has no IFC Class, it can't be spatially contained, so the IFC Spatial Container panel should be hidden until the user sets the IFC class)
+  In the long term it could also be interesting to think about some kind of tutorial mode where more information is conveyed through the interface for new users.
 
 * **Item Lists**
+
 An item list should provide right off the bat a few features :
 
   - Add a new item.
@@ -53,23 +55,26 @@ An item list should provide right off the bat a few features :
 * **Operators**
   
   - Some buttons should be dynamically disabled (grayed out and impossible to click on) when the context to execute them does not make sense. It is important to note there should not be any heavy computation to determine this since this is executed several times per second for each button where it is implemented. It should only test for simple things and not rely on retrieving information from other modules too much. eg : `Is an item selected ?` `Is the z position of the selected object > 0 ?` or `Is the selected object an IfcOpeningElement ?` and **not** `Is there an IfcOpeningElement in the current file ?` or `How many different classes of IfcBeam are implemented in the file ?`
-  In Blender this is done in two ways :
+    In Blender this is done in two ways :
 
     - Directly in the operator `poll` method which is executed when the button is displayed in the interface. The drawback is that some operators rely on custom attributes     which are provided only when the user clicks on the button, and cannot be test in the `poll` method. Note in V3.0 we can implement custom messages when the `poll`     method fails, depending on the step where the context was not right.
 
     - In the UI drawing code, where specific layout parts can be disabled.
 
   - Some buttons or entire interface layout rows or columns may be disabled or hidden at once. It may be desirable when it relies on specific things or combinations of things not being met in the project. In order to avoid UI flicker or the user wondering where the button went, dynamically hiding UI elements should have a minimal interference with the rest of the UI by :
+
   (1) Hiding the last row(s) of a panel
+
   (2) Dynamically resizing the rest of the UI when it's not possible to (1)
-  In any case, the user should be advised why they are prevented to do things via either : 
+
+    In any case, the user should be advised why they are prevented to do things via either : 
 
     - A custom message using Blender's report system
 
     - A label in the UI replacing the missing UI elements
 
     - An helpful tooltip on an operator
-  Generally the context itself should be used to the best of its ability to convey why it's possible to do some things or not. The separation of concerns in multiple   different dynamically hidden-or-shown sub-panels should help limit confusion.
+    Generally the context itself should be used to the best of its ability to convey why it's possible to do some things or not. The separation of concerns in multiple   different dynamically hidden-or-shown sub-panels should help limit confusion.
 
   - The user should be forbidden in any case to click on buttons when its execution returns early and does nothing. If a button is clickable and the user clicks on it,   there should always be some kind of feedback.
 
