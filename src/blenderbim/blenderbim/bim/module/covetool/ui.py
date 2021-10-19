@@ -27,6 +27,11 @@ class BIM_PT_covetool(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+    @classmethod
+    def poll(self, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting.covetool
+
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True

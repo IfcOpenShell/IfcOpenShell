@@ -33,7 +33,10 @@ class BIM_PT_gis(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        if not IfcStore.get_file():
+            return False
+        return view_setting.georeference
 
     def draw(self, context):
         self.layout.use_property_split = True

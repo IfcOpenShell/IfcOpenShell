@@ -28,6 +28,11 @@ class BIM_PT_project(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting.project
+
     def draw(self, context):
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
@@ -169,6 +174,11 @@ class BIM_PT_project_library(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting.project
+
     def draw(self, context):
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
@@ -210,6 +220,11 @@ class BIM_PT_links(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting.project
+        
     def draw(self, context):
         self.props = context.scene.BIMProjectProperties
         row = self.layout.row(align=True)

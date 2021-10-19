@@ -31,6 +31,7 @@ class BIM_PT_type(Panel):
 
     @classmethod
     def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not context.active_object:
             return False
         props = context.active_object.BIMObjectProperties
@@ -44,7 +45,7 @@ class BIM_PT_type(Panel):
             return False
         if not Data.products.get(props.ifc_definition_id, None) and not Data.types.get(props.ifc_definition_id, None):
             return False
-        return True
+        return view_setting.type
 
     def draw(self, context):
         oprops = context.active_object.BIMObjectProperties

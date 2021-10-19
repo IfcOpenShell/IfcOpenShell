@@ -31,8 +31,11 @@ class BIM_PT_boundary(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
 
+
+
     @classmethod
     def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not context.active_object:
             return False
         props = context.active_object.BIMObjectProperties
@@ -42,7 +45,7 @@ class BIM_PT_boundary(Panel):
             return False
         if IfcStore.get_file().by_id(props.ifc_definition_id).is_a() not in ["IfcSpace", "IfcExternalSpatialElement"]:
             return False
-        return True
+        return view_setting.boundary
 
     def draw(self, context):
         self.oprops = context.active_object.BIMObjectProperties

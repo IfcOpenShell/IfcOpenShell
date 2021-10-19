@@ -102,8 +102,11 @@ class BIM_PT_work_schedules(Panel):
 
     @classmethod
     def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         file = IfcStore.get_file()
-        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
+        if not (file and hasattr(file, "schema") and file.schema != "IFC2X3"):
+            return False
+        return view_setting.sequence
 
     def draw(self, context):
         self.props = context.scene.BIMWorkScheduleProperties
@@ -551,8 +554,11 @@ class BIM_PT_work_calendars(Panel):
 
     @classmethod
     def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         file = IfcStore.get_file()
-        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
+        if not (file and hasattr(file, "schema") and file.schema != "IFC2X3"):
+            return False
+        return view_setting.sequence
 
     def draw(self, context):
         if not Data.is_loaded:

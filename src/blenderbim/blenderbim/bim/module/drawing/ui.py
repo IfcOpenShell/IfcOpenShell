@@ -29,7 +29,10 @@ class BIM_PT_camera(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.camera and hasattr(context.active_object.data, "BIMCameraProperties")
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        if not context.camera and hasattr(context.active_object.data, "BIMCameraProperties"):
+            return False
+        return view_setting.drawing
 
     def draw(self, context):
         layout = self.layout
@@ -101,7 +104,10 @@ class BIM_PT_drawing_underlay(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.camera and hasattr(context.active_object.data, "BIMCameraProperties")
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        if not context.camera and hasattr(context.active_object.data, "BIMCameraProperties"):
+            return False
+        return view_setting.drawing
 
     def draw(self, context):
         layout = self.layout
@@ -152,6 +158,11 @@ class BIM_PT_drawings(Panel):
     bl_region_type = "WINDOW"
     bl_context = "output"
 
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting.drawing
+
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
@@ -185,6 +196,11 @@ class BIM_PT_schedules(Panel):
     bl_region_type = "WINDOW"
     bl_context = "output"
 
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting.drawing
+
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
@@ -210,6 +226,11 @@ class BIM_PT_sheets(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "output"
+
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting.drawing
 
     def draw(self, context):
         layout = self.layout
@@ -241,7 +262,10 @@ class BIM_PT_text(Panel):
 
     @classmethod
     def poll(cls, context):
-        return type(context.curve) is bpy.types.TextCurve
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        if not type(context.curve) is bpy.types.TextCurve:
+            return False
+        return view_setting.drawing
 
     def draw(self, context):
         layout = self.layout
@@ -276,6 +300,11 @@ class BIM_PT_annotation_utilities(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "BlenderBIM"
+
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting.drawing
 
     def draw(self, context):
         layout = self.layout

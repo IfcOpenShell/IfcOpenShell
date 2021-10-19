@@ -32,8 +32,11 @@ class BIM_PT_profiles(Panel):
 
     @classmethod
     def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         file = IfcStore.get_file()
-        return file
+        if not file:
+            return False
+        return view_setting.profile
 
     def draw(self, context):
         self.file = IfcStore.get_file()

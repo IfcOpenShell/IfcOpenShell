@@ -31,6 +31,12 @@ class BIM_PT_aggregate(Panel):
 
     @classmethod
     def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting.aggregate
+
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not context.active_object:
             return False
         props = context.active_object.BIMObjectProperties
@@ -40,7 +46,7 @@ class BIM_PT_aggregate(Panel):
             return False
         if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcObjectDefinition"):
             return False
-        return True
+        return view_setting.aggregate
 
     def draw(self, context):
         if not AggregateData.is_loaded:

@@ -30,6 +30,11 @@ class BIM_PT_bcf(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+    @classmethod
+    def poll(cls, context):
+        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
+        return view_setting.bcf
+
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
