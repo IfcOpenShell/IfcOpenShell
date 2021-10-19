@@ -67,22 +67,22 @@ BIM will by definition contain a (big) number of submodules or subschemas. Grant
 
   (2) Dynamically resizing the rest of the UI when it's not possible to (1)
 
-    In any case, the user should be advised why they are prevented to do things via either : 
+  The user should be advised why they are prevented to do things via either : 
 
     - A custom message using Blender's report system
 
     - A label in the UI replacing the missing UI elements
 
     - An helpful tooltip on an operator
-    Generally the context itself should be used to the best of its ability to convey why it's possible to do some things or not. The separation of concerns in multiple   different dynamically hidden-or-shown sub-panels should help limit confusion.
+  Generally the context itself should be used to the best of its ability to convey why it's possible to do some things or not. The separation of concerns in multiple   different dynamically hidden-or-shown sub-panels should help limit confusion.
 
-  - The user should be forbidden in any case to click on buttons when its execution returns early and does nothing. If a button is clickable and the user clicks on it,   there should always be some kind of feedback.
+  - The user should be forbidden to click on buttons when its execution returns early and does nothing. If a button is clickable and the user clicks on it,   there should always be some kind of feedback.
 
 Icons
 ^^^^^
 
 * .. image:: https://user-images.githubusercontent.com/25156105/137270452-bf6c03ea-2d3e-4ae3-8121-6799e8beb335.png
-  : `"CANCEL"` 
+: `"CANCEL"` 
 When to use : To disable the edition state of a particular item.
 Expected result : A part of the interface showing the item attributes is either shrinked down or hidden. The button is usually replaced by a button to delete this item.
 
