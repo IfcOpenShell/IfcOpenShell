@@ -27,6 +27,7 @@ import ifcopenshell.util.representation
 import mathutils.geometry
 import blenderbim.bim.handler
 import blenderbim.core.type
+import blenderbim.core.root
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
@@ -212,7 +213,7 @@ class DumbWallSplitter:
     def duplicate_wall(self):
         new = self.wall.copy()
         self.wall.users_collection[0].objects.link(new)
-        bpy.ops.bim.copy_class(obj=new.name)
+        blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Root, obj=new)
         return new
 
     def snap_end_face_to_point(self, wall, which_end):

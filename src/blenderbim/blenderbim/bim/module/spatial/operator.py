@@ -21,6 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.core.spatial as core
+import blenderbim.core.root
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.spatial.data import SpatialData
@@ -122,9 +123,10 @@ class CopyToContainer(bpy.types.Operator):
                 new_obj = obj.copy()
                 new_obj.data = obj.data.copy()
                 new_obj.matrix_world = container_obj.matrix_world @ local_position
-                bpy.ops.bim.copy_class(obj=new_obj.name)
+                blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Root, obj=new_obj)
                 core.assign_container(
                     tool.Ifc, tool.Collector, tool.Container, structure_obj=container_obj, element_obj=new_obj
                 )
+        blenderbim.bim.handler.purge_module_data()
         obj.BIMObjectSpatialProperties.is_editing = False
         return {"FINISHED"}
