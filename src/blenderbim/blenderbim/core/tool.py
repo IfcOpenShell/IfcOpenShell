@@ -144,6 +144,16 @@ class Owner:
 
 
 @interface
+class Root:
+    def add_dynamic_opening_voids(cls, element, obj): pass
+    def does_type_have_representations(cls, element): pass
+    def get_element_type(cls, element): pass
+    def get_object_context(cls, obj): pass
+    def is_opening_element(cls, element): pass
+    def run_geometry_add_representation(cls, obj=None, context=None): pass
+
+
+@interface
 class Selector:
     def set_active(cls, obj): pass
 

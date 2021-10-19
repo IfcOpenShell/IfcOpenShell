@@ -16,18 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.tool.aggregate import Aggregate
-from blenderbim.tool.blender import Blender
-from blenderbim.tool.collector import Collector
-from blenderbim.tool.container import Container
-from blenderbim.tool.context import Context
-from blenderbim.tool.geometry import Geometry
-from blenderbim.tool.ifc import Ifc
-from blenderbim.tool.material import Material
-from blenderbim.tool.misc import Misc
-from blenderbim.tool.owner import Owner
-from blenderbim.tool.root import Root
-from blenderbim.tool.style import Style
-from blenderbim.tool.surveyor import Surveyor
-from blenderbim.tool.type import Type
-from blenderbim.tool.unit import Unit
+
+def copy_class(ifc, collector, root, obj=None):
+    element = ifc.get_entity(obj)
+    if not element:
+        return
+    element = ifc.run("root.copy_class", product=element)
+    ifc.link(element, obj)
+    relating_type = root.get_element_type(element)
+    if relating_type and root.does_type_have_representations(relating_type):
+        ifc.run("type.assign_type", related_object=element, relating_type=relating_type)
+    else:
+        root.run_geometry_add_representation(obj=obj, context=root.get_object_context(obj))
+    collector.assign(obj)
+    if root.is_opening_element(element):
+        root.add_dynamic_opening_voids(element, obj)
