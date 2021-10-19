@@ -28,11 +28,6 @@ class BIM_PT_debug(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
-    @classmethod
-    def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting.debug
-
     def draw(self, context):
         layout = self.layout
 

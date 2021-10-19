@@ -19,9 +19,8 @@
 import os
 import bpy
 from . import ifc
-from . import prop
 from bpy.types import Panel
-from bpy.props import PointerProperty, StringProperty, IntProperty, BoolProperty, EnumProperty
+from bpy.props import StringProperty, IntProperty, BoolProperty
 
 
 class BIM_PT_section_plane(Panel):
@@ -31,11 +30,6 @@ class BIM_PT_section_plane(Panel):
     bl_region_type = "WINDOW"
     bl_context = "output"
 
-    @classmethod
-    def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting in ["Admin"]
-        
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
@@ -83,7 +77,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
-    module_visibility: PointerProperty(type=prop.ModuleVisibility)
 
     def draw(self, context):
         layout = self.layout

@@ -32,11 +32,8 @@ class BIM_PT_resources(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         file = IfcStore.get_file()
-        if not (file and hasattr(file, "schema") and file.schema != "IFC2X3"):
-            return False
-        return view_setting.resource
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         self.props = context.scene.BIMResourceProperties

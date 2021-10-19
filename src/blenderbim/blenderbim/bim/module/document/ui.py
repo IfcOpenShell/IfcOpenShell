@@ -32,10 +32,7 @@ class BIM_PT_documents(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        if not IfcStore.get_file():
-            return False
-        return view_setting.document
+        return IfcStore.get_file()
 
     def draw(self, context):
         if not Data.is_loaded:
@@ -83,15 +80,11 @@ class BIM_PT_object_documents(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not context.active_object:
             return False
         if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
             return False
-        if not bool(context.active_object.BIMObjectProperties.ifc_definition_id):
-            return False
-        return view_setting.document
-
+        return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
 
     def draw(self, context):
         obj = context.active_object

@@ -27,11 +27,6 @@ class BIM_PT_qto_utilities(Panel):
     bl_region_type = "UI"
     bl_category = "BlenderBIM"
 
-    @classmethod
-    def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting.qto
-
     def draw(self, context):
         layout = self.layout
         props = context.scene.BIMQtoProperties

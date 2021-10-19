@@ -481,11 +481,11 @@ class CopyAttributeToSelection(bpy.types.Operator):
                 a.name() for a in self.schema.declaration_by_name(ifc_class).all_attributes()
             ]
         return self.applicable_attributes_cache[ifc_class]
-      
-      
+
+
 class ConfigureVisibility(bpy.types.Operator):
     bl_idname = "bim.configure_visibility"
-    bl_label = "Select which modules are available in the UI"
+    bl_label = "Toggle availability of modules in BlenderBIM"
     bl_options = {"REGISTER", "UNDO"}
 
     def invoke(self, context, event):
@@ -494,11 +494,11 @@ class ConfigureVisibility(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        modules = bpy.context.preferences.addons["blenderbim"].preferences.module_visibility
-
         grid = layout.column_flow(columns=3)
-        for module in modules.__annotations__.keys():
-            grid.prop(modules, module)
+
+        for operator in dir(bpy.ops.bim):
+            if operator.startswith("change_"):
+                grid.operator(f"bim.{operator}")
 
     def execute(self, context):
-        return {'FINISHED'} 
+        return {'FINISHED'}

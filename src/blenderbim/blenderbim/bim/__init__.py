@@ -68,12 +68,13 @@ modules = {
 }
 
 dynamic_operators = [] #temporary list to hold dynamically generated operators
+
 for name in modules.keys():
     modules[name] = importlib.import_module(f"blenderbim.bim.module.{name}")
-
-    #generate operators that toggle module state Lines 75->102
-    idname = f"bim.change_{name}_visibility"
     nameUpperCase = name[0].upper()+name[1:]
+
+    #generate operators that toggle module state Lines 79->106
+    idname = f"bim.change_{name}_visibility"
     
     def func(self, context):
         try:
@@ -94,8 +95,6 @@ for name in modules.keys():
         "bl_idname": idname, 
         "bl_label": nameUpperCase, 
         "execute": func,
-        "module_name": nameUpperCase,
-        #"is_active": True,
         "classes": modules[name].classes
         },
     )
@@ -122,12 +121,12 @@ classes = [
     prop.BIMObjectProperties,
     prop.BIMMaterialProperties,
     prop.BIMMeshProperties,
-    prop.ModuleVisibility,
     ui.BIM_PT_section_plane,
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
 ]
+
 classes.extend(dynamic_operators)
 
 for mod in modules.values():

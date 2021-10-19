@@ -86,11 +86,7 @@ class BIM_PT_people(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        if not tool.Ifc.get():
-            return False
-        return view_setting.owner
-
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not PeopleData.is_loaded:
@@ -146,11 +142,7 @@ class BIM_PT_organisations(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        if not tool.Ifc.get():
-            return False
-        return view_setting.owner
-
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not OrganisationsData.is_loaded:
@@ -194,11 +186,7 @@ class BIM_PT_owner(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        if not tool.Ifc.get():
-            return False
-        return view_setting.owner
-
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not OwnerData.is_loaded:

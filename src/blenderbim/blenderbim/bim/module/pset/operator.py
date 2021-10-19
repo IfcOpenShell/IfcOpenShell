@@ -359,24 +359,3 @@ class GuessQuantity(bpy.types.Operator):
             if unit_settings.length_unit == "METERS":
                 return None, "METRE"
             return unit_settings.length_unit[0 : -len("METERS")], "METRE"
-
-
-class ConfigureVisibility(bpy.types.Operator):
-    bl_idname = "bim.configure_visibility"
-    bl_label = "Toggle availability of modules in BlenderBIM"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self, width=450)
-
-    def draw(self, context):
-        layout = self.layout
-        grid = layout.column_flow(columns=3)
-
-        for operator in dir(bpy.ops.bim):
-            if operator.startswith("change_"):
-                grid.operator(f"bim.{operator}")
-
-    def execute(self, context):
-        return {'FINISHED'}

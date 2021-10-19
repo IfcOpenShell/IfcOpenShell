@@ -33,11 +33,6 @@ class BIM_PT_pset_template(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
-    @classmethod
-    def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        return view_setting.pset_template
-
     def draw(self, context):
         layout = self.layout
         props = context.scene.BIMPsetTemplateProperties

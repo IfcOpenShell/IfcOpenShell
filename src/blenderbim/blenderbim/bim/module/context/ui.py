@@ -17,7 +17,6 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bpy.types import FluidDomainSettings
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from blenderbim.bim.module.context.data import ContextData
@@ -33,10 +32,7 @@ class BIM_PT_context(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        if not tool.Ifc.get():
-           return False
-        return view_setting.context 
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not ContextData.is_loaded:

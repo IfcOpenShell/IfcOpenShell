@@ -32,11 +32,8 @@ class BIM_PT_units(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         file = IfcStore.get_file()
-        if not file:
-            return False
-        return view_setting.unit
+        return file
 
     def draw(self, context):
         if not UnitsData.is_loaded:

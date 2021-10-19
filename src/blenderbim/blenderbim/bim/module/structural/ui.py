@@ -94,7 +94,6 @@ class BIM_PT_structural_boundary_conditions(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not context.active_object:
             return False
         props = context.active_object.BIMObjectProperties
@@ -104,7 +103,7 @@ class BIM_PT_structural_boundary_conditions(Panel):
             return False
         if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
             return False
-        return view_setting.structural
+        return True
 
     def draw(self, context):
         self.oprops = context.active_object.BIMObjectProperties
@@ -127,7 +126,6 @@ class BIM_PT_connected_structural_members(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not context.active_object:
             return False
         props = context.active_object.BIMObjectProperties
@@ -137,8 +135,7 @@ class BIM_PT_connected_structural_members(Panel):
             return False
         if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
             return False
-        return view_setting.structural
-
+        return True
 
     def draw(self, context):
         self.oprops = context.active_object.BIMObjectProperties
@@ -185,7 +182,6 @@ class BIM_PT_structural_member(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not context.active_object:
             return False
         props = context.active_object.BIMObjectProperties
@@ -195,8 +191,7 @@ class BIM_PT_structural_member(Panel):
             return False
         if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralMember"):
             return False
-        return view_setting.structural
-
+        return True
 
     def draw(self, context):
         self.oprops = context.active_object.BIMObjectProperties
@@ -227,7 +222,6 @@ class BIM_PT_structural_connection(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not context.active_object:
             return False
         props = context.active_object.BIMObjectProperties
@@ -237,8 +231,7 @@ class BIM_PT_structural_connection(Panel):
             return False
         if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
             return False
-        return view_setting.structural
-
+        return True
 
     def draw(self, context):
         self.oprops = context.active_object.BIMObjectProperties
@@ -287,12 +280,8 @@ class BIM_PT_structural_analysis_models(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         file = IfcStore.get_file()
-        if not (file and hasattr(file, "schema") and file.schema != "IFC2X3"):
-            return False
-        return view_setting.structural
-
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not Data.is_loaded:
@@ -369,12 +358,8 @@ class BIM_PT_structural_load_cases(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         file = IfcStore.get_file()
-        if not (file and hasattr(file, "schema") and file.schema != "IFC2X3"):
-            return False
-        return view_setting.structural
-
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         self.props = context.scene.BIMStructuralProperties
@@ -469,12 +454,8 @@ class BIM_PT_structural_loads(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         file = IfcStore.get_file()
-        if not (file and hasattr(file, "schema") and file.schema != "IFC2X3"):
-            return False    
-        return view_setting.structural
-
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not Data.is_loaded:
@@ -541,12 +522,8 @@ class BIM_PT_boundary_conditions(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         file = IfcStore.get_file()
-        if not (file and hasattr(file, "schema") and file.schema != "IFC2X3"):
-            return False
-        return view_setting.structural
-
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not Data.is_loaded:

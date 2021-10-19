@@ -30,10 +30,7 @@ class BIM_PT_authoring(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        if not IfcStore.get_file():
-            return False
-        return view_setting.model
+        return IfcStore.get_file()
 
     def draw(self, context):
         tprops = context.scene.BIMTypeProperties

@@ -31,14 +31,11 @@ class BIM_PT_style(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
-        if not (
+        return (
             IfcStore.get_file()
             and context.active_object is not None
             and context.active_object.active_material is not None
-        ):
-            return False
-        return view_setting.style
+        )
 
     def draw(self, context):
         props = context.active_object.active_material.BIMMaterialProperties
@@ -60,17 +57,13 @@ class BIM_PT_style_attributes(Panel):
 
     @classmethod
     def poll(cls, context):
-        view_setting = context.preferences.addons["blenderbim"].preferences.module_visibility
         if not IfcStore.get_file():
-            
             return False
         try:
-            if not bool(context.active_object.active_material.BIMMaterialProperties.ifc_style_id):
-                return False
+            return bool(context.active_object.active_material.BIMMaterialProperties.ifc_style_id)
         except:
             return False
-        return view_setting.style
-        
+
     def draw(self, context):
         if not StyleAttributesData.is_loaded:
             StyleAttributesData.load()
