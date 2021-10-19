@@ -67,8 +67,39 @@ modules = {
     "debug": None,
 }
 
+dynamic_operators = [] #temporary list to hold dynamically generated operators
 for name in modules.keys():
     modules[name] = importlib.import_module(f"blenderbim.bim.module.{name}")
+
+    #generate operators that toggle module state Lines 75->102
+    idname = f"bim.change_{name}_visibility"
+    nameUpperCase = name[0].upper()+name[1:]
+    
+    def func(self, context):
+        try:
+            for cls in self.classes:
+                bpy.utils.unregister_class(cls)
+                #self.is_active = False
+        except:
+            #class is already registered
+            for cls in self.classes:
+                bpy.utils.register_class(cls)
+                #self.is_active = True
+        return {'FINISHED'}
+
+    opclass = type(
+        f"BIM_OT_Change_{nameUpperCase}_Visibility",
+        (bpy.types.Operator, ),
+        {
+        "bl_idname": idname, 
+        "bl_label": nameUpperCase, 
+        "execute": func,
+        "module_name": nameUpperCase,
+        #"is_active": True,
+        "classes": modules[name].classes
+        },
+    )
+    dynamic_operators.append(opclass)
 
 classes = [
     operator.OpenUri,
@@ -81,6 +112,7 @@ classes = [
     operator.ReloadIfcFile,
     operator.AddIfcFile,
     operator.RemoveIfcFile,
+    operator.ConfigureVisibility,
     prop.StrProperty,
     prop.Attribute,
     prop.BIMProperties,
@@ -95,6 +127,7 @@ classes = [
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
 ]
+classes.extend(dynamic_operators)
 
 for mod in modules.values():
     classes.extend(mod.classes)
