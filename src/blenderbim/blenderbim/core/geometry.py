@@ -66,8 +66,32 @@ def add_representation(
     ifc.run("geometry.assign_representation", product=element, representation=representation)
 
     data = geometry.duplicate_object_data(obj)
-    name = geometry.get_representation_name(context, representation)
-    geometry.rename_object_data(data, name)
+    name = geometry.get_representation_name(representation)
+    geometry.rename_object(data, name)
     geometry.link(representation, data)
 
     return representation
+
+
+def switch_representation(
+    geometry,
+    obj=None,
+    representation=None,
+    should_reload=True,
+    enable_dynamic_voids=True,
+    is_global=True,
+):
+    representation = geometry.resolve_mapped_representation(representation)
+    data = geometry.get_representation_data(representation)
+
+    if not data or should_reload:
+        data = geometry.import_representation(obj, representation, enable_dynamic_voids=enable_dynamic_voids)
+        geometry.rename_object(data, geometry.get_representation_name(representation))
+        geometry.link(representation, data)
+
+    geometry.change_object_data(obj, data, is_global=is_global)
+
+    if enable_dynamic_voids and geometry.is_body_representation(representation):
+        geometry.create_dynamic_voids(obj)
+    else:
+        geometry.clear_dynamic_voids(obj)

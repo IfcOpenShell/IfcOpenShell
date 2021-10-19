@@ -182,8 +182,13 @@ class DumbProfileGenerator:
             profile_set_usage=profile_set_usage,
         )
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        bpy.ops.bim.switch_representation(
-            obj=obj.name, ifc_definition_id=representation.id(), should_reload=True, should_switch_all_meshes=True
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            enable_dynamic_voids=True,
+            is_global=True,
         )
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbProfile"})
@@ -239,8 +244,13 @@ class DumbProfileRegenerator:
             return
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if representation:
-            bpy.ops.bim.switch_representation(
-                obj=obj.name, ifc_definition_id=representation.id(), should_reload=True, should_switch_all_meshes=True
+            blenderbim.core.geometry.switch_representation(
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                enable_dynamic_voids=True,
+                is_global=True,
             )
 
     def sync_object(self, element):

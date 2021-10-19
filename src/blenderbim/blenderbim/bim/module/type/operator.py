@@ -20,6 +20,8 @@ import bpy
 import ifcopenshell.util.schema
 import ifcopenshell.util.type
 import ifcopenshell.api
+import blenderbim.tool as tool
+import blenderbim.core.geometry
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.type.data import Data
 from ifcopenshell.api.geometry.data import Data as GeometryData
@@ -64,13 +66,23 @@ class AssignType(bpy.types.Operator):
             for representation_id in representation_ids:
                 representation = GeometryData.representations[representation_id]
                 if representation["ContextOfItems"]["ContextIdentifier"] == "Body":
-                    bpy.ops.bim.switch_representation(
-                        obj=related_object.name, ifc_definition_id=representation_id, should_switch_all_meshes=False
+                    blenderbim.core.geometry.switch_representation(
+                        tool.Geometry,
+                        obj=related_object,
+                        representation=tool.Ifc.get().by_id(representation_id),
+                        should_reload=False,
+                        enable_dynamic_voids=False,
+                        is_global=False,
                     )
                     has_switched = True
             if not has_switched and representation_ids:
-                bpy.ops.bim.switch_representation(
-                    obj=related_object.name, ifc_definition_id=representation_id, should_switch_all_meshes=False
+                blenderbim.core.geometry.switch_representation(
+                    tool.Geometry,
+                    obj=related_object,
+                    representation=tool.Ifc.get().by_id(representation_id),
+                    should_reload=False,
+                    enable_dynamic_voids=False,
+                    is_global=False,
                 )
 
         bpy.ops.bim.disable_editing_type(obj=related_object.name)

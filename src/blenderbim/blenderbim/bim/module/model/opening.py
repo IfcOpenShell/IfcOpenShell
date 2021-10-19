@@ -21,6 +21,8 @@ import bmesh
 import blenderbim.bim.handler
 import ifcopenshell
 import ifcopenshell.util.representation
+import blenderbim.tool as tool
+import blenderbim.core.geometry
 from blenderbim.bim.ifc import IfcStore
 from math import pi
 from mathutils import Vector
@@ -57,12 +59,13 @@ def mode_callback(obj, data):
             )
             if not representation:
                 continue
-            bpy.ops.bim.switch_representation(
-                obj=building_element_obj.name,
-                should_switch_all_meshes=True,
+            blenderbim.core.geometry.switch_representation(
+                tool.Geometry,
+                obj=building_element_obj,
+                representation=representation,
                 should_reload=True,
-                ifc_definition_id=representation.id(),
-                disable_opening_subtractions=True,
+                enable_dynamic_voids=True,
+                is_global=True,
             )
         IfcStore.edited_objs.add(obj)
         bm = bmesh.from_edit_mesh(obj.data)

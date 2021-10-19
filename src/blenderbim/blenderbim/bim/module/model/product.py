@@ -22,6 +22,8 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+import blenderbim.tool as tool
+import blenderbim.core.geometry
 from . import wall, slab, profile
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
@@ -229,12 +231,13 @@ class DynamicallyVoidProduct(bpy.types.Operator):
         was_edit_mode = obj.mode == "EDIT"
         if was_edit_mode:
             bpy.ops.object.mode_set(mode="OBJECT")
-        bpy.ops.bim.switch_representation(
-            obj=obj.name,
-            should_switch_all_meshes=True,
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
             should_reload=True,
-            ifc_definition_id=representation.id(),
-            disable_opening_subtractions=True,
+            enable_dynamic_voids=True,
+            is_global=True,
         )
         if was_edit_mode:
             bpy.ops.object.mode_set(mode="EDIT")
@@ -286,8 +289,13 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
             continue
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if representation:
-            bpy.ops.bim.switch_representation(
-                obj=obj.name, ifc_definition_id=representation.id(), should_reload=True, should_switch_all_meshes=True
+            blenderbim.core.geometry.switch_representation(
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                enable_dynamic_voids=True,
+                is_global=True,
             )
 
 

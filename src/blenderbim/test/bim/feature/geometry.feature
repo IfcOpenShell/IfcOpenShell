@@ -23,6 +23,16 @@ Scenario: Add representation
     And I press "bim.add_representation"
     Then nothing happens
 
+Scenario: Switch representation
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    When the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
+    And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation})"
+    Then nothing happens
+
 Scenario: Copy representation
     Given an empty IFC project
     And I add a cube
