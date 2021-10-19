@@ -8,11 +8,11 @@ Operators
 
 BIM will by definition contain a (big) number of submodules or subschemas. Granting access to the features of these submodules to the users needs to be considered with several things in minds :
 
-- Ease of use : How do I achieve my goal with the minimal number of clicks ? How many different menu items do I have to go through to get to my goal ? How long do I have to scroll a menu to get to the specific thing I have in mind ?
-
-- Clarity : How long do I have to visually parse the interface to find the item or button I'm looking for ? Are the buttons correctly labeled and are the icons descriptive enough ? If something is forbidden, can I easily know why ? Can I know what a button does before clicking on it ?
-
-- Completeness : I need to have access to all the items that are related to the topic I'm interested in. If it is tied to another submodule, I need to have access to it.
+1. Ease of use : How do I achieve my goal with the minimal number of clicks ? How many different menu items do I have to go through to get to my goal ? How long do I   have to scroll a menu to get to the specific thing I have in mind ?
+  
+2. Clarity : How long do I have to visually parse the interface to find the item or button I'm looking for ? Are the buttons correctly labeled and are the icons   descriptive enough ? If something is forbidden, can I easily know why ? Can I know what a button does before clicking on it ?
+  
+3. Completeness : I need to have access to all the items that are related to the topic I'm interested in. If it is tied to another submodule, I need to have access to it.
 
 
 * **Blender**
