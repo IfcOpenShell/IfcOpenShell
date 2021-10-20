@@ -44,7 +44,7 @@ class AssignContainer(bpy.types.Operator, Operator):
         structure_obj = tool.Ifc.get_object(tool.Ifc.get().by_id(self.structure))
         for element_obj in context.selected_objects:
             core.assign_container(
-                tool.Ifc, tool.Collector, tool.Container, structure_obj=structure_obj, element_obj=element_obj
+                tool.Ifc, tool.Collector, tool.Spatial, structure_obj=structure_obj, element_obj=element_obj
             )
 
 
@@ -54,7 +54,7 @@ class EnableEditingContainer(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.enable_editing_container(tool.Container, obj=context.active_object)
+        core.enable_editing_container(tool.Spatial, obj=context.active_object)
 
 
 class ChangeSpatialLevel(bpy.types.Operator, Operator):
@@ -64,7 +64,7 @@ class ChangeSpatialLevel(bpy.types.Operator, Operator):
     parent: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.change_spatial_level(tool.Container, parent=tool.Ifc.get().by_id(self.parent))
+        core.change_spatial_level(tool.Spatial, parent=tool.Ifc.get().by_id(self.parent))
 
 
 class DisableEditingContainer(bpy.types.Operator, Operator):
@@ -73,7 +73,7 @@ class DisableEditingContainer(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.disable_editing_container(tool.Container, obj=context.active_object)
+        core.disable_editing_container(tool.Spatial, obj=context.active_object)
 
 
 class RemoveContainer(bpy.types.Operator, Operator):
@@ -86,7 +86,7 @@ class RemoveContainer(bpy.types.Operator, Operator):
             core.remove_container(tool.Ifc, tool.Collector, obj=obj)
 
 
-class CopyToContainer(bpy.types.Operator):
+class CopyToContainer(bpy.types.Operator, Operator):
     """
     Copies selected objects to selected containers
     Check the mark next to a container in the container list to select it
@@ -96,37 +96,10 @@ class CopyToContainer(bpy.types.Operator):
     bl_idname = "bim.copy_to_container"
     bl_label = "Copy To Container"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        objects = list(bpy.data.objects.get(self.obj, context.selected_objects))
         sprops = context.scene.BIMSpatialProperties
-        container_ids = [c.ifc_definition_id for c in sprops.containers if c.is_selected]
-        for obj in objects:
-            container = ifcopenshell.util.element.get_container(
-                self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            )
-            if container:
-                container_obj = IfcStore.get_element(container.id())
-                local_position = container_obj.matrix_world.inverted() @ obj.matrix_world
-            else:
-                local_position = obj.matrix_world
-
-            for container_id in container_ids:
-                container_obj = IfcStore.get_element(container_id)
-                if not container_obj:
-                    continue
-                new_obj = obj.copy()
-                new_obj.data = obj.data.copy()
-                new_obj.matrix_world = container_obj.matrix_world @ local_position
-                blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Root, obj=new_obj)
-                core.assign_container(
-                    tool.Ifc, tool.Collector, tool.Container, structure_obj=container_obj, element_obj=new_obj
-                )
+        containers = [tool.Ifc.get().by_id(c.ifc_definition_id) for c in sprops.containers if c.is_selected]
+        for obj in context.selected_objects:
+            core.copy_to_container(tool.Ifc, tool.Spatial, obj=obj, containers=containers)
         blenderbim.bim.handler.purge_module_data()
-        obj.BIMObjectSpatialProperties.is_editing = False
-        return {"FINISHED"}

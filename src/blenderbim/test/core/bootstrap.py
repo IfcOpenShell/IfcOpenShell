@@ -50,13 +50,6 @@ def collector():
 
 
 @pytest.fixture
-def container():
-    prophet = Prophecy(blenderbim.core.tool.Container)
-    yield prophet
-    prophet.verify()
-
-
-@pytest.fixture
 def context():
     prophet = Prophecy(blenderbim.core.tool.Context)
     yield prophet
@@ -101,6 +94,13 @@ def root():
 @pytest.fixture
 def selector():
     prophet = Prophecy(blenderbim.core.tool.Selector)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def spatial():
+    prophet = Prophecy(blenderbim.core.tool.Spatial)
     yield prophet
     prophet.verify()
 

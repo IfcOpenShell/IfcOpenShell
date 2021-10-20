@@ -17,44 +17,42 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.core.spatial as subject
-from test.core.bootstrap import ifc, collector, container
+from test.core.bootstrap import ifc, collector, spatial
 
 
 class TestAssignContainer:
-    def test_run(self, ifc, collector, container):
-        container.can_contain("structure_obj", "element_obj").should_be_called().will_return(True)
+    def test_run(self, ifc, collector, spatial):
+        spatial.can_contain("structure_obj", "element_obj").should_be_called().will_return(True)
         ifc.get_entity("structure_obj").should_be_called().will_return("structure")
         ifc.get_entity("element_obj").should_be_called().will_return("element")
         ifc.run(
             "spatial.assign_container", product="element", relating_structure="structure"
         ).should_be_called().will_return("rel")
-        container.disable_editing("element_obj").should_be_called()
+        spatial.disable_editing("element_obj").should_be_called()
         collector.assign("element_obj").should_be_called()
         assert (
-            subject.assign_container(
-                ifc, collector, container, structure_obj="structure_obj", element_obj="element_obj"
-            )
+            subject.assign_container(ifc, collector, spatial, structure_obj="structure_obj", element_obj="element_obj")
             == "rel"
         )
 
 
 class TestEnableEditingContainer:
-    def test_run(self, container):
-        container.enable_editing("obj").should_be_called()
-        container.import_containers().should_be_called()
-        subject.enable_editing_container(container, obj="obj")
+    def test_run(self, spatial):
+        spatial.enable_editing("obj").should_be_called()
+        spatial.import_containers().should_be_called()
+        subject.enable_editing_container(spatial, obj="obj")
 
 
 class TestDisableEditingContainer:
-    def test_run(self, container):
-        container.disable_editing("obj").should_be_called()
-        subject.disable_editing_container(container, obj="obj")
+    def test_run(self, spatial):
+        spatial.disable_editing("obj").should_be_called()
+        subject.disable_editing_container(spatial, obj="obj")
 
 
 class TestChangeSpatialLevel:
-    def test_run(self, container):
-        container.import_containers(parent="parent").should_be_called()
-        subject.change_spatial_level(container, parent="parent")
+    def test_run(self, spatial):
+        spatial.import_containers(parent="parent").should_be_called()
+        subject.change_spatial_level(spatial, parent="parent")
 
 
 class TestRemoveContainer:
@@ -63,3 +61,36 @@ class TestRemoveContainer:
         ifc.run("spatial.remove_container", product="element").should_be_called()
         collector.assign("obj").should_be_called()
         subject.remove_container(ifc, collector, obj="obj")
+
+
+class TestCopyToContainer:
+    def test_run(self, ifc, spatial):
+        ifc.get_entity("obj").should_be_called().will_return("element")
+        spatial.get_container("element").should_be_called().will_return("container")
+        ifc.get_object("container").should_be_called().will_return("container_obj")
+        spatial.get_relative_object_matrix("obj", "container_obj").should_be_called().will_return("matrix")
+
+        ifc.get_object("to_container").should_be_called().will_return("to_container_obj")
+        spatial.duplicate_object_and_data("obj").should_be_called().will_return("new_obj")
+        spatial.set_relative_object_matrix("new_obj", "to_container_obj", "matrix").should_be_called()
+        spatial.run_root_copy_class(obj="new_obj").should_be_called()
+        spatial.run_spatial_assign_container(structure_obj="to_container_obj", element_obj="new_obj").should_be_called()
+
+        spatial.disable_editing("obj").should_be_called()
+
+        subject.copy_to_container(ifc, spatial, obj="obj", containers=["to_container"])
+
+    def test_using_an_absolute_matrix_if_there_is_no_from_container(self, ifc, spatial):
+        ifc.get_entity("obj").should_be_called().will_return("element")
+        spatial.get_container("element").should_be_called().will_return(None)
+        spatial.get_object_matrix("obj").should_be_called().will_return("matrix")
+
+        ifc.get_object("to_container").should_be_called().will_return("to_container_obj")
+        spatial.duplicate_object_and_data("obj").should_be_called().will_return("new_obj")
+        spatial.set_relative_object_matrix("new_obj", "to_container_obj", "matrix").should_be_called()
+        spatial.run_root_copy_class(obj="new_obj").should_be_called()
+        spatial.run_spatial_assign_container(structure_obj="to_container_obj", element_obj="new_obj").should_be_called()
+
+        spatial.disable_editing("obj").should_be_called()
+
+        subject.copy_to_container(ifc, spatial, obj="obj", containers=["to_container"])

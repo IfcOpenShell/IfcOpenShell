@@ -269,7 +269,7 @@ class AssignClass(bpy.types.Operator):
                 blenderbim.core.spatial.assign_container(
                     tool.Ifc,
                     tool.Collector,
-                    tool.Container,
+                    tool.Spatial,
                     structure_obj=spatial_obj,
                     element_obj=obj,
                 )

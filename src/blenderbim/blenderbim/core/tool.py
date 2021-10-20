@@ -47,14 +47,6 @@ class Collector:
 
 
 @interface
-class Container:
-    def can_contain(cls, structure_obj, element_obj): pass
-    def disable_editing(cls, obj): pass
-    def enable_editing(cls, obj): pass
-    def import_containers(cls, parent=None): pass
-
-
-@interface
 class Context:
     def clear_context(cls): pass
     def export_attributes(cls): pass
@@ -156,6 +148,21 @@ class Root:
 @interface
 class Selector:
     def set_active(cls, obj): pass
+
+
+@interface
+class Spatial:
+    def can_contain(cls, structure_obj, element_obj): pass
+    def disable_editing(cls, obj): pass
+    def duplicate_object_and_data(cls, obj): pass
+    def enable_editing(cls, obj): pass
+    def get_container(cls, element): pass
+    def get_object_matrix(cls, obj): pass
+    def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
+    def import_containers(cls, parent=None): pass
+    def run_root_copy_class(cls, obj=None): pass
+    def run_spatial_assign_container(cls, structure_obj=None, element_obj=None): pass
+    def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
 
 
 @interface
