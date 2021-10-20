@@ -78,6 +78,12 @@ def i_add_an_empty():
     bpy.ops.object.empty_add()
 
 
+@given("I add a sun")
+@when("I add an sun")
+def i_add_an_empty():
+    bpy.ops.object.light_add(type="SUN")
+
+
 @given("I add a material")
 def i_add_a_material():
     bpy.context.active_object.active_material = bpy.data.materials.new("Material")
@@ -124,6 +130,7 @@ def additionally_the_object_name_is_selected(name):
 @given(parsers.parse('I set "{prop}" to "{value}"'))
 @when(parsers.parse('I set "{prop}" to "{value}"'))
 def i_set_prop_to_value(prop, value):
+    value = replace_variables(value)
     try:
         eval(f"bpy.context.{prop}")
     except:

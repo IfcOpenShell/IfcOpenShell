@@ -23,6 +23,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.pset
 import ifcopenshell.util.attribute
 import blenderbim.bim.schema
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data
 from ifcopenshell.api.cost.data import Data as CostData
@@ -274,18 +275,19 @@ class AddPset(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        props = get_pset_props(context, self.obj, self.obj_type)
-        ifc_definition_id = get_pset_obj_ifc_definition_id(context, self.obj, self.obj_type)
-
-        ifcopenshell.api.run(
-            "pset.add_pset",
-            self.file,
-            **{
-                "product": self.file.by_id(ifc_definition_id),
-                "name": props.pset_name,
-            },
-        )
-        Data.load(IfcStore.get_file(), ifc_definition_id)
+        pset_name = get_pset_props(context, self.obj, self.obj_type).pset_name
+        if self.obj_type == "Object":
+            objects = [o.name for o in context.selected_objects]
+        else:
+            objects = [self.obj]
+        for obj in objects:
+            ifc_definition_id = get_pset_obj_ifc_definition_id(context, obj, self.obj_type)
+            if not ifc_definition_id:
+                continue
+            element = tool.Ifc.get().by_id(ifc_definition_id)
+            if pset_name in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(element.is_a(), pset_only=True):
+                ifcopenshell.api.run("pset.add_pset", self.file, product=element, name=pset_name)
+                Data.load(IfcStore.get_file(), ifc_definition_id)
         return {"FINISHED"}
 
 

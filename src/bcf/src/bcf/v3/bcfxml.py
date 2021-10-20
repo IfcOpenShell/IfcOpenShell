@@ -645,9 +645,10 @@ class BcfXml:
 
     def get_comments(self, guid):
         comments = {}
+        data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
         if "Comments" not in data["Topics"]:
             return comments
-        data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
+
         for item in data["Topic"]["Comments"].get("Comment", []):
             comment = bcf.v3.data.Comment()
             mandatory_keys = {
@@ -675,9 +676,9 @@ class BcfXml:
 
     def get_viewpoints(self, guid):
         viewpoints = {}
+        data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
         if "Viewpoints" not in data["Topic"]:
             return viewpoints
-        data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
         for item in data["Topic"]["Viewpoints"]:
             viewpoint = self.get_viewpoint(item, guid)
             viewpoints[viewpoint.guid] = viewpoint

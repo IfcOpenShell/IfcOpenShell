@@ -20,13 +20,14 @@ import bpy
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
-from blenderbim.tool.container import Container as subject
+from blenderbim.tool.spatial import Spatial as subject
 from test.bim.bootstrap import NewFile
+from mathutils import Matrix
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Container)
+        assert isinstance(subject(), blenderbim.core.tool.Spatial)
 
 
 class TestCanContain(NewFile):
@@ -80,6 +81,26 @@ class TestCanContain(NewFile):
         assert subject.can_contain(structure_obj, element_obj) is False
 
 
+class TestDisableEditing(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        subject.enable_editing(obj)
+        subject.disable_editing(obj)
+        assert obj.BIMObjectSpatialProperties.is_editing is False
+
+
+class TestDuplicateObjectAndData(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        new_obj = subject.duplicate_object_and_data(obj)
+        assert new_obj != obj
+        assert new_obj.data != obj.data
+        obj = bpy.data.objects.new("Object", None)
+        new_obj = subject.duplicate_object_and_data(obj)
+        assert new_obj != obj
+        assert new_obj.data is None
+
+
 class TestEnableEditing(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
@@ -87,12 +108,27 @@ class TestEnableEditing(NewFile):
         assert obj.BIMObjectSpatialProperties.is_editing is True
 
 
-class TestDisableEditing(NewFile):
+class TestGetContainer(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        site = ifc.createIfcSite()
+        wall = ifc.createIfcWall()
+        ifcopenshell.api.run("spatial.assign_container", ifc, product=wall, relating_structure=site)
+        assert subject.get_container(wall) == site
+
+
+class TestGetObjectMatrix(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
-        subject.enable_editing(obj)
-        subject.disable_editing(obj)
-        assert obj.BIMObjectSpatialProperties.is_editing is False
+        assert subject.get_object_matrix(obj) == obj.matrix_world
+
+
+class TestGetRelativeObjectMatrix(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        relative_obj = bpy.data.objects.new("Object", None)
+        relative_obj.matrix_world[0][3] = 1
+        assert subject.get_relative_object_matrix(obj, relative_obj)[0][3] == -1
 
 
 class TestImportContainers(NewFile):
@@ -133,3 +169,24 @@ class TestImportContainers(NewFile):
         assert len(props.containers) == 2
         assert props.containers[0].name == "Lower"
         assert props.containers[1].name == "Higher"
+
+
+class TestRunRootCopyClass(NewFile):
+    def test_nothing(self):
+        pass
+
+
+class TestRunSpatialAssignContainer(NewFile):
+    def test_nothing(self):
+        pass
+
+
+class TestSetRelativeObjectMatrix(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        relative_obj = bpy.data.objects.new("Object", None)
+        relative_obj.matrix_world[0][3] = 1
+        matrix = Matrix()
+        matrix[0][3] = 1
+        subject.set_relative_object_matrix(obj, relative_obj, matrix)
+        assert obj.matrix_world[0][3] == 2

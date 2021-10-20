@@ -18,10 +18,7 @@
 
 import os
 import bpy
-import time
 import json
-import tempfile
-import logging
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
@@ -362,87 +359,6 @@ class RemoveIfcFile(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.DocProperties.ifc_files.remove(self.index)
-        return {"FINISHED"}
-
-
-class SetOverrideColour(bpy.types.Operator):
-    bl_idname = "bim.set_override_colour"
-    bl_label = "Set Override Colour"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return context.selected_objects
-
-    def execute(self, context):
-        for obj in context.selected_objects:
-            obj.color = context.scene.BIMProperties.override_colour
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
-        return {"FINISHED"}
-
-
-class SetViewportShadowFromSun(bpy.types.Operator):
-    bl_idname = "bim.set_viewport_shadow_from_sun"
-    bl_label = "Set Viewport Shadow from Sun"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object
-
-    def execute(self, context):
-        # The vector used for the light direction is a bit funny
-        mat = Matrix(((-1.0, 0.0, 0.0, 0.0), (0.0, 0, 1.0, 0.0), (-0.0, -1.0, 0, 0.0), (0.0, 0.0, 0.0, 1.0)))
-        context.scene.display.light_direction = mat.inverted() @ (
-            context.active_object.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-        )
-        return {"FINISHED"}
-
-
-class SnapSpacesTogether(bpy.types.Operator):
-    bl_idname = "bim.snap_spaces_together"
-    bl_label = "Snap Spaces Together"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return context.selected_objects
-
-    def execute(self, context):
-        threshold = 0.5
-        processed_polygons = set()
-        selected_mesh_objects = [o for o in context.selected_objects if o.type == "MESH"]
-        for obj in selected_mesh_objects:
-            for polygon in obj.data.polygons:
-                center = obj.matrix_world @ polygon.center
-                distance = None
-                for obj2 in selected_mesh_objects:
-                    if obj2 == obj:
-                        continue
-                    result = obj2.ray_cast(obj2.matrix_world.inverted() @ center, polygon.normal, distance=threshold)
-                    if not result[0]:
-                        continue
-                    hit = obj2.matrix_world @ result[1]
-                    distance = (hit - center).length / 2
-                    if distance < 0.01:
-                        distance = None
-                        break
-
-                    if (obj2.name, result[3]) in processed_polygons:
-                        distance *= 2
-                        continue
-
-                    offset = polygon.normal * distance * -1
-                    processed_polygons.add((obj2.name, result[3]))
-                    for v in obj2.data.polygons[result[3]].vertices:
-                        obj2.data.vertices[v].co += offset
-                    break
-                if distance:
-                    offset = polygon.normal * distance
-                    processed_polygons.add((obj.name, polygon.index))
-                    for v in polygon.vertices:
-                        obj.data.vertices[v].co += offset
         return {"FINISHED"}
 
 
