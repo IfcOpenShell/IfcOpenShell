@@ -136,7 +136,7 @@ def i_set_prop_to_value(prop, value):
     except:
         assert False, "Property does not exist"
     try:
-        exec(f'bpy.context.{prop} = "{value}"')
+        exec(f'bpy.context.{prop} = r"{value}"')
     except:
         exec(f"bpy.context.{prop} = {value}")
 
@@ -355,3 +355,10 @@ def the_object_name_is_at_location(name, location):
     assert (
         obj_location - Vector([float(co) for co in location.split(",")])
     ).length < 0.1, f"Object is at {obj_location}"
+
+
+@then(parsers.parse('the file "{name}" should contain "{value}"'))
+def the_file_name_should_contain_value(name, value):    
+    name = replace_variables(name)
+    with open(name, "r") as f:
+        assert value in f.read()
