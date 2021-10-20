@@ -117,3 +117,44 @@ class TestAssign(NewFile):
         subject.assign(space_obj)
         assert bpy.context.scene.collection.children.find(space_collection.name) == -1
         assert bpy.data.collections.get("IfcSite/My Site").children.find(space_collection.name) != -1
+
+    def test_in_decomposition_mode_aggregates_subelements_are_placed_in_the_aggregates_collection(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcElementAssembly/Name", None)
+        element = tool.Ifc.get().createIfcElementAssembly()
+        subelement_obj = bpy.data.objects.new("IfcBeam/Name", None)
+        subelement = tool.Ifc.get().createIfcBeam()
+        tool.Ifc.link(element, element_obj)
+        tool.Ifc.link(subelement, subelement_obj)
+        bpy.context.scene.collection.objects.link(element_obj)
+        ifcopenshell.api.run(
+            "aggregate.assign_object",
+            tool.Ifc.get(),
+            relating_object=element,
+            product=subelement,
+        )
+        subject.assign(element_obj)
+        subject.assign(subelement_obj)
+        assert subelement_obj.users_collection[0].name == element_obj.name
+
+    def test_in_decomposition_mode_aggregates_subelements_are_placed_in_the_spatial_collection_as_a_fallback(self):
+        # The aggregate object may not exist in all scenarios, such as when it is filtered out
+        bpy.ops.bim.create_project()
+        element = tool.Ifc.get().createIfcElementAssembly()
+        subelement_obj = bpy.data.objects.new("IfcBeam/Name", None)
+        subelement = tool.Ifc.get().createIfcBeam()
+        tool.Ifc.link(subelement, subelement_obj)
+        ifcopenshell.api.run(
+            "spatial.assign_container",
+            tool.Ifc.get(),
+            product=element,
+            relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
+        )
+        ifcopenshell.api.run(
+            "aggregate.assign_object",
+            tool.Ifc.get(),
+            relating_object=element,
+            product=subelement,
+        )
+        subject.assign(subelement_obj)
+        assert subelement_obj.users_collection[0].name == "IfcSite/My Site"

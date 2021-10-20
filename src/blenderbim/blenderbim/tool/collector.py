@@ -82,9 +82,10 @@ class Collector(blenderbim.core.tool.Collector):
         aggregate = ifcopenshell.util.element.get_aggregate(element)
         if aggregate:
             aggregate_obj = tool.Ifc.get_object(aggregate)
-            collection = bpy.data.collections.get(aggregate_obj.name)
-            if collection:
-                return collection
+            if aggregate_obj:
+                collection = bpy.data.collections.get(aggregate_obj.name)
+                if collection:
+                    return collection
 
         container = ifcopenshell.util.element.get_container(element)
         if container:
