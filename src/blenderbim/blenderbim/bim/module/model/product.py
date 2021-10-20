@@ -62,6 +62,7 @@ class AddTypeInstance(bpy.types.Operator):
     bl_idname = "bim.add_type_instance"
     bl_label = "Add Type Instance"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add the selected Type Instance to the model"
     ifc_class: bpy.props.StringProperty()
     relating_type: bpy.props.IntProperty()
 

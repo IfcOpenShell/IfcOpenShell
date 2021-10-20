@@ -68,6 +68,7 @@ class LoadUnits(bpy.types.Operator, Operator):
     bl_idname = "bim.load_units"
     bl_label = "Load Units"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Open the loaded units"
 
     def _execute(self, context):
         core.load_units(tool.Unit)
@@ -77,6 +78,7 @@ class DisableUnitEditingUI(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_unit_editing_ui"
     bl_label = "Disable Unit Editing UI"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Close the editing units mode"
 
     def _execute(self, context):
         core.disable_unit_editing_ui(tool.Unit)
