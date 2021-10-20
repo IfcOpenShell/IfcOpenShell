@@ -23,11 +23,11 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.pset
 import ifcopenshell.util.attribute
 import blenderbim.bim.schema
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data
 from ifcopenshell.api.cost.data import Data as CostData
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
-from . import prop
 
 def get_pset_props(context, obj, obj_type):
     if obj_type == "Object":
@@ -274,22 +274,18 @@ class AddPset(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        selected_objects = context.selected_objects
-        selected_pset = get_pset_props(context, self.obj, self.obj_type).pset_name
-
-        for object in selected_objects:
-            context.view_layer.objects.active = object
-            ifc_definition_id = get_pset_obj_ifc_definition_id(context, object.name, self.obj_type)
-            if f"'{selected_pset}'" in str(prop.getPsetNames("", context)):
-
-                ifcopenshell.api.run(
-                    "pset.add_pset",
-                    self.file,
-                    **{
-                        "product": self.file.by_id(ifc_definition_id),
-                        "name": selected_pset,
-                    },
-                )
+        pset_name = get_pset_props(context, self.obj, self.obj_type).pset_name
+        if self.obj_type == "Object":
+            objects = [o.name for o in context.selected_objects]
+        else:
+            objects = [self.obj]
+        for obj in objects:
+            ifc_definition_id = get_pset_obj_ifc_definition_id(context, obj, self.obj_type)
+            if not ifc_definition_id:
+                continue
+            element = tool.Ifc.get().by_id(ifc_definition_id)
+            if pset_name in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(element.is_a(), pset_only=True):
+                ifcopenshell.api.run("pset.add_pset", self.file, product=element, name=pset_name)
                 Data.load(IfcStore.get_file(), ifc_definition_id)
         return {"FINISHED"}
 
