@@ -29,6 +29,7 @@ from ifcopenshell.api.pset.data import Data
 from ifcopenshell.api.cost.data import Data as CostData
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 
+
 def get_pset_props(context, obj, obj_type):
     if obj_type == "Object":
         obj = bpy.data.objects.get(obj)

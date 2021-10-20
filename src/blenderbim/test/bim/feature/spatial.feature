@@ -28,3 +28,15 @@ Scenario: Assign container
     And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
     When I press "bim.assign_container(structure={site})"
     Then the object "IfcWall/Cube" is in the collection "IfcSite/My Site"
+
+Scenario: Copy to container
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And I press "bim.enable_editing_container"
+    When I set "scene.BIMSpatialProperties.containers[0].is_selected" to "True"
+    And I press "bim.copy_to_container"
+    Then the object "IfcWall/Cube.001" is in the collection "IfcSite/My Site"

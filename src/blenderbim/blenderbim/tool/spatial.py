@@ -19,10 +19,12 @@
 import bpy
 import ifcopenshell
 import blenderbim.core.tool
+import blenderbim.core.root
+import blenderbim.core.spatial
 import blenderbim.tool as tool
 
 
-class Container(blenderbim.core.tool.Container):
+class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def can_contain(cls, structure_obj, element_obj):
         structure = tool.Ifc.get_entity(structure_obj)
@@ -40,12 +42,31 @@ class Container(blenderbim.core.tool.Container):
         return True
 
     @classmethod
+    def disable_editing(cls, obj):
+        obj.BIMObjectSpatialProperties.is_editing = False
+
+    @classmethod
+    def duplicate_object_and_data(cls, obj):
+        new_obj = obj.copy()
+        if obj.data:
+            new_obj.data = obj.data.copy()
+        return new_obj
+
+    @classmethod
     def enable_editing(cls, obj):
         obj.BIMObjectSpatialProperties.is_editing = True
 
     @classmethod
-    def disable_editing(cls, obj):
-        obj.BIMObjectSpatialProperties.is_editing = False
+    def get_container(cls, element):
+        return ifcopenshell.util.element.get_container(element)
+
+    @classmethod
+    def get_object_matrix(cls, obj):
+        return obj.matrix_world
+
+    @classmethod
+    def get_relative_object_matrix(cls, target_obj, relative_to_obj):
+        return relative_to_obj.matrix_world.inverted() @ target_obj.matrix_world
 
     @classmethod
     def import_containers(cls, parent=None):
@@ -69,3 +90,17 @@ class Container(blenderbim.core.tool.Container):
                 new.long_name = element.LongName or ""
                 new.has_decomposition = bool(element.IsDecomposedBy)
                 new.ifc_definition_id = element.id()
+
+    @classmethod
+    def run_root_copy_class(cls, obj=None):
+        return blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Root, obj=obj)
+
+    @classmethod
+    def run_spatial_assign_container(cls, structure_obj=None, element_obj=None):
+        return blenderbim.core.spatial.assign_container(
+            tool.Ifc, tool.Collector, tool.Spatial, structure_obj=structure_obj, element_obj=element_obj
+        )
+
+    @classmethod
+    def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix):
+        target_obj.matrix_world = relative_to_obj.matrix_world @ matrix

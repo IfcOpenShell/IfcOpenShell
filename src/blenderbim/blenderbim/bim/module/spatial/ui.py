@@ -51,7 +51,7 @@ class BIM_PT_spatial(Panel):
             if SpatialData.data["parent_container_id"]:
                 op = row.operator("bim.change_spatial_level", text="", icon="FRAME_PREV")
                 op.parent = SpatialData.data["parent_container_id"]
-            if props.active_container_index <= len(props.containers):
+            if props.containers and props.active_container_index < len(props.containers):
                 op = row.operator("bim.assign_container", icon="CHECKMARK")
                 op.structure = props.containers[props.active_container_index].ifc_definition_id
             row.operator("bim.copy_to_container", icon="COPYDOWN", text="")

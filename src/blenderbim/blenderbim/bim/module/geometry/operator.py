@@ -312,21 +312,41 @@ class CopyRepresentation(bpy.types.Operator, Operator):
             return
         bm = bmesh.new()
         bm.from_mesh(context.active_object.data)
+        geometric_context = tool.Root.get_object_context(context.active_object)
         for obj in context.selected_objects:
             if obj == context.active_object:
                 continue
             if obj.data:
+                element = tool.Ifc.get_entity(obj)
+                if not element:
+                    continue
                 bm.to_mesh(obj.data)
+                old_rep = self.get_representation_by_context(element, geometric_context)
+                if old_rep:
+                    ifcopenshell.api.run(
+                        "geometry.unassign_representation", tool.Ifc.get(), product=element, representation=old_rep
+                    )
+                    ifcopenshell.api.run("geometry.remove_representation", tool.Ifc.get(), representation=old_rep)
                 core.add_representation(
                     tool.Ifc,
                     tool.Geometry,
                     tool.Style,
                     tool.Surveyor,
                     obj=obj,
-                    context=tool.Ifc.get().by_id(int(context.scene.BIMProperties.contexts)),
+                    context=geometric_context,
                     ifc_representation_class=None,
                     profile_set_usage=None,
                 )
+
+    def get_representation_by_context(self, element, context):
+        if element.is_a("IfcProduct") and element.Representation:
+            for r in element.Representation.Representations:
+                if r.ContextOfItems == context:
+                    return r
+        elif element.is_a("IfcTypeProduct") and element.RepresentationMaps:
+            for r in element.RepresentationMaps:
+                if r.MappedRepresentation.ContextOfItems == context:
+                    return r.MappedRepresentation
 
 
 class OverrideDelete(bpy.types.Operator):
