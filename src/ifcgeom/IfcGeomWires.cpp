@@ -1053,12 +1053,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 			}
 		}
 	} else if (points.begin() < points.end()) {
-                std::vector<gp_Pnt>::const_iterator previous = points.begin();
-                for (std::vector<gp_Pnt>::const_iterator current = previous+1; current < points.end(); ++current){
-                        w.Add(BRepBuilderAPI_MakeEdge(*previous, *current));
-                        previous = current;
-                }
+        std::vector<gp_Pnt>::const_iterator previous = points.begin();
+        for (std::vector<gp_Pnt>::const_iterator current = previous+1; current < points.end(); ++current){
+			BRepBuilderAPI_MakeEdge me(*previous, *current);
+			double u, v;
+			if (me.IsDone() && !BRep_Tool::Curve(me.Edge(), u, v).IsNull()) {
+				w.Add(me.Edge());
+				previous = current;
+			}
         }
+    }
 
 	result = w.Wire();
 	return true;
