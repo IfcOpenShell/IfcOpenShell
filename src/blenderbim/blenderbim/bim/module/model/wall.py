@@ -120,6 +120,10 @@ class AlignWall(bpy.types.Operator):
     bl_idname = "bim.align_wall"
     bl_label = "Align Wall"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = """ Align the selected walls to the last selected wall:
+    'Ext.': align to the EXTERIOR face 
+    'C/L': align to wall CENTERLINE
+    'Int.': align to the INTERIOR face"""
     align_type: bpy.props.StringProperty()
 
     @classmethod
@@ -147,6 +151,7 @@ class FlipWall(bpy.types.Operator):
     bl_idname = "bim.flip_wall"
     bl_label = "Flip Wall"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Switch the origin from the min XY corner to the max XY corner, and rotates the origin by 180"
 
     @classmethod
     def poll(cls, context):
@@ -164,6 +169,7 @@ class SplitWall(bpy.types.Operator):
     bl_idname = "bim.split_wall"
     bl_label = "Split Wall"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Split selected wall into two walls in correspondence of Blender cursor. The cursor must be in the wall volume"
 
     @classmethod
     def poll(cls, context):
