@@ -136,11 +136,12 @@ def remove_deep(ifc_file, element):
     ifc_file.unbatch()
 
 
-def remove_deep2(ifc_file, element):
+def remove_deep2(ifc_file, element, extra_subgraph_elements=[]):
     # Experimental remove deep proposal. No batch for now until this is more certain. See #1812.
     # ifc_file.batch()
     to_delete = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
+    subgraph.extend(extra_subgraph_elements)
     subgraph_set = set(subgraph)
     subelement_queue = ifc_file.traverse(element, max_levels=1)
     while subelement_queue:
