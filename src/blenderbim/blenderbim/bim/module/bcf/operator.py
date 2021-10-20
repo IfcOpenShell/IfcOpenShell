@@ -93,6 +93,7 @@ class LoadBcfTopic(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         topic = bcfxml.get_topic(self.topic_guid)
+        bcfxml.get_header(self.topic_guid)
         new = context.scene.BCFProperties.topics[self.topic_index]
         data_map = {
             "name": topic.guid,
