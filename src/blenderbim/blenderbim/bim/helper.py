@@ -108,9 +108,13 @@ def generate_operators(name, module):
             for cls in reversed(self.classes):
                 bpy.utils.unregister_class(cls)
 
-        except RuntimeError: #class isn't registered  
-            for cls in self.classes:
-                bpy.utils.register_class(cls)
+        except RuntimeError: #class isn't registered
+            #check for edge-case where pset panels inherit from sequence module
+            if self.bl_label == "Pset" and not getattr(bpy.context.scene.module_state, "Sequence"):
+                self.report({"WARNING"}, "Pset can not be activated while Sequence is disabled")
+            else:
+                for cls in self.classes:
+                    bpy.utils.register_class(cls)
 
         if getattr(bpy.context.scene.module_state, self.bl_label):
             setattr(bpy.context.scene.module_state, self.bl_label, False)
