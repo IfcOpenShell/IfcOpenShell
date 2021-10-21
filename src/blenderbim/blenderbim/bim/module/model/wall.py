@@ -169,7 +169,9 @@ class SplitWall(bpy.types.Operator):
     bl_idname = "bim.split_wall"
     bl_label = "Split Wall"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Split selected wall into two walls in correspondence of Blender cursor. The cursor must be in the wall volume"
+    bl_description = (
+        "Split selected wall into two walls in correspondence of Blender cursor. The cursor must be in the wall volume"
+    )
 
     @classmethod
     def poll(cls, context):

@@ -16,19 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.tool.aggregate import Aggregate
-from blenderbim.tool.blender import Blender
-from blenderbim.tool.collector import Collector
-from blenderbim.tool.context import Context
-from blenderbim.tool.geometry import Geometry
-from blenderbim.tool.ifc import Ifc
-from blenderbim.tool.material import Material
-from blenderbim.tool.misc import Misc
-from blenderbim.tool.owner import Owner
-from blenderbim.tool.qto import Qto
-from blenderbim.tool.root import Root
-from blenderbim.tool.spatial import Spatial
-from blenderbim.tool.style import Style
-from blenderbim.tool.surveyor import Surveyor
-from blenderbim.tool.type import Type
-from blenderbim.tool.unit import Unit
+import bpy
+import blenderbim.core.tool
+import blenderbim.tool as tool
+from mathutils import Vector
+
+
+class Qto(blenderbim.core.tool.Qto):
+    @classmethod
+    def get_radius_of_selected_vertices(cls, obj):
+        selected_verts = [v.co for v in obj.data.vertices if v.select]
+        total = Vector()
+        for v in selected_verts:
+            total += v
+        circle_center = total / len(selected_verts)
+        return max([(v - circle_center).length for v in selected_verts])
+
+    @classmethod
+    def set_qto_result(cls, result):
+        bpy.context.scene.BIMQtoProperties.qto_result = str(round(result, 3))

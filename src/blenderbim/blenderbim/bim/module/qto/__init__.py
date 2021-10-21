@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.CalculateCircleRadius,
     operator.CalculateEdgeLengths,
     operator.CalculateFaceAreas,
     operator.CalculateObjectVolumes,

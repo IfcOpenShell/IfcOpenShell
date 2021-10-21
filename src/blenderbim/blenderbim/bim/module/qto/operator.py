@@ -19,9 +19,25 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import blenderbim.tool as tool
+import blenderbim.core.qto as core
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.qto import helper
 from ifcopenshell.api.pset.data import Data as PsetData
+
+
+class CalculateCircleRadius(bpy.types.Operator):
+    bl_idname = "bim.calculate_circle_radius"
+    bl_label = "Calculate Circle Radius"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object
+
+    def execute(self, context):
+        core.calculate_circle_radius(tool.Qto, obj=context.active_object)
+        return {"FINISHED"}
 
 
 class CalculateEdgeLengths(bpy.types.Operator):
