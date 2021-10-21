@@ -39,14 +39,7 @@ class AddEmptyType(bpy.types.Operator, AddObjectHelper):
 
     def execute(self, context):
         obj = bpy.data.objects.new("TYPEX", None)
-        for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
-            if not [c for c in project.children if "Types" in c.name]:
-                types = bpy.data.collections.new("Types")
-                project.collection.children.link(types)
-            for collection in [c for c in project.children if "Types" in c.name]:
-                collection.collection.objects.link(obj)
-                break
-            break
+        context.scene.collection.objects.link(obj)
         context.scene.BIMRootProperties.ifc_product = "IfcElementType"
         bpy.ops.object.select_all(action="DESELECT")
         context.view_layer.objects.active = obj
