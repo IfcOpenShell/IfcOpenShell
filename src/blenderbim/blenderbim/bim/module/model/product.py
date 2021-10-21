@@ -116,7 +116,6 @@ class AddTypeInstance(bpy.types.Operator):
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         blenderbim.core.type.assign_type(
             tool.Ifc,
-            tool.Geometry,
             tool.Type,
             element=tool.Ifc.get_entity(obj),
             type=tool.Ifc.get().by_id(int(tprops.relating_type)),

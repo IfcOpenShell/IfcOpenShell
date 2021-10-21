@@ -24,3 +24,11 @@ class TestUnlinkMaterial:
     def test_run(self, material):
         material.unlink("obj").should_be_called()
         subject.unlink_material(material, obj="obj")
+
+
+class TestAddDefaultMaterial:
+    def test_run(self, ifc, material):
+        material.add_default_material_object().should_be_called().will_return("obj")
+        ifc.run("material.add_material", name="Default").should_be_called().will_return("material")
+        material.link("material", "obj").should_be_called()
+        assert subject.add_default_material(ifc, material) == "obj"
