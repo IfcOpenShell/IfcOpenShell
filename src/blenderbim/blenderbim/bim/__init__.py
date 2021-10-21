@@ -18,7 +18,7 @@
 
 import bpy
 import importlib
-from . import handler, ui, prop, operator
+from . import handler, ui, prop, operator, helper
 
 modules = {
     "project": None,
@@ -68,37 +68,23 @@ modules = {
 }
 
 dynamic_operators = [] #temporary list to hold dynamically generated operators
+module_dict = {} #dictionary which will be used to store the current state of each module (active/inactive)
 
 for name in modules.keys():
     modules[name] = importlib.import_module(f"blenderbim.bim.module.{name}")
-    nameUpperCase = name[0].upper()+name[1:]
 
-    #generate operators that toggle module state
-    idname = f"bim.toggle_module_{name}"
-    
-    def func(self, context):
-        try:
-            for cls in self.classes:
-                bpy.utils.unregister_class(cls)
-                #self.is_active = False
-        except:
-            #class is already registered
-            for cls in self.classes:
-                bpy.utils.register_class(cls)
-                #self.is_active = True
-        return {'FINISHED'}
+    name_uppercase = name.capitalize()
+    module_dict[name_uppercase] = bpy.props.BoolProperty(name=name_uppercase, default=True)
 
-    opclass = type(
-        f"BIM_OT_Toggle_Module_{nameUpperCase}",
-        (bpy.types.Operator, ),
-        {
-        "bl_idname": idname, 
-        "bl_label": nameUpperCase, 
-        "execute": func,
-        "classes": modules[name].classes
-        },
-    )
-    dynamic_operators.append(opclass)
+    new_operator = helper.generate_operators(name, modules[name])
+    dynamic_operators.append(new_operator)
+
+#create a propertygroup that stores module state
+module_propertygroup = type(
+    "ModuleActiveState",
+    (bpy.types.PropertyGroup,),
+    {'__annotations__':module_dict}
+)
 
 classes = [
     operator.OpenUri,
@@ -125,6 +111,7 @@ classes = [
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
+    module_propertygroup
 ]
 
 classes.extend(dynamic_operators)
@@ -158,6 +145,7 @@ def register():
     bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.PointLight.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.SCENE_PT_unit.append(ui.ifc_units)
+    bpy.types.Scene.module_state = bpy.props.PointerProperty(type= module_propertygroup)
 
     for mod in modules.values():
         mod.register()
@@ -177,6 +165,7 @@ def unregister():
     del bpy.types.Curve.BIMMeshProperties
     del bpy.types.Camera.BIMMeshProperties
     del bpy.types.PointLight.BIMMeshProperties
+    del bpy.types.Scene.module_state
     bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
 
     for mod in reversed(list(modules.values())):

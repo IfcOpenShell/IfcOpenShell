@@ -97,3 +97,36 @@ def export_attributes(props, callback=None):
             continue  # Our job is done
         attributes[prop.name] = prop.get_value()
     return attributes
+
+
+def generate_operators(name, module):
+    name_uppercase = name.capitalize()
+    idname = f"bim.toggle_module_{name}"
+    
+    def change_state(self, context):
+        try:
+            for cls in reversed(self.classes):
+                bpy.utils.unregister_class(cls)
+
+        except RuntimeError: #class isn't registered  
+            for cls in self.classes:
+                bpy.utils.register_class(cls)
+
+        if getattr(bpy.context.scene.module_state, self.bl_label):
+            setattr(bpy.context.scene.module_state, self.bl_label, False)
+        else:
+            setattr(bpy.context.scene.module_state, self.bl_label, True)
+
+        return {'FINISHED'}
+
+    opclass = type(
+        f"BIM_OT_Toggle_Module_{name_uppercase}",
+        (bpy.types.Operator, ),
+        {
+        "bl_idname": idname, 
+        "bl_label": name_uppercase, 
+        "execute": change_state,
+        "classes": list(filter(lambda cls: issubclass(cls, bpy.types.Panel), module.classes))
+        },
+    )
+    return opclass 

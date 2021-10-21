@@ -498,7 +498,14 @@ class ConfigureVisibility(bpy.types.Operator):
 
         for operator in dir(bpy.ops.bim):
             if operator.startswith("toggle_module_"):
-                grid.operator(f"bim.{operator}")
+                split = grid.split(factor=0.7)
+                col = split.column()
+                col.operator(f"bim.{operator}")
+                
+                module_name = operator.split("_")[2].capitalize()
+                col = split.column()
+                col.enabled = False
+                col.prop(bpy.context.scene.module_state, module_name, text="")
 
     def execute(self, context):
         return {'FINISHED'}
