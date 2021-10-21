@@ -20,6 +20,7 @@ import os
 import bpy
 import ifcopenshell
 import blenderbim.tool as tool
+import blenderbim.bim
 from blenderbim.bim.ifc import IfcStore
 from pytest_bdd import scenarios, given, when, then, parsers
 from mathutils import Vector
@@ -104,6 +105,12 @@ def i_press_operator(operator):
         exec(f"bpy.ops.{operator}()")
 
 
+@when("I duplicate the selected objects")
+def i_duplicate_the_selected_objects():
+    bpy.ops.object.duplicate_move()
+    blenderbim.bim.handler.active_object_callback()
+
+
 @when("I deselect all objects")
 def i_deselect_all_objects():
     bpy.context.view_layer.objects.active = None
@@ -117,6 +124,13 @@ def the_object_name_is_selected(name):
     additionally_the_object_name_is_selected(name)
 
 
+@when(parsers.parse('the object "{name}" is placed in the collection "{collection}"'))
+def the_object_name_is_placed_in_the_collection_collection(name, collection):
+    obj = the_object_name_exists(name)
+    [c.objects.unlink(obj) for c in obj.users_collection]
+    bpy.data.collections.get(collection).objects.link(obj)
+
+
 @given(parsers.parse('additionally the object "{name}" is selected'))
 @when(parsers.parse('additionally the object "{name}" is selected'))
 def additionally_the_object_name_is_selected(name):
@@ -125,6 +139,12 @@ def additionally_the_object_name_is_selected(name):
         assert False, 'The object "{name}" could not be selected'
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
+
+
+@given(parsers.parse('I rename the object "{name1}" to "{name2}"'))
+@when(parsers.parse('I rename the object "{name1}" to "{name2}"'))
+def i_rename_the_object_name1_to_name2(name1, name2):
+    the_object_name_exists(name1).name = name2
 
 
 @given(parsers.parse('I set "{prop}" to "{value}"'))
@@ -139,6 +159,11 @@ def i_set_prop_to_value(prop, value):
         exec(f'bpy.context.{prop} = r"{value}"')
     except:
         exec(f"bpy.context.{prop} = {value}")
+
+
+@when(parsers.parse('I am on frame "{number}"'))
+def i_am_on_frame_number(number):
+    bpy.context.scene.frame_set(int(number))
 
 
 @when("I delete the selected objects")
@@ -164,6 +189,29 @@ def the_object_name_exists(name) -> bpy.types.Object:
     if not obj:
         assert False, f'The object "{name}" does not exist'
     return obj
+
+
+@then(parsers.parse('the object "{name1}" and "{name2}" are different elements'))
+def the_object_name1_and_name2_are_different_elements(name1, name2):
+    ifc = an_ifc_file_exists()
+    element1 = ifc.by_id(the_object_name_exists(name1).BIMObjectProperties.ifc_definition_id)
+    element2 = ifc.by_id(the_object_name_exists(name2).BIMObjectProperties.ifc_definition_id)
+    assert element1 != element2, f"Objects {name1} and {name2} have same elements {element1} and {element2}"
+
+
+@then(parsers.parse('the object "{name}" has a body of "{value}"'))
+def the_object_name_has_a_body_of_value(name, value):
+    assert the_object_name_exists(name).data.body == value
+
+
+@then(parsers.parse('the object "{name}" has a "{_type}" representation of "{context}"'))
+def the_object_name_has_a_type_representation_of_context(name, _type, context):
+    ifc = an_ifc_file_exists()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    context, subcontext, target_view = context.split("/")
+    assert ifcopenshell.util.representation.get_representation(
+        element, context, subcontext or None, target_view or None
+    )
 
 
 @then(parsers.parse('the material "{name}" exists'))
@@ -330,7 +378,7 @@ def prop_is_value(prop, value):
 
 
 @then(parsers.parse('the object "{name}" has the material "{material}"'))
-def the_object_name_is_in_the_collection_collection(name, material):
+def the_object_name_has_the_material_material(name, material):
     assert material in [ms.material.name for ms in the_object_name_exists(name).material_slots]
 
 
@@ -355,6 +403,16 @@ def the_object_name_is_at_location(name, location):
     assert (
         obj_location - Vector([float(co) for co in location.split(",")])
     ).length < 0.1, f"Object is at {obj_location}"
+
+
+@then(parsers.parse('the object "{name}" is contained in "{container_name}"'))
+def the_object_name_is_contained_in_container_name(name, container_name):
+    ifc = an_ifc_file_exists()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    container = ifcopenshell.util.element.get_container(element)
+    if not container:
+        assert False, f'Object "{name}" is not in any container'
+    assert container.Name == container_name, f'Object "{name}" is in {container}'
 
 
 @then(parsers.parse('the file "{name}" should contain "{value}"'))
