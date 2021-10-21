@@ -18,9 +18,8 @@
 
 import bpy
 from bpy.types import Panel
-from ifcopenshell.api.geometry.data import Data
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.geometry.data import DerivedPlacementsData
+from blenderbim.bim.module.geometry.data import RepresentationsData, DerivedPlacementsData
 
 
 class BIM_PT_representations(Panel):
@@ -40,33 +39,31 @@ class BIM_PT_representations(Panel):
         return IfcStore.get_file()
 
     def draw(self, context):
+        if not RepresentationsData.is_loaded:
+            RepresentationsData.load()
+
         layout = self.layout
         props = context.active_object.BIMObjectProperties
 
-        if props.ifc_definition_id not in Data.products:
-            Data.load(IfcStore.get_file(), props.ifc_definition_id)
-
-        representations = Data.products[props.ifc_definition_id]
-        if not representations:
+        if not RepresentationsData.data["representations"]:
             layout.label(text="No representations found")
 
         row = layout.row(align=True)
         row.prop(context.scene.BIMProperties, "contexts", text="")
         row.operator("bim.add_representation", icon="ADD", text="")
 
-        for ifc_definition_id in representations:
-            representation = Data.representations[ifc_definition_id]
+        for representation in RepresentationsData.data["representations"]:
             row = self.layout.row(align=True)
-            row.label(text=representation["ContextOfItems"]["ContextType"])
-            row.label(text=representation["ContextOfItems"]["ContextIdentifier"])
-            row.label(text=representation["ContextOfItems"]["TargetView"])
+            row.label(text=representation["ContextType"])
+            row.label(text=representation["ContextIdentifier"])
+            row.label(text=representation["TargetView"])
             row.label(text=representation["RepresentationType"])
             op = row.operator("bim.switch_representation", icon="OUTLINER_DATA_MESH", text="")
             op.should_switch_all_meshes = True
             op.should_reload = True
-            op.ifc_definition_id = ifc_definition_id
+            op.ifc_definition_id = representation["id"]
             op.disable_opening_subtractions = False
-            row.operator("bim.remove_representation", icon="X", text="").representation_id = ifc_definition_id
+            row.operator("bim.remove_representation", icon="X", text="").representation_id = representation["id"]
 
 
 class BIM_PT_mesh(Panel):
