@@ -110,6 +110,10 @@ class BIM_PT_mesh(Panel):
         row.operator("bim.update_representation")
 
         row = layout.row()
+        op = row.operator("bim.update_representation", text="Update Mesh As Tessellation")
+        op.ifc_representation_class = "IfcTessellatedFaceSet"
+
+        row = layout.row()
         op = row.operator("bim.update_representation", text="Update Mesh As Rectangle Extrusion")
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
 

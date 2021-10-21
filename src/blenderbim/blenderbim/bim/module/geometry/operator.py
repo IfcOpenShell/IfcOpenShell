@@ -200,6 +200,9 @@ class UpdateRepresentation(bpy.types.Operator):
                 )
             )
 
+        if not self.ifc_representation_class:
+            self.ifc_representation_class = self.auto_detect_ifc_representation_class(product, old_representation) or ""
+
         representation_data = {
             "context": context_of_items,
             "blender_object": obj,
@@ -244,6 +247,25 @@ class UpdateRepresentation(bpy.types.Operator):
         Data.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         if obj.data.BIMMeshProperties.ifc_parameters:
             bpy.ops.bim.get_representation_ifc_parameters()
+
+    def auto_detect_ifc_representation_class(self, element, representation):
+        material = ifcopenshell.util.element.get_material(element)
+
+        if material.is_a("IfcMaterialProfileSetUsage"):
+            return "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
+
+        extruded_areas = [e for e in self.file.traverse(representation) if e.is_a() == "IfcExtrudedAreaSolid"]
+
+        if len(extruded_areas) != 1:
+            return None  # It's too complex for us to derive topologically right now
+
+        profile_def = extruded_areas[0].SweptArea
+
+        if profile_def.is_a() == "IfcRectangleProfileDef":
+            return "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
+        elif profile_def.is_a() == "IfcCircleProfileDef":
+            return "IfcExtrudedAreaSolid/IfcCircleProfileDef"
+        return "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
 
 class UpdateParametricRepresentation(bpy.types.Operator):
