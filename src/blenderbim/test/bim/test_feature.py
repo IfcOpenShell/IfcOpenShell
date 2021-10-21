@@ -358,7 +358,7 @@ def the_object_name_is_at_location(name, location):
 
 
 @then(parsers.parse('the file "{name}" should contain "{value}"'))
-def the_file_name_should_contain_value(name, value):    
+def the_file_name_should_contain_value(name, value):
     name = replace_variables(name)
     with open(name, "r") as f:
         assert value in f.read()

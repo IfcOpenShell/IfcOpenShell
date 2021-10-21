@@ -35,6 +35,8 @@ class BIM_PT_qto_utilities(Panel):
         row.prop(props, "qto_result", text="Results")
 
         row = layout.row(align=True)
+        row.operator("bim.calculate_circle_radius")
+        row = layout.row(align=True)
         row.operator("bim.calculate_edge_lengths")
         row = layout.row(align=True)
         row.operator("bim.calculate_face_areas")

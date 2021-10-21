@@ -16,19 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.tool.aggregate import Aggregate
-from blenderbim.tool.blender import Blender
-from blenderbim.tool.collector import Collector
-from blenderbim.tool.context import Context
-from blenderbim.tool.geometry import Geometry
-from blenderbim.tool.ifc import Ifc
-from blenderbim.tool.material import Material
-from blenderbim.tool.misc import Misc
-from blenderbim.tool.owner import Owner
-from blenderbim.tool.qto import Qto
-from blenderbim.tool.root import Root
-from blenderbim.tool.spatial import Spatial
-from blenderbim.tool.style import Style
-from blenderbim.tool.surveyor import Surveyor
-from blenderbim.tool.type import Type
-from blenderbim.tool.unit import Unit
+import bpy
+import ifcopenshell
+import test.bim.bootstrap
+import blenderbim.core.tool
+import blenderbim.tool as tool
+from blenderbim.tool.qto import Qto as subject
+
+
+class TestImplementsTool(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        assert isinstance(subject(), blenderbim.core.tool.Qto)
+
+
+class TestGetRadiusOfSelectedVertices(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        bpy.ops.mesh.primitive_circle_add()
+        assert round(subject.get_radius_of_selected_vertices(bpy.data.objects.get("Circle")), 3) == 1
+
+
+class TestSetQtoResult(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        subject.set_qto_result(123.4567)
+        assert bpy.context.scene.BIMQtoProperties.qto_result == "123.457"

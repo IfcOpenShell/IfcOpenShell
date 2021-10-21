@@ -136,6 +136,12 @@ class Owner:
 
 
 @interface
+class Qto:
+    def get_radius_of_selected_vertices(cls, obj): pass
+    def set_qto_result(cls, result): pass
+
+
+@interface
 class Root:
     def add_dynamic_opening_voids(cls, element, obj): pass
     def does_type_have_representations(cls, element): pass
