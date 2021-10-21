@@ -170,25 +170,6 @@ class DumbProfileGenerator:
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type)
         profile_set_usage = ifcopenshell.util.element.get_material(element)
-        blenderbim.core.geometry.add_representation(
-            tool.Ifc,
-            tool.Geometry,
-            tool.Style,
-            tool.Surveyor,
-            obj=obj,
-            context=ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW"),
-            ifc_representation_class="IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage",
-            profile_set_usage=profile_set_usage,
-        )
-        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.geometry.switch_representation(
-            tool.Geometry,
-            obj=obj,
-            representation=representation,
-            should_reload=True,
-            enable_dynamic_voids=True,
-            is_global=True,
-        )
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbProfile"})
         MaterialData.load(self.file)
