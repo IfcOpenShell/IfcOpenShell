@@ -2159,25 +2159,26 @@ IfcSchema::IfcProduct::list::ptr IfcGeom::Kernel::products_represented_by(const 
 	}
 
 	if (maps->size() == 1) {
-		IfcSchema::IfcRepresentationMap* map = *maps->begin();
-		if (is_identity_transform(map->MappingOrigin())) {
-			IfcSchema::IfcMappedItem::list::ptr items = map->MapUsage();
-			for (IfcSchema::IfcMappedItem::list::it it = items->begin(); it != items->end(); ++it) {
-				IfcSchema::IfcMappedItem* item = *it;
-				if (item->StyledByItem()->size() != 0) continue;
+		for (IfcSchema::IfcRepresentationMap::list::it map = maps->begin(); map != maps->end(); ++map) {
+			if (is_identity_transform((*map)->MappingOrigin())) {
+				IfcSchema::IfcMappedItem::list::ptr items = (*map)->MapUsage();
+				for (IfcSchema::IfcMappedItem::list::it it = items->begin(); it != items->end(); ++it) {
+					IfcSchema::IfcMappedItem* item = *it;
+					if (item->StyledByItem()->size() != 0) continue;
 
-				if (!is_identity_transform(item->MappingTarget())) {
-					continue;
-				}
+					if (!is_identity_transform(item->MappingTarget())) {
+						continue;
+					}
 
-				IfcSchema::IfcRepresentation::list::ptr reps = item->data().getInverse((&IfcSchema::IfcRepresentation::Class()), -1)->as<IfcSchema::IfcRepresentation>();
-				for (IfcSchema::IfcRepresentation::list::it jt = reps->begin(); jt != reps->end(); ++jt) {
-					IfcSchema::IfcRepresentation* rep = *jt;
-					if (rep->Items()->size() != 1) continue;
-					IfcSchema::IfcProductRepresentation::list::ptr prodreps_mapped = rep->OfProductRepresentation();
-					for (IfcSchema::IfcProductRepresentation::list::it kt = prodreps_mapped->begin(); kt != prodreps_mapped->end(); ++kt) {
-						IfcSchema::IfcProduct::list::ptr ps = (*kt)->data().getInverse((&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>();
-						products->push(ps);
+					IfcSchema::IfcRepresentation::list::ptr reps = item->data().getInverse((&IfcSchema::IfcRepresentation::Class()), -1)->as<IfcSchema::IfcRepresentation>();
+					for (IfcSchema::IfcRepresentation::list::it jt = reps->begin(); jt != reps->end(); ++jt) {
+						IfcSchema::IfcRepresentation* rep = *jt;
+						if (rep->Items()->size() != 1) continue;
+						IfcSchema::IfcProductRepresentation::list::ptr prodreps_mapped = rep->OfProductRepresentation();
+						for (IfcSchema::IfcProductRepresentation::list::it kt = prodreps_mapped->begin(); kt != prodreps_mapped->end(); ++kt) {
+							IfcSchema::IfcProduct::list::ptr ps = (*kt)->data().getInverse((&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>();
+							products->push(ps);
+						}
 					}
 				}
 			}
