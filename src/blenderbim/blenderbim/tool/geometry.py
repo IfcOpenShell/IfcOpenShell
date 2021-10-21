@@ -102,6 +102,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
         element = tool.Ifc.get_entity(obj)
         settings = ifcopenshell.geom.settings()
+        settings.set(settings.WELD_VERTICES, True)
 
         if representation.ContextOfItems.ContextIdentifier == "Body":
             if element.is_a("IfcTypeProduct") or enable_dynamic_voids:
