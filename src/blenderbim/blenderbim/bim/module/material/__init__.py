@@ -21,6 +21,7 @@ from . import ui, prop, operator
 
 classes = (
     operator.AddConstituent,
+    operator.AddDefaultMaterial,
     operator.AddLayer,
     operator.AddListItem,
     operator.AddMaterial,

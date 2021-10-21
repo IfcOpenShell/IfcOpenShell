@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -23,6 +24,10 @@ import blenderbim.bim.helper
 
 
 class Material(blenderbim.core.tool.Material):
+    @classmethod
+    def add_default_material_object(cls):
+        return bpy.data.materials.new("Default")
+
     @classmethod
     def link(cls, material, obj):
         obj.BIMObjectProperties.ifc_definition_id = material.id()

@@ -19,3 +19,9 @@
 
 def unlink_material(material, obj=None):
     material.unlink(obj)
+
+
+def add_default_material(ifc, material):
+    obj = material.add_default_material_object()
+    material.link(ifc.run("material.add_material", name="Default"), obj)
+    return obj

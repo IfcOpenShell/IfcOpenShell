@@ -168,9 +168,7 @@ class DumbProfileGenerator:
             obj.rotation_euler[2] = math.pi / 2
 
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        blenderbim.core.type.assign_type(
-            tool.Ifc, tool.Geometry, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type
-        )
+        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type)
         profile_set_usage = ifcopenshell.util.element.get_material(element)
         blenderbim.core.geometry.add_representation(
             tool.Ifc,

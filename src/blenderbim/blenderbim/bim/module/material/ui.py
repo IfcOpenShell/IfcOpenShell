@@ -77,8 +77,9 @@ class BIM_PT_object_material(Panel):
         self.product_data = Data.products[self.oprops.ifc_definition_id]
 
         if not Data.materials:
-            row = self.layout.row()
+            row = self.layout.row(align=True)
             row.label(text="No Materials Available")
+            row.operator("bim.add_default_material", icon="ADD", text="")
             return
 
         if self.product_data:

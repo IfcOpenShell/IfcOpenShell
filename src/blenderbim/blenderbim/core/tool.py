@@ -90,6 +90,8 @@ class Ifc:
 
 @interface
 class Material:
+    def add_default_material_object(cls): pass
+    def link(cls, element, obj): pass
     def unlink(cls, obj): pass
 
 
