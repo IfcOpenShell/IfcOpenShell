@@ -17,13 +17,13 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import bmesh
 import math
+import bmesh
+import mathutils.geometry
 import ifcopenshell
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
-import mathutils.geometry
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.type
@@ -100,9 +100,7 @@ def ensure_solid(usecase_path, ifc_file, settings):
     material = ifcopenshell.util.element.get_material(product)
     if material and material.is_a("IfcMaterialProfileSetUsage"):
         settings["profile_set_usage"] = material
-    else:
-        return
-    settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
+        settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
 
 
 class DumbProfileGenerator:

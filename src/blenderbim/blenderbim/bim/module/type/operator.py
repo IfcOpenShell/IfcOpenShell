@@ -51,7 +51,7 @@ class AssignType(bpy.types.Operator, Operator):
             else context.selected_objects or [context.active_object]
         )
         for obj in related_objects:
-            core.assign_type(tool.Ifc, tool.Geometry, tool.Type, element=tool.Ifc.get_entity(obj), type=type)
+            core.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=type)
             oprops = obj.BIMObjectProperties
             Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
             GeometryData.load(IfcStore.get_file(), oprops.ifc_definition_id)
