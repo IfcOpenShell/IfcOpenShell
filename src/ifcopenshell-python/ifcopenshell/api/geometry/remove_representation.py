@@ -22,7 +22,8 @@ class Usecase:
         ifcopenshell.util.element.remove_deep2(
             self.file,
             self.settings["representation"],
-            extra_subgraph_elements=list(styled_items | presentation_layer_assignments),
+            also_consider=list(styled_items | presentation_layer_assignments),
+            do_not_delete=self.file.by_type("IfcGeometricRepresentationContext"),
         )
 
         for element in styled_items:

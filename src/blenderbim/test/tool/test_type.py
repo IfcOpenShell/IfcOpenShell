@@ -53,6 +53,16 @@ class TestGetAnyRepresentation(NewFile):
         assert subject.get_any_representation(element) == representation
 
 
+class TestGetBodyContext(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        context = ifc.createIfcGeometricRepresentationSubContext(
+            ContextType="Model", ContextIdentifier="Body", TargetView="MODEL_VIEW"
+        )
+        tool.Ifc.set(ifc)
+        assert subject.get_body_context() == context
+
+
 class TestGetBodyRepresentation(NewFile):
     def test_get_product_representation(self):
         ifc = ifcopenshell.file()
@@ -78,6 +88,49 @@ class TestGetBodyRepresentation(NewFile):
         assert subject.get_body_representation(element) == body_rep
 
 
+class TestGetIfcRepresentationClass(NewFile):
+    def test_detecting_profile_set_representations(self):
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcColumn()
+        ifc.createIfcRelAssociatesMaterial(
+            RelatingMaterial=ifc.createIfcMaterialProfileSetUsage(), RelatedObjects=[element]
+        )
+        assert subject.get_ifc_representation_class(element) == "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
+
+    def test_detecting_layer_set_representations(self):
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcColumn()
+        ifc.createIfcRelAssociatesMaterial(
+            RelatingMaterial=ifc.createIfcMaterialLayerSetUsage(), RelatedObjects=[element]
+        )
+        assert (
+            subject.get_ifc_representation_class(element)
+            == "IfcExtrudedAreaSolid/IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
+        )
+
+    def test_returning_null_for_non_parametric_represntations(self):
+        ifc = ifcopenshell.file()
+        assert subject.get_ifc_representation_class(ifc.createIfcColumn()) is None
+
+
+class TestGetProfileSetUsage(NewFile):
+    def test_getting_a_profile_set_usage(self):
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcColumn()
+        assert subject.get_profile_set_usage(element) is None
+        usage = ifc.createIfcMaterialProfileSetUsage()
+        ifc.createIfcRelAssociatesMaterial(RelatingMaterial=usage, RelatedObjects=[element])
+        assert subject.get_profile_set_usage(element) == usage
+
+
+class TestGetRepresentationContext(NewFile):
+    def test_getting_a_profile_set_usage(self):
+        ifc = ifcopenshell.file()
+        context = ifc.createIfcGeometricRepresentationSubContext()
+        representation = ifc.createIfcShapeRepresentation(ContextOfItems=context)
+        assert subject.get_representation_context(representation) == context
+
+
 class TestHasDynamicVoids(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
@@ -87,3 +140,23 @@ class TestHasDynamicVoids(NewFile):
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
         assert subject.has_dynamic_voids(obj) is True
+
+
+class TestHasMaterialUsage(NewFile):
+    def test_getting_a_profile_set_usage(self):
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcColumn()
+        assert subject.has_material_usage(element) is False
+        usage = ifc.createIfcMaterialProfileSetUsage()
+        ifc.createIfcRelAssociatesMaterial(RelatingMaterial=usage, RelatedObjects=[element])
+        assert subject.has_material_usage(element) is True
+
+
+class TestRunGeometryAddRepresentation(NewFile):
+    def test_nothing(self):
+        pass
+
+
+class TestRunGeometrySwitchRepresentation(NewFile):
+    def test_nothing(self):
+        pass

@@ -74,12 +74,7 @@ def add_representation(
 
 
 def switch_representation(
-    geometry,
-    obj=None,
-    representation=None,
-    should_reload=True,
-    enable_dynamic_voids=True,
-    is_global=True,
+    geometry, obj=None, representation=None, should_reload=True, enable_dynamic_voids=True, is_global=True
 ):
     representation = geometry.resolve_mapped_representation(representation)
     data = geometry.get_representation_data(representation)

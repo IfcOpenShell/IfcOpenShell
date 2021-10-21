@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import blenderbim.core.tool
+import blenderbim.core.geometry
 import blenderbim.tool as tool
 import blenderbim.bim.helper
 
@@ -35,6 +36,10 @@ class Type(blenderbim.core.tool.Type):
             return element.RepresentationMaps[0].MappedRepresentation
 
     @classmethod
+    def get_body_context(cls):
+        return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
+    @classmethod
     def get_body_representation(cls, element):
         if element.is_a("IfcProduct") and element.Representation and element.Representation.Representations:
             for representation in element.Representation.Representations:
@@ -46,8 +51,63 @@ class Type(blenderbim.core.tool.Type):
                     return representation_map.MappedRepresentation
 
     @classmethod
+    def get_ifc_representation_class(cls, element):
+        material = ifcopenshell.util.element.get_material(element)
+        if material:
+            if material.is_a("IfcMaterialProfileSetUsage"):
+                return "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
+            elif material.is_a("IfcMaterialLayerSetUsage"):
+                return "IfcExtrudedAreaSolid/IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
+
+    @classmethod
+    def get_profile_set_usage(cls, element):
+        material = ifcopenshell.util.element.get_material(element)
+        if material:
+            if material.is_a("IfcMaterialProfileSetUsage"):
+                return material
+
+    @classmethod
+    def get_representation_context(cls, representation):
+        return representation.ContextOfItems
+
+    @classmethod
     def has_dynamic_voids(cls, obj):
         for modifier in obj.modifiers:
             if modifier.name == "IfcOpeningElement" and modifier.type == "BOOLEAN":
                 return True
         return False
+
+    @classmethod
+    def has_material_usage(cls, element):
+        material = ifcopenshell.util.element.get_material(element)
+        if material:
+            return "Usage" in material.is_a()
+        return False
+
+    @classmethod
+    def run_geometry_add_representation(
+        cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None
+    ):
+        return blenderbim.core.geometry.add_representation(
+            tool.Ifc,
+            tool.Geometry,
+            tool.Style,
+            tool.Surveyor,
+            obj=obj,
+            context=context,
+            ifc_representation_class=ifc_representation_class,
+            profile_set_usage=profile_set_usage,
+        )
+
+    @classmethod
+    def run_geometry_switch_representation(
+        cls, obj=None, representation=None, should_reload=None, enable_dynamic_voids=None, is_global=None
+    ):
+        return blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=should_reload,
+            enable_dynamic_voids=enable_dynamic_voids,
+            is_global=is_global,
+        )

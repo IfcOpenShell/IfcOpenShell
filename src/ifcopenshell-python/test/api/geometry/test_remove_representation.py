@@ -77,3 +77,9 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
         ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
         assert len(self.file.by_type("IfcPresentationLayerAssignment")) == 1
         assert len(self.file.by_type("IfcShapeRepresentation")) == 1
+
+    def test_not_purging_geometric_representation_contexts(self):
+        context = self.file.createIfcGeometricRepresentationSubContext()
+        representation = self.file.createIfcShapeRepresentation(ContextOfItems=context)
+        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        assert len(self.file.by_type("IfcGeometricRepresentationContext")) == 1

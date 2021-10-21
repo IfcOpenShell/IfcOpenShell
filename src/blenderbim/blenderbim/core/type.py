@@ -19,18 +19,34 @@
 import blenderbim.core.geometry
 
 
-def assign_type(ifc, geometry, type_tool, element=None, type=None):
+def assign_type(ifc, type_tool, element=None, type=None):
     ifc.run("type.assign_type", related_object=element, relating_type=type)
-    representation = type_tool.get_body_representation(element)
-    if not representation:
-        representation = type_tool.get_any_representation(element)
     obj = ifc.get_object(element)
+    if type_tool.has_material_usage(element):
+        representation = type_tool.get_body_representation(element)
+        if representation:
+            body_context = type_tool.get_representation_context(representation)
+            ifc.run("geometry.unassign_representation", product=element, representation=representation)
+            ifc.run("geometry.remove_representation", representation=representation)
+        else:
+            body_context = type_tool.get_body_context()
+        representation = type_tool.run_geometry_add_representation(
+            obj=obj,
+            context=body_context,
+            ifc_representation_class=type_tool.get_ifc_representation_class(element),
+            profile_set_usage=type_tool.get_profile_set_usage(element),
+        )
+        should_reload = True
+    else:
+        representation = type_tool.get_body_representation(element)
+        if not representation:
+            representation = type_tool.get_any_representation(element)
+        should_reload = False
     if representation:
-        blenderbim.core.geometry.switch_representation(
-            geometry,
+        type_tool.run_geometry_switch_representation(
             obj=obj,
             representation=representation,
-            should_reload=False,
+            should_reload=should_reload,
             enable_dynamic_voids=type_tool.has_dynamic_voids(obj),
             is_global=False,
         )
