@@ -74,15 +74,23 @@ class TestGetElementType(NewFile):
         assert subject.get_element_type(element) == type
 
 
-class TestGetElementType(NewFile):
+class TestGetObjectRepresentation(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        representation = ifc.createIfcShapeRepresentation()
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        obj.data.BIMMeshProperties.ifc_definition_id = representation.id()
+        assert subject.get_object_representation(obj) == representation
+
+
+class TestGetRepresentationContext(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         context = ifc.createIfcGeometricRepresentationContext()
         representation = ifc.createIfcShapeRepresentation(ContextOfItems=context)
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        obj.data.BIMMeshProperties.ifc_definition_id = representation.id()
-        assert subject.get_object_context(obj) == context
+        assert subject.get_representation_context(representation) == context
 
 
 class TestIsOpeningElement(NewFile):

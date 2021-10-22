@@ -93,7 +93,7 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def run_root_copy_class(cls, obj=None):
-        return blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Root, obj=obj)
+        return blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
 
     @classmethod
     def run_spatial_assign_container(cls, structure_obj=None, element_obj=None):

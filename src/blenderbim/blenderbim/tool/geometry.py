@@ -62,24 +62,6 @@ class Geometry(blenderbim.core.tool.Geometry):
         return obj.data
 
     @classmethod
-    def get_object_data(cls, obj):
-        return obj.data
-
-    @classmethod
-    def get_object_materials_without_styles(cls, obj):
-        return [
-            s.material for s in obj.material_slots if s.material and not s.material.BIMMaterialProperties.ifc_style_id
-        ]
-
-    @classmethod
-    def get_representation_data(cls, representation):
-        return bpy.data.meshes.get(cls.get_representation_name(representation))
-
-    @classmethod
-    def get_representation_name(cls, representation):
-        return f"{representation.ContextOfItems.id()}/{representation.id()}"
-
-    @classmethod
     def get_cartesian_point_coordinate_offset(cls, obj):
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT":
@@ -90,6 +72,50 @@ class Geometry(blenderbim.core.tool.Geometry):
                     float(props.blender_orthogonal_height),
                 )
             )
+
+    @classmethod
+    def get_ifc_representation_class(cls, element, representation):
+        material = ifcopenshell.util.element.get_material(element)
+        if material and material.is_a("IfcMaterialProfileSetUsage"):
+            return "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
+
+        extruded_areas = [e for e in tool.Ifc.get().traverse(representation) if e.is_a() == "IfcExtrudedAreaSolid"]
+
+        if len(extruded_areas) != 1:
+            return  # It's too complex for us to derive topologically right now
+
+        profile_def = extruded_areas[0].SweptArea
+
+        if profile_def.is_a() == "IfcRectangleProfileDef":
+            return "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
+        elif profile_def.is_a() == "IfcCircleProfileDef":
+            return "IfcExtrudedAreaSolid/IfcCircleProfileDef"
+        return "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
+
+    @classmethod
+    def get_object_data(cls, obj):
+        return obj.data
+
+    @classmethod
+    def get_object_materials_without_styles(cls, obj):
+        return [
+            s.material for s in obj.material_slots if s.material and not s.material.BIMMaterialProperties.ifc_style_id
+        ]
+
+    @classmethod
+    def get_profile_set_usage(cls, element):
+        material = ifcopenshell.util.element.get_material(element)
+        if material:
+            if material.is_a("IfcMaterialProfileSetUsage"):
+                return material
+
+    @classmethod
+    def get_representation_data(cls, representation):
+        return bpy.data.meshes.get(cls.get_representation_name(representation))
+
+    @classmethod
+    def get_representation_name(cls, representation):
+        return f"{representation.ContextOfItems.id()}/{representation.id()}"
 
     @classmethod
     def get_total_representation_items(cls, obj):
