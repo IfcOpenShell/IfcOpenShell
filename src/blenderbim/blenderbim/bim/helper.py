@@ -100,7 +100,7 @@ def export_attributes(props, callback=None):
 
 def create_module_property_group(modules):
     def change_state(self, context):
-        module_specific_classes = modules[self.module_name].classes
+        module_specific_classes = list(filter(lambda cls: issubclass(cls, bpy.types.Panel), modules[self.module_name].classes))
         try:
             for cls in reversed(module_specific_classes):
                 bpy.utils.unregister_class(cls)
