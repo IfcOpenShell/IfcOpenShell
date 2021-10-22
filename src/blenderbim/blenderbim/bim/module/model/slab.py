@@ -100,14 +100,6 @@ def ensure_solidify_modifier(obj):
     return modifier
 
 
-def ensure_solid(usecase_path, ifc_file, settings):
-    product = ifc_file.by_id(settings["blender_object"].BIMObjectProperties.ifc_definition_id)
-    parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer3":
-        return
-    settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
-
-
 def generate_footprint(usecase_path, ifc_file, settings):
     footprint_context = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "FootPrint", "SKETCH_VIEW")
     if not footprint_context:

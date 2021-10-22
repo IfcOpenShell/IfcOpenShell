@@ -53,11 +53,11 @@ class TestChangeObjectData(test.bim.bootstrap.NewFile):
         assert obj2.data == data2
 
 
-class TestClearDynamicVoids(test.bim.bootstrap.NewFile):
+class TestClearModifiers(test.bim.bootstrap.NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-        subject.clear_dynamic_voids(obj)
+        subject.clear_modifiers(obj)
         assert len(obj.modifiers) == 0
 
 

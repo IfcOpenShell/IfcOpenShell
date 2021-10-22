@@ -33,6 +33,26 @@ Scenario: Switch representation
     And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation})"
     Then nothing happens
 
+Scenario: Switch representation - existing Blender modifiers must be purged
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I add an array modifier
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    When the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
+    And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation})"
+    Then the object "IfcWall/Cube" has no modifiers
+
+Scenario: Update representation
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "bim.update_representation(obj='IfcWall/Cube')"
+    Then the object "IfcWall/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
+
 Scenario: Copy representation
     Given an empty IFC project
     And I add a cube

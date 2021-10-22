@@ -58,7 +58,7 @@ class Context:
 @interface
 class Geometry:
     def change_object_data(cls, obj, data, is_global=False): pass
-    def clear_dynamic_voids(cls, obj): pass
+    def clear_modifiers(cls, obj): pass
     def create_dynamic_voids(cls, obj): pass
     def does_object_have_mesh_with_faces(cls, obj): pass
     def duplicate_object_data(cls, obj): pass
