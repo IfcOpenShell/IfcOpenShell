@@ -17,7 +17,6 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from typing import Dict
 import bpy
 import json
 import importlib
@@ -40,7 +39,6 @@ from bpy.props import (
 cwd = os.path.dirname(os.path.realpath(__file__))
 
 materialpsetnames_enum = []
-#modules = modules.get_modules()
 
 
 def getAttributeEnumValues(self, context):
