@@ -20,20 +20,20 @@ import bpy
 import math
 import numpy
 import ifcopenshell
-import test.bim.bootstrap
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from mathutils import Vector
+from test.bim.bootstrap import NewFile
 from blenderbim.tool.geometry import Geometry as subject
 from blenderbim.bim.ifc import IfcStore
 
 
-class TestImplementsTool(test.bim.bootstrap.NewFile):
+class TestImplementsTool(NewFile):
     def test_run(self):
         assert isinstance(subject(), blenderbim.core.tool.Geometry)
 
 
-class TestChangeObjectData(test.bim.bootstrap.NewFile):
+class TestChangeObjectData(NewFile):
     def test_change_single_object_data(self):
         data1 = bpy.data.meshes.new("Mesh")
         data2 = bpy.data.meshes.new("Mesh")
@@ -53,7 +53,7 @@ class TestChangeObjectData(test.bim.bootstrap.NewFile):
         assert obj2.data == data2
 
 
-class TestClearModifiers(test.bim.bootstrap.NewFile):
+class TestClearModifiers(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
@@ -61,7 +61,7 @@ class TestClearModifiers(test.bim.bootstrap.NewFile):
         assert len(obj.modifiers) == 0
 
 
-class TestCreateDynamicVoids(test.bim.bootstrap.NewFile):
+class TestCreateDynamicVoids(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
@@ -82,7 +82,7 @@ class TestCreateDynamicVoids(test.bim.bootstrap.NewFile):
         assert modifier.use_self is True
 
 
-class TestDoesObjectHaveMeshWithFaces(test.bim.bootstrap.NewFile):
+class TestDoesObjectHaveMeshWithFaces(NewFile):
     def test_empties_return_false(self):
         obj = bpy.data.objects.new("Object", None)
         assert subject.does_object_have_mesh_with_faces(obj) is False
@@ -101,7 +101,7 @@ class TestDoesObjectHaveMeshWithFaces(test.bim.bootstrap.NewFile):
         assert subject.does_object_have_mesh_with_faces(obj) is True
 
 
-class TestDuplicateObjectData(test.bim.bootstrap.NewFile):
+class TestDuplicateObjectData(NewFile):
     def test_run(self):
         data = bpy.data.meshes.new("Mesh")
         obj = bpy.data.objects.new("Object", data)
@@ -110,14 +110,14 @@ class TestDuplicateObjectData(test.bim.bootstrap.NewFile):
         assert isinstance(obj.data, bpy.types.Mesh)
 
 
-class TestGetObjectData(test.bim.bootstrap.NewFile):
+class TestGetObjectData(NewFile):
     def test_run(self):
         data = bpy.data.meshes.new("Mesh")
         obj = bpy.data.objects.new("Object", data)
         assert subject.get_object_data(obj) == obj.data
 
 
-class TestGetObjectMaterialsWithoutStyles(test.bim.bootstrap.NewFile):
+class TestGetObjectMaterialsWithoutStyles(NewFile):
     def test_run(self):
         material1 = bpy.data.materials.new("Material")
         material2 = bpy.data.materials.new("Material")
@@ -130,7 +130,7 @@ class TestGetObjectMaterialsWithoutStyles(test.bim.bootstrap.NewFile):
         assert subject.get_object_materials_without_styles(obj) == [material1, material2]
 
 
-class TestGetRepresentationData(test.bim.bootstrap.NewFile):
+class TestGetRepresentationData(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         context = ifc.createIfcGeometricRepresentationContext()
@@ -140,7 +140,7 @@ class TestGetRepresentationData(test.bim.bootstrap.NewFile):
         assert subject.get_representation_data(representation) == data
 
 
-class TestGetRepresentationName(test.bim.bootstrap.NewFile):
+class TestGetRepresentationName(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         context = ifc.createIfcGeometricRepresentationContext()
@@ -149,7 +149,7 @@ class TestGetRepresentationName(test.bim.bootstrap.NewFile):
         assert subject.get_representation_name(representation) == f"{context.id()}/{representation.id()}"
 
 
-class TestGetCartesianPointCoordinateOffset(test.bim.bootstrap.NewFile):
+class TestGetCartesianPointCoordinateOffset(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
         obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
@@ -177,7 +177,7 @@ class TestGetCartesianPointCoordinateOffset(test.bim.bootstrap.NewFile):
         assert subject.get_cartesian_point_coordinate_offset(obj) is None
 
 
-class TestGetTotalRepresentationItems(test.bim.bootstrap.NewFile):
+class TestGetTotalRepresentationItems(NewFile):
     def test_run(self):
         material1 = bpy.data.materials.new("Material")
         material2 = bpy.data.materials.new("Material")
@@ -187,7 +187,7 @@ class TestGetTotalRepresentationItems(test.bim.bootstrap.NewFile):
         assert subject.get_total_representation_items(obj) == 2
 
 
-class TestImportRepresentation(test.bim.bootstrap.NewFile):
+class TestImportRepresentation(NewFile):
     def test_importing_a_normal_shape(self):
         ifc = ifcopenshell.open("test/files/basic.ifc")
         tool.Ifc.set(ifc)
@@ -213,7 +213,7 @@ class TestImportRepresentation(test.bim.bootstrap.NewFile):
         assert len(mesh.edges) == 4
 
 
-class TestIsBodyRepresentation(test.bim.bootstrap.NewFile):
+class TestIsBodyRepresentation(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         context = ifc.createIfcGeometricRepresentationContext()
@@ -225,7 +225,7 @@ class TestIsBodyRepresentation(test.bim.bootstrap.NewFile):
         assert subject.is_body_representation(representation) is False
 
 
-class TestLink(test.bim.bootstrap.NewFile):
+class TestLink(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         element = ifc.createIfcShapeRepresentation()
@@ -234,14 +234,14 @@ class TestLink(test.bim.bootstrap.NewFile):
         assert obj.BIMMeshProperties.ifc_definition_id == element.id()
 
 
-class TestRenameObjectData(test.bim.bootstrap.NewFile):
+class TestRenameObjectData(NewFile):
     def test_run(self):
         obj = bpy.data.meshes.new("Mesh")
         subject.rename_object(obj, "name")
         assert obj.name == "name"
 
 
-class TestResolveMappedRepresentation(test.bim.bootstrap.NewFile):
+class TestResolveMappedRepresentation(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         mapped_representation = ifc.createIfcShapeRepresentation()
@@ -258,19 +258,72 @@ class TestResolveMappedRepresentation(test.bim.bootstrap.NewFile):
         assert subject.resolve_mapped_representation(representation) == representation
 
 
-class TestShouldForceFacetedBrep(test.bim.bootstrap.NewFile):
+class TestShouldForceFacetedBrep(NewFile):
     def test_run(self):
         result = bpy.context.scene.BIMGeometryProperties.should_force_faceted_brep
         assert subject.should_force_faceted_brep() is result
 
 
-class TestShouldForceTriangulation(test.bim.bootstrap.NewFile):
+class TestShouldForceTriangulation(NewFile):
     def test_run(self):
         result = bpy.context.scene.BIMGeometryProperties.should_force_triangulation
         assert subject.should_force_triangulation() is result
 
 
-class TestShouldUsePresentationStyleAssignment(test.bim.bootstrap.NewFile):
+class TestShouldUsePresentationStyleAssignment(NewFile):
     def test_run(self):
         result = bpy.context.scene.BIMGeometryProperties.should_use_presentation_style_assignment
         assert subject.should_use_presentation_style_assignment() is result
+
+
+class TestGetProfileSetUsage(NewFile):
+    def test_getting_a_profile_set_usage(self):
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcColumn()
+        assert subject.get_profile_set_usage(element) is None
+        usage = ifc.createIfcMaterialProfileSetUsage()
+        ifc.createIfcRelAssociatesMaterial(RelatingMaterial=usage, RelatedObjects=[element])
+        assert subject.get_profile_set_usage(element) == usage
+
+
+class TestGetIfcRepresentationClass(NewFile):
+    def test_detecting_profile_set_representations(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcColumn()
+        ifc.createIfcRelAssociatesMaterial(
+            RelatingMaterial=ifc.createIfcMaterialProfileSetUsage(), RelatedObjects=[element]
+        )
+        representation = ifc.createIfcShapeRepresentation()
+        assert (
+            subject.get_ifc_representation_class(element, representation)
+            == "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
+        )
+
+    def test_detecting_rectangular_extrusions(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcColumn()
+        representation = ifc.createIfcShapeRepresentation(
+            Items=[ifc.createIfcExtrudedAreaSolid(SweptArea=ifc.createIfcRectangleProfileDef())]
+        )
+        assert (
+            subject.get_ifc_representation_class(element, representation)
+            == "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
+        )
+
+    def test_detecting_circle_extrusions(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcColumn()
+        representation = ifc.createIfcShapeRepresentation(
+            Items=[ifc.createIfcExtrudedAreaSolid(SweptArea=ifc.createIfcCircleProfileDef())]
+        )
+        assert (
+            subject.get_ifc_representation_class(element, representation) == "IfcExtrudedAreaSolid/IfcCircleProfileDef"
+        )
+
+    def test_returning_null_for_non_parametric_representations(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        assert subject.get_ifc_representation_class(ifc.createIfcColumn(), ifc.createIfcShapeRepresentation()) is None

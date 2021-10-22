@@ -63,8 +63,10 @@ class Geometry:
     def does_object_have_mesh_with_faces(cls, obj): pass
     def duplicate_object_data(cls, obj): pass
     def get_cartesian_point_coordinate_offset(cls, obj): pass
+    def get_ifc_representation_class(cls, element, representation): pass
     def get_object_data(cls, obj): pass
     def get_object_materials_without_styles(cls, obj): pass
+    def get_profile_set_usage(cls, element): pass
     def get_representation_data(cls, representation): pass
     def get_representation_name(cls, representation): pass
     def get_total_representation_items(cls, obj): pass
@@ -148,9 +150,10 @@ class Root:
     def add_dynamic_opening_voids(cls, element, obj): pass
     def does_type_have_representations(cls, element): pass
     def get_element_type(cls, element): pass
-    def get_object_context(cls, obj): pass
+    def get_object_representation(cls, obj): pass
+    def get_representation_context(cls, representation): pass
     def is_opening_element(cls, element): pass
-    def run_geometry_add_representation(cls, obj=None, context=None): pass
+    def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
 
 
 @interface

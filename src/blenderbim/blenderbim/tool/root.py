@@ -49,16 +49,29 @@ class Root(blenderbim.core.tool.Root):
         return ifcopenshell.util.element.get_type(element)
 
     @classmethod
-    def get_object_context(cls, obj):
+    def get_object_representation(cls, obj):
         if obj.data and obj.data.BIMMeshProperties.ifc_definition_id:
-            return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id).ContextOfItems
+            return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+
+    @classmethod
+    def get_representation_context(cls, representation):
+        return representation.ContextOfItems
 
     @classmethod
     def is_opening_element(cls, element):
         return element.is_a("IfcOpeningElement")
 
     @classmethod
-    def run_geometry_add_representation(cls, obj=None, context=None):
+    def run_geometry_add_representation(
+        cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None
+    ):
         return blenderbim.core.geometry.add_representation(
-            tool.Ifc, tool.Geometry, tool.Style, tool.Surveyor, obj=obj, context=context
+            tool.Ifc,
+            tool.Geometry,
+            tool.Style,
+            tool.Surveyor,
+            obj=obj,
+            context=context,
+            ifc_representation_class=ifc_representation_class,
+            profile_set_usage=profile_set_usage,
         )

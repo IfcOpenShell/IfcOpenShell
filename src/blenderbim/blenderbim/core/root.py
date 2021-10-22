@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def copy_class(ifc, collector, root, obj=None):
+def copy_class(ifc, collector, geometry, root, obj=None):
     element = ifc.get_entity(obj)
     if not element:
         return
@@ -27,7 +27,14 @@ def copy_class(ifc, collector, root, obj=None):
     if relating_type and root.does_type_have_representations(relating_type):
         ifc.run("type.map_type_representations", related_object=element, relating_type=relating_type)
     else:
-        root.run_geometry_add_representation(obj=obj, context=root.get_object_context(obj))
+        representation = root.get_object_representation(obj)
+        if representation:
+            root.run_geometry_add_representation(
+                obj=obj,
+                context=root.get_representation_context(representation),
+                ifc_representation_class=geometry.get_ifc_representation_class(element, representation),
+                profile_set_usage=geometry.get_profile_set_usage(element),
+            )
     collector.assign(obj)
     if root.is_opening_element(element):
         root.add_dynamic_opening_voids(element, obj)

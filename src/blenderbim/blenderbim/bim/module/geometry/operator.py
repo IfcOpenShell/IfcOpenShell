@@ -212,7 +212,10 @@ class UpdateRepresentation(bpy.types.Operator):
         }
 
         if not self.ifc_representation_class:
-            self.auto_detect_ifc_representation_class(product, old_representation, representation_data)
+            representation_data["ifc_representation_class"] = tool.Geometry.get_ifc_representation_class(
+                product, old_representation
+            )
+            representation_data["profile_set_usage"] = tool.Geometry.get_profile_set_usage(product)
 
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
 
@@ -247,28 +250,6 @@ class UpdateRepresentation(bpy.types.Operator):
         Data.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         if obj.data.BIMMeshProperties.ifc_parameters:
             bpy.ops.bim.get_representation_ifc_parameters()
-
-    def auto_detect_ifc_representation_class(self, element, representation, data):
-        material = ifcopenshell.util.element.get_material(element)
-
-        if material and material.is_a("IfcMaterialProfileSetUsage"):
-            data["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
-            data["profile_set_usage"] = material
-            return
-
-        extruded_areas = [e for e in self.file.traverse(representation) if e.is_a() == "IfcExtrudedAreaSolid"]
-
-        if len(extruded_areas) != 1:
-            return  # It's too complex for us to derive topologically right now
-
-        profile_def = extruded_areas[0].SweptArea
-
-        if profile_def.is_a() == "IfcRectangleProfileDef":
-            data["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
-        elif profile_def.is_a() == "IfcCircleProfileDef":
-            data["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcCircleProfileDef"
-        else:
-            data["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
 
 class UpdateParametricRepresentation(bpy.types.Operator):
@@ -337,7 +318,9 @@ class CopyRepresentation(bpy.types.Operator, Operator):
             return
         bm = bmesh.new()
         bm.from_mesh(context.active_object.data)
-        geometric_context = tool.Root.get_object_context(context.active_object)
+        geometric_context = tool.Root.get_representation_context(
+            tool.Root.get_object_representation(context.active_object)
+        )
         for obj in context.selected_objects:
             if obj == context.active_object:
                 continue
@@ -467,7 +450,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
             obj.select_set(False)
             new_obj.select_set(True)
             # This is the only difference
-            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Root, obj=new_obj)
+            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
         bpy.ops.transform.translate("INVOKE_DEFAULT")
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}

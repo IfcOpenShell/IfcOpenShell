@@ -225,7 +225,7 @@ class DumbWallSplitter:
     def duplicate_wall(self):
         new = self.wall.copy()
         self.wall.users_collection[0].objects.link(new)
-        blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Root, obj=new)
+        blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new)
         return new
 
     def snap_end_face_to_point(self, wall, which_end):

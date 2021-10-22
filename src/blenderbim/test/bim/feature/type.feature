@@ -13,7 +13,7 @@ Scenario: Assign type - assign to an empty type
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     When the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I press "bim.assign_type(relating_type={type}, related_object="IfcWall/Cube")"
+    And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
 
 Scenario: Assign type - assign to a type with representation maps
@@ -28,7 +28,7 @@ Scenario: Assign type - assign to a type with representation maps
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     When the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I press "bim.assign_type(relating_type={type}, related_object="IfcWall/Cube")"
+    And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "MappedRepresentation" representation of "Model/Body/MODEL_VIEW"
 
 Scenario: Assign type - assign to a type with a material layer set
@@ -54,7 +54,7 @@ Scenario: Assign type - assign to a type with a material layer set
     And I press "bim.edit_material_set_item(material_set_item={layer})"
     And I press "bim.edit_assigned_material(material_set={layer_set})"
     When the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I press "bim.assign_type(relating_type={type}, related_object="IfcWall/Cube")"
+    And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
 
 Scenario: Assign type - assign to a type with a material profile set
@@ -83,5 +83,5 @@ Scenario: Assign type - assign to a type with a material profile set
     And I press "bim.edit_material_set_item(material_set_item={profile})"
     And I press "bim.edit_assigned_material(material_set={profile_set})"
     When the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I press "bim.assign_type(relating_type={type}, related_object="IfcWall/Cube")"
+    And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
