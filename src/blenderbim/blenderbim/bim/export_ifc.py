@@ -169,7 +169,7 @@ class IfcExporter:
         if parent.is_a("IfcSpatialStructureElement") and not element.is_a("IfcSpatialStructureElement"):
             if parent != ifcopenshell.util.element.get_container(element):
                 blenderbim.core.spatial.assign_container(
-                    tool.Ifc, tool.Collector, tool.Container, structure_obj=parent_obj, element_obj=obj
+                    tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
                 )
         elif parent != ifcopenshell.util.element.get_aggregate(element):
             blenderbim.core.aggregate.assign_object(

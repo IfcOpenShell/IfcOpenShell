@@ -89,3 +89,19 @@ Scenario: Override duplicate move - with active IFC data
     And the object "IfcWall/Cube.001" is an "IfcWall"
     And the object "IfcBuildingStorey/My Storey.001" exists
     And the object "IfcBuildingStorey/My Storey.001" is an "IfcBuildingStorey"
+
+Scenario: Override duplicate move - copying a type instance with a representation map
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I set "scene.BIMTypeProperties.ifc_class" to "IfcWallType"
+    And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
+    And I set "scene.BIMTypeProperties.relating_type" to "{cube}"
+    And I press "bim.add_type_instance"
+    And the object "IfcWall/Instance" is selected
+    When I press "object.duplicate_move"
+    Then the object "IfcWall/Instance.001" exists
+    And the object "IfcWall/Instance.001" has a "MappedRepresentation" representation of "Model/Body/MODEL_VIEW"
