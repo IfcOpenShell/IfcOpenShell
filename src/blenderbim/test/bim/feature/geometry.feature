@@ -87,6 +87,7 @@ Scenario: Override duplicate move - with active IFC data
     And the object "IfcWall/Cube" is an "IfcWall"
     And the object "IfcWall/Cube.001" exists
     And the object "IfcWall/Cube.001" is an "IfcWall"
+    And the object "IfcWall/Cube.001" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcBuildingStorey/My Storey.001" exists
     And the object "IfcBuildingStorey/My Storey.001" is an "IfcBuildingStorey"
 

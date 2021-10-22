@@ -69,10 +69,10 @@ def load_post(*args):
     ifcopenshell.api.add_post_listener(
         "geometry.add_representation", "BlenderBIM.DumbWall.CalculateQuantities", wall.calculate_quantities
     )
-    ifcopenshell.api.add_pre_listener(
+    ifcopenshell.api.add_post_listener(
         "material.edit_layer", "BlenderBIM.DumbWall.RegenerateFromLayer", wall.DumbWallPlaner().regenerate_from_layer
     )
-    ifcopenshell.api.add_pre_listener(
+    ifcopenshell.api.add_post_listener(
         "type.assign_type", "BlenderBIM.DumbWall.RegenerateFromType", wall.DumbWallPlaner().regenerate_from_type
     )
 
@@ -85,10 +85,10 @@ def load_post(*args):
     ifcopenshell.api.add_post_listener(
         "geometry.add_representation", "BlenderBIM.DumbSlab.CalculateQuantities", slab.calculate_quantities
     )
-    ifcopenshell.api.add_pre_listener(
+    ifcopenshell.api.add_post_listener(
         "material.edit_layer", "BlenderBIM.DumbSlab.RegenerateFromLayer", slab.DumbSlabPlaner().regenerate_from_layer
     )
-    ifcopenshell.api.add_pre_listener(
+    ifcopenshell.api.add_post_listener(
         "type.assign_type", "BlenderBIM.DumbSlab.RegenerateFromType", slab.DumbSlabPlaner().regenerate_from_type
     )
 
