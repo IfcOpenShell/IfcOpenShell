@@ -103,12 +103,9 @@ class TestGetIfcRepresentationClass(NewFile):
         ifc.createIfcRelAssociatesMaterial(
             RelatingMaterial=ifc.createIfcMaterialLayerSetUsage(), RelatedObjects=[element]
         )
-        assert (
-            subject.get_ifc_representation_class(element)
-            == "IfcExtrudedAreaSolid/IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
-        )
+        assert subject.get_ifc_representation_class(element) == "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
-    def test_returning_null_for_non_parametric_represntations(self):
+    def test_returning_null_for_non_parametric_representations(self):
         ifc = ifcopenshell.file()
         assert subject.get_ifc_representation_class(ifc.createIfcColumn()) is None
 

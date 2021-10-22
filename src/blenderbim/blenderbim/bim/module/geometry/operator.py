@@ -200,9 +200,6 @@ class UpdateRepresentation(bpy.types.Operator):
                 )
             )
 
-        if not self.ifc_representation_class:
-            self.ifc_representation_class = self.auto_detect_ifc_representation_class(product, old_representation) or ""
-
         representation_data = {
             "context": context_of_items,
             "blender_object": obj,
@@ -213,6 +210,9 @@ class UpdateRepresentation(bpy.types.Operator):
             "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
             "ifc_representation_class": self.ifc_representation_class,
         }
+
+        if not self.ifc_representation_class:
+            self.auto_detect_ifc_representation_class(product, old_representation, representation_data)
 
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
 
@@ -248,24 +248,27 @@ class UpdateRepresentation(bpy.types.Operator):
         if obj.data.BIMMeshProperties.ifc_parameters:
             bpy.ops.bim.get_representation_ifc_parameters()
 
-    def auto_detect_ifc_representation_class(self, element, representation):
+    def auto_detect_ifc_representation_class(self, element, representation, data):
         material = ifcopenshell.util.element.get_material(element)
 
         if material.is_a("IfcMaterialProfileSetUsage"):
-            return "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
+            data["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
+            data["profile_set_usage"] = material
+            return
 
         extruded_areas = [e for e in self.file.traverse(representation) if e.is_a() == "IfcExtrudedAreaSolid"]
 
         if len(extruded_areas) != 1:
-            return None  # It's too complex for us to derive topologically right now
+            return  # It's too complex for us to derive topologically right now
 
         profile_def = extruded_areas[0].SweptArea
 
         if profile_def.is_a() == "IfcRectangleProfileDef":
-            return "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
+            data["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
         elif profile_def.is_a() == "IfcCircleProfileDef":
-            return "IfcExtrudedAreaSolid/IfcCircleProfileDef"
-        return "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
+            data["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcCircleProfileDef"
+        else:
+            data["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
 
 class UpdateParametricRepresentation(bpy.types.Operator):

@@ -57,7 +57,7 @@ class Type(blenderbim.core.tool.Type):
             if material.is_a("IfcMaterialProfileSetUsage"):
                 return "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
             elif material.is_a("IfcMaterialLayerSetUsage"):
-                return "IfcExtrudedAreaSolid/IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
+                return "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
     @classmethod
     def get_profile_set_usage(cls, element):
