@@ -54,8 +54,14 @@ class Usecase:
                 }
             )
 
-        self.map_representations()
+        ifcopenshell.api.run(
+            "type.map_type_representations",
+            self.file,
+            related_object=self.settings["related_object"],
+            relating_type=self.settings["relating_type"],
+        )
         self.map_material_usages()
+        return types
 
     def map_representations(self):
         if not self.settings["relating_type"].RepresentationMaps:

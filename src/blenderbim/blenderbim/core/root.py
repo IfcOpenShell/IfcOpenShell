@@ -25,7 +25,7 @@ def copy_class(ifc, collector, root, obj=None):
     ifc.link(element, obj)
     relating_type = root.get_element_type(element)
     if relating_type and root.does_type_have_representations(relating_type):
-        ifc.run("type.assign_type", related_object=element, relating_type=relating_type)
+        ifc.run("type.map_type_representations", related_object=element, relating_type=relating_type)
     else:
         root.run_geometry_add_representation(obj=obj, context=root.get_object_context(obj))
     collector.assign(obj)

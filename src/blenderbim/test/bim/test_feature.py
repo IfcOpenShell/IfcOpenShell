@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import webbrowser
 import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.bim
@@ -28,6 +29,9 @@ from mathutils import Vector
 scenarios("feature")
 
 variables = {"cwd": os.getcwd(), "ifc": "IfcStore.get_file()"}
+
+# Monkey-patch webbrowser opening since we want to test headlessly
+webbrowser.open = lambda x: True
 
 
 def replace_variables(value):
@@ -204,14 +208,14 @@ def the_object_name_has_a_body_of_value(name, value):
     assert the_object_name_exists(name).data.body == value
 
 
-@then(parsers.parse('the object "{name}" has a "{_type}" representation of "{context}"'))
-def the_object_name_has_a_type_representation_of_context(name, _type, context):
+@then(parsers.parse('the object "{name}" has a "{type}" representation of "{context}"'))
+def the_object_name_has_a_representation_type_of_context(name, type, context):
     ifc = an_ifc_file_exists()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     context, subcontext, target_view = context.split("/")
-    assert ifcopenshell.util.representation.get_representation(
-        element, context, subcontext or None, target_view or None
-    )
+    rep = ifcopenshell.util.representation.get_representation(element, context, subcontext or None, target_view or None)
+    assert rep
+    assert rep.RepresentationType == type
 
 
 @then(parsers.parse('the material "{name}" exists'))
