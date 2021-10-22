@@ -76,7 +76,7 @@ class JoinWall(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = """ Trim/Extend the selected walls to the last selected wall:
     'T' mode: Trim/Extend to the virtual projection
-    'L' mode: Chamfer the walls 
+    'L' mode: Chamfer the walls
     'V' mode: Chamfer the walls keeping the angle"""
     join_type: bpy.props.StringProperty()
 
@@ -121,7 +121,7 @@ class AlignWall(bpy.types.Operator):
     bl_label = "Align Wall"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = """ Align the selected walls to the last selected wall:
-    'Ext.': align to the EXTERIOR face 
+    'Ext.': align to the EXTERIOR face
     'C/L': align to wall CENTERLINE
     'Int.': align to the INTERIOR face"""
     align_type: bpy.props.StringProperty()
@@ -965,8 +965,11 @@ class DumbWallPlaner:
 
         min_face, max_face = self.get_wall_end_faces(obj, bm)
 
-        self.thicken_face(min_face, delta_thickness)
-        self.thicken_face(max_face, delta_thickness)
+        verts_to_move = []
+        verts_to_move.extend(self.thicken_face(min_face, delta_thickness))
+        verts_to_move.extend(self.thicken_face(max_face, delta_thickness))
+        for vert_to_move in verts_to_move:
+            vert_to_move["vert"].co += vert_to_move["vector"]
 
         bm.to_mesh(obj.data)
         obj.data.update()
@@ -975,6 +978,7 @@ class DumbWallPlaner:
 
     def thicken_face(self, face, delta_thickness):
         slide_magnitude = abs(delta_thickness)
+        results = []
         for vert in face.verts:
             slide_vector = None
             for edge in vert.link_edges:
@@ -994,7 +998,8 @@ class DumbWallPlaner:
             if not slide_vector:
                 continue
             slide_vector *= slide_magnitude / abs(slide_vector.y)
-            vert.co += slide_vector
+            results.append({"vert":vert, "vector":slide_vector})
+        return results
 
     # An end face is a quad that is on one end of the wall or the other. It must
     # have at least one vertex on either extreme X-axis, and a non-insignificant
