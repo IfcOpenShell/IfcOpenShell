@@ -22,11 +22,12 @@ import json
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
-from . import schema
+from . import schema, modules
 from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector, Matrix, Euler
 from math import radians
 
+modules = modules.get_modules()
 
 class OpenUri(bpy.types.Operator):
     bl_idname = "bim.open_uri"
@@ -42,6 +43,7 @@ class SelectIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_ifc_file"
     bl_label = "Select IFC File"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select a different IFC file"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
@@ -59,6 +61,7 @@ class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
     bl_label = "Select Data Directory"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select the directory that contains all IFC data es. PSet, styles, etc..."
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -74,6 +77,7 @@ class SelectSchemaDir(bpy.types.Operator):
     bl_idname = "bim.select_schema_dir"
     bl_label = "Select Schema Directory"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select the directory containing the IFC schema specification"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -331,6 +335,7 @@ class ReloadIfcFile(bpy.types.Operator):
     bl_idname = "bim.reload_ifc_file"
     bl_label = "Reload IFC File"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload the same IFC file"
 
     def execute(self, context):
         # TODO: reimplement. See #1222.
@@ -490,22 +495,24 @@ class ConfigureVisibility(bpy.types.Operator):
 
     def invoke(self, context, event):
         wm = context.window_manager
+        if not context.scene.module_state:
+            for module in sorted(modules.keys()):
+                new = bpy.context.scene.module_state.add()
+                new.module_name = module
         return wm.invoke_props_dialog(self, width=450)
 
     def draw(self, context):
-        layout = self.layout
+        layout = self.layout   
         grid = layout.column_flow(columns=3)
 
-        for operator in dir(bpy.ops.bim):
-            if operator.startswith("toggle_module_"):
-                split = grid.split(factor=0.7)
-                col = split.column()
-                col.operator(f"bim.{operator}")
-                
-                module_name = operator.split("_")[2].capitalize()
-                col = split.column()
-                col.enabled = False
-                col.prop(bpy.context.scene.module_state, module_name, text="")
+        for module in bpy.context.scene.module_state:
+            split = grid.split()
+            col = split.column()
+            #col.enabled = False
+            col.label(text=module.module_name.capitalize())
 
+            col = split.column()
+            col.prop(module, "state", text="")
+ 
     def execute(self, context):
         return {'FINISHED'}

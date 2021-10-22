@@ -17,74 +17,11 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import importlib
-from . import handler, ui, prop, operator, helper
+from . import handler, ui, prop, operator, modules, helper
 
-modules = {
-    "project": None,
-    "search": None,
-    "bcf": None,
-    "root": None,
-    "unit": None,
-    "model": None,
-    "georeference": None,
-    "context": None,
-    "drawing": None,
-    "misc": None,
-    "attribute": None,
-    "type": None,
-    "spatial": None,
-    "void": None,
-    "aggregate": None,
-    "geometry": None,
-    "cobie": None,
-    "resource": None,
-    "cost": None,
-    "sequence": None,
-    "group": None,
-    "system": None,
-    "structural": None,
-    "boundary": None,
-    "profile": None,
-    "material": None,
-    "style": None,
-    "layer": None,
-    "owner": None,
-    "pset": None,
-    "qto": None,
-    "classification": None,
-    "constraint": None,
-    "document": None,
-    "pset_template": None,
-    "clash": None,
-    "lca": None,
-    "csv": None,
-    "bimtester": None,
-    "diff": None,
-    "patch": None,
-    "covetool": None,
-    "augin": None,
-    "debug": None,
-}
+modules = modules.get_modules()
+module_property_group = helper.create_module_property_group(modules)
 
-dynamic_operators = [] #temporary list to hold dynamically generated operators
-module_dict = {} #dictionary which will be used to store the current state of each module (active/inactive)
-
-for name in modules.keys():
-    modules[name] = importlib.import_module(f"blenderbim.bim.module.{name}")
-
-    name_uppercase = name.capitalize()
-    module_dict[name_uppercase] = bpy.props.BoolProperty(name=name_uppercase, default=True)
-
-    new_operator = helper.generate_operators(name, modules[name])
-    dynamic_operators.append(new_operator)
-
-#create a propertygroup that stores module state
-module_propertygroup = type(
-    "ModuleActiveState",
-    (bpy.types.PropertyGroup,),
-    {'__annotations__':module_dict}
-)
 
 classes = [
     operator.OpenUri,
@@ -107,14 +44,12 @@ classes = [
     prop.BIMObjectProperties,
     prop.BIMMaterialProperties,
     prop.BIMMeshProperties,
+    module_property_group,
     ui.BIM_PT_section_plane,
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
-    module_propertygroup
 ]
-
-classes.extend(dynamic_operators)
 
 for mod in modules.values():
     classes.extend(mod.classes)
@@ -145,7 +80,7 @@ def register():
     bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.PointLight.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.SCENE_PT_unit.append(ui.ifc_units)
-    bpy.types.Scene.module_state = bpy.props.PointerProperty(type= module_propertygroup)
+    bpy.types.Scene.module_state = bpy.props.CollectionProperty(type= module_property_group)
 
     for mod in modules.values():
         mod.register()
