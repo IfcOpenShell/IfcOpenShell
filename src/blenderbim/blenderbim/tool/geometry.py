@@ -35,10 +35,9 @@ class Geometry(blenderbim.core.tool.Geometry):
             obj.data = data
 
     @classmethod
-    def clear_dynamic_voids(cls, obj):
+    def clear_modifiers(cls, obj):
         for modifier in obj.modifiers:
-            if modifier.type == "BOOLEAN" and "IfcOpeningElement" in modifier.name:
-                obj.modifiers.remove(modifier)
+            obj.modifiers.remove(modifier)
 
     @classmethod
     def create_dynamic_voids(cls, obj):

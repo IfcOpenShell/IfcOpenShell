@@ -94,6 +94,11 @@ def i_add_a_material():
     bpy.context.active_object.active_material = bpy.data.materials.new("Material")
 
 
+@given("I add an array modifier")
+def i_add_a_cube():
+    bpy.ops.object.modifier_add(type="ARRAY")
+
+
 @when(parsers.parse('I add a cube of size "{size}" at "{location}"'))
 def i_add_a_cube_of_size_size_at_location(size, location):
     bpy.ops.mesh.primitive_cube_add(size=float(size), location=[float(co) for co in location.split(",")])
@@ -424,3 +429,8 @@ def the_file_name_should_contain_value(name, value):
     name = replace_variables(name)
     with open(name, "r") as f:
         assert value in f.read()
+
+
+@then(parsers.parse('the object "{name}" has no modifiers'))
+def the_object_name_has_no_modifiers(name):
+    assert len(the_object_name_exists(name).modifiers) == 0

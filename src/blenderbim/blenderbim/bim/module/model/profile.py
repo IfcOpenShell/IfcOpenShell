@@ -92,17 +92,6 @@ def mode_callback(obj, data):
             obj.matrix_world.translation = new_origin
 
 
-def ensure_solid(usecase_path, ifc_file, settings):
-    product = ifc_file.by_id(settings["blender_object"].BIMObjectProperties.ifc_definition_id)
-    parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbProfile":
-        return
-    material = ifcopenshell.util.element.get_material(product)
-    if material and material.is_a("IfcMaterialProfileSetUsage"):
-        settings["profile_set_usage"] = material
-        settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
-
-
 class DumbProfileGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type

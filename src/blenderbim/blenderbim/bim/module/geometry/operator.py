@@ -251,7 +251,7 @@ class UpdateRepresentation(bpy.types.Operator):
     def auto_detect_ifc_representation_class(self, element, representation, data):
         material = ifcopenshell.util.element.get_material(element)
 
-        if material.is_a("IfcMaterialProfileSetUsage"):
+        if material and material.is_a("IfcMaterialProfileSetUsage"):
             data["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
             data["profile_set_usage"] = material
             return

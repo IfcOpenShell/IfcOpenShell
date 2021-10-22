@@ -85,8 +85,7 @@ def switch_representation(
         geometry.link(representation, data)
 
     geometry.change_object_data(obj, data, is_global=is_global)
+    geometry.clear_modifiers(obj)
 
     if enable_dynamic_voids and geometry.is_body_representation(representation):
         geometry.create_dynamic_voids(obj)
-    else:
-        geometry.clear_dynamic_voids(obj)
