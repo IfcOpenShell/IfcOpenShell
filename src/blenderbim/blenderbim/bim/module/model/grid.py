@@ -18,6 +18,8 @@
 
 import bpy
 import ifcopenshell.api
+import blenderbim.core.spatial
+import blenderbim.tool as tool
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty
 from mathutils import Vector
@@ -51,8 +53,8 @@ def add_object(self, context):
         if has_site_collection:
             site_obj = bpy.data.objects.get(grandchild.name)
             if site_obj and site_obj.BIMObjectProperties.ifc_definition_id:
-                bpy.ops.bim.assign_container(
-                    relating_structure=site_obj.BIMObjectProperties.ifc_definition_id, related_element=obj.name
+                blenderbim.core.spatial.assign_container(
+                    tool.Ifc, tool.Collector, tool.Spatial, structure_obj=site_obj, element_obj=obj
                 )
 
     axes_collection = bpy.data.collections.new("UAxes")
