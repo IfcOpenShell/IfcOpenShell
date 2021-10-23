@@ -196,7 +196,6 @@ class Attribute(PropertyGroup):
 class ModuleVisibility(PropertyGroup):
     name: StringProperty(name="Name")
     is_visible: BoolProperty(name="Value", default=True, update=update_is_visible)
-    # is_visible: BoolProperty(name="Value", update=update_is_visible)
 
 
 class BIMProperties(PropertyGroup):
