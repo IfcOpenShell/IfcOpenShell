@@ -113,6 +113,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.operator("bim.configure_visibility")
 
+
 def ifc_units(self, context):
     scene = context.scene
     props = scene.BIMProperties

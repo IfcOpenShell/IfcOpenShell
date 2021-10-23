@@ -97,29 +97,3 @@ def export_attributes(props, callback=None):
             continue  # Our job is done
         attributes[prop.name] = prop.get_value()
     return attributes
-
-def create_module_property_group(modules):
-    def change_state(self, context):
-        module_specific_classes = list(filter(lambda cls: issubclass(cls, bpy.types.Panel), modules[self.module_name].classes))
-        try:
-            for cls in reversed(module_specific_classes):
-                bpy.utils.unregister_class(cls)
-
-        except RuntimeError: #class isn't registered
-            #check for edge-case where pset panels inherit from sequence module
-            sequence= list(filter(lambda prop: prop.module_name=="sequence", context.scene.module_state))
-            if self.module_name == "pset" and not sequence[0].state:
-                print("Pset can not be activated while Sequence is disabled")
-                self["state"] = False
-            else:
-                for cls in module_specific_classes:
-                    bpy.utils.register_class(cls)
-
-    return type(
-        "ModuleState",
-        (bpy.types.PropertyGroup,),
-        {'__annotations__':{
-            "module_name": bpy.props.StringProperty(),
-            "state": bpy.props.BoolProperty(default=True, update=change_state)
-        }}
-    )
