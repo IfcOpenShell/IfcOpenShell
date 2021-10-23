@@ -12,7 +12,7 @@ class Usecase:
 
     def execute(self):
         element = self.file.create_entity(
-            "IfcGridAxis", **{"axis_tag": self.settings["axis_tag"], "SameSense": self.settings["same_sense"]}
+            "IfcGridAxis", **{"AxisTag": self.settings["axis_tag"], "SameSense": self.settings["same_sense"]}
         )
         axes = list(getattr(self.settings["grid"], self.settings["uvw_axes"]) or [])
         axes.append(element)

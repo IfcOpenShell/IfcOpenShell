@@ -26,3 +26,14 @@ Scenario: Add type instance - add from an empty
     And I set "scene.BIMTypeProperties.relating_type" to "{empty}"
     When I press "bim.add_type_instance"
     Then the object "IfcWall/Instance" exists
+
+Scenario: Add grid
+    Given an empty IFC project
+    When I press "mesh.add_grid"
+    Then the object "IfcGrid/Grid" is an "IfcGrid"
+    And the object "IfcGridAxis/A" is an "IfcGridAxis"
+    And the object "IfcGridAxis/B" is an "IfcGridAxis"
+    And the object "IfcGridAxis/C" is an "IfcGridAxis"
+    And the object "IfcGridAxis/01" is an "IfcGridAxis"
+    And the object "IfcGridAxis/02" is an "IfcGridAxis"
+    And the object "IfcGridAxis/03" is an "IfcGridAxis"

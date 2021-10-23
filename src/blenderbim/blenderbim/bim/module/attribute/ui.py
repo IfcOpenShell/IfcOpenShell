@@ -16,17 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blenderbim.bim.helper
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.attribute.data import Data
+from blenderbim.bim.module.attribute.data import AttributesData, MaterialAttributesData
 
 
-def draw_ui(context, layout, obj_type):
+def draw_ui(context, layout, obj_type, attributes):
     obj = context.active_object if obj_type == "Object" else context.active_object.active_material
     oprops = obj.BIMObjectProperties
     props = obj.BIMAttributeProperties
-    if oprops.ifc_definition_id not in Data.products:
-        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
 
     if props.is_editing_attributes:
         row = layout.row(align=True)
@@ -37,49 +36,17 @@ def draw_ui(context, layout, obj_type):
         op.obj_type = obj_type
         op.obj = obj.name
 
-        for attribute in Data.products[oprops.ifc_definition_id]:
-            if attribute["type"] == "entity":
-                continue
-            row = layout.row(align=True)
-            blender_attribute = props.attributes.get(attribute["name"])
-            if attribute["type"] == "string" or attribute["type"] == "list":
-                row.prop(blender_attribute, "string_value", text=attribute["name"])
-            elif attribute["type"] == "integer":
-                row.prop(blender_attribute, "int_value", text=attribute["name"])
-            elif attribute["type"] == "float":
-                row.prop(blender_attribute, "float_value", text=attribute["name"])
-            elif attribute["type"] == "enum":
-                row.prop(blender_attribute, "enum_value", text=attribute["name"])
-
-            if attribute["name"] == "GlobalId":
-                row.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
-            if attribute["is_optional"]:
-                row.prop(
-                    blender_attribute,
-                    "is_null",
-                    icon="RADIOBUT_OFF" if blender_attribute.is_null else "RADIOBUT_ON",
-                    text="",
-                )
-            if attribute["name"] != "GlobalId":
-                op = row.operator("bim.copy_attribute_to_selection", icon="COPYDOWN", text="")
-                op.attribute_name = attribute["name"]
+        blenderbim.bim.helper.draw_attributes(props.attributes, layout, copy_operator="bim.copy_attribute_to_selection")
     else:
         row = layout.row()
         op = row.operator("bim.enable_editing_attributes", icon="GREASEPENCIL", text="Edit")
         op.obj_type = obj_type
         op.obj = obj.name
 
-        if "GlobalId" not in [a["name"] for a in Data.products[oprops.ifc_definition_id]]:
-            row = layout.row(align=True)
-            row.label(text="STEP ID")
-            row.label(text=str(oprops.ifc_definition_id))
-
-        for attribute in Data.products[oprops.ifc_definition_id]:
-            if attribute["value"] is None or attribute["type"] == "entity":
-                continue
+        for attribute in attributes:
             row = layout.row(align=True)
             row.label(text=attribute["name"])
-            row.label(text=str(attribute["value"]))
+            row.label(text=attribute["value"])
 
     # TODO: reimplement, see #1222
     # if "IfcSite/" in context.active_object.name or "IfcBuilding/" in context.active_object.name:
@@ -102,7 +69,9 @@ class BIM_PT_object_attributes(Panel):
         return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
 
     def draw(self, context):
-        draw_ui(context, self.layout, "Object")
+        if not AttributesData.is_loaded:
+            AttributesData.load()
+        draw_ui(context, self.layout, "Object", AttributesData.data["attributes"])
 
 
 class BIM_PT_material_attributes(Panel):
@@ -122,4 +91,6 @@ class BIM_PT_material_attributes(Panel):
             return False
 
     def draw(self, context):
-        draw_ui(context, self.layout, "Material")
+        if not MaterialAttributesData.is_loaded:
+            MaterialAttributesData.load()
+        draw_ui(context, self.layout, "Material", MaterialAttributesData.data["attributes"])

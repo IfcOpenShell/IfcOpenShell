@@ -75,15 +75,12 @@ class DisableEditingAttributes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditAttributes(bpy.types.Operator):
+class EditAttributes(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_attributes"
     bl_label = "Edit Attributes"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
