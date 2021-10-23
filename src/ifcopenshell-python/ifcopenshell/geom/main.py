@@ -210,13 +210,17 @@ def create_shape(settings, inst, repr=None):
     )
 
 
-def iterate(settings, file_or_filename, num_threads=1, include=None, exclude=None):
-    it = iterator(settings, file_or_filename, num_threads, include, exclude)
+def consume_iterator(it):
     if it.initialize():
         while True:
             yield it.get()
             if not it.next():
                 break
+
+
+def iterate(settings, file_or_filename, num_threads=1, include=None, exclude=None):
+    it = iterator(settings, file_or_filename, num_threads, include, exclude)
+    yield from consume_iterator(it)
 
 
 def make_shape_function(fn):
