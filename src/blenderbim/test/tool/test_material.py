@@ -24,6 +24,18 @@ from test.bim.bootstrap import NewFile
 from blenderbim.tool.material import Material as subject
 
 
+class TestImplementsTool(NewFile):
+    def test_run(self):
+        assert isinstance(subject(), blenderbim.core.tool.Material)
+
+
+class TestAddDefaultMaterialObject(NewFile):
+    def test_run(self):
+        material = subject.add_default_material_object()
+        assert isinstance(material, bpy.types.Material)
+        assert material.name == "Default"
+
+
 class TestLink(NewFile):
     def test_run(self):
         obj = bpy.data.materials.new("Material")

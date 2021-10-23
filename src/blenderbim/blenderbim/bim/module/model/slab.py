@@ -100,14 +100,6 @@ def ensure_solidify_modifier(obj):
     return modifier
 
 
-def ensure_solid(usecase_path, ifc_file, settings):
-    product = ifc_file.by_id(settings["blender_object"].BIMObjectProperties.ifc_definition_id)
-    parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer3":
-        return
-    settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
-
-
 def generate_footprint(usecase_path, ifc_file, settings):
     footprint_context = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "FootPrint", "SKETCH_VIEW")
     if not footprint_context:
@@ -307,9 +299,7 @@ class DumbSlabGenerator:
             ifc_class=ifc_class,
             ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids",
         )
-        blenderbim.core.type.assign_type(
-            tool.Ifc, tool.Geometry, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type
-        )
+        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer3"})
@@ -330,7 +320,7 @@ class DumbSlabPlaner:
             if not total_thickness:
                 continue
             for inverse in ifc_file.get_inverse(layer_set):
-                if not inverse.is_a("IfcMaterialLayerSetUsage"):
+                if not inverse.is_a("IfcMaterialLayerSetUsage") or inverse.LayerSetDirection != "AXIS3":
                     continue
                 if ifc_file.schema == "IFC2X3":
                     for rel in ifc_file.get_inverse(inverse):
@@ -349,13 +339,11 @@ class DumbSlabPlaner:
         if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
             return
         new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
-        self.change_thickness(settings["related_object"], new_thickness)
+        material = ifcopenshell.util.element.get_material(settings["related_object"])
+        if material and material.is_a("IfcMaterialLayerSetUsage") and material.LayerSetDirection == "AXIS3":
+            self.change_thickness(settings["related_object"], new_thickness)
 
     def change_thickness(self, element, thickness):
-        parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
-        if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer3":
-            return
-
         obj = IfcStore.get_element(element.id())
         if not obj:
             return

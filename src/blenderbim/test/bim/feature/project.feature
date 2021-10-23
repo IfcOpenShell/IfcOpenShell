@@ -92,6 +92,11 @@ Scenario: Load project elements - load all project elements
     And the object "IfcBeam/Beam" is in the collection "IfcElementAssembly/Empty"
     And the object "IfcSlab/Slab" is in the collection "IfcBuildingStorey/Ground Floor"
     And the object "IfcWall/Wall" is in the collection "IfcBuildingStorey/Level 1"
+    And the object "IfcSlab/Slab" has data which is an IFC representation
+    And the object "IfcBeam/Beam" has data which is an IFC representation
+    And the object "IfcWall/Wall" has data which is an IFC representation
+    And the object "IfcSlabType/Slab" has data which is an IFC representation
+    And the object "IfcWallType/Wall" has data which is an IFC representation
     And "scene.BIMProjectProperties.is_loading" is "False"
 
 Scenario: Load project elements - load objects filtered by decomposition

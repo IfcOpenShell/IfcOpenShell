@@ -25,6 +25,7 @@ from blenderbim.tool.ifc import Ifc
 from blenderbim.tool.material import Material
 from blenderbim.tool.misc import Misc
 from blenderbim.tool.owner import Owner
+from blenderbim.tool.qto import Qto
 from blenderbim.tool.root import Root
 from blenderbim.tool.spatial import Spatial
 from blenderbim.tool.style import Style

@@ -17,13 +17,13 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import bmesh
 import math
+import bmesh
+import mathutils.geometry
 import ifcopenshell
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
-import mathutils.geometry
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.type
@@ -92,19 +92,6 @@ def mode_callback(obj, data):
             obj.matrix_world.translation = new_origin
 
 
-def ensure_solid(usecase_path, ifc_file, settings):
-    product = ifc_file.by_id(settings["blender_object"].BIMObjectProperties.ifc_definition_id)
-    parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbProfile":
-        return
-    material = ifcopenshell.util.element.get_material(product)
-    if material and material.is_a("IfcMaterialProfileSetUsage"):
-        settings["profile_set_usage"] = material
-    else:
-        return
-    settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
-
-
 class DumbProfileGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
@@ -170,29 +157,8 @@ class DumbProfileGenerator:
             obj.rotation_euler[2] = math.pi / 2
 
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        blenderbim.core.type.assign_type(
-            tool.Ifc, tool.Geometry, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type
-        )
+        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type)
         profile_set_usage = ifcopenshell.util.element.get_material(element)
-        blenderbim.core.geometry.add_representation(
-            tool.Ifc,
-            tool.Geometry,
-            tool.Style,
-            tool.Surveyor,
-            obj=obj,
-            context=ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW"),
-            ifc_representation_class="IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage",
-            profile_set_usage=profile_set_usage,
-        )
-        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.geometry.switch_representation(
-            tool.Geometry,
-            obj=obj,
-            representation=representation,
-            should_reload=True,
-            enable_dynamic_voids=True,
-            is_global=True,
-        )
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbProfile"})
         MaterialData.load(self.file)

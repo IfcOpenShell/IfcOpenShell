@@ -33,6 +33,10 @@ class Usecase:
                 continue
             elif inverse.is_a("IfcRelFillsElement"):
                 continue
+            elif inverse.is_a("IfcRelAssociatesMaterial") and "Usage" in inverse.RelatingMaterial.is_a():
+                inverse = ifcopenshell.util.element.copy(self.file, inverse)
+                inverse.RelatingMaterial = ifcopenshell.util.element.copy(self.file, inverse.RelatingMaterial)
+                inverse.RelatedObjects = [to_element]
             else:
                 for i, value in enumerate(inverse):
                     if value == from_element:

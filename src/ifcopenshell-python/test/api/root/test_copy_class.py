@@ -108,3 +108,11 @@ class TestCopyClass(test.bootstrap.IFC4):
         ifcopenshell.api.run("void.add_filling", self.file, opening=opening, element=door)
         new = ifcopenshell.api.run("root.copy_class", self.file, product=door)
         assert not new.FillsVoids
+
+    def test_copying_material_set_usages(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        material = self.file.createIfcMaterialLayerSetUsage()
+        self.file.createIfcRelAssociatesMaterial(RelatedObjects=[element], RelatingMaterial=material)
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
+        assert new.HasAssociations[0].RelatingMaterial != element.HasAssociations[0].RelatingMaterial
+        assert new.HasAssociations[0].RelatingMaterial.is_a("IfcMaterialLayerSetUsage")

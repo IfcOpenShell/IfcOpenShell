@@ -456,32 +456,32 @@ class CopyPropertyToSelection(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CopyAttributeToSelection(bpy.types.Operator):
-    bl_idname = "bim.copy_attribute_to_selection"
-    bl_label = "Copy Attribute To Selection"
-    attribute_name: bpy.props.StringProperty()
-    attribute_value: bpy.props.StringProperty()
+class ConfigureVisibility(bpy.types.Operator):
+    bl_idname = "bim.configure_visibility"
+    bl_label = "Configure module UI visibility in BlenderBIM"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def invoke(self, context, event):
+        from blenderbim.bim import modules
+
+        wm = context.window_manager
+        if not len(context.scene.BIMProperties.module_visibility):
+            for module in sorted(modules.keys()):
+                new = context.scene.BIMProperties.module_visibility.add()
+                new.name = module
+        return wm.invoke_props_dialog(self, width=450)
+
+    def draw(self, context):
+        layout = self.layout
+        grid = layout.column_flow(columns=3)
+
+        for module in context.scene.BIMProperties.module_visibility:
+            split = grid.split()
+            col = split.column()
+            col.label(text=module.name.capitalize())
+
+            col = split.column()
+            col.prop(module, "is_visible", text="")
 
     def execute(self, context):
-        # TODO: this is dead code, awaiting reimplementation. See #1222.
-        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(context.scene.BIMProperties.export_schema)
-        self.applicable_attributes_cache = {}
-        for obj in context.selected_objects:
-            if "/" not in obj.name:
-                continue
-            attribute = obj.BIMObjectProperties.attributes.get(self.attribute_name)
-            if not attribute:
-                applicable_attributes = self.get_applicable_attributes(obj.name.split("/")[0])
-                if self.attribute_name not in applicable_attributes:
-                    continue
-                attribute = obj.BIMObjectProperties.attributes.add()
-                attribute.name = self.attribute_name
-            attribute.string_value = self.attribute_value
         return {"FINISHED"}
-
-    def get_applicable_attributes(self, ifc_class):
-        if ifc_class not in self.applicable_attributes_cache:
-            self.applicable_attributes_cache[ifc_class] = [
-                a.name() for a in self.schema.declaration_by_name(ifc_class).all_attributes()
-            ]
-        return self.applicable_attributes_cache[ifc_class]

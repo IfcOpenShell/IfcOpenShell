@@ -15,3 +15,27 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
+import bpy
+import ifcopenshell
+import test.bim.bootstrap
+import blenderbim.core.tool
+import blenderbim.tool as tool
+from blenderbim.tool.qto import Qto as subject
+
+
+class TestImplementsTool(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        assert isinstance(subject(), blenderbim.core.tool.Qto)
+
+
+class TestGetRadiusOfSelectedVertices(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        bpy.ops.mesh.primitive_circle_add()
+        assert round(subject.get_radius_of_selected_vertices(bpy.data.objects.get("Circle")), 3) == 1
+
+
+class TestSetQtoResult(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        subject.set_qto_result(123.4567)
+        assert bpy.context.scene.BIMQtoProperties.qto_result == "123.457"

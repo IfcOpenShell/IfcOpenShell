@@ -1,6 +1,11 @@
 @material
 Feature: Material
 
+Scenario: Add default material
+    Given an empty IFC project
+    When I press "bim.add_default_material"
+    Then the material "Default" exists
+
 Scenario: Unlink object
     Given an empty IFC project
     And I add a cube

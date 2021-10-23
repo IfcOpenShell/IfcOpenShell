@@ -16,16 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bim.bootstrap
+import blenderbim.core.qto as subject
+from test.core.bootstrap import qto
 
 
-class TestExecuteBIMTester(test.bim.bootstrap.NewFile):
-    @test.bim.bootstrap.scenario
-    def test_executing_bimtester(self):
-        return """
-        Given an empty IFC project
-        When I enable "scene.BimTesterProperties.should_load_from_memory"
-        And I set "scene.BimTesterProperties.feature" to "{cwd}/test/files/sample-ids.xml"
-        And I press "bim.execute_bim_tester"
-        Then the file "{cwd}/test/files/sample-ids.xml.html" should contain "Tests passed: <strong>1 / 1</strong> (100%)"
-        """
+class TestCalculateCircleRadius:
+    def test_run(self, qto):
+        qto.get_radius_of_selected_vertices("obj").should_be_called().will_return("radius")
+        qto.set_qto_result("radius").should_be_called()
+        assert subject.calculate_circle_radius(qto, obj="obj") == "radius"

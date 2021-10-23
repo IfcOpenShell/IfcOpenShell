@@ -211,6 +211,12 @@ class UpdateRepresentation(bpy.types.Operator):
             "ifc_representation_class": self.ifc_representation_class,
         }
 
+        if not self.ifc_representation_class:
+            representation_data["ifc_representation_class"] = tool.Geometry.get_ifc_representation_class(
+                product, old_representation
+            )
+            representation_data["profile_set_usage"] = tool.Geometry.get_profile_set_usage(product)
+
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
 
         [
@@ -312,7 +318,9 @@ class CopyRepresentation(bpy.types.Operator, Operator):
             return
         bm = bmesh.new()
         bm.from_mesh(context.active_object.data)
-        geometric_context = tool.Root.get_object_context(context.active_object)
+        geometric_context = tool.Root.get_representation_context(
+            tool.Root.get_object_representation(context.active_object)
+        )
         for obj in context.selected_objects:
             if obj == context.active_object:
                 continue
@@ -442,7 +450,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
             obj.select_set(False)
             new_obj.select_set(True)
             # This is the only difference
-            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Root, obj=new_obj)
+            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
         bpy.ops.transform.translate("INVOKE_DEFAULT")
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}

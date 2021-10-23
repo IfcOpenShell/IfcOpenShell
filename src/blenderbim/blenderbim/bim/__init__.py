@@ -18,7 +18,7 @@
 
 import bpy
 import importlib
-from . import handler, ui, prop, operator
+from . import handler, ui, prop, operator, helper
 
 modules = {
     "project": None,
@@ -67,8 +67,10 @@ modules = {
     "debug": None,
 }
 
+
 for name in modules.keys():
     modules[name] = importlib.import_module(f"blenderbim.bim.module.{name}")
+
 
 classes = [
     operator.OpenUri,
@@ -81,8 +83,10 @@ classes = [
     operator.ReloadIfcFile,
     operator.AddIfcFile,
     operator.RemoveIfcFile,
+    operator.ConfigureVisibility,
     prop.StrProperty,
     prop.Attribute,
+    prop.ModuleVisibility,
     prop.BIMProperties,
     prop.IfcParameter,
     prop.PsetQto,

@@ -16,17 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bim.bootstrap
 
-
-class TestExecuteIfcPatch(test.bim.bootstrap.NewFile):
-    @test.bim.bootstrap.scenario
-    def test_executing_ifcpatch(self):
-        return """
-        Given I set "scene.BIMPatchProperties.ifc_patch_recipes" to "OffsetObjectPlacements"
-        And I set "scene.BIMPatchProperties.ifc_patch_input" to "{cwd}/test/files/basic.ifc"
-        And I set "scene.BIMPatchProperties.ifc_patch_output" to "{cwd}/test/files/basic-patched.ifc"
-        And I set "scene.BIMPatchProperties.ifc_patch_args" to "[123454321,0,0,0]"
-        When I press "bim.execute_ifc_patch"
-        Then the file "{cwd}/test/files/basic-patched.ifc" should contain "123454321"
-        """
+def calculate_circle_radius(qto, obj=None):
+    result = qto.get_radius_of_selected_vertices(obj)
+    qto.set_qto_result(result)
+    return result

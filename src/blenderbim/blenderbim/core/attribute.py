@@ -15,3 +15,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
+
+def copy_attribute_to_selection(ifc, name=None, value=None, obj=None):
+    element = ifc.get_entity(obj)
+    if element:
+        try:
+            ifc.run("attribute.edit_attributes", product=element, attributes={name: value})
+        except:
+            pass

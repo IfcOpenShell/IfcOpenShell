@@ -68,6 +68,16 @@ class AssignParameterizedProfile(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddDefaultMaterial(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_default_material"
+    bl_label = "Add Default Material"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.add_default_material(tool.Ifc, tool.Material)
+        Data.load(IfcStore.get_file())
+
+
 class AddMaterial(bpy.types.Operator):
     bl_idname = "bim.add_material"
     bl_label = "Add Material"

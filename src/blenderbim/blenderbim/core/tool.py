@@ -58,13 +58,15 @@ class Context:
 @interface
 class Geometry:
     def change_object_data(cls, obj, data, is_global=False): pass
-    def clear_dynamic_voids(cls, obj): pass
+    def clear_modifiers(cls, obj): pass
     def create_dynamic_voids(cls, obj): pass
     def does_object_have_mesh_with_faces(cls, obj): pass
     def duplicate_object_data(cls, obj): pass
     def get_cartesian_point_coordinate_offset(cls, obj): pass
+    def get_ifc_representation_class(cls, element, representation): pass
     def get_object_data(cls, obj): pass
     def get_object_materials_without_styles(cls, obj): pass
+    def get_profile_set_usage(cls, element): pass
     def get_representation_data(cls, representation): pass
     def get_representation_name(cls, representation): pass
     def get_total_representation_items(cls, obj): pass
@@ -90,6 +92,8 @@ class Ifc:
 
 @interface
 class Material:
+    def add_default_material_object(cls): pass
+    def link(cls, element, obj): pass
     def unlink(cls, obj): pass
 
 
@@ -136,13 +140,20 @@ class Owner:
 
 
 @interface
+class Qto:
+    def get_radius_of_selected_vertices(cls, obj): pass
+    def set_qto_result(cls, result): pass
+
+
+@interface
 class Root:
     def add_dynamic_opening_voids(cls, element, obj): pass
     def does_type_have_representations(cls, element): pass
     def get_element_type(cls, element): pass
-    def get_object_context(cls, obj): pass
+    def get_object_representation(cls, obj): pass
+    def get_representation_context(cls, representation): pass
     def is_opening_element(cls, element): pass
-    def run_geometry_add_representation(cls, obj=None, context=None): pass
+    def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
 
 
 @interface
@@ -191,8 +202,15 @@ class Surveyor:
 class Type:
     def disable_editing(cls, obj): pass
     def get_any_representation(cls, element): pass
+    def get_body_context(cls): pass
     def get_body_representation(cls, element): pass
+    def get_ifc_representation_class(cls, element): pass
+    def get_profile_set_usage(cls, element): pass
+    def get_representation_context(cls, representation): pass
     def has_dynamic_voids(cls, obj): pass
+    def has_material_usage(cls, element): pass
+    def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
+    def run_geometry_switch_representation(cls, obj=None, representation=None, should_reload=None, enable_dynamic_voids=None, is_global=None): pass
 
 
 @interface

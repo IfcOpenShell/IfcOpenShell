@@ -15,3 +15,23 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
+import bpy
+import blenderbim.core.tool
+import blenderbim.tool as tool
+from mathutils import Vector
+
+
+class Qto(blenderbim.core.tool.Qto):
+    @classmethod
+    def get_radius_of_selected_vertices(cls, obj):
+        selected_verts = [v.co for v in obj.data.vertices if v.select]
+        total = Vector()
+        for v in selected_verts:
+            total += v
+        circle_center = total / len(selected_verts)
+        return max([(v - circle_center).length for v in selected_verts])
+
+    @classmethod
+    def set_qto_result(cls, result):
+        bpy.context.scene.BIMQtoProperties.qto_result = str(round(result, 3))

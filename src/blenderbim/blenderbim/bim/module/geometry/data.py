@@ -24,6 +24,41 @@ from mathutils import Vector
 
 def refresh():
     DerivedPlacementsData.is_loaded = False
+    RepresentationsData.is_loaded = False
+
+
+class RepresentationsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"representations": cls.representations()}
+        cls.is_loaded = True
+
+    @classmethod
+    def representations(cls):
+        results = []
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element.is_a("IfcProduct") and element.Representation:
+            representations = element.Representation.Representations
+        elif element.is_a("IfcTypeProduct"):
+            representations = [rm.MappedRepresentation for rm in element.RepresentationMaps or []]
+        for representation in representations:
+            representation_type = representation.RepresentationType
+            if representation_type == "MappedRepresentation":
+                representation_type = representation.Items[0].MappingSource.MappedRepresentation.RepresentationType
+                representation_type += "*"
+            results.append(
+                {
+                    "id": representation.id(),
+                    "ContextType": representation.ContextOfItems.ContextType,
+                    "ContextIdentifier": representation.ContextOfItems.ContextIdentifier,
+                    "TargetView": representation.ContextOfItems.TargetView,
+                    "RepresentationType": representation_type,
+                }
+            )
+        return results
 
 
 class DerivedPlacementsData:

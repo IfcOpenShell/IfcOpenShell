@@ -85,6 +85,13 @@ def owner():
 
 
 @pytest.fixture
+def qto():
+    prophet = Prophecy(blenderbim.core.tool.Qto)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def root():
     prophet = Prophecy(blenderbim.core.tool.Root)
     yield prophet
@@ -127,15 +134,15 @@ def type():
 
 
 @pytest.fixture
-def voider():
-    prophet = Prophecy(blenderbim.core.tool.Voider)
+def unit():
+    prophet = Prophecy(blenderbim.core.tool.Unit)
     yield prophet
     prophet.verify()
 
 
 @pytest.fixture
-def unit():
-    prophet = Prophecy(blenderbim.core.tool.Unit)
+def voider():
+    prophet = Prophecy(blenderbim.core.tool.Voider)
     yield prophet
     prophet.verify()
 
