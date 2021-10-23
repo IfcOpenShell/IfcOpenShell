@@ -60,6 +60,9 @@ def draw_ui(context, layout, obj_type):
                     icon="RADIOBUT_OFF" if blender_attribute.is_null else "RADIOBUT_ON",
                     text="",
                 )
+            if attribute["name"] != "GlobalId":
+                op = row.operator("bim.copy_attribute_to_selection", icon="COPYDOWN", text="")
+                op.attribute_name = attribute["name"]
     else:
         row = layout.row()
         op = row.operator("bim.enable_editing_attributes", icon="GREASEPENCIL", text="Edit")

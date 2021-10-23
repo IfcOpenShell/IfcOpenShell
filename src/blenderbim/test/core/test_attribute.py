@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -16,26 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-from . import ui, prop, operator
-
-classes = (
-    operator.EnableEditingAttributes,
-    operator.DisableEditingAttributes,
-    operator.EditAttributes,
-    operator.GenerateGlobalId,
-    operator.CopyAttributeToSelection,
-    prop.BIMAttributeProperties,
-    ui.BIM_PT_object_attributes,
-    ui.BIM_PT_material_attributes,
-)
+import blenderbim.core.attribute as subject
+from test.core.bootstrap import ifc
 
 
-def register():
-    bpy.types.Object.BIMAttributeProperties = bpy.props.PointerProperty(type=prop.BIMAttributeProperties)
-    bpy.types.Material.BIMAttributeProperties = bpy.props.PointerProperty(type=prop.BIMAttributeProperties)
+class TestCopyAttributeToSelection:
+    def test_run(self, ifc):
+        ifc.get_entity("obj").should_be_called().will_return("element")
+        ifc.run("attribute.edit_attributes", product="element", attributes={"name": "value"}).should_be_called()
+        subject.copy_attribute_to_selection(ifc, name="name", value="value", obj="obj")
 
-
-def unregister():
-    del bpy.types.Object.BIMAttributeProperties
-    del bpy.types.Material.BIMAttributeProperties
+    def test_do_nothing_if_object_is_not_an_element(self, ifc):
+        ifc.get_entity("obj").should_be_called().will_return(None)
+        subject.copy_attribute_to_selection(ifc, name="name", value="value", obj="obj")
