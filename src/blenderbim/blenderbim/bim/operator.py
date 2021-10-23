@@ -22,11 +22,12 @@ import json
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
-from . import schema
+from . import schema, modules
 from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector, Matrix, Euler
 from math import radians
 
+modules = modules.get_modules()
 
 class OpenUri(bpy.types.Operator):
     bl_idname = "bim.open_uri"
@@ -485,3 +486,33 @@ class CopyAttributeToSelection(bpy.types.Operator):
                 a.name() for a in self.schema.declaration_by_name(ifc_class).all_attributes()
             ]
         return self.applicable_attributes_cache[ifc_class]
+
+
+class ConfigureVisibility(bpy.types.Operator):
+    bl_idname = "bim.configure_visibility"
+    bl_label = "Toggle availability of modules in BlenderBIM"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        if not context.scene.module_state:
+            for module in sorted(modules.keys()):
+                new = bpy.context.scene.module_state.add()
+                new.module_name = module
+        return wm.invoke_props_dialog(self, width=450)
+
+    def draw(self, context):
+        layout = self.layout   
+        grid = layout.column_flow(columns=3)
+
+        for module in bpy.context.scene.module_state:
+            split = grid.split()
+            col = split.column()
+            #col.enabled = False
+            col.label(text=module.module_name.capitalize())
+
+            col = split.column()
+            col.prop(module, "state", text="")
+ 
+    def execute(self, context):
+        return {'FINISHED'}

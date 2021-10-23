@@ -17,58 +17,11 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import importlib
-from . import handler, ui, prop, operator
+from . import handler, ui, prop, operator, modules, helper
 
-modules = {
-    "project": None,
-    "search": None,
-    "bcf": None,
-    "root": None,
-    "unit": None,
-    "model": None,
-    "georeference": None,
-    "context": None,
-    "drawing": None,
-    "misc": None,
-    "attribute": None,
-    "type": None,
-    "spatial": None,
-    "void": None,
-    "aggregate": None,
-    "geometry": None,
-    "cobie": None,
-    "resource": None,
-    "cost": None,
-    "sequence": None,
-    "group": None,
-    "system": None,
-    "structural": None,
-    "boundary": None,
-    "profile": None,
-    "material": None,
-    "style": None,
-    "layer": None,
-    "owner": None,
-    "pset": None,
-    "qto": None,
-    "classification": None,
-    "constraint": None,
-    "document": None,
-    "pset_template": None,
-    "clash": None,
-    "lca": None,
-    "csv": None,
-    "bimtester": None,
-    "diff": None,
-    "patch": None,
-    "covetool": None,
-    "augin": None,
-    "debug": None,
-}
+modules = modules.get_modules()
+module_property_group = helper.create_module_property_group(modules)
 
-for name in modules.keys():
-    modules[name] = importlib.import_module(f"blenderbim.bim.module.{name}")
 
 classes = [
     operator.OpenUri,
@@ -81,6 +34,7 @@ classes = [
     operator.ReloadIfcFile,
     operator.AddIfcFile,
     operator.RemoveIfcFile,
+    operator.ConfigureVisibility,
     prop.StrProperty,
     prop.Attribute,
     prop.BIMProperties,
@@ -90,6 +44,7 @@ classes = [
     prop.BIMObjectProperties,
     prop.BIMMaterialProperties,
     prop.BIMMeshProperties,
+    module_property_group,
     ui.BIM_PT_section_plane,
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
@@ -125,6 +80,7 @@ def register():
     bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.PointLight.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.SCENE_PT_unit.append(ui.ifc_units)
+    bpy.types.Scene.module_state = bpy.props.CollectionProperty(type= module_property_group)
 
     for mod in modules.values():
         mod.register()
@@ -144,6 +100,7 @@ def unregister():
     del bpy.types.Curve.BIMMeshProperties
     del bpy.types.Camera.BIMMeshProperties
     del bpy.types.PointLight.BIMMeshProperties
+    del bpy.types.Scene.module_state
     bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
 
     for mod in reversed(list(modules.values())):
