@@ -527,6 +527,7 @@ class IfcImporter:
                 try:
                     shape = ifcopenshell.geom.create_shape(self.settings, representation_map.MappedRepresentation)
                     mesh = self.create_mesh(element, shape)
+                    self.link_mesh(shape, mesh)
                     self.meshes[mesh_name] = mesh
                 except:
                     self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
@@ -729,10 +730,7 @@ class IfcImporter:
             mesh = self.meshes.get(mesh_name)
             if mesh is None:
                 mesh = self.create_mesh(element, shape)
-                if "-" in shape.geometry.id:
-                    mesh.BIMMeshProperties.ifc_definition_id = int(shape.geometry.id.split("-")[0])
-                else:
-                    mesh.BIMMeshProperties.ifc_definition_id = int(shape.geometry.id)
+                self.link_mesh(shape, mesh)
                 self.meshes[mesh_name] = mesh
         else:
             mesh = None
@@ -1421,6 +1419,16 @@ class IfcImporter:
     def link_element(self, element, obj):
         self.added_data[element.id()] = obj
         IfcStore.link_element(element, obj)
+
+    def link_mesh(self, shape, mesh):
+        if hasattr(shape, "geometry"):
+            geometry = shape.geometry
+        else:
+            geometry = shape
+        if "-" in geometry.id:
+            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
+        else:
+            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id)
 
 
 class IfcImportSettings:

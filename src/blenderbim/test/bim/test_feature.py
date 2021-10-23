@@ -321,6 +321,12 @@ def the_object_name_is_not_an_ifc_element(name):
     assert id == 0, f"The ID is {id}"
 
 
+@then(parsers.parse('the object "{name}" has data which is an IFC representation'))
+def the_object_name_is_not_an_ifc_element(name):
+    id = the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id
+    assert id != 0, f"The ID is {id}"
+
+
 @then(parsers.parse('the material "{name}" is not an IFC material'))
 def the_material_name_is_not_an_ifc_material(name):
     id = the_material_name_exists(name).BIMObjectProperties.ifc_definition_id
