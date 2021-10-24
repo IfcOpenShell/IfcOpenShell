@@ -761,13 +761,13 @@ if "IfcOpenShell-Python" in targets:
         if os.path.exists(cache_path):
             os.remove(cache_path)
 
-        os.environ["python_library_BASENAME"] = os.path.basename(python_library)
+        os.environ["PYTHON_LIBRARY_BASENAME"] = os.path.basename(python_library)
 
         run_cmake("",
             cmake_args + [
-                "-Dpython_library="          +python_library,
-                "-Dpython_executable="       +python_executable,
-                "-Dpython_include_DIR="      +python_include,
+                "-DPYTHON_LIBRARY="          +python_library,
+                "-DPYTHON_EXECUTABLE="       +python_executable,
+                "-DPYTHON_INCLUDE_DIR="      +python_include,
                 "-DSWIG_EXECUTABLE="         f"{DEPS_DIR}/install/swig/bin/swig",
                 "-DCMAKE_INSTALL_PREFIX="    f"{DEPS_DIR}/install/ifcopenshell/tmp",
             ], cmake_dir=CMAKE_DIR, cwd=python_dir)
