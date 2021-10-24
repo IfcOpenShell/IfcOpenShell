@@ -137,7 +137,7 @@ IFCOS_NUM_BUILD_PROCS = os.getenv("IFCOS_NUM_BUILD_PROCS", multiprocessing.cpu_c
 
 CMAKE_DIR = os.path.realpath(os.path.join("..", "cmake"))
 
-path = ["..", "build", platform.system()]
+path = ["..", "build", platform.system(), platform.machine()]
 if TOOLSET:
     path.append(TOOLSET)
 DEFAULT_DEPS_DIR = os.path.realpath(os.path.join(*path))
