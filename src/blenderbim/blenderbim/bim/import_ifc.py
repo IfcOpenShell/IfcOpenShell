@@ -745,18 +745,6 @@ class IfcImporter:
         self.link_element(product, obj)
         return product
 
-    def is_pointcloud(self, product):
-        if not hasattr(product, 'Representation') or not hasattr(product.Representation, 'Representations'):
-            return False
-
-        for representation in product.Representation.Representations:
-            if representation.RepresentationType == 'PointCloud':
-                return True
-            elif self.file.schema == "IFC2X3" and representation.RepresentationType == 'GeometricSet':
-                return True
-
-        return False
-
     def create_curve_products(self, products):
         results = set()
         if not products:
