@@ -56,6 +56,9 @@ namespace IfcGeom {
 				if (extend > 0.) {
 					BRepExtrema_DistShapeShape dss(A, B);
 					if (dss.Perform() && dss.NbSolution() >= 1) {
+						if (dss.Value() <= extend) {
+							distances_.push_back(dss.Value());
+						}						
 						return dss.Value() <= extend;
 					}
 				} else if (completely_within) {
@@ -75,6 +78,11 @@ namespace IfcGeom {
 				}
 				return false;
 			}
+
+		protected:
+
+			// @todo this is ugly, embed this in the return type
+			mutable std::vector<double> distances_;
 
 		public:
 
@@ -144,6 +152,8 @@ namespace IfcGeom {
 			}
 
 			std::vector<T> select(const T& t, bool completely_within = false, double extend = 0.0) const {
+				distances_.clear();
+
 				std::vector<T> ts = select_box(t, completely_within, extend);
 				if (ts.empty()) {
 					return ts;
@@ -174,6 +184,8 @@ namespace IfcGeom {
 			}
 
 			std::vector<T> select(const TopoDS_Shape& s, bool completely_within = false, double extend = -1.e-5) const {
+				distances_.clear();
+
 				Bnd_Box bb;
 				BRepBndLib::AddClose(s, bb);
 				bb.SetGap(bb.GetGap() + extend);
@@ -213,6 +225,8 @@ namespace IfcGeom {
 			}
 
 			std::vector<T> select(const gp_Pnt& p, double extend=0.0) const {
+				distances_.clear();
+
 				std::vector<T> ts = select_box(p, extend);
 				if (ts.empty()) {
 					return ts;
@@ -233,6 +247,7 @@ namespace IfcGeom {
 					if (extend > 0.0) {
 						BRepExtrema_DistShapeShape dss(v, B);
 						if (dss.Perform() && dss.NbSolution() >= 1 && dss.Value() <= extend) {
+							distances_.push_back(dss.Value());
 							ts_filtered.push_back(*it);
 						}
 					} else {
@@ -359,6 +374,10 @@ namespace IfcGeom {
 					}
 				}
 			}
+		}
+
+		const std::vector<double>& distances() const {
+			return distances_;
 		}
 
 		std::vector<IfcGeom::ray_intersection_result> select_ray(const gp_Pnt& p0, const gp_Dir& d, double length = 1000.) const {
