@@ -258,7 +258,7 @@ def run(cmds, cwd=None):
         print("-" * 70)
         print(stderr)
         print("-" * 70)
-        raise Exception(f"Command `{' '.join(cmds)}` returned exit code {proc.returncode}")
+        raise RuntimeError(f"Command `{' '.join(cmds)}` returned exit code {proc.returncode}")
 
     return stdout.strip()
 
@@ -579,13 +579,25 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION:
         PYTHON_CONFIGURE_ARGS = ["--disable-static", "--enable-shared"]
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
-        build_dependency(
-            f"python-{PYTHON_VERSION}",
-            "autoconf",
-            PYTHON_CONFIGURE_ARGS,
-            f"http://www.python.org/ftp/python/{PYTHON_VERSION}/",
-            f"Python-{PYTHON_VERSION}.tgz"
-        )
+        try:
+            build_dependency(
+                f"python-{PYTHON_VERSION}",
+                "autoconf",
+                PYTHON_CONFIGURE_ARGS,
+                f"http://www.python.org/ftp/python/{PYTHON_VERSION}/",
+                f"Python-{PYTHON_VERSION}.tgz"
+            )
+        except RuntimeError as e:
+            # Sometimes setting up modules such as pip/lzma can cause
+            # the python installer script to return a non zero exit
+            # code where actually the headers and dynamic libraries
+            # are installed correctly. This is all we need so we catch
+            # the exception and only reraise if a partially succesful
+            # install is not detected.
+            if not os.path.exists(
+                os.path.join(DEPS_DIR, "install", f"python-{PYTHON_VERSION}")
+            ):
+                raise e
 
     os.environ["CXXFLAGS"] = OLD_CXX_FLAGS
     os.environ["CFLAGS"] = OLD_C_FLAGS
