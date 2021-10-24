@@ -18,6 +18,7 @@
 
 import bpy
 from bpy.types import PropertyGroup
+from . import ui, prop, operator
 from bpy.props import (
     PointerProperty,
     StringProperty,
@@ -40,3 +41,11 @@ class BIMSearchProperties(PropertyGroup):
     search_pset_name: StringProperty(name="Search Pset Name")
     search_prop_name: StringProperty(name="Search Prop Name")
     search_pset_value: StringProperty(name="Search Pset Value")
+
+# -------------------------------------------------------------------
+# IfcType Filter
+# -------------------------------------------------------------------
+class BIMIfcTypeFilterProperties(PropertyGroup):
+    typename: StringProperty()
+    typebool: BoolProperty(default=True, update=operator.BIM_ifctypefilterupdate)
+    typenum: StringProperty()
