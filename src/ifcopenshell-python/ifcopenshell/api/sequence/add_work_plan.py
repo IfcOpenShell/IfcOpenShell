@@ -19,9 +19,9 @@ class Usecase:
             name=self.settings["name"],
         )
         work_plan.CreationDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
-        person = ifcopenshell.api.owner.settings.get_person(self.file)
-        if person:
-            work_plan.Creators = [person]
+        user = ifcopenshell.api.owner.settings.get_user(self.file)
+        if user:
+            work_plan.Creators = [user.ThePerson]
         work_plan.StartTime = ifcopenshell.util.date.datetime2ifc(self.settings["start_time"], "IfcDateTime")
 
         context = self.file.by_type("IfcContext")[0]

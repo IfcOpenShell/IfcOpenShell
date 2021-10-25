@@ -656,13 +656,13 @@ class CopyTaskAttribute(bpy.types.Operator):
     bl_idname = "bim.copy_task_attribute"
     bl_label = "Copy Task Attribute"
     bl_options = {"REGISTER", "UNDO"}
-    data: bpy.props.StringProperty()
+    name: bpy.props.StringProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        data = json.loads(self.data)
+        value = context.scene.BIMWorkScheduleProperties.task_attributes.get(self.name).get_value()
         self.file = IfcStore.get_file()
         props = context.scene.BIMTaskTreeProperties
         for task in props.tasks:
@@ -670,10 +670,8 @@ class CopyTaskAttribute(bpy.types.Operator):
                 ifcopenshell.api.run(
                     "sequence.edit_task",
                     self.file,
-                    **{
-                        "task": self.file.by_id(task.ifc_definition_id),
-                        "attributes": {data["name"]: None if data["is_null"] else data["value"]},
-                    },
+                    task=self.file.by_id(task.ifc_definition_id),
+                    attributes={self.name: value},
                 )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_task_properties()
