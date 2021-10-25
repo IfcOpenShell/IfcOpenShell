@@ -24,10 +24,18 @@ import ifcopenshell.util.pset
 import ifcopenshell.util.attribute
 import blenderbim.bim.schema
 import blenderbim.tool as tool
+import blenderbim.core.pset as core
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data
 from ifcopenshell.api.cost.data import Data as CostData
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
+
+
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
 
 
 def get_pset_props(context, obj, obj_type):
@@ -361,3 +369,17 @@ class GuessQuantity(bpy.types.Operator):
             if unit_settings.length_unit == "METERS":
                 return None, "METRE"
             return unit_settings.length_unit[0 : -len("METERS")], "METRE"
+
+
+class CopyPropertyToSelection(bpy.types.Operator, Operator):
+    bl_idname = "bim.copy_property_to_selection"
+    bl_label = "Copy Property To Selection"
+    name: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        pset_name = context.active_object.PsetProperties.active_pset_name
+        prop_value = context.active_object.PsetProperties.properties.get(self.name).get_value()
+        for obj in context.selected_objects:
+            core.copy_property_to_selection(
+                tool.Ifc, tool.Pset, obj=obj, pset_name=pset_name, prop_name=self.name, prop_value=prop_value
+            )

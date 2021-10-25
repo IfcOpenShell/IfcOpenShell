@@ -425,37 +425,6 @@ class FetchObjectPassport(bpy.types.Operator):
         context.active_object.data = bpy.data.meshes[reference.name]
 
 
-class CopyPropertyToSelection(bpy.types.Operator):
-    bl_idname = "bim.copy_property_to_selection"
-    bl_label = "Copy Property To Selection"
-    pset_name: bpy.props.StringProperty()
-    prop_name: bpy.props.StringProperty()
-    prop_value: bpy.props.StringProperty()
-
-    def execute(self, context):
-        # TODO: this is dead code, awaiting reimplementation. See #1222.
-        for obj in context.selected_objects:
-            if "/" not in obj.name:
-                continue
-            pset = obj.BIMObjectProperties.psets.get(self.pset_name)
-            if not pset:
-                applicable_psets = schema.ifc.psetqto.get_applicable(obj.name.split("/")[0], pset_only=True)
-                for pset_template in applicable_psets:
-                    if pset_template.Name == self.pset_name:
-                        break
-                else:
-                    continue
-                pset = obj.BIMObjectProperties.psets.add()
-                pset.name = self.pset_name
-                for template_prop_name in (p.Name for p in pset_template.HasPropertyTemplates):
-                    prop = pset.properties.add()
-                    prop.name = template_prop_name
-            prop = pset.properties.get(self.prop_name)
-            if prop:
-                prop.string_value = self.prop_value
-        return {"FINISHED"}
-
-
 class ConfigureVisibility(bpy.types.Operator):
     bl_idname = "bim.configure_visibility"
     bl_label = "Configure module UI visibility in BlenderBIM"

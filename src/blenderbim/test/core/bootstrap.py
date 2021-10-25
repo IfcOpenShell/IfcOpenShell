@@ -85,6 +85,13 @@ def owner():
 
 
 @pytest.fixture
+def pset():
+    prophet = Prophecy(blenderbim.core.tool.Pset)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def qto():
     prophet = Prophecy(blenderbim.core.tool.Qto)
     yield prophet

@@ -16,20 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.tool.aggregate import Aggregate
-from blenderbim.tool.blender import Blender
-from blenderbim.tool.collector import Collector
-from blenderbim.tool.context import Context
-from blenderbim.tool.geometry import Geometry
-from blenderbim.tool.ifc import Ifc
-from blenderbim.tool.material import Material
-from blenderbim.tool.misc import Misc
-from blenderbim.tool.owner import Owner
-from blenderbim.tool.pset import Pset
-from blenderbim.tool.qto import Qto
-from blenderbim.tool.root import Root
-from blenderbim.tool.spatial import Spatial
-from blenderbim.tool.style import Style
-from blenderbim.tool.surveyor import Surveyor
-from blenderbim.tool.type import Type
-from blenderbim.tool.unit import Unit
+import bpy
+import ifcopenshell
+import blenderbim.core.tool
+import blenderbim.tool as tool
+
+
+class Pset(blenderbim.core.tool.Pset):
+    @classmethod
+    def get_element_pset(cls, element, pset_name):
+        psets = ifcopenshell.util.element.get_psets(element)
+        pset = psets.get(pset_name, None)
+        if pset:
+            return tool.Ifc.get().by_id(pset["id"])
