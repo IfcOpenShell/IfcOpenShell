@@ -41,6 +41,18 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 materialpsetnames_enum = []
 
 
+def update_preset(self, context):
+    chosen_preset = context.scene.BIMProperties.ui_preset
+
+    if chosen_preset == "SU":
+        for module in context.scene.BIMProperties.module_visibility:
+            module.is_visible = True
+    
+    elif chosen_preset == "ARC":
+        #in progress..
+        pass
+
+
 def update_is_visible(self, context):
     from blenderbim.bim import modules
 
@@ -199,6 +211,21 @@ class ModuleVisibility(PropertyGroup):
 
 
 class BIMProperties(PropertyGroup):
+    ui_preset: EnumProperty(
+        name="UI Preset",
+        description="Select from one of the available UI presets, or configure the modules to your preference below",
+        update=update_preset,
+        default= "ADMIN",
+        items=[
+           ("SU", "Superuser", "All modules are visible in the UI"),
+           ("ARC", "Architecture", "Modules related to .... are shown in the UI"),
+           ("STRUC", "Structural Engineering", "Modules related to .... are shown in the UI"),
+           ("QS", "Quantity surveying", "Modules related to .... are shown in the UI"),
+           ("3D", "Model visualisation", "Modules related to .... are shown in the UI"),
+           ("4D", "4D Scheduling", "Modules related to .... are shown in the UI"),
+           ("5D", "5D Cost estimating", "Modules related to .... are shown in the UI"),
+        ]
+    )
     module_visibility: CollectionProperty(name="Module Visibility", type=ModuleVisibility)
     schema_dir: StringProperty(
         default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=update_schema_dir
