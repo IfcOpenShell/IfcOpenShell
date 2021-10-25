@@ -320,3 +320,106 @@ class ResetObjectColours(bpy.types.Operator):
         for obj in context.selected_objects:
             obj.color = (1, 1, 1, 1)
         return {"FINISHED"}
+
+# -------------------------------------------------------------------
+# IfcType Filter
+# -------------------------------------------------------------------
+def BIM_ifctypefilterupdate(self, context): #Trigger action
+    typename = self.typename
+    typebool = self.typebool
+    typenum = self.typenum
+    if typebool == False:
+        action = "deselecting"
+    else:
+        action = "selecting"
+    print(f"{action} {typenum} {typename} ")
+
+
+    for ele,ifctype in elementsDict.items():
+        if typename == ifctype:
+            if typebool == False:
+                ele.select_set(False)
+            else:
+                ele.select_set(True)
+
+class BIM_UL_ifctype_filter(bpy.types.UIList):
+    "This UI List is to list out all the selected IfcType and number of it as well as providing the BoolProperty to select/deselect"
+    use_filter_linked: bpy.props.BoolProperty(name="Included", default=True, options=set(),description="Filter")
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname,index):
+        #layout.prop(self, "use_filter_linked", text="", icon="ADD")
+        #layout.prop(item, "name", text="",emboss=False,toggle=True, icon="CON_ROTLIKE")
+        #split = layout.split(factor=0.1)
+        split= layout
+        split.use_property_split = True
+        split.use_property_decorate = False
+        #split.label(text=a[0])
+        #split.label(text=item.name)
+        split.prop(item, 'typebool', text="",icon="ADD")
+        split.prop(item, 'typename', text="",emboss=False, slider=True)
+        split = split.column()
+        split.scale_x=0.5
+        split.prop(item, 'typenum', text="",emboss=False)
+
+class BIM_OT_ifctype_filter(bpy.types.Operator):
+    "Click to activate IfcType Filter. It helps you to filter out IfcType with current selection"
+    bl_idname = "bim.ifctype_filter"
+    bl_label = "IfcType Filter"
+    
+    def invoke(self, context, event):
+        print(f"{self.bl_label} Activated")
+        #clear collection property data
+        try:
+            bpy.context.scene.BIM_IfcTypeFilter_collprops.clear()
+        except:
+            pass
+        
+        self.importedIfcFile = IfcStore.get_file()
+
+        #Preparing IFC infomation
+        elements = bpy.context.selected_objects #Get selected objects
+        eleIfcTypeList = []
+        for ele in elements: #Get elements IfcType
+            eleAttr = self.importedIfcFile.by_id(ele.BIMObjectProperties.ifc_definition_id)
+            eleIfcTypeList.append(eleAttr.get_info()["type"])
+
+        #use global to let BIM_ifctypefilterupdate function grabs the user selection
+        global elementsDict
+        elementsDict={}
+        for ele, type in zip(elements, eleIfcTypeList):
+            elementsDict[ele] = type
+
+        #use global to let draw function grabs the user selection
+        global ifcTypeUniqueList
+        ifcTypeUniqueList =sorted(list(set((eleIfcTypeList))))
+        ifcTypeUniqueCount = []
+        for type in ifcTypeUniqueList:
+            ifcTypeUniqueCount.append(eleIfcTypeList.count(type))
+        
+        #adding IfcType name into collection property
+        for type,count in zip(ifcTypeUniqueList,ifcTypeUniqueCount):
+            BIM_IfcTypeFilter_item = bpy.context.scene.BIM_IfcTypeFilter_collprops.add()
+            BIM_IfcTypeFilter_item.typename = type
+            BIM_IfcTypeFilter_item.typenum = str(count)
+        return context.window_manager.invoke_props_dialog(self, width = 250)
+
+    def execute(self, context): #This def will execute after clicking OK
+        print(f"{self.bl_label} Closed")
+        bpy.context.scene.BIM_IfcTypeFilter_collprops.clear()
+        return {'FINISHED'}
+
+    def draw(self, context):
+        layout = self.layout
+        scn = context.scene
+        if len(ifcTypeUniqueList) > 20:
+            rowsNum = 20
+        else:
+            rowsNum = len(ifcTypeUniqueList)
+        layout.template_list(
+            "BIM_UL_ifctype_filter",
+            "",
+            scn,
+            "BIM_IfcTypeFilter_collprops",
+            scn,
+            "BIM_IfcTypeFilter_int",
+            rows = rowsNum
+            )

@@ -65,3 +65,7 @@ class BIM_PT_search(Panel):
         row.prop(props, "search_pset_value", text="")
         row.operator("bim.select_pset", text="", icon="VIEWZOOM")
         row.operator("bim.colour_by_pset", text="", icon="BRUSH_DATA")
+
+        #IfcType Filter
+        row = self.layout.row(align=True)
+        row.operator("bim.ifctype_filter",icon = "FILTER")
