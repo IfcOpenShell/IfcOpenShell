@@ -1,16 +1,24 @@
 import ifcopenshell
 
 
-def get_psets(element):
+def get_psets(element, psets_only=False, qtos_only=False):
     psets = {}
     if element.is_a("IfcTypeObject"):
         if element.HasPropertySets:
             for definition in element.HasPropertySets:
+                if psets_only and not definition.is_a("IfcPropertySet"):
+                    continue
+                if qtos_only and not definition.is_a("IfcElementQuantity"):
+                    continue
                 psets[definition.Name] = get_property_definition(definition)
     elif hasattr(element, "IsDefinedBy"):
         for relationship in element.IsDefinedBy:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
+                if psets_only and not definition.is_a("IfcPropertySet"):
+                    continue
+                if qtos_only and not definition.is_a("IfcElementQuantity"):
+                    continue
                 psets[definition.Name] = get_property_definition(definition)
     return psets
 
