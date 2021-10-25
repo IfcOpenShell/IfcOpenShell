@@ -85,6 +85,7 @@ classes = [
     operator.RemoveIfcFile,
     operator.ConfigureVisibility,
     prop.StrProperty,
+    prop.ObjProperty,
     prop.Attribute,
     prop.ModuleVisibility,
     prop.BIMProperties,
