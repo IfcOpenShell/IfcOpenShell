@@ -123,6 +123,10 @@ class StrProperty(PropertyGroup):
     pass
 
 
+class ObjProperty(PropertyGroup):
+    obj: bpy.props.PointerProperty(type=bpy.types.Object)
+
+
 def updateAttributeValue(self, context):
     value_name = self.get_value_name()
     if value_name:
