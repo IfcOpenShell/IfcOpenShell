@@ -82,6 +82,7 @@ classes = (
     operator.UnassignProcess,
     operator.GenerateGanttChart,
     operator.ImportP6,
+    operator.ImportP6XER,
     operator.ImportMSP,
     operator.LoadTaskProperties,
     operator.SelectTaskRelatedProducts,
@@ -124,6 +125,7 @@ classes = (
 
 def menu_func_import(self, context):
     self.layout.operator(operator.ImportP6.bl_idname, text="P6 (.xml)")
+    self.layout.operator(operator.ImportP6XER.bl_idname, text="P6 (.xer)")
     self.layout.operator(operator.ImportMSP.bl_idname, text="Microsoft Project (.xml)")
 
 
