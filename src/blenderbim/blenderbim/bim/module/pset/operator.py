@@ -23,8 +23,10 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.pset
 import ifcopenshell.util.attribute
 import blenderbim.bim.schema
+import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.pset as core
+import blenderbim.bim.module.pset.data
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data
 from ifcopenshell.api.cost.data import Data as CostData
@@ -78,16 +80,15 @@ def get_pset_obj_ifc_definition_id(context, obj, obj_type):
         return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
 
 
-class TogglePsetExpansion(bpy.types.Operator):
+class TogglePsetExpansion(bpy.types.Operator, Operator):
     bl_idname = "bim.toggle_pset_expansion"
     bl_label = "Toggle Pset Expansion"
     pset_id: bpy.props.IntProperty()
 
-    def execute(self, context):
-        obj = context.active_object
-        data = Data.psets if self.pset_id in Data.psets else Data.qtos
-        data[self.pset_id]["is_expanded"] = not data[self.pset_id]["is_expanded"]
-        return {"FINISHED"}
+    def _execute(self, context):
+        blenderbim.bim.module.pset.data.is_expanded[
+            self.pset_id
+        ] = not blenderbim.bim.module.pset.data.is_expanded.setdefault(self.pset_id, True)
 
 
 class EnablePsetEditing(bpy.types.Operator):
