@@ -20,16 +20,19 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.ActivateIfcTypeFilter,
+    operator.ColourByAttribute,
+    operator.ColourByClass,
+    operator.ColourByPset,
+    operator.ResetObjectColours,
+    operator.SelectAttribute,
     operator.SelectGlobalId,
     operator.SelectIfcClass,
-    operator.SelectAttribute,
     operator.SelectPset,
-    operator.ColourByAttribute,
-    operator.ColourByPset,
-    operator.ColourByClass,
-    operator.ResetObjectColours,
+    prop.BIMFilterClasses,
     prop.BIMSearchProperties,
     ui.BIM_PT_search,
+    ui.BIM_UL_ifctype_filter,
 )
 
 

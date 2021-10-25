@@ -71,7 +71,8 @@ class ObjectPsetsData(Data):
         if element.is_a("IfcTypeObject"):
             return
         element_type = ifcopenshell.util.element.get_type(element)
-        return cls.psetqtos(element_type)
+        if element_type:
+            return cls.psetqtos(element_type)
 
 
 class ObjectQtosData(Data):

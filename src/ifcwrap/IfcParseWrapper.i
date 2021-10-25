@@ -660,6 +660,22 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		def __repr__(self):
 			return "<entity %s>" % (self.name())
 	%}
+	std::vector<std::string> argument_types() {
+		size_t i = 0;
+		std::vector<std::string> r;
+		for (auto& attr : $self->all_attributes()) {
+			auto at = IfcUtil::Argument_UNKNOWN;
+			auto pt = attr->type_of_attribute();
+			if ($self->derived()[i++]) {
+				at = IfcUtil::Argument_DERIVED;
+			}
+			if (pt == 0) {
+				at = IfcUtil::Argument_UNKNOWN;
+			}
+			r.push_back(IfcUtil::ArgumentTypeToString(IfcUtil::from_parameter_type(pt)));
+		}
+		return r;
+	}
 }
 
 %extend IfcParse::schema_definition {
