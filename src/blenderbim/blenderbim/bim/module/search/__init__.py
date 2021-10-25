@@ -30,12 +30,18 @@ classes = (
     operator.ResetObjectColours,
     prop.BIMSearchProperties,
     ui.BIM_PT_search,
+    #ifcType Filter
+    operator.BIM_UL_ifctype_filter,
+    operator.BIM_OT_ifctype_filter,
+    prop.BIMIfcTypeFilterProperties
 )
-
 
 def register():
     bpy.types.Scene.BIMSearchProperties = bpy.props.PointerProperty(type=prop.BIMSearchProperties)
-
+    bpy.types.Scene.BIM_IfcTypeFilter_collprops = bpy.props.CollectionProperty(type=prop.BIMIfcTypeFilterProperties)
+    bpy.types.Scene.BIM_IfcTypeFilter_int = bpy.props.IntProperty()
 
 def unregister():
     del bpy.types.Scene.BIMSearchProperties
+    del bpy.types.Scene.BIM_IfcTypeFilter_collprops
+    del bpy.types.Scene.BIM_IfcTypeFilter_int
