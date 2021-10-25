@@ -1097,6 +1097,7 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
+
 class ImportP6XER(bpy.types.Operator, ImportHelper):
     bl_idname = "import_p6xer.bim"
     bl_label = "Import P6 XER"
@@ -1117,6 +1118,7 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
         Data.load(IfcStore.get_file())
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
+
 
 class ImportMSP(bpy.types.Operator, ImportHelper):
     bl_idname = "import_msp.bim"
