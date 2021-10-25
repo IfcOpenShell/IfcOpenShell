@@ -20,14 +20,15 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.TogglePsetExpansion,
-    operator.EnablePsetEditing,
-    operator.DisablePsetEditing,
-    operator.EditPset,
-    operator.RemovePset,
     operator.AddPset,
     operator.AddQto,
+    operator.CopyPropertyToSelection,
+    operator.DisablePsetEditing,
+    operator.EditPset,
+    operator.EnablePsetEditing,
     operator.GuessQuantity,
+    operator.RemovePset,
+    operator.TogglePsetExpansion,
     prop.PsetProperties,
     prop.MaterialPsetProperties,
     prop.TaskPsetProperties,

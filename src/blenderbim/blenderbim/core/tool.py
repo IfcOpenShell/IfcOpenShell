@@ -140,6 +140,11 @@ class Owner:
 
 
 @interface
+class Pset:
+    def get_element_pset(cls, element, pset_name): pass
+
+
+@interface
 class Qto:
     def get_radius_of_selected_vertices(cls, obj): pass
     def set_qto_result(cls, result): pass

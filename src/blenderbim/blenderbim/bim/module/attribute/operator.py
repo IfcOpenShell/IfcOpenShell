@@ -139,9 +139,9 @@ class GenerateGlobalId(bpy.types.Operator):
 class CopyAttributeToSelection(bpy.types.Operator, Operator):
     bl_idname = "bim.copy_attribute_to_selection"
     bl_label = "Copy Attribute To Selection"
-    attribute_name: bpy.props.StringProperty()
+    name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        value = context.active_object.BIMAttributeProperties.attributes.get(self.attribute_name).get_value()
+        value = context.active_object.BIMAttributeProperties.attributes.get(self.name).get_value()
         for obj in context.selected_objects:
-            core.copy_attribute_to_selection(tool.Ifc, name=self.attribute_name, value=value, obj=obj)
+            core.copy_attribute_to_selection(tool.Ifc, name=self.name, value=value, obj=obj)
