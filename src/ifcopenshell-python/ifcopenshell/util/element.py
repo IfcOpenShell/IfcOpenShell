@@ -28,6 +28,7 @@ def get_property_definition(definition):
             for prop in range(4, len(definition)):
                 if definition[prop] is not None:
                     props[definition.attribute_name(prop)] = definition[prop]
+        props["id"] = definition.id()
         return props
 
 
