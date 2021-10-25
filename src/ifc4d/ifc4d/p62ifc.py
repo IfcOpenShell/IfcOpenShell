@@ -185,8 +185,7 @@ class P62Ifc:
     def create_calendars(self):
         for calendar in self.calendars.values():
             calendar["ifc"] = ifcopenshell.api.run(
-                "sequence.add_work_calendar", self.file, name=calendar["Name"], predefined_type=calendar["Type"]
-            )
+                "sequence.add_work_calendar", self.file, name=calendar["Name"])
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
             self.process_exceptions(calendar["HolidayOrExceptions"], calendar["ifc"])
 
