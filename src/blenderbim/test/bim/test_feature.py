@@ -99,6 +99,7 @@ def i_add_a_cube():
     bpy.ops.object.modifier_add(type="ARRAY")
 
 
+@given(parsers.parse('I add a cube of size "{size}" at "{location}"'))
 @when(parsers.parse('I add a cube of size "{size}" at "{location}"'))
 def i_add_a_cube_of_size_size_at_location(size, location):
     bpy.ops.mesh.primitive_cube_add(size=float(size), location=[float(co) for co in location.split(",")])
