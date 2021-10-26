@@ -69,7 +69,7 @@ class BIM_PT_type(Panel):
             row = self.layout.row(align=True)
 
             row.prop(props, "relating_type_class", text="")
-            if type_prop.getRelatingTypes(None, context):
+            if type_prop.get_object_relating_type(None, context):
                 row.prop(props, "relating_type", text="")
                 row.operator("bim.assign_type", icon="CHECKMARK", text="")
             else:
