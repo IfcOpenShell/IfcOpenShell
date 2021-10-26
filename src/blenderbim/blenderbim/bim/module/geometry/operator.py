@@ -500,3 +500,14 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
         bpy.ops.transform.translate("INVOKE_DEFAULT")
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
+
+
+class OverridePasteBuffer(bpy.types.Operator):
+    bl_idname = "bim.override_paste_buffer"
+    bl_label = "Paste BIM Objects"
+
+    def execute(self, context):
+        bpy.ops.view3d.pastebuffer()
+        for obj in context.selected_objects:
+            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
+        return {"FINISHED"}
