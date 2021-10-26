@@ -1118,6 +1118,28 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
+class ImportP6XER(bpy.types.Operator, ImportHelper):
+    bl_idname = "import_p6xer.bim"
+    bl_label = "Import P6 XER"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".xer"
+    filter_glob: bpy.props.StringProperty(default="*.xer", options={"HIDDEN"})
+
+    def execute(self, context):
+        from ifc4d.p6xer2ifc import P6XER2Ifc
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        p6xer2ifc = P6XER2Ifc()
+        p6xer2ifc.xer = self.filepath
+        p6xer2ifc.file = self.file
+        p6xer2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
+        p6xer2ifc.execute()
+        Data.load(IfcStore.get_file())
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
+
 class ImportMSP(bpy.types.Operator, ImportHelper):
     bl_idname = "import_msp.bim"
     bl_label = "Import MSP"
