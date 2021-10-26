@@ -52,6 +52,10 @@ def register():
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         kmi.properties["name"] = "bim.override_paste_buffer"
         addon_keymaps.append((km, kmi))
+        km = wm.keyconfigs.addon.keymaps.new(name="Outliner", space_type="OUTLINER")
+        kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
+        kmi.properties["name"] = "bim.override_paste_buffer"
+        addon_keymaps.append((km, kmi))
 
 
 def unregister():
