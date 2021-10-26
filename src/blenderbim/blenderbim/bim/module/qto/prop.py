@@ -37,7 +37,16 @@ class BIMQtoProperties(PropertyGroup):
         items=[
             ("HEIGHT", "Height", "Calculate the Z height of an object"),
             ("VOLUME", "Volume", "Calculate the volume of an object"),
-            ("FORMWORK", "Formwork", "Calculate the exposed formwork for all bottoms and sides of one or more objects"),
+            (
+                "FORMWORK",
+                "Formwork",
+                "Calculate the exposed formwork for all bottoms and sides (e.g. for beams and slabs) of one or more objects",
+            ),
+            (
+                "SIDE_FORMWORK",
+                "Side Formwork",
+                "Calculate the exposed formwork for all sides only (e.g. for columns) of one or more objects",
+            ),
         ],
         name="Qto Methods",
     )

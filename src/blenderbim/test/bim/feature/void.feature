@@ -38,7 +38,7 @@ Scenario: Add an opening on an opening
     Then the object "IfcOpeningElement/Cube.001" has no boolean difference by "IfcOpeningElement/Cube"
     And the object "IfcOpeningElement/Cube.001" is not voided by "Cube"
 
-Scenario: Add an opening on a null object        
+Scenario: Add an opening on a null object
     Given an empty IFC project
     And I add a cube
     When the object "Cube" is selected
@@ -89,11 +89,11 @@ Scenario: Add an opening to Element B with a void that already voids Element A
     And I press "bim.assign_class"
     And I press "bim.add_opening(opening='IfcOpeningElement/Cube', obj='IfcWall/Cube.001')"
     Then the object "IfcWall/Cube" is not voided
-    And the object "IfcWall/Cube" has no boolean difference by "IfcOpeningElement/Cube"  
+    And the object "IfcWall/Cube" has no boolean difference by "IfcOpeningElement/Cube"
     And the object "IfcWall/Cube.001" is voided by "Cube"
-    And the object "IfcWall/Cube.001" has a boolean difference by "IfcOpeningElement/Cube"  
+    And the object "IfcWall/Cube.001" has a boolean difference by "IfcOpeningElement/Cube"
 
-Scenario: Remove an opening    
+Scenario: Remove an opening
     Given an empty IFC project
     And I add a cube
     When the object "Cube" is selected
@@ -108,7 +108,7 @@ Scenario: Remove an opening
     Then the object "IfcWall/Cube" has no boolean difference by "IfcOpeningElement/Cube"
     And the object "IfcWall/Cube" is not voided by "Cube"
     And the object "Cube" is not an IFC element
-        
+
 Scenario: Remove a non dynamic opening manually
     Given an empty IFC project
     And I add a cube
