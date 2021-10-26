@@ -158,3 +158,23 @@ class TestAssign(NewFile):
         )
         subject.assign(subelement_obj)
         assert subelement_obj.users_collection[0].name == "IfcSite/My Site"
+
+    def test_in_decomposition_mode_types_are_placed_in_the_types_collection(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcWallType/Name", None)
+        element = tool.Ifc.get().createIfcWallType()
+        tool.Ifc.link(element, element_obj)
+        bpy.context.scene.collection.objects.link(element_obj)
+        subject.assign(element_obj)
+        assert element_obj.users_collection[0].name == "Types"
+        assert bpy.data.collections.get("IfcProject/My Project").children.get("Types")
+
+    def test_in_decomposition_mode_openings_are_placed_in_the_openings_collection(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcOpeningElement/Name", None)
+        element = tool.Ifc.get().createIfcOpeningElement()
+        tool.Ifc.link(element, element_obj)
+        bpy.context.scene.collection.objects.link(element_obj)
+        subject.assign(element_obj)
+        assert element_obj.users_collection[0].name == "IfcOpeningElements"
+        assert bpy.data.collections.get("IfcProject/My Project").children.get("IfcOpeningElements")

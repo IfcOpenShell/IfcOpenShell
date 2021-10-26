@@ -31,6 +31,8 @@ class Usecase:
                 continue
             elif inverse.is_a("IfcRelContainedInSpatialStructure") and inverse.RelatingStructure == from_element:
                 continue
+            elif inverse.is_a("IfcRelDefinesByType") and inverse.RelatingType == from_element:
+                continue
             elif inverse.is_a("IfcRelFillsElement"):
                 continue
             elif inverse.is_a("IfcRelAssociatesMaterial") and "Usage" in inverse.RelatingMaterial.is_a():

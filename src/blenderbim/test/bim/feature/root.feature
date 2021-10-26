@@ -44,7 +44,7 @@ Scenario: Assign a type class to a cube
     Then the object "IfcWallType/Cube" is an "IfcWallType"
     And the object "IfcWallType/Cube" is in the collection "Types"
     And the object "IfcWallType/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
-    
+
 Scenario: Assign a spatial class to a cube
     Given an empty IFC project
     And I add a cube
@@ -55,6 +55,19 @@ Scenario: Assign a spatial class to a cube
     Then the object "IfcBuilding/Cube" is an "IfcBuilding"
     And the object "IfcBuilding/Cube" is in the collection "IfcBuilding/Cube"
     And the object "IfcBuilding/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
+
+Scenario: Assign a spatial class to a cube already in a collection
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is placed in the collection "IfcBuildingStorey/My Storey"
+    When the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcSpatialElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcSpace"
+    And I press "bim.assign_class"
+    Then the object "IfcSpace/Cube" is an "IfcSpace"
+    And the object "IfcSpace/Cube" is in the collection "IfcSpace/Cube"
+    And the collection "IfcSpace/Cube" is in the collection "IfcBuildingStorey/My Storey"
+    And the object "IfcSpace/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
 
 Scenario: Assign an opening class to a cube
     Given an empty IFC project

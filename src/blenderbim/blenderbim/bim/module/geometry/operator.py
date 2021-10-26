@@ -508,6 +508,7 @@ class OverridePasteBuffer(bpy.types.Operator):
 
     def execute(self, context):
         bpy.ops.view3d.pastebuffer()
-        for obj in context.selected_objects:
-            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
+        if IfcStore.get_file():
+            for obj in context.selected_objects:
+                blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
         return {"FINISHED"}
