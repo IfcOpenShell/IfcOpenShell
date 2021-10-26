@@ -20,7 +20,7 @@ from xerparser.reader import Reader
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta, date
 
 
 class P6XER2Ifc():
@@ -93,7 +93,8 @@ class P6XER2Ifc():
         self.parse_wbs_xer()
         self.parse_activity_xer()
         self.parse_relationship_xer()
-        work_schedule = self.create_work_schedule()
+        #work_schedule = self.create_work_schedule()
+        #self.create_tasks(work_schedule)
         
             
     def parse_wbs_xer(self):
@@ -110,18 +111,16 @@ class P6XER2Ifc():
     
     def parse_calendar_xer(self):
         standard_work_week = []
+        exceptions = {}
         for cal in self.model.calendars:
-            standard_work_week = []
-            for k,v in cal.working_days.items(): #TODO: add work times
-                standard_work_week.append({
-                        "DayOfWeek": self.day_map2[k],
-                        "WorkTimes": [{
-                                        "Start": time(8, 0),
-                                        "Finish": time(16, 0)
-                                            }] if not v else [],
-                        "ifc": None,
-                })
-            exceptions = {} #TODO: to be implemented 
+            standard_work_week = cal.working_hours
+            except_lst = cal.exceptions
+            for exception in except_lst:
+                 month = exceptions.setdefault(exception.year, {}).setdefault(exception.month, {})
+                 month.setdefault("FullDay", [])
+                 month.setdefault("WorkTime", [])
+                 exceptions[exception.year][exception.month]["FullDay"].append(exception.day)
+                 
             self.calendars[cal.clndr_id] = {
                 "Name": cal.clndr_name,
                 "Type": cal.clndr_type,
@@ -249,8 +248,8 @@ class P6XER2Ifc():
             work_time=work_time,
             attributes={
                 "Name": f"{year}-{month}",
-                "Start": datetime.date(year, 1, 1),
-                "Finish": datetime.date(year, 12, 31),
+                "Start": date(year, 1, 1),
+                "Finish": date(year, 12, 31),
             },
         )
         recurrence = ifcopenshell.api.run(
@@ -290,8 +289,8 @@ class P6XER2Ifc():
                 work_time=day["ifc"],
                 attributes={
                     "Name": "{}-{}-{}".format(year, month, ", ".join([str(d) for d in day_component])),
-                    "Start": datetime.date(year, 1, 1),
-                    "Finish": datetime.date(year, 12, 31),
+                    "Start": date(year, 1, 1),
+                    "Finish": date(year, 12, 31),
                 },
             )
             recurrence = ifcopenshell.api.run(
@@ -425,8 +424,7 @@ class P6XER2Ifc():
         self.file = ifcopenshell.file(schema="IFC4")
         self.work_plan = self.file.create_entity("IfcWorkPlan")
 
-# TODO: working time need to be extracted from the xer not hard coded
-# TODO: exceptions need to be implemented 
+
 # TODO: add support for resources
 # TODO: consider showing progress bar for better user experience
 # TODO: support multiple projects in a single file
