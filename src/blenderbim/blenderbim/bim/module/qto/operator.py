@@ -105,6 +105,8 @@ class ExecuteQtoMethod(bpy.types.Operator):
             result = helper.calculate_volumes(selected_mesh_objects, context)
         elif props.qto_methods == "FORMWORK":
             result = helper.calculate_formwork_area(selected_mesh_objects, context)
+        elif props.qto_methods == "SIDE_FORMWORK":
+            result = helper.calculate_side_formwork_area(selected_mesh_objects, context)
         props.qto_result = str(round(result, 3))
         return {"FINISHED"}
 
@@ -134,6 +136,8 @@ class QuantifyObjects(bpy.types.Operator):
                 result = helper.calculate_volumes([obj], context)
             elif props.qto_methods == "FORMWORK":
                 result = helper.calculate_formwork_area([obj], context)
+            elif props.qto_methods == "SIDE_FORMWORK":
+                result = helper.calculate_side_formwork_area([obj], context)
             if not result:
                 continue
             result = round(result, 3)

@@ -62,7 +62,7 @@ def calculate_formwork_area(objs, context):
     """
     Formwork is defined as the surface area required to cover all exposed
     surfaces of one or more objects, excluding top surfaces (i.e. that have a
-    face normal with a significant Z component).
+    face normal with a significant +Z component).
     """
     copied_objs = []
     result = 0
@@ -104,4 +104,20 @@ def calculate_formwork_area(objs, context):
         if polygon.normal.z > 0.5:
             continue
         result += polygon.area
+    return result
+
+
+def calculate_side_formwork_area(objs, context):
+    """
+    Side formwork is defined as the surface area required to cover all exposed
+    surfaces of one or more objects, excluding top and bottom surfaces (i.e.
+    that have a face normal with a significant Z component).
+    """
+    result = 0
+    for obj in objs:
+        mesh = obj.evaluated_get(context.evaluated_depsgraph_get()).to_mesh()
+        for polygon in mesh.polygons:
+            if abs(polygon.normal.z) > 0.8:
+                continue
+            result += polygon.area
     return result

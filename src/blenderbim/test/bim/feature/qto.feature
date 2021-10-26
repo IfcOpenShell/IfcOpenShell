@@ -29,7 +29,7 @@ Scenario: Calculate object volumes
     When I press "bim.calculate_object_volumes"
     Then "scene.BIMQtoProperties.qto_result" is "8.0"
 
-Scenario: Calculate formwork areas
+Scenario: Execute qto method - formwork areas
     Given an empty Blender session
     And I add a cube
     And I add a cube of size "1" at "1,0,0"
@@ -38,3 +38,11 @@ Scenario: Calculate formwork areas
     When I set "scene.BIMQtoProperties.qto_methods" to "FORMWORK"
     And I press "bim.execute_qto_method"
     Then "scene.BIMQtoProperties.qto_result" is "21.5"
+
+Scenario: Execute qto method - side formwork areas
+    Given an empty Blender session
+    And I add a cube
+    And the object "Cube" is selected
+    When I set "scene.BIMQtoProperties.qto_methods" to "SIDE_FORMWORK"
+    And I press "bim.execute_qto_method"
+    Then "scene.BIMQtoProperties.qto_result" is "16.0"
