@@ -26,6 +26,8 @@ classes = (
     operator.GetRepresentationIfcParameters,
     operator.OverrideDelete,
     operator.OverrideDuplicateMove,
+    operator.OverrideDuplicateMoveLinked,
+    operator.OverridePasteBuffer,
     operator.RemoveRepresentation,
     operator.SwitchRepresentation,
     operator.UpdateParametricRepresentation,
@@ -38,11 +40,30 @@ classes = (
 )
 
 
+addon_keymaps = []
+
+
 def register():
     bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
     bpy.types.OBJECT_PT_transform.append(ui.BIM_PT_transform)
+    wm = bpy.context.window_manager
+    if wm.keyconfigs.addon:
+        km = wm.keyconfigs.addon.keymaps.new(name="3D View", space_type="VIEW_3D")
+        kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
+        kmi.properties["name"] = "bim.override_paste_buffer"
+        addon_keymaps.append((km, kmi))
+        km = wm.keyconfigs.addon.keymaps.new(name="Outliner", space_type="OUTLINER")
+        kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
+        kmi.properties["name"] = "bim.override_paste_buffer"
+        addon_keymaps.append((km, kmi))
 
 
 def unregister():
     bpy.types.OBJECT_PT_transform.remove(ui.BIM_PT_transform)
     del bpy.types.Scene.BIMGeometryProperties
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        for km, kmi in addon_keymaps:
+            km.keymap_items.remove(kmi)
+    addon_keymaps.clear()

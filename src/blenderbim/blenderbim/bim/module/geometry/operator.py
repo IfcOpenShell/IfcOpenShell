@@ -453,4 +453,62 @@ class OverrideDuplicateMove(bpy.types.Operator):
             blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
         bpy.ops.transform.translate("INVOKE_DEFAULT")
         blenderbim.bim.handler.purge_module_data()
+
+
+class OverrideDuplicateMoveLinked(bpy.types.Operator):
+    bl_idname = "object.duplicate_move_linked"
+    bl_label = "Duplicate Linked"
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) > 0
+
+    def execute(self, context):
+        # Deep magick from the dawn of time
+        if IfcStore.get_file():
+            IfcStore.execute_ifc_operator(self, context)
+            if self.new_active_obj:
+                context.view_layer.objects.active = self.new_active_obj
+            return {"FINISHED"}
+
+        new_active_obj = None
+        for obj in context.selected_objects:
+            new_obj = obj.copy()
+            if obj == context.active_object:
+                new_active_obj = new_obj
+            for collection in obj.users_collection:
+                collection.objects.link(new_obj)
+            obj.select_set(False)
+            new_obj.select_set(True)
+        if new_active_obj:
+            context.view_layer.objects.active = new_active_obj
+        bpy.ops.transform.translate("INVOKE_DEFAULT")
+        return {"FINISHED"}
+
+    def _execute(self, context):
+        self.new_active_obj = None
+        for obj in context.selected_objects:
+            new_obj = obj.copy()
+            if obj == context.active_object:
+                self.new_active_obj = new_obj
+            for collection in obj.users_collection:
+                collection.objects.link(new_obj)
+            obj.select_set(False)
+            new_obj.select_set(True)
+            # This is the only difference
+            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+        bpy.ops.transform.translate("INVOKE_DEFAULT")
+        blenderbim.bim.handler.purge_module_data()
+        return {"FINISHED"}
+
+
+class OverridePasteBuffer(bpy.types.Operator):
+    bl_idname = "bim.override_paste_buffer"
+    bl_label = "Paste BIM Objects"
+
+    def execute(self, context):
+        bpy.ops.view3d.pastebuffer()
+        if IfcStore.get_file():
+            for obj in context.selected_objects:
+                blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
         return {"FINISHED"}

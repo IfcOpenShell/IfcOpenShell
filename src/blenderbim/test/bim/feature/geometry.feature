@@ -244,3 +244,59 @@ Scenario: Override duplicate move - copying a profiled extrusion
     When I press "object.duplicate_move"
     Then the object "IfcWall/Cube.001" exists
     Then the object "IfcWall/Cube.001" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
+
+Scenario: Override duplicate move linked - without active IFC data
+    Given an empty Blender session
+    And I add a cube
+    And I add an empty
+    And the object "Cube" is selected
+    And additionally the object "Empty" is selected
+    When I press "object.duplicate_move_linked"
+    Then the object "Cube" exists
+    And the object "Cube.001" exists
+
+Scenario: Override duplicate move linked - with active IFC data
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And additionally the object "IfcBuildingStorey/My Storey" is selected
+    When I press "object.duplicate_move_linked"
+    Then the object "IfcWall/Cube" exists
+    And the object "IfcWall/Cube" is an "IfcWall"
+    And the object "IfcWall/Cube.001" exists
+    And the object "IfcWall/Cube.001" is an "IfcWall"
+    And the object "IfcWall/Cube.001" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
+    And the object "IfcBuildingStorey/My Storey.001" exists
+    And the object "IfcBuildingStorey/My Storey.001" is an "IfcBuildingStorey"
+
+Scenario: Override paste buffer - without active IFC data
+    Given an empty Blender session
+    And I add a cube
+    And I add an empty
+    And the object "Cube" is selected
+    And additionally the object "Empty" is selected
+    When I press "view3d.copybuffer"
+    And I press "bim.override_paste_buffer"
+    Then the object "Cube" exists
+    And the object "Cube.001" exists
+
+Scenario: Override paste buffer - with active IFC data
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And additionally the object "IfcBuildingStorey/My Storey" is selected
+    When I press "view3d.copybuffer"
+    And I press "bim.override_paste_buffer"
+    Then the object "IfcWall/Cube" exists
+    And the object "IfcWall/Cube" is an "IfcWall"
+    And the object "IfcWall/Cube.001" exists
+    And the object "IfcWall/Cube.001" is an "IfcWall"
+    And the object "IfcWall/Cube.001" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
+    And the object "IfcBuildingStorey/My Storey.001" exists
+    And the object "IfcBuildingStorey/My Storey.001" is an "IfcBuildingStorey"

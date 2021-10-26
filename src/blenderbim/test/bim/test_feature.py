@@ -133,6 +133,7 @@ def the_object_name_is_selected(name):
     additionally_the_object_name_is_selected(name)
 
 
+@given(parsers.parse('the object "{name}" is placed in the collection "{collection}"'))
 @when(parsers.parse('the object "{name}" is placed in the collection "{collection}"'))
 def the_object_name_is_placed_in_the_collection_collection(name, collection):
     obj = the_object_name_exists(name)
