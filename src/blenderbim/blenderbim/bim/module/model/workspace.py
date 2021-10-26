@@ -61,7 +61,7 @@ class BimTool(WorkSpaceTool):
             row.label(text="No IFC Class")
         else:
             row.prop(props, "ifc_class", text="")
-        if type_prop.getAvailableTypes(props, context):
+        if type_prop.get_relating_type(props, context):
             row.prop(props, "relating_type", text="")
         else:
             row.label(text="No Relating Type")
