@@ -1,26 +1,26 @@
-# BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Ifc4D - IFC scheduling utility
+# Copyright (C) 2021 Hassan Emam <hassan@constology.com>
 #
-# This file is part of BlenderBIM Add-on.
+# This file is part of Ifc4D.
 #
-# BlenderBIM Add-on is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
+# Ifc4D is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# Ifc4D is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# GNU Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with Ifc4D.  If not, see <http://www.gnu.org/licenses/>.
 
 from xerparser.reader import Reader
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, date
 
 
 class P6XER2Ifc():
@@ -93,7 +93,8 @@ class P6XER2Ifc():
         self.parse_wbs_xer()
         self.parse_activity_xer()
         self.parse_relationship_xer()
-        work_schedule = self.create_work_schedule()
+        #work_schedule = self.create_work_schedule()
+        #self.create_tasks(work_schedule)
         
             
     def parse_wbs_xer(self):
@@ -110,18 +111,16 @@ class P6XER2Ifc():
     
     def parse_calendar_xer(self):
         standard_work_week = []
+        exceptions = {}
         for cal in self.model.calendars:
-            standard_work_week = []
-            for k,v in cal.working_days.items(): #TODO: add work times
-                standard_work_week.append({
-                        "DayOfWeek": self.day_map2[k],
-                        "WorkTimes": [{
-                                        "Start": time(8, 0),
-                                        "Finish": time(16, 0)
-                                            }] if not v else [],
-                        "ifc": None,
-                })
-            exceptions = {} #TODO: to be implemented 
+            standard_work_week = cal.working_hours
+            except_lst = cal.exceptions
+            for exception in except_lst:
+                 month = exceptions.setdefault(exception.year, {}).setdefault(exception.month, {})
+                 month.setdefault("FullDay", [])
+                 month.setdefault("WorkTime", [])
+                 exceptions[exception.year][exception.month]["FullDay"].append(exception.day)
+                 
             self.calendars[cal.clndr_id] = {
                 "Name": cal.clndr_name,
                 "Type": cal.clndr_type,
@@ -249,8 +248,8 @@ class P6XER2Ifc():
             work_time=work_time,
             attributes={
                 "Name": f"{year}-{month}",
-                "Start": datetime.date(year, 1, 1),
-                "Finish": datetime.date(year, 12, 31),
+                "Start": date(year, 1, 1),
+                "Finish": date(year, 12, 31),
             },
         )
         recurrence = ifcopenshell.api.run(
@@ -290,8 +289,8 @@ class P6XER2Ifc():
                 work_time=day["ifc"],
                 attributes={
                     "Name": "{}-{}-{}".format(year, month, ", ".join([str(d) for d in day_component])),
-                    "Start": datetime.date(year, 1, 1),
-                    "Finish": datetime.date(year, 12, 31),
+                    "Start": date(year, 1, 1),
+                    "Finish": date(year, 12, 31),
                 },
             )
             recurrence = ifcopenshell.api.run(
@@ -425,9 +424,3 @@ class P6XER2Ifc():
         self.file = ifcopenshell.file(schema="IFC4")
         self.work_plan = self.file.create_entity("IfcWorkPlan")
 
-# TODO: working time need to be extracted from the xer not hard coded
-# TODO: exceptions need to be implemented 
-# TODO: add support for resources
-# TODO: consider showing progress bar for better user experience
-# TODO: support multiple projects in a single file
-# TODO: prompt user to select activities and/or wbs nodes to import instead of the full project
