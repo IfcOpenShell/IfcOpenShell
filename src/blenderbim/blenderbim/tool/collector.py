@@ -79,6 +79,22 @@ class Collector(blenderbim.core.tool.Collector):
 
     @classmethod
     def _get_collection(cls, element, obj):
+        if element.is_a("IfcTypeObject"):
+            collection = bpy.data.collections.get("Types")
+            if not collection:
+                collection = bpy.data.collections.new("Types")
+                project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+                project_obj.users_collection[0].children.link(collection)
+            return collection
+
+        if element.is_a("IfcOpeningElement"):
+            collection = bpy.data.collections.get("IfcOpeningElements")
+            if not collection:
+                collection = bpy.data.collections.new("IfcOpeningElements")
+                project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+                project_obj.users_collection[0].children.link(collection)
+            return collection
+
         aggregate = ifcopenshell.util.element.get_aggregate(element)
         if aggregate:
             aggregate_obj = tool.Ifc.get_object(aggregate)
