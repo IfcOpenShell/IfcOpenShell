@@ -76,13 +76,7 @@ class ClassificationData:
             results = {
                 classification.id() : info,
             }
-            #results.append(
-            #    {
-            #        "id" : classification.id(),
-            #        "info" : info,
-            #    }
-            #)
-            #cls.classifications[classification.id()] = data    OLD
+
         return results
 
     @classmethod
@@ -98,13 +92,6 @@ class ClassificationData:
                 reference.id() : info,
             }
 
-            #results.append(
-            #    {
-            #        "id": reference.id(),
-            #        "info" : info,
-            #    }
-            #)
-            #cls.references[reference.id()] = data
         return results
 
     @classmethod
