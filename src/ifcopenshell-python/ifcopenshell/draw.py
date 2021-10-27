@@ -57,23 +57,25 @@ class draw_settings:
     storey_heights: str = "none"
     include_entities: str = ""
     exclude_entities: str = "IfcOpeningElement"
+    drawing_guid: str = ""
 
 
-def main(settings, files, progress_function=DO_NOTHING):
-    iterator_kwargs = {}
-    if settings.include_entities:
-        iterator_kwargs["include"] = settings.include_entities.split(",")
-    elif settings.exclude_entities:
-        iterator_kwargs["exclude"] = settings.exclude_entities.split(",")
+def main(settings, files, iterators=None, merge_projection=True, progress_function=DO_NOTHING):
+    if not iterators:
+        iterator_kwargs = {}
+        if settings.include_entities:
+            iterator_kwargs["include"] = settings.include_entities.split(",")
+        elif settings.exclude_entities:
+            iterator_kwargs["exclude"] = settings.exclude_entities.split(",")
 
-    # We have to keep the iterator in memory because otherwise
-    # the styles are cleared up.
-    iterators = list(
-        map(
-            functools.partial(ifcopenshell.geom.iterator, SETTINGS, **iterator_kwargs),
-            files,
+        # We have to keep the iterator in memory because otherwise
+        # the styles are cleared up.
+        iterators = list(
+            map(
+                functools.partial(ifcopenshell.geom.iterator, SETTINGS, **iterator_kwargs),
+                files,
+            )
         )
-    )
 
     def yield_from_iterator(it):
         if it.initialize():
@@ -90,6 +92,12 @@ def main(settings, files, progress_function=DO_NOTHING):
     if settings.auto_floorplan:
         sr.setSectionHeightsFromStoreys()
 
+    if settings.drawing_guid:
+        sr.setElevationRefGuid(settings.drawing_guid)
+        sr.setWithoutStoreys(True)
+        # If you want to filter by IfcAnnotation ObjectType named "DRAWING"
+        #sr.setElevationRef("DRAWING")
+
     # required for svgfill
     sr.setPolygonal(True)
     sr.setUseNamespace(True)
@@ -105,19 +113,21 @@ def main(settings, files, progress_function=DO_NOTHING):
     sr.setPrintSpaceAreas(settings.space_areas)
     sr.setDrawDoorArcs(settings.door_arcs)
     sr.setNoCSS(not settings.css)
-    
+
     try:
         sh = ['none', 'full', 'left'].index(settings.storey_heights)
         sr.setDrawStoreyHeights(sh)
     except:
         raise ValueError("storey_heights should be one of {'none', 'full', 'left'}")
-    
+
     """
     # It is also possible to add drawing planes manually
+    import bpy
+    obj = bpy.context.active_object
     sr.addDrawing(
-        obj.matrix_world.transposed()[3][0:3],
-        -obj.matrix_world.transposed()[2][0:3],
-        -obj.matrix_world.transposed()[0][0:3],
+        obj.matrix_world.transposed()[3][0:3], # location
+        obj.matrix_world.transposed()[2][0:3], # z axis (view direction)
+        obj.matrix_world.transposed()[0][0:3], # x axis
         "Test", # drawing name
         True    # include projection
     )
@@ -142,6 +152,9 @@ def main(settings, files, progress_function=DO_NOTHING):
 
     # Obtain SVG output from serializer buffer
     svg_data_1 = buffer.get_value()
+
+    if not merge_projection:
+        return svg_data_1
 
     # Parse SVG into vector of line segments
     #
