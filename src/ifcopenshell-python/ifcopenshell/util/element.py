@@ -1,16 +1,28 @@
 import ifcopenshell
 
 
-def get_psets(element):
+def get_psets(element, psets_only=False, qtos_only=False):
     psets = {}
     if element.is_a("IfcTypeObject"):
-        if element.HasPropertySets:
-            for definition in element.HasPropertySets:
-                psets[definition.Name] = get_property_definition(definition)
+        for definition in element.HasPropertySets or []:
+            if psets_only and not definition.is_a("IfcPropertySet"):
+                continue
+            if qtos_only and not definition.is_a("IfcElementQuantity"):
+                continue
+            psets[definition.Name] = get_property_definition(definition)
+    elif element.is_a("IfcMaterialDefinition") or element.is_a("IfcProfileDef"):
+        for definition in element.HasProperties or []:
+            if qtos_only:
+                continue
+            psets[definition.Name] = get_property_definition(definition)
     elif hasattr(element, "IsDefinedBy"):
         for relationship in element.IsDefinedBy:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
+                if psets_only and not definition.is_a("IfcPropertySet"):
+                    continue
+                if qtos_only and not definition.is_a("IfcElementQuantity"):
+                    continue
                 psets[definition.Name] = get_property_definition(definition)
     return psets
 
@@ -22,18 +34,21 @@ def get_property_definition(definition):
             props.update(get_quantities(definition.Quantities))
         elif definition.is_a("IfcPropertySet"):
             props.update(get_properties(definition.HasProperties))
+        elif definition.is_a("IfcMaterialProperties") or definition.is_a("IfcProfileProperties"):
+            props.update(get_properties(definition.Properties))
         else:
             # Entity introduced in IFC4
             # definition.is_a('IfcPreDefinedPropertySet'):
             for prop in range(4, len(definition)):
                 if definition[prop] is not None:
                     props[definition.attribute_name(prop)] = definition[prop]
+        props["id"] = definition.id()
         return props
 
 
 def get_quantities(quantities):
     results = {}
-    for quantity in quantities:
+    for quantity in quantities or []:
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
             results[quantity.Name] = quantity[3]
     return results

@@ -99,9 +99,16 @@ def i_add_a_cube():
     bpy.ops.object.modifier_add(type="ARRAY")
 
 
+@given(parsers.parse('I add a cube of size "{size}" at "{location}"'))
 @when(parsers.parse('I add a cube of size "{size}" at "{location}"'))
 def i_add_a_cube_of_size_size_at_location(size, location):
     bpy.ops.mesh.primitive_cube_add(size=float(size), location=[float(co) for co in location.split(",")])
+
+
+@given(parsers.parse('I add a plane of size "{size}" at "{location}"'))
+@when(parsers.parse('I add a plane of size "{size}" at "{location}"'))
+def i_add_a_plane_of_size_size_at_location(size, location):
+    bpy.ops.mesh.primitive_plane_add(size=float(size), location=[float(co) for co in location.split(",")])
 
 
 @given(parsers.parse('I press "{operator}"'))
@@ -133,6 +140,7 @@ def the_object_name_is_selected(name):
     additionally_the_object_name_is_selected(name)
 
 
+@given(parsers.parse('the object "{name}" is placed in the collection "{collection}"'))
 @when(parsers.parse('the object "{name}" is placed in the collection "{collection}"'))
 def the_object_name_is_placed_in_the_collection_collection(name, collection):
     obj = the_object_name_exists(name)

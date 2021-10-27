@@ -18,6 +18,8 @@
 
 import os
 import bpy
+import ifcopenshell
+import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.decoration as decoration
 import enum
@@ -51,6 +53,22 @@ def purge():
     titleblocks_enum = []
     sheets_enum = []
     vector_styles_enum = []
+
+
+def update_diagram_scale(self, context):
+    scale = self.diagram_scale
+    if scale == "CUSTOM":
+        scale = self.custom_diagram_scale
+    scale = scale.split("|")[1]
+    element = tool.Ifc.get_entity(context.scene.camera)
+    if not element:
+        return
+    pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing")
+    if pset:
+        pset = tool.Ifc.get().by_id(pset["id"])
+    else:
+        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
+    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Scale": scale})
 
 
 def get_diagram_scales(self, context):
@@ -294,8 +312,8 @@ class BIMCameraProperties(PropertyGroup):
         name="Target View",
         default="PLAN_VIEW",
     )
-    diagram_scale: EnumProperty(items=get_diagram_scales, name="Drawing Scale")
-    custom_diagram_scale: StringProperty(name="Custom Scale")
+    diagram_scale: EnumProperty(items=get_diagram_scales, name="Drawing Scale", update=update_diagram_scale)
+    custom_diagram_scale: StringProperty(name="Custom Scale", update=update_diagram_scale)
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
     is_nts: BoolProperty(name="Is NTS")

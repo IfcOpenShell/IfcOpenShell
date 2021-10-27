@@ -62,31 +62,32 @@ def calculate_formwork_area(objs, context):
     """
     Formwork is defined as the surface area required to cover all exposed
     surfaces of one or more objects, excluding top surfaces (i.e. that have a
-    face normal with a significant Z component).
+    face normal with a significant +Z component).
     """
     copied_objs = []
     result = 0
 
-    for obj in objs:
-        new_obj = obj.copy()
-        new_obj.data = obj.data.copy()
-        new_obj.animation_data_clear()
-        context.collection.objects.link(new_obj)
-        copied_objs.append(new_obj)
+    copied_obj = objs[0].copy()
+    copied_obj.data = objs[0].data.copy()
+    copied_obj.animation_data_clear()
+    context.collection.objects.link(copied_obj)
 
     if len(objs) > 1:
-        context_override = {}
-        context_override["object"] = context_override["active_object"] = copied_objs[0]
-        context_override["selected_objects"] = context_override["selected_editable_objects"] = copied_objs
-        bpy.ops.object.join(context_override)
+        for i, obj in enumerate(objs):
+            if i == 0:
+                continue
+            modifier = copied_obj.modifiers.new(type="BOOLEAN", name="Boolean")
+            modifier.operation = "UNION"
+            modifier.object = obj
+            bpy.ops.object.modifier_apply({"object": copied_obj}, modifier="Boolean")
 
-    copied_objs[0].name = "Formwork"
-    copied_objs[0].BIMObjectProperties.ifc_definition_id = 0
-    modifier = copied_objs[0].modifiers.new("Formwork", "REMESH")
+    copied_obj.name = "Formwork"
+    copied_obj.BIMObjectProperties.ifc_definition_id = 0
+    modifier = copied_obj.modifiers.new("Formwork", "REMESH")
     modifier.mode = "SHARP"
     # This hardcoded value may be optimised through a better understanding of the octree division.
     # These values are based off some trial and error heuristics I've learned through experience.
-    max_dim = max(copied_objs[0].dimensions)
+    max_dim = max(copied_obj.dimensions)
     if max_dim > 45:
         modifier.octree_depth = 9
     elif max_dim > 35:
@@ -98,9 +99,25 @@ def calculate_formwork_area(objs, context):
     else:
         modifier.octree_depth = 5
 
-    mesh = copied_objs[0].evaluated_get(context.evaluated_depsgraph_get()).to_mesh()
+    mesh = copied_obj.evaluated_get(context.evaluated_depsgraph_get()).to_mesh()
     for polygon in mesh.polygons:
         if polygon.normal.z > 0.5:
             continue
         result += polygon.area
+    return result
+
+
+def calculate_side_formwork_area(objs, context):
+    """
+    Side formwork is defined as the surface area required to cover all exposed
+    surfaces of one or more objects, excluding top and bottom surfaces (i.e.
+    that have a face normal with a significant Z component).
+    """
+    result = 0
+    for obj in objs:
+        mesh = obj.evaluated_get(context.evaluated_depsgraph_get()).to_mesh()
+        for polygon in mesh.polygons:
+            if abs(polygon.normal.z) > 0.8:
+                continue
+            result += polygon.area
     return result

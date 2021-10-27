@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -17,22 +17,15 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
-
-classes = (
-    operator.ResizeToStorey,
-    operator.SetOverrideColour,
-    operator.SetViewportShadowFromSun,
-    operator.SnapSpacesTogether,
-    operator.SplitAlongEdge,
-    prop.BIMMiscProperties,
-    ui.BIM_PT_misc_utilities,
-)
+import ifcopenshell
+import blenderbim.core.tool
+import blenderbim.tool as tool
 
 
-def register():
-    bpy.types.Scene.BIMMiscProperties = bpy.props.PointerProperty(type=prop.BIMMiscProperties)
-
-
-def unregister():
-    del bpy.types.Scene.BIMMiscProperties
+class Pset(blenderbim.core.tool.Pset):
+    @classmethod
+    def get_element_pset(cls, element, pset_name):
+        psets = ifcopenshell.util.element.get_psets(element)
+        pset = psets.get(pset_name, None)
+        if pset:
+            return tool.Ifc.get().by_id(pset["id"])

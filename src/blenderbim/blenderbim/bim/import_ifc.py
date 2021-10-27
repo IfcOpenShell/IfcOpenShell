@@ -278,13 +278,11 @@ class IfcImporter:
         ]
         if self.body_contexts:
             self.settings.set_context_ids(self.body_contexts)
-        self.non_body_contexts = [
-            c.id()
-            for c in self.file.by_type("IfcGeometricRepresentationSubContext")
-            if c.ContextIdentifier not in ["Body", "Facetation"]
+        self.plan_contexts = [
+            c.id() for c in self.file.by_type("IfcGeometricRepresentationContext") if c.ContextType == "Plan"
         ]
-        if self.non_body_contexts:
-            self.settings_2d.set_context_ids(self.non_body_contexts)
+        if self.plan_contexts:
+            self.settings_2d.set_context_ids(self.plan_contexts)
 
     def process_element_filter(self):
         if self.ifc_import_settings.has_filter:
@@ -590,9 +588,15 @@ class IfcImporter:
         self.create_generic_elements(self.elements)
 
     def create_generic_elements(self, elements):
+        # Based on my experience in viewing BIM models, representations are prioritised as follows:
+        # 1. 3D Body, 2. 2D Plans, 3. Point clouds, 4. No representation
+        # If an element has a representation that doesn't follow 1, 2, or 3, it will not show by default.
+        # The user can load them later if they want to view them.
         products = self.create_products(elements)
         elements -= products
         products = self.create_curve_products(elements)
+        elements -= products
+        products = self.create_pointclouds(elements)
         elements -= products
         for element in elements:
             self.create_product(element)
@@ -684,6 +688,66 @@ class IfcImporter:
             obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
             obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, placement_matrix)
             self.link_element(product, obj)
+
+    def get_pointcloud_representation(self, product):
+        if hasattr(product, "Representation") and hasattr(product.Representation, "Representations"):
+            representations = product.Representation.Representations
+        elif hasattr(product, "RepresentationMaps") and hasattr(product.RepresentationMaps, "RepresentationMaps"):
+            representations = product.RepresentationMaps
+        else:
+            return None
+
+        for representation in representations:
+            if representation.RepresentationType == "PointCloud":
+                return representation
+
+            elif self.file.schema == "IFC2X3" and representation.RepresentationType == "GeometricSet":
+                for item in representation.Items:
+                    if not (item.is_a("IfcCartesianPointList") or item.is_a("IfcCartesianPoint")):
+                        break
+                else:
+                    return representation
+
+            elif representation.RepresentationType == "MappedRepresentation":
+                for item in representation.Items:
+                    mapped_representation = self.get_pointcloud_representation(item)
+                    if mapped_representation is not None:
+                        return mapped_representation
+        return None
+
+    def create_pointclouds(self, products):
+        result = set()
+        for product in products:
+            representation = self.get_pointcloud_representation(product)
+            if representation is not None:
+                pointcloud = self.create_pointcloud(product, representation)
+                if pointcloud is not None:
+                    result.add(pointcloud)
+
+        return result
+
+    def create_pointcloud(self, product, representation):
+        placement_matrix = ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement)
+        vertex_list = []
+        for item in representation.Items:
+            if item.is_a("IfcCartesianPointList"):
+                vertex_list.extend(
+                    mathutils.Vector(list(coordinates)) * self.unit_scale for coordinates in item.CoordList
+                )
+            elif item.is_a("IfcCartesianPoint"):
+                vertex_list.append(mathutils.Vector(list(item.Coordinates)) * self.unit_scale)
+
+        if len(vertex_list) == 0:
+            return None
+
+        mesh_name = f"{representation.ContextOfItems.id()}/{representation.id()}"
+        mesh = bpy.data.meshes.new(mesh_name)
+        mesh.from_pydata(vertex_list, [], [])
+
+        obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
+        obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, placement_matrix)
+        self.link_element(product, obj)
+        return product
 
     def create_curve_products(self, products):
         results = set()

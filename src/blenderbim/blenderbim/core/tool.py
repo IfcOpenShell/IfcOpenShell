@@ -104,8 +104,10 @@ class Misc:
     def get_storey_height_in_si(cls, storey): pass
     def mark_object_as_edited(cls, obj): pass
     def move_object_to_elevation(cls, obj, elevation): pass
+    def run_root_copy_class(cls, obj=None): pass
     def scale_object_to_height(cls, obj, height): pass
     def set_object_origin_to_bottom(cls, obj): pass
+    def split_objects_with_cutter(cls, objs, cutter): pass
 
 
 @interface
@@ -137,6 +139,11 @@ class Owner:
     def set_person(cls, person): pass
     def set_role(cls, role): pass
     def set_user(cls, user): pass
+
+
+@interface
+class Pset:
+    def get_element_pset(cls, element, pset_name): pass
 
 
 @interface

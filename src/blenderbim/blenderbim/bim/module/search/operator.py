@@ -20,6 +20,7 @@ import re
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from itertools import cycle
 
@@ -320,3 +321,41 @@ class ResetObjectColours(bpy.types.Operator):
         for obj in context.selected_objects:
             obj.color = (1, 1, 1, 1)
         return {"FINISHED"}
+
+
+class ActivateIfcTypeFilter(bpy.types.Operator):
+    "It helps you to filter your selection by IFC class"
+    bl_idname = "bim.activate_ifc_type_filter"
+    bl_label = "Activate IfcType Filter"
+
+    def invoke(self, context, event):
+        bpy.context.scene.BIMSearchProperties.filter_classes.clear()
+
+        ifc_types = {}
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            ifc_types.setdefault(element.is_a(), 0)
+            ifc_types[element.is_a()] += 1
+
+        for name, total in ifc_types.items():
+            new = context.scene.BIMSearchProperties.filter_classes.add()
+            new.name = name
+            new.total = total
+
+        return context.window_manager.invoke_props_dialog(self, width=250)
+
+    def execute(self, context):
+        bpy.context.scene.BIMSearchProperties.filter_classes.clear()
+        return {"FINISHED"}
+
+    def draw(self, context):
+        self.layout.template_list(
+            "BIM_UL_ifctype_filter",
+            "",
+            context.scene.BIMSearchProperties,
+            "filter_classes",
+            context.scene.BIMSearchProperties,
+            "filter_classes_index",
+        )

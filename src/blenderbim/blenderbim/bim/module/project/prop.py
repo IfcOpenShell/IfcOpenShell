@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell.util.placement
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty
 from bpy.types import PropertyGroup
@@ -39,7 +40,10 @@ def update_filter_mode(self, context):
             elements = file.by_type("IfcSpatialStructureElement")
         else:
             elements = file.by_type("IfcSpatialElement")
+        elements = [(e, ifcopenshell.util.placement.get_storey_elevation(e)) for e in elements]
+        elements = sorted(elements, key=lambda e: e[1])
         for element in elements:
+            element = element[0]
             new = self.filter_categories.add()
             new.name = "{}/{}".format(element.is_a(), element.Name or "Unnamed")
             new.ifc_definition_id = element.id()

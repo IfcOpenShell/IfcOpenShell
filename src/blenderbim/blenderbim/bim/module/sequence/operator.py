@@ -656,13 +656,13 @@ class CopyTaskAttribute(bpy.types.Operator):
     bl_idname = "bim.copy_task_attribute"
     bl_label = "Copy Task Attribute"
     bl_options = {"REGISTER", "UNDO"}
-    data: bpy.props.StringProperty()
+    name: bpy.props.StringProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        data = json.loads(self.data)
+        value = context.scene.BIMWorkScheduleProperties.task_attributes.get(self.name).get_value()
         self.file = IfcStore.get_file()
         props = context.scene.BIMTaskTreeProperties
         for task in props.tasks:
@@ -670,10 +670,8 @@ class CopyTaskAttribute(bpy.types.Operator):
                 ifcopenshell.api.run(
                     "sequence.edit_task",
                     self.file,
-                    **{
-                        "task": self.file.by_id(task.ifc_definition_id),
-                        "attributes": {data["name"]: None if data["is_null"] else data["value"]},
-                    },
+                    task=self.file.by_id(task.ifc_definition_id),
+                    attributes={self.name: value},
                 )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_task_properties()
@@ -1095,6 +1093,48 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         p62ifc.file = self.file
         p62ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         p62ifc.execute()
+        Data.load(IfcStore.get_file())
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
+class ImportP6XER(bpy.types.Operator, ImportHelper):
+    bl_idname = "import_p6xer.bim"
+    bl_label = "Import P6 XER"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".xer"
+    filter_glob: bpy.props.StringProperty(default="*.xer", options={"HIDDEN"})
+
+    def execute(self, context):
+        from ifc4d.p6xer2ifc import P6XER2Ifc
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        p6xer2ifc = P6XER2Ifc()
+        p6xer2ifc.xer = self.filepath
+        p6xer2ifc.file = self.file
+        p6xer2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
+        p6xer2ifc.execute()
+        Data.load(IfcStore.get_file())
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
+class ImportP6XER(bpy.types.Operator, ImportHelper):
+    bl_idname = "import_p6xer.bim"
+    bl_label = "Import P6 XER"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".xer"
+    filter_glob: bpy.props.StringProperty(default="*.xer", options={"HIDDEN"})
+
+    def execute(self, context):
+        from ifc4d.p6xer2ifc import P6XER2Ifc
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        p6xer2ifc = P6XER2Ifc()
+        p6xer2ifc.xer = self.filepath
+        p6xer2ifc.file = self.file
+        p6xer2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
+        p6xer2ifc.execute()
         Data.load(IfcStore.get_file())
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}

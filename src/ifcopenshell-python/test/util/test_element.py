@@ -10,17 +10,47 @@ class TestGetPsetsIFC4(test.bootstrap.IFC4):
         assert subject.get_psets(element) == {}
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="name")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": "b"})
-        assert subject.get_psets(element) == {"name": {"a": "b"}}
+        assert subject.get_psets(element) == {"name": {"a": "b", "id": pset.id()}}
 
     def test_getting_the_psets_of_a_product_type_as_a_dictionary(self):
         type_element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
         assert subject.get_psets(type_element) == {}
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=type_element, name="name")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"x": "y"})
-        assert subject.get_psets(type_element) == {"name": {"x": "y"}}
+        assert subject.get_psets(type_element) == {"name": {"x": "y", "id": pset.id()}}
+
+    def test_getting_the_psets_of_a_material_as_a_dictionary(self):
+        material = self.file.createIfcMaterial()
+        assert subject.get_psets(material) == {}
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=material, name="name")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"x": "y"})
+        assert subject.get_psets(material) == {"name": {"x": "y", "id": pset.id()}}
+
+    def test_getting_the_psets_of_a_profile_as_a_dictionary(self):
+        profile = self.file.createIfcCircleProfileDef()
+        assert subject.get_psets(profile) == {}
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=profile, name="name")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"x": "y"})
+        assert subject.get_psets(profile) == {"name": {"x": "y", "id": pset.id()}}
 
     def test_getting_psets_from_an_element_which_cannot_have_psets(self):
         assert subject.get_psets(self.file.create_entity("IfcPerson")) == {}
+
+    def test_only_getting_psets_and_not_qtos(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="pset")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": "b"})
+        qto = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name="qto")
+        ifcopenshell.api.run("pset.edit_qto", self.file, qto=qto, properties={"x": 42})
+        assert subject.get_psets(element, psets_only=True) == {"pset": {"a": "b", "id": pset.id()}}
+
+    def test_only_getting_qtos_and_not_psets(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="pset")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": "b"})
+        qto = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name="qto")
+        ifcopenshell.api.run("pset.edit_qto", self.file, qto=qto, properties={"x": 42})
+        assert subject.get_psets(element, qtos_only=True) == {"qto": {"x": 42, "id": qto.id()}}
 
 
 class TestGetPropertyDefinitionIFC4(test.bootstrap.IFC4):
@@ -28,18 +58,28 @@ class TestGetPropertyDefinitionIFC4(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="name")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": "b"})
-        assert subject.get_property_definition(pset) == {"a": "b"}
+        assert subject.get_property_definition(pset) == {"a": "b", "id": pset.id()}
 
     def test_getting_the_properties_of_a_qto(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         qto = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name="name")
         ifcopenshell.api.run("pset.edit_qto", self.file, qto=qto, properties={"x": 42})
-        assert subject.get_property_definition(qto) == {"x": 42}
+        assert subject.get_property_definition(qto) == {"x": 42, "id": qto.id()}
+
+    def test_getting_the_properties_of_a_material_property(self):
+        pset = self.file.createIfcMaterialProperties()
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": "b"})
+        assert subject.get_property_definition(pset) == {"a": "b", "id": pset.id()}
+
+    def test_getting_the_properties_of_a_profile_property(self):
+        pset = self.file.createIfcProfileProperties()
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": "b"})
+        assert subject.get_property_definition(pset) == {"a": "b", "id": pset.id()}
 
     def test_getting_the_properties_of_a_predefined_pset(self):
         pset = self.file.create_entity("IfcDoorLiningProperties", ifcopenshell.guid.new())
         pset.LiningDepth = 42
-        assert subject.get_property_definition(pset) == {"LiningDepth": 42}
+        assert subject.get_property_definition(pset) == {"LiningDepth": 42, "id": pset.id()}
 
 
 class TestGetQuantitiesIFC4(test.bootstrap.IFC4):
@@ -140,19 +180,14 @@ class TestGetMaterial(test.bootstrap.IFC4):
         rel = ifcopenshell.api.run(
             "material.assign_material", self.file, product=element, type="IfcMaterialLayerSetUsage"
         )
-        assert (
-            subject.get_material(element, should_skip_usage=True) == rel.RelatingMaterial.ForLayerSet
-        )
+        assert subject.get_material(element, should_skip_usage=True) == rel.RelatingMaterial.ForLayerSet
 
     def test_getting_a_material_profile_set_indirectly_from_an_assigned_usage(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         rel = ifcopenshell.api.run(
             "material.assign_material", self.file, product=element, type="IfcMaterialProfileSetUsage"
         )
-        assert (
-            subject.get_material(element, should_skip_usage=True)
-            == rel.RelatingMaterial.ForProfileSet
-        )
+        assert subject.get_material(element, should_skip_usage=True) == rel.RelatingMaterial.ForProfileSet
 
     def test_getting_an_inherited_material_from_the_elements_type(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")

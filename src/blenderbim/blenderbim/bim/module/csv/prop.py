@@ -32,7 +32,7 @@ from bpy.props import (
 
 
 class CsvProperties(PropertyGroup):
-    csv_ifc_file: StringProperty(default="", name="CSV IFC File")
+    csv_ifc_file: StringProperty(default="", name="IFC File")
     ifc_selector: StringProperty(default="", name="IFC Selector")
     csv_attributes: CollectionProperty(name="CSV Attributes", type=StrProperty)
     csv_delimiter: EnumProperty(

@@ -1,6 +1,34 @@
 @sequence
 Feature: Sequence
-    Covers Visualising Work Schedule Date Range.
+
+Scenario: Add work plan
+    Given an empty IFC project
+    When I press "bim.add_work_plan"
+    Then nothing happens
+
+Scenario: Enable editing task
+    Given an empty IFC project
+    And I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_tasks(work_schedule={work_schedule})"
+    And I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    When I press "bim.enable_editing_task(task={task})"
+    Then nothing happens
+
+Scenario: Copy task attribute
+    Given an empty IFC project
+    And I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_tasks(work_schedule={work_schedule})"
+    And I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And the variable "task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    And I press "bim.enable_editing_task(task={task})"
+    And I set "scene.BIMWorkScheduleProperties.task_attributes[2].string_value" to "Foo"
+    When I set "scene.BIMTaskTreeProperties.tasks[1].is_selected" to "True"
+    And I press "bim.copy_task_attribute(name='Description')"
+    Then nothing happens
 
 Scenario: See the current frame date as text
     Given an empty IFC project

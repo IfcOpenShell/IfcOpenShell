@@ -1,34 +1,55 @@
-
-# Ifc4D - IFC scheduling utility
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
-# This file is part of Ifc4D.
+# This file is part of BlenderBIM Add-on.
 #
-# Ifc4D is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Ifc4D is distributed in the hope that it will be useful,
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
+# GNU General Public License for more details.
 #
-# You should have received a copy of the GNU Lesser General Public License
-# along with Ifc4D.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
-import datetime
+from xerparser.reader import Reader
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
-import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta, date
 
 
-class P62Ifc:
+class P6XER2Ifc():
+    status_map = {
+        "TK_NotStart": "Not Start",
+        "TK_Complete": "Completed",
+        "TK_Active": "Progress"
+    }
+    
+    TASK_TYPE_MAP = {
+        "TT_Task": "Task",
+        "TT_Rsrc": "Resource Dependent Task",
+        "TT_LOE": "Level of Effort",
+        "TT_Mile": "Start Milestone",
+        "TT_FinMile": "Finish Milestone",
+        "TT_WBS": "WBS Summary"
+    }
+    
+    RELATIONSHIP_TYPE_MAPPING = {
+        "PR_SS": "START_START",
+        "PR_FS": "FINISH_START",
+        "PR_SF": "START_FINISH",
+        "PR_FF": "FINISH_FINISH" 
+    }
+    
     def __init__(self):
-        self.xml = None
+        self.xer = None
         self.file = None
+        self.model = None
         self.work_plan = None
         self.project = {}
         self.calendars = {}
@@ -45,127 +66,103 @@ class P62Ifc:
             "Saturday": 6,
             "Sunday": 7,
         }
-
+        
+        self.day_map2 = {
+            '1': "Monday",
+            '2': "Tuesday",
+            '3': "Wednesday",
+            '4': "Thursday",
+            '5': "Friday",
+            '6': "Saturday",
+            '7': "Sunday",
+        }
+        
+    
     def execute(self):
-        self.parse_xml()
+        self.parse_xer()
         self.create_ifc()
-
-    def parse_xml(self):
-        tree = ET.parse(self.xml)
-        root = tree.getroot()
-        self.ns = {"pr": root.tag[1:].partition("}")[0]}
-        project = root.find("pr:Project", self.ns)
-        self.project["Name"] = project.find("pr:Name", self.ns).text
-        self.parse_calendar_xml(root)
-        self.parse_calendar_xml(project)
-        self.parse_wbs_xml(project)
-        self.parse_activity_xml(project)
-        self.parse_relationship_xml(project)
-
-    def parse_calendar_xml(self, project):
-        for calendar in project.findall("pr:Calendar", self.ns):
-            calendar_id = calendar.find("pr:ObjectId", self.ns).text
-            standard_work_week = []
-            for standard_work_hour in calendar.find("pr:StandardWorkWeek", self.ns).findall(
-                "pr:StandardWorkHours", self.ns
-            ):
-                work_times = []
-                for work_time in standard_work_hour.findall("pr:WorkTime", self.ns):
-                    if work_time.find("pr:Start", self.ns) is None:
-                        continue
-                    work_times.append(
-                        {
-                            "Start": datetime.time.fromisoformat(work_time.find("pr:Start", self.ns).text),
-                            "Finish": datetime.time.fromisoformat(work_time.find("pr:Finish", self.ns).text),
-                        }
-                    )
-                standard_work_week.append(
-                    {
-                        "DayOfWeek": standard_work_hour.find("pr:DayOfWeek", self.ns).text,
-                        "WorkTimes": work_times,
-                        "ifc": None,
-                    }
-                )
-            exceptions = {}
-            holiday_or_exceptions = calendar.find("pr:HolidayOrExceptions", self.ns)
-            holiday_or_exception = []
-            if holiday_or_exceptions is not None:
-                holiday_or_exception = holiday_or_exceptions.findall("pr:HolidayOrException", self.ns)
-            for exception in holiday_or_exception:
-                d = datetime.datetime.fromisoformat(exception.find("pr:Date", self.ns).text).date()
-                month = exceptions.setdefault(d.year, {}).setdefault(d.month, {})
-                month.setdefault("FullDay", [])
-                month.setdefault("WorkTime", [])
-                work_times = []
-                for work_time in exception.findall("pr:WorkTime", self.ns):
-                    if work_time.find("pr:Start", self.ns) is None:
-                        continue
-                    work_times.append(
-                        {
-                            "Start": datetime.time.fromisoformat(work_time.find("pr:Start", self.ns).text),
-                            "Finish": datetime.time.fromisoformat(work_time.find("pr:Finish", self.ns).text),
-                        }
-                    )
-                if work_times:
-                    exceptions[d.year][d.month]["WorkTime"].append({"Day": d.day, "WorkTimes": work_times, "ifc": None})
-                else:
-                    exceptions[d.year][d.month]["FullDay"].append(d.day)
-            self.calendars[calendar_id] = {
-                "Name": calendar.find("pr:Name", self.ns).text,
-                "Type": calendar.find("pr:Type", self.ns).text,
-                "HoursPerDay": calendar.find("pr:HoursPerDay", self.ns).text,
-                "StandardWorkWeek": standard_work_week,
-                "HolidayOrExceptions": exceptions,
-            }
-
-    def parse_wbs_xml(self, project):
-        for wbs in project.findall("pr:WBS", self.ns):
-            self.wbs[wbs.find("pr:ObjectId", self.ns).text] = {
-                "Name": wbs.find("pr:Name", self.ns).text,
-                "Code": wbs.find("pr:Code", self.ns).text,
-                "ParentObjectId": wbs.find("pr:ParentObjectId", self.ns).text,
+       
+    
+    def parse_xer(self):
+        self.model = Reader(self.xer)
+        # for project in self.model.projects:
+        #     if not self.project.get("Name"):
+        self.project["Name"] = self.model.projects._projects[0].proj_short_name
+        print(self.project, type(self.model.projects._projects))
+        self.parse_calendar_xer()
+        self.parse_wbs_xer()
+        self.parse_activity_xer()
+        self.parse_relationship_xer()
+        #work_schedule = self.create_work_schedule()
+        #self.create_tasks(work_schedule)
+        
+            
+    def parse_wbs_xer(self):
+        for wbs in self.model.wbss:
+            self.wbs[wbs.wbs_id] = {
+                "Name": wbs.wbs_name,
+                "Code": wbs.wbs_short_name,
+                "ParentObjectId": wbs.parent_wbs_id,
                 "ifc": None,
                 "rel": None,
                 "activities": [],
             }
-
-    def parse_activity_xml(self, project):
-        for activity in project.findall("pr:Activity", self.ns):
-            activity_type = activity.find("pr:Type", self.ns).text
-            if activity_type == "Level of Effort":
-                continue
-            activity_id = activity.find("pr:ObjectId", self.ns).text
-            wbs_id = activity.find("pr:WBSObjectId", self.ns).text
-            if wbs_id:
-                self.wbs[wbs_id]["activities"].append(activity_id)
-            else:
-                self.root_activites.append(activity_id)
-            self.activities[activity_id] = {
-                "Name": activity.find("pr:Name", self.ns).text,
-                "Identification": activity.find("pr:Id", self.ns).text,
-                "StartDate": datetime.datetime.fromisoformat(activity.find("pr:StartDate", self.ns).text),
-                "FinishDate": datetime.datetime.fromisoformat(activity.find("pr:FinishDate", self.ns).text),
-                "PlannedDuration": activity.find("pr:PlannedDuration", self.ns).text,
-                "Status": activity.find("pr:Status", self.ns).text,
-                "CalendarObjectId": activity.find("pr:CalendarObjectId", self.ns).text,
-                "ifc": None,
+        #print(self.wbs)
+    
+    def parse_calendar_xer(self):
+        standard_work_week = []
+        exceptions = {}
+        for cal in self.model.calendars:
+            standard_work_week = cal.working_hours
+            except_lst = cal.exceptions
+            for exception in except_lst:
+                 month = exceptions.setdefault(exception.year, {}).setdefault(exception.month, {})
+                 month.setdefault("FullDay", [])
+                 month.setdefault("WorkTime", [])
+                 exceptions[exception.year][exception.month]["FullDay"].append(exception.day)
+                 
+            self.calendars[cal.clndr_id] = {
+                "Name": cal.clndr_name,
+                "Type": cal.clndr_type,
+                "HoursPerDay": cal.day_hr_cnt,
+                "StandardWorkWeek": standard_work_week,
+                "HolidayOrExceptions": exceptions,
             }
-
-    def parse_relationship_xml(self, project):
-        for relationship in project.findall("pr:Relationship", self.ns):
-            predecessor = relationship.find("pr:PredecessorActivityObjectId", self.ns).text
-            successor = relationship.find("pr:SuccessorActivityObjectId", self.ns).text
+    
+    def parse_activity_xer(self):
+        for activity in self.model.activities:
+            activity_type = activity.task_type
+            if activity_type == "TT_LOE":
+                continue
+            wbs_id = activity.wbs_id
+            if wbs_id:
+                self.wbs[wbs_id]["activities"].append(activity.task_id)
+            else:
+                self.root_activites.append(activity.task_id)
+            self.activities[activity.task_id] = {
+                "Name": activity.task_name,
+                "Identification": activity.task_code,
+                "StartDate": activity.start_date,
+                "FinishDate": activity.end_date,
+                "PlannedDuration": activity.target_drtn_hr_cnt,
+                "Status": self.status_map[activity.status_code],
+                "CalendarObjectId": activity.clndr_id,
+                "ifc": None
+            }
+            
+    def parse_relationship_xer(self):
+        for rel in self.model.relations:
+            predecessor = rel.pred_task_id
+            successor = rel.task_id
             if predecessor not in self.activities or successor not in self.activities:
                 continue
-            self.relationships[relationship.find("pr:ObjectId", self.ns).text] = {
+            self.relationships[rel.task_pred_id] = {
                 "PredecessorActivity": predecessor,
                 "SuccessorActivity": successor,
-                "Type": relationship.find("pr:Type", self.ns).text,
-                "Lag": relationship.find("pr:Lag", self.ns).text,
+                "Type": self.RELATIONSHIP_TYPE_MAPPING[rel.pred_type],
+                "Lag": rel.lag_hr_cnt,
             }
-
-    def get_wbs(self, wbs):
-        return {"Name": wbs.find("pr:Name", self.ns).text, "subtasks": []}
+    
 
     def create_ifc(self):
         if not self.file:
@@ -185,7 +182,8 @@ class P62Ifc:
     def create_calendars(self):
         for calendar in self.calendars.values():
             calendar["ifc"] = ifcopenshell.api.run(
-                "sequence.add_work_calendar", self.file, name=calendar["Name"])
+                "sequence.add_work_calendar", self.file, name=calendar["Name"]
+            )
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
             self.process_exceptions(calendar["HolidayOrExceptions"], calendar["ifc"])
 
@@ -197,7 +195,6 @@ class P62Ifc:
             day["ifc"] = ifcopenshell.api.run(
                 "sequence.add_work_time", self.file, work_calendar=calendar, time_type="WorkingTimes"
             )
-
             weekday_component = [self.day_map[day["DayOfWeek"]]]
             for day2 in week:
                 if day["DayOfWeek"] == day2["DayOfWeek"]:
@@ -251,8 +248,8 @@ class P62Ifc:
             work_time=work_time,
             attributes={
                 "Name": f"{year}-{month}",
-                "Start": datetime.date(year, 1, 1),
-                "Finish": datetime.date(year, 12, 31),
+                "Start": date(year, 1, 1),
+                "Finish": date(year, 12, 31),
             },
         )
         recurrence = ifcopenshell.api.run(
@@ -292,8 +289,8 @@ class P62Ifc:
                 work_time=day["ifc"],
                 attributes={
                     "Name": "{}-{}-{}".format(year, month, ", ".join([str(d) for d in day_component])),
-                    "Start": datetime.date(year, 1, 1),
-                    "Finish": datetime.date(year, 12, 31),
+                    "Start": date(year, 1, 1),
+                    "Finish": date(year, 12, 31),
                 },
             )
             recurrence = ifcopenshell.api.run(
@@ -324,6 +321,8 @@ class P62Ifc:
             self.create_task_from_activity(self.activities[activity_id], None, work_schedule)
 
     def create_task_from_wbs(self, wbs, work_schedule):
+        if not self.wbs.get(wbs["ParentObjectId"]):
+            wbs["ParentObjectId"] = None
         wbs["ifc"] = ifcopenshell.api.run(
             "sequence.add_task",
             self.file,
@@ -363,6 +362,7 @@ class P62Ifc:
         )
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=activity["ifc"])
         calendar = self.calendars[activity["CalendarObjectId"]]
+        #print(calendar, self.calendars)
         # Seems intermittently crashy - can we investigate for larger files?
         ifcopenshell.api.run(
             "control.assign_control",
@@ -380,7 +380,7 @@ class P62Ifc:
                 "ScheduleStart": activity["StartDate"],
                 "ScheduleFinish": activity["FinishDate"],
                 "DurationType": "WORKTIME" if activity["PlannedDuration"] else None,
-                "ScheduleDuration": datetime.timedelta(
+                "ScheduleDuration": timedelta(
                     days=float(activity["PlannedDuration"]) / float(calendar["HoursPerDay"])
                 )
                 or None
@@ -407,7 +407,7 @@ class P62Ifc:
                 "sequence.edit_sequence",
                 self.file,
                 rel_sequence=rel_sequence,
-                attributes={"SequenceType": self.sequence_type_map[relationship["Type"]]},
+                attributes={"SequenceType": relationship["Type"]},
             )
             lag = float(relationship["Lag"])
             if lag:
@@ -423,3 +423,9 @@ class P62Ifc:
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
         self.work_plan = self.file.create_entity("IfcWorkPlan")
+
+
+# TODO: add support for resources
+# TODO: consider showing progress bar for better user experience
+# TODO: support multiple projects in a single file
+# TODO: prompt user to select activities and/or wbs nodes to import instead of the full project
