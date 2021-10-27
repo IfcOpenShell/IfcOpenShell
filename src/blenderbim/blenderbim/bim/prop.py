@@ -42,16 +42,24 @@ materialpsetnames_enum = []
 
 
 def update_preset(self, context):
+    from blenderbim.bim.data.ui.presets import presets
+    
+    module_visibility = context.scene.BIMProperties.module_visibility
     chosen_preset = context.scene.BIMProperties.ui_preset
 
-    if chosen_preset == "SU":
-        for module in context.scene.BIMProperties.module_visibility:
-            module.is_visible = True
-    
-    elif chosen_preset == "ARC":
-        #in progress..
-        pass
+    #revert back to the "Basic" Preset
+    for module in presets["Basic"].keys():
+        module_visibility[module].is_visible = presets["Basic"][module]
 
+    #Add additional panels based on the chosen preset
+    for module in presets[chosen_preset].keys():
+        module_visibility[module].is_visible = presets[chosen_preset][module]
+
+
+def load_presets(self, context):
+    from blenderbim.bim.data.ui.presets import presets 
+    return [(preset,preset,"") for preset in presets.keys()]
+ 
 
 def update_is_visible(self, context):
     from blenderbim.bim import modules
@@ -215,16 +223,7 @@ class BIMProperties(PropertyGroup):
         name="UI Preset",
         description="Select from one of the available UI presets, or configure the modules to your preference below",
         update=update_preset,
-        default= "ADMIN",
-        items=[
-           ("SU", "Superuser", "All modules are visible in the UI"),
-           ("ARC", "Architecture", "Modules related to .... are shown in the UI"),
-           ("STRUC", "Structural Engineering", "Modules related to .... are shown in the UI"),
-           ("QS", "Quantity surveying", "Modules related to .... are shown in the UI"),
-           ("3D", "Model visualisation", "Modules related to .... are shown in the UI"),
-           ("4D", "4D Scheduling", "Modules related to .... are shown in the UI"),
-           ("5D", "5D Cost estimating", "Modules related to .... are shown in the UI"),
-        ]
+        items=load_presets
     )
     module_visibility: CollectionProperty(name="Module Visibility", type=ModuleVisibility)
     schema_dir: StringProperty(
