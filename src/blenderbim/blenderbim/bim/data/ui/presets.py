@@ -45,7 +45,7 @@ presets = {
       "augin": False,
       "debug": False
    },
-   "Admin": {
+   "Admin": [
       "project",
       "search",
       "bcf",
@@ -90,8 +90,8 @@ presets = {
       "covetool",
       "augin",
       "debug"
-   },
-   "BIM Coordination": {
+   ],
+   "BIM Coordination": [
       "project",
       "search",
       "bcf",
@@ -112,8 +112,8 @@ presets = {
       "diff",
       "patch",
       "debug"
-   },
-   "Architecture": {
+   ],
+   "Architecture": [
       "project",
       "search",
       "bcf",
@@ -144,8 +144,8 @@ presets = {
       "pset_template",
       "clash",
       "csv"
-   },
-   "Structural Engineering": {
+   ],
+   "Structural Engineering": [
       "project",
       "search",
       "bcf",
@@ -177,8 +177,8 @@ presets = {
       "pset_template",
       "clash",
       "csv"
-   },
-   "MEP": {
+   ],
+   "MEP": [
       "project",
       "search",
       "bcf",
@@ -209,8 +209,8 @@ presets = {
       "pset_template",
       "clash",
       "csv"
-   },
-   "Quantity Surveying": {
+   ],
+   "Quantity Surveying": [
       "project",
       "search",
       "attribute",
@@ -220,8 +220,8 @@ presets = {
       "qto",
       "classification",
       "csv"
-   },
-   "Model Enrichment": {
+   ],
+   "Model Enrichment": [
       "project",
       "search",
       "root",
@@ -232,8 +232,8 @@ presets = {
       "pset_template",
       "csv",
       "patch"
-   },
-   "3D Visualisation": {
+   ],
+   "3D Visualisation": [
       "project",
       "search",
       "bcf",
@@ -241,8 +241,8 @@ presets = {
       "spatial",
       "pset",
       "qto"
-   },
-   "4D Scheduling": {
+   ],
+   "4D Scheduling": [
       "project",
       "search",
       "attribute",
@@ -252,8 +252,8 @@ presets = {
       "sequence",
       "pset",
       "qto"
-   },
-   "5D Cost Management": {
+   ],
+   "5D Cost Management": [
       "project",
       "search",
       "attribute",
@@ -264,8 +264,8 @@ presets = {
       "pset",
       "qto",
       "lca"
-   },
-   "Facility Management": {
+   ],
+   "Facility Management": [
       "project",
       "search",
       "attribute",
@@ -274,5 +274,5 @@ presets = {
       "pset",
       "qto",
       "lca"
-   }
+   ]
 }
