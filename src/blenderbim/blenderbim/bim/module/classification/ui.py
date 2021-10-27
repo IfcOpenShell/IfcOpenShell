@@ -19,7 +19,8 @@
 import blenderbim.bim.module.classification.prop as classification_prop
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.classification.data import Data
+from blenderbim.bim.module.classification.data import ClassificationData
+#from ifcopenshell.api.classification.data import Data
 
 
 class BIM_PT_classifications(Panel):
@@ -32,15 +33,15 @@ class BIM_PT_classifications(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return IfcStore.get_file()  #Is it better tool.Ifc.get() ??
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not ClassificationData.is_loaded:
+            ClassificationData.load()
 
         self.props = context.scene.BIMClassificationProperties
 
-        if Data.library_file:
+        if ClassificationData.library_file:
             row = self.layout.row(align=True)
             row.prop(self.props, "available_classifications", text="")
             row.operator("bim.load_classification_library", text="", icon="IMPORT")
@@ -50,7 +51,7 @@ class BIM_PT_classifications(Panel):
             row.label(text="No Active Classification Library")
             row.operator("bim.load_classification_library", text="", icon="IMPORT")
 
-        for classification_id, classification in Data.classifications.items():
+        for classification_id, classification in ClassificationData.data["classifications"].items():
             if self.props.active_classification_id == classification_id:
                 self.draw_editable_ui(classification)
             else:
@@ -101,20 +102,20 @@ class BIM_PT_classification_references(Panel):
         self.sprops = context.scene.BIMClassificationProperties
         self.props = obj.BIMClassificationReferenceProperties
         self.file = IfcStore.get_file()
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
-        if self.oprops.ifc_definition_id not in Data.products:
-            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
+        if not ClassificationData.is_loaded:
+            ClassificationData.load()
+        if self.oprops.ifc_definition_id not in ClassificationData.products:
+            ClassificationData.load(self.oprops.ifc_definition_id)
 
         self.draw_add_ui(context)
 
-        reference_ids = Data.products[self.oprops.ifc_definition_id]
+        reference_ids = ClassificationData.products[self.oprops.ifc_definition_id]
         if not reference_ids:
             row = self.layout.row(align=True)
             row.label(text="No References")
 
         for reference_id in reference_ids:
-            reference = Data.references[reference_id]
+            reference = ClassificationData.data["references"][reference_id]
             if self.props.active_reference_id == reference_id:
                 self.draw_editable_ui(reference)
             else:
@@ -124,8 +125,8 @@ class BIM_PT_classification_references(Panel):
         if not classification_prop.getClassifications(self.sprops, context):
             return
 
-        name = Data.library_classifications[int(self.sprops.available_classifications)]
-        if name in [c["Name"] for c in Data.classifications.values()]:
+        name = ClassificationData.library_classifications[int(self.sprops.available_classifications)]
+        if name in [c["Name"] for c in ClassificationData.data["classifications"].values()]:
             row = self.layout.row(align=True)
             row.prop(self.sprops, "available_classifications", text="")
             if self.sprops.active_library_referenced_source:
