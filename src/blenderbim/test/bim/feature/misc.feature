@@ -35,3 +35,16 @@ Scenario: Resize to storey
     And I press "bim.assign_container(structure={storey})"
     When I press "bim.resize_to_storey"
     Then nothing happens
+
+Scenario: Split along edge
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add a plane of size "4" at "0,0,0"
+    And the object "IfcWall/Cube" is selected
+    And additionally the object "Plane" is selected
+    When I press "bim.split_along_edge"
+    Then the object "IfcWall/Cube" is an "IfcWall"
+    And the object "IfcWall/Cube.001" is an "IfcWall"

@@ -42,7 +42,7 @@ class BIM_PT_authoring(Panel):
         else:
             col.label(text="No IFC Class", icon="FILE_VOLUME")
             enabled = False
-        if type_prop.getAvailableTypes(tprops, context):
+        if type_prop.get_relating_type(tprops, context):
             col.prop(tprops, "relating_type", text="", icon="FILE_3D")
         else:
             col.label(text="No Relating Type", icon="FILE_3D")

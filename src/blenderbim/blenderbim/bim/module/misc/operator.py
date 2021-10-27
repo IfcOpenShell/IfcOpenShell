@@ -120,8 +120,21 @@ class ResizeToStorey(bpy.types.Operator, Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        return context.selected_objects and tool.Ifc.get()
 
     def _execute(self, context):
         for obj in context.selected_objects:
             core.resize_to_storey(tool.Misc, obj=obj)
+
+
+class SplitAlongEdge(bpy.types.Operator, Operator):
+    bl_idname = "bim.split_along_edge"
+    bl_label = "Split Along Edge"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects and tool.Ifc.get()
+
+    def _execute(self, context):
+        core.split_along_edge(tool.Misc, cutter=context.active_object, objs=context.selected_objects)

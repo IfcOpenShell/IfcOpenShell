@@ -40,3 +40,5 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
         row.operator("bim.snap_spaces_together")
         row = layout.row()
         row.operator("bim.resize_to_storey")
+        row = layout.row()
+        row.operator("bim.split_along_edge")
