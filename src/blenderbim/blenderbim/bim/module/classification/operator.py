@@ -155,7 +155,7 @@ class EnableEditingClassificationReference(bpy.types.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         props = obj.BIMClassificationReferenceProperties
         props.reference_attributes.clear()
-        reference_data = ClassificationData.data[self.reference]
+        reference_data = ClassificationData.data["references"][self.reference]
         for attribute in IfcStore.get_schema().declaration_by_name("IfcClassificationReference").all_attributes():
             if attribute.name() == "ReferencedSource":
                 continue
