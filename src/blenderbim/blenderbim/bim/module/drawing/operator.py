@@ -141,6 +141,7 @@ class CreateDrawing(bpy.types.Operator):
 
     def execute(self, context):
         self.camera = context.scene.camera
+        self.camera_element = tool.Ifc.get_entity(self.camera)
         self.file = IfcStore.get_file()
         self.time = None
         start = time.time()
@@ -250,21 +251,15 @@ class CreateDrawing(bpy.types.Operator):
                 bpy.data.objects[name].hide_set(value)
 
         svg_writer = svgwriter.SvgWriter()
-        if self.camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
-            human_scale, fraction = self.camera.data.BIMCameraProperties.custom_diagram_scale.split("|")
-        else:
-            human_scale, fraction = self.camera.data.BIMCameraProperties.diagram_scale.split("|")
-        if self.camera.data.BIMCameraProperties.is_nts:
-            svg_writer.human_scale = "NTS"
-        else:
-            svg_writer.human_scale = human_scale
         render = context.scene.render
-        if self.is_landscape():
+        if self.is_landscape(render):
             width = self.camera.data.ortho_scale
             height = width / render.resolution_x * render.resolution_y
         else:
             height = self.camera.data.ortho_scale
             width = height / render.resolution_y * render.resolution_x
+        svg_writer.human_scale = self.human_scale
+        svg_writer.scale = self.scale
         svg_writer.output = svg_path
         svg_writer.data_dir = context.scene.BIMProperties.data_dir
         svg_writer.vector_style = drawing_style.vector_style
@@ -288,7 +283,7 @@ class CreateDrawing(bpy.types.Operator):
 
         files = [tool.Ifc.get()]
         draw_settings = ifcopenshell.draw.draw_settings()
-        draw_settings.drawing_guid = tool.Ifc.get_entity(self.camera).GlobalId
+        draw_settings.drawing_guid = self.camera_element.GlobalId
         draw_settings.css = False
         draw_settings.auto_floorplan = False
         draw_settings.scale = self.scale
@@ -303,8 +298,15 @@ class CreateDrawing(bpy.types.Operator):
             ]
             if body_contexts:
                 geom_settings.set_context_ids(body_contexts)
+            exclude = f.by_type("IfcOpeningElement")
+            if self.camera.data.BIMCameraProperties.target_view == "PLAN_VIEW":
+                # For plans, we exclude windows and doors by default
+                exclude += f.by_type("IfcWindow") + f.by_type("IfcDoor")
+            # Exclude all annotation apart from the active one so we don't cut through them
+            exclude += [e for e in f.by_type("IfcAnnotation") if e != self.camera_element]
+
             iterators.append(
-                ifcopenshell.geom.iterator(geom_settings, f, multiprocessing.cpu_count(), exclude=["IfcOpeningElement", "IfcWindow", "IfcDoor"])
+                ifcopenshell.geom.iterator(geom_settings, f, multiprocessing.cpu_count(), exclude=exclude)
             )
 
         with open(svg_path, "w") as svg:
@@ -323,8 +325,6 @@ class CreateDrawing(bpy.types.Operator):
         camera = self.camera
         svg_writer = svgwriter.SvgWriter()
 
-        svg_writer.human_scale = self.human_scale
-
         drawing_style = context.scene.DocProperties.drawing_styles[
             camera.data.BIMCameraProperties.active_drawing_style_index
         ]
@@ -337,6 +337,7 @@ class CreateDrawing(bpy.types.Operator):
             height = camera.data.ortho_scale
             width = height / render.resolution_y * render.resolution_x
 
+        svg_writer.human_scale = self.human_scale
         svg_writer.scale = self.scale
         svg_writer.output = svg_path
         svg_writer.data_dir = context.scene.BIMProperties.data_dir
@@ -496,6 +497,7 @@ class AddAnnotation(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
+        context.scene.DocProperties.should_draw_decorations = True
         subcontext = ifcopenshell.util.representation.get_context(
             IfcStore.get_file(), "Plan", "Annotation", context.scene.camera.data.BIMCameraProperties.target_view
         )
