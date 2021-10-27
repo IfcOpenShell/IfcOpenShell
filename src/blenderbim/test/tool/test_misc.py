@@ -134,6 +134,11 @@ class TestMoveObjectToElevation(test.bim.bootstrap.NewFile):
         assert list(obj.matrix_world.translation) == [0.0, 0.0, 3.0]
 
 
+class TestRunRootCopyClass(test.bim.bootstrap.NewFile):
+    def test_nothing(self):
+        pass
+
+
 class TestScaleObjectToHeight(test.bim.bootstrap.NewFile):
     def test_run(self):
         bpy.ops.mesh.primitive_cube_add()
@@ -149,3 +154,16 @@ class TestMarkObjectAsEdited(test.bim.bootstrap.NewFile):
         obj = bpy.data.objects.new("Cube", None)
         subject.mark_object_as_edited(obj)
         assert obj in IfcStore.edited_objs
+
+
+class TestSplitObjectsWithCutter(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        bpy.ops.mesh.primitive_cube_add()
+        bpy.ops.mesh.primitive_plane_add(size=4)
+        obj = bpy.data.objects.get("Cube")
+        cutter = bpy.data.objects.get("Plane")
+        assert obj.dimensions[2] == 2
+        new_objs = subject.split_objects_with_cutter([obj], cutter)
+        assert new_objs[0].name == "Cube.001"
+        assert obj.dimensions[2] == 1
+        assert new_objs[0].dimensions[2] == 1

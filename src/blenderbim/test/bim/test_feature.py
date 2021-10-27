@@ -105,6 +105,12 @@ def i_add_a_cube_of_size_size_at_location(size, location):
     bpy.ops.mesh.primitive_cube_add(size=float(size), location=[float(co) for co in location.split(",")])
 
 
+@given(parsers.parse('I add a plane of size "{size}" at "{location}"'))
+@when(parsers.parse('I add a plane of size "{size}" at "{location}"'))
+def i_add_a_plane_of_size_size_at_location(size, location):
+    bpy.ops.mesh.primitive_plane_add(size=float(size), location=[float(co) for co in location.split(",")])
+
+
 @given(parsers.parse('I press "{operator}"'))
 @when(parsers.parse('I press "{operator}"'))
 def i_press_operator(operator):
