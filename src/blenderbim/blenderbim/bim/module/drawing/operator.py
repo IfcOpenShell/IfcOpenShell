@@ -31,6 +31,7 @@ import ifcopenshell.geom
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import blenderbim.bim.schema
+import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.svgwriter as svgwriter
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
@@ -146,6 +147,7 @@ class CreateDrawing(bpy.types.Operator):
         self.profile_code("Start drawing generation process")
         self.props = context.scene.DocProperties
         self.drawing_name = self.file.by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
+        self.get_scale()
         underlay_svg = self.generate_underlay(context)
         self.profile_code("Generate underlay")
         linework_svg = self.generate_linework(context)
@@ -190,7 +192,7 @@ class CreateDrawing(bpy.types.Operator):
                         elif "<defs>" in line:
                             should_skip = True
                             continue
-                        elif "</style>" in line:
+                        elif "</defs>" in line:
                             should_skip = False
                             continue
                         elif should_skip:
@@ -280,61 +282,35 @@ class CreateDrawing(bpy.types.Operator):
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-linework.svg")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
+
         # This is a work in progress. See #1153 and #1564.
-        # Switch from old to new if you are testing v0.7.0
-        self.generate_linework_old(context, svg_path)
-        # self.generate_linework_new(svg_path)
-        return svg_path
+        import ifcopenshell.draw
 
-    def generate_linework_new(self, svg_path):
-        settings = ifcopenshell.geom.settings(
-            APPLY_DEFAULT_MATERIALS=True,
-            DISABLE_TRIANGULATION=True,
-            INCLUDE_CURVES=True,
-            EXCLUDE_SOLIDS_AND_SURFACES=False,
-        )
-        buffer = ifcopenshell.geom.serializers.buffer()
-        serialiser = ifcopenshell.geom.serializers.svg(buffer, settings)
-        serialiser.setFile(self.file)
-        serialiser.setElevationRef("DRAWING")
-        serialiser.setUseNamespace(True)
-        serialiser.setAlwaysProject(True)
-        serialiser.setUseHlrPoly(True)
-        serialiser.setWithoutStoreys(True)
-        excluded_elements = []
-        for ifc_class in ["IfcSpace", "IfcOpeningElement", "IfcDoor", "IfcWindow"]:
-            excluded_elements += self.file.by_type(ifc_class)
-        for element in ifcopenshell.geom.iterate(
-            settings, self.file, multiprocessing.cpu_count(), exclude=excluded_elements
-        ):
-            serialiser.write(element)
-        serialiser.finalize()
-        with open(svg_path, "w") as svg:
-            svg.write(buffer.get_value())
+        files = [tool.Ifc.get()]
+        draw_settings = ifcopenshell.draw.draw_settings()
+        draw_settings.drawing_guid = tool.Ifc.get_entity(self.camera).GlobalId
+        draw_settings.css = False
+        draw_settings.auto_floorplan = False
+        draw_settings.scale = self.scale
 
-    def generate_linework_old(self, context, svg_path):
-        ifcconvert_path = os.path.join(cwd, "..", "..", "..", "libs", "IfcConvert")
-        subprocess.run(
-            [
-                ifcconvert_path,
-                context.scene.BIMProperties.ifc_file,
-                "-yv",
-                svg_path,
-                "--plan",
-                "--model",
-                "--elevation-ref=DRAWING",
-                "--svg-xmlns",
-                "--svg-project",
-                "--svg-poly",
-                "--svg-without-storeys",
-                "--exclude",
-                "entities",
-                "IfcSpace",
-                "IfcOpeningElement",
-                "IfcDoor",
-                "IfcWindow",
+        iterators = []
+        for f in files:
+            geom_settings = ifcopenshell.geom.settings(APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True)
+            body_contexts = [
+                c.id()
+                for c in self.file.by_type("IfcGeometricRepresentationSubContext")
+                if c.ContextIdentifier in ["Body", "Facetation"]
             ]
-        )
+            if body_contexts:
+                geom_settings.set_context_ids(body_contexts)
+            iterators.append(
+                ifcopenshell.geom.iterator(geom_settings, f, multiprocessing.cpu_count(), exclude=["IfcOpeningElement", "IfcWindow", "IfcDoor"])
+            )
+
+        with open(svg_path, "w") as svg:
+            results = ifcopenshell.draw.main(draw_settings, files, iterators=iterators, merge_projection=False)
+            svg.write(str(results))
+
         return svg_path
 
     def generate_annotation(self, context):
@@ -347,17 +323,7 @@ class CreateDrawing(bpy.types.Operator):
         camera = self.camera
         svg_writer = svgwriter.SvgWriter()
 
-        if camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
-            human_scale, fraction = camera.data.BIMCameraProperties.custom_diagram_scale.split("|")
-        else:
-            human_scale, fraction = camera.data.BIMCameraProperties.diagram_scale.split("|")
-
-        numerator, denominator = fraction.split("/")
-
-        if camera.data.BIMCameraProperties.is_nts:
-            svg_writer.human_scale = "NTS"
-        else:
-            svg_writer.human_scale = human_scale
+        svg_writer.human_scale = self.human_scale
 
         drawing_style = context.scene.DocProperties.drawing_styles[
             camera.data.BIMCameraProperties.active_drawing_style_index
@@ -371,7 +337,7 @@ class CreateDrawing(bpy.types.Operator):
             height = camera.data.ortho_scale
             width = height / render.resolution_y * render.resolution_x
 
-        svg_writer.scale = float(numerator) / float(denominator)
+        svg_writer.scale = self.scale
         svg_writer.output = svg_path
         svg_writer.data_dir = context.scene.BIMProperties.data_dir
         svg_writer.vector_style = drawing_style.vector_style
@@ -417,6 +383,19 @@ class CreateDrawing(bpy.types.Operator):
 
         svg_writer.write("annotation")
         return svg_writer.output
+
+    def get_scale(self):
+        if self.camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
+            self.human_scale, fraction = self.camera.data.BIMCameraProperties.custom_diagram_scale.split("|")
+        else:
+            self.human_scale, fraction = self.camera.data.BIMCameraProperties.diagram_scale.split("|")
+
+        if self.camera.data.BIMCameraProperties.is_nts:
+            self.human_scale = "NTS"
+
+        numerator, denominator = fraction.split("/")
+        self.scale = float(numerator) / float(denominator)
+
 
     def is_landscape(self, render):
         return render.resolution_x > render.resolution_y
@@ -787,12 +766,6 @@ class GenerateReferences(bpy.types.Operator):
         level_obj = annotation.Annotator.get_annotation_obj("Section Level", "curve", context)
 
         width_in_mm = width * 1000
-        if self.camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
-            human_scale, fraction = self.camera.data.BIMCameraProperties.custom_diagram_scale.split("|")
-        else:
-            human_scale, fraction = self.camera.data.BIMCameraProperties.diagram_scale.split("|")
-        numerator, denominator = fraction.split("/")
-        scale = float(numerator) / float(denominator)
         real_world_width_in_mm = width_in_mm * scale
         offset_in_mm = 20
         offset_percentage = offset_in_mm / real_world_width_in_mm
