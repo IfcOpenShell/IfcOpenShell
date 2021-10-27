@@ -51,9 +51,12 @@ def update_preset(self, context):
     for module in presets["Basic"].keys():
         module_visibility[module].is_visible = presets["Basic"][module]
 
+    if chosen_preset == "Basic":
+        return
+        
     #Add additional panels based on the chosen preset
-    for module in presets[chosen_preset].keys():
-        module_visibility[module].is_visible = presets[chosen_preset][module]
+    for module in presets[chosen_preset]:
+        module_visibility[module].is_visible = True
 
 
 def load_presets(self, context):
