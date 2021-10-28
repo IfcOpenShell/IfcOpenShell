@@ -80,6 +80,17 @@ class TestCanContain(NewFile):
         tool.Ifc.link(element, element_obj)
         assert subject.can_contain(structure_obj, element_obj) is False
 
+    def test_other_non_elements_that_have_a_contained_in_structure_attribute_can_be_contained(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        structure = ifc.createIfcSite()
+        structure_obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(structure, structure_obj)
+        element = ifc.createIfcGrid()
+        element_obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(element, element_obj)
+        assert subject.can_contain(structure_obj, element_obj) is True
+
 
 class TestDisableEditing(NewFile):
     def test_run(self):
