@@ -17,11 +17,11 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def resize_to_storey(misc, obj=None):
+def resize_to_storey(misc, obj=None, total_storeys=None):
     storey = misc.get_object_storey(obj)
     if not storey:
         return
-    height = misc.get_storey_height_in_si(storey)
+    height = misc.get_storey_height_in_si(storey, total_storeys)
     if not height:
         return
     misc.set_object_origin_to_bottom(obj)

@@ -24,21 +24,21 @@ class TestResizeToStorey:
     def test_run(self, misc):
         misc.get_object_storey("obj").should_be_called().will_return("storey")
         misc.get_storey_elevation_in_si("storey").should_be_called().will_return("elevation")
-        misc.get_storey_height_in_si("storey").should_be_called().will_return("height")
+        misc.get_storey_height_in_si("storey", 1).should_be_called().will_return("height")
         misc.set_object_origin_to_bottom("obj").should_be_called()
         misc.move_object_to_elevation("obj", "elevation").should_be_called()
         misc.scale_object_to_height("obj", "height").should_be_called()
         misc.mark_object_as_edited("obj").should_be_called()
-        subject.resize_to_storey(misc, obj="obj")
+        subject.resize_to_storey(misc, obj="obj", total_storeys=1)
 
     def test_doing_nothing_when_the_object_has_no_storey(self, misc):
         misc.get_object_storey("obj").should_be_called().will_return(None)
-        subject.resize_to_storey(misc, obj="obj")
+        subject.resize_to_storey(misc, obj="obj", total_storeys=1)
 
     def test_doing_nothing_when_the_storey_has_no_height(self, misc):
         misc.get_object_storey("obj").should_be_called().will_return("storey")
-        misc.get_storey_height_in_si("storey").should_be_called().will_return(None)
-        subject.resize_to_storey(misc, obj="obj")
+        misc.get_storey_height_in_si("storey", 1).should_be_called().will_return(None)
+        subject.resize_to_storey(misc, obj="obj", total_storeys=1)
 
 
 class TestSplitAlongEdge:
