@@ -7,7 +7,8 @@ from datetime import datetime, timedelta, date
 
 class ScheduleIfcGenerator:
     
-    def __init__(self, file, work_plan, project, calendars, wbs, root_activites, activities, relationships):
+    def __init__(self, file, work_plan, project, calendars, wbs,
+                 root_activites, activities, relationships, resources):
         self.file = file
         self.work_plan = work_plan
         self.project = project
@@ -16,6 +17,7 @@ class ScheduleIfcGenerator:
         self.root_activites = root_activites
         self.activities = activities
         self.relationships = relationships
+        self.resources = resources
         self.day_map = {
             "Monday": 1,
             "Tuesday": 2,
@@ -35,6 +37,7 @@ class ScheduleIfcGenerator:
         self.create_calendars()
         self.create_tasks(work_schedule)
         self.create_rel_sequences()
+        self.create_resources()
 
     def create_work_schedule(self):
         return ifcopenshell.api.run(
@@ -279,9 +282,43 @@ class ScheduleIfcGenerator:
                     "sequence.assign_lag_time",
                     self.file,
                     rel_sequence=rel_sequence,
-                    lag_value=datetime.timedelta(days=lag / float(calendar["HoursPerDay"])),
+                    lag_value=timedelta(days=lag / float(calendar["HoursPerDay"])),
                     duration_type="WORKTIME",
                 )
+                
+                
+    def create_resources(self):
+        
+        for id, resource in self.resources.items():
+            
+            parent = self.resources.get(resource.get("ParentObjectId"))
+            if parent:
+                if not parent.get("ifc"):
+                    parent["ifc"] = ifcopenshell.api.run(
+                        "resource.add_resource",
+                        self.file,
+                        **{"ifc_class": "IfcCrewResource",
+                        "name": parent['Name']}
+                    )
+            if parent:
+                resource["ifc"] = ifcopenshell.api.run(
+                "resource.add_resource",
+                self.file,
+                **{"parent_resource": parent["ifc"] if parent else None, 
+                   "ifc_class": "IfcCrewResource",
+                   "name": resource['Name']
+                   }
+            )
+            else:
+                resource["ifc"] = ifcopenshell.api.run(
+                "resource.add_resource",
+                self.file,
+                   **{ "ifc_class": "IfcCrewResource",
+                   "name": resource['Name']
+                   }
+            )
+
+            
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
