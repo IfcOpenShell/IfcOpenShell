@@ -24,7 +24,6 @@ from datetime import datetime, timedelta, date
 from common import ScheduleIfcGenerator
 
 
-
 class P6XER2Ifc():
     status_map = {
         "TK_NotStart": "Not Start",
