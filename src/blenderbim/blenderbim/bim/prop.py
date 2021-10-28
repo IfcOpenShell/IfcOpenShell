@@ -47,16 +47,11 @@ def update_preset(self, context):
     module_visibility = context.scene.BIMProperties.module_visibility
     chosen_preset = context.scene.BIMProperties.ui_preset
 
-    #revert back to the "Basic" Preset
-    for module in presets["Basic"].keys():
-        module_visibility[module].is_visible = presets["Basic"][module]
-
-    if chosen_preset == "Basic":
-        return
-        
-    #Add additional panels based on the chosen preset
-    for module in presets[chosen_preset]:
-        module_visibility[module].is_visible = True
+    for module in module_visibility:
+        if module.name in presets[chosen_preset]:
+            module.is_visible = True
+        else:
+            module.is_visible = False
 
 
 def load_presets(self, context):
