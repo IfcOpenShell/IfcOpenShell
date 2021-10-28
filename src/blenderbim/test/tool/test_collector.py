@@ -178,3 +178,39 @@ class TestAssign(NewFile):
         subject.assign(element_obj)
         assert element_obj.users_collection[0].name == "IfcOpeningElements"
         assert bpy.data.collections.get("IfcProject/My Project").children.get("IfcOpeningElements")
+
+    def test_in_decomposition_mode_grids_are_placed_in_their_own_collection(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcGrid/Name", None)
+        element = tool.Ifc.get().createIfcGrid()
+        tool.Ifc.link(element, element_obj)
+        ifcopenshell.api.run(
+            "spatial.assign_container",
+            tool.Ifc.get(),
+            product=element,
+            relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
+        )
+        bpy.context.scene.collection.objects.link(element_obj)
+        subject.assign(element_obj)
+        assert element_obj.users_collection[0].name == "IfcGrid/Name"
+        assert bpy.data.collections.get("IfcSite/My Site").children.get("IfcGrid/Name")
+
+    def test_in_decomposition_mode_grids_axes_are_placed_in_an_axis_collection_of_the_grid(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcGrid/Name", None)
+        axis_obj = bpy.data.objects.new("IfcGrid/Name", None)
+        axis = tool.Ifc.get().createIfcGridAxis()
+        element = tool.Ifc.get().createIfcGrid(UAxes=[axis])
+        tool.Ifc.link(element, element_obj)
+        tool.Ifc.link(axis, axis_obj)
+        ifcopenshell.api.run(
+            "spatial.assign_container",
+            tool.Ifc.get(),
+            product=element,
+            relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
+        )
+        bpy.context.scene.collection.objects.link(element_obj)
+        subject.assign(element_obj)
+        subject.assign(axis_obj)
+        assert axis_obj.users_collection[0].name == "UAxes"
+        assert bpy.data.collections.get("IfcGrid/Name").children.get("UAxes")

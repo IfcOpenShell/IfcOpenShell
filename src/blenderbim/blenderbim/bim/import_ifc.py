@@ -501,7 +501,7 @@ class IfcImporter:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
-            obj.BIMObjectProperties.ifc_definition_id = axis.id()
+            self.link_element(axis, obj)
             obj.matrix_world = grid_obj.matrix_world
             grid_collection.objects.link(obj)
 
@@ -1208,6 +1208,8 @@ class IfcImporter:
     def place_object_in_decomposition_collection(self, element, obj):
         if element.is_a("IfcProject"):
             return
+        elif element.is_a("IfcGridAxis"):
+            return
         elif element.GlobalId in self.collections:
             return self.collections[element.GlobalId].objects.link(obj)
         elif getattr(element, "Decomposes", None):
@@ -1218,6 +1220,8 @@ class IfcImporter:
 
     def place_object_in_spatial_decomposition_collection(self, element, obj):
         if element.is_a("IfcProject"):
+            return
+        elif element.is_a("IfcGridAxis"):
             return
         elif element.GlobalId in self.collections:
             return self.collections[element.GlobalId].objects.link(obj)
