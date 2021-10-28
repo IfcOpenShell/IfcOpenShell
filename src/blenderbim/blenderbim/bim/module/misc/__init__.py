@@ -24,6 +24,7 @@ classes = (
     operator.SetOverrideColour,
     operator.SetViewportShadowFromSun,
     operator.SnapSpacesTogether,
+    operator.SplitAlongEdge,
     prop.BIMMiscProperties,
     ui.BIM_PT_misc_utilities,
 )

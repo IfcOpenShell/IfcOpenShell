@@ -254,9 +254,11 @@ class IfcImporter:
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
-    def is_element_far_away(self, element, is_meters=True):
+    def is_element_far_away(self, element):
         try:
-            return self.is_point_far_away(element.ObjectPlacement.RelativePlacement.Location, is_meters=is_meters)
+            placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            point = placement[:, 3][0:3]
+            return self.is_point_far_away(point, is_meters=False)
         except:
             pass
 
@@ -373,24 +375,26 @@ class IfcImporter:
         else:
             project = self.file.by_type("IfcContext")[0]
         site = self.find_decomposed_ifc_class(project, "IfcSite")
-        if site and self.is_element_far_away(site[0], is_meters=False):
-            return self.guess_georeferencing(site[0])
+        if site and self.is_element_far_away(site):
+            return self.guess_georeferencing(site)
         building = self.find_decomposed_ifc_class(project, "IfcBuilding")
-        if building and self.is_element_far_away(building[0], is_meters=False):
-            return self.guess_georeferencing(building[0])
+        if building and self.is_element_far_away(building):
+            return self.guess_georeferencing(building)
         return self.guess_absolute_coordinate()
 
     def guess_georeferencing(self, element):
-        if not element.ObjectPlacement.is_a("IfcLocalPlacement"):
+        if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
             return
-        placement = element.ObjectPlacement.RelativePlacement
+        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
         props = bpy.context.scene.BIMGeoreferenceProperties
-        props.blender_eastings = str(placement.Location.Coordinates[0])
-        props.blender_northings = str(placement.Location.Coordinates[1])
-        props.blender_orthogonal_height = str(placement.Location.Coordinates[2])
-        if placement.RefDirection:
-            props.blender_x_axis_abscissa = str(placement.RefDirection.DirectionRatios[0])
-            props.blender_x_axis_ordinate = str(placement.RefDirection.DirectionRatios[1])
+        props.blender_eastings = str(placement[0][3])
+        props.blender_northings = str(placement[1][3])
+        props.blender_orthogonal_height = str(placement[2][3])
+        x_axis = mathutils.Vector(placement[:, 0][0:3])
+        default_x_axis = mathutils.Vector((1, 0, 0))
+        if (default_x_axis - x_axis).length > 0.01:
+            props.blender_x_axis_abscissa = str(placement[0][0])
+            props.blender_x_axis_ordinate = str(placement[1][0])
         props.has_blender_offset = True
 
     def guess_absolute_coordinate(self):

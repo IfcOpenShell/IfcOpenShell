@@ -17,8 +17,10 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
 import ifcopenshell
 import blenderbim.core.tool
+import blenderbim.core.root
 import blenderbim.tool as tool
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
@@ -77,6 +79,10 @@ class Misc(blenderbim.core.tool.Misc):
         obj.matrix_world.translation[2] = elevation
 
     @classmethod
+    def run_root_copy_class(cls, obj=None):
+        return blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
+
+    @classmethod
     def scale_object_to_height(cls, obj, height):
         absolute_bound_box = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
         max_z = max([c[2] for c in absolute_bound_box])
@@ -91,3 +97,39 @@ class Misc(blenderbim.core.tool.Misc):
     @classmethod
     def mark_object_as_edited(cls, obj):
         IfcStore.edited_objs.add(obj)
+
+    @classmethod
+    def split_objects_with_cutter(cls, objs, cutter):
+        cutter_mesh = cutter.data
+
+        bm = bmesh.new()
+        bm.from_mesh(cutter_mesh)
+        bm_flipped = bm.copy()
+        for f in bm_flipped.faces:
+            f.normal_flip()
+
+        new_objs = []
+        for obj in objs:
+            if obj.type != "MESH" or obj == cutter:
+                continue
+            new_obj = obj.copy()
+            new_obj.data = obj.data.copy()
+
+            obj.users_collection[0].objects.link(new_obj)
+
+            mod = new_obj.modifiers.new(type="BOOLEAN", name="Boolean")
+            mod.object = cutter
+            bpy.ops.object.modifier_apply({"object": new_obj}, modifier="Boolean")
+
+            bm_flipped.to_mesh(cutter_mesh)
+
+            mod = obj.modifiers.new(type="BOOLEAN", name="Boolean")
+            mod.object = cutter
+            bpy.ops.object.modifier_apply({"object": obj}, modifier="Boolean")
+
+            new_objs.append(new_obj)
+
+        bm.to_mesh(cutter_mesh)
+        bm.free()
+        bm_flipped.free()
+        return new_objs
