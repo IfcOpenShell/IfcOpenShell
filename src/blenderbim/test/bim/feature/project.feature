@@ -256,13 +256,17 @@ Scenario: Load project elements - load with the spatial decomposition collection
     And the collection "IfcSpace/Space" is in the collection "IfcBuildingStorey/My Storey"
     And "scene.BIMProjectProperties.is_loading" is "False"
 
-
 Scenario: Load project elements - manual offset of object placements
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/manual-geolocation.ifc', is_advanced=True)"
     When I set "scene.BIMProjectProperties.should_offset_model" to "True"
     And I set "scene.BIMProjectProperties.model_offset_coordinates" to "-268388.5, -5774506.0, -21.899999618530273"
     And I press "bim.load_project_elements"
+    Then the object "IfcPlate/1780 x 270 PRECAST WALL" is at "0,0,0"
+
+Scenario: Load project elements - auto offset of object placements
+    Given an empty Blender session
+    When I press "bim.load_project(filepath='{cwd}/test/files/auto-geolocation.ifc')"
     Then the object "IfcPlate/1780 x 270 PRECAST WALL" is at "0,0,0"
 
 Scenario: Unload project

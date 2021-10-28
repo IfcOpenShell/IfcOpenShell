@@ -131,4 +131,5 @@ class Misc(blenderbim.core.tool.Misc):
 
         bm.to_mesh(cutter_mesh)
         bm.free()
+        bm_flipped.free()
         return new_objs
