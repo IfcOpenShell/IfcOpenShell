@@ -88,7 +88,25 @@ class TestGetStoreyHeight(test.bim.bootstrap.NewFile):
         storey2.Elevation = 5000
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=storey, relating_object=building)
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=storey2, relating_object=building)
-        assert subject.get_storey_height_in_si(storey) == 2.0
+        assert subject.get_storey_height_in_si(storey, 1) == 2.0
+
+    def test_getting_a_double_storey_height(self):
+        ifc = ifcopenshell.file()
+        ifc.createIfcProject()
+        unit = ifcopenshell.api.run("unit.add_si_unit", ifc, prefix="MILLI")
+        ifcopenshell.api.run("unit.assign_unit", ifc, units=[unit])
+        tool.Ifc.set(ifc)
+        building = ifc.createIfcBuilding()
+        storey = ifc.createIfcBuildingStorey()
+        storey.Elevation = 3000
+        storey2 = ifc.createIfcBuildingStorey()
+        storey2.Elevation = 5000
+        storey3 = ifc.createIfcBuildingStorey()
+        storey3.Elevation = 9000
+        ifcopenshell.api.run("aggregate.assign_object", ifc, product=storey, relating_object=building)
+        ifcopenshell.api.run("aggregate.assign_object", ifc, product=storey2, relating_object=building)
+        ifcopenshell.api.run("aggregate.assign_object", ifc, product=storey3, relating_object=building)
+        assert subject.get_storey_height_in_si(storey, 2) == 6.0
 
     def test_only_considering_storeys_in_the_same_building(self):
         ifc = ifcopenshell.file()
@@ -99,7 +117,7 @@ class TestGetStoreyHeight(test.bim.bootstrap.NewFile):
         storey2 = ifc.createIfcBuildingStorey()
         storey2.Elevation = 5000
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=storey, relating_object=building)
-        assert subject.get_storey_height_in_si(storey) is None
+        assert subject.get_storey_height_in_si(storey, 1) is None
 
     def test_returning_none_if_the_storey_height_is_undefined(self):
         ifc = ifcopenshell.file()
@@ -107,7 +125,7 @@ class TestGetStoreyHeight(test.bim.bootstrap.NewFile):
         building = ifc.createIfcBuilding()
         storey = ifc.createIfcBuildingStorey()
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=storey, relating_object=building)
-        assert subject.get_storey_height_in_si(storey) is None
+        assert subject.get_storey_height_in_si(storey, 1) is None
 
 
 class TestSetObjectOriginToBottom(test.bim.bootstrap.NewFile):

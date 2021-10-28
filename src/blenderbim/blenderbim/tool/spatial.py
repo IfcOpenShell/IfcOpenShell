@@ -37,7 +37,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         else:
             if not structure.is_a("IfcSpatialElement"):
                 return False
-        if not element.is_a("IfcElement"):
+        if not hasattr(element, "ContainedInStructure"):
             return False
         return True
 

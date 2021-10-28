@@ -53,29 +53,38 @@ class Collector(blenderbim.core.tool.Collector):
     @classmethod
     def _get_own_collection(cls, element, obj):
         if element.is_a("IfcProject"):
-            collection = bpy.data.collections.get(obj.name)
-            if not collection:
-                collection = bpy.data.collections.new(obj.name)
-            return collection
+            return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
 
         if tool.Ifc.get_schema() == "IFC2X3":
             if element.is_a("IfcSpatialStructureElement"):
-                collection = bpy.data.collections.get(obj.name)
-                if not collection:
-                    collection = bpy.data.collections.new(obj.name)
-                return collection
+                return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
         else:
             if element.is_a("IfcSpatialElement"):
-                collection = bpy.data.collections.get(obj.name)
-                if not collection:
-                    collection = bpy.data.collections.new(obj.name)
-                return collection
+                return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
 
-        if element.IsDecomposedBy:
-            collection = bpy.data.collections.get(obj.name)
-            if not collection:
-                collection = bpy.data.collections.new(obj.name)
-            return collection
+        if element.is_a("IfcGrid"):
+            return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
+
+        if element.is_a("IfcGridAxis"):
+            if element.PartOfU:
+                grid = element.PartOfU[0]
+                axes = "UAxes"
+            elif element.PartOfV:
+                grid = element.PartOfV[0]
+                axes = "VAxes"
+            elif element.PartOfW:
+                grid = element.PartOfW[0]
+                axes = "WAxes"
+            grid_obj = tool.Ifc.get_object(grid)
+            if grid_obj:
+                grid_col = bpy.data.collections.get(grid_obj.name)
+                axes_col = [c for c in grid_col.children if axes in c.name]
+                if axes_col:
+                    return axes_col[0]
+                return bpy.data.collections.new(axes)
+
+        if getattr(element, "IsDecomposedBy", None):
+            return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
 
     @classmethod
     def _get_collection(cls, element, obj):
@@ -94,6 +103,20 @@ class Collector(blenderbim.core.tool.Collector):
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
                 project_obj.users_collection[0].children.link(collection)
             return collection
+
+        if element.is_a("IfcGridAxis"):
+            if element.PartOfU:
+                grid = element.PartOfU[0]
+                axes = "UAxes"
+            elif element.PartOfV:
+                grid = element.PartOfV[0]
+                axes = "VAxes"
+            elif element.PartOfW:
+                grid = element.PartOfW[0]
+                axes = "WAxes"
+            grid_obj = tool.Ifc.get_object(grid)
+            if grid_obj:
+                return bpy.data.collections.get(grid_obj.name)
 
         aggregate = ifcopenshell.util.element.get_aggregate(element)
         if aggregate:
