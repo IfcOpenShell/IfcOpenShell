@@ -9,6 +9,7 @@ class Usecase:
             "relating_process": None,
             "related_object": None,
         }
+
         for key, value in settings.items():
             self.settings[key] = value
 
