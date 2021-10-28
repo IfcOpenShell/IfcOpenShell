@@ -23,7 +23,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
 import xml.etree.ElementTree as ET
-from .common import ScheduleIfcGenerator
+from common import Utils
 
 
 class MSP2Ifc:
@@ -41,8 +41,8 @@ class MSP2Ifc:
 
     def execute(self):
         self.parse_xml()
-        ifcCreator = ScheduleIfcGenerator(self.file, self.work_plan, self.project, self.calendars,
-                           self.wbs, self.root_activites, self.activities, self.relationships, None)
+        ifcCreator = Utils(self.file, self.work_plan, self.project, self.calendars,
+                           self.wbs, self.root_activites, self.activities, self.relationships)
         ifcCreator.create_ifc()
         #self.create_ifc()
 
