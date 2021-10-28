@@ -64,7 +64,7 @@ class P62Ifc:
         start = time.time()
         print("Started")
         self.parse_xml()
-        ifcCreator = Utils(self.file, self.work_plan, self.project, self.calendars,
+        ifcCreator = ScheduleIfcGenerator(self.file, self.work_plan, self.project, self.calendars,
                            self.wbs, self.root_activites, self.activities, self.relationships)
         ifcCreator.create_ifc()
         end2 = time.time()
