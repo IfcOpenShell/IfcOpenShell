@@ -119,6 +119,8 @@ class IfcExporter:
     def sync_object_placement(self, obj):
         blender_matrix = np.array(obj.matrix_world)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if element.is_a("IfcGridAxis"):
+            return self.sync_grid_axis_object_placement(obj, element)
         if not hasattr(element, "ObjectPlacement"):
             return
         ifc_matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
@@ -138,6 +140,14 @@ class IfcExporter:
             )
         if not np.allclose(ifc_matrix, blender_matrix, atol=0.0001):
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
+
+    def sync_grid_axis_object_placement(self, obj, element):
+        grid = (element.PartOfU or element.PartOfV or element.PartOfW)[0]
+        grid_obj = tool.Ifc.get_object(grid)
+        if grid_obj:
+            self.sync_object_placement(grid_obj)
+            if grid_obj.matrix_world != obj.matrix_world:
+                bpy.ops.bim.update_representation(obj=obj.name)
 
     def sync_object_container(self, guid, obj):
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
