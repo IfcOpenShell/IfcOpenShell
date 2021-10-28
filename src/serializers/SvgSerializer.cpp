@@ -931,7 +931,7 @@ void SvgSerializer::write(const geometry_data& data) {
 				TopoDS_Shape* compound_to_hlr = &compound_to_use;
 				TopoDS_Shape subtracted_shape;
 				if (any_in_front && any_behind && data.product->declaration().is("IfcSlab") && is_floor_plan_) {
-					// This is currently ony for slanted roof slabs on floor plans
+					// This is currently only for slanted roof slabs on floor plans
 					bool should_cut = false;
 					TopExp_Explorer exp(compound_to_use, TopAbs_FACE);
 					for (; exp.More(); exp.Next()) {
@@ -1382,7 +1382,7 @@ void SvgSerializer::write(const geometry_data& data) {
 					const gp_Pnt& pa = points[i];
 					const gp_Pnt& pb = points[j];
 					// Since the text is always displayed horizontally,
-					// the distance is not simply euclidian, but we
+					// the distance is not simply euclidean, but we
 					// favour the x-component;
 					const double d = std::sqrt(
 						10 * ((pa.X() - pb.X()) * (pa.X() - pb.X())) +
