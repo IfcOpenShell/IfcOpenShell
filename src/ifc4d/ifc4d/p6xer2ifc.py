@@ -64,6 +64,7 @@ class P6XER2Ifc():
         self.root_activites = []
         self.activities = {}
         self.relationships = {}
+        self.resources = {}
         
         
         self.day_map2 = {
@@ -164,6 +165,19 @@ class P6XER2Ifc():
                 "Type": self.RELATIONSHIP_TYPE_MAPPING[rel.pred_type],
                 "Lag": rel.lag_hr_cnt,
             }
+    
+
+    def parse_resource_xer(self):
+        for rsrc in self.model.resources:
+            self.resources[rsrc.rsrc_id] = {
+                "Name": rsrc.rsrc_name,
+                "Code": rsrc.rsrc_short_name,
+                "ParentObjectId": rsrc.parent_rsrc_id,
+                "Type": self.RESOURCE_TYPES_MAPPING[rsrc.rsrc_type],
+                "ifc": None,
+                "rel": None,
+            }
+        print(dir(self.model.resources._rsrcs[0]), self.model.resources._rsrcs[0].rsrc_title_name)
     
 
     
