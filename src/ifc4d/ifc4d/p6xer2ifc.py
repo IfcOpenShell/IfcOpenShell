@@ -91,8 +91,7 @@ class P6XER2Ifc():
         self.parse_relationship_xer()
         #work_schedule = self.create_work_schedule()
         #self.create_tasks(work_schedule)
-        
-            
+                  
     def parse_wbs_xer(self):
         for wbs in self.model.wbss:
             self.wbs[wbs.wbs_id] = {
