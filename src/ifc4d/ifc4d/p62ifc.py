@@ -48,8 +48,8 @@ class P62Ifc:
 
     def execute(self):
         self.parse_xml()
-        ifcCreator = ScheduleIfcGenerator(self.file, self.work_plan, self.project, self.calendars,
-                           self.wbs, self.root_activites, self.activities, self.relationships, None)
+        ifcCreator = Utils(self.file, self.work_plan, self.project, self.calendars,
+                           self.wbs, self.root_activites, self.activities, self.relationships)
         ifcCreator.create_ifc()
 
     def parse_xml(self):
