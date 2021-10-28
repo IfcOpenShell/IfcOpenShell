@@ -592,7 +592,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION:
             # the python installer script to return a non zero exit
             # code where actually the headers and dynamic libraries
             # are installed correctly. This is all we need so we catch
-            # the exception and only reraise if a partially succesful
+            # the exception and only reraise if a partially successful
             # install is not detected.
             if not os.path.exists(
                 os.path.join(DEPS_DIR, "install", f"python-{PYTHON_VERSION}")

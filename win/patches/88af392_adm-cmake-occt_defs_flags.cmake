@@ -110,7 +110,7 @@ endif()
 if(MINGW)
   # Set default release optimization option to O2 instead of O3, since in
   # some OCCT related examples, this gives significantly smaller binaries
-  # at comparable performace with MinGW-w64.
+  # at comparable performance with MinGW-w64.
   string (REGEX MATCH "-O3" IS_O3_CXX "${CMAKE_CXX_FLAGS_RELEASE}")
   if (IS_O3_CXX)
     string (REGEX REPLACE "-O3" "-O2" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")

@@ -382,7 +382,7 @@ class application(QtWidgets.QApplication):
 
                 self.scrollLayout.addStretch()
             else:
-                label = QtWidgets.QLabel("No IfcPropertySets asscociated with selected entity instance")
+                label = QtWidgets.QLabel("No IfcPropertySets associated with selected entity instance")
                 self.scrollLayout.addWidget(label)
 
         def load_file(self, f, **kwargs):

@@ -390,7 +390,7 @@ class specification:
             return False, False
 
     def __str__(self):
-        """Represent the specification in human readible sentence.
+        """Represent the specification in human readable sentence.
 
         :return: sentence
         :rtype: str
@@ -1031,7 +1031,7 @@ class restriction:
         return result
 
     def __repr__(self):
-        """Represent the restriction in human readible sentence.
+        """Represent the restriction in human readable sentence.
 
         :return: sentence
         :rtype: str
