@@ -47,6 +47,12 @@ class P6XER2Ifc():
         "PR_FF": "FINISH_FINISH" 
     }
     
+    RESOURCE_TYPES_MAPPING = {
+        'RT_Labor': "LABOR",
+        'RT_Mat': "MATERIAL",
+        'RT_Equip': "EQUIPMENT"
+    }
+    
     def __init__(self):
         self.xer = None
         self.file = None
@@ -58,6 +64,7 @@ class P6XER2Ifc():
         self.root_activites = []
         self.activities = {}
         self.relationships = {}
+        self.resources = {}
         
         
         self.day_map2 = {
@@ -74,7 +81,7 @@ class P6XER2Ifc():
     def execute(self):
         self.parse_xer()
         ifcCreator = ScheduleIfcGenerator(self.file, self.work_plan, self.project, self.calendars,
-                           self.wbs, self.root_activites, self.activities, self.relationships)
+                           self.wbs, self.root_activites, self.activities, self.relationships, self.resources)
         ifcCreator.create_ifc()
         # self.create_ifc()
        
@@ -84,11 +91,11 @@ class P6XER2Ifc():
         # for project in self.model.projects:
         #     if not self.project.get("Name"):
         self.project["Name"] = self.model.projects._projects[0].proj_short_name
-        print(self.project, type(self.model.projects._projects))
         self.parse_calendar_xer()
         self.parse_wbs_xer()
         self.parse_activity_xer()
         self.parse_relationship_xer()
+        self.parse_resource_xer()
         #work_schedule = self.create_work_schedule()
         #self.create_tasks(work_schedule)
         
@@ -158,6 +165,19 @@ class P6XER2Ifc():
                 "Type": self.RELATIONSHIP_TYPE_MAPPING[rel.pred_type],
                 "Lag": rel.lag_hr_cnt,
             }
+    
+
+    def parse_resource_xer(self):
+        for rsrc in self.model.resources:
+            self.resources[rsrc.rsrc_id] = {
+                "Name": rsrc.rsrc_name,
+                "Code": rsrc.rsrc_short_name,
+                "ParentObjectId": rsrc.parent_rsrc_id,
+                "Type": self.RESOURCE_TYPES_MAPPING[rsrc.rsrc_type],
+                "ifc": None,
+                "rel": None,
+            }
+        print(dir(self.model.resources._rsrcs[0]), self.model.resources._rsrcs[0].rsrc_title_name)
     
 
     
