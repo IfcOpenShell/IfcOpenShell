@@ -23,7 +23,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
 import xml.etree.ElementTree as ET
-
+from common import ScheduleIfcGenerator
 
 class P62Ifc:
     def __init__(self):
@@ -48,7 +48,7 @@ class P62Ifc:
 
     def execute(self):
         self.parse_xml()
-        ifcCreator = Utils(self.file, self.work_plan, self.project, self.calendars,
+        ifcCreator = ScheduleIfcGenerator(self.file, self.work_plan, self.project, self.calendars,
                            self.wbs, self.root_activites, self.activities, self.relationships)
         ifcCreator.create_ifc()
 

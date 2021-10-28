@@ -5,7 +5,7 @@ import ifcopenshell.util.date
 from datetime import datetime, timedelta, date
 
 
-class Utils:
+class ScheduleIfcGenerator:
     
     def __init__(self, file, work_plan, project, calendars, wbs, root_activites, activities, relationships):
         self.file = file
