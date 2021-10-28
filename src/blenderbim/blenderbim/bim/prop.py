@@ -48,10 +48,7 @@ def update_preset(self, context):
     chosen_preset = context.scene.BIMProperties.ui_preset
 
     for module in module_visibility:
-        if module.name in presets[chosen_preset]:
-            module.is_visible = True
-        else:
-            module.is_visible = False
+        module.is_visible = module.name in presets[chosen_preset]
 
 
 def load_presets(self, context):
