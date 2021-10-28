@@ -320,3 +320,20 @@ Scenario: Export IFC - with basic contents
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
     When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
     Then nothing happens
+
+Scenario: Export IFC - with moved object location synchronised
+    Given an empty IFC project
+    When the object "IfcBuildingStorey/My Storey" is moved to "0,0,1"
+    And I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    And an empty Blender session
+    And I press "bim.load_project(filepath='{cwd}/test/files/export.ifc')"
+    Then the object "IfcBuildingStorey/My Storey" is at "0,0,1"
+
+Scenario: Export IFC - with moved grid axis location synchronised
+    Given an empty IFC project
+    And I press "mesh.add_grid"
+    When the object "IfcGridAxis/01" is moved to "1,0,0"
+    And I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    And an empty Blender session
+    And I press "bim.load_project(filepath='{cwd}/test/files/export.ifc')"
+    Then the object "IfcGridAxis/01" bottom left corner is at "1,-2,0"
