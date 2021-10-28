@@ -38,7 +38,8 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
         row.operator("bim.set_viewport_shadow_from_sun")
         row = layout.row()
         row.operator("bim.snap_spaces_together")
-        row = layout.row()
-        row.operator("bim.resize_to_storey")
+        row = layout.split(factor=0.2, align=True)
+        row.prop(props, "total_storeys", text="")
+        row.operator("bim.resize_to_storey").total_storeys = props.total_storeys
         row = layout.row()
         row.operator("bim.split_along_edge")

@@ -19,30 +19,30 @@
 import blenderbim.core
 
 
-def assign_container(ifc, collector, container, structure_obj=None, element_obj=None):
-    if not container.can_contain(structure_obj, element_obj):
+def assign_container(ifc, collector, spatial, structure_obj=None, element_obj=None):
+    if not spatial.can_contain(structure_obj, element_obj):
         return
     rel = ifc.run(
         "spatial.assign_container",
         product=ifc.get_entity(element_obj),
         relating_structure=ifc.get_entity(structure_obj),
     )
-    container.disable_editing(element_obj)
+    spatial.disable_editing(element_obj)
     collector.assign(element_obj)
     return rel
 
 
-def enable_editing_container(container, obj=None):
-    container.enable_editing(obj)
-    container.import_containers()
+def enable_editing_container(spatial, obj=None):
+    spatial.enable_editing(obj)
+    spatial.import_containers()
 
 
-def disable_editing_container(container, obj=None):
-    container.disable_editing(obj)
+def disable_editing_container(spatial, obj=None):
+    spatial.disable_editing(obj)
 
 
-def change_spatial_level(container, parent=None):
-    container.import_containers(parent=parent)
+def change_spatial_level(spatial, parent=None):
+    spatial.import_containers(parent=parent)
 
 
 def remove_container(ifc, collector, obj=None):

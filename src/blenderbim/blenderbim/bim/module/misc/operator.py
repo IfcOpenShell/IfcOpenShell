@@ -117,6 +117,7 @@ class ResizeToStorey(bpy.types.Operator, Operator):
     bl_idname = "bim.resize_to_storey"
     bl_label = "Resize To Storey"
     bl_options = {"REGISTER", "UNDO"}
+    total_storeys: bpy.props.IntProperty()
 
     @classmethod
     def poll(cls, context):
@@ -124,7 +125,7 @@ class ResizeToStorey(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         for obj in context.selected_objects:
-            core.resize_to_storey(tool.Misc, obj=obj)
+            core.resize_to_storey(tool.Misc, obj=obj, total_storeys=self.total_storeys)
 
 
 class SplitAlongEdge(bpy.types.Operator, Operator):
