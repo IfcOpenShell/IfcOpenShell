@@ -252,6 +252,11 @@ void HdfSerializer::read_surface_style(surface_style_serialization& s, std::shar
 
 }
 
+void HdfSerializer::remove(const std::string& guid) {
+	if (H5Lexists(file.getId(), guid.c_str(), H5P_DEFAULT)) {
+		file.unlink(guid);
+	}
+}
 
 const IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& guid, unsigned int representation_id, read_type rt) {
 	if (!H5Lexists(file.getId(), guid.c_str(), H5P_DEFAULT)) {
