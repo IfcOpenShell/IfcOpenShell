@@ -23,7 +23,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
 import xml.etree.ElementTree as ET
-from .common import ScheduleIfcGenerator
+from common import ScheduleIfcGenerator
 
 class P62Ifc:
     def __init__(self):
@@ -36,6 +36,7 @@ class P62Ifc:
         self.root_activites = []
         self.activities = {}
         self.relationships = {}
+        self.resources = {}
         self.day_map = {
             "Monday": 1,
             "Tuesday": 2,
@@ -45,12 +46,33 @@ class P62Ifc:
             "Saturday": 6,
             "Sunday": 7,
         }
+        self.sequence_type_map = {
+            "Start to Start": "START_START",
+            "Start to Finish": "START_FINISH",
+            "Finish to Start": "FINISH_START",
+            "Finish to Finish": "FINISH_FINISH",
+        }
+        self.RESOURCE_TYPES_MAPPING = {
+            'Labor': "LABOR",
+            'Mat': "MATERIAL",
+            'Equip': "EQUIPMENT"
+        }
 
     def execute(self):
+        import time
+
+        start = time.time()
+        print("Started")
         self.parse_xml()
         ifcCreator = ScheduleIfcGenerator(self.file, self.work_plan, self.project, self.calendars,
-                           self.wbs, self.root_activites, self.activities, self.relationships, None)
+                           self.wbs, self.root_activites, self.activities, self.relationships, self.resources)
+        end = time.time()
+        
         ifcCreator.create_ifc()
+        end2 = time.time()
+        print("Parsing time is", end - start)
+        print("IFC Creation took", end2 - end)
+        print("Overall Time", end2 - start)
 
     def parse_xml(self):
         tree = ET.parse(self.xml)
@@ -63,6 +85,7 @@ class P62Ifc:
         self.parse_wbs_xml(project)
         self.parse_activity_xml(project)
         self.parse_relationship_xml(project)
+        self.parse_resources_xml(root)
 
     def parse_calendar_xml(self, project):
         for calendar in project.findall("pr:Calendar", self.ns):
@@ -162,9 +185,30 @@ class P62Ifc:
             self.relationships[relationship.find("pr:ObjectId", self.ns).text] = {
                 "PredecessorActivity": predecessor,
                 "SuccessorActivity": successor,
-                "Type": relationship.find("pr:Type", self.ns).text,
+                "Type": self.sequence_type_map[relationship.find("pr:Type", self.ns).text],
                 "Lag": relationship.find("pr:Lag", self.ns).text,
             }
 
     def get_wbs(self, wbs):
         return {"Name": wbs.find("pr:Name", self.ns).text, "subtasks": []}
+    
+    
+    def parse_resources_xml(self, project):
+        resources = project.findall("pr:Resource", self.ns)
+        for resource in resources:
+            id = resource.find("pr:ObjectId", self.ns).text
+            self.resources[id] = {
+                "Name": resource.find("pr:Name", self.ns).text,
+                "Code": resource.find("pr:Id", self.ns).text,
+                "ParentObjectId": resource.find("pr:ParentObjectId", self.ns).text,
+                "Type": self.RESOURCE_TYPES_MAPPING[resource.find("pr:ResourceType", self.ns).text],
+                "ifc": None,
+                "rel": None,
+            }
+        print("Resource found", self.resources)
+            
+
+p6 = P62Ifc()
+p6.xml = "rsrc.xml"
+p6.file = ifcopenshell.open("file.ifc")
+p6.execute()
