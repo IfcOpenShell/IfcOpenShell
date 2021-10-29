@@ -67,6 +67,7 @@
 
 %include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 %include "../serializers/SvgSerializer.h"
+%include "../serializers/HdfSerializer.h"
 %include "../serializers/WavefrontObjSerializer.h"
 
 %template(ray_intersection_results) std::vector<IfcGeom::ray_intersection_result>;
