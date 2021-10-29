@@ -78,7 +78,8 @@ class BIM_UL_ifctype_filter(bpy.types.UIList):
         split = layout
         split.use_property_split = True
         split.use_property_decorate = False
-        split.prop(item, "is_selected", text="", icon="ADD" if item.is_selected else "REMOVE")
+        #After some tests, using icon ADD & REMOVE may not clearly deliver the message of "Including". TICK & BLANK1 seems to be a better combination but there is no TICK icon so I used CHECKBOX
+        split.prop(item, "is_selected", text="", icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT")
         split.prop(item, "name", text="", emboss=False, slider=True)
         split = split.column()
         split.scale_x = 0.5
