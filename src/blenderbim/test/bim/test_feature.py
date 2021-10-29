@@ -41,7 +41,7 @@ def replace_variables(value):
 
 
 @given("an empty Blender session")
-@when("an empty Blender session")
+@when("an empty Blender session is started")
 def an_empty_ifc_project():
     IfcStore.purge()
     bpy.ops.wm.read_homefile(app_template="")

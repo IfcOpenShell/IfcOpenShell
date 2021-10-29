@@ -214,3 +214,25 @@ class TestAssign(NewFile):
         subject.assign(axis_obj)
         assert axis_obj.users_collection[0].name == "UAxes"
         assert bpy.data.collections.get("IfcGrid/Name").children.get("UAxes")
+
+
+class TestSync(NewFile):
+    def test_in_decomposition_mode_elements_can_be_in_spatial_containers(self):
+        bpy.ops.bim.create_project()
+        wall_obj = bpy.data.objects.new("Object", None)
+        wall_element = tool.Ifc.get().createIfcWall()
+        tool.Ifc.link(wall_element, wall_obj)
+        bpy.data.collections.get("IfcSite/My Site").objects.link(wall_obj)
+        subject.sync(wall_obj)
+        assert ifcopenshell.util.element.get_container(wall_element).is_a("IfcSite")
+
+    def test_in_decomposition_mode_elements_can_aggregate(self):
+        bpy.ops.bim.create_project()
+        obj = bpy.data.objects.new("IfcBuildingStorey/Name", None)
+        col = bpy.data.collections.new("IfcBuildingStorey/Name")
+        element = tool.Ifc.get().createIfcBuildingStorey(Name="Name")
+        tool.Ifc.link(element, obj)
+        bpy.data.collections.get("IfcBuilding/My Building").children.link(col)
+        col.objects.link(obj)
+        subject.sync(obj)
+        assert ifcopenshell.util.element.get_aggregate(element).is_a("IfcBuilding")
