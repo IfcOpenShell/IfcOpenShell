@@ -207,8 +207,3 @@ class P62Ifc:
             }
         print("Resource found", self.resources)
             
-
-p6 = P62Ifc()
-p6.xml = "rsrc.xml"
-p6.file = ifcopenshell.open("file.ifc")
-p6.execute()
