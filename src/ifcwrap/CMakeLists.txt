@@ -43,7 +43,7 @@ ENDIF()
 INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
-SET(CMAKE_SWIG_FLAGS "")
+SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 # NOTE Workaround for most likely missing debug Python libraries on Windows (requires Python built from the source).
 # Python 3.5 intaller and onwards will have an option to install the debug libraries too.
 # NOTE PYTHON_DEBUG_LIBRARIES appears to be a deprecated variable

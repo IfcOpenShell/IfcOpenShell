@@ -305,9 +305,7 @@ class CreateDrawing(bpy.types.Operator):
             # Exclude all annotation apart from the active one so we don't cut through them
             exclude += [e for e in f.by_type("IfcAnnotation") if e != self.camera_element]
 
-            iterators.append(
-                ifcopenshell.geom.iterator(geom_settings, f, multiprocessing.cpu_count(), exclude=exclude)
-            )
+            iterators.append(ifcopenshell.geom.iterator(geom_settings, f, multiprocessing.cpu_count(), exclude=exclude))
 
         with open(svg_path, "w") as svg:
             results = ifcopenshell.draw.main(draw_settings, files, iterators=iterators, merge_projection=False)
@@ -396,7 +394,6 @@ class CreateDrawing(bpy.types.Operator):
 
         numerator, denominator = fraction.split("/")
         self.scale = float(numerator) / float(denominator)
-
 
     def is_landscape(self, render):
         return render.resolution_x > render.resolution_y

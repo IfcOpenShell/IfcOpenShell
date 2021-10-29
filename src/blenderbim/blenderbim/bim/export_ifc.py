@@ -91,8 +91,8 @@ class IfcExporter:
             try:
                 if isinstance(obj, bpy.types.Material):
                     continue
+                tool.Collector.sync(obj)
                 self.sync_object_placement(obj)
-                self.sync_object_container(ifc_definition_id, obj)
             except ReferenceError:
                 pass  # The object is likely deleted
             if self.should_delete(obj):
@@ -119,6 +119,8 @@ class IfcExporter:
     def sync_object_placement(self, obj):
         blender_matrix = np.array(obj.matrix_world)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if element.is_a("IfcGridAxis"):
+            return self.sync_grid_axis_object_placement(obj, element)
         if not hasattr(element, "ObjectPlacement"):
             return
         ifc_matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
@@ -139,42 +141,13 @@ class IfcExporter:
         if not np.allclose(ifc_matrix, blender_matrix, atol=0.0001):
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
 
-    def sync_object_container(self, guid, obj):
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        element_collection = bpy.data.collections.get(obj.name)
-
-        if self.file.schema == "IFC2X3":
-            if element.is_a("IfcProject"):
-                return
-        elif element.is_a("IfcContext"):
-            return
-
-        if (
-            (element.is_a("IfcElement") and element_collection)
-            or element.is_a("IfcSpatialStructureElement")
-            or element.is_a("IfcGrid")
-        ):
-            try:
-                parent_collection = [c for c in bpy.data.collections if c.children.get(element_collection.name)][0]
-            except:
-                return  # Out of the spatial tree
-        else:
-            parent_collection = obj.users_collection[0]
-
-        parent_obj = bpy.data.objects.get(parent_collection.name)
-        if not parent_obj or not parent_obj.BIMObjectProperties.ifc_definition_id:
-            return
-        parent = self.file.by_id(parent_obj.BIMObjectProperties.ifc_definition_id)
-
-        if parent.is_a("IfcSpatialStructureElement") and not element.is_a("IfcSpatialStructureElement"):
-            if parent != ifcopenshell.util.element.get_container(element):
-                blenderbim.core.spatial.assign_container(
-                    tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
-                )
-        elif parent != ifcopenshell.util.element.get_aggregate(element):
-            blenderbim.core.aggregate.assign_object(
-                tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=parent_obj, related_obj=obj
-            )
+    def sync_grid_axis_object_placement(self, obj, element):
+        grid = (element.PartOfU or element.PartOfV or element.PartOfW)[0]
+        grid_obj = tool.Ifc.get_object(grid)
+        if grid_obj:
+            self.sync_object_placement(grid_obj)
+            if grid_obj.matrix_world != obj.matrix_world:
+                bpy.ops.bim.update_representation(obj=obj.name)
 
     def should_delete(self, obj):
         try:

@@ -203,12 +203,10 @@ class BIM_PT_work_schedules(Panel):
 
     def draw_visualisation_ui(self):
         row = self.layout.row(align=True)
-        target_prop = "BIMWorkScheduleProperties.visualisation_start"
-        op = row.operator("bim.datepicker", text=helper.get_scene_prop(target_prop), icon="REW")
-        op.target_prop = target_prop
-        target_prop = "BIMWorkScheduleProperties.visualisation_finish"
-        op = row.operator("bim.datepicker", text=helper.get_scene_prop(target_prop), icon="FF")
-        op.target_prop = target_prop
+        op = row.operator("bim.datepicker", text=self.props.visualisation_start or "Start Date", icon="REW")
+        op.target_prop = "BIMWorkScheduleProperties.visualisation_start"
+        op = row.operator("bim.datepicker", text=self.props.visualisation_finish or "Finish Date", icon="FF")
+        op.target_prop = "BIMWorkScheduleProperties.visualisation_finish"
         op = row.operator("bim.visualise_work_schedule_date", text="", icon="RESTRICT_RENDER_OFF")
         op.work_schedule = self.props.active_work_schedule_id
         op = row.operator("bim.visualise_work_schedule_date_range", text="", icon="OUTLINER_OB_CAMERA")

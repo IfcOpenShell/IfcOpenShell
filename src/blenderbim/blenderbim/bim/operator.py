@@ -442,8 +442,12 @@ class ConfigureVisibility(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        grid = layout.column_flow(columns=3)
 
+        layout.prop(context.scene.BIMProperties, "ui_preset")
+        layout.separator()
+        layout.label(text="Adjust the modules to your liking:")
+
+        grid = layout.column_flow(columns=3)
         for module in context.scene.BIMProperties.module_visibility:
             split = grid.split()
             col = split.column()

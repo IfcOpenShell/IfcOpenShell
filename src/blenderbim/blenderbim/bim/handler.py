@@ -50,9 +50,7 @@ def mode_callback(obj, data):
         ):
             continue
         if obj.data.BIMMeshProperties.ifc_definition_id:
-            representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            if representation.RepresentationType in ["Tessellation", "Brep", "Annotation2D"]:
-                IfcStore.edited_objs.add(obj)
+            IfcStore.edited_objs.add(obj)
         elif IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).is_a("IfcGridAxis"):
             IfcStore.edited_objs.add(obj)
 
@@ -202,6 +200,7 @@ def ensureIfcExported(scene):
 
 
 def get_application(ifc):
+    # TODO: cache this for even faster application retrieval. It honestly makes a difference on long scripts.
     version = get_application_version()
     for element in ifc.by_type("IfcApplication"):
         if element.ApplicationIdentifier == "BlenderBIM" and element.Version == version:
@@ -209,7 +208,7 @@ def get_application(ifc):
     return ifcopenshell.api.run(
         "owner.add_application",
         ifc,
-        version=get_application_version(),
+        version=version,
         application_full_name="BlenderBIM Add-on",
         application_identifier="BlenderBIM",
     )

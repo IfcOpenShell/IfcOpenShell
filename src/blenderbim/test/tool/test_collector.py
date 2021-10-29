@@ -178,3 +178,61 @@ class TestAssign(NewFile):
         subject.assign(element_obj)
         assert element_obj.users_collection[0].name == "IfcOpeningElements"
         assert bpy.data.collections.get("IfcProject/My Project").children.get("IfcOpeningElements")
+
+    def test_in_decomposition_mode_grids_are_placed_in_their_own_collection(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcGrid/Name", None)
+        element = tool.Ifc.get().createIfcGrid()
+        tool.Ifc.link(element, element_obj)
+        ifcopenshell.api.run(
+            "spatial.assign_container",
+            tool.Ifc.get(),
+            product=element,
+            relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
+        )
+        bpy.context.scene.collection.objects.link(element_obj)
+        subject.assign(element_obj)
+        assert element_obj.users_collection[0].name == "IfcGrid/Name"
+        assert bpy.data.collections.get("IfcSite/My Site").children.get("IfcGrid/Name")
+
+    def test_in_decomposition_mode_grids_axes_are_placed_in_an_axis_collection_of_the_grid(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcGrid/Name", None)
+        axis_obj = bpy.data.objects.new("IfcGrid/Name", None)
+        axis = tool.Ifc.get().createIfcGridAxis()
+        element = tool.Ifc.get().createIfcGrid(UAxes=[axis])
+        tool.Ifc.link(element, element_obj)
+        tool.Ifc.link(axis, axis_obj)
+        ifcopenshell.api.run(
+            "spatial.assign_container",
+            tool.Ifc.get(),
+            product=element,
+            relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
+        )
+        bpy.context.scene.collection.objects.link(element_obj)
+        subject.assign(element_obj)
+        subject.assign(axis_obj)
+        assert axis_obj.users_collection[0].name == "UAxes"
+        assert bpy.data.collections.get("IfcGrid/Name").children.get("UAxes")
+
+
+class TestSync(NewFile):
+    def test_in_decomposition_mode_elements_can_be_in_spatial_containers(self):
+        bpy.ops.bim.create_project()
+        wall_obj = bpy.data.objects.new("Object", None)
+        wall_element = tool.Ifc.get().createIfcWall()
+        tool.Ifc.link(wall_element, wall_obj)
+        bpy.data.collections.get("IfcSite/My Site").objects.link(wall_obj)
+        subject.sync(wall_obj)
+        assert ifcopenshell.util.element.get_container(wall_element).is_a("IfcSite")
+
+    def test_in_decomposition_mode_elements_can_aggregate(self):
+        bpy.ops.bim.create_project()
+        obj = bpy.data.objects.new("IfcBuildingStorey/Name", None)
+        col = bpy.data.collections.new("IfcBuildingStorey/Name")
+        element = tool.Ifc.get().createIfcBuildingStorey(Name="Name")
+        tool.Ifc.link(element, obj)
+        bpy.data.collections.get("IfcBuilding/My Building").children.link(col)
+        col.objects.link(obj)
+        subject.sync(obj)
+        assert ifcopenshell.util.element.get_aggregate(element).is_a("IfcBuilding")

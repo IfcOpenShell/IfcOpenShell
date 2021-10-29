@@ -220,7 +220,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 	COLLADASW::InstanceGeometry instanceGeometry(mSW);
 	instanceGeometry.setUrl("#" + geom_name);
     BOOST_FOREACH(const std::string &material_name, material_ids) {
-		// Unescape to avoid double escaping beucase OpenCollada's material URI parameter escapes XML internally
+		// Unescape to avoid double escaping because OpenCollada's material URI parameter escapes XML internally
     	std::string unescaped = material_name;
     	IfcUtil::unescape_xml(unescaped);
 
@@ -371,7 +371,7 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
         std::string material_name = getMaterialUri(material);
 		openMaterial(material_name);
 
-		// Unescape to avoid double escaping beucase OpenCollada's addInstanceEffect escapes XML internally
+		// Unescape to avoid double escaping because OpenCollada's addInstanceEffect escapes XML internally
 		IfcUtil::unescape_xml(material_name);
 
         addInstanceEffect("#" + material_name + "-fx");

@@ -104,6 +104,7 @@ Scenario: Load project elements - load objects filtered by decomposition
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc', is_advanced=True)"
     When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
     And I set "scene.BIMProjectProperties.filter_mode" to "DECOMPOSITION"
+    And I set "scene.BIMProjectProperties.should_filter_spatial_elements" to "True"
     Then "scene.BIMProjectProperties.filter_categories['IfcSite/My Site'].total_elements" is "0"
     Then "scene.BIMProjectProperties.filter_categories['IfcBuilding/My Building'].total_elements" is "0"
     Then "scene.BIMProjectProperties.filter_categories['IfcBuildingStorey/Ground Floor'].total_elements" is "1"
@@ -131,6 +132,7 @@ Scenario: Load project elements - load objects filtered by IFC class
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc', is_advanced=True)"
     When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
     And I set "scene.BIMProjectProperties.filter_mode" to "IFC_CLASS"
+    And I set "scene.BIMProjectProperties.should_filter_spatial_elements" to "True"
     Then "scene.BIMProjectProperties.filter_categories['IfcWall'].total_elements" is "1"
     And "scene.BIMProjectProperties.filter_categories['IfcSlab'].total_elements" is "1"
     And "scene.BIMProjectProperties.filter_categories['IfcElementAssembly'].total_elements" is "1"
@@ -155,6 +157,7 @@ Scenario: Load project elements - load objects filtered by whitelist
     When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
     And I set "scene.BIMProjectProperties.filter_mode" to "WHITELIST"
     And I set "scene.BIMProjectProperties.filter_query" to ".IfcSlab"
+    And I set "scene.BIMProjectProperties.should_filter_spatial_elements" to "True"
     And I press "bim.load_project_elements"
     Then the object "IfcProject/My Project" is an "IfcProject"
     And the object "IfcSite/My Site" is an "IfcSite"
@@ -174,6 +177,7 @@ Scenario: Load project elements - load objects filtered by blacklist
     When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
     And I set "scene.BIMProjectProperties.filter_mode" to "BLACKLIST"
     And I set "scene.BIMProjectProperties.filter_query" to ".IfcSlab"
+    And I set "scene.BIMProjectProperties.should_filter_spatial_elements" to "True"
     And I press "bim.load_project_elements"
     Then the object "IfcProject/My Project" is an "IfcProject"
     And the object "IfcSite/My Site" is an "IfcSite"
@@ -196,6 +200,7 @@ Scenario: Load project elements - load no objects due to filter
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc', is_advanced=True)"
     When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
     And I set "scene.BIMProjectProperties.filter_mode" to "IFC_CLASS"
+    And I set "scene.BIMProjectProperties.should_filter_spatial_elements" to "True"
     And I press "bim.load_project_elements"
     Then the object "IfcProject/My Project" is an "IfcProject"
     And the object "IfcSite/My Site" does not exist
@@ -320,3 +325,30 @@ Scenario: Export IFC - with basic contents
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
     When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
     Then nothing happens
+
+Scenario: Export IFC - with moved object location synchronised
+    Given an empty IFC project
+    When the object "IfcBuildingStorey/My Storey" is moved to "0,0,1"
+    And I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    And an empty Blender session is started
+    And I press "bim.load_project(filepath='{cwd}/test/files/export.ifc')"
+    Then the object "IfcBuildingStorey/My Storey" is at "0,0,1"
+
+Scenario: Export IFC - with moved grid axis location synchronised
+    Given an empty IFC project
+    And I press "mesh.add_grid"
+    When the object "IfcGridAxis/01" is moved to "1,0,0"
+    And I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    And an empty Blender session is started
+    And I press "bim.load_project(filepath='{cwd}/test/files/export.ifc')"
+    Then the object "IfcGridAxis/01" bottom left corner is at "1,-2,0"
+
+Scenario: Export IFC - with changed spatial container synchronised
+    Given an empty Blender session
+    And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
+    Then the object "IfcSlab/Slab" is in the collection "IfcBuildingStorey/Ground Floor"
+    When the object "IfcSlab/Slab" is placed in the collection "IfcBuildingStorey/Level 1"
+    And I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    And an empty Blender session is started
+    And I press "bim.load_project(filepath='{cwd}/test/files/export.ifc')"
+    Then the object "IfcSlab/Slab" is in the collection "IfcBuildingStorey/Level 1"

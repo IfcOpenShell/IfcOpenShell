@@ -41,6 +41,7 @@ def replace_variables(value):
 
 
 @given("an empty Blender session")
+@when("an empty Blender session is started")
 def an_empty_ifc_project():
     IfcStore.purge()
     bpy.ops.wm.read_homefile(app_template="")
@@ -138,6 +139,12 @@ def i_deselect_all_objects():
 def the_object_name_is_selected(name):
     i_deselect_all_objects()
     additionally_the_object_name_is_selected(name)
+
+
+@given(parsers.parse('the object "{name}" is moved to "{location}"'))
+@when(parsers.parse('the object "{name}" is moved to "{location}"'))
+def the_object_name_is_selected(name, location):
+    the_object_name_exists(name).location += Vector([float(co) for co in location.split(",")])
 
 
 @given(parsers.parse('the object "{name}" is placed in the collection "{collection}"'))
@@ -426,6 +433,14 @@ def the_object_name_is_at_location(name, location):
     assert (
         obj_location - Vector([float(co) for co in location.split(",")])
     ).length < 0.1, f"Object is at {obj_location}"
+
+
+@then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
+def the_object_name_is_at_location(name, location):
+    obj_corner = Vector(the_object_name_exists(name).bound_box[0])
+    assert (
+        obj_corner - Vector([float(co) for co in location.split(",")])
+    ).length < 0.1, f"Object has corner {obj_corner}"
 
 
 @then(parsers.parse('the object "{name}" is contained in "{container_name}"'))

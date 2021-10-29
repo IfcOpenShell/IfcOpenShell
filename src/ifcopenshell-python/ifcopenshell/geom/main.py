@@ -262,8 +262,15 @@ def wrap_buffer_creation(fn):
     return inner
 
 
-serializers = type('serializers', (), {
-    'obj': wrap_buffer_creation(ifcopenshell_wrapper.WaveFrontOBJSerializer),
-    'svg': wrap_buffer_creation(ifcopenshell_wrapper.SvgSerializer),
-    'buffer': ifcopenshell_wrapper.buffer
-})
+serializer_dict = {}
+serializer_dict['obj'] = wrap_buffer_creation(ifcopenshell_wrapper.WaveFrontOBJSerializer)
+serializer_dict['svg'] = wrap_buffer_creation(ifcopenshell_wrapper.SvgSerializer)
+serializer_dict['buffer'] = ifcopenshell_wrapper.buffer
+try:
+    # HdfSerializer doesn't support writing to a buffer (obviously) only to filename
+    # so no wrap_buffer_creation()
+    serializer_dict['hdf5'] = ifcopenshell_wrapper.HdfSerializer
+except: pass
+
+serializers = type('serializers', (), serializer_dict)
+

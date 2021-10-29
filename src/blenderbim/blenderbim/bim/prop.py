@@ -41,6 +41,22 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 materialpsetnames_enum = []
 
 
+def update_preset(self, context):
+    from blenderbim.bim.data.ui.presets import presets
+
+    module_visibility = context.scene.BIMProperties.module_visibility
+    chosen_preset = context.scene.BIMProperties.ui_preset
+
+    for module in module_visibility:
+        module.is_visible = module.name in presets[chosen_preset]
+
+
+def load_presets(self, context):
+    from blenderbim.bim.data.ui.presets import presets
+
+    return [(preset, preset, "") for preset in presets.keys()]
+
+
 def update_is_visible(self, context):
     from blenderbim.bim import modules
 
@@ -203,6 +219,12 @@ class ModuleVisibility(PropertyGroup):
 
 
 class BIMProperties(PropertyGroup):
+    ui_preset: EnumProperty(
+        name="UI Preset",
+        description="Select from one of the available UI presets, or configure the modules to your preference below",
+        update=update_preset,
+        items=load_presets,
+    )
     module_visibility: CollectionProperty(name="Module Visibility", type=ModuleVisibility)
     schema_dir: StringProperty(
         default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=update_schema_dir
