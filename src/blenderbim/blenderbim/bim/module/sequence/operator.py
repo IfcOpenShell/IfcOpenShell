@@ -1097,6 +1097,7 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
+
 class ImportP6XER(bpy.types.Operator, ImportHelper):
     bl_idname = "import_p6xer.bim"
     bl_label = "Import P6 XER"
@@ -1117,6 +1118,7 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
         Data.load(IfcStore.get_file())
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
+
 
 class ImportP6XER(bpy.types.Operator, ImportHelper):
     bl_idname = "import_p6xer.bim"
@@ -2000,17 +2002,17 @@ class BlenderBIM_DatePicker(bpy.types.Operator):
     bl_idname = "bim.datepicker"
     bl_options = {"REGISTER", "UNDO"}
     display_date: bpy.props.StringProperty(name="Display Date")
-    selected_date: bpy.props.StringProperty(name="Selected Date")
     target_prop: bpy.props.StringProperty(name="Target date prop to set")
 
     def execute(self, context):
-        helper.set_scene_prop(self.target_prop, self.selected_date)
+        try:
+            value = parser.parse(context.scene.DatePickerProperties.selected_date, dayfirst=True, fuzzy=True)
+            self.set_scene_prop(self.target_prop, helper.canonicalise_time(value))
+        except:
+            pass
         return {"FINISHED"}
 
     def draw(self, context):
-        self.selected_date = helper.get_scene_prop("DatePickerProperties.selected_date") or helper.canonicalise_time(
-            datetime.now()
-        )
         current_date = parser.parse(context.scene.DatePickerProperties.display_date, dayfirst=True, fuzzy=True)
         current_month = (current_date.year, current_date.month)
         lines = calendar.monthcalendar(*current_month)
@@ -2018,7 +2020,7 @@ class BlenderBIM_DatePicker(bpy.types.Operator):
 
         layout = self.layout
         row = layout.row()
-        row.prop(self, "selected_date")
+        row.prop(context.scene.DatePickerProperties, "selected_date")
 
         split = layout.split()
         col = split.row()
@@ -2050,10 +2052,22 @@ class BlenderBIM_DatePicker(bpy.types.Operator):
                     op.selected_date = helper.canonicalise_time(selected_date)
 
     def invoke(self, context, event):
-        self.display_date = helper.get_scene_prop(self.target_prop) or helper.canonicalise_time(datetime.now())
+        self.display_date = self.get_scene_prop(self.target_prop) or helper.canonicalise_time(datetime.now())
         context.scene.DatePickerProperties.display_date = self.display_date
         context.scene.DatePickerProperties.selected_date = self.display_date
         return context.window_manager.invoke_props_dialog(self)
+
+    def get_scene_prop(self, prop_path):
+        prop = bpy.context.scene.get(prop_path.split(".")[0])
+        for part in prop_path.split(".")[1:]:
+            if part:
+                prop = prop.get(part)
+        return prop
+
+    def set_scene_prop(self, prop_path, value):
+        parent = self.get_scene_prop(prop_path[: prop_path.rfind(".")])
+        prop = prop_path.split(".")[-1]
+        parent[prop] = value
 
 
 class BlenderBIM_DatePickerSetDate(bpy.types.Operator):
