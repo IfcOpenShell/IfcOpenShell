@@ -442,7 +442,7 @@ class ConfigureVisibility(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        
+
         layout.prop(context.scene.BIMProperties, "ui_preset")
         layout.separator()
         layout.label(text="Adjust the modules to your liking:")

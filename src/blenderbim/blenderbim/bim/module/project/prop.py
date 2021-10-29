@@ -111,7 +111,7 @@ class BIMProjectProperties(PropertyGroup):
     filter_categories: CollectionProperty(name="Filter Categories", type=FilterCategory)
     active_filter_category_index: IntProperty(name="Active Filter Category Index")
     filter_query: StringProperty(name="Filter Query")
-    should_filter_spatial_elements: BoolProperty(name="Filter Spatial Elements", default=True)
+    should_filter_spatial_elements: BoolProperty(name="Filter Spatial Elements", default=False)
     should_use_cpu_multiprocessing: BoolProperty(name="Import with CPU Multiprocessing", default=True)
     should_merge_by_class: BoolProperty(name="Import and Merge by Class", default=False)
     should_merge_by_material: BoolProperty(name="Import and Merge by Material", default=False)

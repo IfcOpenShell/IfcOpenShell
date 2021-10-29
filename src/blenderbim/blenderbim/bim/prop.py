@@ -43,7 +43,7 @@ materialpsetnames_enum = []
 
 def update_preset(self, context):
     from blenderbim.bim.data.ui.presets import presets
-    
+
     module_visibility = context.scene.BIMProperties.module_visibility
     chosen_preset = context.scene.BIMProperties.ui_preset
 
@@ -52,9 +52,10 @@ def update_preset(self, context):
 
 
 def load_presets(self, context):
-    from blenderbim.bim.data.ui.presets import presets 
-    return [(preset,preset,"") for preset in presets.keys()]
- 
+    from blenderbim.bim.data.ui.presets import presets
+
+    return [(preset, preset, "") for preset in presets.keys()]
+
 
 def update_is_visible(self, context):
     from blenderbim.bim import modules
@@ -222,7 +223,7 @@ class BIMProperties(PropertyGroup):
         name="UI Preset",
         description="Select from one of the available UI presets, or configure the modules to your preference below",
         update=update_preset,
-        items=load_presets
+        items=load_presets,
     )
     module_visibility: CollectionProperty(name="Module Visibility", type=ModuleVisibility)
     schema_dir: StringProperty(
