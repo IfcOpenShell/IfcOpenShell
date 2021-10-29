@@ -524,16 +524,6 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 %newobject parse_ifcxml;
 
 %inline %{
-	IfcParse::IfcFile* parse_ifcxml(const std::string& fn) {
-#ifdef WITH_IFCXML
-		return IfcParse::parse_ifcxml(fn);
-#else
-		throw std::runtime_error("No IfcXML support enabled");
-#endif
-	}
-%}
-
-%inline %{
 	IfcParse::IfcFile* open(const std::string& fn) {
 		IfcParse::IfcFile* f = new IfcParse::IfcFile(fn);
 		return f;
