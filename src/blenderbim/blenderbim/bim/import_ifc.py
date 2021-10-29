@@ -1214,7 +1214,9 @@ class IfcImporter:
             return self.collections[element.GlobalId].objects.link(obj)
         elif getattr(element, "Decomposes", None):
             aggregate = ifcopenshell.util.element.get_aggregate(element)
-            return self.collections[aggregate.GlobalId].objects.link(obj)
+            collection = self.collections[aggregate.GlobalId]
+            collection.name = obj.name
+            return collection.objects.link(obj)
         else:
             return self.place_object_in_spatial_decomposition_collection(element, obj)
 
