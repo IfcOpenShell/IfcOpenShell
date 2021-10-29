@@ -202,6 +202,7 @@ def ensureIfcExported(scene):
 
 
 def get_application(ifc):
+    # TODO: cache this for even faster application retrieval. It honestly makes a difference on long scripts.
     version = get_application_version()
     for element in ifc.by_type("IfcApplication"):
         if element.ApplicationIdentifier == "BlenderBIM" and element.Version == version:
@@ -209,7 +210,7 @@ def get_application(ifc):
     return ifcopenshell.api.run(
         "owner.add_application",
         ifc,
-        version=get_application_version(),
+        version=version,
         application_full_name="BlenderBIM Add-on",
         application_identifier="BlenderBIM",
     )
