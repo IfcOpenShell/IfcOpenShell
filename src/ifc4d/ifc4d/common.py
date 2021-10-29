@@ -196,7 +196,8 @@ class ScheduleIfcGenerator:
         )
         identification = wbs["Code"]
         if wbs["ParentObjectId"]:
-            identification = self.wbs[wbs["ParentObjectId"]]["ifc"].Identification + "." + wbs["Code"]
+            if self.wbs[wbs["ParentObjectId"]]["ifc"]:
+                identification = self.wbs[wbs["ParentObjectId"]]["ifc"].Identification + "." + wbs["Code"]
         ifcopenshell.api.run(
             "sequence.edit_task",
             self.file,
