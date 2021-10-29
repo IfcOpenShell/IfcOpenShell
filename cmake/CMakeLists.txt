@@ -144,6 +144,7 @@ ELSE()
 	MESSAGE(FATAL_ERROR "Unable to find JSON for Modern C++ header file, aborting")
 ENDIF()
 add_definitions(-DWITH_GLTF)
+set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_GLTF)
 endif()
 
 # Set INSTALL_RPATH for target
@@ -200,6 +201,7 @@ find_package(LibXml2 REQUIRED)
 
 if (IFCXML_SUPPORT)
     add_definitions(-DWITH_IFCXML)
+	set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
 endif()
 
 FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
@@ -371,6 +373,8 @@ IF(COLLADA_SUPPORT)
 	IF(COLLADASWStreamWriter_h)
 		MESSAGE(STATUS "OpenCOLLADA header files found")
 		ADD_DEFINITIONS(-DWITH_OPENCOLLADA)
+		set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_OPENCOLLADA)
+
 		SET(OPENCOLLADA_LIBRARY_NAMES
 			GeneratedSaxParser MathMLSolver OpenCOLLADABaseUtils OpenCOLLADAFramework OpenCOLLADASaxFrameworkLoader
 			OpenCOLLADAStreamWriter UTF buffer ftoa
@@ -462,6 +466,7 @@ if(HDF5_SUPPORT)
     endif()
     
     add_definitions(-DWITH_HDF5)
+	set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_HDF5)
 endif()
 
 IF(NOT CMAKE_BUILD_TYPE)
