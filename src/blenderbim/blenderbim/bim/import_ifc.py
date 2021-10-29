@@ -1211,12 +1211,12 @@ class IfcImporter:
         elif element.is_a("IfcGridAxis"):
             return
         elif element.GlobalId in self.collections:
-            return self.collections[element.GlobalId].objects.link(obj)
-        elif getattr(element, "Decomposes", None):
-            aggregate = ifcopenshell.util.element.get_aggregate(element)
-            collection = self.collections[aggregate.GlobalId]
+            collection = self.collections[element.GlobalId]
             collection.name = obj.name
             return collection.objects.link(obj)
+        elif getattr(element, "Decomposes", None):
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            return self.collections[aggregate.GlobalId].objects.link(obj)
         else:
             return self.place_object_in_spatial_decomposition_collection(element, obj)
 

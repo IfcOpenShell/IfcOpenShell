@@ -61,10 +61,11 @@ class CreateProject(bpy.types.Operator):
         )
         self.file = IfcStore.get_file()
 
-        person = blenderbim.core.owner.add_person(tool.Ifc)
-        organisation = blenderbim.core.owner.add_organisation(tool.Ifc)
-        user = blenderbim.core.owner.add_person_and_organisation(tool.Ifc, person=person, organisation=organisation)
-        blenderbim.core.owner.set_user(tool.Owner, user=user)
+        if self.file.schema == "IFC2X3":
+            person = blenderbim.core.owner.add_person(tool.Ifc)
+            organisation = blenderbim.core.owner.add_organisation(tool.Ifc)
+            user = blenderbim.core.owner.add_person_and_organisation(tool.Ifc, person=person, organisation=organisation)
+            blenderbim.core.owner.set_user(tool.Owner, user=user)
 
         project = bpy.data.objects.new(self.get_name("IfcProject", "My Project"), None)
         site = bpy.data.objects.new(self.get_name("IfcSite", "My Site"), None)

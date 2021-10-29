@@ -12,10 +12,11 @@ class Usecase:
 
     def execute(self):
         user = ifcopenshell.api.owner.settings.get_user(self.file)
+        if self.file.schema != "IFC2X3" and not user:
+            return
         application = ifcopenshell.api.owner.settings.get_application(self.file)
-        if self.file.schema != "IFC2X3":
-            if not user or not application:
-                return
+        if self.file.schema != "IFC2X3" and not application:
+            return
         return self.file.create_entity(
             "IfcOwnerHistory",
             **{
