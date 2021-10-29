@@ -322,6 +322,19 @@ class ResetObjectColours(bpy.types.Operator):
             obj.color = (1, 1, 1, 1)
         return {"FINISHED"}
 
+class IfcTypeFilterSelectingAction(bpy.types.Operator):
+    "Click to select/deselect all ifctype"
+    bl_idname = "bim.ifctype_filter_selecting_action"
+    bl_label = "IfcType Filter Selecting Action"
+    selecting_action: bpy.props.EnumProperty(items=( ("SELECT",'Select',"") , ("DESELECT","Deselect","") ))
+    def execute(self, context):
+        if self.selecting_action == "SELECT":
+            self.selecting_actionbool = True
+        else:
+            self.selecting_actionbool = False
+        for ifcelement in bpy.context.scene.BIMSearchProperties.filter_classes:
+            ifcelement.is_selected = self.selecting_actionbool
+        return {'FINISHED'}
 
 class ActivateIfcTypeFilter(bpy.types.Operator):
     "It helps you to filter your selection by IFC class"
@@ -339,7 +352,7 @@ class ActivateIfcTypeFilter(bpy.types.Operator):
             ifc_types.setdefault(element.is_a(), 0)
             ifc_types[element.is_a()] += 1
 
-        for name, total in ifc_types.items():
+        for name, total in dict(sorted(ifc_types.items())).items():
             new = context.scene.BIMSearchProperties.filter_classes.add()
             new.name = name
             new.total = total
@@ -358,4 +371,8 @@ class ActivateIfcTypeFilter(bpy.types.Operator):
             "filter_classes",
             context.scene.BIMSearchProperties,
             "filter_classes_index",
+            rows = 20 if len(bpy.context.scene.BIMSearchProperties.filter_classes) > 20 else len(bpy.context.scene.BIMSearchProperties.filter_classes),
         )
+        row = self.layout.row()
+        row.operator(IfcTypeFilterSelectingAction.bl_idname, text = "Select All").selecting_action = "SELECT"
+        row.operator(IfcTypeFilterSelectingAction.bl_idname, text = "Deselect All").selecting_action = "DESELECT"
