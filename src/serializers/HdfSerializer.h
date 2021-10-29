@@ -104,12 +104,6 @@ public:
 	void setFile(IfcParse::IfcFile*) {}
 };
 
-#else
-
-// We just define something here so that the symbol exists and the Iterator class
-// methods don't need to look so different
-class HdfSerializer {};
-
 #endif
 
 #endif
