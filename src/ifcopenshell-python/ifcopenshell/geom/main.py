@@ -262,8 +262,13 @@ def wrap_buffer_creation(fn):
     return inner
 
 
-serializers = type('serializers', (), {
-    'obj': wrap_buffer_creation(ifcopenshell_wrapper.WaveFrontOBJSerializer),
-    'svg': wrap_buffer_creation(ifcopenshell_wrapper.SvgSerializer),
-    'buffer': ifcopenshell_wrapper.buffer
-})
+serializer_dict = {}
+serializer_dict['obj'] = wrap_buffer_creation(ifcopenshell_wrapper.WaveFrontOBJSerializer)
+serializer_dict['svg'] = wrap_buffer_creation(ifcopenshell_wrapper.SvgSerializer)
+serializer_dict['buffer'] = ifcopenshell_wrapper.buffer
+try:
+    serializer_dict['hdf5'] = wrap_buffer_creation(ifcopenshell_wrapper.HdfSerializer)
+except: pass
+
+serializers = type('serializers', (), serializer_dict)
+
