@@ -642,10 +642,16 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 				gp_Trsf pi;
 				pi.SetTransformation(pln->Position());
 				pi.Invert();
-				v.Transform(pi);				
+				v.Transform(pi);			
+				auto v_y = v.Y();
+				if (std::fabs(1.0 - pln->Position().Direction().Z()) < 1.e-5) {
+					// @todo tfk: I don't understand this. Somehow only for floor plans the
+					// direction of the Y offset needs to be inverted.
+					v_y *= -1.0;
+				}
 				offset_2d_ = std::make_pair(
 					(-size->first / 2. - v.X()) * 1000 * *scale_,
-					(-size->second / 2. + v.Y()) * 1000 * *scale_
+					(-size->second / 2. - v_y) * 1000 * *scale_
 				);
 			}
 
