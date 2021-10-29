@@ -352,10 +352,10 @@ class ActivateIfcTypeFilter(bpy.types.Operator):
             ifc_types.setdefault(element.is_a(), 0)
             ifc_types[element.is_a()] += 1
 
-        for name, total in dict(sorted(ifc_types.items())).items(): #For improving the user experience during large selection
+        for name, total in dict(sorted(ifc_types.items())).items():
             new = context.scene.BIMSearchProperties.filter_classes.add()
             new.name = name
-            new.total = str(total) #Prevent user changing the number by using StringProperty
+            new.total = total
 
         return context.window_manager.invoke_props_dialog(self, width=250)
 
@@ -372,9 +372,7 @@ class ActivateIfcTypeFilter(bpy.types.Operator):
             context.scene.BIMSearchProperties,
             "filter_classes_index",
             rows = 20 if len(bpy.context.scene.BIMSearchProperties.filter_classes) > 20 else len(bpy.context.scene.BIMSearchProperties.filter_classes),
-            #blender default only shows 5 rows of ifc types which is not enough in most situations. so I change it to maximum 20 rows
         )
-        #buttons for selecting/deselecting all
         row = self.layout.row()
         row.operator(IfcTypeFilterSelectingAction.bl_idname, text = "Select All").selecting_action = "SELECT"
         row.operator(IfcTypeFilterSelectingAction.bl_idname, text = "Deselect All").selecting_action = "DESELECT"
