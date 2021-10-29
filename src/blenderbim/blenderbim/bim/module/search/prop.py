@@ -50,7 +50,7 @@ def update_is_selected(self, context):
 class BIMFilterClasses(PropertyGroup):
     name: StringProperty(name="Name")
     is_selected: BoolProperty(name="Is Selected", default=True, update=update_is_selected)
-    total: IntProperty(name="Total")
+    total: IntProperty(name="Total") 
     unselected_objects: CollectionProperty(type=ObjProperty, name="Unfiltered Objects")
 
 
