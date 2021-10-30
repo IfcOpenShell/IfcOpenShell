@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.DrawSystemArrows,
     operator.GetConnectedSystemElements,
     operator.ResizeToStorey,
     operator.SetOverrideColour,

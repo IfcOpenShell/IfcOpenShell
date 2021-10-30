@@ -45,3 +45,5 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
         row.operator("bim.split_along_edge")
         row = layout.row()
         row.operator("bim.get_connected_system_elements")
+        row = layout.row()
+        row.operator("bim.draw_system_arrows")
