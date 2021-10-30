@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.misc as core
@@ -153,37 +154,74 @@ class GetConnectedSystemElements(bpy.types.Operator, Operator):
     def _execute(self, context):
         # Just dumped here for now before the system module gets properly planned
         def pprint_element(e):
-            return '{} ({})'.format(e.Name, e.GlobalId)
+            return "{} ({})".format(e.Name, e.GlobalId)
 
         start = tool.Ifc.get_entity(bpy.context.active_object)
 
         connected_elements = []
 
         # Note: this code is for IFC2X3. IFC4 has a different approach.
-        print('Investigating element:', pprint_element(start))
+        print("Investigating element:", pprint_element(start))
         for rel in start.HasPorts:
             for rel2 in rel.RelatingPort.ConnectedTo:
-                print('{} is connected as via {} ({}) TO {} ({}), contained in {}'.format(
-                    pprint_element(start),
-                    rel.RelatingPort.FlowDirection,
-                    rel.RelatingPort.GlobalId,
-                    rel2.RelatedPort.FlowDirection,
-                    rel2.RelatedPort.GlobalId,
-                    [pprint_element(r.RelatedElement) for r in rel2.RelatedPort.ContainedIn]
-                ))
+                print(
+                    "{} is connected as via {} ({}) TO {} ({}), contained in {}".format(
+                        pprint_element(start),
+                        rel.RelatingPort.FlowDirection,
+                        rel.RelatingPort.GlobalId,
+                        rel2.RelatedPort.FlowDirection,
+                        rel2.RelatedPort.GlobalId,
+                        [pprint_element(r.RelatedElement) for r in rel2.RelatedPort.ContainedIn],
+                    )
+                )
                 connected_elements.extend([r.RelatedElement for r in rel2.RelatedPort.ContainedIn])
             for rel2 in rel.RelatingPort.ConnectedFrom:
-                print('{} is connected as via {} ({}) FROM {} ({}), contained in {}'.format(
-                    pprint_element(start),
-                    rel.RelatingPort.FlowDirection,
-                    rel.RelatingPort.GlobalId,
-                    rel2.RelatingPort.FlowDirection,
-                    rel2.RelatingPort.GlobalId,
-                    [pprint_element(r.RelatedElement) for r in rel2.RelatingPort.ContainedIn]
-                ))
+                print(
+                    "{} is connected as via {} ({}) FROM {} ({}), contained in {}".format(
+                        pprint_element(start),
+                        rel.RelatingPort.FlowDirection,
+                        rel.RelatingPort.GlobalId,
+                        rel2.RelatingPort.FlowDirection,
+                        rel2.RelatingPort.GlobalId,
+                        [pprint_element(r.RelatedElement) for r in rel2.RelatingPort.ContainedIn],
+                    )
+                )
                 connected_elements.extend([r.RelatedElement for r in rel2.RelatingPort.ContainedIn])
 
         for element in connected_elements:
             obj = tool.Ifc.get_object(element)
             if obj:
                 obj.select_set(True)
+
+
+class DrawSystemArrows(bpy.types.Operator, Operator):
+    bl_idname = "bim.draw_system_arrows"
+    bl_label = "Draw System Arrows"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects and tool.Ifc.get()
+
+    def _execute(self, context):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        curve = bpy.data.objects.new("System Arrows", bpy.data.curves.new("System Arrows", "CURVE"))
+        curve.data.dimensions = "3D"
+        context.scene.collection.objects.link(curve)
+        for obj in bpy.context.selected_objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            e = tool.Ifc.get().by_id(obj.BIMObjectProperties.ifc_definition_id)
+            sources = []
+            sinks = []
+            for rel in getattr(e, "HasPorts", []) or []:
+                if rel.RelatingPort.FlowDirection == "SOURCE":
+                    sources.append(ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement))
+                elif rel.RelatingPort.FlowDirection == "SINK":
+                    sinks.append(ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement))
+            for sink in sinks:
+                for source in sources:
+                    polyline = curve.data.splines.new("POLY")
+                    polyline.points.add(1)
+                    polyline.points[0].co = (Matrix(sink).translation * unit_scale).to_4d()
+                    polyline.points[1].co = (Matrix(source).translation * unit_scale).to_4d()
