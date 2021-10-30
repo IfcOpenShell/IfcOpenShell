@@ -23,7 +23,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
 import xml.etree.ElementTree as ET
-from .common import ScheduleIfcGenerator
+from common import ScheduleIfcGenerator
 
 
 class MSP2Ifc:
@@ -36,15 +36,32 @@ class MSP2Ifc:
         self.calendars = {}
         self.wbs = {}
         self.root_activites = []
+        self.activities = []
         self.tasks = {}
         self.relationships = {}
+        self.resources = {}
+        
+        self.RESOURCE_TYPES_MAPPING = {
+            '1' : "LABOR",
+            '0' : "MATERIAL",
+            '2' : None
+        }
+
 
     def execute(self):
         self.parse_xml()
-        ifcCreator = ScheduleIfcGenerator(self.file, self.work_plan, self.project, self.calendars,
-                           self.wbs, self.root_activites, self.activities, self.relationships, None)
+        settings = {
+            "work_plan":self.work_plan, 
+            "project": self.project,
+            "calendars": self.calendars,
+            "wbs": self.wbs,
+            "root_activities": self.root_activites,
+            "activities": self.activities,
+            "relationships": self.relationships,
+            "resources": self.resources
+        }
+        ifcCreator = ScheduleIfcGenerator(self.file, settings)
         ifcCreator.create_ifc()
-        #self.create_ifc()
 
     def parse_xml(self):
         tree = ET.parse(self.xml)
@@ -55,6 +72,8 @@ class MSP2Ifc:
         self.outline_parents = {}
         self.parse_task_xml(project)
         self.parse_calendar_xml(project)
+        self.parse_resources_xml(project)
+
 
     def parse_relationship_xml(self, task):
         relationships = {}
@@ -124,3 +143,31 @@ class MSP2Ifc:
                 "Name": calendar.find("pr:Name", self.ns).text,
                 "StandardWorkWeek": week_days,
             }
+    
+    def parse_resources_xml(self, project):
+        resources_lst = project.find("pr:Resources", self.ns)
+        resources = resources_lst.findall("pr:Resource", self.ns)
+        # print("Resource text", resources[4].find("pr:Name", self.ns).text)
+        for resource in resources:
+            name = resource.find("pr:Name", self.ns)
+            id = resource.find("pr:ID", self.ns).text
+            if name is not None:
+                name = name.text 
+            else:
+                # print("- No Name")
+                name = None
+            self.resources[id] = {
+                "Name": name,
+                "Code": resource.find("pr:UID", self.ns).text,
+                "ParentObjectId": None,
+                "Type": self.RESOURCE_TYPES_MAPPING[resource.find("pr:Type", self.ns).text],
+                "ifc": None,
+                "rel": None,
+            }
+        print("Resource found", self.resources)
+
+if __name__ == "__main__":
+    msp = MSP2Ifc()
+    msp.xml = "sample.xml"
+    msp.file = ifcopenshell.open("file.ifc")
+    msp.execute()

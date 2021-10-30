@@ -21,7 +21,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
 from datetime import datetime, timedelta, date
-from .common import ScheduleIfcGenerator
+from common import ScheduleIfcGenerator
 
 
 class P6XER2Ifc():
@@ -80,10 +80,18 @@ class P6XER2Ifc():
     
     def execute(self):
         self.parse_xer()
-        ifcCreator = ScheduleIfcGenerator(self.file, self.work_plan, self.project, self.calendars,
-                           self.wbs, self.root_activites, self.activities, self.relationships, self.resources)
+        settings = {
+            "work_plan":self.work_plan, 
+            "project": self.project,
+            "calendars": self.calendars,
+            "wbs": self.wbs,
+            "root_activities": self.root_activites,
+            "activities": self.activities,
+            "relationships": self.relationships,
+            "resources": self.resources
+        }
+        ifcCreator = ScheduleIfcGenerator(self.file, settings)
         ifcCreator.create_ifc()
-        # self.create_ifc()
        
     
     def parse_xer(self):
@@ -177,7 +185,6 @@ class P6XER2Ifc():
                 "ifc": None,
                 "rel": None,
             }
-        print(dir(self.model.resources._rsrcs[0]), self.model.resources._rsrcs[0].rsrc_title_name)
     
 
     

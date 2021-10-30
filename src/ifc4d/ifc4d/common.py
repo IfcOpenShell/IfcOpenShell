@@ -7,17 +7,16 @@ from datetime import datetime, timedelta, date
 
 class ScheduleIfcGenerator:
     
-    def __init__(self, file, work_plan, project, calendars, wbs,
-                 root_activites, activities, relationships, resources):
+    def __init__(self, file, settings):
         self.file = file
-        self.work_plan = work_plan
-        self.project = project
-        self.calendars = calendars
-        self.wbs = wbs
-        self.root_activites = root_activites
-        self.activities = activities
-        self.relationships = relationships
-        self.resources = resources
+        self.work_plan = settings['work_plan']
+        self.project = settings['project']
+        self.calendars = settings['calendars']
+        self.wbs = settings['wbs']
+        self.root_activites = settings['root_activities']
+        self.activities = settings['activities']
+        self.relationships = settings['relationships']
+        self.resources = settings['resources']
         self.day_map = {
             "Monday": 1,
             "Tuesday": 2,
@@ -50,11 +49,11 @@ class ScheduleIfcGenerator:
                 "sequence.add_work_calendar", self.file, name=calendar["Name"]
             )
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
-            self.process_exceptions(calendar["HolidayOrExceptions"], calendar["ifc"])
+            self.process_exceptions(calendar.get("HolidayOrExceptions"), calendar["ifc"])
 
     def process_working_week(self, week, calendar):
         for day in week:
-            if day["ifc"] or not day["WorkTimes"]:
+            if day["ifc"] or not day.get("WorkTimes"):
                 continue
 
             day["ifc"] = ifcopenshell.api.run(
@@ -96,12 +95,13 @@ class ScheduleIfcGenerator:
                 )
 
     def process_exceptions(self, exceptions, calendar):
-        for year, year_data in exceptions.items():
-            for month, month_data in year_data.items():
-                if month_data["FullDay"]:
-                    self.process_full_day_exceptions(year, month, month_data, calendar)
-                if month_data["WorkTime"]:
-                    self.process_work_time_exceptions(year, month, month_data, calendar)
+        if exceptions:
+            for year, year_data in exceptions.items():
+                for month, month_data in year_data.items():
+                    if month_data["FullDay"]:
+                        self.process_full_day_exceptions(year, month, month_data, calendar)
+                    if month_data["WorkTime"]:
+                        self.process_work_time_exceptions(year, month, month_data, calendar)
 
     def process_full_day_exceptions(self, year, month, month_data, calendar):
         work_time = ifcopenshell.api.run(
@@ -288,35 +288,37 @@ class ScheduleIfcGenerator:
                 
                 
     def create_resources(self):
-        
-        for id, resource in self.resources.items():
-            
-            parent = self.resources.get(resource.get("ParentObjectId"))
-            if parent:
-                if not parent.get("ifc"):
-                    parent["ifc"] = ifcopenshell.api.run(
-                        "resource.add_resource",
-                        self.file,
-                        **{"ifc_class": "IfcCrewResource",
-                        "name": parent['Name']}
-                    )
-            if parent:
-                resource["ifc"] = ifcopenshell.api.run(
-                "resource.add_resource",
-                self.file,
-                **{"parent_resource": parent["ifc"] if parent else None, 
-                   "ifc_class": "IfcCrewResource",
-                   "name": resource['Name']
-                   }
-            )
-            else:
-                resource["ifc"] = ifcopenshell.api.run(
-                "resource.add_resource",
-                self.file,
-                   **{ "ifc_class": "IfcCrewResource",
-                   "name": resource['Name']
-                   }
-            )
+        # print("Resources", self.resources)
+        if self.resources:
+            for id, resource in self.resources.items():
+                
+                parent = self.resources.get(resource.get("ParentObjectId"))
+                if parent:
+                    if not parent.get("ifc"):
+                        parent["ifc"] = ifcopenshell.api.run(
+                            "resource.add_resource",
+                            self.file,
+                            **{"ifc_class": "IfcCrewResource",
+                            "name": parent['Name']}
+                        )
+                if parent:
+                    resource["ifc"] = ifcopenshell.api.run(
+                    "resource.add_resource",
+                    self.file,
+                    **{"parent_resource": parent["ifc"] if parent else None, 
+                    "ifc_class": "IfcCrewResource",
+                    "name": resource['Name']
+                    }
+                )
+                else:
+                    resource["ifc"] = ifcopenshell.api.run(
+                    "resource.add_resource",
+                    self.file,
+                    **{ "ifc_class": "IfcCrewResource",
+                    "name": resource['Name']
+                    }
+                )
+            print(self.resources)
 
             
 
