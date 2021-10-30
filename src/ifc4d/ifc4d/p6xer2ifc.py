@@ -21,7 +21,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
 from datetime import datetime, timedelta, date
-from common import ScheduleIfcGenerator
+from .common import ScheduleIfcGenerator
 
 
 class P6XER2Ifc():

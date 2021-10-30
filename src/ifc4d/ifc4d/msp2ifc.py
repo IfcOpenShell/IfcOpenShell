@@ -23,7 +23,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
 import xml.etree.ElementTree as ET
-from common import ScheduleIfcGenerator
+from .common import ScheduleIfcGenerator
 
 
 class MSP2Ifc:

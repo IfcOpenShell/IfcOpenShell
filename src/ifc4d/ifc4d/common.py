@@ -38,7 +38,8 @@ class ScheduleIfcGenerator:
         self.create_tasks(work_schedule)
         self.create_rel_sequences()
         self.create_resources()
-        self.file.write(self.output)
+        if self.output:
+            self.file.write(self.output)
 
     def create_work_schedule(self):
         return ifcopenshell.api.run(
