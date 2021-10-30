@@ -43,3 +43,5 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
         row.operator("bim.resize_to_storey").total_storeys = props.total_storeys
         row = layout.row()
         row.operator("bim.split_along_edge")
+        row = layout.row()
+        row.operator("bim.get_connected_system_elements")

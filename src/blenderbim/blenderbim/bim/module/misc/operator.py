@@ -139,3 +139,51 @@ class SplitAlongEdge(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.split_along_edge(tool.Misc, cutter=context.active_object, objs=context.selected_objects)
+
+
+class GetConnectedSystemElements(bpy.types.Operator, Operator):
+    bl_idname = "bim.get_connected_system_elements"
+    bl_label = "Get Connected System Elements"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects and tool.Ifc.get()
+
+    def _execute(self, context):
+        # Just dumped here for now before the system module gets properly planned
+        def pprint_element(e):
+            return '{} ({})'.format(e.Name, e.GlobalId)
+
+        start = tool.Ifc.get_entity(bpy.context.active_object)
+
+        connected_elements = []
+
+        # Note: this code is for IFC2X3. IFC4 has a different approach.
+        print('Investigating element:', pprint_element(start))
+        for rel in start.HasPorts:
+            for rel2 in rel.RelatingPort.ConnectedTo:
+                print('{} is connected as via {} ({}) TO {} ({}), contained in {}'.format(
+                    pprint_element(start),
+                    rel.RelatingPort.FlowDirection,
+                    rel.RelatingPort.GlobalId,
+                    rel2.RelatedPort.FlowDirection,
+                    rel2.RelatedPort.GlobalId,
+                    [pprint_element(r.RelatedElement) for r in rel2.RelatedPort.ContainedIn]
+                ))
+                connected_elements.extend([r.RelatedElement for r in rel2.RelatedPort.ContainedIn])
+            for rel2 in rel.RelatingPort.ConnectedFrom:
+                print('{} is connected as via {} ({}) FROM {} ({}), contained in {}'.format(
+                    pprint_element(start),
+                    rel.RelatingPort.FlowDirection,
+                    rel.RelatingPort.GlobalId,
+                    rel2.RelatingPort.FlowDirection,
+                    rel2.RelatingPort.GlobalId,
+                    [pprint_element(r.RelatedElement) for r in rel2.RelatingPort.ContainedIn]
+                ))
+                connected_elements.extend([r.RelatedElement for r in rel2.RelatingPort.ContainedIn])
+
+        for element in connected_elements:
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                obj.select_set(True)
