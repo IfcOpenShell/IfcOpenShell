@@ -217,7 +217,7 @@ class IfcImporter:
         self.profile_code("Create materials")
         self.create_styles()
         self.profile_code("Create styles")
-        self.create_annotation()
+        self.create_annotations()
         self.profile_code("Create annotation")
         self.parse_native_elements()
         self.profile_code("Parsing native elements")
@@ -293,8 +293,11 @@ class IfcImporter:
     def process_element_filter(self):
         if self.ifc_import_settings.has_filter:
             self.elements = set(self.ifc_import_settings.elements)
+            # TODO: enable filtering for annotations
+            self.annotations = set(self.file.by_type("IfcAnnotation"))
         else:
             self.elements = set(self.file.by_type("IfcElement"))
+            self.annotations = set(self.file.by_type("IfcAnnotation"))
 
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
             self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
@@ -592,6 +595,9 @@ class IfcImporter:
     def create_spatial_elements(self):
         self.create_generic_elements(self.spatial_elements)
 
+    def create_annotations(self):
+        self.create_generic_elements(self.annotations)
+
     def create_elements(self):
         self.create_generic_elements(self.elements)
 
@@ -653,9 +659,6 @@ class IfcImporter:
                 break
         print("Done creating geometry")
         return results
-
-    def create_annotation(self):
-        self.create_curve_products(self.file.by_type("IfcAnnotation"))
 
     def create_structural_items(self):
         # Create structural collections
@@ -797,6 +800,7 @@ class IfcImporter:
             pass
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             mesh = self.create_camera(element, shape)
+            self.link_mesh(shape, mesh)
         elif shape:
             mesh_name = self.get_mesh_name(shape.geometry)
             mesh = self.meshes.get(mesh_name)
