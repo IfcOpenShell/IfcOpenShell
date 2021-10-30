@@ -165,9 +165,3 @@ class MSP2Ifc:
                 "rel": None,
             }
         print("Resource found", self.resources)
-
-if __name__ == "__main__":
-    msp = MSP2Ifc()
-    msp.xml = "sample.xml"
-    msp.file = ifcopenshell.open("file.ifc")
-    msp.execute()
