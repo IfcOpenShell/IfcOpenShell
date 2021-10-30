@@ -93,7 +93,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-$(PYNUMBER)-v0.7.0-58ee049-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-$(PYNUMBER)-v0.7.0-93c5906-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcblender*
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/blenderbim/libs/site/packages/
 
@@ -360,7 +360,7 @@ endif
 	cd dist/working/ && patch ../blenderbim/libs/site/packages/behave/runner_util.py < runner_util.patch
 	rm -rf dist/working
 
-	# Required by ids
+	# Required by ids - uh, not any more, but I'm trying it out in the drawing module
 	mkdir dist/working
 	cd dist/working && wget $(LXML_URL)
 	cd dist/working && cp *.whl lxml.zip && unzip lxml.zip

@@ -149,6 +149,8 @@ class CreateDrawing(bpy.types.Operator):
         self.props = context.scene.DocProperties
         self.drawing_name = self.file.by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
         self.get_scale()
+        if self.camera.data.BIMCameraProperties.update_representation(self.camera):
+            bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
         underlay_svg = self.generate_underlay(context)
         self.profile_code("Generate underlay")
         linework_svg = self.generate_linework(context)
@@ -307,11 +309,42 @@ class CreateDrawing(bpy.types.Operator):
 
             iterators.append(ifcopenshell.geom.iterator(geom_settings, f, multiprocessing.cpu_count(), exclude=exclude))
 
-        with open(svg_path, "w") as svg:
-            results = ifcopenshell.draw.main(draw_settings, files, iterators=iterators, merge_projection=False)
-            svg.write(str(results))
+        results = ifcopenshell.draw.main(draw_settings, files, iterators=iterators, merge_projection=False)
+
+        from lxml import etree
+
+        root = etree.fromstring(results)
+        self.enrich_linework_with_metadata(root)
+        self.move_projection_to_bottom(root)
+        with open(svg_path, "wb") as svg:
+            svg.write(etree.tostring(root))
 
         return svg_path
+
+    def enrich_linework_with_metadata(self, root):
+        ifc = tool.Ifc.get()
+        for el in root.findall('.//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]'):
+            classes = []
+            element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
+            material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+            if material:
+                if material.is_a("IfcMaterialLayerSet"):
+                    name = material.LayerSetName or "null"
+                else:
+                    name = getattr(material, "Name", "null")
+                name = self.canonicalise_class_name(name)
+                classes.append(f"material-{name}")
+            if classes:
+                el.set("class", (el.get("class", "") + " " + " ".join(classes)).strip())
+
+    def move_projection_to_bottom(self, root):
+        # https://stackoverflow.com/questions/36018627/sorting-child-elements-with-lxml-based-on-attribute-value
+        group = root.find('{http://www.w3.org/2000/svg}g')
+        #group[:] = sorted(group, key=lambda e : "projection" in e.get("class"))
+        group[:] = reversed(group)
+
+    def canonicalise_class_name(self, name):
+        return re.sub("[^0-9a-zA-Z]+", "", name)
 
     def generate_annotation(self, context):
         if not self.props.has_annotation:
