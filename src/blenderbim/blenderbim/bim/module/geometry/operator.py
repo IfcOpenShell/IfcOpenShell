@@ -383,14 +383,14 @@ class OverrideDelete(bpy.types.Operator):
         for obj in context.selected_objects:
             if obj.BIMObjectProperties.ifc_definition_id:
                 element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-                if element.FillsVoids:
+                if getattr(element, "FillsVoids", None):
                     self.remove_filling(element)
                 if element.is_a("IfcOpeningElement"):
                     for rel in element.HasFillings:
                         self.remove_filling(rel.RelatedBuildingElement)
                     if element.VoidsElements:
                         self.delete_opening_element(element)
-                elif element.HasOpenings:
+                elif getattr(element, "HasOpenings", None):
                     for rel in element.HasOpenings:
                         self.delete_opening_element(rel.RelatedOpeningElement)
             bpy.data.objects.remove(obj)
