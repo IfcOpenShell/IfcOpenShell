@@ -65,7 +65,7 @@ class P6XER2Ifc():
         self.activities = {}
         self.relationships = {}
         self.resources = {}
-        
+        self.output = None
         
         self.day_map2 = {
             '1': "Monday",
@@ -90,7 +90,7 @@ class P6XER2Ifc():
             "relationships": self.relationships,
             "resources": self.resources
         }
-        ifcCreator = ScheduleIfcGenerator(self.file, settings)
+        ifcCreator = ScheduleIfcGenerator(self.file, self.output, settings)
         ifcCreator.create_ifc()
        
     

@@ -37,6 +37,7 @@ class P62Ifc:
         self.activities = {}
         self.relationships = {}
         self.resources = {}
+        self.output = None
         self.day_map = {
             "Monday": 1,
             "Tuesday": 2,
@@ -74,7 +75,7 @@ class P62Ifc:
             "relationships": self.relationships,
             "resources": self.resources
         }
-        ifcCreator = ScheduleIfcGenerator(self.file, settings)
+        ifcCreator = ScheduleIfcGenerator(self.file, self.output, settings)
         end = time.time()
         
         ifcCreator.create_ifc()

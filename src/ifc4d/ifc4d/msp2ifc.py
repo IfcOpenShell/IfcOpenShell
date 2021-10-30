@@ -40,7 +40,7 @@ class MSP2Ifc:
         self.tasks = {}
         self.relationships = {}
         self.resources = {}
-        
+        self.output = None
         self.RESOURCE_TYPES_MAPPING = {
             '1' : "LABOR",
             '0' : "MATERIAL",
@@ -60,7 +60,7 @@ class MSP2Ifc:
             "relationships": self.relationships,
             "resources": self.resources
         }
-        ifcCreator = ScheduleIfcGenerator(self.file, settings)
+        ifcCreator = ScheduleIfcGenerator(self.file, self.output, settings)
         ifcCreator.create_ifc()
 
     def parse_xml(self):

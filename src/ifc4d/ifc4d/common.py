@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, date
 
 class ScheduleIfcGenerator:
     
-    def __init__(self, file, settings):
+    def __init__(self, file, output, settings):
         self.file = file
         self.work_plan = settings['work_plan']
         self.project = settings['project']
@@ -17,6 +17,7 @@ class ScheduleIfcGenerator:
         self.activities = settings['activities']
         self.relationships = settings['relationships']
         self.resources = settings['resources']
+        self.output = output
         self.day_map = {
             "Monday": 1,
             "Tuesday": 2,
@@ -37,6 +38,7 @@ class ScheduleIfcGenerator:
         self.create_tasks(work_schedule)
         self.create_rel_sequences()
         self.create_resources()
+        self.file.write(self.output)
 
     def create_work_schedule(self):
         return ifcopenshell.api.run(
