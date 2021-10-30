@@ -47,7 +47,7 @@ simple_type_python_mapping = {
     "real": float,
     "number": float,
     "boolean": bool,
-    "logical": bool,  # still not implemented in IfcOpenShell
+    "logical": {True, False, "UNKNOWN"},
     "binary": str,  # maps to a str of "0" and "1"
 }
 
@@ -79,7 +79,11 @@ def assert_valid(attr, val, schema):
     invalid = False
 
     if isinstance(attr_type, simple_type):
-        invalid = type(val) != simple_type_python_mapping[attr_type.declared_type()]
+        simple_type_python = simple_type_python_mapping[attr_type.declared_type()]
+        if type(simple_type_python) == set:
+            invalid = val not in simple_type_python
+        else:
+            invalid = type(val) != simple_type_python
     elif isinstance(attr_type, (entity_type, type_declaration)):
         invalid = not isinstance(val, ifcopenshell.entity_instance) or not val.is_a(attr_type.name())
     elif isinstance(attr_type, select_type):
