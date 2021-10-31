@@ -193,3 +193,4 @@ class P6XER2Ifc():
 # TODO: consider showing progress bar for better user experience
 # TODO: support multiple projects in a single file
 # TODO: prompt user to select activities and/or wbs nodes to import instead of the full project
+

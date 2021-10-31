@@ -200,12 +200,12 @@ class ScheduleIfcGenerator:
         identification = wbs["Code"]
         if wbs["ParentObjectId"]:
             if self.wbs[wbs["ParentObjectId"]]["ifc"]:
-                identification = self.wbs[wbs["ParentObjectId"]]["ifc"].Identification + "." + wbs["Code"]
+                identification = str(self.wbs[wbs["ParentObjectId"]]["ifc"].Identification) + "." + str(wbs["Code"])
         ifcopenshell.api.run(
             "sequence.edit_task",
             self.file,
             task=wbs["ifc"],
-            attributes={"Name": wbs["Name"], "Identification": identification},
+            attributes={"Name": wbs["Name"], "Identification": str(identification)},
         )
         for activity_id in wbs["activities"]:
             self.create_task_from_activity(self.activities[activity_id], wbs, None)
@@ -223,7 +223,7 @@ class ScheduleIfcGenerator:
             task=activity["ifc"],
             attributes={
                 "Name": activity["Name"],
-                "Identification": activity["Identification"],
+                "Identification": str(activity["Identification"]),
                 "Status": activity["Status"],
                 "IsMilestone": activity["StartDate"] == activity["FinishDate"],
                 "PredefinedType": "CONSTRUCTION"
