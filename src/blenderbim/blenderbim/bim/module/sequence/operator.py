@@ -1120,6 +1120,27 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
+class ImportPP(bpy.types.Operator, ImportHelper):
+    bl_idname = "import_pp.bim"
+    bl_label = "Import Powerproject pp"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".pp"
+    filter_glob: bpy.props.StringProperty(default="*.pp", options={"HIDDEN"})
+
+    def execute(self, context):
+        from ifc4d.pp2ifc import PP2Ifc
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        pp2ifc = PP2Ifc()
+        pp2ifc.pp = self.filepath
+        pp2ifc.file = self.file
+        pp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
+        pp2ifc.execute()
+        Data.load(IfcStore.get_file())
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
 class ImportMSP(bpy.types.Operator, ImportHelper):
     bl_idname = "import_msp.bim"
     bl_label = "Import MSP"
