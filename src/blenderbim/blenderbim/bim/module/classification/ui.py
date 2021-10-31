@@ -125,7 +125,7 @@ class BIM_PT_classification_references(Panel):
         if not classification_prop.getClassifications(self.sprops, context):
             return
 
-        name = ClassificationReferencesData.library_classifications[int(self.sprops.available_classifications)]
+        name = ClassificationsData.library_classifications[int(self.sprops.available_classifications)]
         if name in [c["Name"] for c in ClassificationsData.data["classifications"].values()]:  #Here there is a call to ClassificationsData
             row = self.layout.row(align=True)
             row.prop(self.sprops, "available_classifications", text="")

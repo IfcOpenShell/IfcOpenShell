@@ -19,15 +19,15 @@
 import bpy
 import blenderbim.tool as tool
 
-#import ifcopenshell
 import ifcopenshell.util.date
 
 def refresh():
     ClassificationsData.is_loaded = False
 
 class ClassificationsData:
-    is_loaded = False  
-    library_file = None  #ClassificationsData
+    is_loaded = False
+    library_file = None
+    library_classifications = {}
 
     @classmethod
     def load(cls):
@@ -68,8 +68,7 @@ class ClassificationsData:
 class ClassificationReferencesData:
     is_loaded = False
     products = {}
-    library_references = {}
-    library_classifications = {}       #Called in operator
+    #library_references = {}  #never called
 
     @classmethod
     def load(cls,  product_id=None):

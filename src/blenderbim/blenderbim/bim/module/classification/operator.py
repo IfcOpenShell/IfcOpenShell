@@ -20,7 +20,8 @@ import bpy
 import json
 import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.classification.data import ClassificationData
+from blenderbim.bim.module.classification.data import ClassificationsData
+from blenderbim.bim.module.classification.data import ClassificationReferencesData
 #from ifcopenshell.api.classification.data import Data      #OLD
 from blenderbim.bim.module.classification.prop import getClassifications, getReferences
 
@@ -33,7 +34,7 @@ class LoadClassificationLibrary(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        ClassificationData.load_library(self.filepath)
+        ClassificationsData.load_library(self.filepath)
         getClassifications(self, context)
         return {"FINISHED"}
 
@@ -55,9 +56,9 @@ class AddClassification(bpy.types.Operator):
         ifcopenshell.api.run(
             "classification.add_classification",
             IfcStore.get_file(),
-            **{"classification": ClassificationData.library_file.by_id(int(props.available_classifications))},
+            **{"classification": ClassificationsData.library_file.by_id(int(props.available_classifications))},
         )
-        ClassificationData.load()
+        ClassificationsData.load()
         return {"FINISHED"}
 
 
@@ -70,7 +71,7 @@ class EnableEditingClassification(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMClassificationProperties
         props.classification_attributes.clear()
-        classification_data = ClassificationData.data['classifications'][self.classification]
+        classification_data = ClassificationsData.data['classifications'][self.classification]
         for attribute in IfcStore.get_schema().declaration_by_name("IfcClassification").all_attributes():
             new = props.classification_attributes.add()
             new.name = attribute.name()
@@ -111,7 +112,7 @@ class RemoveClassification(bpy.types.Operator):
             self.file,
             **{"classification": self.file.by_id(self.classification)},
         )
-        ClassificationData.load()
+        ClassificationsData.load()
         return {"FINISHED"}
 
 
@@ -139,7 +140,7 @@ class EditClassification(bpy.types.Operator):
             self.file,
             **{"classification": self.file.by_id(props.active_classification_id), "attributes": attributes},
         )
-        ClassificationData.load()
+        ClassificationsData.load()
         bpy.ops.bim.disable_editing_classification()
         return {"FINISHED"}
 
@@ -155,7 +156,7 @@ class EnableEditingClassificationReference(bpy.types.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         props = obj.BIMClassificationReferenceProperties
         props.reference_attributes.clear()
-        reference_data = ClassificationData.data["references"][self.reference]
+        reference_data = ClassificationReferencesData.data["references"][self.reference]
         for attribute in IfcStore.get_schema().declaration_by_name("IfcClassificationReference").all_attributes():
             if attribute.name() == "ReferencedSource":
                 continue
@@ -202,8 +203,8 @@ class RemoveClassificationReference(bpy.types.Operator):
                 "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
             },
         )
-        ClassificationData.load(obj.BIMObjectProperties.ifc_definition_id)
-        ClassificationData.load()
+        ClassificationReferencesData.load(obj.BIMObjectProperties.ifc_definition_id)
+        ClassificationReferencesData.load()
         return {"FINISHED"}
 
 
@@ -231,7 +232,7 @@ class EditClassificationReference(bpy.types.Operator):
             self.file,
             **{"reference": self.file.by_id(props.active_reference_id), "attributes": attributes},
         )
-        ClassificationData.load()
+        ClassificationReferencesData.load()
         bpy.ops.bim.disable_editing_classification_reference()
         return {"FINISHED"}
 
@@ -253,8 +254,8 @@ class AddClassificationReference(bpy.types.Operator):
         classification = None
 
         props = context.scene.BIMClassificationProperties
-        classification_name = ClassificationData.library_classifications[int(props.available_classifications)]
-        for classification_id, classification in ClassificationData.data["classifications"].items():
+        classification_name = ClassificationsData.library_classifications[int(props.available_classifications)]
+        for classification_id, classification in ClassificationsData.data["classifications"].items():
             if classification["Name"] == classification_name:
                 classification = self.file.by_id(classification_id)
                 break
@@ -263,13 +264,13 @@ class AddClassificationReference(bpy.types.Operator):
             "classification.add_reference",
             self.file,
             **{
-                "reference": ClassificationData.library_file.by_id(self.reference),
+                "reference": ClassificationsData.library_file.by_id(self.reference),
                 "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
                 "classification": classification,           
             },
         )
-        ClassificationData.load(obj.BIMObjectProperties.ifc_definition_id)
-        ClassificationData.load()
+        ClassificationReferencesData.load(obj.BIMObjectProperties.ifc_definition_id)
+        ClassificationReferencesData.load()
         return {"FINISHED"}
 
 
