@@ -77,6 +77,7 @@
 #include <HLRBRep_PolyHLRToShape.hxx>
 
 #include <Extrema_ExtPElS.hxx>
+#include <GeomAPI_ProjectPointOnSurf.hxx>
 
 #include "../ifcparse/IfcGlobalId.h"
 
@@ -631,6 +632,16 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 			// Move pln to have projection of origin at plane center.
 			// This is necessary to have Poly and BRep HLR at the same position
 			// (Poly) is wrong otherwise.
+
+			double pu, pv;
+			if (!emit_building_storeys_ && scale && size) {
+				Handle_Geom_Surface surf = new Geom_Plane(*pln);
+				GeomAPI_ProjectPointOnSurf project_point_on_surf = GeomAPI_ProjectPointOnSurf(
+					gp::Origin(), surf, size->first/-2, size->first/2, size->second/-2, size->second/2
+				);
+				project_point_on_surf.Parameters(1, pu, pv);
+			}
+
 			Extrema_ExtPElS ext;
 			ext.Perform(gp::Origin(), *pln, 1.e-5);
 			auto P0 = pln->Location();
@@ -643,15 +654,9 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 				pi.SetTransformation(pln->Position());
 				pi.Invert();
 				v.Transform(pi);			
-				auto v_y = v.Y();
-				if (std::fabs(1.0 - pln->Position().Direction().Z()) < 1.e-5) {
-					// @todo tfk: I don't understand this. Somehow only for floor plans the
-					// direction of the Y offset needs to be inverted.
-					v_y *= -1.0;
-				}
 				offset_2d_ = std::make_pair(
-					(-size->first / 2. - v.X()) * 1000 * *scale_,
-					(-size->second / 2. - v_y) * 1000 * *scale_
+					((-size->first / 2.) - pu) * 1000 * *scale_,
+					((-size->second / 2.) + pv) * 1000 * *scale_
 				);
 			}
 
