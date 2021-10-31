@@ -634,26 +634,13 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 			// (Poly) is wrong otherwise.
 
 			double pu, pv;
-			if (!emit_building_storeys_ && scale && size) {
-				Handle_Geom_Surface surf = new Geom_Plane(*pln);
-				GeomAPI_ProjectPointOnSurf project_point_on_surf = GeomAPI_ProjectPointOnSurf(
-					gp::Origin(), surf, size->first/-2, size->first/2, size->second/-2, size->second/2
-				);
-				project_point_on_surf.Parameters(1, pu, pv);
-			}
-
 			Extrema_ExtPElS ext;
 			ext.Perform(gp::Origin(), *pln, 1.e-5);
 			auto P0 = pln->Location();
 			pln->SetLocation(ext.Point(1).Value());
+			ext.Point(1).Parameter(pu, pv);
 
 			if (!emit_building_storeys_ && scale && size) {
-				auto P1 = pln->Location();
-				gp_Vec v(P1.XYZ() - P0.XYZ());
-				gp_Trsf pi;
-				pi.SetTransformation(pln->Position());
-				pi.Invert();
-				v.Transform(pi);			
 				offset_2d_ = std::make_pair(
 					((-size->first / 2.) - pu) * 1000 * *scale_,
 					((-size->second / 2.) + pv) * 1000 * *scale_
