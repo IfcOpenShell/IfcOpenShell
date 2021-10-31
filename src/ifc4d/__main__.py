@@ -2,9 +2,10 @@ import os
 import sys
 import argparse
 
-from p6xer2ifc import P6XER2Ifc
-from p62ifc import P62Ifc
-from msp2ifc import MSP2Ifc
+from ifc4d.p6xer2ifc import P6XER2Ifc
+from ifc4d.p62ifc import P62Ifc
+from ifc4d.msp2ifc import MSP2Ifc
+from ifc4d.pp2ifc import PP2Ifc
 import ifcopenshell
 
 
@@ -12,7 +13,7 @@ parser  = argparse.ArgumentParser()
 parser .add_argument('-f','--file', action='store', type=str, 
                         required=True, help="schedule file name to be parsed")
 parser .add_argument('-s','--schedule', action='store', required=True,
-                        type=str, help='file format as xer, p6xml, mspxml')
+                        type=str, help='file format as xer, p6xml, mspxml, pp')
 parser .add_argument('-i', '--ifcfile', action='store', required=False,
                         type=str, help='ifc file name as string e.g. \"file.ifc\"')
 parser .add_argument('-o', '--output', action='store', required=True,
@@ -65,6 +66,14 @@ elif args.schedule == "p6xml":
     if ifcfile:
         p6xml.file = ifcopenshell.open(args.ifcfile)
         p6xml.execute()
+elif args.schedule == "pp":
+    pp = PP2Ifc()
+    pp.output = args.output
+    pp.pp = args.file
+    ifcfile = get_file()
+    if ifcfile:
+        pp.file = ifcopenshell.open(args.ifcfile)
+        pp.execute()
 else:
     print("schedule type you selected is not implemented at the moment")
 
