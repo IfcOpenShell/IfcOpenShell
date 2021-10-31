@@ -77,7 +77,6 @@
 #include <HLRBRep_PolyHLRToShape.hxx>
 
 #include <Extrema_ExtPElS.hxx>
-#include <GeomAPI_ProjectPointOnSurf.hxx>
 
 #include "../ifcparse/IfcGlobalId.h"
 
@@ -632,7 +631,6 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 			// Move pln to have projection of origin at plane center.
 			// This is necessary to have Poly and BRep HLR at the same position
 			// (Poly) is wrong otherwise.
-
 			double pu, pv;
 			Extrema_ExtPElS ext;
 			ext.Perform(gp::Origin(), *pln, 1.e-5);
