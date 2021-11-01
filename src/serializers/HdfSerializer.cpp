@@ -316,13 +316,48 @@ const IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::str
 		for (auto& part : parts) {
 			TopoDS_Shape shp = read_shape(part.shape_serialization);
 
-			gp_GTrsf trsf(gp_Mat(
+			// The gp_GTrsf(Mat, V) constructor isn't very smart in that
+			// it sets the Form to gp_Other. This, in turn, then means that
+			// in IfcOpenShell when the BRepElement is cast to a TopoDS_Compound
+			// (happens e.g in SVG and Python), and the trsf is multiplied into
+			// the shape, it is automatically converted to a Nurbs object.
+			// For this reason we do a quick identity check so that we in that
+			// case can keep the Form at gp_Identity. Better yet would be to
+			// do a full decomposition of the matrix in Translation Rotation and
+			// Scale components and use the OCCT APIs to reconstruct the Trsf
+			// from that.
+
+			gp_Mat M(
 				part.matrix[0][0], part.matrix[0][1], part.matrix[0][2],
 				part.matrix[1][0], part.matrix[1][1], part.matrix[1][2],
 				part.matrix[2][0], part.matrix[2][1], part.matrix[2][2]
-			), gp_XYZ(
+			);
+
+			bool is_identity = true;
+
+			// quick identity test
+
+			for (int i = 1; i < 4; ++i) {
+				for (int j = 1; j < 4; ++j) {
+					if (std::fabs(M.Row(i).Coord(j) - ((i == j) ? 1.0 : 0.0)) > 1.e-9) {
+						is_identity = false;
+					}
+				}
+			}
+
+			gp_XYZ V(
 				part.matrix[3][0], part.matrix[3][1], part.matrix[3][2]
-			));
+			);
+
+			if (gp_Pnt(V).Distance(gp::Origin()) > 1.e-9) {
+				is_identity = false;
+			}
+
+			gp_GTrsf trsf;
+			
+			if (!is_identity) {
+				trsf = gp_GTrsf(M, V);
+			}
 
 			std::shared_ptr<IfcGeom::SurfaceStyle> style_ptr;
 			read_surface_style(part.surface_style, style_ptr);
