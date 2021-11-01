@@ -26,14 +26,14 @@ def refresh():
 
 class ClassificationsData:
     is_loaded = False
-    library_file = None
-    library_classifications = {}
 
     @classmethod
     def load(cls):
         cls._file = tool.Ifc.get()
         cls.data = {
             "classifications" : cls.get_classifications(),  #ClassificationsData  list of available classifications, es. Omniclass, Uniclass,etc..
+            "library_file" : None,
+            "library_classifications" : {},
         }
         cls.is_loaded = True
 
@@ -59,15 +59,14 @@ class ClassificationsData:
 
     @classmethod
     def load_library(cls, filepath):
-        cls.library_file = ifcopenshell.open(filepath)
-        cls.library_classifications = {}
-        for classification in cls.library_file.by_type("IfcClassification"):
-            cls.library_classifications[classification.id()] = classification.Name
+        cls.data["library_file"] = ifcopenshell.open(filepath)
+        cls.data["library_classifications"] = {}
+        for classification in cls.data["library_file"].by_type("IfcClassification"):
+            cls.data["library_classifications"][classification.id()] = classification.Name
 
 
 class ClassificationReferencesData:
     is_loaded = False
-    products = {}
     #library_references = {}  #never called
 
     @classmethod
@@ -75,6 +74,7 @@ class ClassificationReferencesData:
         cls._file = tool.Ifc.get()
         cls.data = {
             "references" : cls.get_references(),  #list of available ifcclassificationsreferences in the current file
+            "products" : {},
         }
         if product_id:
             cls.load_product_classifications(product_id)
@@ -83,12 +83,12 @@ class ClassificationReferencesData:
     @classmethod
     def load_product_classifications(cls, product_id):
         product = cls._file.by_id(product_id)
-        cls.products[product_id] = []
+        cls.data["products"][product_id] = []
         if not product.HasAssociations:
             return
         for association in product.HasAssociations:
             if association.is_a("IfcRelAssociatesClassification"):
-                cls.products[product_id].append(association.RelatingClassification.id())
+                cls.data["products"][product_id].append(association.RelatingClassification.id())
 
     @classmethod
     def get_references(cls):

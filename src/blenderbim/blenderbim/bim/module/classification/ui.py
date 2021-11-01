@@ -41,7 +41,7 @@ class BIM_PT_classifications(Panel):
 
         self.props = context.scene.BIMClassificationProperties
 
-        if ClassificationsData.library_file:
+        if ClassificationsData.data["library_file"]:
             row = self.layout.row(align=True)
             row.prop(self.props, "available_classifications", text="")
             row.operator("bim.load_classification_library", text="", icon="IMPORT")
@@ -104,12 +104,12 @@ class BIM_PT_classification_references(Panel):
         self.file = IfcStore.get_file()
         if not ClassificationReferencesData.is_loaded:
             ClassificationReferencesData.load()
-        if self.oprops.ifc_definition_id not in ClassificationReferencesData.products:
+        if self.oprops.ifc_definition_id not in ClassificationReferencesData.data["products"]:
             ClassificationReferencesData.load(self.oprops.ifc_definition_id)
 
         self.draw_add_ui(context)
 
-        reference_ids = ClassificationReferencesData.products[self.oprops.ifc_definition_id]
+        reference_ids = ClassificationReferencesData.data["products"][self.oprops.ifc_definition_id]
         if not reference_ids:
             row = self.layout.row(align=True)
             row.label(text="No References")
@@ -125,8 +125,8 @@ class BIM_PT_classification_references(Panel):
         if not classification_prop.getClassifications(self.sprops, context):
             return
 
-        name = ClassificationsData.library_classifications[int(self.sprops.available_classifications)]
-        if name in [c["Name"] for c in ClassificationsData.data["classifications"].values()]:  #Here there is a call to ClassificationsData
+        name = ClassificationsData.data["library_classifications"][int(self.sprops.available_classifications)]
+        if name in [c["Name"] for c in ClassificationsData.data["classifications"].values()]:
             row = self.layout.row(align=True)
             row.prop(self.sprops, "available_classifications", text="")
             if self.sprops.active_library_referenced_source:

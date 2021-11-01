@@ -22,7 +22,6 @@ import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.classification.data import ClassificationsData
 from blenderbim.bim.module.classification.data import ClassificationReferencesData
-#from ifcopenshell.api.classification.data import Data      #OLD
 from blenderbim.bim.module.classification.prop import getClassifications, getReferences
 
 
@@ -56,7 +55,7 @@ class AddClassification(bpy.types.Operator):
         ifcopenshell.api.run(
             "classification.add_classification",
             IfcStore.get_file(),
-            **{"classification": ClassificationsData.library_file.by_id(int(props.available_classifications))},
+            **{"classification": ClassificationsData.data["library_file"].by_id(int(props.available_classifications))},
         )
         ClassificationsData.load()
         return {"FINISHED"}
@@ -254,7 +253,7 @@ class AddClassificationReference(bpy.types.Operator):
         classification = None
 
         props = context.scene.BIMClassificationProperties
-        classification_name = ClassificationsData.library_classifications[int(props.available_classifications)]
+        classification_name = ClassificationsData.data["library_classifications"][int(props.available_classifications)]
         for classification_id, classification in ClassificationsData.data["classifications"].items():
             if classification["Name"] == classification_name:
                 classification = self.file.by_id(classification_id)
@@ -264,7 +263,7 @@ class AddClassificationReference(bpy.types.Operator):
             "classification.add_reference",
             self.file,
             **{
-                "reference": ClassificationsData.library_file.by_id(self.reference),
+                "reference": ClassificationsData.data["library_file"].by_id(self.reference),
                 "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
                 "classification": classification,           
             },
