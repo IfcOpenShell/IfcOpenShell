@@ -123,6 +123,12 @@ struct drawing_meta {
 	std::array<std::array<double, 3>, 3> matrix_3;
 };
 
+enum subtract_before_project {
+	ON_SLABS_AT_FLOORPLANS,
+	ON_SLABS_AND_WALLS,
+	ALWAYS
+};
+
 typedef boost::variant<
 	boost::blank,
 	Handle(HLRBRep_Algo),
@@ -182,6 +188,8 @@ protected:
 
 	void draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name);
 
+	subtract_before_project subtraction_settings_;
+
 public:
 	SvgSerializer(const stream_or_filename& out_filename, const SerializerSettings& settings)
 		: WriteOnlyGeometrySerializer(settings)
@@ -210,6 +218,7 @@ public:
 		, ycoords_begin(0)
 		, radii_begin(0)
 		, namespace_prefix_("data-")
+		, subtraction_settings_(ON_SLABS_AT_FLOORPLANS)
 	{}
     void addXCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
     void addYCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
@@ -307,6 +316,14 @@ public:
 	void addDrawing(const gp_Pnt& pos, const gp_Dir& dir, const gp_Dir& ref, const std::string& name, bool include_projection) {
 		deferred_section_data_.emplace();
 		deferred_section_data_->push_back(vertical_section{ gp_Pln(gp_Ax3(pos, dir, ref)), name, include_projection });
+	}
+
+	void setSubtractionSettings(subtract_before_project sbp) {
+		subtraction_settings_ = sbp;
+	}
+
+	subtract_before_project getSubtractionSettings() const {
+		return subtraction_settings_;
 	}
 
 protected:
