@@ -41,10 +41,10 @@
 #define read_shape read_text
 #endif
 
-herr_t print_stack(hid_t, void*) {
-	/*
+herr_t print_stack(hid_t /*estack*/, void*) {
 	// For debugging: when using IfcConvert on Windows with wcout,
 	// it's difficult to get console output of HDF5 stack traces.
+	/*
 	auto f = fopen("temp.txt", "w");
 	H5Eprint(estack, f);
 	fclose(f);
@@ -258,12 +258,10 @@ void HdfSerializer::remove(const std::string& guid) {
 	}
 }
 
-const IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& guid, unsigned int representation_id, read_type rt) {
+IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& guid, const std::string& representation_id_str, read_type rt) {
 	if (!H5Lexists(file.getId(), guid.c_str(), H5P_DEFAULT)) {
 		return nullptr;
 	}
-
-	auto representation_id_str = std::to_string(representation_id);
 
 	auto element_group = file.openGroup(guid);
 	if (!H5Lexists(element_group.getId(), representation_id_str.c_str(), H5P_DEFAULT)) {
@@ -287,7 +285,7 @@ const IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::str
 		m44[2][0], m44[2][1], m44[2][2], m44[2][3]
 	);
 
-	auto representation_group = element_group.openGroup(std::to_string(representation_id));
+	auto representation_group = element_group.openGroup(representation_id_str);
 	std::string geom_id = read_scalar_attribute<std::string>(representation_group, "geom_id");
 
 	IfcGeom::ElementSettings element_settings(settings_, f.getUnit("LENGTHUNIT").second, type);

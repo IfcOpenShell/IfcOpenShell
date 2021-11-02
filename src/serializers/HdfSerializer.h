@@ -97,7 +97,7 @@ public:
 	void write(const IfcGeom::TriangulationElement* o);
 	void remove(const std::string& guid);
 
-	const IfcGeom::Element* read(IfcParse::IfcFile& f, const std::string& guid, unsigned int representation_id, read_type rt = READ_BREP);
+	IfcGeom::Element* read(IfcParse::IfcFile& f, const std::string& guid, const std::string&, read_type rt = READ_BREP);
 	
 	void finalize() {}
 	bool isTesselated() const { return false; }
