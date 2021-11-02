@@ -386,8 +386,8 @@ class BIMWorkCalendarProperties(PropertyGroup):
 
 
 class DatePickerProperties(PropertyGroup):
-    display_date: StringProperty()
-    selected_date: StringProperty()
+    display_date: StringProperty(name="Display Date")
+    selected_date: StringProperty(name="Selected Date")
 
 
 class BIMDateTextProperties(PropertyGroup):

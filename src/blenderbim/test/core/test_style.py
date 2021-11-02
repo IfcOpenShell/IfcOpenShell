@@ -21,15 +21,18 @@ from test.core.bootstrap import ifc, style
 
 
 class TestAddStyle:
-    def test_it_adds_a_style_with_rendering_attributes(self, ifc, style):
-        style.get_name("obj").should_be_called().will_return("name")
+    def predict(self, ifc, style, obj="obj"):
+        style.get_name(obj).should_be_called().will_return("name")
         ifc.run("style.add_style", name="name").should_be_called().will_return("style")
-        style.link("style", "obj").should_be_called()
-        style.get_surface_rendering_attributes("obj").should_be_called().will_return("attributes")
+        style.link("style", obj).should_be_called()
+        style.get_surface_rendering_attributes(obj).should_be_called().will_return("attributes")
         ifc.run(
             "style.add_surface_style", style="style", ifc_class="IfcSurfaceStyleRendering", attributes="attributes"
         ).should_be_called()
-        ifc.get_entity("obj").should_be_called().will_return(None)
+        ifc.get_entity(obj).should_be_called().will_return(None)
+
+    def test_it_adds_a_style_with_rendering_attributes(self, ifc, style):
+        self.predict(ifc, style)
         assert subject.add_style(ifc, style, obj="obj") == "style"
 
     def test_adding_a_style_linked_to_a_material(self, ifc, style):

@@ -22,10 +22,22 @@ import ifcopenshell.api
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 import blenderbim.bim.handler
+import blenderbim.core.geometry
+import blenderbim.core.material
 import blenderbim.core.spatial
+import blenderbim.core.style
+import blenderbim.core.type
+import blenderbim.core.root as core
 import blenderbim.tool as tool
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
+
+
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
 
 
 class EnableReassignClass(bpy.types.Operator):
@@ -103,6 +115,7 @@ class AssignClass(bpy.types.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Assign the IFC Class to the selected object"
     obj: bpy.props.StringProperty()
     ifc_class: bpy.props.StringProperty()
     predefined_type: bpy.props.StringProperty()
@@ -142,15 +155,25 @@ class AssignClass(bpy.types.Operator):
         IfcStore.link_element(product, obj)
 
         if self.should_add_representation:
-            bpy.ops.bim.add_representation(
-                obj=obj.name, context_id=self.context_id, ifc_representation_class=self.ifc_representation_class
+            ifc_context = self.context_id or int(context.scene.BIMProperties.contexts or "0") or None
+            if ifc_context:
+                ifc_context = tool.Ifc.get().by_id(ifc_context)
+            blenderbim.core.geometry.add_representation(
+                tool.Ifc,
+                tool.Geometry,
+                tool.Style,
+                tool.Surveyor,
+                obj=obj,
+                context=ifc_context,
+                ifc_representation_class=self.ifc_representation_class,
+                profile_set_usage=None,
             )
 
         if product.is_a("IfcElementType"):
-            self.place_in_types_collection(obj, context)
+            tool.Collector.assign(obj)
         elif product.is_a("IfcOpeningElement"):
             obj.display_type = "WIRE"
-            self.place_in_openings_collection(obj, context)
+            tool.Collector.assign(obj)
         elif (
             product.is_a("IfcSpatialElement")
             or product.is_a("IfcSpatialStructureElement")
@@ -167,30 +190,6 @@ class AssignClass(bpy.types.Operator):
             self.assign_potential_spatial_container(obj)
         context.view_layer.objects.active = obj
 
-    def place_in_types_collection(self, obj, context):
-        for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
-            if not [c for c in project.children if "Types" in c.name]:
-                types = bpy.data.collections.new("Types")
-                project.collection.children.link(types)
-            for collection in [c for c in project.children if "Types" in c.name]:
-                for user_collection in obj.users_collection:
-                    user_collection.objects.unlink(obj)
-                collection.collection.objects.link(obj)
-                break
-            break
-
-    def place_in_openings_collection(self, obj, context):
-        for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
-            if not [c for c in project.children if "IfcOpeningElements" in c.name]:
-                opening_elements = bpy.data.collections.new("IfcOpeningElements")
-                project.collection.children.link(opening_elements)
-            for collection in [c for c in project.children if "IfcOpeningElements" in c.name]:
-                for user_collection in obj.users_collection:
-                    user_collection.objects.unlink(obj)
-                collection.collection.objects.link(obj)
-                break
-            break
-
     def place_in_spatial_collection(self, obj, context):
         for collection in obj.users_collection:
             if collection.name == obj.name:
@@ -206,7 +205,7 @@ class AssignClass(bpy.types.Operator):
             parent_collection.children.link(collection)
             blenderbim.core.aggregate.assign_object(
                 tool.Ifc,
-                tool.Aggregator,
+                tool.Aggregate,
                 tool.Collector,
                 relating_obj=bpy.data.objects.get(parent_collection.name),
                 related_obj=obj,
@@ -247,7 +246,7 @@ class AssignClass(bpy.types.Operator):
                 blenderbim.core.spatial.assign_container(
                     tool.Ifc,
                     tool.Collector,
-                    tool.Container,
+                    tool.Spatial,
                     structure_obj=spatial_obj,
                     element_obj=obj,
                 )
@@ -315,69 +314,23 @@ class UnlinkObject(bpy.types.Operator):
         for obj in objects:
             if obj.BIMObjectProperties.ifc_definition_id:
                 IfcStore.unlink_element(obj=obj)
+            for material_slot in obj.material_slots:
+                if material_slot.material:
+                    blenderbim.core.style.unlink_style(tool.Style, obj=material_slot.material)
+                    blenderbim.core.material.unlink_material(tool.Material, obj=material_slot.material)
             if "Ifc" in obj.name and "/" in obj.name:
                 obj.name = "/".join(obj.name.split("/")[1:])
         return {"FINISHED"}
 
 
-class CopyClass(bpy.types.Operator):
+class CopyClass(bpy.types.Operator, Operator):
     bl_idname = "bim.copy_class"
     bl_label = "Copy Class"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        if self.obj:
-            objects = [bpy.data.objects.get(self.obj)]
-        else:
-            objects = context.selected_objects
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         for obj in objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            old_element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            result = ifcopenshell.api.run("root.copy_class", self.file, **{"product": old_element})
-            IfcStore.link_element(result, obj)
-            relating_type = ifcopenshell.util.element.get_type(result)
-            if relating_type and relating_type.RepresentationMaps:
-                bpy.ops.bim.assign_type(relating_type=relating_type.id(), related_object=obj.name)
-            else:
-                bpy.ops.bim.add_representation(obj=obj.name)
-            if result.is_a("IfcSpatialElement") or result.is_a("IfcSpatialStructureElement"):
-                self.place_in_spatial_collection(result, obj)
-            elif result.is_a("IfcOpeningElement"):
-                self.add_opening_modifiers(result, obj)
+            core.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
         blenderbim.bim.handler.purge_module_data()
-        return {"FINISHED"}
-
-    def place_in_spatial_collection(self, element, obj):
-        aggregate = ifcopenshell.util.element.get_aggregate(element)
-        if not aggregate:
-            return
-        container_obj = IfcStore.get_element(aggregate.id())
-        for collection in obj.users_collection:
-            collection.objects.unlink(obj)
-            if "Ifc" in collection.name:
-                parent_collection = collection
-        for collection in container_obj.users_collection:
-            if collection.name == container_obj.name:
-                new = bpy.data.collections.new(obj.name)
-                new.objects.link(obj)
-                collection.children.link(new)
-
-    def add_opening_modifiers(self, result, obj):
-        for rel in result.VoidsElements:
-            building_obj = IfcStore.get_element(rel.RelatingBuildingElement.id())
-            try:
-                modifier = next(m for m in obj.modifiers if m.type == "BOOLEAN" and m.object == obj)
-            except StopIteration:
-                modifier = building_obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-                modifier.object = obj
-            finally:
-                modifier.operation = "DIFFERENCE"
-                modifier.solver = "EXACT"
-                modifier.use_self = True
-                modifier.operand_type = "OBJECT"

@@ -43,8 +43,36 @@ def aggregate():
 
 
 @pytest.fixture
+def collector():
+    prophet = Prophecy(blenderbim.core.tool.Collector)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def context():
     prophet = Prophecy(blenderbim.core.tool.Context)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def geometry():
+    prophet = Prophecy(blenderbim.core.tool.Geometry)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def material():
+    prophet = Prophecy(blenderbim.core.tool.Material)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def misc():
+    prophet = Prophecy(blenderbim.core.tool.Misc)
     yield prophet
     prophet.verify()
 
@@ -57,8 +85,22 @@ def owner():
 
 
 @pytest.fixture
-def voider():
-    prophet = Prophecy(blenderbim.core.tool.Voider)
+def pset():
+    prophet = Prophecy(blenderbim.core.tool.Pset)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def qto():
+    prophet = Prophecy(blenderbim.core.tool.Qto)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def root():
+    prophet = Prophecy(blenderbim.core.tool.Root)
     yield prophet
     prophet.verify()
 
@@ -66,6 +108,13 @@ def voider():
 @pytest.fixture
 def selector():
     prophet = Prophecy(blenderbim.core.tool.Selector)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def spatial():
+    prophet = Prophecy(blenderbim.core.tool.Spatial)
     yield prophet
     prophet.verify()
 
@@ -85,15 +134,22 @@ def surveyor():
 
 
 @pytest.fixture
-def collector():
-    prophet = Prophecy(blenderbim.core.tool.Collector)
+def type():
+    prophet = Prophecy(blenderbim.core.tool.Type)
     yield prophet
     prophet.verify()
 
 
 @pytest.fixture
-def container():
-    prophet = Prophecy(blenderbim.core.tool.Container)
+def unit():
+    prophet = Prophecy(blenderbim.core.tool.Unit)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def voider():
+    prophet = Prophecy(blenderbim.core.tool.Voider)
     yield prophet
     prophet.verify()
 

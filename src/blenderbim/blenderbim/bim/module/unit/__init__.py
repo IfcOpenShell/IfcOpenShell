@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AssignSceneUnits,
     operator.AssignUnit,
     operator.UnassignUnit,
     operator.LoadUnits,

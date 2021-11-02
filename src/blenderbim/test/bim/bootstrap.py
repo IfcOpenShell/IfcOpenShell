@@ -180,7 +180,7 @@ def the_object_name_does_not_exist(name):
 def the_object_name_is_an_ifc_class(name, ifc_class):
     ifc = an_ifc_file_exists()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
-    assert element.is_a(ifc_class), f'Object "{name}" is a {element.is_a()}'
+    assert element.is_a(ifc_class), f'Object "{name}" is an {element.is_a()}'
 
 
 def the_object_name_is_not_an_ifc_element(name):

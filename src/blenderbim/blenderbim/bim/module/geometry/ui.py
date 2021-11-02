@@ -18,8 +18,8 @@
 
 import bpy
 from bpy.types import Panel
-from ifcopenshell.api.geometry.data import Data
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.geometry.data import RepresentationsData, DerivedPlacementsData
 
 
 class BIM_PT_representations(Panel):
@@ -39,33 +39,31 @@ class BIM_PT_representations(Panel):
         return IfcStore.get_file()
 
     def draw(self, context):
+        if not RepresentationsData.is_loaded:
+            RepresentationsData.load()
+
         layout = self.layout
         props = context.active_object.BIMObjectProperties
 
-        if props.ifc_definition_id not in Data.products:
-            Data.load(IfcStore.get_file(), props.ifc_definition_id)
-
-        representations = Data.products[props.ifc_definition_id]
-        if not representations:
+        if not RepresentationsData.data["representations"]:
             layout.label(text="No representations found")
 
         row = layout.row(align=True)
         row.prop(context.scene.BIMProperties, "contexts", text="")
         row.operator("bim.add_representation", icon="ADD", text="")
 
-        for ifc_definition_id in representations:
-            representation = Data.representations[ifc_definition_id]
+        for representation in RepresentationsData.data["representations"]:
             row = self.layout.row(align=True)
-            row.label(text=representation["ContextOfItems"]["ContextType"])
-            row.label(text=representation["ContextOfItems"]["ContextIdentifier"])
-            row.label(text=representation["ContextOfItems"]["TargetView"])
+            row.label(text=representation["ContextType"])
+            row.label(text=representation["ContextIdentifier"])
+            row.label(text=representation["TargetView"])
             row.label(text=representation["RepresentationType"])
             op = row.operator("bim.switch_representation", icon="OUTLINER_DATA_MESH", text="")
             op.should_switch_all_meshes = True
             op.should_reload = True
-            op.ifc_definition_id = ifc_definition_id
+            op.ifc_definition_id = representation["id"]
             op.disable_opening_subtractions = False
-            row.operator("bim.remove_representation", icon="X", text="").representation_id = ifc_definition_id
+            row.operator("bim.remove_representation", icon="X", text="").representation_id = representation["id"]
 
 
 class BIM_PT_mesh(Panel):
@@ -103,7 +101,14 @@ class BIM_PT_mesh(Panel):
         op.disable_opening_subtractions = True
 
         row = layout.row()
+        row.operator("bim.copy_representation")
+
+        row = layout.row()
         row.operator("bim.update_representation")
+
+        row = layout.row()
+        op = row.operator("bim.update_representation", text="Update Mesh As Tessellation")
+        op.ifc_representation_class = "IfcTessellatedFaceSet"
 
         row = layout.row()
         op = row.operator("bim.update_representation", text="Update Mesh As Rectangle Extrusion")
@@ -150,24 +155,28 @@ class BIM_PT_derived_placements(Panel):
     bl_parent_id = "OBJECT_PT_transform"
 
     def draw(self, context):
-        z = context.active_object.matrix_world.translation.z
-        z_values = [co[2] for co in context.active_object.bound_box]
+        if not DerivedPlacementsData.is_loaded:
+            DerivedPlacementsData.load()
+
         row = self.layout.row(align=True)
         row.label(text="Min Global Z")
-        row.label(text="{0:.3f}".format(min(z_values) + z))
+        row.label(text=DerivedPlacementsData.data["min_global_z"])
         row = self.layout.row(align=True)
         row.label(text="Max Global Z")
-        row.label(text="{0:.3f}".format(max(z_values) + z))
+        row.label(text=DerivedPlacementsData.data["max_global_z"])
 
-        collection = bpy.data.objects.get(context.active_object.users_collection[0].name)
-        if collection:
-            collection_z = collection.matrix_world.translation.z
+        if DerivedPlacementsData.data["has_collection"]:
             row = self.layout.row(align=True)
-            row.label(text="Min Local Z")
-            row.label(text="{0:.3f}".format(min(z_values) + z - collection_z))
+            row.label(text="Min Decomposed Z")
+            row.label(text=DerivedPlacementsData.data["min_decomposed_z"])
             row = self.layout.row(align=True)
-            row.label(text="Max Local Z")
-            row.label(text="{0:.3f}".format(max(z_values) + z - collection_z))
+            row.label(text="Max Decomposed Z")
+            row.label(text=DerivedPlacementsData.data["max_decomposed_z"])
+
+        if DerivedPlacementsData.data["is_storey"]:
+            row = self.layout.row(align=True)
+            row.label(text="Storey Height")
+            row.label(text=DerivedPlacementsData.data["storey_height"])
 
 
 class BIM_PT_workarounds(Panel):

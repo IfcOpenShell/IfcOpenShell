@@ -1,16 +1,28 @@
 import ifcopenshell
 
 
-def get_psets(element):
+def get_psets(element, psets_only=False, qtos_only=False):
     psets = {}
     if element.is_a("IfcTypeObject"):
-        if element.HasPropertySets:
-            for definition in element.HasPropertySets:
-                psets[definition.Name] = get_property_definition(definition)
+        for definition in element.HasPropertySets or []:
+            if psets_only and not definition.is_a("IfcPropertySet"):
+                continue
+            if qtos_only and not definition.is_a("IfcElementQuantity"):
+                continue
+            psets[definition.Name] = get_property_definition(definition)
+    elif element.is_a("IfcMaterialDefinition") or element.is_a("IfcProfileDef"):
+        for definition in element.HasProperties or []:
+            if qtos_only:
+                continue
+            psets[definition.Name] = get_property_definition(definition)
     elif hasattr(element, "IsDefinedBy"):
         for relationship in element.IsDefinedBy:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
+                if psets_only and not definition.is_a("IfcPropertySet"):
+                    continue
+                if qtos_only and not definition.is_a("IfcElementQuantity"):
+                    continue
                 psets[definition.Name] = get_property_definition(definition)
     return psets
 
@@ -22,18 +34,21 @@ def get_property_definition(definition):
             props.update(get_quantities(definition.Quantities))
         elif definition.is_a("IfcPropertySet"):
             props.update(get_properties(definition.HasProperties))
+        elif definition.is_a("IfcMaterialProperties") or definition.is_a("IfcProfileProperties"):
+            props.update(get_properties(definition.Properties))
         else:
             # Entity introduced in IFC4
             # definition.is_a('IfcPreDefinedPropertySet'):
             for prop in range(4, len(definition)):
                 if definition[prop] is not None:
                     props[definition.attribute_name(prop)] = definition[prop]
+        props["id"] = definition.id()
         return props
 
 
 def get_quantities(quantities):
     results = {}
-    for quantity in quantities:
+    for quantity in quantities or []:
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
             results[quantity.Name] = quantity[3]
     return results
@@ -134,6 +149,28 @@ def remove_deep(ifc_file, element):
         if ref.id() and len(set(ifc_file.get_inverse(ref)) - subgraph_set) == 0:
             ifc_file.remove(ref)
     ifc_file.unbatch()
+
+
+def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
+    # Experimental remove deep proposal. No batch for now until this is more certain. See #1812.
+    # ifc_file.batch()
+    to_delete = set()
+    subgraph = list(ifc_file.traverse(element, breadth_first=True))
+    subgraph.extend(also_consider)
+    subgraph_set = set(subgraph)
+    subelement_queue = ifc_file.traverse(element, max_levels=1)
+    while subelement_queue:
+        subelement = subelement_queue.pop(0)
+        if (
+            subelement.id()
+            and len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
+            and subelement not in do_not_delete
+        ):
+            to_delete.add(subelement)
+            subelement_queue.extend(ifc_file.traverse(subelement, max_levels=1)[1:])
+    for subelement in to_delete:
+        ifc_file.remove(subelement)
+    # ifc_file.unbatch()
 
 
 def copy(ifc_file, element):

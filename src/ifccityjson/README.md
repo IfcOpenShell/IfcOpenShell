@@ -1,15 +1,12 @@
 # IFCCityJSON
 Converter for CityJSON files and IFC. Currently only supports one-way conversion from CityJSON to IFC. 
 
--- WARNING --
-
-IFCCityJSON only came into being 14/04/2021. Be prepared for lots of bugs, unfinished implementations and little to no documentation!
-
 ## Dependencies
 - [IfcOpenShell](https://github.com/IfcOpenShell/IfcOpenShell) (also IfcOpenShell api is needed)
 - [CJIO](https://github.com/cityjson/cjio)
 
 ## Usage of IFCCityJSON
+An extended ifccityjson tutorial can be found on [the OSARCH wiki](https://wiki.osarch.org/index.php?title=Ifccityjson)
 Following command will execute a conversion from CityJSON to IFC
   
     python ifccityjson.py [-i input file] [-o output file] [-n name of identification attribute]

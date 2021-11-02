@@ -207,6 +207,8 @@ class IfcImporter:
         self.profile_code("Create project")
         self.process_element_filter()
         self.profile_code("Process element filter")
+        self.process_context_filter()
+        self.profile_code("Process context filter")
         self.create_collections()
         self.profile_code("Create collections")
         self.create_openings_collection()
@@ -215,7 +217,7 @@ class IfcImporter:
         self.profile_code("Create materials")
         self.create_styles()
         self.profile_code("Create styles")
-        self.create_annotation()
+        self.create_annotations()
         self.profile_code("Create annotation")
         self.parse_native_elements()
         self.profile_code("Parsing native elements")
@@ -252,9 +254,11 @@ class IfcImporter:
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
-    def is_element_far_away(self, element, is_meters=True):
+    def is_element_far_away(self, element):
         try:
-            return self.is_point_far_away(element.ObjectPlacement.RelativePlacement.Location, is_meters=is_meters)
+            placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            point = placement[:, 3][0:3]
+            return self.is_point_far_away(point, is_meters=False)
         except:
             pass
 
@@ -266,12 +270,38 @@ class IfcImporter:
             coords = point.Coordinates
         return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
 
+    def process_context_filter(self):
+        # Facetation is to accommodate broken Revit files
+        # See https://forums.buildingsmart.org/t/suggestions-on-how-to-improve-clarity-of-representation-context-usage-in-documentation/3663/6?u=moult
+        self.body_contexts = [
+            c.id()
+            for c in self.file.by_type("IfcGeometricRepresentationSubContext")
+            if c.ContextIdentifier in ["Body", "Facetation"]
+        ]
+        if self.body_contexts:
+            self.settings.set_context_ids(self.body_contexts)
+        # Annotation is to accommodate broken Revit files
+        # See https://github.com/Autodesk/revit-ifc/issues/187
+        self.plan_contexts = [
+            c.id()
+            for c in self.file.by_type("IfcGeometricRepresentationContext")
+            if c.ContextType in ["Plan", "Annotation"]
+        ]
+        if self.plan_contexts:
+            self.settings_2d.set_context_ids(self.plan_contexts)
+
     def process_element_filter(self):
         if self.ifc_import_settings.has_filter:
             self.elements = set(self.ifc_import_settings.elements)
-            self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
+            # TODO: enable filtering for annotations
+            self.annotations = set(self.file.by_type("IfcAnnotation"))
         else:
             self.elements = set(self.file.by_type("IfcElement"))
+            self.annotations = set(self.file.by_type("IfcAnnotation"))
+
+        if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
+            self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
+        else:
             if self.file.schema == "IFC2X3":
                 self.spatial_elements = set(self.file.by_type("IfcSpatialStructureElement"))
             else:
@@ -352,24 +382,26 @@ class IfcImporter:
         else:
             project = self.file.by_type("IfcContext")[0]
         site = self.find_decomposed_ifc_class(project, "IfcSite")
-        if site and self.is_element_far_away(site[0], is_meters=False):
-            return self.guess_georeferencing(site[0])
+        if site and self.is_element_far_away(site):
+            return self.guess_georeferencing(site)
         building = self.find_decomposed_ifc_class(project, "IfcBuilding")
-        if building and self.is_element_far_away(building[0], is_meters=False):
-            return self.guess_georeferencing(building[0])
+        if building and self.is_element_far_away(building):
+            return self.guess_georeferencing(building)
         return self.guess_absolute_coordinate()
 
     def guess_georeferencing(self, element):
-        if not element.ObjectPlacement.is_a("IfcLocalPlacement"):
+        if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
             return
-        placement = element.ObjectPlacement.RelativePlacement
+        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
         props = bpy.context.scene.BIMGeoreferenceProperties
-        props.blender_eastings = str(placement.Location.Coordinates[0])
-        props.blender_northings = str(placement.Location.Coordinates[1])
-        props.blender_orthogonal_height = str(placement.Location.Coordinates[2])
-        if placement.RefDirection:
-            props.blender_x_axis_abscissa = str(placement.RefDirection.DirectionRatios[0])
-            props.blender_x_axis_ordinate = str(placement.RefDirection.DirectionRatios[1])
+        props.blender_eastings = str(placement[0][3])
+        props.blender_northings = str(placement[1][3])
+        props.blender_orthogonal_height = str(placement[2][3])
+        x_axis = mathutils.Vector(placement[:, 0][0:3])
+        default_x_axis = mathutils.Vector((1, 0, 0))
+        if (default_x_axis - x_axis).length > 0.01:
+            props.blender_x_axis_abscissa = str(placement[0][0])
+            props.blender_x_axis_ordinate = str(placement[1][0])
         props.has_blender_offset = True
 
     def guess_absolute_coordinate(self):
@@ -476,7 +508,7 @@ class IfcImporter:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
-            obj.BIMObjectProperties.ifc_definition_id = axis.id()
+            self.link_element(axis, obj)
             obj.matrix_world = grid_obj.matrix_world
             grid_collection.objects.link(obj)
 
@@ -504,6 +536,7 @@ class IfcImporter:
                 try:
                     shape = ifcopenshell.geom.create_shape(self.settings, representation_map.MappedRepresentation)
                     mesh = self.create_mesh(element, shape)
+                    self.link_mesh(shape, mesh)
                     self.meshes[mesh_name] = mesh
                 except:
                     self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
@@ -560,19 +593,26 @@ class IfcImporter:
         print("Done creating geometry")
 
     def create_spatial_elements(self):
-        products = self.create_products(self.spatial_elements)
-        self.spatial_elements -= products
-        products = self.create_curve_products(self.spatial_elements)
-        self.spatial_elements -= products
-        for element in self.spatial_elements:
-            self.create_product(element)
+        self.create_generic_elements(self.spatial_elements)
+
+    def create_annotations(self):
+        self.create_generic_elements(self.annotations)
 
     def create_elements(self):
-        products = self.create_products(self.elements)
-        self.elements -= products
-        products = self.create_curve_products(self.elements)
-        self.elements -= products
-        for element in self.elements:
+        self.create_generic_elements(self.elements)
+
+    def create_generic_elements(self, elements):
+        # Based on my experience in viewing BIM models, representations are prioritised as follows:
+        # 1. 3D Body, 2. 2D Plans, 3. Point clouds, 4. No representation
+        # If an element has a representation that doesn't follow 1, 2, or 3, it will not show by default.
+        # The user can load them later if they want to view them.
+        products = self.create_products(elements)
+        elements -= products
+        products = self.create_curve_products(elements)
+        elements -= products
+        products = self.create_pointclouds(elements)
+        elements -= products
+        for element in elements:
             self.create_product(element)
 
     def create_products(self, products):
@@ -605,21 +645,20 @@ class IfcImporter:
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.guid)
-                # Facetation is to accommodate broken Revit files
-                # See https://forums.buildingsmart.org/t/suggestions-on-how-to-improve-clarity-of-representation-context-usage-in-documentation/3663/6?u=moult
-                if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.guid):
-                    # We only load a single context, and we prioritise the Body context. See #1290.
-                    pass
-                else:
+                if self.body_contexts:
                     self.create_product(product, shape)
                     results.add(product)
+                else:
+                    if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.guid):
+                        # We only load a single context, and we prioritise the Body context. See #1290.
+                        pass
+                    else:
+                        self.create_product(product, shape)
+                        results.add(product)
             if not iterator.next():
                 break
         print("Done creating geometry")
         return results
-
-    def create_annotation(self):
-        self.create_curve_products(self.file.by_type("IfcAnnotation"))
 
     def create_structural_items(self):
         # Create structural collections
@@ -661,6 +700,66 @@ class IfcImporter:
             obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, placement_matrix)
             self.link_element(product, obj)
 
+    def get_pointcloud_representation(self, product):
+        if hasattr(product, "Representation") and hasattr(product.Representation, "Representations"):
+            representations = product.Representation.Representations
+        elif hasattr(product, "RepresentationMaps") and hasattr(product.RepresentationMaps, "RepresentationMaps"):
+            representations = product.RepresentationMaps
+        else:
+            return None
+
+        for representation in representations:
+            if representation.RepresentationType == "PointCloud":
+                return representation
+
+            elif self.file.schema == "IFC2X3" and representation.RepresentationType == "GeometricSet":
+                for item in representation.Items:
+                    if not (item.is_a("IfcCartesianPointList") or item.is_a("IfcCartesianPoint")):
+                        break
+                else:
+                    return representation
+
+            elif representation.RepresentationType == "MappedRepresentation":
+                for item in representation.Items:
+                    mapped_representation = self.get_pointcloud_representation(item)
+                    if mapped_representation is not None:
+                        return mapped_representation
+        return None
+
+    def create_pointclouds(self, products):
+        result = set()
+        for product in products:
+            representation = self.get_pointcloud_representation(product)
+            if representation is not None:
+                pointcloud = self.create_pointcloud(product, representation)
+                if pointcloud is not None:
+                    result.add(pointcloud)
+
+        return result
+
+    def create_pointcloud(self, product, representation):
+        placement_matrix = ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement)
+        vertex_list = []
+        for item in representation.Items:
+            if item.is_a("IfcCartesianPointList"):
+                vertex_list.extend(
+                    mathutils.Vector(list(coordinates)) * self.unit_scale for coordinates in item.CoordList
+                )
+            elif item.is_a("IfcCartesianPoint"):
+                vertex_list.append(mathutils.Vector(list(item.Coordinates)) * self.unit_scale)
+
+        if len(vertex_list) == 0:
+            return None
+
+        mesh_name = f"{representation.ContextOfItems.id()}/{representation.id()}"
+        mesh = bpy.data.meshes.new(mesh_name)
+        mesh.from_pydata(vertex_list, [], [])
+
+        obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
+        obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, placement_matrix)
+        self.link_element(product, obj)
+        return product
+
     def create_curve_products(self, products):
         results = set()
         if not products:
@@ -701,15 +800,13 @@ class IfcImporter:
             pass
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             mesh = self.create_camera(element, shape)
+            self.link_mesh(shape, mesh)
         elif shape:
             mesh_name = self.get_mesh_name(shape.geometry)
             mesh = self.meshes.get(mesh_name)
             if mesh is None:
                 mesh = self.create_mesh(element, shape)
-                if "-" in shape.geometry.id:
-                    mesh.BIMMeshProperties.ifc_definition_id = int(shape.geometry.id.split("-")[0])
-                else:
-                    mesh.BIMMeshProperties.ifc_definition_id = int(shape.geometry.id)
+                self.link_mesh(shape, mesh)
                 self.meshes[mesh_name] = mesh
         else:
             mesh = None
@@ -1019,6 +1116,8 @@ class IfcImporter:
     def create_aggregate_collections(self):
         if self.ifc_import_settings.has_filter:
             rel_aggregates = [e.IsDecomposedBy[0] for e in self.elements if e.IsDecomposedBy]
+            rel_aggregates += [e.Decomposes[0] for e in self.elements if e.Decomposes]
+            rel_aggregates = set(rel_aggregates)
         else:
             rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
 
@@ -1117,8 +1216,12 @@ class IfcImporter:
     def place_object_in_decomposition_collection(self, element, obj):
         if element.is_a("IfcProject"):
             return
+        elif element.is_a("IfcGridAxis"):
+            return
         elif element.GlobalId in self.collections:
-            return self.collections[element.GlobalId].objects.link(obj)
+            collection = self.collections[element.GlobalId]
+            collection.name = obj.name
+            return collection.objects.link(obj)
         elif getattr(element, "Decomposes", None):
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             return self.collections[aggregate.GlobalId].objects.link(obj)
@@ -1127,6 +1230,8 @@ class IfcImporter:
 
     def place_object_in_spatial_decomposition_collection(self, element, obj):
         if element.is_a("IfcProject"):
+            return
+        elif element.is_a("IfcGridAxis"):
             return
         elif element.GlobalId in self.collections:
             return self.collections[element.GlobalId].objects.link(obj)
@@ -1397,6 +1502,16 @@ class IfcImporter:
         self.added_data[element.id()] = obj
         IfcStore.link_element(element, obj)
 
+    def link_mesh(self, shape, mesh):
+        if hasattr(shape, "geometry"):
+            geometry = shape.geometry
+        else:
+            geometry = shape
+        if "-" in geometry.id:
+            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
+        else:
+            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id)
+
 
 class IfcImportSettings:
     def __init__(self):
@@ -1413,14 +1528,30 @@ class IfcImportSettings:
         self.should_offset_model = False
         self.model_offset_coordinates = (0, 0, 0)
         self.has_filter = None
-        self.elements = ""
+        self.should_filter_spatial_elements = True
+        self.elements = set()
         self.collection_mode = "DECOMPOSITION"
 
     @staticmethod
     def factory(context, input_file, logger):
         scene_diff = context.scene.DiffProperties
+        props = context.scene.BIMProjectProperties
         settings = IfcImportSettings()
         settings.input_file = input_file
         settings.logger = logger
         settings.diff_file = scene_diff.diff_json_file
+        settings.collection_mode = props.collection_mode
+        settings.should_use_cpu_multiprocessing = props.should_use_cpu_multiprocessing
+        settings.should_merge_by_class = props.should_merge_by_class
+        settings.should_merge_by_material = props.should_merge_by_material
+        settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
+        settings.should_clean_mesh = props.should_clean_mesh
+        settings.deflection_tolerance = props.deflection_tolerance
+        settings.angular_tolerance = props.angular_tolerance
+        settings.should_offset_model = props.should_offset_model
+        settings.model_offset_coordinates = (
+            [float(o) for o in props.model_offset_coordinates.split(",")]
+            if props.model_offset_coordinates
+            else (0, 0, 0)
+        )
         return settings

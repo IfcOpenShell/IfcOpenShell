@@ -23,10 +23,21 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.pset
 import ifcopenshell.util.attribute
 import blenderbim.bim.schema
+import blenderbim.bim.handler
+import blenderbim.tool as tool
+import blenderbim.core.pset as core
+import blenderbim.bim.module.pset.data
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data
 from ifcopenshell.api.cost.data import Data as CostData
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
+
+
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
 
 
 def get_pset_props(context, obj, obj_type):
@@ -69,16 +80,15 @@ def get_pset_obj_ifc_definition_id(context, obj, obj_type):
         return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
 
 
-class TogglePsetExpansion(bpy.types.Operator):
+class TogglePsetExpansion(bpy.types.Operator, Operator):
     bl_idname = "bim.toggle_pset_expansion"
     bl_label = "Toggle Pset Expansion"
     pset_id: bpy.props.IntProperty()
 
-    def execute(self, context):
-        obj = context.active_object
-        data = Data.psets if self.pset_id in Data.psets else Data.qtos
-        data[self.pset_id]["is_expanded"] = not data[self.pset_id]["is_expanded"]
-        return {"FINISHED"}
+    def _execute(self, context):
+        blenderbim.bim.module.pset.data.is_expanded[
+            self.pset_id
+        ] = not blenderbim.bim.module.pset.data.is_expanded.setdefault(self.pset_id, True)
 
 
 class EnablePsetEditing(bpy.types.Operator):
@@ -274,18 +284,19 @@ class AddPset(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        props = get_pset_props(context, self.obj, self.obj_type)
-        ifc_definition_id = get_pset_obj_ifc_definition_id(context, self.obj, self.obj_type)
-
-        ifcopenshell.api.run(
-            "pset.add_pset",
-            self.file,
-            **{
-                "product": self.file.by_id(ifc_definition_id),
-                "name": props.pset_name,
-            },
-        )
-        Data.load(IfcStore.get_file(), ifc_definition_id)
+        pset_name = get_pset_props(context, self.obj, self.obj_type).pset_name
+        if self.obj_type == "Object":
+            objects = [o.name for o in context.selected_objects]
+        else:
+            objects = [self.obj]
+        for obj in objects:
+            ifc_definition_id = get_pset_obj_ifc_definition_id(context, obj, self.obj_type)
+            if not ifc_definition_id:
+                continue
+            element = tool.Ifc.get().by_id(ifc_definition_id)
+            if pset_name in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(element.is_a(), pset_only=True):
+                ifcopenshell.api.run("pset.add_pset", self.file, product=element, name=pset_name)
+                Data.load(IfcStore.get_file(), ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -359,3 +370,17 @@ class GuessQuantity(bpy.types.Operator):
             if unit_settings.length_unit == "METERS":
                 return None, "METRE"
             return unit_settings.length_unit[0 : -len("METERS")], "METRE"
+
+
+class CopyPropertyToSelection(bpy.types.Operator, Operator):
+    bl_idname = "bim.copy_property_to_selection"
+    bl_label = "Copy Property To Selection"
+    name: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        pset_name = context.active_object.PsetProperties.active_pset_name
+        prop_value = context.active_object.PsetProperties.properties.get(self.name).get_value()
+        for obj in context.selected_objects:
+            core.copy_property_to_selection(
+                tool.Ifc, tool.Pset, obj=obj, pset_name=pset_name, prop_name=self.name, prop_value=prop_value
+            )

@@ -9,35 +9,26 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        if self.settings["representation"].RepresentationType == "MappedRepresentation":
-            return self.remove_mapped_representation_portion_only()
-        return self.remove_entire_representation_tree()
-
-    def remove_mapped_representation_portion_only(self):
-        for item in self.settings["representation"].Items:
-            if len(self.file.get_inverse(item.MappingTarget)) == 1:
-                ifcopenshell.util.element.remove_deep(self.file, item.MappingTarget)
-                self.file.remove(item.MappingTarget)
-            self.file.remove(item)
-        self.file.remove(self.settings["representation"])
-
-    def remove_entire_representation_tree(self):
-        dummy_context = self.file.create_entity("IfcRepresentationContext")
+        styled_items = set()
+        presentation_layer_assignments = set()
         for subelement in self.file.traverse(self.settings["representation"]):
             if subelement.is_a("IfcRepresentationItem") and subelement.StyledByItem:
-                [self.file.remove(s) for s in subelement.StyledByItem]
+                [styled_items.add(s) for s in subelement.StyledByItem]
             elif subelement.is_a("IfcRepresentation"):
-                subelement.ContextOfItems = dummy_context
-                self.purge_representation_inverses(subelement)
-        self.purge_representation_inverses(self.settings["representation"])
-        ifcopenshell.util.element.remove_deep(self.file, self.settings["representation"])
+                for inverse in self.file.get_inverse(subelement):
+                    if inverse.is_a("IfcPresentationLayerAssignment"):
+                        presentation_layer_assignments.add(inverse)
 
-    def purge_representation_inverses(self, element):
-        for inverse in self.file.get_inverse(element):
-            if inverse.is_a("IfcPresentationLayerAssignment"):
-                assigned_items = set(inverse.AssignedItems)
-                if len(assigned_items) == 1:
-                    self.file.remove(inverse)
-                else:
-                    assigned_items.remove(element)
-                    inverse.AssignedItems = list(assigned_items)
+        ifcopenshell.util.element.remove_deep2(
+            self.file,
+            self.settings["representation"],
+            also_consider=list(styled_items | presentation_layer_assignments),
+            do_not_delete=self.file.by_type("IfcGeometricRepresentationContext"),
+        )
+
+        for element in styled_items:
+            if not element.Item:
+                self.file.remove(element)
+        for element in presentation_layer_assignments:
+            if len(element.AssignedItems) == 0:
+                self.file.remove(element)

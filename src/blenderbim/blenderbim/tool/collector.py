@@ -25,6 +25,45 @@ import blenderbim.tool as tool
 
 class Collector(blenderbim.core.tool.Collector):
     @classmethod
+    def sync(cls, obj):
+        # This is the reverse of assign. It reads the Blender collection and figures out its IFC hierarchy
+        element = tool.Ifc.get_entity(obj)
+
+        if element.is_a("IfcProject") or element.is_a("IfcGridAxis"):
+            return
+
+        object_collection = None
+        collection_collection = None
+
+        object_collection = cls._get_own_collection(element, obj)
+        if object_collection:
+            collection_collection = cls._get_collection(element, obj)
+        else:
+            object_collection = cls._get_collection(element, obj)
+
+        parent_collection = None
+
+        if obj.users_collection != (object_collection,) and obj.users_collection[0].name != obj.name:
+            parent_collection = obj.users_collection[0]
+        elif collection_collection and collection_collection.children.find(object_collection.name) == -1:
+            for collection in bpy.data.collections:
+                if collection.children.find(obj.users_collection[0].name) != -1:
+                    parent_collection = collection
+                    break
+
+        if parent_collection:
+            parent_obj = bpy.data.objects.get(parent_collection.name)
+            parent = tool.Ifc.get_entity(parent_obj)
+            if parent:
+                # This is lazy, but works. One of these will succeed, the other will fail silently.
+                blenderbim.core.spatial.assign_container(
+                    tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
+                )
+                blenderbim.core.aggregate.assign_object(
+                    tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=parent_obj, related_obj=obj
+                )
+
+    @classmethod
     def assign(cls, obj):
         element = tool.Ifc.get_entity(obj)
 
@@ -53,38 +92,78 @@ class Collector(blenderbim.core.tool.Collector):
     @classmethod
     def _get_own_collection(cls, element, obj):
         if element.is_a("IfcProject"):
-            collection = bpy.data.collections.get(obj.name)
-            if not collection:
-                collection = bpy.data.collections.new(obj.name)
-            return collection
+            return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
 
         if tool.Ifc.get_schema() == "IFC2X3":
             if element.is_a("IfcSpatialStructureElement"):
-                collection = bpy.data.collections.get(obj.name)
-                if not collection:
-                    collection = bpy.data.collections.new(obj.name)
-                return collection
+                return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
         else:
             if element.is_a("IfcSpatialElement"):
-                collection = bpy.data.collections.get(obj.name)
-                if not collection:
-                    collection = bpy.data.collections.new(obj.name)
-                return collection
+                return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
 
-        if element.IsDecomposedBy:
-            collection = bpy.data.collections.get(obj.name)
-            if not collection:
-                collection = bpy.data.collections.new(obj.name)
-            return collection
+        if element.is_a("IfcGrid"):
+            return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
+
+        if element.is_a("IfcGridAxis"):
+            if element.PartOfU:
+                grid = element.PartOfU[0]
+                axes = "UAxes"
+            elif element.PartOfV:
+                grid = element.PartOfV[0]
+                axes = "VAxes"
+            elif element.PartOfW:
+                grid = element.PartOfW[0]
+                axes = "WAxes"
+            grid_obj = tool.Ifc.get_object(grid)
+            if grid_obj:
+                grid_col = bpy.data.collections.get(grid_obj.name)
+                axes_col = [c for c in grid_col.children if axes in c.name]
+                if axes_col:
+                    return axes_col[0]
+                return bpy.data.collections.new(axes)
+
+        if getattr(element, "IsDecomposedBy", None):
+            return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
 
     @classmethod
     def _get_collection(cls, element, obj):
+        if element.is_a("IfcTypeObject"):
+            collection = bpy.data.collections.get("Types")
+            if not collection:
+                collection = bpy.data.collections.new("Types")
+                project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+                project_obj.users_collection[0].children.link(collection)
+            return collection
+
+        if element.is_a("IfcOpeningElement"):
+            collection = bpy.data.collections.get("IfcOpeningElements")
+            if not collection:
+                collection = bpy.data.collections.new("IfcOpeningElements")
+                project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+                project_obj.users_collection[0].children.link(collection)
+            return collection
+
+        if element.is_a("IfcGridAxis"):
+            if element.PartOfU:
+                grid = element.PartOfU[0]
+                axes = "UAxes"
+            elif element.PartOfV:
+                grid = element.PartOfV[0]
+                axes = "VAxes"
+            elif element.PartOfW:
+                grid = element.PartOfW[0]
+                axes = "WAxes"
+            grid_obj = tool.Ifc.get_object(grid)
+            if grid_obj:
+                return bpy.data.collections.get(grid_obj.name)
+
         aggregate = ifcopenshell.util.element.get_aggregate(element)
         if aggregate:
             aggregate_obj = tool.Ifc.get_object(aggregate)
-            collection = bpy.data.collections.get(aggregate_obj.name)
-            if collection:
-                return collection
+            if aggregate_obj:
+                collection = bpy.data.collections.get(aggregate_obj.name)
+                if collection:
+                    return collection
 
         container = ifcopenshell.util.element.get_container(element)
         if container:

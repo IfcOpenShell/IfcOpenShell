@@ -46,7 +46,7 @@ def draw_attribute(attribute, layout, copy_operator=None):
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
     if copy_operator:
         op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
-        op.data = json.dumps({"name": attribute.name, "value": attribute.get_value(), "is_null": attribute.is_null})
+        op.name = attribute.name
 
 
 def import_attributes(ifc_class, props, data, callback=None):

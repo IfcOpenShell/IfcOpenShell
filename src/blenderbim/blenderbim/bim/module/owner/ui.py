@@ -218,8 +218,9 @@ class BIM_PT_owner(bpy.types.Panel):
             row = self.layout.row(align=True)
             if user["is_active"]:
                 row.label(text=user["label"], icon="USER")
+                row.operator("bim.clear_user", icon="KEYFRAME", text="").user = user["id"]
             else:
                 row.label(text=user["label"])
-            row.operator("bim.set_user", icon="KEYFRAME_HLT", text="").user = user["id"]
+                row.operator("bim.set_user", icon="KEYFRAME_HLT", text="").user = user["id"]
             op = row.operator("bim.remove_person_and_organisation", icon="X", text="")
             op.person_and_organisation = user["id"]

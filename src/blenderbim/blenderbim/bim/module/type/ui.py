@@ -69,7 +69,7 @@ class BIM_PT_type(Panel):
             row = self.layout.row(align=True)
 
             row.prop(props, "relating_type_class", text="")
-            if type_prop.getRelatingTypes(None, context):
+            if type_prop.get_object_relating_type(None, context):
                 row.prop(props, "relating_type", text="")
                 row.operator("bim.assign_type", icon="CHECKMARK", text="")
             else:
@@ -81,14 +81,13 @@ class BIM_PT_type(Panel):
                 Data.products[oprops.ifc_definition_id]["type"], Data.products[oprops.ifc_definition_id]["Name"]
             )
             if name == "None/None":
-                label = "This object has no type"
+                row.label(text="This object has no type")
+                row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
             else:
-                label = name
-            row.label(text=label)
-            row.operator("bim.select_type", icon="TRACKER", text="")
-            row.operator("bim.select_similar_type", icon="RESTRICT_SELECT_OFF", text="")
-            row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
-            if name != "None/None":
+                row.label(text=name)
+                row.operator("bim.select_type", icon="TRACKER", text="")
+                row.operator("bim.select_similar_type", icon="RESTRICT_SELECT_OFF", text="")
+                row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
                 row.operator("bim.unassign_type", icon="X", text="")
 
 

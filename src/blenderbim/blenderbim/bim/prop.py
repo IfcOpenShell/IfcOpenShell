@@ -41,6 +41,45 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 materialpsetnames_enum = []
 
 
+def update_preset(self, context):
+    from blenderbim.bim.data.ui.presets import presets
+
+    module_visibility = context.scene.BIMProperties.module_visibility
+    chosen_preset = context.scene.BIMProperties.ui_preset
+
+    for module in module_visibility:
+        module.is_visible = module.name in presets[chosen_preset]
+
+
+def load_presets(self, context):
+    from blenderbim.bim.data.ui.presets import presets
+
+    return [(preset, preset, "") for preset in presets.keys()]
+
+
+def update_is_visible(self, context):
+    from blenderbim.bim import modules
+
+    # TODO: Pset depends on sequence module as an edge case.
+    if self.name == "sequence" and not self.is_visible:
+        context.scene.BIMProperties.module_visibility["pset"].is_visible = False
+
+    for cls in modules[self.name].classes:
+        if not issubclass(cls, bpy.types.Panel):
+            continue
+
+        if self.is_visible:
+            try:
+                bpy.utils.register_class(cls)
+            except:
+                pass
+        else:
+            try:
+                bpy.utils.unregister_class(cls)
+            except:
+                pass
+
+
 def getAttributeEnumValues(self, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
     data = json.loads(self.enum_items)
@@ -49,13 +88,13 @@ def getAttributeEnumValues(self, context):
     return [(e, e, "") for e in data]
 
 
-def updateSchemaDir(self, context):
+def update_schema_dir(self, context):
     import blenderbim.bim.schema
 
     blenderbim.bim.schema.ifc.schema_dir = context.scene.BIMProperties.schema_dir
 
 
-def updateDataDir(self, context):
+def update_data_dir(self, context):
     import blenderbim.bim.schema
 
     blenderbim.bim.schema.ifc.data_dir = context.scene.BIMProperties.data_dir
@@ -98,6 +137,10 @@ def getContexts(self, context):
 
 class StrProperty(PropertyGroup):
     pass
+
+
+class ObjProperty(PropertyGroup):
+    obj: bpy.props.PointerProperty(type=bpy.types.Object)
 
 
 def updateAttributeValue(self, context):
@@ -170,12 +213,24 @@ class Attribute(PropertyGroup):
         setattr(self, self.get_value_name(), value)
 
 
+class ModuleVisibility(PropertyGroup):
+    name: StringProperty(name="Name")
+    is_visible: BoolProperty(name="Value", default=True, update=update_is_visible)
+
+
 class BIMProperties(PropertyGroup):
+    ui_preset: EnumProperty(
+        name="UI Preset",
+        description="Select from one of the available UI presets, or configure the modules to your preference below",
+        update=update_preset,
+        items=load_presets,
+    )
+    module_visibility: CollectionProperty(name="Module Visibility", type=ModuleVisibility)
     schema_dir: StringProperty(
-        default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=updateSchemaDir
+        default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=update_schema_dir
     )
     data_dir: StringProperty(
-        default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory", update=updateDataDir
+        default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory", update=update_data_dir
     )
     ifc_file: StringProperty(name="IFC File", update=update_ifc_file)
     export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")
@@ -233,9 +288,6 @@ class BIMProperties(PropertyGroup):
             ("1/256", 'Nearest 1/256"', ""),
         ],
         name="Drawing Imperial Precision",
-    )
-    override_colour: FloatVectorProperty(
-        name="Override Colour", subtype="COLOR", default=(1, 0, 0, 1), min=0.0, max=1.0, size=4
     )
 
 

@@ -48,6 +48,7 @@ class RemoveCsvAttribute(bpy.types.Operator):
         context.scene.CsvProperties.csv_attributes.remove(self.index)
         return {"FINISHED"}
 
+
 class RemoveAllCsvAttributes(bpy.types.Operator):
     bl_idname = "bim.remove_all_csv_attributes"
     bl_label = "Remove all CSV Attributes"
@@ -56,6 +57,7 @@ class RemoveAllCsvAttributes(bpy.types.Operator):
     def execute(self, context):
         context.scene.CsvProperties.csv_attributes.clear()
         return {"FINISHED"}
+
 
 class ImportCsvAttributes(bpy.types.Operator):
     bl_idname = "bim.import_csv_attributes"
@@ -72,13 +74,14 @@ class ImportCsvAttributes(bpy.types.Operator):
         for attribute in csv_json:
             csv_attributes.add()
             csv_attributes[i].name = attribute
-            i +=1      
+            i += 1
 
         return {"FINISHED"}
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
 
 class ExportCsvAttributes(bpy.types.Operator):
     bl_idname = "bim.export_csv_attributes"
@@ -102,7 +105,8 @@ class ExportCsvAttributes(bpy.types.Operator):
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}       
+        return {"RUNNING_MODAL"}
+
 
 class ExportIfcCsv(bpy.types.Operator):
     bl_idname = "bim.export_ifccsv"

@@ -65,3 +65,21 @@ class BIM_PT_search(Panel):
         row.prop(props, "search_pset_value", text="")
         row.operator("bim.select_pset", text="", icon="VIEWZOOM")
         row.operator("bim.colour_by_pset", text="", icon="BRUSH_DATA")
+
+        row = self.layout.row(align=True)
+        row.operator("bim.activate_ifc_type_filter", icon="FILTER")
+
+
+class BIM_UL_ifctype_filter(bpy.types.UIList):
+    "This UI List is to list out all the selected IfcType and number of it as well as providing the BoolProperty to select/deselect"
+    use_filter_linked: bpy.props.BoolProperty(name="Included", default=True, options=set(), description="Filter")
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        split = layout
+        split.use_property_split = True
+        split.use_property_decorate = False
+        split.prop(item, "is_selected", text="", icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT")
+        split.prop(item, "name", text="", emboss=False, slider=True)
+        split = split.column()
+        split.scale_x = 0.5
+        split.label(text=str(item.total))

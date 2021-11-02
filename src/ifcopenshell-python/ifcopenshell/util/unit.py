@@ -117,6 +117,7 @@ si_type_names = {
     "THERMODYNAMICTEMPERATUREUNIT": "KELVIN",  # Or, DEGREE_CELSIUS, but this is a quirk of IFC
     "TIMEUNIT": "SECOND",
     "VOLUMEUNIT": "CUBIC_METRE",
+    "USERDEFINED": "METRE",
 }
 
 # See IfcDimensionalExponents:
@@ -151,6 +152,7 @@ named_dimensions = {
     "THERMODYNAMICTEMPERATUREUNIT": (0, 0, 0, 0, 1, 0, 0),
     "TIMEUNIT": (0, 0, 1, 0, 0, 0, 0),
     "VOLUMEUNIT": (3, 0, 0, 0, 0, 0, 0),
+    "USERDEFINED": (0, 0, 0, 0, 0, 0, 0),
 }
 
 si_conversions = {
@@ -190,7 +192,55 @@ si_conversions = {
     "hour": 3600,
     "day": 86400,
     "btu": 1055.056,
+    "fahrenheit": 1.8,
 }
+
+
+si_offsets = {
+    "fahrenheit": -459.67,
+}
+
+
+imperial_types = {
+    "thou": "LENGTHUNIT",
+    "inch": "LENGTHUNIT",
+    "foot": "LENGTHUNIT",
+    "yard": "LENGTHUNIT",
+    "mile": "LENGTHUNIT",
+    "square thou": "AREAUNIT",
+    "square inch": "AREAUNIT",
+    "square foot": "AREAUNIT",
+    "square yard": "AREAUNIT",
+    "acre": "AREAUNIT",
+    "square mile": "AREAUNIT",
+    "cubic thou": "VOLUMEUNIT",
+    "cubic inch": "VOLUMEUNIT",
+    "cubic foot": "VOLUMEUNIT",
+    "cubic yard": "VOLUMEUNIT",
+    "cubic mile": "VOLUMEUNIT",
+    "litre": "VOLUMEUNIT",
+    "fluid ounce UK": "VOLUMEUNIT",
+    "fluid ounce US": "VOLUMEUNIT",
+    "pint UK": "VOLUMEUNIT",
+    "pint US": "VOLUMEUNIT",
+    "gallon UK": "VOLUMEUNIT",
+    "gallon US": "VOLUMEUNIT",
+    "degree": "PLANEANGLEUNIT",
+    "ounce": "MASSUNIT",
+    "pound": "MASSUNIT",
+    "ton UK": "MASSUNIT",
+    "ton US": "MASSUNIT",
+    "lbf": "FORCEUNIT",
+    "kip": "FORCEUNIT",
+    "psi": "PRESSUREUNIT",
+    "ksi": "PRESSUREUNIT",
+    "minute": "TIMEUNIT",
+    "hour": "TIMEUNIT",
+    "day": "TIMEUNIT",
+    "btu": "ENERGYUNIT",
+    "fahrenheit": "THERMODYNAMICTEMPERATUREUNIT",
+}
+
 
 prefix_symbols = {
     "EXA": "E",

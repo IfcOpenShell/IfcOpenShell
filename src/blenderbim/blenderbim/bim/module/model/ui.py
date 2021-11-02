@@ -42,7 +42,7 @@ class BIM_PT_authoring(Panel):
         else:
             col.label(text="No IFC Class", icon="FILE_VOLUME")
             enabled = False
-        if type_prop.getAvailableTypes(tprops, context):
+        if type_prop.get_relating_type(tprops, context):
             col.prop(tprops, "relating_type", text="", icon="FILE_3D")
         else:
             col.label(text="No Relating Type", icon="FILE_3D")
@@ -74,24 +74,3 @@ class BIM_PT_authoring_architectural(Panel):
         row = self.layout.row(align=True)
         row.operator("bim.flip_wall", icon="ORIENTATION_NORMAL", text="Flip")
         row.operator("bim.split_wall", icon="MOD_PHYSICS", text="Split")
-
-
-class BIM_PT_misc_utilities(Panel):
-    bl_idname = "BIM_PT_misc_utilities"
-    bl_label = "Miscellaneous"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BlenderBIM"
-
-    def draw(self, context):
-        layout = self.layout
-        props = context.scene.BIMProperties
-
-        row = layout.split(factor=0.2, align=True)
-        row.prop(props, "override_colour", text="")
-        row.operator("bim.set_override_colour")
-        row = layout.row(align=True)
-        row.operator("bim.set_viewport_shadow_from_sun")
-        row = layout.row(align=True)
-        row.operator("bim.snap_spaces_together")

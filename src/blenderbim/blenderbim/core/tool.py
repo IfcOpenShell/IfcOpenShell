@@ -47,14 +47,6 @@ class Collector:
 
 
 @interface
-class Container:
-    def can_contain(cls, structure_obj, element_obj): pass
-    def disable_editing(cls, obj): pass
-    def enable_editing(cls, obj): pass
-    def import_containers(cls, parent=None): pass
-
-
-@interface
 class Context:
     def clear_context(cls): pass
     def export_attributes(cls): pass
@@ -64,12 +56,58 @@ class Context:
 
 
 @interface
+class Geometry:
+    def change_object_data(cls, obj, data, is_global=False): pass
+    def clear_modifiers(cls, obj): pass
+    def create_dynamic_voids(cls, obj): pass
+    def does_object_have_mesh_with_faces(cls, obj): pass
+    def duplicate_object_data(cls, obj): pass
+    def get_cartesian_point_coordinate_offset(cls, obj): pass
+    def get_ifc_representation_class(cls, element, representation): pass
+    def get_object_data(cls, obj): pass
+    def get_object_materials_without_styles(cls, obj): pass
+    def get_profile_set_usage(cls, element): pass
+    def get_representation_data(cls, representation): pass
+    def get_representation_name(cls, representation): pass
+    def get_total_representation_items(cls, obj): pass
+    def import_representation(cls, obj, representation, enable_dynamic_voids=False): pass
+    def is_body_representation(cls, representation): pass
+    def link(cls, element, obj): pass
+    def rename_object(cls, obj, name): pass
+    def resolve_mapped_representation(cls, representation): pass
+    def should_force_faceted_brep(cls): pass
+    def should_force_triangulation(cls): pass
+    def should_use_presentation_style_assignment(cls): pass
+
+
+@interface
 class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
+    def get_object(cls, obj): pass
     def link(cls, element, obj): pass
     def run(cls, command, **kwargs): pass
     def unlink(cls, element=None, obj=None): pass
+
+
+@interface
+class Material:
+    def add_default_material_object(cls): pass
+    def link(cls, element, obj): pass
+    def unlink(cls, obj): pass
+
+
+@interface
+class Misc:
+    def get_object_storey(cls, obj): pass
+    def get_storey_elevation_in_si(cls, storey): pass
+    def get_storey_height_in_si(cls, storey, total_storeys): pass
+    def mark_object_as_edited(cls, obj): pass
+    def move_object_to_elevation(cls, obj, elevation): pass
+    def run_root_copy_class(cls, obj=None): pass
+    def scale_object_to_height(cls, obj, height): pass
+    def set_object_origin_to_bottom(cls, obj): pass
+    def split_objects_with_cutter(cls, objs, cutter): pass
 
 
 @interface
@@ -104,8 +142,45 @@ class Owner:
 
 
 @interface
+class Pset:
+    def get_element_pset(cls, element, pset_name): pass
+
+
+@interface
+class Qto:
+    def get_radius_of_selected_vertices(cls, obj): pass
+    def set_qto_result(cls, result): pass
+
+
+@interface
+class Root:
+    def add_dynamic_opening_voids(cls, element, obj): pass
+    def does_type_have_representations(cls, element): pass
+    def get_element_type(cls, element): pass
+    def get_object_representation(cls, obj): pass
+    def get_representation_context(cls, representation): pass
+    def is_opening_element(cls, element): pass
+    def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
+
+
+@interface
 class Selector:
     def set_active(cls, obj): pass
+
+
+@interface
+class Spatial:
+    def can_contain(cls, structure_obj, element_obj): pass
+    def disable_editing(cls, obj): pass
+    def duplicate_object_and_data(cls, obj): pass
+    def enable_editing(cls, obj): pass
+    def get_container(cls, element): pass
+    def get_object_matrix(cls, obj): pass
+    def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
+    def import_containers(cls, parent=None): pass
+    def run_root_copy_class(cls, obj=None): pass
+    def run_spatial_assign_container(cls, structure_obj=None, element_obj=None): pass
+    def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
 
 
 @interface
@@ -128,6 +203,37 @@ class Style:
 @interface
 class Surveyor:
     def get_absolute_matrix(cls, obj): pass
+
+
+@interface
+class Type:
+    def disable_editing(cls, obj): pass
+    def get_any_representation(cls, element): pass
+    def get_body_context(cls): pass
+    def get_body_representation(cls, element): pass
+    def get_ifc_representation_class(cls, element): pass
+    def get_profile_set_usage(cls, element): pass
+    def get_representation_context(cls, representation): pass
+    def has_dynamic_voids(cls, obj): pass
+    def has_material_usage(cls, element): pass
+    def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
+    def run_geometry_switch_representation(cls, obj=None, representation=None, should_reload=None, enable_dynamic_voids=None, is_global=None): pass
+
+
+@interface
+class Unit:
+    def clear_active_unit(cls): pass
+    def disable_editing_units(cls): pass
+    def enable_editing_units(cls): pass
+    def export_unit_attributes(cls): pass
+    def get_scene_unit_name(cls, unit_type): pass
+    def get_scene_unit_si_prefix(cls): pass
+    def get_si_name_from_unit_type(cls, unit_type): pass
+    def get_unit_class(cls, unit): pass
+    def import_unit_attributes(cls, unit): pass
+    def import_units(cls): pass
+    def is_scene_unit_metric(cls): pass
+    def set_active_unit(cls, unit): pass
 
 
 @interface

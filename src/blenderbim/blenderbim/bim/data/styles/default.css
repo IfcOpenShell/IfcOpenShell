@@ -19,7 +19,8 @@
  */
 
 * { stroke-linecap: round; stroke-linejoin: round; }
-*[id] { fill: black; stroke: black; stroke-linecap: 'round'; stroke-width: 0.35; }
+text { fill: black; stroke: none; }
+.cut { fill: black; stroke: black; stroke-linecap: 'round'; stroke-width: 0.35; }
 .projection { fill: white; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .hidden { stroke-dasharray: 3, 2; }

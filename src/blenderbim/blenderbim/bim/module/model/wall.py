@@ -26,6 +26,9 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import mathutils.geometry
 import blenderbim.bim.handler
+import blenderbim.core.type
+import blenderbim.core.root
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
 from ifcopenshell.api.material.data import Data as MaterialData
@@ -71,6 +74,10 @@ class JoinWall(bpy.types.Operator):
     bl_idname = "bim.join_wall"
     bl_label = "Join Wall"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = """ Trim/Extend the selected walls to the last selected wall:
+    'T' mode: Trim/Extend to the virtual projection
+    'L' mode: Chamfer the walls
+    'V' mode: Chamfer the walls keeping the angle"""
     join_type: bpy.props.StringProperty()
 
     @classmethod
@@ -113,6 +120,10 @@ class AlignWall(bpy.types.Operator):
     bl_idname = "bim.align_wall"
     bl_label = "Align Wall"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = """ Align the selected walls to the last selected wall:
+    'Ext.': align to the EXTERIOR face
+    'C/L': align to wall CENTERLINE
+    'Int.': align to the INTERIOR face"""
     align_type: bpy.props.StringProperty()
 
     @classmethod
@@ -140,6 +151,7 @@ class FlipWall(bpy.types.Operator):
     bl_idname = "bim.flip_wall"
     bl_label = "Flip Wall"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Switch the origin from the min XY corner to the max XY corner, and rotates the origin by 180"
 
     @classmethod
     def poll(cls, context):
@@ -157,6 +169,9 @@ class SplitWall(bpy.types.Operator):
     bl_idname = "bim.split_wall"
     bl_label = "Split Wall"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Split selected wall into two walls in correspondence of Blender cursor. The cursor must be in the wall volume"
+    )
 
     @classmethod
     def poll(cls, context):
@@ -210,7 +225,7 @@ class DumbWallSplitter:
     def duplicate_wall(self):
         new = self.wall.copy()
         self.wall.users_collection[0].objects.link(new)
-        bpy.ops.bim.copy_class(obj=new.name)
+        blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new)
         return new
 
     def snap_end_face_to_point(self, wall, which_end):
@@ -792,21 +807,13 @@ class DumbWallGenerator:
             ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef",
         )
 
-        bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
+        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer2"})
         MaterialData.load(self.file)
         obj.select_set(True)
         return obj
-
-
-def ensure_solid(usecase_path, ifc_file, settings):
-    product = ifc_file.by_id(settings["blender_object"].BIMObjectProperties.ifc_definition_id)
-    parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
-        return
-    settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef"
 
 
 def generate_axis(usecase_path, ifc_file, settings):
@@ -910,7 +917,7 @@ class DumbWallPlaner:
             if not total_thickness:
                 continue
             for inverse in ifc_file.get_inverse(layer_set):
-                if not inverse.is_a("IfcMaterialLayerSetUsage"):
+                if not inverse.is_a("IfcMaterialLayerSetUsage") or inverse.LayerSetDirection != "AXIS2":
                     continue
                 if ifc_file.schema == "IFC2X3":
                     for rel in ifc_file.get_inverse(inverse):
@@ -929,13 +936,11 @@ class DumbWallPlaner:
         if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
             return
         new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
-        self.change_thickness(settings["related_object"], new_thickness)
+        material = ifcopenshell.util.element.get_material(settings["related_object"])
+        if material and material.is_a("IfcMaterialLayerSetUsage") and material.LayerSetDirection == "AXIS2":
+            self.change_thickness(settings["related_object"], new_thickness)
 
     def change_thickness(self, element, thickness):
-        parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
-        if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
-            return
-
         obj = IfcStore.get_element(element.id())
         if not obj:
             return
@@ -950,8 +955,11 @@ class DumbWallPlaner:
 
         min_face, max_face = self.get_wall_end_faces(obj, bm)
 
-        self.thicken_face(min_face, delta_thickness)
-        self.thicken_face(max_face, delta_thickness)
+        verts_to_move = []
+        verts_to_move.extend(self.thicken_face(min_face, delta_thickness))
+        verts_to_move.extend(self.thicken_face(max_face, delta_thickness))
+        for vert_to_move in verts_to_move:
+            vert_to_move["vert"].co += vert_to_move["vector"]
 
         bm.to_mesh(obj.data)
         obj.data.update()
@@ -960,6 +968,7 @@ class DumbWallPlaner:
 
     def thicken_face(self, face, delta_thickness):
         slide_magnitude = abs(delta_thickness)
+        results = []
         for vert in face.verts:
             slide_vector = None
             for edge in vert.link_edges:
@@ -979,7 +988,8 @@ class DumbWallPlaner:
             if not slide_vector:
                 continue
             slide_vector *= slide_magnitude / abs(slide_vector.y)
-            vert.co += slide_vector
+            results.append({"vert": vert, "vector": slide_vector})
+        return results
 
     # An end face is a quad that is on one end of the wall or the other. It must
     # have at least one vertex on either extreme X-axis, and a non-insignificant

@@ -6,7 +6,7 @@
 
 ## 14/10/20
 
-- Add curve connections betweeen elements and as supports according to the defined orientation - stiffness is not yet considered
+- Add curve connections between elements and as supports according to the defined orientation - stiffness is not yet considered
 
 ## 17/08/20
 

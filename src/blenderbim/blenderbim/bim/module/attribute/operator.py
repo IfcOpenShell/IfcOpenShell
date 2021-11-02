@@ -20,8 +20,19 @@ import bpy
 import json
 import ifcopenshell
 import ifcopenshell.api
+import blenderbim.bim.helper
+import blenderbim.bim.handler
+import blenderbim.tool as tool
+import blenderbim.core.attribute as core
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.attribute.data import Data
+
+
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
 
 
 class EnableEditingAttributes(bpy.types.Operator):
@@ -40,22 +51,9 @@ class EnableEditingAttributes(bpy.types.Operator):
         oprops = obj.BIMObjectProperties
         props = obj.BIMAttributeProperties
         props.attributes.clear()
-        for attribute in Data.products[oprops.ifc_definition_id]:
-            new = props.attributes.add()
-            if attribute["type"] == "entity" or (attribute["type"] == "list" and attribute["list_type"] == "entity"):
-                continue
-            new.name = attribute["name"]
-            new.is_null = attribute["is_null"]
-            if attribute["type"] == "string" or attribute["type"] == "list":
-                new.string_value = attribute["value"] or ""
-            elif attribute["type"] == "integer":
-                new.int_value = attribute["value"] or 0
-            elif attribute["type"] == "float":
-                new.float_value = attribute["value"] or 0.0
-            elif attribute["type"] == "enum":
-                new.enum_items = json.dumps(attribute["enum_items"])
-                if attribute["value"]:
-                    new.enum_value = attribute["value"]
+        if oprops.ifc_definition_id not in Data.products:
+            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
+        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(oprops.ifc_definition_id), props.attributes)
         props.is_editing_attributes = True
         return {"FINISHED"}
 
@@ -77,15 +75,12 @@ class DisableEditingAttributes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditAttributes(bpy.types.Operator):
+class EditAttributes(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_attributes"
     bl_label = "Edit Attributes"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -139,3 +134,14 @@ class GenerateGlobalId(bpy.types.Operator):
         global_id.data_type = "string"
         global_id.string_value = ifcopenshell.guid.new()
         return {"FINISHED"}
+
+
+class CopyAttributeToSelection(bpy.types.Operator, Operator):
+    bl_idname = "bim.copy_attribute_to_selection"
+    bl_label = "Copy Attribute To Selection"
+    name: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        value = context.active_object.BIMAttributeProperties.attributes.get(self.name).get_value()
+        for obj in context.selected_objects:
+            core.copy_attribute_to_selection(tool.Ifc, name=self.name, value=value, obj=obj)

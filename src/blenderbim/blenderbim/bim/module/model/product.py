@@ -22,6 +22,9 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+import blenderbim.tool as tool
+import blenderbim.core.type
+import blenderbim.core.geometry
 from . import wall, slab, profile
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
@@ -36,14 +39,7 @@ class AddEmptyType(bpy.types.Operator, AddObjectHelper):
 
     def execute(self, context):
         obj = bpy.data.objects.new("TYPEX", None)
-        for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
-            if not [c for c in project.children if "Types" in c.name]:
-                types = bpy.data.collections.new("Types")
-                project.collection.children.link(types)
-            for collection in [c for c in project.children if "Types" in c.name]:
-                collection.collection.objects.link(obj)
-                break
-            break
+        context.scene.collection.objects.link(obj)
         context.scene.BIMRootProperties.ifc_product = "IfcElementType"
         bpy.ops.object.select_all(action="DESELECT")
         context.view_layer.objects.active = obj
@@ -59,6 +55,7 @@ class AddTypeInstance(bpy.types.Operator):
     bl_idname = "bim.add_type_instance"
     bl_label = "Add Type Instance"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add the selected Type Instance to the model"
     ifc_class: bpy.props.StringProperty()
     relating_type: bpy.props.IntProperty()
 
@@ -117,7 +114,12 @@ class AddTypeInstance(bpy.types.Operator):
         collection.objects.link(obj)
         collection_obj = bpy.data.objects.get(collection.name)
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
-        bpy.ops.bim.assign_type(relating_type=int(tprops.relating_type), related_object=obj.name)
+        blenderbim.core.type.assign_type(
+            tool.Ifc,
+            tool.Type,
+            element=tool.Ifc.get_entity(obj),
+            type=tool.Ifc.get().by_id(int(tprops.relating_type)),
+        )
 
         if building_obj:
             if instance_class in ["IfcWindow", "IfcDoor"]:
@@ -229,12 +231,13 @@ class DynamicallyVoidProduct(bpy.types.Operator):
         was_edit_mode = obj.mode == "EDIT"
         if was_edit_mode:
             bpy.ops.object.mode_set(mode="OBJECT")
-        bpy.ops.bim.switch_representation(
-            obj=obj.name,
-            should_switch_all_meshes=True,
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
             should_reload=True,
-            ifc_definition_id=representation.id(),
-            disable_opening_subtractions=True,
+            enable_dynamic_voids=True,
+            is_global=True,
         )
         if was_edit_mode:
             bpy.ops.object.mode_set(mode="EDIT")
@@ -286,8 +289,13 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
             continue
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if representation:
-            bpy.ops.bim.switch_representation(
-                obj=obj.name, ifc_definition_id=representation.id(), should_reload=True, should_switch_all_meshes=True
+            blenderbim.core.geometry.switch_representation(
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                enable_dynamic_voids=True,
+                is_global=True,
             )
 
 

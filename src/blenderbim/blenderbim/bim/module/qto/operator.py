@@ -19,9 +19,25 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import blenderbim.tool as tool
+import blenderbim.core.qto as core
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.qto import helper
 from ifcopenshell.api.pset.data import Data as PsetData
+
+
+class CalculateCircleRadius(bpy.types.Operator):
+    bl_idname = "bim.calculate_circle_radius"
+    bl_label = "Calculate Circle Radius"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object
+
+    def execute(self, context):
+        core.calculate_circle_radius(tool.Qto, obj=context.active_object)
+        return {"FINISHED"}
 
 
 class CalculateEdgeLengths(bpy.types.Operator):
@@ -89,6 +105,8 @@ class ExecuteQtoMethod(bpy.types.Operator):
             result = helper.calculate_volumes(selected_mesh_objects, context)
         elif props.qto_methods == "FORMWORK":
             result = helper.calculate_formwork_area(selected_mesh_objects, context)
+        elif props.qto_methods == "SIDE_FORMWORK":
+            result = helper.calculate_side_formwork_area(selected_mesh_objects, context)
         props.qto_result = str(round(result, 3))
         return {"FINISHED"}
 
@@ -118,6 +136,8 @@ class QuantifyObjects(bpy.types.Operator):
                 result = helper.calculate_volumes([obj], context)
             elif props.qto_methods == "FORMWORK":
                 result = helper.calculate_formwork_area([obj], context)
+            elif props.qto_methods == "SIDE_FORMWORK":
+                result = helper.calculate_side_formwork_area([obj], context)
             if not result:
                 continue
             result = round(result, 3)

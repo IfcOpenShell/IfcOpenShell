@@ -15,8 +15,10 @@ class Usecase:
         if not hasattr(self.settings["element"], "OwnerHistory"):
             return
         user = ifcopenshell.api.owner.settings.get_user(self.file)
+        if not user:
+            return
         application = ifcopenshell.api.owner.settings.get_application(self.file)
-        if not user or not application:
+        if not application:
             return
         if not self.settings["element"].OwnerHistory:
             self.settings["element"].OwnerHistory = ifcopenshell.api.run(

@@ -24,6 +24,7 @@ classes = (
     operator.DisableEditingAttributes,
     operator.EditAttributes,
     operator.GenerateGlobalId,
+    operator.CopyAttributeToSelection,
     prop.BIMAttributeProperties,
     ui.BIM_PT_object_attributes,
     ui.BIM_PT_material_attributes,

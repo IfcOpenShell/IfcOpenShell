@@ -110,6 +110,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "should_hide_empty_props")
         row = layout.row()
         row.prop(self, "should_play_chaching_sound")
+        row = layout.row()
+        row.operator("bim.configure_visibility")
 
 
 def ifc_units(self, context):

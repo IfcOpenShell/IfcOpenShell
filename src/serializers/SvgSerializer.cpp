@@ -631,21 +631,17 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 			// Move pln to have projection of origin at plane center.
 			// This is necessary to have Poly and BRep HLR at the same position
 			// (Poly) is wrong otherwise.
+			double pu, pv;
 			Extrema_ExtPElS ext;
 			ext.Perform(gp::Origin(), *pln, 1.e-5);
 			auto P0 = pln->Location();
 			pln->SetLocation(ext.Point(1).Value());
+			ext.Point(1).Parameter(pu, pv);
 
 			if (!emit_building_storeys_ && scale && size) {
-				auto P1 = pln->Location();
-				gp_Vec v(P1.XYZ() - P0.XYZ());
-				gp_Trsf pi;
-				pi.SetTransformation(pln->Position());
-				pi.Invert();
-				v.Transform(pi);				
 				offset_2d_ = std::make_pair(
-					(-size->first / 2. - v.X()) * 1000 * *scale_,
-					(-size->second / 2. + v.Y()) * 1000 * *scale_
+					((-size->first / 2.) - pu) * 1000 * *scale_,
+					((-size->second / 2.) + pv) * 1000 * *scale_
 				);
 			}
 
@@ -931,7 +927,7 @@ void SvgSerializer::write(const geometry_data& data) {
 				TopoDS_Shape* compound_to_hlr = &compound_to_use;
 				TopoDS_Shape subtracted_shape;
 				if (any_in_front && any_behind && data.product->declaration().is("IfcSlab") && is_floor_plan_) {
-					// This is currently ony for slanted roof slabs on floor plans
+					// This is currently only for slanted roof slabs on floor plans
 					bool should_cut = false;
 					TopExp_Explorer exp(compound_to_use, TopAbs_FACE);
 					for (; exp.More(); exp.Next()) {
@@ -1382,7 +1378,7 @@ void SvgSerializer::write(const geometry_data& data) {
 					const gp_Pnt& pa = points[i];
 					const gp_Pnt& pb = points[j];
 					// Since the text is always displayed horizontally,
-					// the distance is not simply euclidian, but we
+					// the distance is not simply euclidean, but we
 					// favour the x-component;
 					const double d = std::sqrt(
 						10 * ((pa.X() - pb.X()) * (pa.X() - pb.X())) +

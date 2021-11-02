@@ -18,94 +18,14 @@
 
 import os
 import bpy
-import time
 import json
-import tempfile
-import logging
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
-from . import export_ifc
 from . import schema
 from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector, Matrix, Euler
 from math import radians
-
-
-class ExportIFC(bpy.types.Operator):
-    bl_idname = "export_ifc.bim"
-    bl_label = "Export IFC"
-    bl_options = {"REGISTER", "UNDO"}
-    filename_ext = ".ifc"
-    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
-    json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
-
-    def invoke(self, context, event):
-        if not IfcStore.get_file():
-            self.report({"ERROR"}, "No IFC project is available for export - create or import a project first.")
-            return {"FINISHED"}
-        if context.scene.BIMProperties.ifc_file:
-            self.filepath = context.scene.BIMProperties.ifc_file
-            return self.execute(context)
-        if not self.filepath:
-            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".ifc")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
-        start = time.time()
-        logger = logging.getLogger("ExportIFC")
-        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
-        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
-            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
-        logging.basicConfig(
-            filename=path_log,
-            filemode="a",
-            level=logging.DEBUG,
-        )
-        extension = self.filepath.split(".")[-1]
-        if extension == "ifczip":
-            output_file = bpy.path.ensure_ext(self.filepath, ".ifczip")
-        elif extension == "ifcjson":
-            output_file = bpy.path.ensure_ext(self.filepath, ".ifcjson")
-        else:
-            output_file = bpy.path.ensure_ext(self.filepath, ".ifc")
-
-        settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
-        settings.json_version = self.json_version
-        settings.json_compact = self.json_compact
-
-        ifc_exporter = export_ifc.IfcExporter(settings)
-        settings.logger.info("Starting export")
-        ifc_exporter.export()
-        settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
-        print("Export finished in {:.2f} seconds".format(time.time() - start))
-        scene = context.scene
-        if not scene.DocProperties.ifc_files:
-            new = scene.DocProperties.ifc_files.add()
-            new.name = output_file
-        if not scene.BIMProperties.ifc_file:
-            scene.BIMProperties.ifc_file = output_file
-        if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
-            bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
-        blenderbim.bim.handler.purge_module_data()
-        return {"FINISHED"}
-
-
-class ImportIFC(bpy.types.Operator):
-    bl_idname = "import_ifc.bim"
-    bl_label = "Import IFC"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        bpy.ops.bim.load_project("INVOKE_DEFAULT")
-        return {"FINISHED"}
 
 
 class OpenUri(bpy.types.Operator):
@@ -122,6 +42,7 @@ class SelectIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_ifc_file"
     bl_label = "Select IFC File"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select a different IFC file"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
@@ -139,6 +60,7 @@ class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
     bl_label = "Select Data Directory"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select the directory that contains all IFC data es. PSet, styles, etc..."
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -154,6 +76,7 @@ class SelectSchemaDir(bpy.types.Operator):
     bl_idname = "bim.select_schema_dir"
     bl_label = "Select Schema Directory"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select the directory containing the IFC schema specification"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -411,6 +334,7 @@ class ReloadIfcFile(bpy.types.Operator):
     bl_idname = "bim.reload_ifc_file"
     bl_label = "Reload IFC File"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload the same IFC file"
 
     def execute(self, context):
         # TODO: reimplement. See #1222.
@@ -435,87 +359,6 @@ class RemoveIfcFile(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.DocProperties.ifc_files.remove(self.index)
-        return {"FINISHED"}
-
-
-class SetOverrideColour(bpy.types.Operator):
-    bl_idname = "bim.set_override_colour"
-    bl_label = "Set Override Colour"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return context.selected_objects
-
-    def execute(self, context):
-        for obj in context.selected_objects:
-            obj.color = context.scene.BIMProperties.override_colour
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
-        return {"FINISHED"}
-
-
-class SetViewportShadowFromSun(bpy.types.Operator):
-    bl_idname = "bim.set_viewport_shadow_from_sun"
-    bl_label = "Set Viewport Shadow from Sun"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object
-
-    def execute(self, context):
-        # The vector used for the light direction is a bit funny
-        mat = Matrix(((-1.0, 0.0, 0.0, 0.0), (0.0, 0, 1.0, 0.0), (-0.0, -1.0, 0, 0.0), (0.0, 0.0, 0.0, 1.0)))
-        context.scene.display.light_direction = mat.inverted() @ (
-            context.active_object.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-        )
-        return {"FINISHED"}
-
-
-class SnapSpacesTogether(bpy.types.Operator):
-    bl_idname = "bim.snap_spaces_together"
-    bl_label = "Snap Spaces Together"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return context.selected_objects
-
-    def execute(self, context):
-        threshold = 0.5
-        processed_polygons = set()
-        selected_mesh_objects = [o for o in context.selected_objects if o.type == "MESH"]
-        for obj in selected_mesh_objects:
-            for polygon in obj.data.polygons:
-                center = obj.matrix_world @ polygon.center
-                distance = None
-                for obj2 in selected_mesh_objects:
-                    if obj2 == obj:
-                        continue
-                    result = obj2.ray_cast(obj2.matrix_world.inverted() @ center, polygon.normal, distance=threshold)
-                    if not result[0]:
-                        continue
-                    hit = obj2.matrix_world @ result[1]
-                    distance = (hit - center).length / 2
-                    if distance < 0.01:
-                        distance = None
-                        break
-
-                    if (obj2.name, result[3]) in processed_polygons:
-                        distance *= 2
-                        continue
-
-                    offset = polygon.normal * distance * -1
-                    processed_polygons.add((obj2.name, result[3]))
-                    for v in obj2.data.polygons[result[3]].vertices:
-                        obj2.data.vertices[v].co += offset
-                    break
-                if distance:
-                    offset = polygon.normal * distance
-                    processed_polygons.add((obj.name, polygon.index))
-                    for v in polygon.vertices:
-                        obj.data.vertices[v].co += offset
         return {"FINISHED"}
 
 
@@ -582,108 +425,36 @@ class FetchObjectPassport(bpy.types.Operator):
         context.active_object.data = bpy.data.meshes[reference.name]
 
 
-class CopyPropertyToSelection(bpy.types.Operator):
-    bl_idname = "bim.copy_property_to_selection"
-    bl_label = "Copy Property To Selection"
-    pset_name: bpy.props.StringProperty()
-    prop_name: bpy.props.StringProperty()
-    prop_value: bpy.props.StringProperty()
-
-    def execute(self, context):
-        # TODO: this is dead code, awaiting reimplementation. See #1222.
-        for obj in context.selected_objects:
-            if "/" not in obj.name:
-                continue
-            pset = obj.BIMObjectProperties.psets.get(self.pset_name)
-            if not pset:
-                applicable_psets = schema.ifc.psetqto.get_applicable(obj.name.split("/")[0], pset_only=True)
-                for pset_template in applicable_psets:
-                    if pset_template.Name == self.pset_name:
-                        break
-                else:
-                    continue
-                pset = obj.BIMObjectProperties.psets.add()
-                pset.name = self.pset_name
-                for template_prop_name in (p.Name for p in pset_template.HasPropertyTemplates):
-                    prop = pset.properties.add()
-                    prop.name = template_prop_name
-            prop = pset.properties.get(self.prop_name)
-            if prop:
-                prop.string_value = self.prop_value
-        return {"FINISHED"}
-
-
-class CopyAttributeToSelection(bpy.types.Operator):
-    bl_idname = "bim.copy_attribute_to_selection"
-    bl_label = "Copy Attribute To Selection"
-    attribute_name: bpy.props.StringProperty()
-    attribute_value: bpy.props.StringProperty()
-
-    def execute(self, context):
-        # TODO: this is dead code, awaiting reimplementation. See #1222.
-        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(context.scene.BIMProperties.export_schema)
-        self.applicable_attributes_cache = {}
-        for obj in context.selected_objects:
-            if "/" not in obj.name:
-                continue
-            attribute = obj.BIMObjectProperties.attributes.get(self.attribute_name)
-            if not attribute:
-                applicable_attributes = self.get_applicable_attributes(obj.name.split("/")[0])
-                if self.attribute_name not in applicable_attributes:
-                    continue
-                attribute = obj.BIMObjectProperties.attributes.add()
-                attribute.name = self.attribute_name
-            attribute.string_value = self.attribute_value
-        return {"FINISHED"}
-
-    def get_applicable_attributes(self, ifc_class):
-        if ifc_class not in self.applicable_attributes_cache:
-            self.applicable_attributes_cache[ifc_class] = [
-                a.name() for a in self.schema.declaration_by_name(ifc_class).all_attributes()
-            ]
-        return self.applicable_attributes_cache[ifc_class]
-
-
-class OverrideDelete(bpy.types.Operator):
-    bl_idname = "object.delete"
-    bl_label = "Delete"
-
-    @classmethod
-    def poll(cls, context):
-        return len(context.selected_objects) > 0
-
-    def execute(self, context):
-        if IfcStore.get_file():
-            return IfcStore.execute_ifc_operator(self, context)
-        for obj in context.selected_objects:
-            bpy.data.objects.remove(obj)
-        return {"FINISHED"}
+class ConfigureVisibility(bpy.types.Operator):
+    bl_idname = "bim.configure_visibility"
+    bl_label = "Configure module UI visibility in BlenderBIM"
+    bl_options = {"REGISTER", "UNDO"}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_confirm(self, event)
+        from blenderbim.bim import modules
 
-    def _execute(self, context):
-        file = IfcStore.get_file()
-        for obj in context.selected_objects:
-            if obj.BIMObjectProperties.ifc_definition_id:
-                element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-                if element.FillsVoids:
-                    self.remove_filling(element)
-                if element.is_a("IfcOpeningElement"):
-                    for rel in element.HasFillings:
-                        self.remove_filling(rel.RelatedBuildingElement)
-                    if element.VoidsElements:
-                        self.delete_opening_element(element)
-                elif element.HasOpenings:
-                    for rel in element.HasOpenings:
-                        self.delete_opening_element(rel.RelatedOpeningElement)
-            bpy.data.objects.remove(obj)
+        wm = context.window_manager
+        if not len(context.scene.BIMProperties.module_visibility):
+            for module in sorted(modules.keys()):
+                new = context.scene.BIMProperties.module_visibility.add()
+                new.name = module
+        return wm.invoke_props_dialog(self, width=450)
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.prop(context.scene.BIMProperties, "ui_preset")
+        layout.separator()
+        layout.label(text="Adjust the modules to your liking:")
+
+        grid = layout.column_flow(columns=3)
+        for module in context.scene.BIMProperties.module_visibility:
+            split = grid.split()
+            col = split.column()
+            col.label(text=module.name.capitalize())
+
+            col = split.column()
+            col.prop(module, "is_visible", text="")
+
+    def execute(self, context):
         return {"FINISHED"}
-
-    def delete_opening_element(self, element):
-        obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
-        bpy.ops.bim.remove_opening(opening_id=element.id(), obj=obj.name)
-
-    def remove_filling(self, element):
-        obj = IfcStore.get_element(element.id())
-        bpy.ops.bim.remove_filling(obj=obj.name)

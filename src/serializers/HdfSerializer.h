@@ -28,14 +28,11 @@
 
 #include "H5Cpp.h"
 
-#include "../serializers/GeometrySerializer.h"
+#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 
 #define USE_BINARY
 
 class HdfSerializer : public GeometrySerializer {
-public:
-	enum read_type { READ_BREP, READ_TRIANGULATION };
-
 private:
 	const std::string hdf_filename;
 	unsigned int vcount_total;
@@ -98,6 +95,7 @@ public:
 	H5::Group write(const IfcGeom::Element* o);
 	void write(const IfcGeom::BRepElement* o);
 	void write(const IfcGeom::TriangulationElement* o);
+	void remove(const std::string& guid);
 
 	const IfcGeom::Element* read(IfcParse::IfcFile& f, const std::string& guid, unsigned int representation_id, read_type rt = READ_BREP);
 	
@@ -106,12 +104,6 @@ public:
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(IfcParse::IfcFile*) {}
 };
-
-#else
-
-// We just define something here so that the symbol exists and the Iterator class
-// methods don't need to look so different
-class HdfSerializer {};
 
 #endif
 

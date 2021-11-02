@@ -20,7 +20,6 @@ import bpy
 import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.owner as core
-import blenderbim.bim.module.owner.data
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 
@@ -292,9 +291,19 @@ class RemovePersonAndOrganisation(bpy.types.Operator, Operator):
 
 class SetUser(bpy.types.Operator, Operator):
     bl_idname = "bim.set_user"
-    bl_label = "set_user"
+    bl_label = "Set User"
     bl_options = {"REGISTER", "UNDO"}
     user: bpy.props.IntProperty()
 
     def _execute(self, context):
         core.set_user(tool.Owner, user=tool.Ifc.get().by_id(self.user))
+
+
+class ClearUser(bpy.types.Operator, Operator):
+    bl_idname = "bim.clear_user"
+    bl_label = "Clear User"
+    bl_options = {"REGISTER", "UNDO"}
+    user: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.clear_user(tool.Owner)

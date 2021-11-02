@@ -36,9 +36,10 @@ class BIM_PT_material(Panel):
         return IfcStore.get_file() and context.active_object and context.active_object.active_material
 
     def draw(self, context):
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         if bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id):
             row.operator("bim.remove_material", icon="X", text="Remove IFC Material")
+            row.operator("bim.unlink_material", icon="UNLINKED", text="")
         else:
             row.operator("bim.add_material", icon="ADD", text="Create IFC Material")
 
@@ -76,8 +77,9 @@ class BIM_PT_object_material(Panel):
         self.product_data = Data.products[self.oprops.ifc_definition_id]
 
         if not Data.materials:
-            row = self.layout.row()
+            row = self.layout.row(align=True)
             row.label(text="No Materials Available")
+            row.operator("bim.add_default_material", icon="ADD", text="")
             return
 
         if self.product_data:
