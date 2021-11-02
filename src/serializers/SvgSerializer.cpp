@@ -926,7 +926,18 @@ void SvgSerializer::write(const geometry_data& data) {
 				
 				TopoDS_Shape* compound_to_hlr = &compound_to_use;
 				TopoDS_Shape subtracted_shape;
-				if (any_in_front && any_behind && data.product->declaration().is("IfcSlab") && is_floor_plan_) {
+
+				bool should_subtract = false;
+
+				if (subtraction_settings_ == ON_SLABS_AT_FLOORPLANS) {
+					should_subtract = data.product->declaration().is("IfcSlab") && is_floor_plan_;
+				} else if (subtraction_settings_ == ON_SLABS_AND_WALLS) {
+					should_subtract = data.product->declaration().is("IfcSlab") || data.product->declaration().is("IfcWall");
+				} else if (subtraction_settings_ == ALWAYS) {
+					should_subtract = true;
+				}
+
+				if (any_in_front && any_behind && should_subtract) {
 					// This is currently only for slanted roof slabs on floor plans
 					bool should_cut = false;
 					TopExp_Explorer exp(compound_to_use, TopAbs_FACE);
