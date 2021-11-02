@@ -568,7 +568,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 
 	if (occ_op == BOPAlgo_CUT) {
 		int n_half_space_operands = 0;
-		bool process_as_list = false;
+		bool process_as_list = true;
 		while (true) {
 			auto res1 = operand1->as<IfcSchema::IfcBooleanResult>();
 			if (res1 && res1->SecondOperand()->as<IfcSchema::IfcHalfSpaceSolid>() && ++n_half_space_operands > 8) {
@@ -598,7 +598,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	}
 
 	if ( shape_type(operand1) == ST_SHAPELIST ) {
-		if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, true))) {
+		if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, false))) {
 			return false;
 		}
 	} else if ( shape_type(operand1) == ST_SHAPE ) {
@@ -694,7 +694,25 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	// @todo: this currently does not compile anymore, do we still need this?
 	bool valid_result = boolean_operation(s1, s2, occ_op, shape);
 #else
-	bool valid_result = boolean_operation(s1, second_operand_shapes, occ_op, shape);
+	
+	bool valid_result;
+
+	if (s1.ShapeType() == TopAbs_COMPOUND) {
+		TopoDS_Compound C;
+		BRep_Builder B;
+		B.MakeCompound(C);
+		TopoDS_Iterator it(s1);
+		valid_result = true;
+		for (; it.More(); it.Next()) {
+			TopoDS_Shape part;
+			valid_result = valid_result && boolean_operation(it.Value(), second_operand_shapes, occ_op, part);
+			B.Add(C, part);
+		}
+		shape = C;
+	} else {
+		valid_result = boolean_operation(s1, second_operand_shapes, occ_op, shape);
+	}
+
 #endif
 
 	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
@@ -873,8 +891,15 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresen
 				part_succes |= convert_shapes(*it, shapes);
 			} else {
 				TopoDS_Shape s;
-				if (convert_shape(representation_item,s)) {
-					shapes.push_back(IfcRepresentationShapeItem(representation_item->data().id(), s, get_style(representation_item)));
+				if (convert_shape(representation_item, s)) {
+					if (s.ShapeType() == TopAbs_COMPOUND) {
+						TopoDS_Iterator it(s);
+						for (; it.More(); it.Next()) {
+							shapes.push_back(IfcRepresentationShapeItem(representation_item->data().id(), it.Value(), get_style(representation_item)));
+						}
+					} else {
+						shapes.push_back(IfcRepresentationShapeItem(representation_item->data().id(), s, get_style(representation_item)));
+					}
 					part_succes |= true;
 				}
 			}
