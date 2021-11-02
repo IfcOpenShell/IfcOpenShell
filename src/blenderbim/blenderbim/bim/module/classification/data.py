@@ -26,15 +26,16 @@ def refresh():
 
 class ClassificationsData:
     is_loaded = False
+    data = {
+        "classifications" : {},
+        "library_file" : None,
+        "library_classifications" : {},
+    }
 
     @classmethod
     def load(cls):
         cls._file = tool.Ifc.get()
-        cls.data = {
-            "classifications" : cls.get_classifications(),  #ClassificationsData  list of available classifications, es. Omniclass, Uniclass,etc..
-            "library_file" : None,
-            "library_classifications" : {},
-        }
+        cls.data["classifications"] = cls.get_classifications()  #list of available classifications, es. Omniclass, Uniclass,etc..
         cls.is_loaded = True
 
     @classmethod
@@ -67,15 +68,16 @@ class ClassificationsData:
 
 class ClassificationReferencesData:
     is_loaded = False
-    #library_references = {}  #never called
+    data = {
+        "products" : {},
+        "references" : {},
+        "library_references" : {},  #never called
+    }
 
     @classmethod
     def load(cls,  product_id=None):
         cls._file = tool.Ifc.get()
-        cls.data = {
-            "references" : cls.get_references(),  #list of available ifcclassificationsreferences in the current file
-            "products" : {},
-        }
+        cls.data["references"] = cls.get_references()  #list of available ifcclassificationsreferences in the current file
         if product_id:
             cls.load_product_classifications(product_id)
         cls.is_loaded = True
