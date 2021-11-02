@@ -956,7 +956,7 @@ void SvgSerializer::write(const geometry_data& data) {
 						auto largest = dx > dy ? dx : dy;
 						largest = largest > dz ? largest : dz;
 
-						if (largest < (1. - 1.e-5)) {
+						if (subtraction_settings_ != ON_SLABS_AT_FLOORPLANS || largest < (1. - 1.e-5)) {
 
 							bool any_in_front_face = false, any_behind_face = false;
 
