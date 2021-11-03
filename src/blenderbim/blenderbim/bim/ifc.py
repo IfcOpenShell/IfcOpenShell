@@ -31,6 +31,7 @@ class IfcStore:
     schema = None
     id_map = {}
     guid_map = {}
+    deleted_ids = set()
     edited_objs = set()
     pset_template_path = ""
     pset_template_file = None
@@ -50,6 +51,7 @@ class IfcStore:
         IfcStore.schema = None
         IfcStore.id_map = {}
         IfcStore.guid_map = {}
+        IfcStore.deleted_ids = set()
         IfcStore.edited_objs = set()
         IfcStore.pset_template_path = ""
         IfcStore.pset_template_file = None

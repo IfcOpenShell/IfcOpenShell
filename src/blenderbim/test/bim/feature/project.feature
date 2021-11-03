@@ -326,6 +326,15 @@ Scenario: Export IFC - with basic contents
     When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
     Then nothing happens
 
+Scenario: Export IFC - with deleted objects synchronised
+    Given an empty IFC project
+    When the object "IfcBuildingStorey/My Storey" is selected
+    And I press "object.delete"
+    And I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    And an empty Blender session is started
+    And I press "bim.load_project(filepath='{cwd}/test/files/export.ifc')"
+    Then the object "IfcBuildingStorey/My Storey" does not exist
+
 Scenario: Export IFC - with moved object location synchronised
     Given an empty IFC project
     When the object "IfcBuildingStorey/My Storey" is moved to "0,0,1"
