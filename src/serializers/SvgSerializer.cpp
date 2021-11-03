@@ -989,7 +989,7 @@ void SvgSerializer::write(const geometry_data& data) {
 							BRepBuilderAPI_MakePolygon mp(points[0], points[1], points[2], points[3], true);
 							auto w = mp.Wire();
 							BRepBuilderAPI_MakeFace mf(w);
-							auto f = mf.Face();
+							TopoDS_Face f = BRepBuilderAPI_MakeFace(projection_plane);
 							gp_Pnt ref = projection_plane.Position().Location().XYZ() + projection_plane.Position().Direction().XYZ();
 							BRepPrimAPI_MakeHalfSpace mhs(f, ref);
 							auto s = mhs.Solid();
