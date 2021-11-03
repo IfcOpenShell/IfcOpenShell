@@ -100,6 +100,16 @@ class TestIsOpeningElement(NewFile):
         assert subject.is_opening_element(ifc.createIfcOpeningElement()) is True
 
 
+class TestLinkObjectData(NewFile):
+    def test_run(self):
+        data = bpy.data.meshes.new("Mesh")
+        source = bpy.data.objects.new("Object", data)
+        destination = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        subject.link_object_data(source, destination)
+        assert source.data == data
+        assert source.data == destination.data
+
+
 class TestRunGeometryAddRepresntation(NewFile):
     def test_nothing(self):
         pass

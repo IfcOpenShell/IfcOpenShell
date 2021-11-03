@@ -62,6 +62,10 @@ class Root(blenderbim.core.tool.Root):
         return element.is_a("IfcOpeningElement")
 
     @classmethod
+    def link_object_data(cls, source_obj, destination_obj):
+        destination_obj.data = source_obj.data
+
+    @classmethod
     def run_geometry_add_representation(
         cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None
     ):
