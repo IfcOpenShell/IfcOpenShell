@@ -36,7 +36,7 @@ if __name__ == '__main__':
     parser.set_defaults(split=True)
     args = parser.parse_args()
 
-    city_model = cityjson.load(args.input)
+    city_model = cityjson.load(args.input, transform=False)
     data = {}
     if args.name:
         data["name_attribute"] = args.name
