@@ -42,6 +42,20 @@ class Blender: pass
 
 
 @interface
+class Brick:
+    def add_brick_breadcrumb(cls): pass
+    def clear_brick_browser(cls): pass
+    def clear_project(cls): pass
+    def get_item_class(cls, item): pass
+    def import_brick_classes(cls, brick_class): pass
+    def import_brick_items(cls, brick_class): pass
+    def load_brick_file(cls, filepath): pass
+    def pop_brick_breadcrumb(cls): pass
+    def select_browser_item(cls, item): pass
+    def set_active_brick_class(cls, brick_class): pass
+
+
+@interface
 class Collector:
     def assign(cls, obj): pass
 
