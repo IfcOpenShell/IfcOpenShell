@@ -104,11 +104,12 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def load_brick_file(cls, filepath):
-        BrickStore.graph = brickschema.Graph()
-        cwd = os.path.dirname(os.path.realpath(__file__))
-        schema_path = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
-        BrickStore.graph.load_file(schema_path)
-        BrickStore.graph.load_file(filepath)
+        if not BrickStore.schema:
+            BrickStore.schema = brickschema.Graph()
+            cwd = os.path.dirname(os.path.realpath(__file__))
+            schema_path = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
+            BrickStore.schema.load_file(schema_path)
+        BrickStore.graph = brickschema.Graph().load_file(filepath) + BrickStore.schema
 
     @classmethod
     def pop_brick_breadcrumb(cls):
@@ -130,8 +131,10 @@ class Brick(blenderbim.core.tool.Brick):
 
 
 class BrickStore:
+    schema = None
     graph = None
 
     @staticmethod
     def purge():
+        BrickStore.schema = None
         BrickStore.graph = None
