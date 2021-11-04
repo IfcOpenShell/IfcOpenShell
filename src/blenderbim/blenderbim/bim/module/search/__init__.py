@@ -24,7 +24,7 @@ classes = (
     operator.ColourByAttribute,
     operator.ColourByClass,
     operator.ColourByPset,
-    operator.IfcTypeFilterSelectingAction, #Add selecting/deselecting all operator
+    operator.ToggleFilterSelection,
     operator.ResetObjectColours,
     operator.SelectAttribute,
     operator.SelectGlobalId,

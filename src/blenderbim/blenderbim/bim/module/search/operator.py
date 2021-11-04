@@ -322,19 +322,22 @@ class ResetObjectColours(bpy.types.Operator):
             obj.color = (1, 1, 1, 1)
         return {"FINISHED"}
 
-class IfcTypeFilterSelectingAction(bpy.types.Operator):
+
+class ToggleFilterSelection(bpy.types.Operator):
     "Click to select/deselect all ifctype"
-    bl_idname = "bim.ifctype_filter_selecting_action"
-    bl_label = "IfcType Filter Selecting Action"
-    selecting_action: bpy.props.EnumProperty(items=( ("SELECT",'Select',"") , ("DESELECT","Deselect","") ))
+    bl_idname = "bim.toggle_filter_selection"
+    bl_label = "Toggle Filter Selection"
+    action: bpy.props.EnumProperty(items=(("SELECT", "Select", ""), ("DESELECT", "Deselect", "")))
+
     def execute(self, context):
-        if self.selecting_action == "SELECT":
+        if self.action == "SELECT":
             self.selecting_actionbool = True
         else:
             self.selecting_actionbool = False
         for ifcelement in bpy.context.scene.BIMSearchProperties.filter_classes:
             ifcelement.is_selected = self.selecting_actionbool
-        return {'FINISHED'}
+        return {"FINISHED"}
+
 
 class ActivateIfcTypeFilter(bpy.types.Operator):
     "It helps you to filter your selection by IFC class"
@@ -371,8 +374,10 @@ class ActivateIfcTypeFilter(bpy.types.Operator):
             "filter_classes",
             context.scene.BIMSearchProperties,
             "filter_classes_index",
-            rows = 20 if len(bpy.context.scene.BIMSearchProperties.filter_classes) > 20 else len(bpy.context.scene.BIMSearchProperties.filter_classes),
+            rows=20
+            if len(bpy.context.scene.BIMSearchProperties.filter_classes) > 20
+            else len(bpy.context.scene.BIMSearchProperties.filter_classes),
         )
-        row = self.layout.row()
-        row.operator(IfcTypeFilterSelectingAction.bl_idname, text = "Select All").selecting_action = "SELECT"
-        row.operator(IfcTypeFilterSelectingAction.bl_idname, text = "Deselect All").selecting_action = "DESELECT"
+        row = self.layout.row(align=True)
+        row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
+        row.operator("bim.toggle_filter_selection", text="Deselect All").action = "DESELECT"
