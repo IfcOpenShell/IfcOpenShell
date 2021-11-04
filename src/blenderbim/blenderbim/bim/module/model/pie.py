@@ -17,6 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.tool as tool
+import blenderbim.core.spatial
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -67,8 +69,8 @@ class PieUpdateContainer(bpy.types.Operator):
             for collection in obj.users_collection:
                 spatial_obj = bpy.data.objects.get(collection.name)
                 if spatial_obj and spatial_obj.BIMObjectProperties.ifc_definition_id:
-                    bpy.ops.bim.assign_container(
-                        relating_structure=spatial_obj.BIMObjectProperties.ifc_definition_id, related_element=obj.name
+                    blenderbim.core.spatial.assign_container(
+                        tool.Ifc, tool.Collector, tool.Spatial, structure_obj=spatial_obj, element_obj=obj
                     )
                     break
         return {"FINISHED"}

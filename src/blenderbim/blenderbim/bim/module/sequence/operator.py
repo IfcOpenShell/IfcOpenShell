@@ -1141,6 +1141,7 @@ class ImportPP(bpy.types.Operator, ImportHelper):
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
+
 class ImportMSP(bpy.types.Operator, ImportHelper):
     bl_idname = "import_msp.bim"
     bl_label = "Import MSP"
