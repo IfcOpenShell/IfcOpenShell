@@ -43,6 +43,7 @@ modules = {
     "sequence": None,
     "group": None,
     "system": None,
+    "brick": None,
     "structural": None,
     "boundary": None,
     "profile": None,

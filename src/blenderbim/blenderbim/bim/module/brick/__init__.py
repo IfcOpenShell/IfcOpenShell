@@ -16,21 +16,25 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.tool.aggregate import Aggregate
-from blenderbim.tool.blender import Blender
-from blenderbim.tool.brick import Brick
-from blenderbim.tool.collector import Collector
-from blenderbim.tool.context import Context
-from blenderbim.tool.geometry import Geometry
-from blenderbim.tool.ifc import Ifc
-from blenderbim.tool.material import Material
-from blenderbim.tool.misc import Misc
-from blenderbim.tool.owner import Owner
-from blenderbim.tool.pset import Pset
-from blenderbim.tool.qto import Qto
-from blenderbim.tool.root import Root
-from blenderbim.tool.spatial import Spatial
-from blenderbim.tool.style import Style
-from blenderbim.tool.surveyor import Surveyor
-from blenderbim.tool.type import Type
-from blenderbim.tool.unit import Unit
+import bpy
+from . import ui, prop, operator
+
+classes = (
+    operator.CloseBrickProject,
+    operator.LoadBrickProject,
+    operator.RewindBrickClass,
+    operator.ViewBrickClass,
+    operator.ViewBrickItem,
+    prop.Brick,
+    prop.BIMBrickProperties,
+    ui.BIM_PT_brickschema,
+    ui.BIM_UL_bricks,
+)
+
+
+def register():
+    bpy.types.Scene.BIMBrickProperties = bpy.props.PointerProperty(type=prop.BIMBrickProperties)
+
+
+def unregister():
+    del bpy.types.Scene.BIMBrickProperties

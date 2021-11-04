@@ -1,0 +1,584 @@
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix ns2: <http://buildsys.org/ontologies/bldg#> .
+@prefix ns4: <http://buildsys.org/ontologies/bldg#CHW.Pump1_Start/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix unit: <http://qudt.org/vocab/unit/> .
+
+ns2:AHU01 a brick:Air_Handler_Unit ;
+    brick:feeds ns2:VAVRM107A,
+        ns2:VAVRM107B,
+        ns2:VAVRM115,
+        ns2:VAVRM120 ;
+    brick:hasPoint ns2:AHU.AHU01.CCV,
+        ns2:AHU.AHU01.Cooling_Valve_Output,
+        ns2:AHU.AHU01.Mixed_Air_Temp,
+        ns2:AHU.AHU01.Outside_Air_Temp,
+        ns2:AHU.AHU01.Return_Air_Temp,
+        ns2:AHU.AHU01.Supply_Air_Pressure,
+        ns2:AHU.AHU01.Supply_Air_Temp,
+        ns2:AHU.AHU01.Supply_Air_Temp_Setpoint ;
+    brick:isFedBy ns2:chiller .
+
+ns2:AHU02 a brick:Air_Handler_Unit ;
+    brick:feeds ns2:VAVRM100,
+        ns2:VAVRM103,
+        ns2:VAVRM110,
+        ns2:VAVRM112 ;
+    brick:hasPoint ns2:AHU.AHU02.CCV,
+        ns2:AHU.AHU02.Cooling_Valve_Output,
+        ns2:AHU.AHU02.Mixed_Air_Temp,
+        ns2:AHU.AHU02.Outside_Air_Temp,
+        ns2:AHU.AHU02.Return_Air_Temp,
+        ns2:AHU.AHU02.Supply_Air_Pressure,
+        ns2:AHU.AHU02.Supply_Air_Temp ;
+    brick:isFedBy ns2:chiller .
+
+ns2:BLDG a brick:Building ;
+    brick:area [ brick:hasUnits unit:FT_2 ;
+            brick:value "9973^^<http://www.w3.org/2001/XMLSchema#integer>" ] .
+
+ns2:damperVAVRM100 a brick:Damper ;
+    brick:hasPoint ns2:ZONE.AHU02.RM100.Zone_Air_Damper_Command ;
+    brick:isPartOf ns2:VAVRM100 .
+
+ns2:damperVAVRM103 a brick:Damper ;
+    brick:hasPoint ns2:ZONE.AHU02.RM103.Zone_Air_Damper_Command ;
+    brick:isPartOf ns2:VAVRM103 .
+
+ns2:damperVAVRM107A a brick:Damper ;
+    brick:hasPoint ns2:ZONE.AHU01.RM107A.Zone_Air_Damper_Command ;
+    brick:isPartOf ns2:VAVRM107A .
+
+ns2:damperVAVRM107B a brick:Damper ;
+    brick:hasPoint ns2:ZONE.AHU01.RM107B.Zone_Air_Damper_Command ;
+    brick:isPartOf ns2:VAVRM107B .
+
+ns2:damperVAVRM110 a brick:Damper ;
+    brick:hasPoint ns2:ZONE.AHU02.RM110.Zone_Air_Damper_Command ;
+    brick:isPartOf ns2:VAVRM110 .
+
+ns2:damperVAVRM112 a brick:Damper ;
+    brick:hasPoint ns2:ZONE.AHU02.RM112.Zone_Air_Damper_Command ;
+    brick:isPartOf ns2:VAVRM112 .
+
+ns2:damperVAVRM115 a brick:Damper ;
+    brick:hasPoint ns2:ZONE.AHU01.RM115.Zone_Air_Damper_Command ;
+    brick:isPartOf ns2:VAVRM115 .
+
+ns2:damperVAVRM120 a brick:Damper ;
+    brick:hasPoint ns2:ZONE.AHU01.RM120.Zone_Air_Damper_Command ;
+    brick:isPartOf ns2:VAVRM120 .
+
+ns2:floor1 a brick:Floor ;
+    brick:hasPart ns2:RM100_room,
+        ns2:RM103_room,
+        ns2:RM107A_room,
+        ns2:RM107B_room,
+        ns2:RM110_room,
+        ns2:RM112_room,
+        ns2:RM115_room,
+        ns2:RM120_room .
+
+ns2:AHU.AHU01.CCV a brick:Cooling_Command,
+        brick:Valve_Command ;
+    rdfs:label "AHU.AHU01.CCV" ;
+    brick:timeseries [ brick:hasTimeseriesId "849c17ad-343b-41b0-bb9b-a2e9d7c47c68" ] .
+
+ns2:AHU.AHU01.Cooling_Valve_Output a brick:Cooling_Command,
+        brick:Valve_Command ;
+    rdfs:label "AHU.AHU01.Cooling Valve Output" ;
+    brick:timeseries [ brick:hasTimeseriesId "d0209901-ed29-4ac8-bc26-1b26a680f40b" ] .
+
+ns2:AHU.AHU01.Mixed_Air_Temp a brick:Mixed_Air_Temperature_Sensor ;
+    rdfs:label "AHU.AHU01.Mixed Air Temp" .
+
+ns2:AHU.AHU01.Outside_Air_Temp a brick:Outside_Air_Temperature_Sensor ;
+    rdfs:label "AHU.AHU01.Outside Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "a52505ae-f1b6-451b-ab60-6a9018efcbb0" ] .
+
+ns2:AHU.AHU01.Return_Air_Temp a brick:Return_Air_Temperature_Sensor ;
+    rdfs:label "AHU.AHU01.Return Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "54317e55-d0b4-4c87-869a-cf15d8d25abc" ] .
+
+ns2:AHU.AHU01.Supply_Air_Pressure a brick:Supply_Air_Static_Pressure_Sensor ;
+    rdfs:label "AHU.AHU01.Supply Air Pressure" ;
+    brick:timeseries [ brick:hasTimeseriesId "3ce2fdb1-469b-47eb-9ca4-c8ebcde6c713" ] .
+
+ns2:AHU.AHU01.Supply_Air_Temp a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "AHU.AHU01.Supply Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "0481a1cf-1092-4bd2-92ed-376f5c24bee5" ] .
+
+ns2:AHU.AHU01.Supply_Air_Temp_Setpoint a brick:Supply_Air_Temperature_Setpoint ;
+    rdfs:label "AHU.AHU01.Supply Air Temp Setpoint" ;
+    brick:timeseries [ brick:hasTimeseriesId "d50328c3-9410-4217-a667-38526546551c" ] .
+
+ns2:AHU.AHU02.CCV a brick:Cooling_Command,
+        brick:Valve_Command ;
+    rdfs:label "AHU.AHU02.CCV" ;
+    brick:timeseries [ brick:hasTimeseriesId "25f61eb5-d498-40b4-ad0e-9b01325c67b6" ] .
+
+ns2:AHU.AHU02.Cooling_Valve_Output a brick:Cooling_Command,
+        brick:Valve_Command ;
+    rdfs:label "AHU.AHU02.Cooling Valve Output" ;
+    brick:timeseries [ brick:hasTimeseriesId "f3bfc8c8-c769-41fa-9b56-367c61ba2ffa" ] .
+
+ns2:AHU.AHU02.Mixed_Air_Temp a brick:Mixed_Air_Temperature_Sensor ;
+    rdfs:label "AHU.AHU02.Mixed Air Temp" .
+
+ns2:AHU.AHU02.Outside_Air_Temp a brick:Outside_Air_Temperature_Sensor ;
+    rdfs:label "AHU.AHU02.Outside Air Temp" .
+
+ns2:AHU.AHU02.Return_Air_Temp a brick:Return_Air_Temperature_Sensor ;
+    rdfs:label "AHU.AHU02.Return Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "64abb724-b682-4f14-898d-db887359bc71" ] .
+
+ns2:AHU.AHU02.Supply_Air_Pressure a brick:Supply_Air_Static_Pressure_Sensor ;
+    rdfs:label "AHU.AHU02.Supply Air Pressure" ;
+    brick:timeseries [ brick:hasTimeseriesId "aa6cbab8-f5c7-4bde-a4c1-46ede7f17c42" ] .
+
+ns2:AHU.AHU02.Supply_Air_Temp a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "AHU.AHU02.Supply Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "de577867-dc26-4a7f-afa5-c7257f2da030" ] .
+
+ns2:CHW.Building_Chilled_Water_Return_Temp a brick:Chilled_Water_Return_Temperature_Sensor ;
+    rdfs:label "CHW.Building Chilled Water Return Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "2fd18842-a01f-44cc-8376-036a332ca04f" ] .
+
+ns2:CHW.Building_Chilled_Water_Supply_Temp a brick:Chilled_Water_Supply_Temperature_Sensor ;
+    rdfs:label "CHW.Building Chilled Water Supply Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "a4232bbc-652c-4574-847b-4a7c4a4d966f" ] .
+
+ns2:CHW.ECONOMIZER a brick:Damper_Position_Command ;
+    rdfs:label "CHW.ECONOMIZER" ;
+    brick:timeseries [ brick:hasTimeseriesId "d79fd637-8854-4c84-abff-a787c97ca884" ] .
+
+ns2:CHW.Loop_Chilled_Water_Return_Temp a brick:Chilled_Water_Return_Temperature_Sensor ;
+    rdfs:label "CHW.Loop Chilled Water Return Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "64be6ecd-1960-4a12-bc62-d3454204e2c1" ] .
+
+ns2:CHW.Loop_Chilled_Water_Supply_Temp a brick:Chilled_Water_Supply_Temperature_Sensor ;
+    rdfs:label "CHW.Loop Chilled Water Supply Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "d7c6db4c-10e4-4569-b292-925b177b9dc6" ] .
+
+ns4:Stop a brick:Start_Stop_Command ;
+    rdfs:label "CHW.Pump1_Start/Stop" ;
+    brick:timeseries [ brick:hasTimeseriesId "ece06123-f7a2-4e0e-8292-d4ce667e8c3d" ] .
+
+ns2:ZONE.AHU01.RM107A.Zone_Air_Control_Temp a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU01.RM107A.Zone Air Control Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "a99860c0-f693-42b8-acce-342a2681efb2" ] .
+
+ns2:ZONE.AHU01.RM107A.Zone_Air_Damper_Command a brick:Damper_Position_Setpoint ;
+    rdfs:label "ZONE.AHU01.RM107A.Zone Air Damper Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "30e70beb-717f-46fa-8ff4-52e4eb21cd89" ] .
+
+ns2:ZONE.AHU01.RM107A.Zone_Air_Temp a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU01.RM107A.Zone Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "f1b2906b-2b63-47c1-9c1d-ae50618f9bb9" ] .
+
+ns2:ZONE.AHU01.RM107A.Zone_Air_Temp_Setpoint a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU01.RM107A.Zone Air Temp Setpoint" ;
+    brick:timeseries [ brick:hasTimeseriesId "97a6f762-bccb-400b-9da8-94a432151f5c" ] .
+
+ns2:ZONE.AHU01.RM107A.Zone_Heating_Mode a brick:Heating_Command ;
+    rdfs:label "ZONE.AHU01.RM107A.Zone Heating Mode" .
+
+ns2:ZONE.AHU01.RM107A.Zone_Percent_Air_Flow a brick:Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU01.RM107A.Zone Percent Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "29aeaf32-9827-49b1-8d9d-6d973ee2653c" ] .
+
+ns2:ZONE.AHU01.RM107A.Zone_Reheat_Valve_Command a brick:Command ;
+    rdfs:label "ZONE.AHU01.RM107A.Zone Reheat Valve Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "80ea00dd-04fd-435b-a639-3663b2ebc24c" ] .
+
+ns2:ZONE.AHU01.RM107A.Zone_Supply_Air_Flow a brick:Supply_Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU01.RM107A.Zone Supply Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "069e8b5e-185f-4129-a243-03fc502239d4" ] .
+
+ns2:ZONE.AHU01.RM107A.Zone_Supply_Air_Temp a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU01.RM107A.Zone Supply Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "0a07c546-320a-4a0b-9fc4-a3a54d5e8d90" ] .
+
+ns2:ZONE.AHU01.RM107B.Zone_Air_Control_Temp a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU01.RM107B.Zone Air Control Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "853d2889-1929-4b3c-9919-c3829973a753" ] .
+
+ns2:ZONE.AHU01.RM107B.Zone_Air_Damper_Command a brick:Damper_Position_Setpoint ;
+    rdfs:label "ZONE.AHU01.RM107B.Zone Air Damper Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "713ad6f8-56ae-495b-a6e4-8158ad5460db" ] .
+
+ns2:ZONE.AHU01.RM107B.Zone_Air_Temp a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU01.RM107B.Zone Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "ca0764b5-079c-431d-a4ee-60ff75b92bf8" ] .
+
+ns2:ZONE.AHU01.RM107B.Zone_Air_Temp_Setpoint a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU01.RM107B.Zone Air Temp Setpoint" ;
+    brick:timeseries [ brick:hasTimeseriesId "baa08d2c-f937-4188-a751-ae127e94c2d5" ] .
+
+ns2:ZONE.AHU01.RM107B.Zone_Heating_Mode a brick:Heating_Command ;
+    rdfs:label "ZONE.AHU01.RM107B.Zone Heating Mode" .
+
+ns2:ZONE.AHU01.RM107B.Zone_Percent_Air_Flow a brick:Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU01.RM107B.Zone Percent Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "88f751d8-9f64-4d6e-985d-590901669bda" ] .
+
+ns2:ZONE.AHU01.RM107B.Zone_Reheat_Valve_Command a brick:Command ;
+    rdfs:label "ZONE.AHU01.RM107B.Zone Reheat Valve Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "220c62ce-0063-4f70-aec3-7c5caf7cf9bc" ] .
+
+ns2:ZONE.AHU01.RM107B.Zone_Supply_Air_Flow a brick:Supply_Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU01.RM107B.Zone Supply Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "4f04bb7d-260e-4cee-a7da-9ff5872a7866" ] .
+
+ns2:ZONE.AHU01.RM107B.Zone_Supply_Air_Temp a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU01.RM107B.Zone Supply Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "e913807e-d3a1-497a-a072-01b738c4819f" ] .
+
+ns2:ZONE.AHU01.RM115.Zone_Air_Control_Temp a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU01.RM115.Zone Air Control Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "69bde0d1-20d1-444c-a4d5-4dc6ab86dc6b" ] .
+
+ns2:ZONE.AHU01.RM115.Zone_Air_Damper_Command a brick:Damper_Position_Setpoint ;
+    rdfs:label "ZONE.AHU01.RM115.Zone Air Damper Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "d23760d3-f13d-438d-9144-ccbd363aa109" ] .
+
+ns2:ZONE.AHU01.RM115.Zone_Air_Temp a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU01.RM115.Zone Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "8368a065-a593-4617-a92d-3d047861d86e" ] .
+
+ns2:ZONE.AHU01.RM115.Zone_Air_Temp_Setpoint a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU01.RM115.Zone Air Temp Setpoint" ;
+    brick:timeseries [ brick:hasTimeseriesId "d22d42e0-41c9-4a21-9141-e0a848208533" ] .
+
+ns2:ZONE.AHU01.RM115.Zone_Heating_Mode a brick:Heating_Command ;
+    rdfs:label "ZONE.AHU01.RM115.Zone Heating Mode" .
+
+ns2:ZONE.AHU01.RM115.Zone_Percent_Air_Flow a brick:Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU01.RM115.Zone Percent Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "2b07fbea-2907-4e86-a114-99ccd437df8a" ] .
+
+ns2:ZONE.AHU01.RM115.Zone_Reheat_Valve_Command a brick:Command ;
+    rdfs:label "ZONE.AHU01.RM115.Zone Reheat Valve Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "58da756a-fc0c-447d-b3c1-bf1cbfb5feee" ] .
+
+ns2:ZONE.AHU01.RM115.Zone_Supply_Air_Flow a brick:Supply_Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU01.RM115.Zone Supply Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "062881ba-47d6-4ca3-a097-34bf186db590" ] .
+
+ns2:ZONE.AHU01.RM115.Zone_Supply_Air_Temp a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU01.RM115.Zone Supply Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "1d412083-8513-4af4-ab6a-98ecc8719f38" ] .
+
+ns2:ZONE.AHU01.RM120.Zone_Air_Control_Temp a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU01.RM120.Zone Air Control Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "24c6c142-d5e8-4726-b056-154a4594d885" ] .
+
+ns2:ZONE.AHU01.RM120.Zone_Air_Damper_Command a brick:Damper_Position_Setpoint ;
+    rdfs:label "ZONE.AHU01.RM120.Zone Air Damper Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "e4cfe3c2-7657-4e51-a94d-e2636f0aab18" ] .
+
+ns2:ZONE.AHU01.RM120.Zone_Air_Temp a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU01.RM120.Zone Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "c35e8c50-55df-4d30-a816-acac325e46d4" ] .
+
+ns2:ZONE.AHU01.RM120.Zone_Air_Temp_Setpoint a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU01.RM120.Zone Air Temp Setpoint" ;
+    brick:timeseries [ brick:hasTimeseriesId "427bdd4a-7ab5-4315-82ba-5e8f819fcbb1" ] .
+
+ns2:ZONE.AHU01.RM120.Zone_Heating_Mode a brick:Heating_Command ;
+    rdfs:label "ZONE.AHU01.RM120.Zone Heating Mode" .
+
+ns2:ZONE.AHU01.RM120.Zone_Percent_Air_Flow a brick:Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU01.RM120.Zone Percent Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "b34ffaea-3f0a-4abd-9094-ccd18e5c56c9" ] .
+
+ns2:ZONE.AHU01.RM120.Zone_Reheat_Valve_Command a brick:Command ;
+    rdfs:label "ZONE.AHU01.RM120.Zone Reheat Valve Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "4d975209-1ef5-4e36-9acc-e74b50d5ad31" ] .
+
+ns2:ZONE.AHU01.RM120.Zone_Supply_Air_Flow a brick:Supply_Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU01.RM120.Zone Supply Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "42619a81-4074-4309-9098-64b77235afeb" ] .
+
+ns2:ZONE.AHU01.RM120.Zone_Supply_Air_Temp a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU01.RM120.Zone Supply Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "122d9f60-cc9c-4b28-95a0-5585713fc8e9" ] .
+
+ns2:ZONE.AHU02.RM100.Zone_Air_Control_Temp a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU02.RM100.Zone Air Control Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "bf982460-8151-432c-a928-87c924886d38" ] .
+
+ns2:ZONE.AHU02.RM100.Zone_Air_Damper_Command a brick:Damper_Position_Setpoint ;
+    rdfs:label "ZONE.AHU02.RM100.Zone Air Damper Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "852b53c5-c805-4030-82f7-d58f73ab1b0b" ] .
+
+ns2:ZONE.AHU02.RM100.Zone_Air_Temp a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU02.RM100.Zone Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "ce35a53a-bbf5-491f-a4cd-2685395d0665" ] .
+
+ns2:ZONE.AHU02.RM100.Zone_Air_Temp_Setpoint a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU02.RM100.Zone Air Temp Setpoint" ;
+    brick:timeseries [ brick:hasTimeseriesId "e283e0a5-99b1-47c6-9313-540ca777b7c5" ] .
+
+ns2:ZONE.AHU02.RM100.Zone_Heating_Mode a brick:Heating_Command ;
+    rdfs:label "ZONE.AHU02.RM100.Zone Heating Mode" .
+
+ns2:ZONE.AHU02.RM100.Zone_Percent_Air_Flow a brick:Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU02.RM100.Zone Percent Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "3178f935-2ef3-4a55-925b-d62c155237e1" ] .
+
+ns2:ZONE.AHU02.RM100.Zone_Reheat_Valve_Command a brick:Command ;
+    rdfs:label "ZONE.AHU02.RM100.Zone Reheat Valve Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "78c103f8-1179-4df7-9b30-19f4bdd89dac" ] .
+
+ns2:ZONE.AHU02.RM100.Zone_Supply_Air_Flow a brick:Supply_Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU02.RM100.Zone Supply Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "28c78169-b187-4efd-951b-384d516cd504" ] .
+
+ns2:ZONE.AHU02.RM100.Zone_Supply_Air_Temp a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU02.RM100.Zone Supply Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "ae92f608-859f-489d-9363-d461f18cea78" ] .
+
+ns2:ZONE.AHU02.RM103.Zone_Air_Control_Temp a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU02.RM103.Zone Air Control Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "66fcfc3c-ca14-429d-ae65-0633c111073e" ] .
+
+ns2:ZONE.AHU02.RM103.Zone_Air_Damper_Command a brick:Damper_Position_Setpoint ;
+    rdfs:label "ZONE.AHU02.RM103.Zone Air Damper Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "eb74d290-3e79-4e46-ba4f-39acae483d72" ] .
+
+ns2:ZONE.AHU02.RM103.Zone_Air_Temp a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU02.RM103.Zone Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "4e05069e-78cc-4bda-a8e2-ae3d15f1c604" ] .
+
+ns2:ZONE.AHU02.RM103.Zone_Air_Temp_Setpoint a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU02.RM103.Zone Air Temp Setpoint" ;
+    brick:timeseries [ brick:hasTimeseriesId "79d29db2-307b-4d96-b4e9-e9ebbaea00c0" ] .
+
+ns2:ZONE.AHU02.RM103.Zone_Heating_Mode a brick:Heating_Command ;
+    rdfs:label "ZONE.AHU02.RM103.Zone Heating Mode" .
+
+ns2:ZONE.AHU02.RM103.Zone_Percent_Air_Flow a brick:Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU02.RM103.Zone Percent Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "05d7494a-4653-4c30-8f66-9eaf964ee1a5" ] .
+
+ns2:ZONE.AHU02.RM103.Zone_Reheat_Valve_Command a brick:Command ;
+    rdfs:label "ZONE.AHU02.RM103.Zone Reheat Valve Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "965b71e7-4315-4dd1-a94a-d47b3467ba35" ] .
+
+ns2:ZONE.AHU02.RM103.Zone_Supply_Air_Flow a brick:Supply_Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU02.RM103.Zone Supply Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "8d9f309f-9729-4fb8-9d47-d095b590d00d" ] .
+
+ns2:ZONE.AHU02.RM103.Zone_Supply_Air_Temp a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU02.RM103.Zone Supply Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "9f8a2092-28f2-4731-ba2e-2d0608af219c" ] .
+
+ns2:ZONE.AHU02.RM110.Zone_Air_Control_Temp a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU02.RM110.Zone Air Control Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "69df025f-2405-4c8a-a64b-f4315229081e" ] .
+
+ns2:ZONE.AHU02.RM110.Zone_Air_Damper_Command a brick:Damper_Position_Setpoint ;
+    rdfs:label "ZONE.AHU02.RM110.Zone Air Damper Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "e257e073-e0bf-426c-871e-ff5c1375c3b8" ] .
+
+ns2:ZONE.AHU02.RM110.Zone_Air_Temp a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU02.RM110.Zone Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "1634482d-8b5d-45a2-bea1-661202b3e337" ] .
+
+ns2:ZONE.AHU02.RM110.Zone_Air_Temp_Setpoint a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU02.RM110.Zone Air Temp Setpoint" ;
+    brick:timeseries [ brick:hasTimeseriesId "83d51b64-b30d-498a-9526-52a597bf18b6" ] .
+
+ns2:ZONE.AHU02.RM110.Zone_Heating_Mode a brick:Heating_Command ;
+    rdfs:label "ZONE.AHU02.RM110.Zone Heating Mode" .
+
+ns2:ZONE.AHU02.RM110.Zone_Percent_Air_Flow a brick:Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU02.RM110.Zone Percent Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "01f5cba4-111b-42a4-bbb4-4844ec3ad6f6" ] .
+
+ns2:ZONE.AHU02.RM110.Zone_Reheat_Valve_Command a brick:Command ;
+    rdfs:label "ZONE.AHU02.RM110.Zone Reheat Valve Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "d4011153-1c79-49fb-9697-90f5f3f6044a" ] .
+
+ns2:ZONE.AHU02.RM110.Zone_Supply_Air_Flow a brick:Supply_Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU02.RM110.Zone Supply Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "06b9bf19-c0a2-4804-b917-665857b495a2" ] .
+
+ns2:ZONE.AHU02.RM110.Zone_Supply_Air_Temp a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU02.RM110.Zone Supply Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "6162aa89-3ac4-40bd-af5d-69711606181f" ] .
+
+ns2:ZONE.AHU02.RM112.Zone_Air_Control_Temp a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU02.RM112.Zone Air Control Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "fa630d31-f6eb-4fa5-91f2-73e94ed55694" ] .
+
+ns2:ZONE.AHU02.RM112.Zone_Air_Damper_Command a brick:Damper_Position_Setpoint ;
+    rdfs:label "ZONE.AHU02.RM112.Zone Air Damper Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "cc5c6ad9-8b8c-4291-81d7-07f7cb8a685b" ] .
+
+ns2:ZONE.AHU02.RM112.Zone_Air_Temp a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU02.RM112.Zone Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "b8f2ed23-f593-46a6-a139-1081d29d5a1d" ] .
+
+ns2:ZONE.AHU02.RM112.Zone_Air_Temp_Setpoint a brick:Zone_Air_Temperature_Setpoint ;
+    rdfs:label "ZONE.AHU02.RM112.Zone Air Temp Setpoint" ;
+    brick:timeseries [ brick:hasTimeseriesId "fb4379f0-a29c-4647-8228-ea88c3525cab" ] .
+
+ns2:ZONE.AHU02.RM112.Zone_Heating_Mode a brick:Heating_Command ;
+    rdfs:label "ZONE.AHU02.RM112.Zone Heating Mode" .
+
+ns2:ZONE.AHU02.RM112.Zone_Percent_Air_Flow a brick:Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU02.RM112.Zone Percent Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "060e62cb-546f-4312-a692-6f15521b3352" ] .
+
+ns2:ZONE.AHU02.RM112.Zone_Reheat_Valve_Command a brick:Command ;
+    rdfs:label "ZONE.AHU02.RM112.Zone Reheat Valve Command" ;
+    brick:timeseries [ brick:hasTimeseriesId "fc48ab24-1d7b-42c6-bef9-be82403eea9a" ] .
+
+ns2:ZONE.AHU02.RM112.Zone_Supply_Air_Flow a brick:Supply_Air_Flow_Sensor ;
+    rdfs:label "ZONE.AHU02.RM112.Zone Supply Air Flow" ;
+    brick:timeseries [ brick:hasTimeseriesId "d33f5c94-4738-47c8-b4d1-f83f7ed5f8b7" ] .
+
+ns2:ZONE.AHU02.RM112.Zone_Supply_Air_Temp a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "ZONE.AHU02.RM112.Zone Supply Air Temp" ;
+    brick:timeseries [ brick:hasTimeseriesId "2c80a551-03e0-447a-a5fd-881688b1d866" ] .
+
+ns2:RM100 a brick:HVAC_Zone ;
+    brick:hasPart ns2:RM100_room .
+
+ns2:RM103 a brick:HVAC_Zone ;
+    brick:hasPart ns2:RM103_room .
+
+ns2:RM107A a brick:HVAC_Zone ;
+    brick:hasPart ns2:RM107A_room .
+
+ns2:RM107B a brick:HVAC_Zone ;
+    brick:hasPart ns2:RM107B_room .
+
+ns2:RM110 a brick:HVAC_Zone ;
+    brick:hasPart ns2:RM110_room .
+
+ns2:RM112 a brick:HVAC_Zone ;
+    brick:hasPart ns2:RM112_room .
+
+ns2:RM115 a brick:HVAC_Zone ;
+    brick:hasPart ns2:RM115_room .
+
+ns2:RM120 a brick:HVAC_Zone ;
+    brick:hasPart ns2:RM120_room .
+
+ns2:RM100_room a brick:Room .
+
+ns2:RM103_room a brick:Room .
+
+ns2:RM107A_room a brick:Room .
+
+ns2:RM107B_room a brick:Room .
+
+ns2:RM110_room a brick:Room .
+
+ns2:RM112_room a brick:Room .
+
+ns2:RM115_room a brick:Room .
+
+ns2:RM120_room a brick:Room .
+
+ns2:VAVRM100 a brick:VAV ;
+    brick:feeds ns2:RM100 ;
+    brick:hasPoint ns2:ZONE.AHU02.RM100.Zone_Air_Control_Temp,
+        ns2:ZONE.AHU02.RM100.Zone_Air_Temp,
+        ns2:ZONE.AHU02.RM100.Zone_Air_Temp_Setpoint,
+        ns2:ZONE.AHU02.RM100.Zone_Heating_Mode,
+        ns2:ZONE.AHU02.RM100.Zone_Percent_Air_Flow,
+        ns2:ZONE.AHU02.RM100.Zone_Reheat_Valve_Command,
+        ns2:ZONE.AHU02.RM100.Zone_Supply_Air_Flow,
+        ns2:ZONE.AHU02.RM100.Zone_Supply_Air_Temp .
+
+ns2:VAVRM103 a brick:VAV ;
+    brick:feeds ns2:RM103 ;
+    brick:hasPoint ns2:ZONE.AHU02.RM103.Zone_Air_Control_Temp,
+        ns2:ZONE.AHU02.RM103.Zone_Air_Temp,
+        ns2:ZONE.AHU02.RM103.Zone_Air_Temp_Setpoint,
+        ns2:ZONE.AHU02.RM103.Zone_Heating_Mode,
+        ns2:ZONE.AHU02.RM103.Zone_Percent_Air_Flow,
+        ns2:ZONE.AHU02.RM103.Zone_Reheat_Valve_Command,
+        ns2:ZONE.AHU02.RM103.Zone_Supply_Air_Flow,
+        ns2:ZONE.AHU02.RM103.Zone_Supply_Air_Temp .
+
+ns2:VAVRM107A a brick:VAV ;
+    brick:feeds ns2:RM107A ;
+    brick:hasPoint ns2:ZONE.AHU01.RM107A.Zone_Air_Control_Temp,
+        ns2:ZONE.AHU01.RM107A.Zone_Air_Temp,
+        ns2:ZONE.AHU01.RM107A.Zone_Air_Temp_Setpoint,
+        ns2:ZONE.AHU01.RM107A.Zone_Heating_Mode,
+        ns2:ZONE.AHU01.RM107A.Zone_Percent_Air_Flow,
+        ns2:ZONE.AHU01.RM107A.Zone_Reheat_Valve_Command,
+        ns2:ZONE.AHU01.RM107A.Zone_Supply_Air_Flow,
+        ns2:ZONE.AHU01.RM107A.Zone_Supply_Air_Temp .
+
+ns2:VAVRM107B a brick:VAV ;
+    brick:feeds ns2:RM107B ;
+    brick:hasPoint ns2:ZONE.AHU01.RM107B.Zone_Air_Control_Temp,
+        ns2:ZONE.AHU01.RM107B.Zone_Air_Temp,
+        ns2:ZONE.AHU01.RM107B.Zone_Air_Temp_Setpoint,
+        ns2:ZONE.AHU01.RM107B.Zone_Heating_Mode,
+        ns2:ZONE.AHU01.RM107B.Zone_Percent_Air_Flow,
+        ns2:ZONE.AHU01.RM107B.Zone_Reheat_Valve_Command,
+        ns2:ZONE.AHU01.RM107B.Zone_Supply_Air_Flow,
+        ns2:ZONE.AHU01.RM107B.Zone_Supply_Air_Temp .
+
+ns2:VAVRM110 a brick:VAV ;
+    brick:feeds ns2:RM110 ;
+    brick:hasPoint ns2:ZONE.AHU02.RM110.Zone_Air_Control_Temp,
+        ns2:ZONE.AHU02.RM110.Zone_Air_Temp,
+        ns2:ZONE.AHU02.RM110.Zone_Air_Temp_Setpoint,
+        ns2:ZONE.AHU02.RM110.Zone_Heating_Mode,
+        ns2:ZONE.AHU02.RM110.Zone_Percent_Air_Flow,
+        ns2:ZONE.AHU02.RM110.Zone_Reheat_Valve_Command,
+        ns2:ZONE.AHU02.RM110.Zone_Supply_Air_Flow,
+        ns2:ZONE.AHU02.RM110.Zone_Supply_Air_Temp .
+
+ns2:VAVRM112 a brick:VAV ;
+    brick:feeds ns2:RM112 ;
+    brick:hasPoint ns2:ZONE.AHU02.RM112.Zone_Air_Control_Temp,
+        ns2:ZONE.AHU02.RM112.Zone_Air_Temp,
+        ns2:ZONE.AHU02.RM112.Zone_Air_Temp_Setpoint,
+        ns2:ZONE.AHU02.RM112.Zone_Heating_Mode,
+        ns2:ZONE.AHU02.RM112.Zone_Percent_Air_Flow,
+        ns2:ZONE.AHU02.RM112.Zone_Reheat_Valve_Command,
+        ns2:ZONE.AHU02.RM112.Zone_Supply_Air_Flow,
+        ns2:ZONE.AHU02.RM112.Zone_Supply_Air_Temp .
+
+ns2:VAVRM115 a brick:VAV ;
+    brick:feeds ns2:RM115 ;
+    brick:hasPoint ns2:ZONE.AHU01.RM115.Zone_Air_Control_Temp,
+        ns2:ZONE.AHU01.RM115.Zone_Air_Temp,
+        ns2:ZONE.AHU01.RM115.Zone_Air_Temp_Setpoint,
+        ns2:ZONE.AHU01.RM115.Zone_Heating_Mode,
+        ns2:ZONE.AHU01.RM115.Zone_Percent_Air_Flow,
+        ns2:ZONE.AHU01.RM115.Zone_Reheat_Valve_Command,
+        ns2:ZONE.AHU01.RM115.Zone_Supply_Air_Flow,
+        ns2:ZONE.AHU01.RM115.Zone_Supply_Air_Temp .
+
+ns2:VAVRM120 a brick:VAV ;
+    brick:feeds ns2:RM120 ;
+    brick:hasPoint ns2:ZONE.AHU01.RM120.Zone_Air_Control_Temp,
+        ns2:ZONE.AHU01.RM120.Zone_Air_Temp,
+        ns2:ZONE.AHU01.RM120.Zone_Air_Temp_Setpoint,
+        ns2:ZONE.AHU01.RM120.Zone_Heating_Mode,
+        ns2:ZONE.AHU01.RM120.Zone_Percent_Air_Flow,
+        ns2:ZONE.AHU01.RM120.Zone_Reheat_Valve_Command,
+        ns2:ZONE.AHU01.RM120.Zone_Supply_Air_Flow,
+        ns2:ZONE.AHU01.RM120.Zone_Supply_Air_Temp .
+
+ns2:chiller a brick:Chiller ;
+    brick:hasPoint ns2:CHW.Building_Chilled_Water_Return_Temp,
+        ns2:CHW.Building_Chilled_Water_Supply_Temp,
+        ns2:CHW.ECONOMIZER,
+        ns2:CHW.Loop_Chilled_Water_Return_Temp,
+        ns2:CHW.Loop_Chilled_Water_Supply_Temp,
+        ns4:Stop .
+
+ns2:camera a brick:Surveillance_Camera .
+ns2:temp a brick:Temperature_Sensor .

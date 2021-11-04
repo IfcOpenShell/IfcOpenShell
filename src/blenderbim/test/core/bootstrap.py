@@ -36,6 +36,13 @@ def blender():
 
 
 @pytest.fixture
+def brick():
+    prophet = Prophecy(blenderbim.core.tool.Brick)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def aggregate():
     prophet = Prophecy(blenderbim.core.tool.Aggregate)
     yield prophet
