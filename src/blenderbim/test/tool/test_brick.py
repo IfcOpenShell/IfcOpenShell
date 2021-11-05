@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import brickschema
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -70,13 +71,13 @@ class TestImportBrickClasses(NewFile):
         subject.import_brick_classes("Class")
         assert len(bpy.context.scene.BIMBrickProperties.bricks) == 2
         brick = bpy.context.scene.BIMBrickProperties.bricks[0]
+        assert brick.name == "Building"
+        assert brick.uri == "https://brickschema.org/schema/Brick#Building"
+        assert brick.total_items == 1
+        brick = bpy.context.scene.BIMBrickProperties.bricks[1]
         assert brick.name == "Location"
         assert brick.uri == "https://brickschema.org/schema/Brick#Location"
-        assert brick.total_items == 7
-        brick = bpy.context.scene.BIMBrickProperties.bricks[1]
-        assert brick.name == "Measurable"
-        assert brick.uri == "https://brickschema.org/schema/Brick#Measurable"
-        assert brick.total_items == 142
+        assert brick.total_items == 1
 
 
 class TestImportBrickItems(NewFile):
@@ -92,6 +93,13 @@ class TestImportBrickItems(NewFile):
 
 class TestLoadBrickFile(NewFile):
     def test_run(self):
+        # We stub the schema to make tests run faster
+        BrickStore.schema = brickschema.Graph()
+        cwd = os.path.dirname(os.path.realpath(__file__))
+        schema_path = os.path.join(cwd, "..", "files", "BrickStub.ttl")
+        BrickStore.schema.load_file(schema_path)
+
+        # This is the actual test
         cwd = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(cwd, "..", "files", "spaces.ttl")
         subject.load_brick_file(filepath)

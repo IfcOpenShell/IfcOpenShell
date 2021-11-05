@@ -393,6 +393,7 @@ class OverrideDelete(bpy.types.Operator):
                 elif getattr(element, "HasOpenings", None):
                     for rel in element.HasOpenings:
                         self.delete_opening_element(rel.RelatedOpeningElement)
+                IfcStore.deleted_ids.add(element.id())
             bpy.data.objects.remove(obj)
         return {"FINISHED"}
 
