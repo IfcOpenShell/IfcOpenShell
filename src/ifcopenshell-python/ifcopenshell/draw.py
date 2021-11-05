@@ -31,12 +31,6 @@ import numpy
 
 W = ifcopenshell.ifcopenshell_wrapper
 
-SETTINGS = ifcopenshell.geom.settings(
-    # this is required for serialization
-    APPLY_DEFAULT_MATERIALS=True,
-    DISABLE_TRIANGULATION=True,
-)
-
 WHITE = numpy.array((1.0, 1.0, 1.0))
 
 DO_NOTHING = lambda *args: None
@@ -53,6 +47,8 @@ class draw_settings:
     space_names: bool = False
     space_areas: bool = False
     door_arcs: bool = False
+    subtract_before_hlr: bool = False
+    cache: bool = False
     css: bool = True
     storey_heights: str = "none"
     include_entities: str = ""
@@ -61,6 +57,15 @@ class draw_settings:
 
 
 def main(settings, files, iterators=None, merge_projection=True, progress_function=DO_NOTHING):
+
+    geom_settings = ifcopenshell.geom.settings(
+        # this is required for serialization
+        APPLY_DEFAULT_MATERIALS = True,
+        DISABLE_TRIANGULATION = True,
+        # when not doing booleans, proper solids from shells isn't a requirement
+        SEW_SHELLS = settings.subtract_before_hlr
+    )
+
     if not iterators:
         iterator_kwargs = {}
         if settings.include_entities:
@@ -72,10 +77,15 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
         # the styles are cleared up.
         iterators = list(
             map(
-                functools.partial(ifcopenshell.geom.iterator, SETTINGS, **iterator_kwargs),
+                functools.partial(ifcopenshell.geom.iterator, geom_settings, **iterator_kwargs),
                 files,
             )
         )
+        
+        if settings.cache:
+            cache = ifcopenshell.geom.serializers.hdf5("cache.h5", geom_settings)
+            for it in iterators:
+                it.set_cache(cache)
 
     def yield_from_iterator(it):
         if it.initialize():
@@ -86,7 +96,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
 
     # Initialize serializer
     buffer = ifcopenshell.geom.serializers.buffer()
-    sr = ifcopenshell.geom.serializers.svg(buffer, SETTINGS)
+    sr = ifcopenshell.geom.serializers.svg(buffer, geom_settings)
 
     sr.setFile(files[0])
     if settings.auto_floorplan:
@@ -113,6 +123,8 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
     sr.setPrintSpaceAreas(settings.space_areas)
     sr.setDrawDoorArcs(settings.door_arcs)
     sr.setNoCSS(not settings.css)
+    if settings.subtract_before_hlr:
+        sr.setSubtractionSettings(W.ALWAYS)
 
     try:
         sh = ['none', 'full', 'left'].index(settings.storey_heights)
