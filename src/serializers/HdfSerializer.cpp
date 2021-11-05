@@ -355,6 +355,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			
 			if (!is_identity) {
 				trsf = gp_GTrsf(M, V);
+				trsf.SetForm();
 			}
 
 			std::shared_ptr<IfcGeom::SurfaceStyle> style_ptr;
