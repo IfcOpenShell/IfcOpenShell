@@ -785,7 +785,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
 	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords || output_extension == OBJ);
 	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES,                weld_vertices);
-	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS,                   orient_shells);
+	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS,                   orient_shells || output_extension == SVG); // svg depends on correct solids for boolean subtractions for hlr
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS,           convert_back_units);
 	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
 	settings.set(IfcGeom::IteratorSettings::DISABLE_BOOLEAN_RESULT, disable_boolean_results);
