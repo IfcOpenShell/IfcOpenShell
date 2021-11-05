@@ -1,4 +1,4 @@
-﻿#ifndef SHAPES
+#ifndef SHAPES
 #define SHAPES(T)
 #endif
 #ifndef SHAPE
