@@ -20,7 +20,6 @@ class Usecase:
         if self.settings["related_object"].Representation:
             representations = self.settings["related_object"].Representation.Representations
         for representation in representations:
-            print('for each rep', representation)
             ifcopenshell.api.run(
                 "geometry.unassign_representation",
                 self.file,
