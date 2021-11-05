@@ -229,7 +229,7 @@ public:
     bool ready();
     void write(const IfcGeom::TriangulationElement* /*o*/) {}
     void write(const IfcGeom::BRepElement* o);
-    void write(path_object& p, const TopoDS_Wire& wire, boost::optional<std::vector<double>> dash_array=boost::none);
+    void write(path_object& p, const TopoDS_Shape& wire, boost::optional<std::vector<double>> dash_array=boost::none);
 	void write(const geometry_data& data);
     path_object& start_path(const gp_Pln& p, IfcUtil::IfcBaseEntity* storey, const std::string& id);
 	path_object& start_path(const gp_Pln& p, const std::string& drawing_name, const std::string& id);
