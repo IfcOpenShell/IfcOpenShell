@@ -81,16 +81,6 @@ class AddRepresentation(bpy.types.Operator, Operator):
             ifc_representation_class=self.ifc_representation_class,
             profile_set_usage=tool.Ifc.get().by_id(self.profile_set_usage) if self.profile_set_usage else None,
         )
-        Data.load(tool.Ifc.get(), obj.BIMObjectProperties.ifc_definition_id)
-        element = tool.Ifc.get_entity(obj)
-        if element.is_a("IfcTypeProduct"):
-            if tool.Ifc.get_schema() == "IFC2X3":
-                types = element.ObjectTypeOf
-            else:
-                types = element.Types
-            if types:
-                for element in types[0].RelatedObjects:
-                    Data.load(tool.Ifc.get(), element.id())
 
 
 class SwitchRepresentation(bpy.types.Operator, Operator):
