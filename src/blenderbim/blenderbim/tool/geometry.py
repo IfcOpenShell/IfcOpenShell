@@ -52,6 +52,11 @@ class Geometry(blenderbim.core.tool.Geometry):
             modifier.solver = "EXACT"
             modifier.use_self = True
 
+
+    @classmethod
+    def delete_data(cls, data):
+        bpy.data.meshes.remove(data)
+
     @classmethod
     def does_object_have_mesh_with_faces(cls, obj):
         return bool(isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons))

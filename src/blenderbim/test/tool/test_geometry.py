@@ -82,6 +82,13 @@ class TestCreateDynamicVoids(NewFile):
         assert modifier.use_self is True
 
 
+class TestDeleteData(NewFile):
+    def test_run(self):
+        data = bpy.data.meshes.new("Mesh")
+        subject.delete_data(data)
+        assert not bpy.data.meshes.get("Mesh")
+
+
 class TestDoesObjectHaveMeshWithFaces(NewFile):
     def test_empties_return_false(self):
         obj = bpy.data.objects.new("Object", None)
