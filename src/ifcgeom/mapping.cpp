@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
 *                                                                              *
 * This file is part of IfcOpenShell.                                           *
 *                                                                              *
@@ -40,13 +40,13 @@ bool IfcGeom::Kernel::convert_shapes(const IfcBaseInterface* l, IfcRepresentatio
 		return false;
 	}
 
-#include "IfcRegisterConvertShapes.h"
+#include "mapping_shapes.i"
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l);
 	return false;
 }
 
 IfcGeom::ShapeType IfcGeom::Kernel::shape_type(const IfcBaseInterface* l) {
-#include "IfcRegisterShapeType.h"
+#include "mapping_shape_type.i"
 	return ST_OTHER;
 }
 
@@ -70,7 +70,7 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseInterface* l, TopoDS_Shape& r) 
 		IfcRepresentationShapeItems items;
 		success = convert_shapes(l, items) && flatten_shape_list(items, r, false);
 	} else if (st == ST_SHAPE && include_solids_and_surfaces) {
-#include "IfcRegisterConvertShape.h"
+#include "mapping_shape.i"
 	} else if (st == ST_FACE && include_solids_and_surfaces) {
 		processed = true;
 		success = convert_face(l, r);
@@ -112,7 +112,7 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseInterface* l, TopoDS_Shape& r) 
 }
 
 bool IfcGeom::Kernel::convert_wire(const IfcBaseInterface* l, TopoDS_Wire& r) {
-#include "IfcRegisterConvertWire.h"
+#include "mapping_wire.i"
 	Handle(Geom_Curve) curve;
 	if (IfcGeom::Kernel::convert_curve(l, curve)) {
 		return IfcGeom::Kernel::convert_curve_to_wire(curve, r);
@@ -122,13 +122,13 @@ bool IfcGeom::Kernel::convert_wire(const IfcBaseInterface* l, TopoDS_Wire& r) {
 }
 
 bool IfcGeom::Kernel::convert_face(const IfcBaseInterface* l, TopoDS_Shape& r) {
-#include "IfcRegisterConvertFace.h"
+#include "mapping_face.i"
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l);
 	return false;
 }
 
 bool IfcGeom::Kernel::convert_curve(const IfcBaseInterface* l, Handle(Geom_Curve)& r) {
-#include "IfcRegisterConvertCurve.h"
+#include "mapping_curve.i"
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l);
 	return false;
 }

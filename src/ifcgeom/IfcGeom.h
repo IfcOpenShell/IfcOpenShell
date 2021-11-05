@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -107,7 +107,7 @@ namespace IfcGeom {
 
 class IFC_GEOM_API MAKE_TYPE_NAME(Cache) {
 public:
-#include "IfcRegisterCreateCache.h"
+#include "mapping_cache.i"
 	std::map<int, TopoDS_Shape> Shape;
 };
 
@@ -536,7 +536,7 @@ public:
 
 	void set_conversion_placement_rel_to(const IfcParse::declaration* type);
 
-#include "IfcRegisterGeomHeader.h"
+#include "mapping_kernel_header.i"
 
 	virtual void setValue(GeomValue var, double value);
 	virtual double getValue(GeomValue var) const;

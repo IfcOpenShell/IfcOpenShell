@@ -1,4 +1,4 @@
-﻿#include "IfcRegisterUndef.h"
+#include "mapping_undefine.i"
 #define SHAPES(T) \
 	if ( l->declaration().is(IfcSchema::T::Class()) ) return ST_SHAPELIST;
 #define SHAPE(T) \
@@ -9,6 +9,6 @@
 	if ( l->declaration().is(IfcSchema::T::Class()) ) return ST_FACE;
 #define CURVE(T) \
 	if ( l->declaration().is(IfcSchema::T::Class()) ) return ST_CURVE;
-#include "IfcRegisterDef.h"
+#include "mapping_define_missing.i"
 
-#include "IfcRegister.h"
+#include "mapping.i"

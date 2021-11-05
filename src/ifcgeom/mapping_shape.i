@@ -1,4 +1,4 @@
-﻿#include "IfcRegisterUndef.h"
+#include "mapping_undefine.i"
 #define SHAPE(T) \
 	if (!processed && l->as<IfcSchema::T>()) { \
 		processed = true; \
@@ -21,6 +21,6 @@
 			return false; \
 		} \
 	}
-#include "IfcRegisterDef.h"
+#include "mapping_define_missing.i"
 
-#include "IfcRegister.h"
+#include "mapping.i"

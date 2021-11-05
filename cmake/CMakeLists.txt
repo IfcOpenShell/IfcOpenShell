@@ -697,7 +697,7 @@ TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_
 if (BUILD_IFCGEOM)
 
 # IfcGeom
-file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/*.h)
+file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/*.h ../src/ifcgeom/*.i)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
