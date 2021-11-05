@@ -91,7 +91,7 @@ bool SvgSerializer::ready() {
 	return true;
 }
 
-void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire, boost::optional<std::vector<double>> dash_array) {
+void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boost::optional<std::vector<double>> dash_array) {
 	/* ShapeFix_Wire fix;
 	Handle(ShapeExtend_WireData) data = new ShapeExtend_WireData;
 	for (TopExp_Explorer edges(result, TopAbs_EDGE); edges.More(); edges.Next()) {
@@ -102,207 +102,236 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire, boost::option
 	fix.FixConnected();
 	const TopoDS_Wire fixed_wire = fix.Wire(); */
 
-	bool first = true;
 	util::string_buffer path;
-	for (TopExp_Explorer edges(wire, TopAbs_EDGE); edges.More(); edges.Next()) {
-		const TopoDS_Edge& edge = TopoDS::Edge(edges.Current());
 
-		double u1, u2;
-		Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, u1, u2);
-		Handle(Geom2d_Curve) curve2d;
-		if (curve.IsNull()) {
-			TopLoc_Location loc;
-			Handle_Geom_Surface surf;
+	std::list<TopoDS_Shape> wires;
+	if (comp_or_wire.ShapeType() == TopAbs_WIRE) {
+		wires.push_back(comp_or_wire);
+	} else if (comp_or_wire.ShapeType() == TopAbs_COMPOUND) {
+		TopoDS_Iterator it(comp_or_wire);
+		for (; it.More(); it.Next()) {
+			wires.push_back(it.Value());
+		}
+	}
+
+	bool first_wire = true;
+
+	for (auto& wire : wires) {
+
+		bool first = true;
+
+		for (TopExp_Explorer edges(wire, TopAbs_EDGE); edges.More(); edges.Next()) {
+			const TopoDS_Edge& edge = TopoDS::Edge(edges.Current());
+
+			double u1, u2;
+			Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, u1, u2);
+			Handle(Geom2d_Curve) curve2d;
+			if (curve.IsNull()) {
+				TopLoc_Location loc;
+				Handle_Geom_Surface surf;
+
+				BRep_Tool::CurveOnSurface(edge, curve2d, surf, loc, u1, u2);
+
+				if (curve2d.IsNull()) {
+					Logger::Error("Failed to obtain 2d and 3d curve from edge");
+					continue;
+				}
+
+				Handle(Standard_Type) sty = surf->DynamicType();
+				if (sty != STANDARD_TYPE(Geom_Plane)) {
+					Logger::Error("Non-planar p-curves are not supported by this serializer");
+					continue;
+				}
+
+				gp_Pln pln = Handle(Geom_Plane)::DownCast(surf)->Pln();
+				curve = GeomAPI::To3d(curve2d, pln);
+			}
+
+			Handle(Standard_Type) ty = curve->DynamicType();
+			bool conical = (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse));
+
+			// TODO: ALMOST_THE_SAME utilities in separate header
+			bool closed = fabs((u1 + PI2) - u2) < 1.e-9;
+
+			// Write the element as a svg circle or ellipse. This isn't possible
+			// when forced writing of polygonal output or when there are multiple
+			// wires to be written.
+			if (!polygonal_ && (conical && closed) && wires.size() == 1) {
+				if (first) {
+					if (ty == STANDARD_TYPE(Geom_Circle)) {
+						Handle(Geom_Circle) circle = Handle(Geom_Circle)::DownCast(curve);
+						double r = circle->Radius();
+						gp_Circ c = circle->Circ();
+						gp_Pnt center = c.Location();
+						path.add("            <circle r=\"");
+						radii.push_back(path.add(r));
+						path.add("\" cx=\"");
+						xcoords.push_back(path.add(center.X()));
+						path.add("\" cy=\"");
+						ycoords.push_back(path.add(center.Y()));
+
+						growBoundingBox(center.X() - r, center.Y() - r);
+						growBoundingBox(center.X() + r, center.Y() + r);
+
+						first = false;
+						continue;
+					} else if (ty == STANDARD_TYPE(Geom_Ellipse)) {
+						Handle(Geom_Ellipse) ellipse = Handle(Geom_Ellipse)::DownCast(curve);
+						gp_Elips e = ellipse->Elips();
+						gp_Pnt center = e.Location();
+
+						// Write the ellipse with major radius along X axis:
+						path.add("            <ellipse rx=\"");
+						radii.push_back(path.add(e.MajorRadius()));
+						path.add("\" ry=\"");
+						radii.push_back(path.add(e.MinorRadius()));
+						path.add("\" cx=\"");
+						xcoords.push_back(path.add(center.X()));
+						path.add("\" cy=\"");
+						ycoords.push_back(path.add(center.Y()));
+						path.add("\"");
+
+						// Rotate it with "transform":
+						gp_Ax1 major_axis = e.XAxis();
+						double z_rotation = major_axis.Direction().AngleWithRef(gp_Dir(1., 0., 0.), gp_Dir(0., 0., 1.));
+						path.add(" transform=\"rotate(");
+						path.add(z_rotation);
+						path.add(" ");
+						path.add(center.X());
+						path.add(" ");
+						path.add(center.Y());
+						// @todo isn't there a ")" missing here?
+						// @todo also X, Y are not added to {x,y}coords vector
+						// @todo also z_rotation is in radians, should be in degrees
+
+						// Bounding box:
+						// More important to have all geometry in bounding box than to be minimal
+						growBoundingBox(center.X() - e.MajorRadius(), center.Y() - e.MajorRadius());
+						growBoundingBox(center.X() + e.MajorRadius(), center.Y() + e.MajorRadius());
+
+						first = false;
+						continue;
+					}
+				} else {
+					std::stringstream ss;
+					ss << "Skipping full circle/ellipse inside aggregated <path> (id "
+						<< p.first << ")";
+					Logger::Warning(ss.str());
+				}
+			}
+
+			const bool reversed = edge.Orientation() == TopAbs_REVERSED;
+
+			gp_Pnt p1, p2;
+			curve->D0(u1, p1);
+			curve->D0(u2, p2);
+
+			if (reversed) {
+				std::swap(p1, p2);
+			}
+
 			
-			BRep_Tool::CurveOnSurface(edge, curve2d, surf, loc, u1, u2);
-			
-			if (curve2d.IsNull()) {
-				Logger::Error("Failed to obtain 2d and 3d curve from edge");
-				continue;
-			}
 
-			Handle(Standard_Type) sty = surf->DynamicType();
-			if (sty != STANDARD_TYPE(Geom_Plane)) {
-				Logger::Error("Non-planar p-curves are not supported by this serializer");
-				continue;
-			}
+			if (first) {
+				if (first_wire) {
+					path.add("            <path d=\"");
+				} else {
+					path.add(" ");
+				}
 
-			gp_Pln pln = Handle(Geom_Plane)::DownCast(surf)->Pln();
-			curve = GeomAPI::To3d(curve2d, pln);
-		}
-
-		Handle(Standard_Type) ty = curve->DynamicType();
-        bool conical = (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse));
-
-		// TODO: ALMOST_THE_SAME utilities in separate header
-		bool closed = fabs((u1 + PI2) - u2) < 1.e-9;
-
-        if (!polygonal_ && (conical && closed)) {
-            if (first) {
-                if (ty == STANDARD_TYPE(Geom_Circle)) {
-                    Handle(Geom_Circle) circle = Handle(Geom_Circle)::DownCast(curve);
-                    double r = circle->Radius();
-                    gp_Circ c = circle->Circ();
-                    gp_Pnt center = c.Location();
-                    path.add("            <circle r=\"");
-                    radii.push_back(path.add(r));
-                    path.add("\" cx=\"");
-                    xcoords.push_back(path.add(center.X()));
-                    path.add("\" cy=\"");
-                    ycoords.push_back(path.add(center.Y()));
-
-                    growBoundingBox(center.X() - r, center.Y() - r);
-                    growBoundingBox(center.X() + r, center.Y() + r);
-
-                    first = false;
-                    continue;
-                } else if (ty == STANDARD_TYPE(Geom_Ellipse)) {
-                    Handle(Geom_Ellipse) ellipse = Handle(Geom_Ellipse)::DownCast(curve);
-                    gp_Elips e = ellipse->Elips();
-                    gp_Pnt center = e.Location();
-
-                    // Write the ellipse with major radius along X axis:
-                    path.add("            <ellipse rx=\"");
-                    radii.push_back(path.add(e.MajorRadius()));
-                    path.add("\" ry=\"");
-                    radii.push_back(path.add(e.MinorRadius()));
-                    path.add("\" cx=\"");
-                    xcoords.push_back(path.add(center.X()));
-                    path.add("\" cy=\"");
-                    ycoords.push_back(path.add(center.Y()));
-                    path.add("\"");
-
-                    // Rotate it with "transform":
-                    gp_Ax1 major_axis = e.XAxis();
-                    double z_rotation = major_axis.Direction().AngleWithRef(gp_Dir(1., 0., 0.), gp_Dir(0., 0., 1.));
-                    path.add(" transform=\"rotate(");
-                    path.add(z_rotation);
-                    path.add(" ");
-                    path.add(center.X());
-                    path.add(" ");
-                    path.add(center.Y());
-					// @todo isn't there a ")" missing here?
-					// @todo also X, Y are not added to {x,y}coords vector
-					// @todo also z_rotation is in radians, should be in degrees
-
-                    // Bounding box:
-                    // More important to have all geometry in bounding box than to be minimal
-                    growBoundingBox(center.X() - e.MajorRadius(), center.Y() - e.MajorRadius());
-                    growBoundingBox(center.X() + e.MajorRadius(), center.Y() + e.MajorRadius());
-
-                    first = false;
-                    continue;
-                }
-            } else {
-                std::stringstream ss;
-                ss << "Skipping full circle/ellipse inside aggregated <path> (id "
-                   << p.first << ")";
-                Logger::Warning(ss.str());
-            }
-        }
-
-        const bool reversed = edge.Orientation() == TopAbs_REVERSED;
-
-		gp_Pnt p1, p2;
-		curve->D0(u1, p1);
-		curve->D0(u2, p2);
-
-		if (reversed) {
-			std::swap(p1, p2);
-		}
-				
-		if (first) {
-            path.add("            <path d=\"");
-			path.add("M");
-			addXCoordinate(path.add(p1.X()));
-			path.add(",");
-			addYCoordinate(path.add(p1.Y()));
-
-			growBoundingBox(p1.X(), p1.Y());
-		}
-
-		growBoundingBox(p2.X(), p2.Y());
-
-
-		if (!polygonal_ && (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse))) {
-			Handle(Geom_Conic) conic = Handle(Geom_Conic)::DownCast(curve);
-			const bool mirrored = conic->Position().Axis().Direction().Z() < 0;
-					
-			double r1, r2;
-			bool larger_arc_segment = (fmod(u2 - u1 + PI2, PI2) > M_PI);
-			bool positive_direction = (u2 > u1);
-
-			if (mirrored != reversed) {
-				// In case the local coordinate system is mirrored
-				// the direction is reversed.
-				positive_direction = !positive_direction;
-			}
-
-			gp_Pnt center;
-			if (ty == STANDARD_TYPE(Geom_Circle)) {
-				Handle(Geom_Circle) circle = Handle(Geom_Circle)::DownCast(curve);
-				r1 = r2 = circle->Radius();
-				center = circle->Location();
-			} else {
-				Handle(Geom_Ellipse) ellipse = Handle(Geom_Ellipse)::DownCast(curve);
-				r1 = ellipse->MajorRadius();
-				r2 = ellipse->MinorRadius();
-				center = ellipse->Location();
-			}
-
-			// Make sure the arc segment is entirely inside bounding box:
-			growBoundingBox(center.X() - r1, center.Y() - r1);
-			growBoundingBox(center.X() + r1, center.Y() + r1);
-					
-			// Calculate the angle between 2d vecs to have signed result
-			const gp_Dir& d = conic->Position().XDirection();
-			const gp_Dir2d d2(d.X(), d.Y());
-			const double ang = d2.Angle(gp::DX2d());
-
-			// Write radii
-			path.add(" A");
-			addSizeComponent(path.add(r1));
-			path.add(",");
-			addSizeComponent(path.add(r2));
-					
-			// Write X-axis rotation
-			{ std::stringstream ss; ss << " " << ang << " ";
-			path.add(ss.str()); }
-					
-			// Write large-arc-flag and sweep-flag
-			path.add(std::string(1, '0'+static_cast<int>(larger_arc_segment)));
-			path.add(",");
-			path.add(std::string(1, '0'+static_cast<int>(positive_direction)));
-					
-			path.add(" ");
-
-			// Write arc end point
-			xcoords.push_back(path.add(p2.X()));
-			path.add(",");
-			ycoords.push_back(path.add(p2.Y()));
-		} else if (ty != STANDARD_TYPE(Geom_Line)) {
-			BRepAdaptor_Curve crv(edge);
-			GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
-			// NB: Start at 2: 1-based and skip the first point, assume it coincides with p1.
-			for (int i = 2; i <= tessellater.NbPoints(); ++i) {
-				gp_Pnt pi = tessellater.Value(i);
-				path.add(" L");
-				xcoords.push_back(path.add(pi.X()));
+				path.add("M");
+				addXCoordinate(path.add(p1.X()));
 				path.add(",");
-				ycoords.push_back(path.add(pi.Y()));
+				addYCoordinate(path.add(p1.Y()));
 
-				growBoundingBox(pi.X(), pi.Y());
+				growBoundingBox(p1.X(), p1.Y());
 			}
-		} else {
-			// Either a Geom_Line or something unimplemented,
-			// drawn as a straight line segment.
-			path.add(" L");
-			xcoords.push_back(path.add(p2.X()));
-			path.add(",");
-			ycoords.push_back(path.add(p2.Y()));
+
+			growBoundingBox(p2.X(), p2.Y());
+
+
+			if (!polygonal_ && (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse))) {
+				Handle(Geom_Conic) conic = Handle(Geom_Conic)::DownCast(curve);
+				const bool mirrored = conic->Position().Axis().Direction().Z() < 0;
+
+				double r1, r2;
+				bool larger_arc_segment = (fmod(u2 - u1 + PI2, PI2) > M_PI);
+				bool positive_direction = (u2 > u1);
+
+				if (mirrored != reversed) {
+					// In case the local coordinate system is mirrored
+					// the direction is reversed.
+					positive_direction = !positive_direction;
+				}
+
+				gp_Pnt center;
+				if (ty == STANDARD_TYPE(Geom_Circle)) {
+					Handle(Geom_Circle) circle = Handle(Geom_Circle)::DownCast(curve);
+					r1 = r2 = circle->Radius();
+					center = circle->Location();
+				} else {
+					Handle(Geom_Ellipse) ellipse = Handle(Geom_Ellipse)::DownCast(curve);
+					r1 = ellipse->MajorRadius();
+					r2 = ellipse->MinorRadius();
+					center = ellipse->Location();
+				}
+
+				// Make sure the arc segment is entirely inside bounding box:
+				growBoundingBox(center.X() - r1, center.Y() - r1);
+				growBoundingBox(center.X() + r1, center.Y() + r1);
+
+				// Calculate the angle between 2d vecs to have signed result
+				const gp_Dir& d = conic->Position().XDirection();
+				const gp_Dir2d d2(d.X(), d.Y());
+				const double ang = closed ? M_PI * 2. : d2.Angle(gp::DX2d());
+
+				// Write radii
+				path.add(" A");
+				addSizeComponent(path.add(r1));
+				path.add(",");
+				addSizeComponent(path.add(r2));
+
+				// Write X-axis rotation
+				{ std::stringstream ss; ss << " " << ang << " ";
+				path.add(ss.str()); }
+
+				// Write large-arc-flag and sweep-flag
+				path.add(std::string(1, '0' + static_cast<int>(larger_arc_segment)));
+				path.add(",");
+				path.add(std::string(1, '0' + static_cast<int>(positive_direction)));
+
+				path.add(" ");
+
+				// Write arc end point
+				xcoords.push_back(path.add(p2.X()));
+				path.add(",");
+				ycoords.push_back(path.add(p2.Y()));
+			} else if (ty != STANDARD_TYPE(Geom_Line)) {
+				BRepAdaptor_Curve crv(edge);
+				GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
+				// NB: Start at 2: 1-based and skip the first point, assume it coincides with p1.
+				for (int i = 2; i <= tessellater.NbPoints(); ++i) {
+					gp_Pnt pi = tessellater.Value(i);
+					path.add(" L");
+					xcoords.push_back(path.add(pi.X()));
+					path.add(",");
+					ycoords.push_back(path.add(pi.Y()));
+
+					growBoundingBox(pi.X(), pi.Y());
+				}
+			} else {
+				// Either a Geom_Line or something unimplemented,
+				// drawn as a straight line segment.
+				path.add(" L");
+				xcoords.push_back(path.add(p2.X()));
+				path.add(",");
+				ycoords.push_back(path.add(p2.Y()));
+			}
+
+			first = false;
 		}
 
-		first = false;
+		first_wire = false;
 	}
 
 	path.add("\"");
@@ -1269,6 +1298,10 @@ void SvgSerializer::write(const geometry_data& data) {
 
 			gp_Pnt prev;
 
+			TopoDS_Compound wires_compound;
+			BRep_Builder BB;
+			BB.MakeCompound(wires_compound);
+
 			for (int i = 1; i <= wires->Length(); ++i) {
 				
 				// @nb not const, because in case of storey annotations we might
@@ -1374,8 +1407,10 @@ void SvgSerializer::write(const geometry_data& data) {
 					po->second.push_back(path);
 				}
 
-				write(*po, wire);
+				BB.Add(wires_compound, wire);
 			}
+
+			write(*po, wires_compound);
 		}
 
 		if (!largest_closed_wire_face.IsNull()) {
@@ -2067,6 +2102,7 @@ void SvgSerializer::doWriteHeader() {
 			"        path {\n"
 			"            stroke: #222222;\n"
 			"            fill: #444444;\n"
+			"            fill-rule: evenodd;\n"
 			"        }\n"
 			"        .IfcDoor path,\n"
 			"        .Symbol path {\n"
