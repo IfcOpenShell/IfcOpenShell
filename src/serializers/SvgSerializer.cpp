@@ -1008,16 +1008,45 @@ void SvgSerializer::write(const geometry_data& data) {
 					}
 
 					if (should_cut) {
-						gp_Pnt points[4] = {
-							gp_Pnt(xs[0] - 1., ys[0] - 1., cut_z),
-							gp_Pnt(xs[1] + 1., ys[0] - 1., cut_z),
-							gp_Pnt(xs[1] + 1., ys[1] + 1., cut_z),
-							gp_Pnt(xs[0] - 1., ys[1] + 1., cut_z)
-						};
+
+						// Sample eight bounding box points, project on plane
+						// and take the min and max U, V parameters to form
+						// a 2d bounding box in parameter space on the plane.
+
+						// This is used to form a cutting plane (halfspace)
+						// to trim away parts behind the projection plane
+						// before performing HLR.
+
+						double min_u = +std::numeric_limits<double>::infinity();
+						double max_u = -std::numeric_limits<double>::infinity();
+						double min_v = +std::numeric_limits<double>::infinity();
+						double max_v = -std::numeric_limits<double>::infinity();
+
+						for (int i = 0; i < 8; ++i) {
+							gp_Pnt p(xs[(i & 1) == 1], ys[(i & 2) == 2], zs[(i & 4) == 4]);
+							Extrema_ExtPElS ext;
+							ext.Perform(p, projection_plane, 1.e-5);
+							if (ext.NbExt() == 1) {
+								double pu, pv;
+								ext.Point(1).Parameter(pu, pv);
+								if (pu < min_u) {
+									min_u = pu;
+								}
+								if (pu > max_u) {
+									max_u = pu;
+								}
+								if (pv < min_v) {
+									min_v = pv;
+								}
+								if (pv > max_v) {
+									max_v = pv;
+								}
+							}
+						}
+
 						try {
-							BRepBuilderAPI_MakePolygon mp(points[0], points[1], points[2], points[3], true);
-							auto w = mp.Wire();
-							BRepBuilderAPI_MakeFace mf(w);
+							
+							BRepBuilderAPI_MakeFace mf(new Geom_Plane(projection_plane), min_u - 1., max_u + 1., min_v - 1., max_v + 1., Precision::Confusion());
 							auto f = mf.Face();
 							gp_Pnt ref = projection_plane.Position().Location().XYZ() + projection_plane.Position().Direction().XYZ();
 							BRepPrimAPI_MakeHalfSpace mhs(f, ref);
