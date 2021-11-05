@@ -993,7 +993,20 @@ void SvgSerializer::write(const geometry_data& data) {
 							gp_Pnt ref = projection_plane.Position().Location().XYZ() + projection_plane.Position().Direction().XYZ();
 							BRepPrimAPI_MakeHalfSpace mhs(f, ref);
 							auto s = mhs.Solid();
-							subtracted_shape = BRepAlgoAPI_Cut(compound_to_use, s).Shape();
+
+							BRep_Builder BB;
+							TopoDS_Compound C;
+							BB.MakeCompound(C);
+
+							// loop over parts to have better luck with co-planar parts
+							TopoDS_Iterator it(compound_to_use);
+							for (; it.More(); it.Next()) {
+								auto part = BRepAlgoAPI_Cut(it.Value(), s).Shape();
+								BB.Add(C, part);
+							}
+
+							subtracted_shape = C;
+
 							compound_to_hlr = &subtracted_shape;
 						} catch (...) {
 							Logger::Error("Failed to cut element for HLR", data.product);
