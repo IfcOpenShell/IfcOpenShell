@@ -76,6 +76,7 @@ class TestAddRepresentation:
 
         # Update mesh
         geometry.duplicate_object_data("obj").should_be_called().will_return("data")
+        geometry.change_object_data("obj", "data", is_global=True).should_be_called()
         geometry.get_representation_name("representation").should_be_called().will_return("name")
         geometry.rename_object("data", "name").should_be_called()
         geometry.link("representation", "data").should_be_called()
@@ -124,6 +125,7 @@ class TestAddRepresentation:
 
         # Update mesh
         geometry.duplicate_object_data("obj").should_be_called().will_return("data")
+        geometry.change_object_data("obj", "data", is_global=True).should_be_called()
         geometry.get_representation_name("representation").should_be_called().will_return("name")
         geometry.rename_object("data", "name").should_be_called()
         geometry.link("representation", "data").should_be_called()
