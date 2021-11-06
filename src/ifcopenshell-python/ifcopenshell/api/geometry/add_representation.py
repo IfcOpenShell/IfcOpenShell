@@ -142,6 +142,12 @@ class Usecase:
             pass
         elif self.settings["context"].ContextIdentifier == "SurveyPoints":
             pass
+        else:
+            if isinstance(self.settings["geometry"], bpy.types.TextCurve):
+                return self.create_text_representation()
+            shape_representation = self.create_geometric_curve_set_representation(is_2d=True)
+            shape_representation.RepresentationType = "Annotation2D"
+            return shape_representation
 
     def create_lighting_representation(self):
         return self.file.createIfcShapeRepresentation(
