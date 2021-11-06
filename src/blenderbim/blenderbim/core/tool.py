@@ -223,11 +223,12 @@ class Surveyor:
 
 @interface
 class Type:
+    def change_object_data(cls, obj, data, is_global=False): pass
     def disable_editing(cls, obj): pass
-    def get_any_representation(cls, element): pass
     def get_body_context(cls): pass
     def get_body_representation(cls, element): pass
     def get_ifc_representation_class(cls, element): pass
+    def get_object_data(cls, obj): pass
     def get_profile_set_usage(cls, element): pass
     def get_representation_context(cls, representation): pass
     def has_dynamic_voids(cls, obj): pass

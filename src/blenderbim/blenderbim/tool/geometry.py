@@ -52,7 +52,6 @@ class Geometry(blenderbim.core.tool.Geometry):
             modifier.solver = "EXACT"
             modifier.use_self = True
 
-
     @classmethod
     def delete_data(cls, data):
         bpy.data.meshes.remove(data)
