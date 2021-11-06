@@ -86,7 +86,10 @@ class IfcExporter:
 
     def sync_deletions(self):
         for ifc_definition_id in IfcStore.deleted_ids:
-            product = self.file.by_id(ifc_definition_id)
+            try:
+                product = self.file.by_id(ifc_definition_id)
+            except:
+                continue
             ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
 
     def sync_object_placements(self):
