@@ -1,4 +1,4 @@
-﻿#include "IfcRegisterUndef.h"
+#include "mapping_undefine.i"
 #define SHAPES(T) \
 	if (l->as<IfcSchema::T>()) { \
 		try { \
@@ -13,6 +13,6 @@
 		} \
 		return false; \
 	}
-#include "IfcRegisterDef.h"
+#include "mapping_define_missing.i"
 
-#include "IfcRegister.h"
+#include "mapping.i"

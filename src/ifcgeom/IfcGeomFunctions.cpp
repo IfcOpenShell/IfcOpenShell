@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -1037,6 +1037,9 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			IfcGeom::IfcRepresentationShapeItems opening_shapes;
 
 			for (IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++it2) {
+				if (IfcParse::traverse((*it2))->as<IfcSchema::IfcBoundingBox>()->size()) {
+					continue;
+				}
 				convert_shapes(*it2, opening_shapes);
 			}
 

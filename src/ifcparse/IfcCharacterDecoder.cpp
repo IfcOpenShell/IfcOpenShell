@@ -201,7 +201,18 @@ namespace {
 			builder_.push_back('\'');
 
 			if (mode == IfcParse::IfcCharacterDecoder::UTF8) {
-				return IfcUtil::convert_utf8(builder_);
+				if (builder_.empty()) {
+					static std::string empty;
+					return empty;
+				} else {
+					auto it = std::max_element(builder_.begin(), builder_.end());
+					if (*it <= 0x7e) {
+						std::string r(builder_.begin(), builder_.end());
+						return r;
+					} else {
+						return IfcUtil::convert_utf8(builder_);
+					}
+				}				
 			} else if (mode == IfcParse::IfcCharacterDecoder::SUBSTITUTE) {
 				std::string r;
 				r.reserve(builder_.size());

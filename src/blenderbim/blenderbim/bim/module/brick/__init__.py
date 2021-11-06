@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -20,26 +20,21 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.ActivateIfcTypeFilter,
-    operator.ColourByAttribute,
-    operator.ColourByClass,
-    operator.ColourByPset,
-    operator.ToggleFilterSelection,
-    operator.ResetObjectColours,
-    operator.SelectAttribute,
-    operator.SelectGlobalId,
-    operator.SelectIfcClass,
-    operator.SelectPset,
-    prop.BIMFilterClasses,
-    prop.BIMSearchProperties,
-    ui.BIM_PT_search,
-    ui.BIM_UL_ifctype_filter,
+    operator.CloseBrickProject,
+    operator.LoadBrickProject,
+    operator.RewindBrickClass,
+    operator.ViewBrickClass,
+    operator.ViewBrickItem,
+    prop.Brick,
+    prop.BIMBrickProperties,
+    ui.BIM_PT_brickschema,
+    ui.BIM_UL_bricks,
 )
 
 
 def register():
-    bpy.types.Scene.BIMSearchProperties = bpy.props.PointerProperty(type=prop.BIMSearchProperties)
+    bpy.types.Scene.BIMBrickProperties = bpy.props.PointerProperty(type=prop.BIMBrickProperties)
 
 
 def unregister():
-    del bpy.types.Scene.BIMSearchProperties
+    del bpy.types.Scene.BIMBrickProperties

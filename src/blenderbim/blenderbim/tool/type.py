@@ -25,15 +25,15 @@ import blenderbim.bim.helper
 
 class Type(blenderbim.core.tool.Type):
     @classmethod
-    def disable_editing(cls, obj):
-        obj.BIMTypeProperties.is_editing_type = False
+    def change_object_data(cls, obj, data, is_global=False):
+        if is_global:
+            obj.data.user_remap(data)
+        else:
+            obj.data = data
 
     @classmethod
-    def get_any_representation(cls, element):
-        if element.is_a("IfcProduct") and element.Representation and element.Representation.Representations:
-            return element.Representation.Representations[0]
-        elif element.is_a("IfcTypeProduct") and element.RepresentationMaps:
-            return element.RepresentationMaps[0].MappedRepresentation
+    def disable_editing(cls, obj):
+        obj.BIMTypeProperties.is_editing_type = False
 
     @classmethod
     def get_body_context(cls):
@@ -58,6 +58,10 @@ class Type(blenderbim.core.tool.Type):
                 return "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
             elif material.is_a("IfcMaterialLayerSetUsage"):
                 return "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
+
+    @classmethod
+    def get_object_data(cls, obj):
+        return obj.data
 
     @classmethod
     def get_profile_set_usage(cls, element):

@@ -82,6 +82,10 @@ private:
 
 private:
 
+	std::map<std::string, boost::shared_ptr<IfcGeom::Representation::BRep>> brep_cache_;
+	std::map<std::string, boost::shared_ptr<IfcGeom::Representation::Triangulation>> triangulation_cache_;
+	std::map<std::string, std::string> group_cache_;
+
 	H5::Group createRepresentationGroup(const H5::Group& element_group, const std::string& gid);
 	void read_surface_style(surface_style_serialization& sss, std::shared_ptr<IfcGeom::SurfaceStyle>& style_ptr);
 	void write_style(surface_style_serialization& data, const IfcGeom::SurfaceStyle& s);
@@ -97,7 +101,7 @@ public:
 	void write(const IfcGeom::TriangulationElement* o);
 	void remove(const std::string& guid);
 
-	const IfcGeom::Element* read(IfcParse::IfcFile& f, const std::string& guid, unsigned int representation_id, read_type rt = READ_BREP);
+	IfcGeom::Element* read(IfcParse::IfcFile& f, const std::string& guid, const std::string&, read_type rt = READ_BREP);
 	
 	void finalize() {}
 	bool isTesselated() const { return false; }

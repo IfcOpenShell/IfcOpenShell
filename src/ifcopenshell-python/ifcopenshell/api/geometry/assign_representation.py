@@ -1,4 +1,5 @@
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -10,13 +11,16 @@ class Usecase:
 
     def execute(self):
         if self.settings["product"].is_a("IfcProduct"):
-            definition = self.settings["product"].Representation
-            if not definition:
-                definition = self.file.createIfcProductDefinitionShape()
-                self.settings["product"].Representation = definition
-            representations = list(definition.Representations) if definition.Representations else []
-            representations.append(self.settings["representation"])
-            definition.Representations = representations
+            product_type = ifcopenshell.util.element.get_type(self.settings["product"])
+            if (
+                product_type
+                and product_type.RepresentationMaps
+                and self.settings["representation"].RepresentationType != "MappedRepresentation"
+            ):
+                self.settings["product"] = product_type
+
+        if self.settings["product"].is_a("IfcProduct"):
+            self.assign_product_representation(self.settings["product"], self.settings["representation"])
         elif self.settings["product"].is_a("IfcTypeProduct"):
             if self.settings["product"].RepresentationMaps:
                 maps = list(self.settings["product"].RepresentationMaps)
@@ -44,9 +48,14 @@ class Usecase:
                     mapped_representation = ifcopenshell.api.run(
                         "geometry.map_representation", self.file, **{"representation": self.settings["representation"]}
                     )
-                    ifcopenshell.api.run(
-                        "geometry.assign_representation",
-                        self.file,
-                        **{"product": element, "representation": mapped_representation}
-                    )
+                    self.assign_product_representation(element, mapped_representation)
         ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})
+
+    def assign_product_representation(self, product, representation):
+        definition = product.Representation
+        if not definition:
+            definition = self.file.createIfcProductDefinitionShape()
+            product.Representation = definition
+        representations = list(definition.Representations) if definition.Representations else []
+        representations.append(representation)
+        definition.Representations = representations

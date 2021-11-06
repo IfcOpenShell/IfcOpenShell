@@ -29,28 +29,32 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.Type)
 
 
+class TestChangeObjectData(NewFile):
+    def test_change_single_object_data(self):
+        data1 = bpy.data.meshes.new("Mesh")
+        data2 = bpy.data.meshes.new("Mesh")
+        obj1 = bpy.data.objects.new("Object", data1)
+        obj2 = bpy.data.objects.new("Object", data1)
+        subject.change_object_data(obj1, data2, is_global=False)
+        assert obj1.data == data2
+        assert obj2.data == data1
+
+    def test_change_object_data_globally(self):
+        data1 = bpy.data.meshes.new("Mesh")
+        data2 = bpy.data.meshes.new("Mesh")
+        obj1 = bpy.data.objects.new("Object", data1)
+        obj2 = bpy.data.objects.new("Object", data1)
+        subject.change_object_data(obj1, data2, is_global=True)
+        assert obj1.data == data2
+        assert obj2.data == data2
+
+
 class TestDisableEditing(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
         obj.BIMTypeProperties.is_editing_type = True
         subject.disable_editing(obj)
         assert obj.BIMTypeProperties.is_editing_type is False
-
-
-class TestGetAnyRepresentation(NewFile):
-    def test_get_product_representation(self):
-        ifc = ifcopenshell.file()
-        representation = ifc.createIfcShapeRepresentation()
-        element = ifc.createIfcWall(Representation=ifc.createIfcProductRepresentation(Representations=[representation]))
-        assert subject.get_any_representation(element) == representation
-
-    def test_get_type_product_representation(self):
-        ifc = ifcopenshell.file()
-        representation = ifc.createIfcShapeRepresentation()
-        element = ifc.createIfcWallType(
-            RepresentationMaps=[ifc.createIfcRepresentationMap(MappedRepresentation=representation)]
-        )
-        assert subject.get_any_representation(element) == representation
 
 
 class TestGetBodyContext(NewFile):
@@ -108,6 +112,13 @@ class TestGetIfcRepresentationClass(NewFile):
     def test_returning_null_for_non_parametric_representations(self):
         ifc = ifcopenshell.file()
         assert subject.get_ifc_representation_class(ifc.createIfcColumn()) is None
+
+
+class TestGetObjectData(NewFile):
+    def test_run(self):
+        data = bpy.data.meshes.new("Mesh")
+        obj = bpy.data.objects.new("Object", data)
+        assert subject.get_object_data(obj) == obj.data
 
 
 class TestGetProfileSetUsage(NewFile):

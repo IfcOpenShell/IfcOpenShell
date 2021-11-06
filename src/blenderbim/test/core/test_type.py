@@ -21,36 +21,21 @@ from test.core.bootstrap import ifc, type
 
 
 class TestAssignType:
-    def test_assigning_and_switching_preferably_to_a_body_representation(self, ifc, type):
+    def test_assigning_and_switching_to_an_existing_type_data(self, ifc, type):
         ifc.run("type.assign_type", related_object="element", relating_type="type").should_be_called()
         type.has_material_usage("element").should_be_called().will_return(False)
-        type.get_body_representation("element").should_be_called().will_return("mapped_rep")
+        ifc.get_object("type").should_be_called().will_return("type_obj")
+        type.get_object_data("type_obj").should_be_called().will_return("type_obj_data")
+        type.change_object_data("obj", "type_obj_data", is_global=False).should_be_called()
         ifc.get_object("element").should_be_called().will_return("obj")
-        type.has_dynamic_voids("obj").should_be_called().will_return(False)
-        type.run_geometry_switch_representation(
-            obj="obj", representation="mapped_rep", should_reload=False, enable_dynamic_voids=False, is_global=False
-        ).should_be_called()
         type.disable_editing("obj").should_be_called()
         subject.assign_type(ifc, type, element="element", type="type")
 
-    def test_assigning_and_switching_to_any_representation_as_a_fallback(self, ifc, type):
+    def test_assigning_and_not_changing_data_if_the_type_has_no_data(self, ifc, type):
         ifc.run("type.assign_type", related_object="element", relating_type="type").should_be_called()
         type.has_material_usage("element").should_be_called().will_return(False)
-        type.get_body_representation("element").should_be_called().will_return(None)
-        type.get_any_representation("element").should_be_called().will_return("mapped_rep")
-        ifc.get_object("element").should_be_called().will_return("obj")
-        type.has_dynamic_voids("obj").should_be_called().will_return(False)
-        type.run_geometry_switch_representation(
-            obj="obj", representation="mapped_rep", should_reload=False, enable_dynamic_voids=False, is_global=False
-        ).should_be_called()
-        type.disable_editing("obj").should_be_called()
-        subject.assign_type(ifc, type, element="element", type="type")
-
-    def test_assigning_and_not_changing_representation_if_there_is_no_representation_to_change_to(self, ifc, type):
-        ifc.run("type.assign_type", related_object="element", relating_type="type").should_be_called()
-        type.has_material_usage("element").should_be_called().will_return(False)
-        type.get_body_representation("element").should_be_called().will_return(None)
-        type.get_any_representation("element").should_be_called().will_return(None)
+        ifc.get_object("type").should_be_called().will_return("type_obj")
+        type.get_object_data("type_obj").should_be_called().will_return(None)
         ifc.get_object("element").should_be_called().will_return("obj")
         type.disable_editing("obj").should_be_called()
         subject.assign_type(ifc, type, element="element", type="type")

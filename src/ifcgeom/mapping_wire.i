@@ -1,6 +1,6 @@
-﻿#include "IfcRegisterUndef.h"
+#include "mapping_undefine.i"
 #define WIRE(T) \
 	if (l->as<IfcSchema::T>()) return convert(l->as<IfcSchema::T>(), r);
-#include "IfcRegisterDef.h"
+#include "mapping_define_missing.i"
 
-#include "IfcRegister.h"
+#include "mapping.i"

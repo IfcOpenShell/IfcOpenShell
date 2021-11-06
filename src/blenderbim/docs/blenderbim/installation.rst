@@ -21,32 +21,6 @@ Like all Blender add-ons, they can be installed using ``Edit > Preferences >
 Addons > Install > Choose Downloaded ZIP > Enable Add-on Checkbox``. You can
 enable add-ons permanently by using ``Save User Settings`` from the Addons menu.
 
-If you downloaded Blender as a ``.zip`` file without running an installer, you
-will find the BlenderBIM Add-on installed in the following directory, where
-``2.XX`` is the Blender version:
-::
-
-    /path/to/blender/2.XX/scripts/addons/
-
-Otherwise, if you installed Blender using an installation package, the add-ons
-folder depends on which operating system you use. On Linux:
-::
-
-    ~/.config/blender/2.XX/scripts/addons/
-
-On Mac:
-::
-
-    /Users/{YOUR_USER}/Library/Application Support/Blender/2.XX/
-
-On Windows:
-::
-
-    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\2.XX\scripts\addons
-
-Upon installation, the BlenderBIM Add-on is stored in the ``blenderbim/``
-directory.
-
 Daily build installation
 ------------------------
 
@@ -166,7 +140,7 @@ However, creating a build, uninstalling the old add-on, and installing a new
 build is a slow process. A more rapid approach is to follow the **Daily build
 installation** method, as this provides all dependencies for you out of the box.
 Then, we can replace certain Python files that tend to be updated frequently
-with those from the Git repository. We're going to use symlinks (Windows user
+with those from the Git repository. We're going to use symlinks (Windows users
 can use ``mklink``), so we can code in our Git repository, and see the changes
 in our Blender installation.
 
@@ -224,6 +198,35 @@ After you modify your code in the Git repository, you will need to restart
 Blender for the changes to take effect. In ``Edit > Preferences > Add-ons`` you
 will see that the version number of BlenderBIM has changed to ``0.0.999999``,
 which represents an un-versioned BlenderBIM.
+
+Where is the BlenderBIM Add-on installed?
+-----------------------------------------
+
+If you downloaded Blender as a ``.zip`` file without running an installer, you
+will find the BlenderBIM Add-on installed in the following directory, where
+``2.XX`` is the Blender version:
+::
+
+    /path/to/blender/2.XX/scripts/addons/
+
+Otherwise, if you installed Blender using an installation package, the add-ons
+folder depends on which operating system you use. On Linux:
+::
+
+    ~/.config/blender/2.XX/scripts/addons/
+
+On Mac:
+::
+
+    /Users/{YOUR_USER}/Library/Application Support/Blender/2.XX/
+
+On Windows:
+::
+
+    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\2.XX\scripts\addons
+
+Upon installation, the BlenderBIM Add-on is stored in the ``blenderbim/``
+directory.
 
 Updating
 --------

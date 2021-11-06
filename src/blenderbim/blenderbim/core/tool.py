@@ -42,6 +42,20 @@ class Blender: pass
 
 
 @interface
+class Brick:
+    def add_brick_breadcrumb(cls): pass
+    def clear_brick_browser(cls): pass
+    def clear_project(cls): pass
+    def get_item_class(cls, item): pass
+    def import_brick_classes(cls, brick_class): pass
+    def import_brick_items(cls, brick_class): pass
+    def load_brick_file(cls, filepath): pass
+    def pop_brick_breadcrumb(cls): pass
+    def select_browser_item(cls, item): pass
+    def set_active_brick_class(cls, brick_class): pass
+
+
+@interface
 class Collector:
     def assign(cls, obj): pass
 
@@ -60,6 +74,7 @@ class Geometry:
     def change_object_data(cls, obj, data, is_global=False): pass
     def clear_modifiers(cls, obj): pass
     def create_dynamic_voids(cls, obj): pass
+    def delete_data(cls, data): pass
     def does_object_have_mesh_with_faces(cls, obj): pass
     def duplicate_object_data(cls, obj): pass
     def get_cartesian_point_coordinate_offset(cls, obj): pass
@@ -160,6 +175,7 @@ class Root:
     def get_object_representation(cls, obj): pass
     def get_representation_context(cls, representation): pass
     def is_opening_element(cls, element): pass
+    def link_object_data(cls, source_obj, destination_obj): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
 
 
@@ -207,11 +223,12 @@ class Surveyor:
 
 @interface
 class Type:
+    def change_object_data(cls, obj, data, is_global=False): pass
     def disable_editing(cls, obj): pass
-    def get_any_representation(cls, element): pass
     def get_body_context(cls): pass
     def get_body_representation(cls, element): pass
     def get_ifc_representation_class(cls, element): pass
+    def get_object_data(cls, obj): pass
     def get_profile_set_usage(cls, element): pass
     def get_representation_context(cls, representation): pass
     def has_dynamic_voids(cls, obj): pass

@@ -76,6 +76,7 @@ class TestAddRepresentation:
 
         # Update mesh
         geometry.duplicate_object_data("obj").should_be_called().will_return("data")
+        geometry.change_object_data("obj", "data", is_global=True).should_be_called()
         geometry.get_representation_name("representation").should_be_called().will_return("name")
         geometry.rename_object("data", "name").should_be_called()
         geometry.link("representation", "data").should_be_called()
@@ -124,6 +125,7 @@ class TestAddRepresentation:
 
         # Update mesh
         geometry.duplicate_object_data("obj").should_be_called().will_return("data")
+        geometry.change_object_data("obj", "data", is_global=True).should_be_called()
         geometry.get_representation_name("representation").should_be_called().will_return("name")
         geometry.rename_object("data", "name").should_be_called()
         geometry.link("representation", "data").should_be_called()
@@ -179,9 +181,9 @@ class TestAddRepresentation:
 
 
 class TestSwitchRepresentation:
-    def test_switching_to_a_freshly_reloaded_representation(self, geometry):
+    def test_switching_to_a_freshly_loaded_representation(self, geometry):
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
-        geometry.get_representation_data("representation").should_be_called().will_return("data")
+        geometry.get_representation_data("representation").should_be_called().will_return(None)
         geometry.import_representation(
             "obj", "representation", enable_dynamic_voids=True
         ).should_be_called().will_return("new_data")
@@ -189,6 +191,29 @@ class TestSwitchRepresentation:
         geometry.rename_object("new_data", "name").should_be_called()
         geometry.link("representation", "new_data").should_be_called()
         geometry.change_object_data("obj", "new_data", is_global=True).should_be_called()
+        geometry.clear_modifiers("obj").should_be_called()
+        geometry.is_body_representation("representation").should_be_called().will_return(True)
+        geometry.create_dynamic_voids("obj").should_be_called()
+        subject.switch_representation(
+            geometry,
+            obj="obj",
+            representation="mapped_rep",
+            should_reload=True,
+            enable_dynamic_voids=True,
+            is_global=True,
+        )
+
+    def test_switching_to_a_reloaded_representation_and_deleting_the_existing_data(self, geometry):
+        geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
+        geometry.get_representation_data("representation").should_be_called().will_return("existing_data")
+        geometry.import_representation(
+            "obj", "representation", enable_dynamic_voids=True
+        ).should_be_called().will_return("new_data")
+        geometry.get_representation_name("representation").should_be_called().will_return("name")
+        geometry.rename_object("new_data", "name").should_be_called()
+        geometry.link("representation", "new_data").should_be_called()
+        geometry.change_object_data("obj", "new_data", is_global=True).should_be_called()
+        geometry.delete_data("existing_data").should_be_called()
         geometry.clear_modifiers("obj").should_be_called()
         geometry.is_body_representation("representation").should_be_called().will_return(True)
         geometry.create_dynamic_voids("obj").should_be_called()

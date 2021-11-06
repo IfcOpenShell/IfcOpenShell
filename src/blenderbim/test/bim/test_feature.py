@@ -228,6 +228,7 @@ def the_object_name_has_a_body_of_value(name, value):
     assert the_object_name_exists(name).data.body == value
 
 
+@given(parsers.parse('the object "{name}" has a "{type}" representation of "{context}"'))
 @then(parsers.parse('the object "{name}" has a "{type}" representation of "{context}"'))
 def the_object_name_has_a_representation_type_of_context(name, type, context):
     ifc = an_ifc_file_exists()
@@ -236,6 +237,19 @@ def the_object_name_has_a_representation_type_of_context(name, type, context):
     rep = ifcopenshell.util.representation.get_representation(element, context, subcontext or None, target_view or None)
     assert rep
     assert rep.RepresentationType == type
+
+
+@given(parsers.parse('the object "{name}" data is a "{type}" representation of "{context}"'))
+@then(parsers.parse('the object "{name}" data is a "{type}" representation of "{context}"'))
+def the_object_name_has_a_representation_type_of_context(name, type, context):
+    ifc = an_ifc_file_exists()
+    context, subcontext, target_view = context.split("/")
+    rep = ifc.by_id(the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id)
+    assert rep
+    assert rep.RepresentationType == type
+    assert rep.ContextOfItems.ContextType == context
+    assert rep.ContextOfItems.ContextIdentifier == subcontext
+    assert rep.ContextOfItems.TargetView == target_view
 
 
 @then(parsers.parse('the material "{name}" exists'))

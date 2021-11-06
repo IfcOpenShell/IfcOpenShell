@@ -53,13 +53,16 @@ class Geometry(blenderbim.core.tool.Geometry):
             modifier.use_self = True
 
     @classmethod
+    def delete_data(cls, data):
+        bpy.data.meshes.remove(data)
+
+    @classmethod
     def does_object_have_mesh_with_faces(cls, obj):
         return bool(isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons))
 
     @classmethod
     def duplicate_object_data(cls, obj):
-        obj.data = obj.data.copy()
-        return obj.data
+        return obj.data.copy()
 
     @classmethod
     def get_cartesian_point_coordinate_offset(cls, obj):

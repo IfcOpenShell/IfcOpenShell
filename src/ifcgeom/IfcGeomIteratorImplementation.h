@@ -107,66 +107,6 @@ namespace {
 		std::vector<IfcGeom::BRepElement*> breps;
 		std::vector<IfcGeom::Element*> elements;
 	};
-
-	IfcGeom::Element* process_based_on_settings(
-		const IfcGeom::IteratorSettings& settings,
-		IfcGeom::BRepElement* elem,
-		IfcGeom::TriangulationElement* previous=nullptr)
-	{
-		if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
-			try {
-				return new IfcGeom::SerializedElement(*elem);
-			} catch (...) {
-				Logger::Message(Logger::LOG_ERROR, "Getting a serialized element from model failed.");
-				return nullptr;
-			}
-		} else if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
-			try {
-				if (!previous) {
-					return  new IfcGeom::TriangulationElement(*elem);
-				} else {
-					return  new IfcGeom::TriangulationElement(*elem, previous->geometry_pointer());
-				}
-			} catch (...) {
-				Logger::Message(Logger::LOG_ERROR, "Getting a triangulation element from model failed.");
-				return nullptr;
-			}
-		} else {
-			return elem;
-		}
-	}
-
-	void create_element(
-		IfcGeom::MAKE_TYPE_NAME(Kernel)* kernel,
-		const IfcGeom::IteratorSettings& settings,
-		geometry_conversion_task* rep)
-	{
-		IfcSchema::IfcRepresentation *representation = rep->representation;
-		IfcSchema::IfcProduct *product = *rep->products->begin();
-		auto brep = kernel->create_brep_for_representation_and_product(settings, representation, product);
-		if (!brep) {
-			return;
-		}
-
-		auto elem = process_based_on_settings(settings, brep);
-		if (!elem) {
-			return;
-		}
-
-		rep->breps = { brep };
-		rep->elements = { elem };
-
-		for (auto it = rep->products->begin() + 1; it != rep->products->end(); ++it) {
-			auto brep2 = kernel->create_brep_for_processed_representation(settings, representation, *it, brep);
-			if (brep2) {
-				auto elem2 = process_based_on_settings(settings, brep2, dynamic_cast<IfcGeom::TriangulationElement*>(elem));
-				if (elem2) {
-					rep->breps.push_back(brep2);
-					rep->elements.push_back(elem2);
-				}
-			}
-		}
-	}
 }
 
 namespace IfcGeom {
@@ -380,7 +320,17 @@ namespace IfcGeom {
 					}   // for
 				}     // while
 
-				std::future<void> fu = std::async(std::launch::async, create_element, K, std::ref(settings), &rep);
+				std::future<void> fu = std::async(
+					std::launch::async, [this](
+						IfcGeom::MAKE_TYPE_NAME(Kernel)* kernel,
+						const IfcGeom::IteratorSettings& settings,
+						geometry_conversion_task* rep) {
+							return this->create_element_(kernel, settings, rep); 
+						},
+					K,
+					std::ref(settings),
+					&rep);
+
 				threadpool.emplace_back(std::move(fu));
 			}
 
@@ -766,6 +716,44 @@ namespace IfcGeom {
 			}
 		}
 
+		std::mutex caching_mutex_;
+
+		template <typename Fn>
+		Element* decorate_with_cache_(GeometrySerializer::read_type rt, const std::string& product_guid, const std::string& representation_id, Fn f) {
+			
+			bool read_from_cache = false;
+			Element* element = nullptr;
+
+#ifdef WITH_HDF5
+			if (cache_) {
+				std::lock_guard<std::mutex> lk(caching_mutex_);
+
+				auto from_cache = cache_->read(*ifc_file, product_guid, representation_id, rt);
+				if (from_cache) {
+					read_from_cache = true;
+					element = from_cache;
+				}
+			}
+#endif
+			if (!read_from_cache) {
+				element = f();
+			}
+
+#ifdef WITH_HDF5
+			if (cache_ && !read_from_cache && element) {
+				std::lock_guard<std::mutex> lk(caching_mutex_);
+
+				if (rt == GeometrySerializer::READ_TRIANGULATION) {
+					cache_->write((IfcGeom::TriangulationElement*) element);
+				} else {
+					cache_->write((IfcGeom::BRepElement*)element);
+				}				
+			}
+#endif
+
+			return element;
+		}
+
 		BRepElement* create_shape_model_for_next_entity() {
 			for (;;) {
 				auto rp = get_next_task();
@@ -777,26 +765,13 @@ namespace IfcGeom {
 
 				Logger::SetProduct(product);
 
-				bool read_from_cache = false;
-				BRepElement* element;
-
-#ifdef WITH_HDF5
-				if (cache_) {
-					auto from_cache = cache_->read(*ifc_file, product->GlobalId(), representation->data().id());
-					if (from_cache) {
-						read_from_cache = true;
-						element = (BRepElement*) from_cache;
-					}
-				}
-#endif
-
-				if (!read_from_cache) {
+				BRepElement* element = (BRepElement*)decorate_with_cache_(GeometrySerializer::READ_BREP, product->GlobalId(), std::to_string(representation->data().id()), [this, product, representation]() {
 					if (ifcproduct_iterator == ifcproducts->begin() || !geometry_reuse_ok_for_current_representation_) {
-						element = kernel.create_brep_for_representation_and_product(settings, representation, product);
+						return kernel.create_brep_for_representation_and_product(settings, representation, product);
 					} else {
-						element = kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
+						return kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
 					}
-				}
+				});
 
 				Logger::SetProduct(boost::none);
 
@@ -804,12 +779,6 @@ namespace IfcGeom {
 					_nextShape();
 					continue;
 				}
-
-#ifdef WITH_HDF5
-				if (cache_ && !read_from_cache) {
-					cache_->write(element);
-				}
-#endif
 
 				return element;
 			}
@@ -823,6 +792,82 @@ namespace IfcGeom {
 			current_serialization = 0;
 			delete current_shape_model;
 			current_shape_model = 0;
+		}
+
+		void create_element_(
+			IfcGeom::MAKE_TYPE_NAME(Kernel)* kernel,
+			const IfcGeom::IteratorSettings& settings,
+			geometry_conversion_task* rep)
+		{
+			IfcSchema::IfcRepresentation *representation = rep->representation;
+			IfcSchema::IfcProduct *product = *rep->products->begin();
+
+			IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, product->GlobalId(), std::to_string(representation->data().id()), [kernel, settings, product, representation]() {
+				return kernel->create_brep_for_representation_and_product(settings, representation, product);
+			}));
+
+			if (!brep) {
+				return;
+			}
+
+			auto elem = process_based_on_settings(settings, brep);
+			if (!elem) {
+				return;
+			}
+
+			rep->breps = { brep };
+			rep->elements = { elem };
+
+			for (auto it = rep->products->begin() + 1; it != rep->products->end(); ++it) {
+				auto product2 = *it;
+				IfcGeom::BRepElement* brep2 = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, product2->GlobalId(), std::to_string(representation->data().id()), [kernel, settings, product2, representation, brep]() {
+					return kernel->create_brep_for_processed_representation(settings, representation, product2, brep);
+				}));
+				if (brep2) {
+					auto elem2 = process_based_on_settings(settings, brep2, dynamic_cast<IfcGeom::TriangulationElement*>(elem));
+					if (elem2) {
+						rep->breps.push_back(brep2);
+						rep->elements.push_back(elem2);
+					}
+				}
+			}
+		}
+
+		IfcGeom::Element* process_based_on_settings(
+			const IfcGeom::IteratorSettings& settings,
+			IfcGeom::BRepElement* elem,
+			IfcGeom::TriangulationElement* previous = nullptr)
+		{
+			if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
+				try {
+					return new IfcGeom::SerializedElement(*elem);
+				} catch (...) {
+					Logger::Message(Logger::LOG_ERROR, "Getting a serialized element from model failed.");
+					return nullptr;
+				}
+			} else if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
+				// the part before the hyphen is the representation id
+				auto gid2 = elem->geometry().id();
+				auto hyphen = gid2.find("-");
+				if (hyphen != std::string::npos) {
+					gid2 = gid2.substr(0, hyphen);
+				}
+
+				return decorate_with_cache_(GeometrySerializer::READ_TRIANGULATION, elem->guid(), gid2, [elem, previous]() {
+					try {
+						if (!previous) {
+							return new TriangulationElement(*elem);
+						} else {
+							return new TriangulationElement(*elem, previous->geometry_pointer());
+						}
+					} catch (...) {
+						Logger::Message(Logger::LOG_ERROR, "Getting a triangulation element from model failed.");
+					}
+					return (TriangulationElement*)nullptr;
+				});
+			} else {
+				return elem;
+			}
 		}
 
     public:
@@ -1023,43 +1068,25 @@ namespace IfcGeom {
                         Logger::Message(Logger::LOG_ERROR, "Getting a serialized element from model failed.");
 					}
 				} else if (!settings.get(IteratorSettings::DISABLE_TRIANGULATION)) {
-
-					bool read_from_cache = false;
-
-#ifdef WITH_HDF5
-					if (cache_) {
-						// the part before the hyphen is the representation id
-						auto gid2 = next_shape_model->geometry().id();
-						auto hyphen = gid2.find("-");
-						if (hyphen != std::string::npos) {
-							gid2 = gid2.substr(0, hyphen);
-						}
-
-						auto from_cache = cache_->read(*ifc_file, next_shape_model->guid(), boost::lexical_cast<int>(gid2), GeometrySerializer::READ_TRIANGULATION);
-						if (from_cache) {
-							read_from_cache = true;
-							next_triangulation = (TriangulationElement*)from_cache;
-						}
+					// the part before the hyphen is the representation id
+					auto gid2 = next_shape_model->geometry().id();
+					auto hyphen = gid2.find("-");
+					if (hyphen != std::string::npos) {
+						gid2 = gid2.substr(0, hyphen);
 					}
-#endif
 
-					if (!read_from_cache) {
+					next_triangulation = (TriangulationElement*)decorate_with_cache_(GeometrySerializer::READ_TRIANGULATION, next_shape_model->guid(), gid2, [this, next_shape_model]() {
 						try {
 							if (ifcproduct_iterator == ifcproducts->begin() || !geometry_reuse_ok_for_current_representation_) {
-								next_triangulation = new TriangulationElement(*next_shape_model);
+								return new TriangulationElement(*next_shape_model);
 							} else {
-								next_triangulation = new TriangulationElement(*next_shape_model, current_triangulation->geometry_pointer());
+								return new TriangulationElement(*next_shape_model, current_triangulation->geometry_pointer());
 							}
-
-#ifdef WITH_HDF5
-							if (cache_) {
-								cache_->write(next_triangulation);
-							}
-#endif
 						} catch (...) {
 							Logger::Message(Logger::LOG_ERROR, "Getting a triangulation element from model failed.");
 						}
-					}
+						return (TriangulationElement*) nullptr;
+					});
 				}
 			}
 

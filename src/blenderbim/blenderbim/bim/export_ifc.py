@@ -42,7 +42,8 @@ class IfcExporter:
         self.file = IfcStore.get_file()
         self.set_header()
         if bpy.context.scene.BIMProjectProperties.is_authoring:
-            self.sync_object_placements_and_deletions()
+            self.sync_deletions()
+            self.sync_object_placements()
             self.sync_edited_objects()
         extension = self.ifc_export_settings.output_file.split(".")[-1]
         if extension == "ifczip":
@@ -83,10 +84,16 @@ class IfcExporter:
             self.get_application_name(), self.get_application_version()
         )
 
-    def sync_object_placements_and_deletions(self):
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        to_delete = []
+    def sync_deletions(self):
+        for ifc_definition_id in IfcStore.deleted_ids:
+            try:
+                product = self.file.by_id(ifc_definition_id)
+            except:
+                continue
+            ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
 
+    def sync_object_placements(self):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         for ifc_definition_id, obj in IfcStore.id_map.items():
             try:
                 if isinstance(obj, bpy.types.Material):
@@ -95,13 +102,6 @@ class IfcExporter:
                 self.sync_object_placement(obj)
             except ReferenceError:
                 pass  # The object is likely deleted
-            if self.should_delete(obj):
-                to_delete.append(ifc_definition_id)
-
-        for ifc_definition_id in to_delete:
-            product = self.file.by_id(ifc_definition_id)
-            IfcStore.unlink_element(product)
-            ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
 
     def sync_edited_objects(self):
         for obj in IfcStore.edited_objs.copy():
@@ -148,15 +148,6 @@ class IfcExporter:
             self.sync_object_placement(grid_obj)
             if grid_obj.matrix_world != obj.matrix_world:
                 bpy.ops.bim.update_representation(obj=obj.name)
-
-    def should_delete(self, obj):
-        try:
-            # This will throw an exception if the Blender object no longer exists
-            foo = obj.name
-            foo
-            return False
-        except:
-            return True
 
     def get_application_name(self):
         return "BlenderBIM"

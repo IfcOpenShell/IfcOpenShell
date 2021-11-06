@@ -110,7 +110,7 @@ public:
 	virtual void write(const IfcGeom::TriangulationElement* o) = 0;
 	virtual void write(const IfcGeom::BRepElement* o) = 0;
 	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
-	virtual const IfcGeom::Element* read(IfcParse::IfcFile& f, const std::string& guid, unsigned int representation_id, read_type rt = READ_BREP) = 0;
+	virtual IfcGeom::Element* read(IfcParse::IfcFile& f, const std::string& guid, const std::string& representation_id, read_type rt = READ_BREP) = 0;
 
     const SerializerSettings& settings() const { return settings_; }
     SerializerSettings& settings() { return settings_; }
@@ -132,7 +132,7 @@ class WriteOnlyGeometrySerializer : public GeometrySerializer {
 public:
 	WriteOnlyGeometrySerializer(const SerializerSettings& settings) : GeometrySerializer(settings) {}
 
-	virtual const IfcGeom::Element* read(IfcParse::IfcFile&, const std::string&, unsigned int, read_type = READ_BREP) {
+	virtual IfcGeom::Element* read(IfcParse::IfcFile&, const std::string&, const std::string&, read_type = READ_BREP) {
 		throw std::runtime_error("Not supported");
 	};
 };
