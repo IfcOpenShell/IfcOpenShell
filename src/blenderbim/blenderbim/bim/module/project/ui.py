@@ -134,6 +134,8 @@ class BIM_PT_project(Panel):
         row = self.layout.row(align=True)
         row.prop(props, "ifc_file", text="")
         row.operator("bim.reload_ifc_file", icon="FILE_REFRESH", text="")
+        op = row.operator("export_ifc.bim", icon="FILE_TICK", text="")
+        op.should_save_as = True
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
         row = self.layout.row(align=True)

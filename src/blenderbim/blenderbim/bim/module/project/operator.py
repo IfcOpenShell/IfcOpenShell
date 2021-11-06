@@ -740,12 +740,13 @@ class ExportIFC(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
+    should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False)
 
     def invoke(self, context, event):
         if not IfcStore.get_file():
             self.report({"ERROR"}, "No IFC project is available for export - create or import a project first.")
             return {"FINISHED"}
-        if context.scene.BIMProperties.ifc_file:
+        if context.scene.BIMProperties.ifc_file and not self.should_save_as:
             self.filepath = context.scene.BIMProperties.ifc_file
             return self.execute(context)
         if not self.filepath:
@@ -789,7 +790,7 @@ class ExportIFC(bpy.types.Operator):
         if not scene.DocProperties.ifc_files:
             new = scene.DocProperties.ifc_files.add()
             new.name = output_file
-        if not scene.BIMProperties.ifc_file:
+        if not scene.BIMProperties.ifc_file or self.should_save_as:
             scene.BIMProperties.ifc_file = output_file
         if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
