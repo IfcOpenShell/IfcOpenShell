@@ -36,18 +36,16 @@ def assign_type(ifc, type_tool, element=None, type=None):
             ifc_representation_class=type_tool.get_ifc_representation_class(element),
             profile_set_usage=type_tool.get_profile_set_usage(element),
         )
-        should_reload = True
+        if representation:
+            type_tool.run_geometry_switch_representation(
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                enable_dynamic_voids=type_tool.has_dynamic_voids(obj),
+                is_global=False,
+            )
     else:
-        representation = type_tool.get_body_representation(element)
-        if not representation:
-            representation = type_tool.get_any_representation(element)
-        should_reload = False
-    if representation:
-        type_tool.run_geometry_switch_representation(
-            obj=obj,
-            representation=representation,
-            should_reload=should_reload,
-            enable_dynamic_voids=type_tool.has_dynamic_voids(obj),
-            is_global=False,
-        )
+        type_data = type_tool.get_object_data(ifc.get_object(type))
+        if type_data:
+            type_tool.change_object_data(obj, type_data, is_global=False)
     type_tool.disable_editing(obj)

@@ -27,6 +27,27 @@ Scenario: Add type instance - add from an empty
     When I press "bim.add_type_instance"
     Then the object "IfcWall/Instance" exists
 
+Scenario: Add type instance - add a mesh where existing instances have changed context
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I set "scene.BIMTypeProperties.ifc_class" to "IfcWallType"
+    And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
+    And I set "scene.BIMTypeProperties.relating_type" to "{cube}"
+    And I press "bim.add_type_instance"
+    And the object "IfcWall/Instance" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
+    And the object "IfcWall/Instance" is selected
+    And the variable "context" is "{ifc}.by_type('IfcGeometricRepresentationSubContext')[-1].id()"
+    And I set "scene.BIMProperties.contexts" to "{context}"
+    And I press "bim.add_representation"
+    And the object "IfcWall/Instance" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
+    When I press "bim.add_type_instance"
+    Then the object "IfcWall/Instance" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
+    And the object "IfcWall/Instance.001" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
+
 Scenario: Add grid
     Given an empty IFC project
     When I press "mesh.add_grid"
