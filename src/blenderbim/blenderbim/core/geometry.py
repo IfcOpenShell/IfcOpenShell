@@ -66,6 +66,7 @@ def add_representation(
     ifc.run("geometry.assign_representation", product=element, representation=representation)
 
     data = geometry.duplicate_object_data(obj)
+    geometry.change_object_data(obj, data, is_global=True)
     name = geometry.get_representation_name(representation)
     geometry.rename_object(data, name)
     geometry.link(representation, data)

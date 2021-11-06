@@ -112,9 +112,9 @@ class TestDuplicateObjectData(NewFile):
     def test_run(self):
         data = bpy.data.meshes.new("Mesh")
         obj = bpy.data.objects.new("Object", data)
-        assert subject.duplicate_object_data(obj) == obj.data
-        assert obj.data != data
-        assert isinstance(obj.data, bpy.types.Mesh)
+        new_data = subject.duplicate_object_data(obj)
+        assert obj.data == data
+        assert isinstance(new_data, bpy.types.Mesh)
 
 
 class TestGetObjectData(NewFile):
