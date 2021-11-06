@@ -49,15 +49,17 @@ class RepresentationsData:
             if representation_type == "MappedRepresentation":
                 representation_type = representation.Items[0].MappingSource.MappedRepresentation.RepresentationType
                 representation_type += "*"
-            results.append(
-                {
-                    "id": representation.id(),
-                    "ContextType": representation.ContextOfItems.ContextType,
-                    "ContextIdentifier": representation.ContextOfItems.ContextIdentifier,
-                    "TargetView": representation.ContextOfItems.TargetView,
-                    "RepresentationType": representation_type,
-                }
-            )
+            data = {
+                "id": representation.id(),
+                "ContextType": representation.ContextOfItems.ContextType or "",
+                "ContextIdentifier": "",
+                "TargetView": "",
+                "RepresentationType": representation_type or "",
+            }
+            if representation.ContextOfItems.is_a("IfcGeometricRepresentationSubContext"):
+                data["ContextIdentifier"] = representation.ContextOfItems.ContextIdentifier or ""
+                data["TargetView"] = representation.ContextOfItems.TargetView or ""
+            results.append(data)
         return results
 
 
