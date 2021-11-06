@@ -291,7 +291,22 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 	IfcGeom::ElementSettings element_settings(settings_, f.getUnit("LENGTHUNIT").second, type);
 	auto inst = f.instance_by_id(id)->as<IfcUtil::IfcBaseEntity>();
 
+	boost::shared_ptr<IfcGeom::Representation::BRep> brep_geometry;
+	boost::shared_ptr<IfcGeom::Representation::Triangulation> triangulation_geometry;
+
 	if (rt == READ_BREP) {
+		auto it = brep_cache_.find(representation_id_str);
+		if (it != brep_cache_.end()) {
+			brep_geometry = it->second;
+		}
+	} else {
+		auto it = triangulation_cache_.find(representation_id_str);
+		if (it != triangulation_cache_.end()) {
+			triangulation_geometry = it->second;
+		}
+	}
+
+	if (rt == READ_BREP && !brep_geometry) {
 		auto brepDataset = representation_group.openDataSet(DATASET_NAME_OCCT);
 
 		std::vector<brep_element> parts;
@@ -364,11 +379,12 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			shapes.push_back(IfcGeom::IfcRepresentationShapeItem(part.id, trsf, shp, style_ptr));
 		}
 
-		auto geometry = boost::shared_ptr<IfcGeom::Representation::BRep>(new IfcGeom::Representation::BRep(element_settings, geom_id, shapes));
+		brep_geometry = boost::shared_ptr<IfcGeom::Representation::BRep>(new IfcGeom::Representation::BRep(element_settings, geom_id, shapes));
 
-		return new IfcGeom::BRepElement(id, parent_id, name, type, guid, context, trsf, geometry, inst);
-	} else {
-
+		brep_cache_.insert({ representation_id_str, brep_geometry });
+	}
+	
+	if (rt == READ_TRIANGULATION && !triangulation_geometry) {
 		H5::Group meshGroup;
 		try {
 			meshGroup = representation_group.openGroup(GROUP_NAME_MESH);
@@ -407,7 +423,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			read_surface_style(surface_styles[i], surface_style_ptrs[i]);
 		}
 
-		auto rep = boost::shared_ptr<IfcGeom::Representation::Triangulation>(new IfcGeom::Representation::Triangulation(
+		triangulation_geometry = boost::shared_ptr<IfcGeom::Representation::Triangulation>(new IfcGeom::Representation::Triangulation(
 			element_settings,
 			geom_id,
 			verts,
@@ -419,6 +435,12 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			surface_style_ptrs
 		));
 
+		triangulation_cache_.insert({ representation_id_str, triangulation_geometry });
+	}
+
+	if (rt == READ_BREP) {
+		return new IfcGeom::BRepElement(id, parent_id, name, type, guid, context, trsf, brep_geometry, inst);
+	} else {
 		return new IfcGeom::TriangulationElement(
 			IfcGeom::Element(
 				element_settings,
@@ -431,8 +453,8 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 				trsf,
 				inst
 			),
-			rep			
-		);		
+			triangulation_geometry
+		);
 	}
 }
 
@@ -553,9 +575,21 @@ void HdfSerializer::write_style(surface_style_serialization& data, const IfcGeom
 void HdfSerializer::write(const IfcGeom::BRepElement* o) {
 	static auto nan = std::numeric_limits<double>::quiet_NaN();
 
-	auto element_group = write((const IfcGeom::Element*)o);	
+	auto element_group = write((const IfcGeom::Element*)o);
+
+	auto it = group_cache_.find(o->geometry().id());
+	if (it != group_cache_.end()) {
+		H5Lcreate_soft(it->second.c_str(), element_group.getLocId(), o->geometry().id().c_str(), H5P_DEFAULT, H5P_DEFAULT);
+		return;
+	}
 
 	H5::Group representation_group = createRepresentationGroup(element_group, o->geometry().id());
+
+	const size_t len = H5Iget_name(representation_group.getId(), NULL, 0);
+	char* name_buffer = new char[len];
+	H5Iget_name(representation_group.getId(), name_buffer, len + 1);
+	group_cache_.insert(it, { o->geometry().id(), name_buffer });		
+	delete[] name_buffer;
 
 	std::list<std::string> brep_strings;
 	size_t num_parts = std::distance(o->geometry().begin(), o->geometry().end());
