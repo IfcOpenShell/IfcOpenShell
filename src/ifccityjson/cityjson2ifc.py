@@ -84,9 +84,10 @@ class Cityjson2ifc:
         self.city_model = city_model
         self.create_new_file()
         self.create_metadata()
-        self.geometry.build_vertices(self.IFC_model,
-                                     coords=city_model.j["vertices"],
-                                     scale=self.properties["local_scale"])
+        self.geometry.set_scale(self.properties["local_scale"])
+        #self.geometry.build_vertices(self.IFC_model,
+        #                             coords=city_model.j["vertices"],
+        #                             scale=self.properties["local_scale"])
         # self.build_vertices()
         self.create_IFC_classes()
         if self.properties["split"]:

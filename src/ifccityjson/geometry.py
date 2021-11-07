@@ -20,20 +20,34 @@
 import warnings
 
 class GeometryIO:
-    def __init__(self):
+    def __init__(self, scale=None):
         self.vertices = {}
+        self.scale = scale
 
-    def build_vertices(self, IFC_model, coords, scale=None):
-        for coord in coords:
-            if scale:
-                IFC_vertex = tuple([float(xyz) * coord_scale
-                                    for xyz, coord_scale
-                                    in zip(coord, scale)])
-            else:
-                IFC_vertex = [float(xyz) for xyz in coord]
+    def set_scale(self, scale):
+        self.scale = scale
 
-            IFC_cartesian_point = IFC_model.create_entity("IfcCartesianPoint", IFC_vertex)
-            self.vertices[tuple(coord)] = IFC_cartesian_point
+    def build_vertices(self, IFC_model, vertices):
+        for vertex in vertices:
+            self.build_vertex(self, IFC_model, vertex)
+
+    def build_vertex(self, IFC_model, vertex):
+        if self.scale:
+            IFC_vertex = [float(xyz) * coord_scale
+                                for xyz, coord_scale
+                                in zip(vertex, self.scale)]
+        else:
+            IFC_vertex = [float(xyz) for xyz in vertex]
+
+        IFC_cartesian_point = IFC_model.create_entity("IfcCartesianPoint", IFC_vertex)
+        self.vertices[tuple(vertex)] = IFC_cartesian_point
+        return IFC_cartesian_point
+
+    def get_vertex(self, IFC_model, vertex):
+        if tuple(vertex) in self.vertices:
+            return self.vertices[tuple(vertex)]
+        else:
+            return self.build_vertex(IFC_model, vertex)
 
     # See for CityJSON geometries:
     # https://www.cityjson.org/dev/geom-arrays/
@@ -75,7 +89,7 @@ class GeometryIO:
         for line in geometry.boundaries:
             vertices = []
             for vertex in line:
-                vertices.append(self.vertices[tuple(vertex)])
+                vertices.append(self.get_vertex(IFC_model, vertex))
             polyline = IFC_model.create_entity("IfcPolyLine", vertices)
             IFC_geometry.append(polyline)
         return IFC_geometry
@@ -133,9 +147,9 @@ class GeometryIO:
         # exterior face
         vertices = []
         for vertex in face[0]:
-            vertices.append(self.vertices[tuple(vertex)])
         polyloop = IFC_model.create_entity("IfcPolyLoop", vertices)
         outerbound = IFC_model.create_entity("IfcFaceOuterBound", polyloop, True)
+            vertices.append(self.get_vertex(IFC_model, vertex))
 
         # return if only exterior face
         if len(face) == 1:
@@ -145,8 +159,8 @@ class GeometryIO:
         innerbounds = []
         for interior_face in face[1:]:
             for vertex in interior_face:
-                vertices.append(self.vertices[tuple(vertex)])
             polyloop = IFC_model.create_entity("IfcPolyLoop", vertices)
             innerbounds.append(IFC_model.create_entity("IfcFaceBound", polyloop, True))
         return IFC_model.create_entity("IfcFace", [outerbound] + innerbounds)
 
+                vertices.append(self.get_vertex(IFC_model, vertex))
