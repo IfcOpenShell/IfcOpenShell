@@ -66,3 +66,10 @@ def copy_to_container(ifc, spatial, obj=None, containers=None):
         spatial.run_root_copy_class(obj=copied_obj)
         spatial.run_spatial_assign_container(structure_obj=to_container_obj, element_obj=copied_obj)
     spatial.disable_editing(obj)
+
+
+def select_container(ifc, spatial, obj=None):
+    element = ifc.get_entity(obj)
+    if not element:
+        return
+    spatial.set_active_object(ifc.get_object(spatial.get_container(element)))

@@ -94,3 +94,12 @@ class TestCopyToContainer:
         spatial.disable_editing("obj").should_be_called()
 
         subject.copy_to_container(ifc, spatial, obj="obj", containers=["to_container"])
+
+
+class TestSelectContainer:
+    def test_run(self, ifc, spatial):
+        ifc.get_entity("obj").should_be_called().will_return("element")
+        spatial.get_container("element").should_be_called().will_return("container")
+        ifc.get_object("container").should_be_called().will_return("container_obj")
+        spatial.set_active_object("container_obj").should_be_called()
+        subject.select_container(ifc, spatial, obj="obj")

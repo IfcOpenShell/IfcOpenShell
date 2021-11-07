@@ -192,6 +192,15 @@ class TestRunSpatialAssignContainer(NewFile):
         pass
 
 
+class TestSetActiveObject(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        bpy.context.scene.collection.objects.link(obj)
+        subject.set_active_object(obj)
+        assert bpy.context.view_layer.objects.active == obj
+        assert obj in bpy.context.selected_objects
+
+
 class TestSetRelativeObjectMatrix(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
