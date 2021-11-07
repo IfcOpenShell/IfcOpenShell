@@ -105,7 +105,7 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 		case IfcUtil::Argument_ENTITY_INSTANCE: {
 			IfcUtil::IfcBaseClass* e = *argument;
 			if (!e->declaration().as_entity()) {
-				IfcUtil::IfcBaseType* f = (IfcUtil::IfcBaseType*) e;
+				IfcUtil::IfcBaseType* f = e->as<IfcUtil::IfcBaseType>();
 				value = format_attribute(f->data().getArgument(0), f->data().getArgument(0)->type(), argument_name);
 			} else if (e->declaration().is(IfcSchema::IfcSIUnit::Class()) || e->declaration().is(IfcSchema::IfcConversionBasedUnit::Class())) {
 				// Some string concatenation to have a unit name as a XML attribute.
@@ -113,13 +113,13 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 				std::string unit_name;
 
 				if (e->declaration().is(IfcSchema::IfcSIUnit::Class())) {
-					IfcSchema::IfcSIUnit* unit = (IfcSchema::IfcSIUnit*) e;
+					IfcSchema::IfcSIUnit* unit = e->as<IfcSchema::IfcSIUnit>();
 					unit_name = IfcSchema::IfcSIUnitName::ToString(unit->Name());
 					if (unit->Prefix()) {
 						unit_name = IfcSchema::IfcSIPrefix::ToString(*unit->Prefix()) + unit_name;
 					}
 				} else {
-					IfcSchema::IfcConversionBasedUnit* unit = (IfcSchema::IfcConversionBasedUnit*) e;
+					IfcSchema::IfcConversionBasedUnit* unit = e->as<IfcSchema::IfcConversionBasedUnit>();
 					unit_name = unit->Name();
 				}
 
@@ -244,7 +244,7 @@ ptree* descend(IfcSchema::IfcObjectDefinition* product, ptree& tree, IfcUtil::If
 	ptree& child = *format_entity_instance(product, tree);
 
 	if (product->declaration().is(IfcSchema::IfcOpeningElement::Class())) {
-		IfcSchema::IfcOpeningElement* opening = static_cast<IfcSchema::IfcOpeningElement*>(product);
+		IfcSchema::IfcOpeningElement* opening = product->as<IfcSchema::IfcOpeningElement>();
 		IfcSchema::IfcElement::list::ptr fills = get_related<IfcSchema::IfcOpeningElement, IfcSchema::IfcRelFillsElement, IfcSchema::IfcElement>(
 			opening, &IfcSchema::IfcOpeningElement::HasFillings, &IfcSchema::IfcRelFillsElement::RelatedBuildingElement);
 
@@ -254,7 +254,7 @@ ptree* descend(IfcSchema::IfcObjectDefinition* product, ptree& tree, IfcUtil::If
 	}
 	
 	if (product->declaration().is(IfcSchema::IfcSpatialStructureElement::Class())) {
-		IfcSchema::IfcSpatialStructureElement* structure = (IfcSchema::IfcSpatialStructureElement*) product;
+		IfcSchema::IfcSpatialStructureElement* structure = product->as<IfcSchema::IfcSpatialStructureElement>();
 
 		IfcSchema::IfcObjectDefinition::list::ptr elements = get_related
 			<IfcSchema::IfcSpatialStructureElement, IfcSchema::IfcRelContainedInSpatialStructure, IfcSchema::IfcObjectDefinition>
@@ -343,7 +343,7 @@ ptree* descend(IfcSchema::IfcObjectDefinition* product, ptree& tree, IfcUtil::If
 				IfcSchema::IfcMaterialSelect* mat = (*it)->as<IfcSchema::IfcRelAssociatesMaterial>()->RelatingMaterial();
 				ptree node;
 				node.put("<xmlattr>.xlink:href", "#" + qualify_unrooted_instance(mat));
-				format_entity_instance((IfcUtil::IfcBaseEntity*) mat, node, child, true);
+				format_entity_instance(mat->as<IfcUtil::IfcBaseEntity>(), node, child, true);
 			}
 		}
     }
@@ -356,7 +356,7 @@ void format_properties(IfcSchema::IfcProperty::list::ptr properties, ptree& node
 	for (IfcSchema::IfcProperty::list::it it = properties->begin(); it != properties->end(); ++it) {
 		IfcSchema::IfcProperty* p = *it;
 		if (p->declaration().is(IfcSchema::IfcComplexProperty::Class())) {
-			IfcSchema::IfcComplexProperty* complex = (IfcSchema::IfcComplexProperty*) p;
+			IfcSchema::IfcComplexProperty* complex = p->as<IfcSchema::IfcComplexProperty>();
 			format_properties(complex->HasProperties(), node);
 		} else {
 			format_entity_instance(p, node);
@@ -370,7 +370,7 @@ void format_quantities(IfcSchema::IfcPhysicalQuantity::list::ptr quantities, ptr
 		IfcSchema::IfcPhysicalQuantity* p = *it;
 		ptree* node2 = format_entity_instance(p, node);
 		if (node2 && p->declaration().is(IfcSchema::IfcPhysicalComplexQuantity::Class())) {
-			IfcSchema::IfcPhysicalComplexQuantity* complex = (IfcSchema::IfcPhysicalComplexQuantity*)p;
+			IfcSchema::IfcPhysicalComplexQuantity* complex = p->as<IfcSchema::IfcPhysicalComplexQuantity>();
 			format_quantities(complex->HasQuantities(), *node2);
 		}
 	}
@@ -553,7 +553,7 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 					format_entity_instance(*jt, subnode, node);
 				}
 			}
-			format_entity_instance((IfcUtil::IfcBaseEntity*) mat, node, materials);
+			format_entity_instance(mat->as<IfcUtil::IfcBaseEntity>(), node, materials);
 		}
 	}
 
