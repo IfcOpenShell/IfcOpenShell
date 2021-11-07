@@ -741,6 +741,7 @@ class ExportIFC(bpy.types.Operator):
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False)
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def invoke(self, context, event):
         if not IfcStore.get_file():
@@ -748,6 +749,8 @@ class ExportIFC(bpy.types.Operator):
             return {"FINISHED"}
         if context.scene.BIMProperties.ifc_file and not self.should_save_as:
             self.filepath = context.scene.BIMProperties.ifc_file
+            if not os.path.isabs(self.filepath):
+                self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath))
             return self.execute(context)
         if not self.filepath:
             self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".ifc")
@@ -790,7 +793,9 @@ class ExportIFC(bpy.types.Operator):
         if not scene.DocProperties.ifc_files:
             new = scene.DocProperties.ifc_files.add()
             new.name = output_file
-        if not scene.BIMProperties.ifc_file or self.should_save_as:
+        if self.use_relative_path and bpy.data.is_saved:
+            output_file = os.path.relpath(output_file, bpy.path.abspath("//"))
+        if scene.BIMProperties.ifc_file != output_file:
             scene.BIMProperties.ifc_file = output_file
         if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
