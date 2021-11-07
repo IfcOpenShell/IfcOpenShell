@@ -61,6 +61,10 @@ class Spatial(blenderbim.core.tool.Spatial):
         return ifcopenshell.util.element.get_container(element)
 
     @classmethod
+    def get_decomposed_elements(cls, container):
+        return ifcopenshell.util.element.get_decomposition(container)
+
+    @classmethod
     def get_object_matrix(cls, obj):
         return obj.matrix_world
 
@@ -100,6 +104,10 @@ class Spatial(blenderbim.core.tool.Spatial):
         return blenderbim.core.spatial.assign_container(
             tool.Ifc, tool.Collector, tool.Spatial, structure_obj=structure_obj, element_obj=element_obj
         )
+
+    @classmethod
+    def select_object(cls, obj):
+        obj.select_set(True)
 
     @classmethod
     def set_active_object(cls, obj):

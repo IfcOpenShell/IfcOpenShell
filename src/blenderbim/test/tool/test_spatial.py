@@ -128,6 +128,15 @@ class TestGetContainer(NewFile):
         assert subject.get_container(wall) == site
 
 
+class TestGetDecomposedElements(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        site = ifc.createIfcSite()
+        wall = ifc.createIfcWall()
+        ifcopenshell.api.run("spatial.assign_container", ifc, product=wall, relating_structure=site)
+        assert subject.get_decomposed_elements(site) == [wall]
+
+
 class TestGetObjectMatrix(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
@@ -190,6 +199,14 @@ class TestRunRootCopyClass(NewFile):
 class TestRunSpatialAssignContainer(NewFile):
     def test_nothing(self):
         pass
+
+
+class TestSelectObject(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        bpy.context.scene.collection.objects.link(obj)
+        subject.select_object(obj)
+        assert obj in bpy.context.selected_objects
 
 
 class TestSetActiveObject(NewFile):

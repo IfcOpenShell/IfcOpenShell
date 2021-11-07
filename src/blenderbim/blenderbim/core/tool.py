@@ -191,11 +191,13 @@ class Spatial:
     def duplicate_object_and_data(cls, obj): pass
     def enable_editing(cls, obj): pass
     def get_container(cls, element): pass
+    def get_decomposed_elements(cls, container): pass
     def get_object_matrix(cls, obj): pass
     def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
     def import_containers(cls, parent=None): pass
     def run_root_copy_class(cls, obj=None): pass
     def run_spatial_assign_container(cls, structure_obj=None, element_obj=None): pass
+    def select_object(cls, obj): pass
     def set_active_object(cls, obj): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
 
