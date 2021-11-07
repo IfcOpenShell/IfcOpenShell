@@ -127,6 +127,11 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
+	aggregate_of_instance::ptr select(const IfcGeom::BRepElement* elem, bool completely_within = false, double extend = -1.e-5) const {
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select(elem, completely_within, extend);
+		return IfcGeom_tree_vector_to_list(ps);
+	}
+
 }
 
 // A visitor
