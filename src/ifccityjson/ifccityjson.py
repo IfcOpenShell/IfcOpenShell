@@ -21,7 +21,7 @@ from cjio import cityjson
 from cityjson2ifc import Cityjson2ifc
 
 # Press the green button in the gutter to run the script.
-if __name__ == '__main__':
+def cmdline():
     # Example:
     # python ifccityjson.py -i example/3DBAG_example.json -o example/output.ifc -n identificatie
     # python ifccityjson.py -i example/geometries.json -o example/geometry_output.ifc

@@ -259,6 +259,14 @@ endif
 	mkdir dist/working
 	cd dist/working && wget $(HPPFCL_URL)
 	cd dist/working && tar -xf hpp-fcl*
+
+	# Required by IFCCityJSON
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/36/f2/d85e6699a55f4531de77fd1cff08161d350415265faf96a7b6614314a9a7/cjio-0.6.10.tar.gz
+    cd dist/working && tar -xzvf cjio*
+    cp -r dist/working/cjio-0.6.10/cjio dist/blenderbim/libs/site/packages/
+    rm -rf dist/working
+
 ifeq ($(PLATFORM), linux)
 	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/hppfcl dist/blenderbim/libs/site/packages/
 	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
