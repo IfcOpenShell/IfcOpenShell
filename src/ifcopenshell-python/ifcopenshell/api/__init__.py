@@ -103,7 +103,6 @@ def extract_docs(module, usecase):
     import typing
     import inspect
     import collections
-    print("EXTRACTING DOCS...")
 
     results = []
     inputs = collections.OrderedDict()
@@ -118,9 +117,9 @@ def extract_docs(module, usecase):
         if name == "self":
             continue
         inputs[name] = {"name": name}
-        print("Name is: " + str(inputs[name]))
+        print("Name is: {}".format(str(inputs[name])))
         if isinstance(parameter.default, (str, float, int, bool, dict)):
-            print("implementing default")
+            print("implementing default: {}".format(parameter.default))
             inputs[name]["default"] = parameter.default
 
     type_hints = typing.get_type_hints(function_init)
@@ -145,6 +144,7 @@ def extract_docs(module, usecase):
             description += line
 
     if "output" in node_data:
+        print(typing.get_type_hints(function_execute))
         node_data["output"]["type"] = typing.get_type_hints(function_execute)["return"].__name__
     node_data["description"] = description.strip()
     node_data["inputs"] = inputs

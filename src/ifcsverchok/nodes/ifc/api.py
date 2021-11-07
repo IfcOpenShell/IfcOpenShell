@@ -53,7 +53,7 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "usecase").prop_name = "usecase"
-        self.outputs.new("SvVerticesSocket", "file")
+        self.outputs.new("SvStringsSocket", "file")
 
     def draw_buttons(self, context, layout):
         op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False)
@@ -72,8 +72,11 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
             return usecase.split(".")
 
     def generate_node(self, module, usecase):
-        # Removed try except for debug
-        node_data = ifcopenshell.api.extract_docs(module, usecase)
+        try:
+            node_data = ifcopenshell.api.extract_docs(module, usecase)
+        except:
+            print("node not generated:", module, usecase)
+            return
         while len(self.inputs) > 1:
             self.inputs.remove(self.inputs[-1])
 
@@ -85,19 +88,49 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
                 self.tooltip = f"{name} ({data['default']}): {data['description']}\n"
             else:
                 self.tooltip = f"{name}: {data['description']}\n"
+
+        if "output" in node_data:
+            name = node_data["output"]["name"]
+            if name != "file":
+                setattr(SvIfcApi, name, StringProperty(name=name, update=updateNode))
+                self.outputs.new("SvStringsSocket", name).prop_name = name
+                self.tooltip = f"{name}: {node_data['output']['description']}\n"
+
+
+
         self.tooltip = self.tooltip.strip()
 
     def process_ifc(self, usecase, *setting_values):
         if usecase:
             settings = dict(zip(self.sv_input_names[1:], setting_values))
             settings = {k: v for k, v in settings.items() if v != ""}
-            self.outputs["file"].sv_set([ifcopenshell.api.run(usecase, **settings)])
+            if "file" in settings: 
+                file = settings.pop("file")   
+                if file:     
+                    print("triggered if statement: " + usecase)
+                    try:    
+                        output = ifcopenshell.api.run(usecase, file[0], **settings)
+                    except:
+                        print("failed to run", usecase)
+                        return
+                    self.outputs["file"].sv_set([file]) 
+                    output_key = [k for k in self.outputs.keys() if k != "file"] 
+                    if output_key:
+                        self.outputs[output_key[0]].sv_set([output])
+            else:
+                print("triggered else statement: " + usecase)
+                try: 
+                    file = ifcopenshell.api.run(usecase, **settings)
+                except:
+                    print("Failed to run", usecase)
+                    return
+                self.outputs["file"].sv_set([file])
+
 
 
 def register():
     bpy.utils.register_class(SvIfcTooltip)
     bpy.utils.register_class(SvIfcApi)
-
 
 def unregister():
     bpy.utils.unregister_class(SvIfcApi)

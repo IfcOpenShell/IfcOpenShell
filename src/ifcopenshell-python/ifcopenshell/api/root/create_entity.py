@@ -3,7 +3,7 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file: ifcopenshell.file = "file", ifc_class: str = "IfcBuildingElementProxy", predefined_type: str = None, name: str = None):
+    def __init__(self, file: ifcopenshell.file = "file", ifc_class: str = "IfcBuildingElementProxy", predefined_type: str = "testType", name: str = "ifcproxy"):
         """Create Entity
 
         Create a new IFC Root entity
@@ -21,8 +21,11 @@ class Usecase:
             "predefined_type": predefined_type,
             "name": name,
         }
+        # for key, value in settings.items():
+        #     print("key: " + str(key))
+        #     print("value: " + str(value))
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         element = self.file.create_entity(
             self.settings["ifc_class"],
             **{
@@ -30,6 +33,7 @@ class Usecase:
                 "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
             }
         )
+        
         element.Name = self.settings["name"] or None
         if self.settings["predefined_type"]:
             if hasattr(element, "PredefinedType"):
