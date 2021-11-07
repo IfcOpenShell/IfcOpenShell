@@ -146,7 +146,7 @@ class tree(ifcopenshell_wrapper.tree):
             return value
 
         args = [self, unwrap(value)]
-        if isinstance(value, entity_instance):
+        if isinstance(value, (entity_instance, ifcopenshell_wrapper.BRepElement)):
             args.append(kwargs.get("completely_within", False))
             if "extend" in kwargs:
                 args.append(kwargs["extend"])

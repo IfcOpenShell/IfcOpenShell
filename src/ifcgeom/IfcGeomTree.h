@@ -224,6 +224,12 @@ namespace IfcGeom {
 				return ts_filtered;
 			}
 
+			std::vector<T> select(const IfcGeom::BRepElement* elem, bool completely_within = false, double extend = -1.e-5) const {
+				auto compound = elem->geometry().as_compound();
+				compound.Move(elem->transformation().data());
+				return select(compound, completely_within, extend);
+			}
+
 			std::vector<T> select(const gp_Pnt& p, double extend=0.0) const {
 				distances_.clear();
 
