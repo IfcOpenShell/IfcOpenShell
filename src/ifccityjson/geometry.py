@@ -128,9 +128,12 @@ class GeometryIO:
         #             print(triangle)
 
     def create_IFC_surface(self, IFC_model, geometry, surface_id=None):
-        faces = None
+        faces = []
+
         if surface_id is not None:
             face_ids = geometry.surfaces[surface_id]["surface_idx"]
+            if face_ids is None:
+                return  # there is no geometry
             faces = list(map(lambda face_id: geometry.boundaries[face_id[0]][face_id[1]], face_ids))
         else:
             faces = geometry.boundaries
@@ -147,20 +150,20 @@ class GeometryIO:
         # exterior face
         vertices = []
         for vertex in face[0]:
-        polyloop = IFC_model.create_entity("IfcPolyLoop", vertices)
-        outerbound = IFC_model.create_entity("IfcFaceOuterBound", polyloop, True)
             vertices.append(self.get_vertex(IFC_model, vertex))
+        polyloop = IFC_model.create_entity("IfcPolyLoop", Polygon=vertices)
+        outerbound = IFC_model.create_entity("IfcFaceOuterBound", Bound=polyloop, 	Orientation=True)
 
         # return if only exterior face
         if len(face) == 1:
-            return IFC_model.create_entity("IfcFace", [outerbound])
+            return IFC_model.create_entity("IfcFace", Bounds=[outerbound])
 
-        # interior face
+        # return IFC_model.create_entity("IfcFace", [outerbound])
+        # interior face BUGS
         innerbounds = []
         for interior_face in face[1:]:
             for vertex in interior_face:
-            polyloop = IFC_model.create_entity("IfcPolyLoop", vertices)
-            innerbounds.append(IFC_model.create_entity("IfcFaceBound", polyloop, True))
-        return IFC_model.create_entity("IfcFace", [outerbound] + innerbounds)
-
                 vertices.append(self.get_vertex(IFC_model, vertex))
+            polyloop = IFC_model.create_entity("IfcPolyLoop", Polygon=vertices)
+            innerbounds.append(IFC_model.create_entity("IfcFaceBound", Bound=polyloop, 	Orientation=False))
+        return IFC_model.create_entity("IfcFace", Bounds=[outerbound] + innerbounds)
