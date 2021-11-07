@@ -158,12 +158,12 @@ class GeometryIO:
         if len(face) == 1:
             return IFC_model.create_entity("IfcFace", Bounds=[outerbound])
 
-        # return IFC_model.create_entity("IfcFace", [outerbound])
+        return IFC_model.create_entity("IfcFace", [outerbound])
         # interior face BUGS
-        innerbounds = []
-        for interior_face in face[1:]:
-            for vertex in interior_face:
-                vertices.append(self.get_vertex(IFC_model, vertex))
-            polyloop = IFC_model.create_entity("IfcPolyLoop", Polygon=vertices)
-            innerbounds.append(IFC_model.create_entity("IfcFaceBound", Bound=polyloop, 	Orientation=False))
-        return IFC_model.create_entity("IfcFace", Bounds=[outerbound] + innerbounds)
+        # innerbounds = []
+        # for interior_face in face[1:]:
+        #     for vertex in interior_face:
+        #         vertices.append(self.get_vertex(IFC_model, vertex))
+        #     polyloop = IFC_model.create_entity("IfcPolyLoop", Polygon=vertices)
+        #     innerbounds.append(IFC_model.create_entity("IfcFaceBound", Bound=polyloop, 	Orientation=False))
+        # return IFC_model.create_entity("IfcFace", Bounds=[outerbound] + innerbounds)
