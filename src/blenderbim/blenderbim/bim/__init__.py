@@ -43,7 +43,6 @@ modules = {
     "sequence": None,
     "group": None,
     "system": None,
-    "brick": None,
     "structural": None,
     "boundary": None,
     "profile": None,
@@ -66,6 +65,7 @@ modules = {
     "covetool": None,
     "augin": None,
     "debug": None,
+    "gis": None,
 }
 
 
