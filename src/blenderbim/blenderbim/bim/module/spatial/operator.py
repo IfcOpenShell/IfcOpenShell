@@ -112,3 +112,12 @@ class SelectContainer(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.select_container(tool.Ifc, tool.Spatial, obj=context.active_object)
+
+
+class SelectSimilarContainer(bpy.types.Operator, Operator):
+    bl_idname = "bim.select_similar_container"
+    bl_label = "Select Similar Container"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.select_similar_container(tool.Ifc, tool.Spatial, obj=context.active_object)

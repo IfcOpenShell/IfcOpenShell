@@ -27,6 +27,7 @@ classes = (
     operator.EnableEditingContainer,
     operator.RemoveContainer,
     operator.SelectContainer,
+    operator.SelectSimilarContainer,
     prop.SpatialElement,
     prop.BIMSpatialProperties,
     prop.BIMObjectSpatialProperties,
