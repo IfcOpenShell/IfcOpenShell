@@ -77,10 +77,11 @@ class Cityjson2ifc:
         self.geometry = GeometryIO()
         self.configuration()
 
-    def configuration(self, file_destination="output.ifc", name_attribute=None, split=True):
+    def configuration(self, file_destination="output.ifc", name_attribute=None, split=True, lod=None):
         self.properties["file_destination"], self.properties["file_extension"] = os.path.splitext(file_destination)
         self.properties["name_attribute"] = name_attribute
         self.properties["split"] = split
+        self.properties["lod"] = lod
 
     def convert(self, city_model):
         self.city_model = city_model
@@ -92,7 +93,9 @@ class Cityjson2ifc:
         #                             scale=self.properties["local_scale"])
         # self.build_vertices()
         self.create_IFC_classes()
-        if self.properties["split"]:
+        if self.properties["lod"]:
+            self.write_file()
+        elif self.properties["split"]:
             self.write_files()
         else:
             self.write_file()
@@ -190,7 +193,6 @@ class Cityjson2ifc:
             IFC_copied_model = ifcopenshell.open(file)
             IFC_copied_model_sub_contexts = IFC_copied_model.by_type('IfcGeometricRepresentationSubContext')
             for sub_context in IFC_copied_model_sub_contexts:
-                print(sub_context)
                 if sub_context.id() == sub_context_id:
                     continue
 
@@ -230,7 +232,7 @@ class Cityjson2ifc:
             IFC_shape_representations = []
             for geometry in obj.geometry:
                 lod = geometry.lod
-                if str(lod) != '1.3':  # TODO: split LODS
+                if self.properties["lod"] is not None and str(lod) != self.properties["lod"]:
                     continue
                 if str(lod) not in self.IFC_representation_sub_contexts:
                     self.IFC_representation_sub_contexts[str(lod)] = self.create_representation_sub_context(lod)
