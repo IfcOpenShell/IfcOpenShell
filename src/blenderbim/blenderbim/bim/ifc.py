@@ -237,7 +237,6 @@ class IfcStore:
         is_top_level_operator = not bool(IfcStore.current_transaction)
 
         if is_top_level_operator:
-            active_object = context.active_object
             IfcStore.begin_transaction(operator)
             IfcStore.get_file().begin_transaction()
             # This empty transaction ensures that each operator has at least one transaction
@@ -253,11 +252,6 @@ class IfcStore:
                 operator, rollback=lambda d: IfcStore.get_file().undo(), commit=lambda d: IfcStore.get_file().redo()
             )
             IfcStore.end_transaction(operator)
-            try:
-                active_object.name
-                context.view_layer.objects.active = active_object
-            except:
-                pass
 
         return result
 

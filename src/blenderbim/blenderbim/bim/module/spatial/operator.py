@@ -103,3 +103,12 @@ class CopyToContainer(bpy.types.Operator, Operator):
         for obj in context.selected_objects:
             core.copy_to_container(tool.Ifc, tool.Spatial, obj=obj, containers=containers)
         blenderbim.bim.handler.purge_module_data()
+
+
+class SelectContainer(bpy.types.Operator, Operator):
+    bl_idname = "bim.select_container"
+    bl_label = "Select Container"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.select_container(tool.Ifc, tool.Spatial, obj=context.active_object)

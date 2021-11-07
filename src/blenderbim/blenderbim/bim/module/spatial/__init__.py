@@ -21,11 +21,12 @@ from . import ui, prop, operator
 
 classes = (
     operator.AssignContainer,
-    operator.RemoveContainer,
-    operator.EnableEditingContainer,
-    operator.DisableEditingContainer,
     operator.ChangeSpatialLevel,
     operator.CopyToContainer,
+    operator.DisableEditingContainer,
+    operator.EnableEditingContainer,
+    operator.RemoveContainer,
+    operator.SelectContainer,
     prop.SpatialElement,
     prop.BIMSpatialProperties,
     prop.BIMObjectSpatialProperties,
