@@ -33,6 +33,7 @@ if __name__ == '__main__':
                         help="Split the file in multiple LoDs")
     parser.add_argument('--no-split-lod', dest='split', action='store_false',
                         help="Do not split the file in multiple LoDs")
+    parser.add_argument("--lod", type=str, help="extract LOD value (example: 1.2)")
     parser.set_defaults(split=True)
     args = parser.parse_args()
 
@@ -42,6 +43,8 @@ if __name__ == '__main__':
         data["name_attribute"] = args.name
     if args.output:
         data["file_destination"] = args.output
+    if args.lod:
+        data["lod"] = args.lod
     data["split"] = args.split
 
     converter = Cityjson2ifc()
