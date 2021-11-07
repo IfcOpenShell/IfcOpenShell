@@ -160,8 +160,12 @@ namespace IfcGeom
         /// Optional rotation that is applied to serialized objects, (0,0,0,1) by default.
         std::array<double,4> rotation = std::array<double,4>{0.0, 0.0, 0.0, 1.0};
 
+		uint64_t get_raw() const {
+			return settings_;
+		}
+
     protected:
-		unsigned settings_;
+		uint64_t settings_;
         double deflection_tolerance_, angular_tolerance_, force_space_transparency_;
 		std::set<int> context_ids_;
     };
