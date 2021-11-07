@@ -114,6 +114,11 @@ namespace {
 	}
 
 	template <>
+	H5::DataType h5_datatype_for_cpp<uint64_t>() {
+		return H5::PredType::NATIVE_UINT64;
+	}
+
+	template <>
 	H5::DataType h5_datatype_for_cpp<double>() {
 		return H5::PredType::NATIVE_DOUBLE;
 	}
@@ -308,6 +313,10 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 
 	if (rt == READ_BREP && !brep_geometry) {
 		auto brepDataset = representation_group.openDataSet(DATASET_NAME_OCCT);
+		auto stored_settings = read_scalar_attribute<uint64_t>(brepDataset, "settings");
+		if (stored_settings != settings_.get_raw() && (stored_settings | IfcGeom::IteratorSettings::USE_WORLD_COORDS) != settings_.get_raw()) {
+			throw std::runtime_error("Settings mismatch");
+		}
 
 		std::vector<brep_element> parts;
 		{
@@ -379,9 +388,19 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			shapes.push_back(IfcGeom::IfcRepresentationShapeItem(part.id, trsf, shp, style_ptr));
 		}
 
+		if (settings_.get(IfcGeom::IteratorSettings::USE_WORLD_COORDS) && !(stored_settings & IfcGeom::IteratorSettings::USE_WORLD_COORDS)) {
+			for (IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++it) {
+				it->prepend(trsf);
+			}
+			trsf = gp_Trsf();
+		}
+
 		brep_geometry = boost::shared_ptr<IfcGeom::Representation::BRep>(new IfcGeom::Representation::BRep(element_settings, geom_id, shapes));
 
-		brep_cache_.insert({ representation_id_str, brep_geometry });
+
+		if (!settings_.get(IfcGeom::IteratorSettings::USE_WORLD_COORDS)) {
+			brep_cache_.insert({ representation_id_str, brep_geometry });
+		}
 	}
 	
 	if (rt == READ_TRIANGULATION && !triangulation_geometry) {
@@ -626,6 +645,11 @@ void HdfSerializer::write(const IfcGeom::BRepElement* o) {
 
 	auto brepDataset = representation_group.createDataSet(DATASET_NAME_OCCT, compound, dataspace_parts);
 	brepDataset.write(parts, compound);
+
+	H5::DataSpace attrdspace(H5S_SCALAR);
+	H5::Attribute att = brepDataset.createAttribute("settings", H5::PredType::NATIVE_UINT64, attrdspace);
+	uint64_t value = o->geometry().settings().get_raw();
+	att.write(H5::PredType::NATIVE_UINT64, &value);
 }
 
 namespace {
