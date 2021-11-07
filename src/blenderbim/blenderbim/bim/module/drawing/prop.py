@@ -337,13 +337,15 @@ class BIMCameraProperties(PropertyGroup):
     # For now, this JSON dump are all the parameters that determine a camera's "Block representation"
     # By checking this, you will know whether or not the camera IFC representation needs to be refreshed
     def update_representation(self, obj):
-        representation = json.dumps({
-            "matrix": [list(x) for x in obj.matrix_world],
-            "raster_x": self.raster_x,
-            "raster_y": self.raster_y,
-            "ortho_scale": obj.data.ortho_scale,
-            "clip_end": obj.data.clip_end,
-        })
+        representation = json.dumps(
+            {
+                "matrix": [list(x) for x in obj.matrix_world],
+                "raster_x": self.raster_x,
+                "raster_y": self.raster_y,
+                "ortho_scale": obj.data.ortho_scale,
+                "clip_end": obj.data.clip_end,
+            }
+        )
         if self.representation != representation:
             self.representation = representation
             return True

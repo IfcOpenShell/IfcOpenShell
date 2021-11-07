@@ -236,6 +236,7 @@ def setDefaultProperties(scene):
     )
     ifcopenshell.api.owner.settings.get_user = lambda ifc: core_owner.get_user(tool.Owner)
     ifcopenshell.api.owner.settings.get_application = get_application
+    # TODO: Move to drawing module
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Technical"
@@ -289,7 +290,7 @@ def setDefaultProperties(scene):
                 RasterStyleProperty.SHADING_SHADOW_INTENSITY.value: 0.5,
                 RasterStyleProperty.DISPLAY_LIGHT_DIRECTION.value: (0.5, 0.5, 0.5),
                 RasterStyleProperty.VIEW_USE_CURVE_MAPPING.value: False,
-                RasterStyleProperty.OVERLAY_SHOW_WIREFRAMES.value: True,
+                RasterStyleProperty.OVERLAY_SHOW_WIREFRAMES.value: False,
                 RasterStyleProperty.OVERLAY_WIREFRAME_THRESHOLD.value: 0,
                 RasterStyleProperty.OVERLAY_SHOW_FLOOR.value: False,
                 RasterStyleProperty.OVERLAY_SHOW_AXIS_X.value: False,
