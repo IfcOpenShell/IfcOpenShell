@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import uuid
 import zipfile
@@ -62,6 +63,8 @@ class IfcStore:
     def get_file():
         if IfcStore.file is None:
             IfcStore.path = bpy.context.scene.BIMProperties.ifc_file
+            if not os.path.isabs(IfcStore.path):
+                IfcStore.path = os.path.abspath(os.path.join(bpy.path.abspath("//"), IfcStore.path))
             if IfcStore.path:
                 try:
                     IfcStore.load_file(IfcStore.path)
