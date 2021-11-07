@@ -37,8 +37,9 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
-from blenderbim.bim.module.drawing.prop import RasterStyleProperty
+from lxml import etree
 from mathutils import Vector, Matrix, Euler, geometry
+from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.group.data import Data as GroupData
 from ifcopenshell.api.pset.data import Data as PsetData
@@ -280,38 +281,89 @@ class CreateDrawing(bpy.types.Operator):
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
 
+        # If we have already calculated it in the SVG in the past, don't recalculate
+        edited_guids = set()
+        for obj in IfcStore.edited_objs:
+            element = tool.Ifc.get_entity(obj)
+            edited_guids.add(element.GlobalId) if hasattr(element, "GlobalId") else None
+        cached_linework = set()
+        if os.path.isfile(svg_path):
+            tree = etree.parse(svg_path)
+            root = tree.getroot()
+            cached_linework = {
+                el.get("{http://www.ifcopenshell.org/ns}guid")
+                for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]")
+            }
+        cached_linework -= edited_guids
+
         # This is a work in progress. See #1153 and #1564.
+        import hashlib
         import ifcopenshell.draw
 
-        files = [tool.Ifc.get()]
-        draw_settings = ifcopenshell.draw.draw_settings()
-        draw_settings.drawing_guid = self.camera_element.GlobalId
-        draw_settings.css = False
-        draw_settings.auto_floorplan = False
-        draw_settings.scale = self.scale
+        files = {context.scene.BIMProperties.ifc_file: tool.Ifc.get()}
 
-        iterators = []
-        for f in files:
-            geom_settings = ifcopenshell.geom.settings(APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True)
-            body_contexts = [
-                c.id()
-                for c in self.file.by_type("IfcGeometricRepresentationSubContext")
-                if c.ContextIdentifier in ["Body", "Facetation"]
-            ]
+        for ifc_path, ifc in files.items():
+            # Don't use draw.main() just whilst we're prototyping and experimenting
+            ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
+            ifc_cache_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
+
+            # Get all representation contexts to see what we're dealing with
+            # A drawing prioritises a target view context first, followed by a body context as a fallback
+            body_contexts = []
+            target_view_contexts = []
+            for rep_context in ifc.by_type("IfcGeometricRepresentationContext"):
+                if rep_context.is_a("IfcGeometricRepresentationSubContext"):
+                    if rep_context.TargetView == context.scene.camera.data.BIMCameraProperties.target_view:
+                        target_view_contexts.append(rep_context.id())
+                        continue
+                if rep_context.ContextIdentifier in ["Body", "Facetation"]:
+                    body_contexts.append(rep_context.id())
+                    continue
+                if rep_context.is_a() == "IfcGeometricRepresentationContext" and rep_context.ContextType == "Model":
+                    body_contexts.append(rep_context.id())
+                    continue
+
+            elements = set(ifc.by_type("IfcElement")) - set(ifc.by_type("IfcOpeningElement"))
+            # elements = set([tool.Ifc.get_entity(o) for o in bpy.context.visible_objects if tool.Ifc.get_entity(o).is_a("IfcProduct")])
+
+            self.setup_serialiser(ifc)
+            cache_settings = ifcopenshell.geom.settings(
+                APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True, SEW_SHELLS=True
+            )
+            cache = ifcopenshell.geom.serializers.hdf5(ifc_cache_path, cache_settings)
+
+            if target_view_contexts:
+                geom_settings = ifcopenshell.geom.settings(
+                    APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True, SEW_SHELLS=True, INCLUDE_CURVES=True
+                )
+                geom_settings.set_context_ids(target_view_contexts)
+                it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
+                it.set_cache(cache)
+                processed = set()
+                for elem in self.yield_from_iterator(it):
+                    processed.add(ifc.by_guid(elem.guid))
+                    self.serialiser.write(elem)
+                elements -= processed
+
             if body_contexts:
+                geom_settings = ifcopenshell.geom.settings(
+                    APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True, SEW_SHELLS=True
+                )
                 geom_settings.set_context_ids(body_contexts)
-            exclude = f.by_type("IfcOpeningElement")
-            if self.camera.data.BIMCameraProperties.target_view == "PLAN_VIEW":
-                # For plans, we exclude windows and doors by default
-                exclude += f.by_type("IfcWindow") + f.by_type("IfcDoor")
-            # Exclude all annotation apart from the active one so we don't cut through them
-            exclude += [e for e in f.by_type("IfcAnnotation") if e != self.camera_element]
+                it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
+                it.set_cache(cache)
+                for elem in self.yield_from_iterator(it):
+                    self.serialiser.write(elem)
 
-            iterators.append(ifcopenshell.geom.iterator(geom_settings, f, multiprocessing.cpu_count(), exclude=exclude))
+            geom_settings = ifcopenshell.geom.settings(
+                APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True, SEW_SHELLS=True
+            )
+            it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
+            for elem in self.yield_from_iterator(it):
+                self.serialiser.write(elem)
 
-        results = ifcopenshell.draw.main(draw_settings, files, iterators=iterators, merge_projection=False)
-
-        from lxml import etree
+        self.serialiser.finalize()
+        results = self.svg_buffer.get_value()
 
         root = etree.fromstring(results)
         self.enrich_linework_with_metadata(root)
@@ -321,26 +373,57 @@ class CreateDrawing(bpy.types.Operator):
 
         return svg_path
 
+    def setup_serialiser(self, ifc):
+        self.svg_settings = ifcopenshell.geom.settings(
+            APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True, INCLUDE_CURVES=True
+        )
+        self.svg_buffer = ifcopenshell.geom.serializers.buffer()
+        self.serialiser = ifcopenshell.geom.serializers.svg(self.svg_buffer, self.svg_settings)
+        self.serialiser.setFile(ifc)
+        self.serialiser.setWithoutStoreys(True)
+        self.serialiser.setPolygonal(True)
+        self.serialiser.setUseNamespace(True)
+        self.serialiser.setAlwaysProject(True)
+        self.serialiser.setAutoElevation(False)
+        self.serialiser.setAutoSection(False)
+        self.serialiser.setPrintSpaceNames(False)
+        self.serialiser.setPrintSpaceAreas(False)
+        self.serialiser.setDrawDoorArcs(False)
+        self.serialiser.setNoCSS(True)
+        self.serialiser.setElevationRefGuid(self.camera_element.GlobalId)
+        self.serialiser.setScale(self.scale)
+        self.serialiser.setSubtractionSettings(ifcopenshell.ifcopenshell_wrapper.ALWAYS)
+        # tree = ifcopenshell.geom.tree()
+        # This instructs the tree to explode BReps into faces and return
+        # the style of the face when running tree.select_ray()
+        # tree.enable_face_styles(True)
+
+    def yield_from_iterator(self, it):
+        if it.initialize():
+            while True:
+                yield it.get()
+                if not it.next():
+                    break
+
     def enrich_linework_with_metadata(self, root):
         ifc = tool.Ifc.get()
-        for el in root.findall('.//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]'):
-            classes = []
+        for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
+            classes = ["cut"]
             element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
             material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
             if material:
                 if material.is_a("IfcMaterialLayerSet"):
                     name = material.LayerSetName or "null"
                 else:
-                    name = getattr(material, "Name", "null")
+                    name = getattr(material, "Name", "null") or "null"
                 name = self.canonicalise_class_name(name)
                 classes.append(f"material-{name}")
-            if classes:
-                el.set("class", (el.get("class", "") + " " + " ".join(classes)).strip())
+            el.set("class", (el.get("class", "") + " " + " ".join(classes)).strip())
 
     def move_projection_to_bottom(self, root):
         # https://stackoverflow.com/questions/36018627/sorting-child-elements-with-lxml-based-on-attribute-value
-        group = root.find('{http://www.w3.org/2000/svg}g')
-        #group[:] = sorted(group, key=lambda e : "projection" in e.get("class"))
+        group = root.find("{http://www.w3.org/2000/svg}g")
+        # group[:] = sorted(group, key=lambda e : "projection" in e.get("class"))
         group[:] = reversed(group)
 
     def canonicalise_class_name(self, name):

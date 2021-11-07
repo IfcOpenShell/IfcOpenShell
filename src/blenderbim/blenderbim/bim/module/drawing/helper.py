@@ -263,7 +263,7 @@ def get_active_drawing(scene):
         return None, None
     try:
         drawing = props.active_drawing
-        return scene.collection.children["Views"].children[f"IfcGroup/{drawing.name}"], drawing.camera
+        return drawing.camera.users_collection[0], drawing.camera
     except (KeyError, IndexError):
         raise RuntimeError("missing drawing collection")
 
