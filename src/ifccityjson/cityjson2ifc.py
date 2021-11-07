@@ -16,13 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with ifccityjson.  If not, see <http://www.gnu.org/licenses/>.
 import os
-import copy
-
 import ifcopenshell
 import ifcopenshell.api
-from geometry import GeometryIO
 from datetime import datetime
 
+from .geometry import GeometryIO
 
 JSON_TO_IFC = {
     "Building": ["IfcBuilding"],
