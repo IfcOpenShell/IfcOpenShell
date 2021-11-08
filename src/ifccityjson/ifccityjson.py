@@ -1,4 +1,3 @@
-
 # ifccityjson - Python CityJSON to IFC converter
 # Copyright (C) 2021 Laurens J.N. Oostwegel <l.oostwegel@gmail.com>
 #
@@ -16,12 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with ifccityjson.  If not, see <http://www.gnu.org/licenses/>.
+
 import argparse
 from cjio import cityjson
-from cityjson2ifc import Cityjson2ifc
+from cityjson2ifc.cityjson2ifc import Cityjson2ifc
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
+def cmdline():
     # Example:
     # python ifccityjson.py -i example/3DBAG_example.json -o example/output.ifc -n identificatie
     # python ifccityjson.py -i example/geometries.json -o example/geometry_output.ifc
@@ -50,3 +49,6 @@ if __name__ == '__main__':
     converter = Cityjson2ifc()
     converter.configuration(**data)
     converter.convert(city_model)
+
+if __name__ == '__main__':
+    cmdline()
