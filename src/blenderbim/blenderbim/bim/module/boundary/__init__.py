@@ -24,6 +24,7 @@ classes = (
     operator.LoadSpaceBoundaries,
     operator.LoadBoundary,
     operator.SelectProjectBoundaries,
+    operator.ColourByRelatedBuildingElement,
     ui.BIM_PT_Boundary,
     ui.BIM_PT_SceneBoundaries,
 )

@@ -20,6 +20,7 @@ import bpy
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 from ifcopenshell.api.boundary.data import Data
 
 
@@ -39,6 +40,7 @@ class BIM_PT_SceneBoundaries(Panel):
         row = self.layout.row()
         row.operator("bim.load_project_space_boundaries")
         row.operator("bim.select_project_space_boundaries", text="", icon="RESTRICT_SELECT_OFF")
+        row.operator("bim.colour_by_related_building_element", text="", icon="BRUSH_DATA")
 
 
 class BIM_PT_Boundary(Panel):
@@ -66,11 +68,13 @@ class BIM_PT_Boundary(Panel):
         self.oprops = context.active_object.BIMObjectProperties
         row = self.layout.row()
         row.operator("bim.load_space_boundaries")
+        ifc_file = tool.Ifc.get()
         if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+            Data.load(ifc_file)
         for boundary_id in Data.spaces.get(self.oprops.ifc_definition_id, []):
             boundary = Data.boundaries[boundary_id]
+            building_element = ifc_file.by_id(boundary["RelatedBuildingElement"])
             row = self.layout.row()
-            row.label(text=f"{boundary_id}", icon="GHOST_ENABLED")
+            row.label(text=f"{boundary_id} > {building_element.is_a()}/{building_element.Name}", icon="GHOST_ENABLED")
             op = row.operator("bim.load_boundary", text="", icon="RESTRICT_SELECT_OFF")
             op.boundary_id = boundary_id

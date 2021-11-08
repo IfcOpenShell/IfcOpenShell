@@ -139,3 +139,66 @@ class SelectProjectBoundaries(bpy.types.Operator):
             obj = tool.Ifc.get_object(boundary)
             if obj:
                 obj.select_set(True)
+        return {"FINISHED"}
+
+
+def get_colour(ifc_boundary):
+    """Return a color depending on IfcClass given"""
+    product_colors = {
+        "IfcWall": (0.7, 0.3, 0, 1),
+        "IfcWindow": (0, 0.7, 1, 1),
+        "IfcSlab": (0.7, 0.7, 0.5, 1),
+        "IfcRoof": (0, 0.3, 0, 1),
+        "IfcDoor": (1, 1, 1, 1),
+    }
+    if ifc_boundary.PhysicalOrVirtualBoundary == "VIRTUAL":
+        return (1, 0, 1, 1)
+
+    element = ifc_boundary.RelatedBuildingElement
+    if not element:
+        return (1, 0, 0, 1)
+    for product, colour in product_colors.items():
+        if element.is_a(product):
+            return colour
+    return (0, 0, 0, 1)
+
+
+class ColourByRelatedBuildingElement(bpy.types.Operator):
+    bl_idname = "bim.colour_by_related_building_element"
+    bl_label = "Apply colour based on related building elements"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        IfcStore.begin_transaction(self)
+        self.store_state(context)
+        result = self._execute(context)
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
+        self.file = tool.Ifc.get()
+        for obj in context.visible_objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            if not element.is_a("IfcRelSpaceBoundary"):
+                continue
+            obj.color = get_colour(element)
+        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            areas[0].spaces[0].shading.color_type = "OBJECT"
+        return {"FINISHED"}
+
+    def store_state(self, context):
+        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+
+    def rollback(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = data["color_type"]
+
+    def commit(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = "OBJECT"
