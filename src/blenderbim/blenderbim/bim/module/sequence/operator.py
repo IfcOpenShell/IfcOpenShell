@@ -1083,6 +1083,11 @@ class ImportP6(bpy.types.Operator, ImportHelper):
     filename_ext = ".xml"
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
 
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
+                
     def execute(self, context):
         from ifc4d.p62ifc import P62Ifc
 
@@ -1105,6 +1110,11 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
     filename_ext = ".xer"
     filter_glob: bpy.props.StringProperty(default="*.xer", options={"HIDDEN"})
 
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
+                
     def execute(self, context):
         from ifc4d.p6xer2ifc import P6XER2Ifc
 
@@ -1127,6 +1137,11 @@ class ImportPP(bpy.types.Operator, ImportHelper):
     filename_ext = ".pp"
     filter_glob: bpy.props.StringProperty(default="*.pp", options={"HIDDEN"})
 
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
+                
     def execute(self, context):
         from ifc4d.pp2ifc import PP2Ifc
 
@@ -1149,6 +1164,11 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
     filename_ext = ".xml"
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
 
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
+                
     def execute(self, context):
         from ifc4d.msp2ifc import MSP2Ifc
 
