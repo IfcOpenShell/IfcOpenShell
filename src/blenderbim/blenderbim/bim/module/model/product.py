@@ -63,9 +63,9 @@ class AddTypeInstance(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        tprops = context.scene.BIMTypeProperties
-        ifc_class = self.ifc_class or tprops.ifc_class
-        relating_type_id = self.relating_type or tprops.relating_type
+        props = context.scene.BIMModelProperties
+        ifc_class = self.ifc_class or props.ifc_class
+        relating_type_id = self.relating_type or props.relating_type
 
         if not ifc_class or not relating_type_id:
             return {"FINISHED"}
@@ -118,7 +118,7 @@ class AddTypeInstance(bpy.types.Operator):
             tool.Ifc,
             tool.Type,
             element=tool.Ifc.get_entity(obj),
-            type=tool.Ifc.get().by_id(int(tprops.relating_type)),
+            type=tool.Ifc.get().by_id(int(props.relating_type)),
         )
 
         if building_obj:

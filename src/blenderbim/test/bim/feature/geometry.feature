@@ -275,9 +275,9 @@ Scenario: Override duplicate move - copying a type instance with a representatio
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I set "scene.BIMTypeProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I set "scene.BIMTypeProperties.relating_type" to "{cube}"
+    And I set "scene.BIMModelProperties.relating_type" to "{cube}"
     And I press "bim.add_type_instance"
     And the object "IfcWall/Instance" is selected
     When I press "object.duplicate_move"

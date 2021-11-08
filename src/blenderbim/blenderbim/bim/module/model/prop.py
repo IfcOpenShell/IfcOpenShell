@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.util.type
+from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.prop import StrProperty, Attribute
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
@@ -32,21 +33,23 @@ from bpy.props import (
     CollectionProperty,
 )
 
-relating_types_enum = []
+
+def get_ifc_class(self, context):
+    if not AuthoringData.is_loaded:
+        AuthoringData.load()
+    return AuthoringData.data["ifc_classes"]
 
 
-def purge():
-    global relating_types_enum
-    relating_types_enum = []
+def get_relating_type(self, context):
+    if not AuthoringData.is_loaded:
+        AuthoringData.load()
+    return AuthoringData.data["relating_types"]
 
 
-def getRelatingTypes(self, context):
-    global relating_types_enum
-    if len(relating_types_enum) < 1:
-        elements = IfcStore.get_file().by_type("IfcWallType")
-        relating_types_enum.extend((str(e.id()), e.Name, "") for e in elements)
-    return relating_types_enum
+def update_ifc_class(self, context):
+    AuthoringData.is_loaded = False
 
 
 class BIMModelProperties(PropertyGroup):
-    relating_type: EnumProperty(items=getRelatingTypes, name="Relating Type")
+    ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="IFC Class", update=update_ifc_class)
+    relating_type: bpy.props.EnumProperty(items=get_relating_type, name="Relating Type")

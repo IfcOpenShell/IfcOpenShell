@@ -8,9 +8,9 @@ Scenario: Add type instance - add from a mesh
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I set "scene.BIMTypeProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I set "scene.BIMTypeProperties.relating_type" to "{cube}"
+    And I set "scene.BIMModelProperties.relating_type" to "{cube}"
     When I press "bim.add_type_instance"
     Then the object "IfcWall/Instance" exists
 
@@ -21,9 +21,9 @@ Scenario: Add type instance - add from an empty
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I set "scene.BIMTypeProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "empty" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I set "scene.BIMTypeProperties.relating_type" to "{empty}"
+    And I set "scene.BIMModelProperties.relating_type" to "{empty}"
     When I press "bim.add_type_instance"
     Then the object "IfcWall/Instance" exists
 
@@ -34,9 +34,9 @@ Scenario: Add type instance - add a mesh where existing instances have changed c
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I set "scene.BIMTypeProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I set "scene.BIMTypeProperties.relating_type" to "{cube}"
+    And I set "scene.BIMModelProperties.relating_type" to "{cube}"
     And I press "bim.add_type_instance"
     And the object "IfcWall/Instance" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcWall/Instance" is selected

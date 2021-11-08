@@ -21,6 +21,7 @@ import bpy
 import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.model.data import WorkspaceData
 
 
 class BimTool(WorkSpaceTool):
@@ -51,17 +52,19 @@ class BimTool(WorkSpaceTool):
     )
 
     def draw_settings(context, layout, tool):
+        if not WorkspaceData.is_loaded:
+            WorkspaceData.load()
+
         row = layout.row(align=True)
         if not IfcStore.get_file():
             row.label(text="No IFC Project", icon="ERROR")
             return
-        props = context.scene.BIMTypeProperties
-        ifc_classes_is_empty = not bool(type_prop.getIfcTypes(props, context))
-        if ifc_classes_is_empty:
-            row.label(text="No IFC Class")
-        else:
+        props = context.scene.BIMModelProperties
+        if WorkspaceData.data["ifc_classes"]:
             row.prop(props, "ifc_class", text="")
-        if type_prop.get_relating_type(props, context):
+        else:
+            row.label(text="No IFC Class")
+        if WorkspaceData.data["relating_types"]:
             row.prop(props, "relating_type", text="")
         else:
             row.label(text="No Relating Type")
@@ -143,8 +146,12 @@ class Hotkey(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        self.props = context.scene.BIMTypeProperties
-        self.ifc_classes_is_empty = not bool(type_prop.getIfcTypes(self.props, context))
+        self.props = context.scene.BIMModelProperties
+        self.ifc_classes_is_empty = True
+        try:
+            self.ifc_classes_is_empty = bool(self.props.ifc_class)
+        except:
+            pass
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
 
