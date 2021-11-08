@@ -266,8 +266,9 @@ endif
 	# Required by IFCCityJSON
 	mkdir dist/working
 	cd dist/working && python -m venv env
-	cd dist/working && . env/bin/activate && pip install cjio
-	cp -r dist/working/env/Lib/site-packages dist/blenderbim/libs/site/packages/
+	cd dist/working && mkdir site-packages
+	cd dist/working && . env/bin/activate && pip install cjio --target=./site-packages
+	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 ifeq ($(PLATFORM), linux)
