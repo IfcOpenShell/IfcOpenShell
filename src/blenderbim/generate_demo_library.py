@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import blenderbim.tool as tool
 
 
 class LibraryGenerator:
@@ -37,16 +38,26 @@ class LibraryGenerator:
             "project.assign_declaration", self.file, definition=self.library, relating_context=self.project
         )
         ifcopenshell.api.run("unit.assign_unit", self.file, length={"is_metric": True, "raw": "METERS"})
-        ifcopenshell.api.run("context.add_context", self.file, context="Model")
+        model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
+        plan = ifcopenshell.api.run("context.add_context", self.file, context_type="Plan")
         self.representations = {
             "body": ifcopenshell.api.run(
-                "context.add_context", self.file, context="Model", subcontext="Body", target_view="MODEL_VIEW"
-            )
+                "context.add_context",
+                self.file,
+                context_type="Model",
+                context_identifier="Body",
+                target_view="MODEL_VIEW",
+                parent=model,
+            ),
+            "annotation": ifcopenshell.api.run(
+                "context.add_context",
+                self.file,
+                context_type="Plan",
+                context_identifier="Annotation",
+                target_view="PLAN_VIEW",
+                parent=plan,
+            ),
         }
-        ifcopenshell.api.run("context.add_context", self.file, context="Plan")
-        self.annotation = ifcopenshell.api.run(
-            "context.add_context", self.file, context="Model", subcontext="Annotation", target_view="PLAN_VIEW"
-        )
 
         self.material = ifcopenshell.api.run("material.add_material", self.file, name="Unknown")
 
@@ -116,9 +127,9 @@ class LibraryGenerator:
         )
         self.create_profile_type("IfcBeamType", "DEMO2", profile)
 
-        self.create_type("IfcWindowType", "DEMO1", {"body": "Window"})
-        self.create_type("IfcDoorType", "DEMO1", {"body": "Door"})
-        self.create_type("IfcFurnitureType", "BUNNY", {"body": "Bunny"})
+        self.create_type("IfcWindowType", "DEMO1", {"body": "Window", "annotation": "Window-Annotation"})
+        self.create_type("IfcDoorType", "DEMO1", {"body": "Door", "annotation": "Door-Annotation"})
+        self.create_type("IfcFurnitureType", "BUNNY", {"body": "Bunny", "annotation": "Bunny-Annotation"})
 
         self.file.write("blenderbim-demo-library.ifc")
 
@@ -153,41 +164,25 @@ class LibraryGenerator:
                 geometry=obj.data,
                 total_items=max(1, len(obj.material_slots)),
             )
-            ifcopenshell.api.run(
-                "style.assign_representation_styles",
-                self.file,
-                **{
-                    "shape_representation": representation,
-                    "styles": [
-                        ifcopenshell.api.run("style.add_style", self.file, **self.get_style_settings(s.material))
-                        for s in obj.material_slots
-                    ],
-                },
-            )
+            styles = []
+            for slot in obj.material_slots:
+                style = ifcopenshell.api.run("style.add_style", self.file, name=slot.material.name)
+                ifcopenshell.api.run(
+                    "style.add_surface_style",
+                    self.file,
+                    style=style,
+                    ifc_class="IfcSurfaceStyleRendering",
+                    attributes=tool.Style.get_surface_rendering_attributes(slot.material),
+                )
+                styles.append(style)
+            if styles:
+                ifcopenshell.api.run(
+                    "style.assign_representation_styles", self.file, shape_representation=representation, styles=styles
+                )
             ifcopenshell.api.run(
                 "geometry.assign_representation", self.file, product=element, representation=representation
             )
         ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
-
-    def get_style_settings(self, material):
-        transparency = material.diffuse_color[3]
-        diffuse_colour = material.diffuse_color
-        if (
-            material.use_nodes
-            and hasattr(material.node_tree, "nodes")
-            and "Principled BSDF" in material.node_tree.nodes
-        ):
-            bsdf = material.node_tree.nodes["Principled BSDF"]
-            transparency = bsdf.inputs["Alpha"].default_value
-            diffuse_colour = bsdf.inputs["Base Color"].default_value
-        transparency = 1 - transparency
-        return {
-            "name": material.name,
-            "external_definition": None,
-            "surface_colour": tuple(material.diffuse_color),
-            "transparency": transparency,
-            "diffuse_colour": tuple(diffuse_colour),
-        }
 
 
 LibraryGenerator().generate()
