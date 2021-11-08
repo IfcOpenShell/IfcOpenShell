@@ -78,6 +78,12 @@ def get_type(element):
                 return relationship.RelatingType
 
 
+def get_types(type):
+    for rel in getattr(type, "Types", []):
+        return rel.RelatedObjects
+    return []
+
+
 def get_material(element, should_skip_usage=False):
     if hasattr(element, "HasAssociations") and element.HasAssociations:
         for relationship in element.HasAssociations:
