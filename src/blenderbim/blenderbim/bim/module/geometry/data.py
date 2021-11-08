@@ -40,6 +40,7 @@ class RepresentationsData:
     def representations(cls):
         results = []
         element = tool.Ifc.get_entity(bpy.context.active_object)
+        representations = []
         if element.is_a("IfcProduct") and element.Representation:
             representations = element.Representation.Representations
         elif element.is_a("IfcTypeProduct"):
