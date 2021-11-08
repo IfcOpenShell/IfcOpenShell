@@ -1,7 +1,7 @@
 import bpy
 from bpy.types import Operator
 from cjio import cityjson
-from ifccityjson.cityjson2ifc import Cityjson2ifc
+from ifccityjson.cityjson2ifc.cityjson2ifc import Cityjson2ifc
 
 class BIM_OT_cityjson2ifc(Operator):
     bl_idname = "bim.convert_cityjson2ifc"
