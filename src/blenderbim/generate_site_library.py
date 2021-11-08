@@ -37,19 +37,25 @@ class LibraryGenerator:
             "project.assign_declaration", self.file, definition=self.library, relating_context=self.library
         )
         ifcopenshell.api.run("unit.assign_unit", self.file, length={"is_metric": True, "raw": "METERS"})
-        ifcopenshell.api.run("context.add_context", self.file, context="Model")
+        model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
         self.representations = {
             "body": ifcopenshell.api.run(
-                "context.add_context", self.file, context="Model", subcontext="Body", target_view="MODEL_VIEW"
+                "context.add_context",
+                self.file,
+                context_type="Model",
+                context_identifier="Body",
+                target_view="MODEL_VIEW",
+                parent=model,
             ),
             "clearance": ifcopenshell.api.run(
-                "context.add_context", self.file, context="Model", subcontext="Clearance", target_view="MODEL_VIEW"
+                "context.add_context",
+                self.file,
+                context_type="Model",
+                context_identifier="Clearance",
+                target_view="MODEL_VIEW",
+                parent=model,
             ),
         }
-        ifcopenshell.api.run("context.add_context", self.file, context="Plan")
-        self.annotation = ifcopenshell.api.run(
-            "context.add_context", self.file, context="Model", subcontext="Annotation", target_view="PLAN_VIEW"
-        )
 
         self.create_type("IfcBuildingElementProxyType", "Site Shed 3x6m", {"body": "Site Shed 3x6m"})
         self.create_type("IfcBuildingElementProxyType", "Site Shed 3x12m", {"body": "Site Shed 3x12m"})
@@ -73,41 +79,25 @@ class LibraryGenerator:
                 geometry=obj.data,
                 total_items=max(1, len(obj.material_slots)),
             )
-            ifcopenshell.api.run(
-                "style.assign_representation_styles",
-                self.file,
-                **{
-                    "shape_representation": representation,
-                    "styles": [
-                        ifcopenshell.api.run("style.add_style", self.file, **self.get_style_settings(s.material))
-                        for s in obj.material_slots
-                    ],
-                },
-            )
+            styles = []
+            for slot in obj.material_slots:
+                style = ifcopenshell.api.run("style.add_style", self.file, name=slot.material.name)
+                ifcopenshell.api.run(
+                    "style.add_surface_style",
+                    self.file,
+                    style=style,
+                    ifc_class="IfcSurfaceStyleRendering",
+                    attributes=tool.Style.get_surface_rendering_attributes(slot.material),
+                )
+                styles.append(style)
+            if styles:
+                ifcopenshell.api.run(
+                    "style.assign_representation_styles", self.file, shape_representation=representation, styles=styles
+                )
             ifcopenshell.api.run(
                 "geometry.assign_representation", self.file, product=element, representation=representation
             )
         ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
-
-    def get_style_settings(self, material):
-        transparency = material.diffuse_color[3]
-        diffuse_colour = material.diffuse_color
-        if (
-            material.use_nodes
-            and hasattr(material.node_tree, "nodes")
-            and "Principled BSDF" in material.node_tree.nodes
-        ):
-            bsdf = material.node_tree.nodes["Principled BSDF"]
-            transparency = bsdf.inputs["Alpha"].default_value
-            diffuse_colour = bsdf.inputs["Base Color"].default_value
-        transparency = 1 - transparency
-        return {
-            "name": material.name,
-            "external_definition": None,
-            "surface_colour": tuple(material.diffuse_color),
-            "transparency": transparency,
-            "diffuse_colour": tuple(diffuse_colour),
-        }
 
 
 LibraryGenerator().generate()
