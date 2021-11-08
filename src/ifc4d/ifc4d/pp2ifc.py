@@ -107,14 +107,14 @@ class PP2Ifc:
     def parse_calendar_pp(self):
         calendars = self.get_json("CALENDAR")
         wp_data = self.get_json("WORK_PATTERN")
-        
+        work_types = self.get_json("EXCEPTIONN")
+        work_type_ids = [wt['ID'] for wt in work_types if wt['EXCEPTION_TYPE'] == 0]
+
         for calendar in calendars:
             calendar_id = calendar["ID"]
             calendar_wp = calendar["DOMINANT_WORK_PATTERN"]
             wp_data = self.get_json_with_filter("WORK_PATTERN", "ID", calendar_wp)
-            print("wp_data", wp_data[0]['SHIFTS'])
-            wp = AstaCalendarWorkPattern(wp_data[0]['SHIFTS'])
-            print(wp.dict_wp)
+            wp = AstaCalendarWorkPattern(wp_data[0]['SHIFTS'], work_type_ids)
             exceptions = {}
             timex = []
             for times in wp.dict_wp:
@@ -164,6 +164,13 @@ class PP2Ifc:
         for activity in activities:
             activity_type = "TASK"
             activity_id = activity["ID"]
+            if 'PLANNED_DURATION' in activity.keys():
+                activity_duration = float(activity["PLANNED_DURATION"].split(",")[-2].replace("<","").replace(">",""))
+            elif 'GIVEN_DURATION' in activity.keys():
+                activity_duration = float(activity["GIVEN_DURATION"].split(",")[-2].replace("<","").replace(">",""))
+            else:
+                activity_duration = 0.0
+
             wbs_id = activity["BAR"]
             if wbs_id:
                 self.wbs[wbs_id]["activities"].append(activity_id)
@@ -174,7 +181,7 @@ class PP2Ifc:
                 "Identification": activity["ID"],
                 "StartDate": datetime.datetime.fromisoformat(activity["LINKABLE_START"]),
                 "FinishDate": datetime.datetime.fromisoformat(activity["LINKABLE_FINISH"]),
-                "PlannedDuration": float(activity["PLANNED_DURATION"].split(",")[-2].replace("<","").replace(">","") ),
+                "PlannedDuration": activity_duration,
                 "Status": "PLANNED",
                 "CalendarObjectId": activity["CALENDAR"],
                 "ifc": None,
@@ -202,12 +209,15 @@ class PP2Ifc:
 
     def parse_relationship_pp(self, project):
         relations = self.get_json('LINK')
+        print(relations)
         for relationship in relations:
             predecessor = relationship['START_TASK']
             successor = relationship['END_TASK']
-            if predecessor not in self.activities or successor not in self.activities:
-                print("!!!!!!!!!!!!!!!!!ERROR!!!!!!!!!!!!!!!!")
-                print(predecessor, successor)
+            if predecessor not in self.activities:
+                print(f"Linked predecessor task {predecessor} cannot be found.")
+                continue
+            if successor not in self.activities:
+                print(f"Linked successor task {successor} cannot be found.")
                 continue
             self.relationships[relationship["ID"]] = {
                 "PredecessorActivity": predecessor,
