@@ -34,9 +34,8 @@ class Usecase:
         self.settings["product"].RepresentationMaps = self.settings["product"].RepresentationMaps or None
 
     def remove_representation_map_only(self, representation_map):
-        dummy_representation = self.file.createIfcShapeRepresentation()
-        representation_map.MappedRepresentation = dummy_representation
-        ifcopenshell.util.element.remove_deep(self.file, representation_map)
+        representation_map.MappedRepresentation = self.file.createIfcShapeRepresentation()
+        ifcopenshell.util.element.remove_deep2(self.file, representation_map)
         self.file.remove(representation_map)
 
     def unassign_products_using_mapped_representation(self, representation_map):
