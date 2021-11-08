@@ -29,7 +29,7 @@ class GeometryIO:
 
     def build_vertices(self, IFC_model, vertices):
         for vertex in vertices:
-            self.build_vertex(self, IFC_model, vertex)
+            self.build_vertex(IFC_model, vertex)
 
     def build_vertex(self, IFC_model, vertex):
         if self.scale:
@@ -158,12 +158,11 @@ class GeometryIO:
         if len(face) == 1:
             return IFC_model.create_entity("IfcFace", Bounds=[outerbound])
 
-        return IFC_model.create_entity("IfcFace", [outerbound])
-        # interior face BUGS
-        # innerbounds = []
-        # for interior_face in face[1:]:
-        #     for vertex in interior_face:
-        #         vertices.append(self.get_vertex(IFC_model, vertex))
-        #     polyloop = IFC_model.create_entity("IfcPolyLoop", Polygon=vertices)
-        #     innerbounds.append(IFC_model.create_entity("IfcFaceBound", Bound=polyloop, 	Orientation=False))
-        # return IFC_model.create_entity("IfcFace", Bounds=[outerbound] + innerbounds)
+        innerbounds = []
+        for interior_face in face[1:]:
+            vertices = []
+            for vertex in interior_face:
+                vertices.append(self.get_vertex(IFC_model, vertex))
+            polyloop = IFC_model.create_entity("IfcPolyLoop", Polygon=vertices)
+            innerbounds.append(IFC_model.create_entity("IfcFaceBound", Bound=polyloop, 	Orientation=False))
+        return IFC_model.create_entity("IfcFace", Bounds=[outerbound] + innerbounds)

@@ -15,14 +15,13 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with ifccityjson.  If not, see <http://www.gnu.org/licenses/>.
-import os
-import copy
 
+import os
 import ifcopenshell
 import ifcopenshell.api
-from geometry import GeometryIO
 from datetime import datetime
 
+from .geometry import GeometryIO
 
 JSON_TO_IFC = {
     "Building": ["IfcBuilding"],
@@ -145,8 +144,8 @@ class Cityjson2ifc:
 
     def create_representation_sub_contexts(self):
         self.IFC_representation_sub_contexts = {}
-        for lod in self.city_model.j["metadata"]["presentLoDs"]:
-            self.IFC_representation_sub_contexts[str(lod)] = self.create_representation_sub_context(lod)
+        # for lod in self.city_model.j["metadata"]["presentLoDs"]:
+        #     self.IFC_representation_sub_contexts[str(lod)] = self.create_representation_sub_context(lod)
 
     def create_representation_sub_context(self, lod):
         # TODO in ifcopenshell.api.context.add_context add support for UserDefinedTargetView

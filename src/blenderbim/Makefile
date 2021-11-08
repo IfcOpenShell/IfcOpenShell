@@ -134,6 +134,8 @@ endif
 	# Provides IFC5D functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifc5d/ifc5d dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
+	# Provides IFCCityJSON functionality
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifccityjson dist/blenderbim/libs/site/packages/
 
 	# Provides Mustache templating in construction documentation
 	mkdir dist/working
@@ -259,6 +261,14 @@ endif
 	mkdir dist/working
 	cd dist/working && wget $(HPPFCL_URL)
 	cd dist/working && tar -xf hpp-fcl*
+
+	# Required by IFCCityJSON
+	mkdir dist/working
+	cd dist/working && python -m venv env
+	cd dist/working && . env/bin/activate && pip install cjio
+	cp -r dist/working/env/Lib/site-packages dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
 ifeq ($(PLATFORM), linux)
 	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/hppfcl dist/blenderbim/libs/site/packages/
 	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
