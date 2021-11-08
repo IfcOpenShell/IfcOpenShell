@@ -37,6 +37,7 @@ import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
+import blenderbim.bim.export_ifc
 from lxml import etree
 from mathutils import Vector, Matrix, Euler, geometry
 from blenderbim.bim.module.drawing.prop import RasterStyleProperty
@@ -281,6 +282,14 @@ class CreateDrawing(bpy.types.Operator):
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
 
+        # All very hackish whilst prototyping
+        exporter = blenderbim.bim.export_ifc.IfcExporter(None)
+        exporter.file = tool.Ifc.get()
+        invalidated_guids = exporter.sync_deletions()
+        invalidated_elements = exporter.sync_object_placements()
+        invalidated_elements += exporter.sync_edited_objects()
+        [invalidated_guids.append(e.GlobalId) for e in invalidated_elements if hasattr(e, "GlobalId")]
+
         # If we have already calculated it in the SVG in the past, don't recalculate
         edited_guids = set()
         for obj in IfcStore.edited_objs:
@@ -324,15 +333,15 @@ class CreateDrawing(bpy.types.Operator):
                     continue
 
             elements = set(ifc.by_type("IfcElement")) - set(ifc.by_type("IfcOpeningElement"))
-            # elements = set([tool.Ifc.get_entity(o) for o in bpy.context.visible_objects if tool.Ifc.get_entity(o).is_a("IfcProduct")])
 
             self.setup_serialiser(ifc)
             cache_settings = ifcopenshell.geom.settings(
                 APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True, SEW_SHELLS=True
             )
             cache = ifcopenshell.geom.serializers.hdf5(ifc_cache_path, cache_settings)
+            [cache.remove(guid) for guid in invalidated_guids]
 
-            if target_view_contexts:
+            if target_view_contexts and elements:
                 geom_settings = ifcopenshell.geom.settings(
                     APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True, SEW_SHELLS=True, INCLUDE_CURVES=True
                 )
@@ -341,11 +350,11 @@ class CreateDrawing(bpy.types.Operator):
                 it.set_cache(cache)
                 processed = set()
                 for elem in self.yield_from_iterator(it):
-                    processed.add(ifc.by_guid(elem.guid))
+                    processed.add(ifc.by_id(elem.id))
                     self.serialiser.write(elem)
                 elements -= processed
 
-            if body_contexts:
+            if body_contexts and elements:
                 geom_settings = ifcopenshell.geom.settings(
                     APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True, SEW_SHELLS=True
                 )
@@ -409,7 +418,11 @@ class CreateDrawing(bpy.types.Operator):
         ifc = tool.Ifc.get()
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
             classes = ["cut"]
-            element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
+            try:
+                element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
+            except:
+                # See #1861 - freshly created guids cannot be extracted unfortunately
+                continue
             material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
             if material:
                 if material.is_a("IfcMaterialLayerSet"):

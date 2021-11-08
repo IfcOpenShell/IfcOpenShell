@@ -85,25 +85,34 @@ class IfcExporter:
         )
 
     def sync_deletions(self):
+        results = []
         for ifc_definition_id in IfcStore.deleted_ids:
             try:
                 product = self.file.by_id(ifc_definition_id)
+                if hasattr(product, "GlobalId"):
+                    results.append(product.GlobalId)
             except:
                 continue
             ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
+        return results
 
     def sync_object_placements(self):
+        results = []
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         for ifc_definition_id, obj in IfcStore.id_map.items():
             try:
                 if isinstance(obj, bpy.types.Material):
                     continue
                 tool.Collector.sync(obj)
-                self.sync_object_placement(obj)
+                result = self.sync_object_placement(obj)
+                if result:
+                    results.append(result)
             except ReferenceError:
                 pass  # The object is likely deleted
+        return results
 
     def sync_edited_objects(self):
+        results = []
         for obj in IfcStore.edited_objs.copy():
             if not obj:
                 continue
@@ -111,10 +120,14 @@ class IfcExporter:
                 if isinstance(obj, bpy.types.Material):
                     blenderbim.core.style.update_style_colours(tool.Ifc, tool.Style, obj=obj)
                 else:
+                    element = tool.Ifc.get_entity(obj)
+                    if element:
+                        results.append(element)
                     bpy.ops.bim.update_representation(obj=obj.name)
             except ReferenceError:
                 pass  # The object is likely deleted
         IfcStore.edited_objs.clear()
+        return results
 
     def sync_object_placement(self, obj):
         blender_matrix = np.array(obj.matrix_world)
@@ -140,6 +153,7 @@ class IfcExporter:
             )
         if not np.allclose(ifc_matrix, blender_matrix, atol=0.0001):
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
+            return element
 
     def sync_grid_axis_object_placement(self, obj, element):
         grid = (element.PartOfU or element.PartOfV or element.PartOfW)[0]
