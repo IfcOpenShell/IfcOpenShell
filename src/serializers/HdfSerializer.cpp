@@ -313,8 +313,25 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 
 	if (rt == READ_BREP && !brep_geometry) {
 		auto brepDataset = representation_group.openDataSet(DATASET_NAME_OCCT);
+		
+		static const auto ignored_settings =
+			// Settings that do not affect storage of brep data
+			IfcGeom::IteratorSettings::DISABLE_TRIANGULATION | IfcGeom::IteratorSettings::USE_BREP_DATA |
+			// Settings that affect which representation is considered, but cache does not need to be complete
+			IfcGeom::IteratorSettings::INCLUDE_CURVES | IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES |
+			// Only affects triangulation
+			IfcGeom::IteratorSettings::WELD_VERTICES | IfcGeom::IteratorSettings::NO_NORMALS |
+			IfcGeom::IteratorSettings::GENERATE_UVS | IfcGeom::IteratorSettings::EDGE_ARROWS |
+			// Is applied in the serializer
+			IfcGeom::IteratorSettings::SEARCH_FLOOR;
+		
 		auto stored_settings = read_scalar_attribute<uint64_t>(brepDataset, "settings");
-		if (stored_settings != settings_.get_raw() && (stored_settings | IfcGeom::IteratorSettings::USE_WORLD_COORDS) != settings_.get_raw()) {
+		auto requested_settings = settings_.get_raw();
+		stored_settings &= ~ignored_settings;
+		requested_settings &= ~ignored_settings;
+
+		// World coordinates can be applied post hoc
+		if (stored_settings != requested_settings && (stored_settings | IfcGeom::IteratorSettings::USE_WORLD_COORDS) != requested_settings) {
 			throw std::runtime_error("Settings mismatch");
 		}
 
@@ -388,6 +405,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			shapes.push_back(IfcGeom::IfcRepresentationShapeItem(part.id, trsf, shp, style_ptr));
 		}
 
+		// World coordinates can be applied post-hoc
 		if (settings_.get(IfcGeom::IteratorSettings::USE_WORLD_COORDS) && !(stored_settings & IfcGeom::IteratorSettings::USE_WORLD_COORDS)) {
 			for (IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++it) {
 				it->prepend(trsf);
