@@ -18,9 +18,14 @@
 
 import os
 import bpy
-import brickschema
 import blenderbim.core.tool
 import blenderbim.tool as tool
+
+try:
+    import brickschema
+except:
+    # See #1860
+    print("Warning: brickschema not available.")
 
 
 class Brick(blenderbim.core.tool.Brick):
