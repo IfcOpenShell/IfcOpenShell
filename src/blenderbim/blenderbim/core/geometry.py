@@ -96,3 +96,27 @@ def switch_representation(
 
     if enable_dynamic_voids and geometry.is_body_representation(representation):
         geometry.create_dynamic_voids(obj)
+
+
+def remove_representation(ifc, geometry, obj=None, representation=None):
+    element = ifc.get_entity(obj)
+    if geometry.is_mapped_representation(representation) or geometry.is_type_product(element):
+        type = geometry.get_element_type(element)
+        representation = geometry.resolve_mapped_representation(representation)
+        data = geometry.get_representation_data(representation)
+        if data and geometry.has_data_users(data):
+            for element in geometry.get_elements_of_type(type):
+                obj = ifc.get_object(element)
+                if obj:
+                    obj = geometry.replace_object_with_empty(obj)
+            obj = ifc.get_object(type)
+            if obj:
+                obj = geometry.replace_object_with_empty(obj)
+        ifc.run("geometry.unassign_representation", product=type, representation=representation)
+        ifc.run("geometry.remove_representation", representation=representation)
+    else:
+        data = geometry.get_representation_data(representation)
+        if data and geometry.has_data_users(data):
+            geometry.replace_object_with_empty(obj)
+        ifc.run("geometry.unassign_representation", product=element, representation=representation)
+        ifc.run("geometry.remove_representation", representation=representation)
