@@ -108,37 +108,15 @@ class RemoveRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_representation"
     bl_label = "Remove Representation"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
     representation_id: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        representation = self.file.by_id(self.representation_id)
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        is_mapped_representation = representation.RepresentationType == "MappedRepresentation"
-        if is_mapped_representation:
-            mesh_name = "{}/{}".format(
-                representation.ContextOfItems.id(), representation.Items[0].MappingSource.MappedRepresentation.id()
-            )
-        else:
-            mesh_name = "{}/{}".format(representation.ContextOfItems.id(), representation.id())
-        mesh = bpy.data.meshes.get(mesh_name)
-        if mesh:
-            if obj.data == mesh:
-                # TODO we can do better than this
-                void_mesh = bpy.data.meshes.get("Void")
-                if not void_mesh:
-                    void_mesh = bpy.data.meshes.new("Void")
-                obj.data = void_mesh
-            if not is_mapped_representation:
-                bpy.data.meshes.remove(mesh)
-        product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        ifcopenshell.api.run(
-            "geometry.unassign_representation", self.file, **{"product": product, "representation": representation}
+        core.remove_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=context.active_object,
+            representation=tool.Ifc.get().by_id(self.representation_id),
         )
-        ifcopenshell.api.run("geometry.remove_representation", self.file, **{"representation": representation})
-        Data.load(self.file, product.id())
-        return {"FINISHED"}
 
 
 class UpdateRepresentation(bpy.types.Operator):
@@ -236,7 +214,7 @@ class UpdateRepresentation(bpy.types.Operator):
 
         obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
         obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
-        bpy.ops.bim.remove_representation(representation_id=old_representation.id(), obj=obj.name)
+        core.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_representation)
         Data.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         if obj.data.BIMMeshProperties.ifc_parameters:
             bpy.ops.bim.get_representation_ifc_parameters()

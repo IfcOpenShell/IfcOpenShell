@@ -77,6 +77,14 @@ class Geometry(blenderbim.core.tool.Geometry):
             )
 
     @classmethod
+    def get_element_type(cls, element):
+        return ifcopenshell.util.element.get_type(element)
+
+    @classmethod
+    def get_elements_of_type(cls, type):
+        return ifcopenshell.util.element.get_types(type)
+
+    @classmethod
     def get_ifc_representation_class(cls, element, representation):
         material = ifcopenshell.util.element.get_material(element)
         if material and material.is_a("IfcMaterialProfileSetUsage"):
@@ -125,6 +133,10 @@ class Geometry(blenderbim.core.tool.Geometry):
         return max(1, len(obj.material_slots))
 
     @classmethod
+    def has_data_users(cls, data):
+        return data.users != 0
+
+    @classmethod
     def import_representation(cls, obj, representation, enable_dynamic_voids=False):
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
@@ -153,12 +165,34 @@ class Geometry(blenderbim.core.tool.Geometry):
         return representation.ContextOfItems.ContextIdentifier == "Body"
 
     @classmethod
+    def is_mapped_representation(cls, representation):
+        return representation.RepresentationType == "MappedRepresentation"
+
+    @classmethod
+    def is_type_product(cls, element):
+        return element.is_a("IfcTypeProduct")
+
+    @classmethod
     def link(cls, element, obj):
         obj.BIMMeshProperties.ifc_definition_id = element.id()
 
     @classmethod
     def rename_object(cls, obj, name):
         obj.name = name
+
+    @classmethod
+    def replace_object_with_empty(cls, obj):
+        element = tool.Ifc.get_entity(obj)
+        name = obj.name
+        tool.Ifc.unlink(obj)
+        obj.name = ifcopenshell.guid.new()
+        new_obj = bpy.data.objects.new(name, None)
+        if element:
+            tool.Ifc.link(element, new_obj)
+        for collection in obj.users_collection:
+            collection.objects.link(new_obj)
+        new_obj.matrix_world = obj.matrix_world
+        bpy.data.objects.remove(obj)
 
     @classmethod
     def resolve_mapped_representation(cls, representation):

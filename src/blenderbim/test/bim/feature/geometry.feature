@@ -84,6 +84,66 @@ Scenario: Switch representation - existing Blender modifiers must be purged
     And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation})"
     Then the object "IfcWall/Cube" has no modifiers
 
+Scenario: Remove representation - remove an active representation
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I add an array modifier
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    When the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
+    And I press "bim.remove_representation(representation_id={representation})"
+    Then the object "IfcWall/Cube" has no data
+
+Scenario: Remove representation - remove an unloaded representation
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I add an array modifier
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    When the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[1].id()"
+    And I press "bim.remove_representation(representation_id={representation})"
+    Then the object "IfcWall/Cube" has data which is an IFC representation
+
+Scenario: Remove representation - remove an instanced representation from an active type object
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
+    And I set "scene.BIMModelProperties.relating_type" to "{cube}"
+    And I press "bim.add_type_instance"
+    And I press "bim.add_type_instance"
+    And the object "IfcWallType/Cube" is selected
+    When the variable "representation" is "{ifc}.by_type('IfcWallType')[0].RepresentationMaps[1].MappedRepresentation.id()"
+    And I press "bim.remove_representation(representation_id={representation})"
+    Then the object "IfcWallType/Cube" has no data
+    Then the object "IfcWall/Instance" has no data
+    Then the object "IfcWall/Instance.001" has no data
+
+Scenario: Remove representation - remove an instanced representation from an active instance object
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
+    And I set "scene.BIMModelProperties.relating_type" to "{cube}"
+    And I press "bim.add_type_instance"
+    And I press "bim.add_type_instance"
+    And the object "IfcWall/Instance" is selected
+    When the variable "representation" is "{ifc}.by_type('IfcWall')[0].Representation.Representations[1].id()"
+    And I press "bim.remove_representation(representation_id={representation})"
+    Then the object "IfcWallType/Cube" has no data
+    Then the object "IfcWall/Instance" has no data
+    Then the object "IfcWall/Instance.001" has no data
+
 Scenario: Update representation - updating a tessellation
     Given an empty IFC project
     And I add a cube
