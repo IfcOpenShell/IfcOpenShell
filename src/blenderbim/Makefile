@@ -261,6 +261,7 @@ endif
 	mkdir dist/working
 	cd dist/working && wget $(HPPFCL_URL)
 	cd dist/working && tar -xf hpp-fcl*
+	rm -rf dist/working
 
 	# Required by IFCCityJSON
 	mkdir dist/working
