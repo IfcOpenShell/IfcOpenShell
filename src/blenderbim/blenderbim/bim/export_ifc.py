@@ -132,6 +132,9 @@ class IfcExporter:
     def sync_object_placement(self, obj):
         blender_matrix = np.array(obj.matrix_world)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if list(obj.scale) != [1., 1., 1.]:
+            bpy.ops.bim.update_representation(obj=obj.name)
+            return element
         if element.is_a("IfcGridAxis"):
             return self.sync_grid_axis_object_placement(obj, element)
         if not hasattr(element, "ObjectPlacement"):
