@@ -42,6 +42,27 @@ Scenario: Add representation - add a new representation to a typed instance
     Then the object "IfcWall/Instance" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
     And the object "IfcWall/Instance.001" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
 
+Scenario: Add representation - add a representation with a scale factor applied
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    When the object "Cube" is scaled to "2"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    Then the object "IfcWall/Cube" has no scale
+    And the object "IfcWall/Cube" dimensions are "4,4,4"
+
+Scenario: Add representation - add a representation with a scale factor removed due to multiple users
+    Given an empty IFC project
+    And I add a cube
+    And I press "object.duplicate_move_linked"
+    And the object "Cube" is selected
+    When the object "Cube" is scaled to "2"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    Then the object "IfcWall/Cube" has no scale
+    And the object "IfcWall/Cube" dimensions are "2,2,2"
+
 Scenario: Switch representation
     Given an empty IFC project
     And I add a cube

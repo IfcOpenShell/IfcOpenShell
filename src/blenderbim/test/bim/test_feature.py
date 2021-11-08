@@ -86,7 +86,7 @@ def i_add_an_empty():
 
 @given("I add a sun")
 @when("I add an sun")
-def i_add_an_empty():
+def i_add_a_sun():
     bpy.ops.object.light_add(type="SUN")
 
 
@@ -143,8 +143,14 @@ def the_object_name_is_selected(name):
 
 @given(parsers.parse('the object "{name}" is moved to "{location}"'))
 @when(parsers.parse('the object "{name}" is moved to "{location}"'))
-def the_object_name_is_selected(name, location):
+def the_object_name_is_moved_to_location(name, location):
     the_object_name_exists(name).location += Vector([float(co) for co in location.split(",")])
+
+
+@given(parsers.parse('the object "{name}" is scaled to "{scale}"'))
+@when(parsers.parse('the object "{name}" is scaled to "{scale}"'))
+def the_object_name_is_scaled_to_scale(name, scale):
+    the_object_name_exists(name).scale *= float(scale)
 
 
 @given(parsers.parse('the object "{name}" is placed in the collection "{collection}"'))
@@ -447,6 +453,22 @@ def the_object_name_is_at_location(name, location):
     assert (
         obj_location - Vector([float(co) for co in location.split(",")])
     ).length < 0.1, f"Object is at {obj_location}"
+
+
+@then(parsers.parse('the object "{name}" has no scale'))
+def the_object_name_has_no_scale(name):
+    assert the_object_name_exists(name).scale == Vector(
+        (
+            1.0,
+            1.0,
+            1.0,
+        )
+    )
+
+
+@then(parsers.parse('the object "{name}" dimensions are "{dimensions}"'))
+def the_object_name_dimensions_are_dimensions(name, dimensions):
+    assert list(the_object_name_exists(name).dimensions) == [float(co) for co in dimensions.split(",")]
 
 
 @then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
