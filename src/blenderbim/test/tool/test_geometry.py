@@ -184,6 +184,26 @@ class TestGetCartesianPointCoordinateOffset(NewFile):
         assert subject.get_cartesian_point_coordinate_offset(obj) is None
 
 
+class TestGetElementType(NewFile):
+    def test_run(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        element = ifc.createIfcWall()
+        type = ifc.createIfcWallType()
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=element, relating_type=type)
+        assert subject.get_element_type(element) == type
+
+
+class TestGetElementsOfType(NewFile):
+    def test_run(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        element = ifc.createIfcWall()
+        type = ifc.createIfcWallType()
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=element, relating_type=type)
+        assert subject.get_elements_of_type(type) == (element,)
+
+
 class TestGetTotalRepresentationItems(NewFile):
     def test_run(self):
         material1 = bpy.data.materials.new("Material")
@@ -192,6 +212,14 @@ class TestGetTotalRepresentationItems(NewFile):
         obj.data.materials.append(material1)
         obj.data.materials.append(material2)
         assert subject.get_total_representation_items(obj) == 2
+
+
+class TestHasDataUsers(NewFile):
+    def test_run(self):
+        data = bpy.data.meshes.new("Mesh")
+        assert subject.has_data_users(data) is False
+        bpy.data.objects.new("Object", data)
+        assert subject.has_data_users(data) is True
 
 
 class TestImportRepresentation(NewFile):
@@ -232,6 +260,22 @@ class TestIsBodyRepresentation(NewFile):
         assert subject.is_body_representation(representation) is False
 
 
+class TestIsMappedRepresentation(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        representation = ifc.createIfcShapeRepresentation()
+        assert subject.is_mapped_representation(representation) is False
+        representation.RepresentationType = "MappedRepresentation"
+        assert subject.is_mapped_representation(representation) is True
+
+
+class TestIsTypeProduct(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        assert subject.is_type_product(ifc.createIfcWall()) is False
+        assert subject.is_type_product(ifc.createIfcWallType()) is True
+
+
 class TestLink(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -241,11 +285,29 @@ class TestLink(NewFile):
         assert obj.BIMMeshProperties.ifc_definition_id == element.id()
 
 
-class TestRenameObjectData(NewFile):
+class TestRenameObject(NewFile):
     def test_run(self):
         obj = bpy.data.meshes.new("Mesh")
         subject.rename_object(obj, "name")
         assert obj.name == "name"
+
+
+class TestReplaceObjectWithEmpty(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        obj.matrix_world[0][3] = 1
+        bpy.context.scene.collection.objects.link(obj)
+        element = ifc.createIfcWall()
+        tool.Ifc.link(element, obj)
+        subject.replace_object_with_empty(obj)
+        obj = bpy.data.objects.get("Object")
+        assert obj.users_collection[0] == bpy.context.scene.collection
+        assert tool.Ifc.get_entity(obj) == element
+        assert tool.Ifc.get_object(element) == obj
+        assert obj.data is None
+        assert obj.matrix_world[0][3] == 1
 
 
 class TestResolveMappedRepresentation(NewFile):

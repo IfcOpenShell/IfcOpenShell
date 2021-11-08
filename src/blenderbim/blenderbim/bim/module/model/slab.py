@@ -26,6 +26,7 @@ import ifcopenshell.util.element
 import mathutils.geometry
 import blenderbim.bim.handler
 import blenderbim.core.type
+import blenderbim.core.geometry
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from math import pi, degrees
@@ -112,7 +113,9 @@ def generate_footprint(usecase_path, ifc_file, settings):
     old_footprint = ifcopenshell.util.representation.get_representation(product, "Plan", "FootPrint", "SKETCH_VIEW")
     if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
         if old_footprint:
-            bpy.ops.bim.remove_representation(representation_id=old_footprint.id(), obj=obj.name)
+            blenderbim.core.geometry.remove_representation(
+                tool.Ifc, tool.Geometry, obj=obj, representation=old_footprint
+            )
 
         helper = Helper(ifc_file)
         indices = helper.auto_detect_arbitrary_profile_with_voids_extruded_area_solid(settings["geometry"])

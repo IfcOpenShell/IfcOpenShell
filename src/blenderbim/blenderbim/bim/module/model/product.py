@@ -255,7 +255,7 @@ def generate_box(usecase_path, ifc_file, settings):
     old_box = ifcopenshell.util.representation.get_representation(product, "Model", "Box", "MODEL_VIEW")
     if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
         if old_box:
-            bpy.ops.bim.remove_representation(representation_id=old_box.id(), obj=obj.name)
+            blenderbim.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_box)
 
         new_settings = settings.copy()
         new_settings["context"] = box_context

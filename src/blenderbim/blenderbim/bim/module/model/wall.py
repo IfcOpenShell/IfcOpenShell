@@ -28,6 +28,7 @@ import mathutils.geometry
 import blenderbim.bim.handler
 import blenderbim.core.type
 import blenderbim.core.root
+import blenderbim.core.geometry
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
@@ -828,7 +829,7 @@ def generate_axis(usecase_path, ifc_file, settings):
     old_axis = ifcopenshell.util.representation.get_representation(product, "Model", "Axis", "GRAPH_VIEW")
     if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
         if old_axis:
-            bpy.ops.bim.remove_representation(representation_id=old_axis.id(), obj=obj.name)
+            blenderbim.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_axis)
 
         new_settings = settings.copy()
         new_settings["context"] = axis_context
