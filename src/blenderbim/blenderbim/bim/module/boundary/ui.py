@@ -20,12 +20,32 @@ import bpy
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 from ifcopenshell.api.boundary.data import Data
 
 
-class BIM_PT_boundary(Panel):
+class BIM_PT_SceneBoundaries(Panel):
     bl_label = "IFC Space Boundaries"
-    bl_idname = "BIM_PT_boundary"
+    bl_id_name = "BIM_PT_scene_boundaries"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.operator("bim.load_project_space_boundaries")
+        row.operator("bim.select_project_space_boundaries", text="", icon="RESTRICT_SELECT_OFF")
+        row.operator("bim.colour_by_related_building_element", text="", icon="BRUSH_DATA")
+
+
+class BIM_PT_Boundary(Panel):
+    bl_label = "IFC Space Boundaries"
+    bl_idname = "BIM_PT_Boundary"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -46,9 +66,15 @@ class BIM_PT_boundary(Panel):
 
     def draw(self, context):
         self.oprops = context.active_object.BIMObjectProperties
+        row = self.layout.row()
+        row.operator("bim.load_space_boundaries")
+        ifc_file = tool.Ifc.get()
         if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+            Data.load(ifc_file)
         for boundary_id in Data.spaces.get(self.oprops.ifc_definition_id, []):
             boundary = Data.boundaries[boundary_id]
+            building_element = ifc_file.by_id(boundary["RelatedBuildingElement"])
             row = self.layout.row()
-            row.label(text=f"{boundary_id}", icon="GHOST_ENABLED")
+            row.label(text=f"{boundary_id} > {building_element.is_a()}/{building_element.Name}", icon="GHOST_ENABLED")
+            op = row.operator("bim.load_boundary", text="", icon="RESTRICT_SELECT_OFF")
+            op.boundary_id = boundary_id
