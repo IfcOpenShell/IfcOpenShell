@@ -136,6 +136,14 @@ class TestGetTypeIFC2X3(test.bootstrap.IFC2X3):
         assert subject.get_type(element_type) == element_type
 
 
+class TestGetTypes(test.bootstrap.IFC4):
+    def test_getting_the_type_of_a_product(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        assert subject.get_types(element_type) == (element,)
+
+
 class TestGetMaterial(test.bootstrap.IFC4):
     def test_getting_the_material_of_a_product(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
