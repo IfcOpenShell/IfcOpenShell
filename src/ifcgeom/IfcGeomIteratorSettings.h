@@ -138,14 +138,14 @@ namespace IfcGeom
 		}
 
         /// Get boolean value for a single settings or for a combination of settings.
-        bool get(unsigned setting) const
+        bool get(uint64_t setting) const
         {
             /// @todo If unknown setting value/combination: throw IfcParse::IfcException("Invalid IteratorSetting")?
             return (settings_ & setting) != 0;
         }
 
         /// Set boolean value for a single settings or for a combination of settings.
-        void set(unsigned setting, bool value)
+        void set(uint64_t setting, bool value)
         {
             /// @todo If unknown setting value/combination: throw IfcParse::IfcException("Invalid IteratorSetting")?
             if (value) {
