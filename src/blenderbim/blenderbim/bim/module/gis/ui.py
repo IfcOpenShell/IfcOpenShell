@@ -23,6 +23,7 @@ class BIM_PT_cityjson_converter(Panel):
         row.prop(props, "name")
         row = layout.row(align=True)
         row.prop(props, "split_lod")
+        row.prop(props, "load_after_convert")
         row = layout.row(align=True)
         row.prop(props, "lod")
         if not props.is_lod_found:

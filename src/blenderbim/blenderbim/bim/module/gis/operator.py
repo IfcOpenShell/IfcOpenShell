@@ -1,3 +1,4 @@
+import bpy
 from bpy.types import Operator
 from cjio import cityjson
 from ifccityjson.cityjson2ifc import Cityjson2ifc
@@ -21,6 +22,8 @@ class BIM_OT_cityjson2ifc(Operator):
         converter = Cityjson2ifc()
         converter.configuration(**data)
         converter.convert(city_model)
+        if props.load_after_convert:
+            bpy.ops.bim.load_project(filepath=props.output)
         return {'FINISHED'}
 
 

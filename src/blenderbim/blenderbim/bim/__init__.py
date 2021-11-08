@@ -63,10 +63,10 @@ modules = {
     "bimtester": None,
     "diff": None,
     "patch": None,
+    "gis": None,
     "covetool": None,
     "augin": None,
     "debug": None,
-    "gis": None,
 }
 
 
