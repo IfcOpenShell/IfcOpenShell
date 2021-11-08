@@ -19,6 +19,7 @@
 import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.model.data import AuthoringData
 
 
 class BIM_PT_authoring(Panel):
@@ -33,17 +34,20 @@ class BIM_PT_authoring(Panel):
         return IfcStore.get_file()
 
     def draw(self, context):
-        tprops = context.scene.BIMTypeProperties
+        if not AuthoringData.is_loaded:
+            AuthoringData.load()
+
+        props = context.scene.BIMModelProperties
         col = self.layout.column(align=True)
         enabled = True
 
-        if type_prop.getIfcTypes(tprops, context):
-            col.prop(tprops, "ifc_class", text="", icon="FILE_VOLUME")
+        if AuthoringData.data["ifc_classes"]:
+            col.prop(props, "ifc_class", text="", icon="FILE_VOLUME")
         else:
             col.label(text="No IFC Class", icon="FILE_VOLUME")
             enabled = False
-        if type_prop.get_relating_type(tprops, context):
-            col.prop(tprops, "relating_type", text="", icon="FILE_3D")
+        if AuthoringData.data["relating_types"]:
+            col.prop(props, "relating_type", text="", icon="FILE_3D")
         else:
             col.label(text="No Relating Type", icon="FILE_3D")
             enabled = False

@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.util.type
+from blenderbim.bim.module.type.data import TypeData
 from blenderbim.bim.prop import StrProperty, Attribute
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
@@ -32,78 +33,24 @@ from bpy.props import (
     CollectionProperty,
 )
 
-applicable_types_enum = []
-relating_types_enum = []
-type_classes_enum = []
-available_types_enum = []
 
-
-def purge():
-    global applicable_types_enum
-    global relating_types_enum
-    global type_classes_enum
-    global available_types_enum
-    applicable_types_enum = []
-    relating_types_enum = []
-    type_classes_enum = []
-    available_types_enum = []
-
-
-def getIfcTypes(self, context):
-    global type_classes_enum
-    file = IfcStore.get_file()
-    if len(type_classes_enum) < 1 and file:
-        classes = set([e.is_a() for e in file.by_type("IfcElementType")])
-        type_classes_enum.extend([(c, c, "") for c in sorted(classes)])
-    return type_classes_enum
+def get_relating_type_class(self, context):
+    if not TypeData.is_loaded:
+        TypeData.load()
+    return TypeData.data["relating_type_classes"]
 
 
 def get_relating_type(self, context):
-    global available_types_enum
-    if len(available_types_enum) < 1 and getIfcTypes(self, context):
-        elements = [(str(e.id()), e.Name, "") for e in IfcStore.get_file().by_type(self.ifc_class)]
-        available_types_enum.extend(sorted(elements, key=lambda s: s[1]))
-    return available_types_enum
+    if not TypeData.is_loaded:
+        TypeData.load()
+    return TypeData.data["relating_types"]
 
 
-def updateTypeInstanceIfcClass(self, context):
-    global type_classes_enum
-    global available_types_enum
-    type_classes_enum.clear()
-    available_types_enum.clear()
-
-
-def getApplicableTypes(self, context):
-    global applicable_types_enum
-    if len(applicable_types_enum) < 1:
-        element = IfcStore.get_file().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
-        types = ifcopenshell.util.type.get_applicable_types(element.is_a(), schema=IfcStore.get_file().schema)
-        applicable_types_enum.extend((t, t, "") for t in types)
-    return applicable_types_enum
-
-
-def get_object_relating_type(self, context):
-    global relating_types_enum
-    if len(relating_types_enum) < 1:
-        elements = IfcStore.get_file().by_type(context.active_object.BIMTypeProperties.relating_type_class)
-        elements = [(str(e.id()), e.Name, "") for e in elements]
-        relating_types_enum.extend(sorted(elements, key=lambda s: s[1]))
-    return relating_types_enum
-
-
-def updateTypeDropdowns(self, context):
-    global applicable_types_enum
-    global relating_types_enum
-    applicable_types_enum.clear()
-    relating_types_enum.clear()
+def update_is_editing_type(self, context):
+    TypeData.is_loaded = False
 
 
 class BIMTypeProperties(PropertyGroup):
-    ifc_class: bpy.props.EnumProperty(items=getIfcTypes, name="IFC Class", update=updateTypeInstanceIfcClass)
-    relating_type: bpy.props.EnumProperty(items=get_relating_type, name="Relating Type")
-
-
-class BIMTypeObjectProperties(PropertyGroup):
-    is_editing_type: BoolProperty(name="Is Editing Type", update=updateTypeDropdowns)
-    relating_type_class: EnumProperty(items=getApplicableTypes, name="Relating Type Class")
-    relating_type: EnumProperty(items=get_object_relating_type, name="Relating Type")
+    is_editing_type: BoolProperty(name="Is Editing Type", update=update_is_editing_type)
+    relating_type_class: EnumProperty(items=get_relating_type_class, name="Relating Type Class")
+    relating_type: EnumProperty(items=get_relating_type, name="Relating Type")

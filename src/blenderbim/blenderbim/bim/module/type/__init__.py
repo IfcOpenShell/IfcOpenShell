@@ -28,16 +28,13 @@ classes = (
     operator.SelectTypeObjects,
     operator.SelectType,
     prop.BIMTypeProperties,
-    prop.BIMTypeObjectProperties,
     ui.BIM_PT_type,
 )
 
 
 def register():
-    bpy.types.Scene.BIMTypeProperties = bpy.props.PointerProperty(type=prop.BIMTypeProperties)
-    bpy.types.Object.BIMTypeProperties = bpy.props.PointerProperty(type=prop.BIMTypeObjectProperties)
+    bpy.types.Object.BIMTypeProperties = bpy.props.PointerProperty(type=prop.BIMTypeProperties)
 
 
 def unregister():
-    del bpy.types.Scene.BIMTypeProperties
     del bpy.types.Object.BIMTypeProperties
