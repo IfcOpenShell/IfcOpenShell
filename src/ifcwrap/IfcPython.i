@@ -47,6 +47,7 @@
 // TODO add '# pragma warning(pop)' to the very end of the file
 %}
 
+%include "stdint.i"
 %include "std_array.i"
 %include "std_vector.i"
 %include "std_string.i"
