@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import handler, prop, ui, grid, product, wall, slab, stair, door, window, opening, pie, workspace
+from . import handler, prop, ui, grid, product, wall, slab, stair, opening, pie, workspace
 
 classes = (
     product.AddEmptyType,
@@ -36,8 +36,6 @@ classes = (
     ui.BIM_PT_authoring_architectural,
     grid.BIM_OT_add_object,
     stair.BIM_OT_add_object,
-    door.BIM_OT_add_object,
-    window.BIM_OT_add_object,
     opening.BIM_OT_add_object,
     pie.OpenPieClass,
     pie.PieUpdateContainer,
@@ -55,8 +53,6 @@ def register():
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.VIEW3D_MT_mesh_add.append(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.append(door.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.append(window.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(opening.add_object_button)
     bpy.types.VIEW3D_MT_add.append(product.add_empty_type_button)
     bpy.app.handlers.load_post.append(handler.load_post)
@@ -75,8 +71,6 @@ def unregister():
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.remove(door.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.remove(window.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(opening.add_object_button)
     bpy.types.VIEW3D_MT_add.remove(product.add_empty_type_button)
     wm = bpy.context.window_manager
