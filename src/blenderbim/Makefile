@@ -257,12 +257,6 @@ endif
 	cp -r dist/working/tqdm-4.50.0/tqdm dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Required by IFCClash
-	mkdir dist/working
-	cd dist/working && wget $(HPPFCL_URL)
-	cd dist/working && tar -xf hpp-fcl*
-	rm -rf dist/working
-
 	# Required by IFCCityJSON
 	mkdir dist/working
 	cd dist/working && python -m venv env
@@ -271,6 +265,10 @@ endif
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Required by IFCClash
+	mkdir dist/working
+	cd dist/working && wget $(HPPFCL_URL)
+	cd dist/working && tar -xf hpp-fcl*
 ifeq ($(PLATFORM), linux)
 	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/hppfcl dist/blenderbim/libs/site/packages/
 	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
