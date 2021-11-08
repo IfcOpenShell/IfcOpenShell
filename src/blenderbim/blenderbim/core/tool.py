@@ -78,6 +78,8 @@ class Geometry:
     def does_object_have_mesh_with_faces(cls, obj): pass
     def duplicate_object_data(cls, obj): pass
     def get_cartesian_point_coordinate_offset(cls, obj): pass
+    def get_element_type(cls, element): pass
+    def get_elements_of_type(cls, type): pass
     def get_ifc_representation_class(cls, element, representation): pass
     def get_object_data(cls, obj): pass
     def get_object_materials_without_styles(cls, obj): pass
@@ -85,10 +87,14 @@ class Geometry:
     def get_representation_data(cls, representation): pass
     def get_representation_name(cls, representation): pass
     def get_total_representation_items(cls, obj): pass
+    def has_data_users(cls, data): pass
     def import_representation(cls, obj, representation, enable_dynamic_voids=False): pass
     def is_body_representation(cls, representation): pass
+    def is_mapped_representation(cls, representation): pass
+    def is_type_product(cls, element): pass
     def link(cls, element, obj): pass
     def rename_object(cls, obj, name): pass
+    def replace_object_with_empty(cls, obj): pass
     def resolve_mapped_representation(cls, representation): pass
     def should_force_faceted_brep(cls): pass
     def should_force_triangulation(cls): pass
