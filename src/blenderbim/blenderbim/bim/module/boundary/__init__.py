@@ -17,9 +17,16 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui
+from . import ui, operator
 
-classes = (ui.BIM_PT_boundary,)
+classes = (
+    operator.LoadProjectSpaceBoundaries,
+    operator.LoadSpaceBoundaries,
+    operator.LoadBoundary,
+    operator.SelectProjectBoundaries,
+    ui.BIM_PT_Boundary,
+    ui.BIM_PT_SceneBoundaries,
+)
 
 
 def register():
