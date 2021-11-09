@@ -238,6 +238,7 @@ class DynamicallyVoidProduct(bpy.types.Operator):
             should_reload=True,
             enable_dynamic_voids=True,
             is_global=True,
+            should_sync_changes_first=False,
         )
         if was_edit_mode:
             bpy.ops.object.mode_set(mode="EDIT")
@@ -296,6 +297,7 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
                 should_reload=True,
                 enable_dynamic_voids=True,
                 is_global=True,
+                should_sync_changes_first=False,
             )
 
 
