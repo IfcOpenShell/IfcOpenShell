@@ -129,6 +129,7 @@ class RemoveOpening(bpy.types.Operator):
                 should_reload=True,
                 enable_dynamic_voids=False,
                 is_global=True,
+                should_sync_changes_first=False,
             )
 
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)

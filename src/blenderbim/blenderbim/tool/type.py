@@ -114,4 +114,5 @@ class Type(blenderbim.core.tool.Type):
             should_reload=should_reload,
             enable_dynamic_voids=enable_dynamic_voids,
             is_global=is_global,
+            should_sync_changes_first=False,
         )

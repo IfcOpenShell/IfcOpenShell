@@ -73,6 +73,37 @@ Scenario: Switch representation
     And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation})"
     Then nothing happens
 
+Scenario: Switch representation - current edited representation is updated prior to switch
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the variable "context" is "{ifc}.by_type('IfcGeometricRepresentationSubContext')[-1].id()"
+    And I set "scene.BIMProperties.contexts" to "{context}"
+    And I press "bim.add_representation"
+    When the object "IfcWall/Cube" is scaled to "2"
+    And the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
+    And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
+    And the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[-1].id()"
+    And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
+    When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    Then the object "IfcWall/Cube" dimensions are "4,4,0"
+
+Scenario: Switch representation - current edited representation is discarded if switching to a box
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    When the object "IfcWall/Cube" is scaled to "2"
+    And the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[-1].id()"
+    And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
+    And the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
+    And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
+    When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    Then the object "IfcWall/Cube" dimensions are "2,2,2"
+
 Scenario: Switch representation - existing Blender modifiers must be purged
     Given an empty IFC project
     And I add a cube
@@ -209,6 +240,16 @@ Scenario: Update representation - updating a profiled extrusion
     And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     When I press "bim.update_representation(obj='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
+
+Scenario: Get representation IFC parameters
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "bim.update_representation(ifc_representation_class='IfcExtrudedAreaSolid/IfcRectangleProfileDef')"
+    When I press "bim.get_representation_ifc_parameters"
+    Then nothing happens
 
 Scenario: Copy representation
     Given an empty IFC project

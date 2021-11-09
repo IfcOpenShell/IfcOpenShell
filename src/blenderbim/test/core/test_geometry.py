@@ -182,6 +182,7 @@ class TestAddRepresentation:
 
 class TestSwitchRepresentation:
     def test_switching_to_a_freshly_loaded_representation(self, geometry):
+        geometry.is_edited("obj").should_be_called().will_return(False)
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return(None)
         geometry.import_representation(
@@ -201,9 +202,11 @@ class TestSwitchRepresentation:
             should_reload=True,
             enable_dynamic_voids=True,
             is_global=True,
+            should_sync_changes_first=True,
         )
 
     def test_switching_to_a_reloaded_representation_and_deleting_the_existing_data(self, geometry):
+        geometry.is_edited("obj").should_be_called().will_return(False)
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return("existing_data")
         geometry.import_representation(
@@ -224,9 +227,11 @@ class TestSwitchRepresentation:
             should_reload=True,
             enable_dynamic_voids=True,
             is_global=True,
+            should_sync_changes_first=True,
         )
 
     def test_switching_to_an_existing_representation(self, geometry):
+        geometry.is_edited("obj").should_be_called().will_return(False)
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return("data")
         geometry.change_object_data("obj", "data", is_global=True).should_be_called()
@@ -240,9 +245,11 @@ class TestSwitchRepresentation:
             should_reload=False,
             enable_dynamic_voids=True,
             is_global=True,
+            should_sync_changes_first=True,
         )
 
     def test_switching_to_non_dynamic_baked_voids(self, geometry):
+        geometry.is_edited("obj").should_be_called().will_return(False)
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return("data")
         geometry.change_object_data("obj", "data", is_global=False).should_be_called()
@@ -254,7 +261,33 @@ class TestSwitchRepresentation:
             should_reload=False,
             enable_dynamic_voids=False,
             is_global=False,
+            should_sync_changes_first=True,
         )
+
+    def test_updating_a_representation_if_the_blender_object_has_been_edited_prior_to_switching(self, geometry):
+        geometry.is_edited("obj").should_be_called().will_return(True)
+        geometry.is_box_representation("mapped_rep").should_be_called().will_return(False)
+        geometry.run_geometry_update_representation(obj="obj").should_be_called()
+        geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
+        geometry.get_representation_data("representation").should_be_called().will_return("data")
+        geometry.change_object_data("obj", "data", is_global=False).should_be_called()
+        geometry.clear_modifiers("obj").should_be_called()
+        subject.switch_representation(
+            geometry,
+            obj="obj",
+            representation="mapped_rep",
+            should_reload=False,
+            enable_dynamic_voids=False,
+            is_global=False,
+            should_sync_changes_first=True,
+        )
+
+
+class TestGetRepresentationIfcParameters:
+    def test_run(self, geometry):
+        geometry.get_object_data("obj").should_be_called().will_return("data")
+        geometry.import_representation_parameters("data").should_be_called()
+        subject.get_representation_ifc_parameters(geometry, obj="obj", should_sync_changes_first=False)
 
 
 class TestRemoveRepresentation:

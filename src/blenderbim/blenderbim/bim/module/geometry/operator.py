@@ -101,6 +101,7 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
             should_reload=self.should_reload,
             enable_dynamic_voids=self.disable_opening_subtractions,
             is_global=self.should_switch_all_meshes,
+            should_sync_changes_first=True,
         )
 
 
@@ -217,7 +218,7 @@ class UpdateRepresentation(bpy.types.Operator):
         core.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_representation)
         Data.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         if obj.data.BIMMeshProperties.ifc_parameters:
-            bpy.ops.bim.get_representation_ifc_parameters()
+            core.get_representation_ifc_parameters(tool.Geometry, obj=obj)
 
 
 class UpdateParametricRepresentation(bpy.types.Operator):
@@ -244,35 +245,20 @@ class UpdateParametricRepresentation(bpy.types.Operator):
             should_reload=True,
             enable_dynamic_voids=False,
             is_global=True,
+            should_sync_changes_first=False,
         )
         if show_representation_parameters:
-            bpy.ops.bim.get_representation_ifc_parameters()
+            core.get_representation_ifc_parameters(tool.Geometry, obj=obj)
         return {"FINISHED"}
 
 
-class GetRepresentationIfcParameters(bpy.types.Operator):
+class GetRepresentationIfcParameters(bpy.types.Operator, Operator):
     bl_idname = "bim.get_representation_ifc_parameters"
     bl_label = "Get Representation IFC Parameters"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        self.file = IfcStore.get_file()
-        obj = context.active_object
-        props = obj.data.BIMMeshProperties
-        elements = self.file.traverse(self.file.by_id(props.ifc_definition_id))
-        props.ifc_parameters.clear()
-        for element in elements:
-            if element.is_a("IfcRepresentationItem") or element.is_a("IfcParameterizedProfileDef"):
-                for i in range(0, len(element)):
-                    if element.attribute_type(i) == "DOUBLE":
-                        new = props.ifc_parameters.add()
-                        new.name = "{}/{}".format(element.is_a(), element.attribute_name(i))
-                        new.step_id = element.id()
-                        new.type = element.attribute_type(i)
-                        new.index = i
-                        if element[i]:
-                            new.value = element[i]
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.get_representation_ifc_parameters(tool.Geometry, obj=context.active_object)
 
 
 class CopyRepresentation(bpy.types.Operator, Operator):

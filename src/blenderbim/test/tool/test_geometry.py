@@ -248,6 +248,24 @@ class TestImportRepresentation(NewFile):
         assert len(mesh.edges) == 4
 
 
+class TestImportRepresentationParameters(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        swept_area = ifc.createIfcCircleProfileDef(Radius=1)
+        item = ifc.createIfcExtrudedAreaSolid(SweptArea=swept_area, Depth=2)
+        representation = ifc.createIfcShapeRepresentation(Items=[item])
+        data = bpy.data.meshes.new("Mesh")
+        data.BIMMeshProperties.ifc_definition_id = representation.id()
+        subject.import_representation_parameters(data)
+        assert data.BIMMeshProperties.ifc_parameters[0].name == "IfcExtrudedAreaSolid/Depth"
+        assert data.BIMMeshProperties.ifc_parameters[0].step_id == item.id()
+        assert data.BIMMeshProperties.ifc_parameters[0].index == 3
+        assert data.BIMMeshProperties.ifc_parameters[1].name == "IfcCircleProfileDef/Radius"
+        assert data.BIMMeshProperties.ifc_parameters[1].step_id == swept_area.id()
+        assert data.BIMMeshProperties.ifc_parameters[1].index == 3
+
+
 class TestIsBodyRepresentation(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -258,6 +276,30 @@ class TestIsBodyRepresentation(NewFile):
         assert subject.is_body_representation(representation) is True
         context.ContextIdentifier = "Clearance"
         assert subject.is_body_representation(representation) is False
+
+
+class TestIsBoxRepresentation(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        context = ifc.createIfcGeometricRepresentationContext()
+        representation = ifc.createIfcShapeRepresentation()
+        representation.ContextOfItems = context
+        context.ContextIdentifier = "Box"
+        assert subject.is_box_representation(representation) is True
+        context.ContextIdentifier = "Clearance"
+        assert subject.is_box_representation(representation) is False
+
+
+class TestIsEdited(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        assert subject.is_edited(obj) is False
+        obj.scale[0] = 2
+        assert subject.is_edited(obj) is True
+        obj.scale[0] = 1
+        assert subject.is_edited(obj) is False
+        IfcStore.edited_objs.add(obj)
+        assert subject.is_edited(obj) is True
 
 
 class TestIsMappedRepresentation(NewFile):
@@ -325,6 +367,11 @@ class TestResolveMappedRepresentation(NewFile):
         ifc = ifcopenshell.file()
         representation = ifc.createIfcShapeRepresentation()
         assert subject.resolve_mapped_representation(representation) == representation
+
+
+class TestRunGeometryUpdateRepresentation(NewFile):
+    def test_nothing(self):
+        pass
 
 
 class TestShouldForceFacetedBrep(NewFile):

@@ -89,13 +89,17 @@ class Geometry:
     def get_total_representation_items(cls, obj): pass
     def has_data_users(cls, data): pass
     def import_representation(cls, obj, representation, enable_dynamic_voids=False): pass
+    def import_representation_parameters(cls, data): pass
     def is_body_representation(cls, representation): pass
+    def is_box_representation(cls, representation): pass
+    def is_edited(cls, obj): pass
     def is_mapped_representation(cls, representation): pass
     def is_type_product(cls, element): pass
     def link(cls, element, obj): pass
     def rename_object(cls, obj, name): pass
     def replace_object_with_empty(cls, obj): pass
     def resolve_mapped_representation(cls, representation): pass
+    def run_geometry_update_representation(cls, obj=None): pass
     def should_force_faceted_brep(cls): pass
     def should_force_triangulation(cls): pass
     def should_use_presentation_style_assignment(cls): pass

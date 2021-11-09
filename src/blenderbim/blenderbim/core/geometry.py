@@ -75,8 +75,17 @@ def add_representation(
 
 
 def switch_representation(
-    geometry, obj=None, representation=None, should_reload=True, enable_dynamic_voids=True, is_global=True
+    geometry,
+    obj=None,
+    representation=None,
+    should_reload=True,
+    enable_dynamic_voids=True,
+    is_global=True,
+    should_sync_changes_first=False,
 ):
+    if should_sync_changes_first and geometry.is_edited(obj) and not geometry.is_box_representation(representation):
+        geometry.run_geometry_update_representation(obj=obj)
+
     representation = geometry.resolve_mapped_representation(representation)
     existing_data = geometry.get_representation_data(representation)
 
@@ -96,6 +105,10 @@ def switch_representation(
 
     if enable_dynamic_voids and geometry.is_body_representation(representation):
         geometry.create_dynamic_voids(obj)
+
+
+def get_representation_ifc_parameters(geometry, obj=None, should_sync_changes_first=False):
+    geometry.import_representation_parameters(geometry.get_object_data(obj))
 
 
 def remove_representation(ifc, geometry, obj=None, representation=None):

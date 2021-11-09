@@ -161,8 +161,33 @@ class Geometry(blenderbim.core.tool.Geometry):
         return mesh
 
     @classmethod
+    def import_representation_parameters(cls, data):
+        props = data.BIMMeshProperties
+        elements = tool.Ifc.get().traverse(tool.Ifc.get().by_id(props.ifc_definition_id))
+        props.ifc_parameters.clear()
+        for element in elements:
+            if element.is_a("IfcRepresentationItem") or element.is_a("IfcParameterizedProfileDef"):
+                for i in range(0, len(element)):
+                    if element.attribute_type(i) == "DOUBLE":
+                        new = props.ifc_parameters.add()
+                        new.name = "{}/{}".format(element.is_a(), element.attribute_name(i))
+                        new.step_id = element.id()
+                        new.type = element.attribute_type(i)
+                        new.index = i
+                        if element[i]:
+                            new.value = element[i]
+
+    @classmethod
     def is_body_representation(cls, representation):
         return representation.ContextOfItems.ContextIdentifier == "Body"
+
+    @classmethod
+    def is_box_representation(cls, representation):
+        return representation.ContextOfItems.ContextIdentifier == "Box"
+
+    @classmethod
+    def is_edited(cls, obj):
+        return list(obj.scale) != [1.0, 1.0, 1.0] or obj in IfcStore.edited_objs
 
     @classmethod
     def is_mapped_representation(cls, representation):
@@ -199,6 +224,10 @@ class Geometry(blenderbim.core.tool.Geometry):
         if representation.RepresentationType == "MappedRepresentation":
             return cls.resolve_mapped_representation(representation.Items[0].MappingSource.MappedRepresentation)
         return representation
+
+    @classmethod
+    def run_geometry_update_representation(cls, obj=None):
+        bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
 
     @classmethod
     def should_force_faceted_brep(cls):
