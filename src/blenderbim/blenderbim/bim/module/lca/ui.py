@@ -30,9 +30,13 @@ class BIM_PT_lca(Panel):
 
     def draw(self, context):
         props = context.scene.BIMLCAProperties
-        row = self.layout.row()
-        row.prop(props, "product_systems", text="")
-        row = self.layout.row()
-        row.prop(props, "amount", text="")
-        row = self.layout.row()
-        row.operator("bim.calculate_lca")
+        if props.is_connected:
+            row = self.layout.row()
+            row.prop(props, "product_systems", text="")
+            row = self.layout.row()
+            row.prop(props, "amount", text="")
+            row = self.layout.row()
+            row.operator("bim.calculate_lca")
+        else:
+            row = self.layout.row()
+            row.operator("bim.connect_openlca")

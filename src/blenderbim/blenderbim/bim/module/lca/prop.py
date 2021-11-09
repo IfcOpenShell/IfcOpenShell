@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import olca
+from blenderbim.bim.module.lca.data import LcaData
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -31,25 +31,14 @@ from bpy.props import (
     CollectionProperty,
 )
 
-productsystems_enum = []
-
-
-def purge():
-    global productsystems_enum
-    productsystems_enum = []
-
 
 def get_product_systems(self, context):
-    global productsystems_enum
-    if not len(productsystems_enum):
-        client = olca.Client(context.preferences.addons["blenderbim"].preferences.openlca_port)
-        try:
-            productsystems_enum = [(ps.name, ps.name, "") for ps in client.get_all(olca.ProductSystem)]
-        except:
-            pass
-    return productsystems_enum
+    if not LcaData.is_loaded:
+        LcaData.load()
+    return LcaData.data["product_systems"]
 
 
 class BIMLCAProperties(PropertyGroup):
+    is_connected: BoolProperty(name="Is Connected")
     amount: FloatProperty(name="Amount")
     product_systems: EnumProperty(items=get_product_systems, name="Product Systems")

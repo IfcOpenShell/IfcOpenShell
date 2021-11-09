@@ -17,19 +17,33 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
-
-classes = (
-    operator.CalculateLCA,
-    operator.ConnectOpenLCA,
-    prop.BIMLCAProperties,
-    ui.BIM_PT_lca,
-)
+import olca
+import blenderbim.tool as tool
 
 
-def register():
-    bpy.types.Scene.BIMLCAProperties = bpy.props.PointerProperty(type=prop.BIMLCAProperties)
+def refresh():
+    LcaData.is_loaded = False
 
 
-def unregister():
-    del bpy.types.Scene.BIMLCAProperties
+class LcaData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "product_systems": cls.product_systems(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def product_systems(cls):
+        if not bpy.context.scene.BIMLCAProperties.is_connected:
+            return []
+        results = []
+        client = olca.Client(context.preferences.addons["blenderbim"].preferences.openlca_port)
+        try:
+            results = [(ps.name, ps.name, "") for ps in client.get_all(olca.ProductSystem)]
+        except:
+            pass
+        return results
