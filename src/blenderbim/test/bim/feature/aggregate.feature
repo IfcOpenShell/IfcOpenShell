@@ -38,3 +38,44 @@ Scenario: Unassign object
     Then the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
     And the collection "IfcBuildingStorey/My Storey" is in the collection "IfcProject/My Project"
+
+Scenario: Add aggregate
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    When I press "bim.add_aggregate"
+    Then the object "IfcWall/Cube" is in the collection "IfcElementAssembly/Assembly"
+    And the object "IfcElementAssembly/Assembly" is in the collection "IfcElementAssembly/Assembly"
+    And the collection "IfcElementAssembly/Assembly" is in the collection "IfcProject/My Project"
+
+Scenario: Add aggregate - with the aggregate inheriting the existing spatial collection
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is placed in the collection "IfcBuildingStorey/My Storey"
+    And the object "IfcWall/Cube" is selected
+    When I press "bim.add_aggregate"
+    Then the object "IfcWall/Cube" is in the collection "IfcElementAssembly/Assembly"
+    And the object "IfcElementAssembly/Assembly" is in the collection "IfcElementAssembly/Assembly"
+    And the collection "IfcElementAssembly/Assembly" is in the collection "IfcBuildingStorey/My Storey"
+
+Scenario: Add aggregate - add a nested aggregate
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is placed in the collection "IfcBuildingStorey/My Storey"
+    And the object "IfcWall/Cube" is selected
+    When I press "bim.add_aggregate"
+    And the object "IfcWall/Cube" is selected
+    And I press "bim.add_aggregate"
+    Then the object "IfcWall/Cube" is in the collection "IfcElementAssembly/Assembly.001"
+    And the object "IfcElementAssembly/Assembly.001" is in the collection "IfcElementAssembly/Assembly.001"
+    And the collection "IfcElementAssembly/Assembly.001" is in the collection "IfcElementAssembly/Assembly"
+    And the collection "IfcElementAssembly/Assembly" is in the collection "IfcBuildingStorey/My Storey"
