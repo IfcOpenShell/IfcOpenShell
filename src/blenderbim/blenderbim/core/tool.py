@@ -58,6 +58,7 @@ class Brick:
 @interface
 class Collector:
     def assign(cls, obj): pass
+    def sync(cls, obj): pass
 
 
 @interface

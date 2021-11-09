@@ -17,8 +17,11 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell
+import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.core.aggregate as core
+import blenderbim.core.spatial
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 
@@ -92,10 +95,34 @@ class AddAggregate(bpy.types.Operator):
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return {"FINISHED"}
+
         aggregate_collection = bpy.data.collections.new("IfcElementAssembly/Assembly")
         context.scene.collection.children.link(aggregate_collection)
         aggregate = bpy.data.objects.new("Assembly", None)
         aggregate_collection.objects.link(aggregate)
         bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class="IfcElementAssembly")
+
+        tool.Collector.sync(obj)
+        current_aggregate = ifcopenshell.util.element.get_aggregate(element)
+        current_container = ifcopenshell.util.element.get_container(element)
+        if current_aggregate:
+            core.assign_object(
+                tool.Ifc,
+                tool.Aggregate,
+                tool.Collector,
+                relating_obj=tool.Ifc.get_object(current_aggregate),
+                related_obj=aggregate,
+            )
+        elif current_container:
+            blenderbim.core.spatial.assign_container(
+                tool.Ifc,
+                tool.Collector,
+                tool.Spatial,
+                structure_obj=tool.Ifc.get_object(current_container),
+                element_obj=aggregate,
+            )
         core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
         return {"FINISHED"}
