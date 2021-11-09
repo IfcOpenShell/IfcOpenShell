@@ -262,6 +262,7 @@ endif
 	cd dist/working && python -m venv env
 	cd dist/working && mkdir site-packages
 	cd dist/working && . env/bin/activate && pip install cjio --target=./site-packages
+	cd dist/working/site-packages/ && rm -r *dist-info*
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
