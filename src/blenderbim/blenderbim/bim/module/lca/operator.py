@@ -43,3 +43,13 @@ class CalculateLCA(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+
+class ConnectOpenLCA(bpy.types.Operator):
+    bl_idname = "bim.connect_openlca"
+    bl_label = "Connect OpenLCA"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bpy.context.scene.BIMLCAProperties.is_connected = True
+        return {"FINISHED"}
