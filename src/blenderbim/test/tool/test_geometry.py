@@ -53,6 +53,11 @@ class TestChangeObjectData(NewFile):
         assert obj2.data == data2
 
 
+class TestClearCache(NewFile):
+    def test_nothing(self):
+        pass  # TODO I don't know how to test this
+
+
 class TestClearModifiers(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))

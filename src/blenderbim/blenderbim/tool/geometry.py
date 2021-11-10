@@ -35,6 +35,10 @@ class Geometry(blenderbim.core.tool.Geometry):
             obj.data = data
 
     @classmethod
+    def clear_cache(cls, element):
+        IfcStore.get_cache().remove(element.GlobalId)
+
+    @classmethod
     def clear_modifiers(cls, obj):
         for modifier in obj.modifiers:
             obj.modifiers.remove(modifier)

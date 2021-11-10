@@ -19,6 +19,7 @@
 import os
 import bpy
 import uuid
+import hashlib
 import zipfile
 import tempfile
 import ifcopenshell
@@ -30,6 +31,8 @@ class IfcStore:
     path = ""
     file = None
     schema = None
+    cache = None
+    cache_path = None
     id_map = {}
     guid_map = {}
     deleted_ids = set()
@@ -50,6 +53,8 @@ class IfcStore:
         IfcStore.path = ""
         IfcStore.file = None
         IfcStore.schema = None
+        IfcStore.cache = None
+        IfcStore.cache_path = None
         IfcStore.id_map = {}
         IfcStore.guid_map = {}
         IfcStore.deleted_ids = set()
@@ -71,6 +76,27 @@ class IfcStore:
                 except:
                     pass
         return IfcStore.file
+
+    @staticmethod
+    def get_cache():
+        if IfcStore.cache is None and IfcStore.path:
+            ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
+            ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
+            IfcStore.cache_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
+            cache_settings = ifcopenshell.geom.settings()
+            IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, cache_settings)
+        return IfcStore.cache
+
+    @staticmethod
+    def update_cache():
+        if not IfcStore.cache:
+            return
+        ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
+        ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
+        new_cache_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
+        os.replace(IfcStore.cache_path, new_cache_path)
+        IfcStore.cache = None
+        IfcStore.get_cache()
 
     @staticmethod
     def load_file(path):
