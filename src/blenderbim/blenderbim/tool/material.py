@@ -27,11 +27,3 @@ class Material(blenderbim.core.tool.Material):
     @classmethod
     def add_default_material_object(cls):
         return bpy.data.materials.new("Default")
-
-    @classmethod
-    def link(cls, material, obj):
-        obj.BIMObjectProperties.ifc_definition_id = material.id()
-
-    @classmethod
-    def unlink(self, obj):
-        obj.BIMObjectProperties.ifc_definition_id = 0

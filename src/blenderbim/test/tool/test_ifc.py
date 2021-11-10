@@ -101,7 +101,7 @@ class TestGetObject(test.bim.bootstrap.NewFile):
 
 
 class TestLink(test.bim.bootstrap.NewFile):
-    def test_run(self):
+    def test_link_an_object(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
         element = ifc.createIfcWall()
@@ -110,13 +110,32 @@ class TestLink(test.bim.bootstrap.NewFile):
         assert subject.get_entity(obj) == element
         assert subject.get_object(element) == obj
 
+    def test_link_a_material(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        element = ifc.createIfcMaterial()
+        obj = bpy.data.materials.new("Material")
+        subject.link(element, obj)
+        assert subject.get_entity(obj) == element
+        assert subject.get_object(element) == obj
+
 
 class TestUnlink(test.bim.bootstrap.NewFile):
-    def test_run(self):
+    def test_unlink_an_object(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
         element = ifc.createIfcWall()
         obj = bpy.data.objects.new("Object", None)
+        subject.link(element, obj)
+        subject.unlink(element, obj)
+        assert subject.get_entity(obj) is None
+        assert subject.get_object(element) is None
+
+    def test_unlink_a_material(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        element = ifc.createIfcMaterial()
+        obj = bpy.data.materials.new("Material")
         subject.link(element, obj)
         subject.unlink(element, obj)
         assert subject.get_entity(obj) is None

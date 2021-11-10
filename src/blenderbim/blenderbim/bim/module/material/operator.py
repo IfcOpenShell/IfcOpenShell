@@ -137,7 +137,7 @@ class UnlinkMaterial(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.unlink_material(tool.Material, obj=context.active_object.active_material)
+        core.unlink_material(tool.Ifc, obj=context.active_object.active_material)
 
 
 class AssignMaterial(bpy.types.Operator):
