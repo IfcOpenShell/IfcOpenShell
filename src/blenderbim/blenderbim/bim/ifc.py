@@ -94,8 +94,8 @@ class IfcStore:
         ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
         ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
         new_cache_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
-        os.replace(IfcStore.cache_path, new_cache_path)
         IfcStore.cache = None
+        os.replace(IfcStore.cache_path, new_cache_path)
         IfcStore.get_cache()
 
     @staticmethod
