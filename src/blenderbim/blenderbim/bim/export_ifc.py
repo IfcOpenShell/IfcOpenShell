@@ -155,7 +155,7 @@ class IfcExporter:
                 float(props.blender_x_axis_ordinate),
             )
         if not np.allclose(ifc_matrix, blender_matrix, atol=0.0001):
-            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
+            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
             return element
 
     def sync_grid_axis_object_placement(self, obj, element):

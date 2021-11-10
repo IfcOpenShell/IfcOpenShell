@@ -19,9 +19,10 @@
 import blenderbim.core.style
 
 
-def edit_object_placement(ifc, surveyor, obj=None):
+def edit_object_placement(ifc, geometry, surveyor, obj=None):
     element = ifc.get_entity(obj)
     if element:
+        geometry.clear_scale(obj)
         ifc.run("geometry.edit_object_placement", product=element, matrix=surveyor.get_absolute_matrix(obj))
 
 
@@ -32,7 +33,7 @@ def add_representation(
     if not element:
         return
 
-    edit_object_placement(ifc, surveyor, obj=obj)
+    edit_object_placement(ifc, geometry, surveyor, obj=obj)
     data = geometry.get_object_data(obj)
 
     if not data:

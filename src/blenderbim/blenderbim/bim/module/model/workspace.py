@@ -21,7 +21,7 @@ import bpy
 import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.model.data import WorkspaceData
+from blenderbim.bim.module.model.data import AuthoringData
 
 
 class BimTool(WorkSpaceTool):
@@ -52,19 +52,19 @@ class BimTool(WorkSpaceTool):
     )
 
     def draw_settings(context, layout, tool):
-        if not WorkspaceData.is_loaded:
-            WorkspaceData.load()
+        if not AuthoringData.is_loaded:
+            AuthoringData.load()
 
         row = layout.row(align=True)
         if not IfcStore.get_file():
             row.label(text="No IFC Project", icon="ERROR")
             return
         props = context.scene.BIMModelProperties
-        if WorkspaceData.data["ifc_classes"]:
+        if AuthoringData.data["ifc_classes"]:
             row.prop(props, "ifc_class", text="")
         else:
             row.label(text="No IFC Class")
-        if WorkspaceData.data["relating_types"]:
+        if AuthoringData.data["relating_types"]:
             row.prop(props, "relating_type", text="")
         else:
             row.label(text="No Relating Type")
@@ -75,7 +75,7 @@ class BimTool(WorkSpaceTool):
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="Add Type Instance", icon="EVENT_A")
 
-        if not ifc_classes_is_empty:
+        if AuthoringData.data["ifc_classes"]:
             if props.ifc_class == "IfcWallType":
                 row = layout.row()
                 row.label(text="Join")
@@ -147,9 +147,9 @@ class Hotkey(bpy.types.Operator):
 
     def _execute(self, context):
         self.props = context.scene.BIMModelProperties
-        self.ifc_classes_is_empty = True
+        self.has_ifc_class = True
         try:
-            self.ifc_classes_is_empty = bool(self.props.ifc_class)
+            self.has_ifc_class = bool(self.props.ifc_class)
         except:
             pass
         getattr(self, f"hotkey_{self.hotkey}")()
@@ -159,13 +159,13 @@ class Hotkey(bpy.types.Operator):
         bpy.ops.bim.add_type_instance()
 
     def hotkey_S_C(self):
-        if not self.ifc_classes_is_empty and self.props.ifc_class == "IfcWallType":
+        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.align_wall(align_type="CENTERLINE")
         else:
             bpy.ops.bim.align_product(align_type="CENTERLINE")
 
     def hotkey_S_E(self):
-        if self.ifc_classes_is_empty:
+        if not self.has_ifc_class:
             return
         if self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.join_wall(join_type="T")
@@ -173,13 +173,13 @@ class Hotkey(bpy.types.Operator):
             bpy.ops.bim.extend_profile()
 
     def hotkey_S_V(self):
-        if not self.ifc_classes_is_empty and self.props.ifc_class == "IfcWallType":
+        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.align_wall(align_type="INTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="POSITIVE")
 
     def hotkey_S_X(self):
-        if not self.ifc_classes_is_empty and self.props.ifc_class == "IfcWallType":
+        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
             if bpy.ops.bim.align_wall.poll():
                 bpy.ops.bim.align_wall(align_type="EXTERIOR")
         else:

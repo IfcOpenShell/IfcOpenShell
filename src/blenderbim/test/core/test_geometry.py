@@ -22,19 +22,20 @@ from test.core.bootstrap import ifc, surveyor, geometry, style
 
 
 class TestEditObjectPlacement:
-    def predict(self, ifc, surveyor):
+    def predict(self, ifc, geometry, surveyor):
         ifc.get_entity("obj").should_be_called().will_return("element")
+        geometry.clear_scale("obj").should_be_called()
         surveyor.get_absolute_matrix("obj").should_be_called().will_return("matrix")
         ifc.run("geometry.edit_object_placement", product="element", matrix="matrix").should_be_called()
 
-    def test_run(self, ifc, surveyor):
-        self.predict(ifc, surveyor)
-        subject.edit_object_placement(ifc, surveyor, obj="obj")
+    def test_run(self, ifc, geometry, surveyor):
+        self.predict(ifc, geometry, surveyor)
+        subject.edit_object_placement(ifc, geometry, surveyor, obj="obj")
 
 
 class TestAddRepresentation:
     def test_run(self, ifc, geometry, style, surveyor):
-        TestEditObjectPlacement.predict(self, ifc, surveyor)
+        TestEditObjectPlacement.predict(self, ifc, geometry, surveyor)
 
         # Add representation
         geometry.get_object_data("obj").should_be_called().will_return("data")
@@ -96,7 +97,7 @@ class TestAddRepresentation:
         )
 
     def test_not_handling_styles_if_representation_has_no_faces(self, ifc, geometry, style, surveyor):
-        TestEditObjectPlacement.predict(self, ifc, surveyor)
+        TestEditObjectPlacement.predict(self, ifc, geometry, surveyor)
 
         # Add representation
         geometry.get_object_data("obj").should_be_called().will_return("data")
@@ -145,7 +146,7 @@ class TestAddRepresentation:
         )
 
     def test_only_updating_the_placement_if_there_is_no_object_data(self, ifc, geometry, style, surveyor):
-        TestEditObjectPlacement.predict(self, ifc, surveyor)
+        TestEditObjectPlacement.predict(self, ifc, geometry, surveyor)
 
         # Add representation
         geometry.get_object_data("obj").should_be_called().will_return(None)

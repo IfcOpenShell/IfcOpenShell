@@ -40,6 +40,17 @@ class Geometry(blenderbim.core.tool.Geometry):
             obj.modifiers.remove(modifier)
 
     @classmethod
+    def clear_scale(cls, obj):
+        if obj.scale != Vector((1.0, 1.0, 1.0)):
+            if obj.data.users == 1:
+                context_override = {}
+                context_override["object"] = context_override["active_object"] = obj
+                context_override["selected_objects"] = context_override["selected_editable_objects"] = [obj]
+                bpy.ops.object.transform_apply(context_override, location=False, rotation=False, scale=True)
+            else:
+                obj.scale = Vector((1.0, 1.0, 1.0))
+
+    @classmethod
     def create_dynamic_voids(cls, obj):
         element = tool.Ifc.get_entity(obj)
         for rel in element.HasOpenings:
