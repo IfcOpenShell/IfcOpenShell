@@ -95,6 +95,7 @@ class BIM_PT_pset_template(Panel):
                 row.prop(props.active_prop_template, "primary_measure_type", text="")
             else:
                 row.label(text=prop_template["Name"])
+                row.label(text=prop_template["Description"])
                 row.label(text=prop_template["PrimaryMeasureType"])
 
             if props.active_prop_template_id and props.active_prop_template_id == prop_template_id:
