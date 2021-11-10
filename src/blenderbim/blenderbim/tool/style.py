@@ -51,11 +51,11 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def get_surface_rendering_attributes(cls, obj):
         transparency = obj.diffuse_color[3]
-        diffuse_colour = obj.diffuse_color
+        diffuse_color = obj.diffuse_color
         if obj.use_nodes and hasattr(obj.node_tree, "nodes") and "Principled BSDF" in obj.node_tree.nodes:
             bsdf = obj.node_tree.nodes["Principled BSDF"]
             transparency = bsdf.inputs["Alpha"].default_value
-            diffuse_colour = bsdf.inputs["Base Color"].default_value
+            diffuse_color = bsdf.inputs["Base Color"].default_value
         transparency = 1 - transparency
         return {
             "SurfaceColour": {
@@ -67,9 +67,9 @@ class Style(blenderbim.core.tool.Style):
             "Transparency": transparency,
             "DiffuseColour": {
                 "Name": None,
-                "Red": obj.diffuse_color[0],
-                "Green": obj.diffuse_color[1],
-                "Blue": obj.diffuse_color[2],
+                "Red": diffuse_color[0],
+                "Green": diffuse_color[1],
+                "Blue": diffuse_color[2],
             },
         }
 

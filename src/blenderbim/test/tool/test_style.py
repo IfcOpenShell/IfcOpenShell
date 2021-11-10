@@ -112,9 +112,9 @@ class TestGetSurfaceRenderingAttributes(NewFile):
             "Transparency": 1 - node.inputs["Alpha"].default_value,
             "DiffuseColour": {
                 "Name": None,
-                "Red": 1,
-                "Green": 1,
-                "Blue": 1,
+                "Red": 0.5,
+                "Green": 0.5,
+                "Blue": 0.5,
             },
         }
 
