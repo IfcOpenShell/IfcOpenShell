@@ -131,6 +131,7 @@ class TestGetSurfaceRenderingStyle(NewFile):
 
 class TestGetSurfaceShadingAttributes(NewFile):
     def test_get_colours_from_a_basic_material(self):
+        tool.Ifc.set(ifcopenshell.file())
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
         assert subject.get_surface_shading_attributes(obj) == {
@@ -141,6 +142,19 @@ class TestGetSurfaceShadingAttributes(NewFile):
                 "Blue": 1,
             },
             "Transparency": 0,
+        }
+
+    def test_get_colours_from_a_basic_material_ifc2x3(self):
+        tool.Ifc.set(ifcopenshell.file(schema="IFC2X3"))
+        obj = bpy.data.materials.new("Material")
+        obj.diffuse_color = [1, 1, 1, 1]
+        assert subject.get_surface_shading_attributes(obj) == {
+            "SurfaceColour": {
+                "Name": None,
+                "Red": 1,
+                "Green": 1,
+                "Blue": 1,
+            },
         }
 
 
