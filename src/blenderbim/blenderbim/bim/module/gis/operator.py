@@ -35,7 +35,7 @@ class BIM_OT_cityjson2ifc(Operator):
             "lod": props.lod,
             "split": props.split_lod,
         }
-        if props.name is not "":
+        if props.name != "":
             data["name_attribute"] = props.name
 
         converter = Cityjson2ifc()

@@ -278,6 +278,7 @@ class IfcStore:
                 operator, rollback=lambda d: IfcStore.get_file().undo(), commit=lambda d: IfcStore.get_file().redo()
             )
             IfcStore.end_transaction(operator)
+            blenderbim.bim.handler.refresh_ui_data()
 
         return result
 
