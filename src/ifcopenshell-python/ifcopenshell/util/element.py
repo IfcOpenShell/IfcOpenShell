@@ -99,6 +99,24 @@ def get_material(element, should_skip_usage=False):
         return get_material(relating_type, should_skip_usage)
 
 
+def get_layer(element):
+    the_layer = None
+    if (
+        hasattr(element, "Representation")
+        and hasattr(element.Representation, "Representations")
+        and len(element.Representation.Representations) > 0
+    ):
+        all_layer = element.Representation.Representations[0].LayerAssignments
+        # print("")
+        # print(element)
+        # print("  {}".format(element.Representation))
+        # print("  {}".format(element.Representation.Representations))
+        # print("  {}".format(all_layer))
+        if all_layer:
+            the_layer = all_layer[0]
+    return the_layer
+
+
 def get_container(element, should_get_direct=False):
     if should_get_direct:
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
