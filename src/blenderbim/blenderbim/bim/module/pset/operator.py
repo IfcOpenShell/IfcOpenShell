@@ -176,20 +176,19 @@ class EnablePsetEditing(bpy.types.Operator):
             new.set_value(new.get_value_default() if new.is_null else value)
 
 
-class DisablePsetEditing(bpy.types.Operator):
+class DisablePsetEditing(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_pset_editing"
     bl_label = "Disable Pset Editing"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         props = get_pset_props(context, self.obj, self.obj_type)
         props.active_pset_id = 0
-        return {"FINISHED"}
 
 
-class EditPset(bpy.types.Operator):
+class EditPset(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_pset"
     bl_label = "Edit Pset"
     bl_options = {"REGISTER", "UNDO"}
@@ -197,9 +196,6 @@ class EditPset(bpy.types.Operator):
     obj_type: bpy.props.StringProperty()
     pset_id: bpy.props.IntProperty()
     properties: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -242,19 +238,15 @@ class EditPset(bpy.types.Operator):
             CostData.purge()
         Data.load(IfcStore.get_file(), ifc_definition_id)
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
-        return {"FINISHED"}
 
 
-class RemovePset(bpy.types.Operator):
+class RemovePset(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_pset"
     bl_label = "Remove Pset"
     bl_options = {"REGISTER", "UNDO"}
     pset_id: bpy.props.IntProperty()
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -269,18 +261,14 @@ class RemovePset(bpy.types.Operator):
             },
         )
         Data.load(IfcStore.get_file(), ifc_definition_id)
-        return {"FINISHED"}
 
 
-class AddPset(bpy.types.Operator):
+class AddPset(bpy.types.Operator, Operator):
     bl_idname = "bim.add_pset"
     bl_label = "Add Pset"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -297,18 +285,14 @@ class AddPset(bpy.types.Operator):
             if pset_name in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(element.is_a(), pset_only=True):
                 ifcopenshell.api.run("pset.add_pset", self.file, product=element, name=pset_name)
                 Data.load(IfcStore.get_file(), ifc_definition_id)
-        return {"FINISHED"}
 
 
-class AddQto(bpy.types.Operator):
+class AddQto(bpy.types.Operator, Operator):
     bl_idname = "bim.add_qto"
     bl_label = "Add Qto"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -323,7 +307,6 @@ class AddQto(bpy.types.Operator):
             },
         )
         Data.load(IfcStore.get_file(), ifc_definition_id)
-        return {"FINISHED"}
 
 
 class GuessQuantity(bpy.types.Operator):
