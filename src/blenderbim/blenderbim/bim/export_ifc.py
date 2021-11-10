@@ -32,6 +32,7 @@ import blenderbim.core.aggregate
 import blenderbim.core.spatial
 import blenderbim.core.style
 from blenderbim.bim.ifc import IfcStore
+from mathutils import Vector
 
 
 class IfcExporter:
@@ -133,7 +134,7 @@ class IfcExporter:
     def sync_object_placement(self, obj):
         blender_matrix = np.array(obj.matrix_world)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        if list(obj.scale) != [1.0, 1.0, 1.0]:
+        if (obj.scale - Vector((1., 1.,1.))).length > 1e-4:
             bpy.ops.bim.update_representation(obj=obj.name)
             return element
         if element.is_a("IfcGridAxis"):

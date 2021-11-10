@@ -83,7 +83,7 @@ class Style(blenderbim.core.tool.Style):
 
     @classmethod
     def get_surface_shading_attributes(cls, obj):
-        return {
+        data = {
             "SurfaceColour": {
                 "Name": None,
                 "Red": obj.diffuse_color[0],
@@ -92,6 +92,9 @@ class Style(blenderbim.core.tool.Style):
             },
             "Transparency": 1 - obj.diffuse_color[3],
         }
+        if tool.Ifc.get_schema() == "IFC2X3":
+            del data["Transparency"]
+        return data
 
     @classmethod
     def get_surface_shading_style(cls, obj):
