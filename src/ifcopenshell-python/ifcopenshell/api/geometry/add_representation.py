@@ -66,15 +66,6 @@ class Usecase:
         return any([abs((tM @ v.co).z) > threshold for v in face.verts])
 
     def evaluate_geometry(self):
-        if self.settings["blender_object"].scale != Vector((1., 1., 1.)):
-            if self.settings["blender_object"].data.users == 1:
-                context_override = {}
-                context_override["object"] = context_override["active_object"] = self.settings["blender_object"]
-                context_override["selected_objects"] = context_override["selected_editable_objects"] = [self.settings["blender_object"]]
-                bpy.ops.object.transform_apply(context_override, location=False, rotation=False, scale=True)
-            else:
-                self.settings["blender_object"].scale = Vector((1., 1., 1.))
-
         for modifier in self.settings["blender_object"].modifiers:
             if modifier.type == "BOOLEAN":
                 modifier.show_viewport = False

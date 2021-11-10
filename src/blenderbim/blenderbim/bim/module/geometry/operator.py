@@ -54,7 +54,7 @@ class EditObjectPlacement(bpy.types.Operator, Operator):
     def _execute(self, context):
         objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         for obj in objs:
-            core.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
+            core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
 
 class AddRepresentation(bpy.types.Operator, Operator):
@@ -153,7 +153,7 @@ class UpdateRepresentation(bpy.types.Operator):
             ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": product})
             return
 
-        core.edit_object_placement(tool.Ifc, tool.Surveyor, obj=obj)
+        core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         context_of_items = old_representation.ContextOfItems

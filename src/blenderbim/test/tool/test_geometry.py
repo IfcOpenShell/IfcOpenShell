@@ -61,6 +61,14 @@ class TestClearModifiers(NewFile):
         assert len(obj.modifiers) == 0
 
 
+class TestClearScale(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        obj.scale[0] = 2
+        subject.clear_scale(obj)
+        assert list(obj.scale) == [1, 1, 1]
+
+
 class TestCreateDynamicVoids(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()

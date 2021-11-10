@@ -74,6 +74,7 @@ class Context:
 class Geometry:
     def change_object_data(cls, obj, data, is_global=False): pass
     def clear_modifiers(cls, obj): pass
+    def clear_scale(cls, obj): pass
     def create_dynamic_voids(cls, obj): pass
     def delete_data(cls, data): pass
     def does_object_have_mesh_with_faces(cls, obj): pass
