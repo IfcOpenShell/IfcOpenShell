@@ -303,9 +303,9 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
 
 def ensure_material_assigned(usecase_path, ifc_file, settings):
     if usecase_path == "material.assign_material":
-        if not settings.get("Material", None):
+        if not settings.get("material", None):
             return
-        elements = [self.settings["product"]]
+        elements = [settings["product"]]
     else:
         elements = []
         for rel in ifc_file.by_type("IfcRelAssociatesMaterial"):
@@ -330,5 +330,8 @@ def ensure_material_assigned(usecase_path, ifc_file, settings):
 
         if material[0].id() in object_material_ids:
             continue
+
+        if len(obj.data.materials) == 1:
+            obj.data.materials.clear()
 
         obj.data.materials.append(IfcStore.get_element(material[0].id()))
