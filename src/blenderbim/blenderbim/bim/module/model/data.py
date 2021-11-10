@@ -45,10 +45,13 @@ class AuthoringData:
 
     @classmethod
     def relating_types(cls):
-        if not cls.ifc_classes():
+        ifc_classes = cls.ifc_classes()
+        if not ifc_classes:
             return []
         results = []
         ifc_class = bpy.context.scene.BIMModelProperties.ifc_class
+        if not ifc_class and ifc_classes:
+            ifc_class = ifc_classes[0][0]
         if ifc_class:
             elements = [(str(e.id()), e.Name, "") for e in tool.Ifc.get().by_type(ifc_class)]
             results.extend(sorted(elements, key=lambda s: s[1]))

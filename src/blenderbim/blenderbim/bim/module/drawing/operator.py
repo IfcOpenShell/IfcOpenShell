@@ -335,16 +335,12 @@ class CreateDrawing(bpy.types.Operator):
             elements = set(ifc.by_type("IfcElement")) - set(ifc.by_type("IfcOpeningElement"))
 
             self.setup_serialiser(ifc)
-            cache_settings = ifcopenshell.geom.settings(
-                APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True, SEW_SHELLS=True
-            )
-            cache = ifcopenshell.geom.serializers.hdf5(ifc_cache_path, cache_settings)
+            cache_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True)
+            cache = IfcStore.get_cache()
             [cache.remove(guid) for guid in invalidated_guids]
 
             if target_view_contexts and elements:
-                geom_settings = ifcopenshell.geom.settings(
-                    APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True, SEW_SHELLS=True, INCLUDE_CURVES=True
-                )
+                geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, INCLUDE_CURVES=True)
                 geom_settings.set_context_ids(target_view_contexts)
                 it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
                 it.set_cache(cache)
@@ -356,7 +352,7 @@ class CreateDrawing(bpy.types.Operator):
 
             if body_contexts and elements:
                 geom_settings = ifcopenshell.geom.settings(
-                    APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True, SEW_SHELLS=True
+                    DISABLE_TRIANGULATION=True,
                 )
                 geom_settings.set_context_ids(body_contexts)
                 it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
@@ -365,7 +361,7 @@ class CreateDrawing(bpy.types.Operator):
                     self.serialiser.write(elem)
 
             geom_settings = ifcopenshell.geom.settings(
-                APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True, SEW_SHELLS=True
+                DISABLE_TRIANGULATION=True,
             )
             it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
             for elem in self.yield_from_iterator(it):
@@ -383,9 +379,7 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def setup_serialiser(self, ifc):
-        self.svg_settings = ifcopenshell.geom.settings(
-            APPLY_DEFAULT_MATERIALS=True, DISABLE_TRIANGULATION=True, INCLUDE_CURVES=True
-        )
+        self.svg_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, INCLUDE_CURVES=True)
         self.svg_buffer = ifcopenshell.geom.serializers.buffer()
         self.serialiser = ifcopenshell.geom.serializers.svg(self.svg_buffer, self.svg_settings)
         self.serialiser.setFile(ifc)

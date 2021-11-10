@@ -41,6 +41,7 @@ class IfcExporter:
     def export(self):
         self.file = IfcStore.get_file()
         self.set_header()
+        IfcStore.update_cache()
         if bpy.context.scene.BIMProjectProperties.is_authoring:
             self.sync_deletions()
             self.sync_object_placements()

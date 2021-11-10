@@ -24,6 +24,7 @@ from test.core.bootstrap import ifc, surveyor, geometry, style
 class TestEditObjectPlacement:
     def predict(self, ifc, geometry, surveyor):
         ifc.get_entity("obj").should_be_called().will_return("element")
+        geometry.clear_cache("element").should_be_called()
         geometry.clear_scale("obj").should_be_called()
         surveyor.get_absolute_matrix("obj").should_be_called().will_return("matrix")
         ifc.run("geometry.edit_object_placement", product="element", matrix="matrix").should_be_called()

@@ -625,6 +625,7 @@ class IfcImporter:
             )
         else:
             iterator = ifcopenshell.geom.iterator(self.settings, self.file, include=products)
+        iterator.set_cache(IfcStore.get_cache())
         valid_file = iterator.initialize()
         if not valid_file:
             return results
@@ -770,6 +771,7 @@ class IfcImporter:
             )
         else:
             iterator = ifcopenshell.geom.iterator(self.settings_2d, self.file, include=products)
+        iterator.set_cache(IfcStore.get_cache())
         valid_file = iterator.initialize()
         if not valid_file:
             return results
