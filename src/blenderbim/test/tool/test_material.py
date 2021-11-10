@@ -34,22 +34,3 @@ class TestAddDefaultMaterialObject(NewFile):
         material = subject.add_default_material_object()
         assert isinstance(material, bpy.types.Material)
         assert material.name == "Default"
-
-
-class TestLink(NewFile):
-    def test_run(self):
-        obj = bpy.data.materials.new("Material")
-        ifc = ifcopenshell.file()
-        material = ifc.createIfcMaterial()
-        subject.link(material, obj)
-        assert obj.BIMObjectProperties.ifc_definition_id == material.id()
-
-
-class TestUnlink(NewFile):
-    def test_run(self):
-        obj = bpy.data.materials.new("Material")
-        ifc = ifcopenshell.file()
-        material = ifc.createIfcMaterial()
-        subject.link(material, obj)
-        subject.unlink(obj)
-        assert obj.BIMObjectProperties.ifc_definition_id == 0

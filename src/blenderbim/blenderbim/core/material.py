@@ -17,11 +17,11 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def unlink_material(material, obj=None):
-    material.unlink(obj)
+def unlink_material(ifc, obj=None):
+    ifc.unlink(obj=obj)
 
 
 def add_default_material(ifc, material):
     obj = material.add_default_material_object()
-    material.link(ifc.run("material.add_material", name="Default"), obj)
+    ifc.link(ifc.run("material.add_material", name="Default"), obj)
     return obj
