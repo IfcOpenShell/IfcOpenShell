@@ -352,6 +352,19 @@ class TestLink(NewFile):
         assert obj.BIMMeshProperties.ifc_definition_id == element.id()
 
 
+class TestRecordObjectMaterials(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        style = ifc.createIfcSurfaceStyle()
+        material = bpy.data.materials.new("Material")
+        material.BIMMaterialProperties.ifc_style_id = style.id()
+        obj.data.materials.append(material)
+        subject.record_object_materials(obj)
+        assert obj.data.BIMMeshProperties.material_checksum == str([style.id()])
+
+
 class TestRecordObjectPosition(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)

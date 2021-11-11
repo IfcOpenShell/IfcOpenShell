@@ -74,6 +74,7 @@ class TestAddRepresentation:
             styles=["style"],
             should_use_presentation_style_assignment=False,
         ).should_be_called()
+        geometry.record_object_materials("obj").should_be_called()
 
         # Assign representation to product
         ifc.run("geometry.assign_representation", product="element", representation="representation").should_be_called()

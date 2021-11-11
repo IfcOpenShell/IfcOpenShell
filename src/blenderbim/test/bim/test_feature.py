@@ -91,6 +91,7 @@ def i_add_a_sun():
 
 
 @given("I add a material")
+@when("I add a material")
 def i_add_a_material():
     bpy.context.active_object.active_material = bpy.data.materials.new("Material")
 

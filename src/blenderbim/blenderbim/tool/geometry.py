@@ -225,6 +225,10 @@ class Geometry(blenderbim.core.tool.Geometry):
         obj.BIMMeshProperties.ifc_definition_id = element.id()
 
     @classmethod
+    def record_object_materials(cls, obj):
+        obj.data.BIMMeshProperties.material_checksum = str([s.id() for s in cls.get_styles(obj) if s])
+
+    @classmethod
     def record_object_position(cls, obj):
         # These are recorded separately because they have different numerical tolerances
         obj.BIMObjectProperties.location_checksum = repr(np.array(obj.matrix_world.translation).tobytes())
