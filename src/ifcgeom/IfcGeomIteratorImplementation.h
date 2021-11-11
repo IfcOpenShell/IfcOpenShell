@@ -184,6 +184,9 @@ namespace IfcGeom {
 
 		boost::optional<bool> initialization_outcome_;
 
+		// Should not be destructed because, destructor is blocking
+		std::future<void> init_future_;
+
 		bool initialize() {
 			if (initialization_outcome_) {
 				return *initialization_outcome_;
@@ -233,9 +236,10 @@ namespace IfcGeom {
 
 				if (num_threads_ != 1) {
 					collect();
-					process_concurrently();
 
-					initialization_outcome_ = !all_processed_elements_.empty();
+					initialization_outcome_ = !tasks_.empty();
+
+					init_future_ = std::async(std::launch::async, [this]() { process_concurrently(); });
 				} else {
 					initialization_outcome_ = create();
 				}
@@ -338,10 +342,10 @@ namespace IfcGeom {
 				fu.get();
 
 				processed += 1;
-				progress_ = processed * 50 / tasks_.size();
-				if (progress_ != old_progress) {
-					Logger::ProgressBar(progress_);
-					old_progress = progress_;
+				progress_ = processed * 100 / tasks_.size();
+				if (progress_ / 2 != old_progress) {
+					Logger::ProgressBar(progress_ / 2);
+					old_progress = progress_ / 2;
 				}
 			}
 
