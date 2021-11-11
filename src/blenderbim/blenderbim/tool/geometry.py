@@ -36,7 +36,9 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def clear_cache(cls, element):
-        IfcStore.get_cache().remove(element.GlobalId)
+        cache = IfcStore.get_cache()
+        if cache:
+            cache.remove(element.GlobalId)
 
     @classmethod
     def clear_modifiers(cls, obj):
@@ -224,7 +226,7 @@ class Geometry(blenderbim.core.tool.Geometry):
     def replace_object_with_empty(cls, obj):
         element = tool.Ifc.get_entity(obj)
         name = obj.name
-        tool.Ifc.unlink(obj)
+        tool.Ifc.unlink(obj=obj, element=element)
         obj.name = ifcopenshell.guid.new()
         new_obj = bpy.data.objects.new(name, None)
         if element:

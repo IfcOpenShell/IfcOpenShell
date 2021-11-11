@@ -316,8 +316,8 @@ class UnlinkObject(bpy.types.Operator):
                 IfcStore.unlink_element(obj=obj)
             for material_slot in obj.material_slots:
                 if material_slot.material:
-                    blenderbim.core.style.unlink_style(tool.Style, obj=material_slot.material)
-                    blenderbim.core.material.unlink_material(tool.Material, obj=material_slot.material)
+                    blenderbim.core.style.unlink_style(tool.Ifc, tool.Style, obj=material_slot.material)
+                    blenderbim.core.material.unlink_material(tool.Ifc, obj=material_slot.material)
             if "Ifc" in obj.name and "/" in obj.name:
                 obj.name = "/".join(obj.name.split("/")[1:])
         return {"FINISHED"}

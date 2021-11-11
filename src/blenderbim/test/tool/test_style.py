@@ -189,22 +189,3 @@ class TestImportSurfaceAttributes(NewFile):
         assert len(obj.BIMStyleProperties.attributes) == 2
         assert obj.BIMStyleProperties.attributes.get("Name").string_value == "Name"
         assert obj.BIMStyleProperties.attributes.get("Side").enum_value == "BOTH"
-
-
-class TestLink(NewFile):
-    def test_run(self):
-        obj = bpy.data.materials.new("Material")
-        ifc = ifcopenshell.file()
-        style = ifc.createIfcSurfaceStyle()
-        subject.link(style, obj)
-        assert obj.BIMMaterialProperties.ifc_style_id == style.id()
-
-
-class TestUnlink(NewFile):
-    def test_run(self):
-        obj = bpy.data.materials.new("Material")
-        ifc = ifcopenshell.file()
-        style = ifc.createIfcSurfaceStyle()
-        subject.link(style, obj)
-        subject.unlink(obj)
-        assert obj.BIMMaterialProperties.ifc_style_id == 0

@@ -95,6 +95,14 @@ def i_add_a_material():
     bpy.context.active_object.active_material = bpy.data.materials.new("Material")
 
 
+@given(parsers.parse('the material "{name}" colour is set to "{colour}"'))
+@when(parsers.parse('the material "{name}" colour is set to "{colour}"'))
+def the_material_name_colour_is_set_to_colour(name, colour):
+    obj = the_material_name_exists(name)
+    obj.diffuse_color = [float(c) for c in colour.split(",")]
+    blenderbim.bim.handler.color_callback(obj, None)
+
+
 @given("I add an array modifier")
 def i_add_a_cube():
     bpy.ops.object.modifier_add(type="ARRAY")
@@ -383,6 +391,12 @@ def the_material_name_is_not_an_ifc_material(name):
 def the_material_name_is_not_an_ifc_material(name):
     id = the_material_name_exists(name).BIMMaterialProperties.ifc_style_id
     assert id == 0, f"The ID is {id}"
+
+
+@then(parsers.parse('the material "{name}" colour is "{colour}"'))
+def the_material_name_colour_is_set_to_colour(name, colour):
+    diffuse_color = list(the_material_name_exists(name).diffuse_color)
+    assert diffuse_color == [float(c) for c in colour.split(",")], f"The colour is {diffuse_color}"
 
 
 @then(parsers.parse('the object "{name}" has "{number}" vertices'))

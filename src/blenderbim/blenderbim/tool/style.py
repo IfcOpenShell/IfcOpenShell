@@ -108,11 +108,3 @@ class Style(blenderbim.core.tool.Style):
     def import_surface_attributes(cls, style, obj):
         obj.BIMStyleProperties.attributes.clear()
         blenderbim.bim.helper.import_attributes2(style, obj.BIMStyleProperties.attributes)
-
-    @classmethod
-    def link(cls, style, obj):
-        obj.BIMMaterialProperties.ifc_style_id = style.id()
-
-    @classmethod
-    def unlink(self, obj):
-        obj.BIMMaterialProperties.ifc_style_id = 0

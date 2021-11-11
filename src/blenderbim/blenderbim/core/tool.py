@@ -226,8 +226,6 @@ class Style:
     def get_surface_shading_attributes(cls, obj): pass
     def get_surface_shading_style(cls, obj): pass
     def import_surface_attributes(cls, style, obj): pass
-    def link(cls, style, obj): pass
-    def unlink(cls, obj): pass
 
 
 @interface

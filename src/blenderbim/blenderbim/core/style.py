@@ -19,7 +19,7 @@
 
 def add_style(ifc, style, obj=None):
     element = ifc.run("style.add_style", name=style.get_name(obj))
-    style.link(element, obj)
+    ifc.link(element, obj)
     ifc.run(
         "style.add_surface_style",
         style=element,
@@ -33,8 +33,9 @@ def add_style(ifc, style, obj=None):
 
 
 def remove_style(ifc, style, obj=None):
-    ifc.run("style.remove_style", style=style.get_style(obj))
-    style.unlink(obj=obj)
+    element = style.get_style(obj)
+    ifc.unlink(obj=obj, element=element)
+    ifc.run("style.remove_style", style=element)
 
 
 def update_style_colours(ifc, style, obj=None):
@@ -50,8 +51,8 @@ def update_style_colours(ifc, style, obj=None):
         ifc.run("style.edit_surface_style", style=shading_style, attributes=attributes)
 
 
-def unlink_style(style, obj=None):
-    style.unlink(obj)
+def unlink_style(ifc, style, obj=None):
+    ifc.unlink(obj=obj, element=style.get_style(obj))
 
 
 def enable_editing_style(style, obj=None):

@@ -63,7 +63,7 @@ class UnlinkStyle(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.unlink_style(tool.Style, obj=context.active_object.active_material)
+        core.unlink_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
 
 
 class EnableEditingStyle(bpy.types.Operator, Operator):
