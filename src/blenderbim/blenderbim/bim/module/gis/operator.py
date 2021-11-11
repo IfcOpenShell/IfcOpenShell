@@ -19,6 +19,7 @@
 import bpy
 from bpy.types import Operator
 
+
 class BIM_OT_cityjson2ifc(Operator):
     bl_idname = "bim.convert_cityjson2ifc"
     bl_label = "Convert CityJSON to IFC"
@@ -27,7 +28,7 @@ class BIM_OT_cityjson2ifc(Operator):
     def execute(self, context):
         from cjio import cityjson
         from ifccityjson.cityjson2ifc.cityjson2ifc import Cityjson2ifc
-        
+
         props = context.scene.ifccityjson_properties
         city_model = cityjson.load(props.input, transform=False)
         data = {
@@ -53,7 +54,7 @@ class BIM_OT_find_cityjson_lod(Operator):
 
     def execute(self, context):
         from cjio import cityjson
-        
+
         props = context.scene.ifccityjson_properties
         city_model = cityjson.load(props.input)
         lods = set()

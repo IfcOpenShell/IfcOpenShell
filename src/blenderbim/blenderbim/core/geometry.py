@@ -62,6 +62,7 @@ def add_representation(
             styles=geometry.get_styles(obj),
             should_use_presentation_style_assignment=geometry.should_use_presentation_style_assignment(),
         )
+        geometry.record_object_materials(obj)
 
     ifc.run("geometry.assign_representation", product=element, representation=representation)
 

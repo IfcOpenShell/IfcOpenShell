@@ -401,3 +401,18 @@ Scenario: Export IFC - with changed style colour synchronised
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/export.ifc')"
     Then the material "Material" colour is "1,0,0,1"
+
+Scenario: Export IFC - with changed style element synchronised
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I add a material
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    When I add a material
+    And the material "Material.001" colour is set to "1,0,0,1"
+    And I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    And an empty Blender session is started
+    And I press "bim.load_project(filepath='{cwd}/test/files/export.ifc')"
+    Then the material "Material.001" colour is "1,0,0,1"

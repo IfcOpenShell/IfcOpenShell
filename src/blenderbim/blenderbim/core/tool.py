@@ -100,6 +100,7 @@ class Geometry:
     def is_mapped_representation(cls, representation): pass
     def is_type_product(cls, element): pass
     def link(cls, element, obj): pass
+    def record_object_materials(cls, obj): pass
     def record_object_position(cls, obj): pass
     def rename_object(cls, obj, name): pass
     def replace_object_with_empty(cls, obj): pass

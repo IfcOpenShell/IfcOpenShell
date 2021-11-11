@@ -68,6 +68,7 @@ class MaterialCreator:
         self.add_default_material(element)
         if self.parse_representations(element):
             self.assign_material_slots_to_faces()
+        tool.Geometry.record_object_materials(obj)
 
     def add_default_material(self, element):
         element_material = ifcopenshell.util.element.get_material(element)

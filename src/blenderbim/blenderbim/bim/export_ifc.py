@@ -45,7 +45,7 @@ class IfcExporter:
         IfcStore.update_cache()
         if bpy.context.scene.BIMProjectProperties.is_authoring:
             self.sync_deletions()
-            self.sync_object_placements()
+            self.sync_all_objects()
             self.sync_edited_objects()
         extension = self.ifc_export_settings.output_file.split(".")[-1]
         if extension == "ifczip":
@@ -98,15 +98,19 @@ class IfcExporter:
             ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
         return results
 
-    def sync_object_placements(self):
+    def sync_all_objects(self):
         results = []
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        for ifc_definition_id, obj in IfcStore.id_map.items():
+        for ifc_definition_id in list(IfcStore.id_map.keys()):
+            obj = IfcStore.id_map[ifc_definition_id]
             try:
                 if isinstance(obj, bpy.types.Material):
                     continue
                 tool.Collector.sync(obj)
                 result = self.sync_object_placement(obj)
+                if result:
+                    results.append(result)
+                result = self.sync_object_material(obj)
                 if result:
                     results.append(result)
             except ReferenceError:
@@ -130,6 +134,17 @@ class IfcExporter:
                 pass  # The object is likely deleted
         IfcStore.edited_objs.clear()
         return results
+
+    def sync_object_material(self, obj):
+        if not obj.data or not isinstance(obj.data, bpy.types.Mesh):
+            return
+        if not self.has_changed_materials(obj):
+            return
+        bpy.ops.bim.update_representation(obj=obj.name)
+
+    def has_changed_materials(self, obj):
+        checksum = obj.data.BIMMeshProperties.material_checksum
+        return checksum != str([s.id() for s in tool.Geometry.get_styles(obj) if s])
 
     def sync_object_placement(self, obj):
         if not self.has_object_moved(obj):
