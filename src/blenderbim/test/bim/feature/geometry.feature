@@ -282,6 +282,10 @@ Scenario: Override delete - with active IFC data
     When I press "object.delete"
     Then the object "IfcWall/Cube" does not exist
 
+Scenario: Override outliner delete
+    Given an untestable scenario
+    Then nothing happens
+
 Scenario: Override duplicate move - without active IFC data
     Given an empty Blender session
     And I add a cube

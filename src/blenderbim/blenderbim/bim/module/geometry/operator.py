@@ -311,7 +311,32 @@ class CopyRepresentation(bpy.types.Operator, Operator):
                     return r.MappedRepresentation
 
 
-class OverrideDelete(bpy.types.Operator):
+class OverrideDeleteTrait:
+    def delete_ifc_object(self, obj):
+        if obj.BIMObjectProperties.ifc_definition_id:
+            element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+            IfcStore.deleted_ids.add(element.id())
+            if getattr(element, "FillsVoids", None):
+                self.remove_filling(element)
+            if element.is_a("IfcOpeningElement"):
+                for rel in element.HasFillings:
+                    self.remove_filling(rel.RelatedBuildingElement)
+                if element.VoidsElements:
+                    self.delete_opening_element(element)
+            elif getattr(element, "HasOpenings", None):
+                for rel in element.HasOpenings:
+                    self.delete_opening_element(rel.RelatedOpeningElement)
+
+    def delete_opening_element(self, element):
+        obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
+        bpy.ops.bim.remove_opening(opening_id=element.id(), obj=obj.name)
+
+    def remove_filling(self, element):
+        obj = IfcStore.get_element(element.id())
+        bpy.ops.bim.remove_filling(obj=obj.name)
+
+
+class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
     bl_idname = "object.delete"
     bl_label = "Delete"
     use_global: bpy.props.BoolProperty(default=False)
@@ -333,31 +358,56 @@ class OverrideDelete(bpy.types.Operator):
         return context.window_manager.invoke_confirm(self, event)
 
     def _execute(self, context):
-        file = IfcStore.get_file()
         for obj in context.selected_objects:
-            if obj.BIMObjectProperties.ifc_definition_id:
-                element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-                IfcStore.deleted_ids.add(element.id())
-                if getattr(element, "FillsVoids", None):
-                    self.remove_filling(element)
-                if element.is_a("IfcOpeningElement"):
-                    for rel in element.HasFillings:
-                        self.remove_filling(rel.RelatedBuildingElement)
-                    if element.VoidsElements:
-                        self.delete_opening_element(element)
-                elif getattr(element, "HasOpenings", None):
-                    for rel in element.HasOpenings:
-                        self.delete_opening_element(rel.RelatedOpeningElement)
+            self.delete_ifc_object(obj)
             bpy.data.objects.remove(obj)
         return {"FINISHED"}
 
-    def delete_opening_element(self, element):
-        obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
-        bpy.ops.bim.remove_opening(opening_id=element.id(), obj=obj.name)
 
-    def remove_filling(self, element):
-        obj = IfcStore.get_element(element.id())
-        bpy.ops.bim.remove_filling(obj=obj.name)
+class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
+    bl_idname = "outliner.delete"
+    bl_label = "Delete"
+    hierarchy: bpy.props.BoolProperty(default=False)
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_ids) > 0
+
+    def execute(self, context):
+        # Deep magick from the dawn of time
+        if IfcStore.get_file():
+            return IfcStore.execute_ifc_operator(self, context)
+        # https://blender.stackexchange.com/questions/203729/python-get-selected-objects-in-outliner
+        objects_to_delete = set()
+        for item in context.selected_ids:
+            if item.bl_rna.identifier == "Collection":
+                collection = bpy.data.collections.get(item.name)
+                if self.hierarchy:
+                    for obj in collection.objects:
+                        objects_to_delete.add(bpy.data.objects.get(item.name))
+                bpy.data.collections.remove(collection)
+            elif item.bl_rna.identifier == "Object":
+                objects_to_delete.add(bpy.data.objects.get(item.name))
+        for obj in objects_to_delete:
+            bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+    def _execute(self, context):
+        objects_to_delete = set()
+        for item in context.selected_ids:
+            if item.bl_rna.identifier == "Collection":
+                collection = bpy.data.collections.get(item.name)
+                if self.hierarchy:
+                    for obj in collection.objects:
+                        objects_to_delete.add(bpy.data.objects.get(item.name))
+                bpy.data.collections.remove(collection)
+            elif item.bl_rna.identifier == "Object":
+                objects_to_delete.add(bpy.data.objects.get(item.name))
+        for obj in objects_to_delete:
+            # This is the only difference
+            self.delete_ifc_object(obj)
+            bpy.data.objects.remove(obj)
+        return {"FINISHED"}
 
 
 class OverrideDuplicateMove(bpy.types.Operator):
