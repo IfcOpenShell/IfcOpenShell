@@ -20,6 +20,7 @@ import bpy
 import logging
 import ifcopenshell
 import blenderbim.core.tool
+import blenderbim.core.style
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc
 from mathutils import Vector
@@ -146,6 +147,10 @@ class Geometry(blenderbim.core.tool.Geometry):
         return f"{representation.ContextOfItems.id()}/{representation.id()}"
 
     @classmethod
+    def get_styles(cls, obj):
+        return [tool.Style.get_style(s.material) for s in obj.material_slots if s.material]
+
+    @classmethod
     def get_total_representation_items(cls, obj):
         return max(1, len(obj.material_slots))
 
@@ -245,6 +250,10 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def run_geometry_update_representation(cls, obj=None):
         bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
+
+    @classmethod
+    def run_style_add_style(cls, obj=None):
+        return blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=obj)
 
     @classmethod
     def should_force_faceted_brep(cls):

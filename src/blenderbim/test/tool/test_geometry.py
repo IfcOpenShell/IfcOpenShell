@@ -169,6 +169,18 @@ class TestGetRepresentationName(NewFile):
         assert subject.get_representation_name(representation) == f"{context.id()}/{representation.id()}"
 
 
+class TestGetStyles(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        style = ifc.createIfcSurfaceStyle()
+        material = bpy.data.materials.new("Material")
+        tool.Ifc.link(style, material)
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        obj.data.materials.append(material)
+        subject.get_styles(obj) == [style]
+
+
 class TestGetCartesianPointCoordinateOffset(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
@@ -383,6 +395,11 @@ class TestResolveMappedRepresentation(NewFile):
 
 
 class TestRunGeometryUpdateRepresentation(NewFile):
+    def test_nothing(self):
+        pass
+
+
+class TestRunStyleAddStyle(NewFile):
     def test_nothing(self):
         pass
 
