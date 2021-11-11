@@ -18,7 +18,7 @@
 
 import bpy
 import math
-import numpy
+import numpy as np
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -350,6 +350,14 @@ class TestLink(NewFile):
         obj = bpy.data.meshes.new("Mesh")
         subject.link(element, obj)
         assert obj.BIMMeshProperties.ifc_definition_id == element.id()
+
+
+class TestRecordObjectPosition(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        subject.record_object_position(obj)
+        assert obj.BIMObjectProperties.location_checksum == repr(np.array(obj.matrix_world.translation).tobytes())
+        assert obj.BIMObjectProperties.rotation_checksum == repr(np.array(obj.matrix_world.to_3x3()).tobytes())
 
 
 class TestRenameObject(NewFile):

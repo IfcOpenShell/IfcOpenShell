@@ -28,6 +28,7 @@ class TestEditObjectPlacement:
         geometry.clear_scale("obj").should_be_called()
         surveyor.get_absolute_matrix("obj").should_be_called().will_return("matrix")
         ifc.run("geometry.edit_object_placement", product="element", matrix="matrix").should_be_called()
+        geometry.record_object_position("obj").should_be_called()
 
     def test_run(self, ifc, geometry, surveyor):
         self.predict(ifc, geometry, surveyor)

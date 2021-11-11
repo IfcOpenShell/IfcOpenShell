@@ -318,9 +318,8 @@ class BIMObjectProperties(PropertyGroup):
         default="NONE",
     )
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
-    global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
-    psets: CollectionProperty(name="Psets", type=PsetQto)
-    qtos: CollectionProperty(name="Qtos", type=PsetQto)
+    location_checksum: StringProperty(name="Location Checksum")
+    rotation_checksum: StringProperty(name="Rotation Checksum")
 
 
 class BIMMaterialProperties(PropertyGroup):
