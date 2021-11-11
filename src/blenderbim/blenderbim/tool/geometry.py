@@ -18,6 +18,7 @@
 
 import bpy
 import logging
+import numpy as np
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.core.style
@@ -222,6 +223,12 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def link(cls, element, obj):
         obj.BIMMeshProperties.ifc_definition_id = element.id()
+
+    @classmethod
+    def record_object_position(cls, obj):
+        # These are recorded separately because they have different numerical tolerances
+        obj.BIMObjectProperties.location_checksum = repr(np.array(obj.matrix_world.translation).tobytes())
+        obj.BIMObjectProperties.rotation_checksum = repr(np.array(obj.matrix_world.to_3x3()).tobytes())
 
     @classmethod
     def rename_object(cls, obj, name):

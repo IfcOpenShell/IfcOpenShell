@@ -132,6 +132,8 @@ class IfcExporter:
         return results
 
     def sync_object_placement(self, obj):
+        if not self.has_object_moved(obj):
+            return
         blender_matrix = np.array(obj.matrix_world)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if (obj.scale - Vector((1.0, 1.0, 1.0))).length > 1e-4:
@@ -141,24 +143,19 @@ class IfcExporter:
             return self.sync_grid_axis_object_placement(obj, element)
         if not hasattr(element, "ObjectPlacement"):
             return
-        ifc_matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-        ifc_matrix[0][3] *= self.unit_scale
-        ifc_matrix[1][3] *= self.unit_scale
-        ifc_matrix[2][3] *= self.unit_scale
+        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        return element
 
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "OBJECT_PLACEMENT":
-            ifc_matrix = ifcopenshell.util.geolocation.global2local(
-                ifc_matrix,
-                float(props.blender_eastings) * self.unit_scale,
-                float(props.blender_northings) * self.unit_scale,
-                float(props.blender_orthogonal_height) * self.unit_scale,
-                float(props.blender_x_axis_abscissa),
-                float(props.blender_x_axis_ordinate),
-            )
-        if not np.allclose(ifc_matrix, blender_matrix, atol=0.0001):
-            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-            return element
+    def has_object_moved(self, obj):
+        if not obj.BIMObjectProperties.location_checksum:
+            return True  # Let's be conservative
+        loc_check = np.frombuffer(eval(obj.BIMObjectProperties.location_checksum))
+        rot_check = np.frombuffer(eval(obj.BIMObjectProperties.rotation_checksum))
+        loc_real = np.array(obj.matrix_world.translation).flatten()
+        rot_real = np.array(obj.matrix_world.to_3x3()).flatten()
+        if np.allclose(loc_check, loc_real, atol=1e-4) and np.allclose(rot_check, rot_real, atol=1e-2):
+            return False
+        return True
 
     def sync_grid_axis_object_placement(self, obj, element):
         grid = (element.PartOfU or element.PartOfV or element.PartOfW)[0]

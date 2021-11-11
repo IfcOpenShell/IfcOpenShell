@@ -31,6 +31,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.drawing.prop import get_diagram_scales
 
@@ -509,7 +510,7 @@ class IfcImporter:
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
             self.link_element(axis, obj)
-            obj.matrix_world = grid_obj.matrix_world
+            self.set_matrix_world(obj, grid_obj.matrix_world)
             grid_collection.objects.link(obj)
 
     def create_type_products(self):
@@ -700,7 +701,7 @@ class IfcImporter:
             mesh.from_pydata([mathutils.Vector(vertex) * self.unit_scale], [], [])
 
             obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
-            obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, placement_matrix)
+            self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, placement_matrix))
             self.link_element(product, obj)
 
     def get_pointcloud_representation(self, product):
@@ -759,7 +760,7 @@ class IfcImporter:
         mesh.from_pydata(vertex_list, [], [])
 
         obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
-        obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, placement_matrix)
+        self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, placement_matrix))
         self.link_element(product, obj)
         return product
 
@@ -826,13 +827,13 @@ class IfcImporter:
             mat = np.array(
                 ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
             )
-            obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, mat)
+            self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, mat))
             self.material_creator.create(element, obj, mesh)
         elif mesh:
-            obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
+            self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element)))
             self.material_creator.create(element, obj, mesh)
         elif hasattr(element, "ObjectPlacement"):
-            obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
+            self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element)))
 
         self.add_opening_relation(element, obj)
 
@@ -1517,6 +1518,10 @@ class IfcImporter:
             mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
         else:
             mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id)
+
+    def set_matrix_world(self, obj, matrix_world):
+        obj.matrix_world = matrix_world
+        tool.Geometry.record_object_position(obj)
 
 
 class IfcImportSettings:
