@@ -40,6 +40,11 @@ def replace_variables(value):
     return value
 
 
+@given("an untestable scenario")
+def an_untestable_scenario():
+    pass
+
+
 @given("an empty Blender session")
 @when("an empty Blender session is started")
 def an_empty_ifc_project():

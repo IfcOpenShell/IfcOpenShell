@@ -25,6 +25,7 @@ classes = (
     operator.EditObjectPlacement,
     operator.GetRepresentationIfcParameters,
     operator.OverrideDelete,
+    operator.OverrideOutlinerDelete,
     operator.OverrideDuplicateMove,
     operator.OverrideDuplicateMoveLinked,
     operator.OverridePasteBuffer,
