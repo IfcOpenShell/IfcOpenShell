@@ -62,7 +62,8 @@ class TestAddRepresentation:
 
         # Add styles
         geometry.get_object_materials_without_styles("obj").should_be_called().will_return(["material"])
-        test.core.test_style.TestAddStyle.predict(self, ifc, style, obj="material")
+        geometry.run_style_add_style(obj="material").should_be_called()
+        geometry.get_styles("obj").should_be_called().will_return(["style"])
 
         # Link style to representation items
         geometry.should_use_presentation_style_assignment().should_be_called().will_return(False)

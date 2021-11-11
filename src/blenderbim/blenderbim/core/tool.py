@@ -89,6 +89,7 @@ class Geometry:
     def get_profile_set_usage(cls, element): pass
     def get_representation_data(cls, representation): pass
     def get_representation_name(cls, representation): pass
+    def get_styles(cls, obj): pass
     def get_total_representation_items(cls, obj): pass
     def has_data_users(cls, data): pass
     def import_representation(cls, obj, representation, enable_dynamic_voids=False): pass
@@ -103,6 +104,7 @@ class Geometry:
     def replace_object_with_empty(cls, obj): pass
     def resolve_mapped_representation(cls, representation): pass
     def run_geometry_update_representation(cls, obj=None): pass
+    def run_style_add_style(cls, obj=None): pass
     def should_force_faceted_brep(cls): pass
     def should_force_triangulation(cls): pass
     def should_use_presentation_style_assignment(cls): pass

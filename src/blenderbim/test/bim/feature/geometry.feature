@@ -309,6 +309,23 @@ Scenario: Override duplicate move - with active IFC data
     And the object "IfcBuildingStorey/My Storey.001" exists
     And the object "IfcBuildingStorey/My Storey.001" is an "IfcBuildingStorey"
 
+Scenario: Override duplicate move - copying a coloured representation
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I add a material
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And the material "Material" colour is set to "1,0,0,1"
+    When I press "object.duplicate_move"
+    And I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    And an empty Blender session is started
+    And I press "bim.load_project(filepath='{cwd}/test/files/export.ifc')"
+    Then the material "Material" colour is "1,0,0,1"
+    And the object "IfcWall/Cube" has the material "Material"
+    And the object "IfcWall/Cube.001" has the material "Material"
+
 Scenario: Override duplicate move - copying a type instance with a representation map
     Given an empty IFC project
     And I add a cube
