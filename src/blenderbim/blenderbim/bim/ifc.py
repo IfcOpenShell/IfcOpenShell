@@ -84,7 +84,10 @@ class IfcStore:
             ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
             IfcStore.cache_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
             cache_settings = ifcopenshell.geom.settings()
-            IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, cache_settings)
+            try:
+                IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, cache_settings)
+            except:
+                return
         return IfcStore.cache
 
     @staticmethod
@@ -255,7 +258,9 @@ class IfcStore:
         except:
             pass
 
-        if obj:
+        if element.is_a("IfcSurfaceStyle"):
+            obj.BIMMaterialProperties.ifc_style_id = 0
+        elif obj:
             obj.BIMObjectProperties.ifc_definition_id = 0
 
     @staticmethod

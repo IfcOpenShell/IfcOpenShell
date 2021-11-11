@@ -119,6 +119,26 @@ class TestLink(test.bim.bootstrap.NewFile):
         assert subject.get_entity(obj) == element
         assert subject.get_object(element) == obj
 
+    def test_link_a_style(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        element = ifc.createIfcSurfaceStyle()
+        obj = bpy.data.materials.new("Material")
+        subject.link(element, obj)
+        assert subject.get_object(element) == obj
+
+    def test_link_a_material_and_style(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        style = ifc.createIfcSurfaceStyle()
+        material = ifc.createIfcMaterial()
+        obj = bpy.data.materials.new("Material")
+        subject.link(style, obj)
+        subject.link(material, obj)
+        assert subject.get_entity(obj) == material
+        assert subject.get_object(style) == obj
+        assert subject.get_object(material) == obj
+
 
 class TestUnlink(test.bim.bootstrap.NewFile):
     def test_unlink_an_object(self):
@@ -140,6 +160,31 @@ class TestUnlink(test.bim.bootstrap.NewFile):
         subject.unlink(element, obj)
         assert subject.get_entity(obj) is None
         assert subject.get_object(element) is None
+
+    def test_unlink_a_style(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        element = ifc.createIfcSurfaceStyle()
+        obj = bpy.data.materials.new("Material")
+        subject.link(element, obj)
+        subject.unlink(element, obj)
+        assert subject.get_object(element) is None
+
+    def test_unlink_a_style_and_material(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        style = ifc.createIfcSurfaceStyle()
+        material = ifc.createIfcMaterial()
+        obj = bpy.data.materials.new("Material")
+        subject.link(style, obj)
+        subject.link(material, obj)
+        subject.unlink(element=style, obj=obj)
+        assert subject.get_entity(obj) == material
+        assert subject.get_object(material) == obj
+        assert subject.get_object(style) is None
+        subject.unlink(element=material, obj=obj)
+        assert subject.get_entity(obj) is None
+        assert subject.get_object(material) is None
 
     def test_unlinking_using_an_object(self):
         ifc = ifcopenshell.file()

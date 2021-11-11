@@ -24,7 +24,7 @@ class TestAddStyle:
     def predict(self, ifc, style, obj="obj"):
         style.get_name(obj).should_be_called().will_return("name")
         ifc.run("style.add_style", name="name").should_be_called().will_return("style")
-        style.link("style", obj).should_be_called()
+        ifc.link("style", obj).should_be_called()
         style.get_surface_rendering_attributes(obj).should_be_called().will_return("attributes")
         ifc.run(
             "style.add_surface_style", style="style", ifc_class="IfcSurfaceStyleRendering", attributes="attributes"
@@ -38,7 +38,7 @@ class TestAddStyle:
     def test_adding_a_style_linked_to_a_material(self, ifc, style):
         style.get_name("obj").should_be_called().will_return("name")
         ifc.run("style.add_style", name="name").should_be_called().will_return("style")
-        style.link("style", "obj").should_be_called()
+        ifc.link("style", "obj").should_be_called()
         style.get_surface_rendering_attributes("obj").should_be_called().will_return("attributes")
         ifc.run(
             "style.add_surface_style", style="style", ifc_class="IfcSurfaceStyleRendering", attributes="attributes"
@@ -52,8 +52,8 @@ class TestAddStyle:
 class TestRemoveStyle:
     def test_run(self, ifc, style):
         style.get_style("obj").should_be_called().will_return("style")
+        ifc.unlink(obj="obj", element="style").should_be_called()
         ifc.run("style.remove_style", style="style").should_be_called()
-        style.unlink(obj="obj").should_be_called()
         subject.remove_style(ifc, style, obj="obj")
 
 
@@ -73,9 +73,10 @@ class TestUpdateStyleColours:
 
 
 class TestUnlinkStyle:
-    def test_run(self, style):
-        style.unlink("obj").should_be_called()
-        subject.unlink_style(style, obj="obj")
+    def test_run(self, ifc, style):
+        style.get_style("obj").should_be_called().will_return("style")
+        ifc.unlink(obj="obj", element="style").should_be_called()
+        subject.unlink_style(ifc, style, obj="obj")
 
 
 class TestEnableEditingStyle:

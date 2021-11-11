@@ -387,3 +387,17 @@ Scenario: Export IFC - with changed object scale synchronised
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/export.ifc')"
     Then the object "IfcWall/Cube" dimensions are "4,4,4"
+
+Scenario: Export IFC - with changed style colour synchronised
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I add a material
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    When the material "Material" colour is set to "1,0,0,1"
+    And I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc')"
+    And an empty Blender session is started
+    And I press "bim.load_project(filepath='{cwd}/test/files/export.ifc')"
+    Then the material "Material" colour is "1,0,0,1"
