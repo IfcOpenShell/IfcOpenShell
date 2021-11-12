@@ -271,7 +271,7 @@ class BIM_PT_text(Panel):
 
 class BIM_PT_annotation_utilities(Panel):
     bl_idname = "BIM_PT_annotation_utilities"
-    bl_label = "Annotation"
+    bl_label = "Drawing"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"

@@ -24,6 +24,7 @@ import pystache
 import xml.etree.ElementTree as ET
 import svgwrite
 import ifcopenshell
+import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.module.drawing.annotation as annotation
 from mathutils import Vector
@@ -168,7 +169,7 @@ class SvgWriter:
                 line["marker-start"] = "url(#grid-marker)"
                 line["marker-end"] = "url(#grid-marker)"
                 line["stroke-dasharray"] = "12.5, 3, 3, 3"
-                axis_tag = IfcStore.get_file().by_id(grid_obj.BIMObjectProperties.ifc_definition_id).AxisTag
+                axis_tag = tool.Ifc.get_entity(grid_obj).Name
                 self.svg.add(
                     self.svg.text(
                         axis_tag,
