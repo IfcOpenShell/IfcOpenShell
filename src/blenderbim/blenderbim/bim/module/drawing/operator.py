@@ -286,7 +286,7 @@ class CreateDrawing(bpy.types.Operator):
         exporter = blenderbim.bim.export_ifc.IfcExporter(None)
         exporter.file = tool.Ifc.get()
         invalidated_guids = exporter.sync_deletions()
-        invalidated_elements = exporter.sync_object_placements()
+        invalidated_elements = exporter.sync_all_objects()
         invalidated_elements += exporter.sync_edited_objects()
         [invalidated_guids.append(e.GlobalId) for e in invalidated_elements if hasattr(e, "GlobalId")]
 
@@ -501,7 +501,8 @@ class CreateDrawing(bpy.types.Operator):
                 svg_writer.annotations.setdefault("misc_objs", []).append(obj)
 
         svg_writer.annotations["attributes"] = [a.name for a in drawing_style.attributes]
-        svg_writer.annotations["annotation_objs"] = self.get_annotation(svg_writer)
+        # TODO: This was the old 2D annotation box checking system, prepare to deprecate
+        svg_writer.annotations["annotation_objs"] = []
 
         svg_writer.write("annotation")
         return svg_writer.output
@@ -529,56 +530,6 @@ class CreateDrawing(bpy.types.Operator):
                 if space.type != "VIEW_3D":
                     continue
                 return space
-
-    def get_annotation(self, svg_writer):
-        results = []
-        x = svg_writer.camera_width / 2
-        y = svg_writer.camera_height / 2
-        z = 0.01
-        camera_box = helper.BoundingBox(
-            self.camera,
-            [
-                self.camera.matrix_world @ Vector((-x, -y, -z)),
-                self.camera.matrix_world @ Vector((-x, -y, 0)),
-                self.camera.matrix_world @ Vector((-x, y, 0)),
-                self.camera.matrix_world @ Vector((-x, y, -z)),
-                self.camera.matrix_world @ Vector((x, -y, -z)),
-                self.camera.matrix_world @ Vector((x, -y, 0)),
-                self.camera.matrix_world @ Vector((x, y, 0)),
-                self.camera.matrix_world @ Vector((x, y, -z)),
-            ],
-        )
-        # This should probably be also part of IfcConvert in the future, here is a Python prototype
-        settings_2d = ifcopenshell.geom.settings()
-        settings_2d.set(settings_2d.INCLUDE_CURVES, True)
-        for obj in bpy.data.objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            if obj == self.camera:
-                continue
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if element.is_a("IfcTypeProduct"):
-                continue
-            representation = ifcopenshell.util.representation.get_representation(
-                element, "Plan", "Annotation", self.camera.data.BIMCameraProperties.target_view
-            )
-            if not representation:
-                continue
-            if not camera_box.intersect(helper.BoundingBox(obj)):
-                continue
-            shape = ifcopenshell.geom.create_shape(settings_2d, representation)
-            geometry = shape
-            e = geometry.edges
-            v = geometry.verts
-            results.append(
-                {
-                    "raw": element,
-                    "classes": self.get_classes(element, "annotation", svg_writer),
-                    "edges": [[e[i], e[i + 1]] for i in range(0, len(e), 2)],
-                    "vertices": [obj.matrix_world @ Vector((v[i], v[i + 1], v[i + 2])) for i in range(0, len(v), 3)],
-                }
-            )
-        return results
 
     def get_classes(self, element, position, svg_writer):
         classes = [position, element.is_a()]
