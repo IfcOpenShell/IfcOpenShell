@@ -469,7 +469,8 @@ class CreateDrawing(bpy.types.Operator):
         svg_writer.camera_projection = tuple(camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
 
         for obj in camera.users_collection[0].objects:
-            if "IfcGrid" in obj.name:
+            element = tool.Ifc.get_entity(obj)
+            if element.ObjectType == "GRID":
                 svg_writer.annotations.setdefault("grid_objs", []).append(obj)
             elif obj.type == "CAMERA":
                 continue
@@ -1232,6 +1233,12 @@ class CopyGrid(bpy.types.Operator):
         return helper.get_active_drawing(context.scene)[0] is not None
 
     def execute(self, context):
+        subcontext = ifcopenshell.util.representation.get_context(
+            IfcStore.get_file(), "Plan", "Annotation", context.scene.camera.data.BIMCameraProperties.target_view
+        )
+        if not subcontext:
+            return {"FINISHED"}
+
         proj_coll = helper.get_project_collection(context.scene)
         view_coll, camera = helper.get_active_drawing(context.scene)
         is_ortho = camera.data.type == "ORTHO"
@@ -1240,11 +1247,19 @@ class CopyGrid(bpy.types.Operator):
         elevating = is_ortho and camera.data.BIMCameraProperties.target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
 
         def grep(coll):
-            return [obj for obj in coll.all_objects if obj.name.startswith("IfcGridAxis")]
+            results = []
+            for obj in coll.all_objects:
+                element = tool.Ifc.get_entity(obj)
+                if element and element.is_a("IfcAnnotation") and element.ObjectType == "GRID":
+                    results.append(obj)
+            return results
 
         def clone(src):
             dst = src.copy()
             dst.data = dst.data.copy()
+            dst.name = dst.name.replace("IfcGridAxis/", "")
+            dst.BIMObjectProperties.ifc_definition_id = 0
+            dst.data.BIMMeshProperties.ifc_definition_id = 0
             return dst
 
         def disassemble(obj):
@@ -1291,17 +1306,25 @@ class CopyGrid(bpy.types.Operator):
         for obj in grep(view_coll):
             view_coll.objects.unlink(obj)
 
-        grid = [localize(*disassemble(clone(obj))) for obj in grep(proj_coll)]
+        grids = []
+        for element in tool.Ifc.get().by_type("IfcGridAxis"):
+            obj = tool.Ifc.get_object(element)
+            if not obj:
+                continue
+            grids.append((*localize(*disassemble(clone(obj))), element))
 
         if clipping:
-            grid = [(obj, clip(mesh)) for obj, mesh in grid]
+            grids = [(obj, clip(mesh), element) for obj, mesh, element in grids]
         elif elevating:
-            grid = [(obj, elev(mesh)) for obj, mesh in grid]
+            grids = [(obj, elev(mesh), element) for obj, mesh, element in grids]
 
-        for obj, mesh in grid:
+        for obj, mesh, element in grids:
             if mesh is not None:
                 view_coll.objects.link(assemble(obj, mesh))
-
+                bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcAnnotation", context_id=subcontext.id())
+                annotation = tool.Ifc.get_entity(obj)
+                annotation.Name = element.AxisTag
+                annotation.ObjectType = "GRID"
         return {"FINISHED"}
 
 
