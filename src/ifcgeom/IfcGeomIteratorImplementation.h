@@ -114,13 +114,20 @@ namespace IfcGeom {
 	class MAKE_TYPE_NAME(IteratorImplementation_) : public IteratorImplementation {
 	private:
 
-		std::atomic<int> progress_;
+		std::atomic<bool> finished_ = false;
+		std::atomic<int> progress_ = 0;
 		std::vector<geometry_conversion_task> tasks_;
-		std::vector<IfcGeom::Element*> all_processed_elements_;
-		std::vector<IfcGeom::BRepElement*> all_processed_native_elements_;
-		typename std::vector<IfcGeom::Element*>::const_iterator task_result_iterator_;
-		typename std::vector<IfcGeom::BRepElement*>::const_iterator native_task_result_iterator_;
 
+		std::list<IfcGeom::Element*> all_processed_elements_;
+		std::list<IfcGeom::BRepElement*> all_processed_native_elements_;
+
+		typename std::list<IfcGeom::Element*>::const_iterator task_result_iterator_;
+		typename std::list<IfcGeom::BRepElement*>::const_iterator native_task_result_iterator_;
+
+		std::mutex element_ready_mutex_;
+		bool task_result_ptr_initialized = false;
+		size_t async_elements_returned_ = 0;
+		
 		MAKE_TYPE_NAME(IteratorImplementation_)(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 		MAKE_TYPE_NAME(IteratorImplementation_)& operator=(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 
@@ -240,6 +247,10 @@ namespace IfcGeom {
 					initialization_outcome_ = !tasks_.empty();
 
 					init_future_ = std::async(std::launch::async, [this]() { process_concurrently(); });
+
+					// wait for the first element, because after init(), get() can be called.
+					// so the element conversion must succeed
+					initialization_outcome_ = wait_for_element();
 				} else {
 					initialization_outcome_ = create();
 				}
@@ -275,6 +286,23 @@ namespace IfcGeom {
 			}
 		}
 
+		size_t processed_ = 0;
+
+		void process_finished_rep(geometry_conversion_task* rep) {
+			std::lock_guard<std::mutex> lk(element_ready_mutex_);
+
+			all_processed_elements_.insert(all_processed_elements_.end(), rep->elements.begin(), rep->elements.end());
+			all_processed_native_elements_.insert(all_processed_native_elements_.end(), rep->breps.begin(), rep->breps.end());
+
+			if (!task_result_ptr_initialized) {
+				task_result_iterator_ = all_processed_elements_.begin();
+				native_task_result_iterator_ = all_processed_native_elements_.begin();
+				task_result_ptr_initialized = true;
+			}
+
+			progress_ = ++processed_ * 100 / tasks_.size();
+		}
+
 		void process_concurrently() {
 			size_t conc_threads = num_threads_;
 			if (conc_threads > tasks_.size()) {
@@ -287,13 +315,8 @@ namespace IfcGeom {
 				kernel_pool.push_back(new MAKE_TYPE_NAME(Kernel)(kernel));
 			}
 
-			std::vector<std::future<void>> threadpool;
-
-			int old_progress = -1;
-			int processed = 0;
-
-			Logger::ProgressBar(0);
-
+			std::vector<std::future<geometry_conversion_task*>> threadpool;			
+			
 			for (auto& rep : tasks_) {
 				MAKE_TYPE_NAME(Kernel)* K = nullptr;
 				if (threadpool.size() < kernel_pool.size()) {
@@ -302,18 +325,11 @@ namespace IfcGeom {
 
 				while (threadpool.size() == conc_threads) {
 					for (int i = 0; i < (int)threadpool.size(); i++) {
-						std::future<void> &fu = threadpool[i];
+						auto& fu = threadpool[i];
 						std::future_status status;
 						status = fu.wait_for(std::chrono::seconds(0));
 						if (status == std::future_status::ready) {
-							fu.get();
-
-							processed += 1;
-							progress_ = processed * 50 / tasks_.size();
-							if (progress_ != old_progress) {
-								Logger::ProgressBar(progress_);
-								old_progress = progress_;
-							}
+							process_finished_rep(fu.get());							
 
 							std::swap(threadpool[i], threadpool.back());
 							threadpool.pop_back();
@@ -324,12 +340,13 @@ namespace IfcGeom {
 					}   // for
 				}     // while
 
-				std::future<void> fu = std::async(
+				std::future<geometry_conversion_task*> fu = std::async(
 					std::launch::async, [this](
 						IfcGeom::MAKE_TYPE_NAME(Kernel)* kernel,
 						const IfcGeom::IteratorSettings& settings,
 						geometry_conversion_task* rep) {
-							return this->create_element_(kernel, settings, rep); 
+							this->create_element_(kernel, settings, rep); 
+							return rep;
 						},
 					K,
 					std::ref(settings),
@@ -338,24 +355,11 @@ namespace IfcGeom {
 				threadpool.emplace_back(std::move(fu));
 			}
 
-			for (std::future<void> &fu : threadpool) {
-				fu.get();
-
-				processed += 1;
-				progress_ = processed * 100 / tasks_.size();
-				if (progress_ / 2 != old_progress) {
-					Logger::ProgressBar(progress_ / 2);
-					old_progress = progress_ / 2;
-				}
+			for (auto& fu : threadpool) {
+				process_finished_rep(fu.get());
 			}
 
-			for (auto& rep : tasks_) {
-				all_processed_elements_.insert(all_processed_elements_.end(), rep.elements.begin(), rep.elements.end());
-				all_processed_native_elements_.insert(all_processed_native_elements_.end(), rep.breps.begin(), rep.breps.end());
-			}
-
-			task_result_iterator_ = all_processed_elements_.begin();
-			native_task_result_iterator_ = all_processed_native_elements_.begin();
+			finished_ = true;
 
 			Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(all_processed_elements_.size()) +
 				" objects)                                ");
@@ -874,6 +878,24 @@ namespace IfcGeom {
 			}
 		}
 
+		bool wait_for_element() {
+			while (true) {
+				size_t s;
+				{
+					std::lock_guard<std::mutex> lk(element_ready_mutex_);
+					s = all_processed_elements_.size();
+				}
+				if (s > async_elements_returned_) {
+					++async_elements_returned_;
+					return true;
+				} else if (finished_) {
+					return false;
+				} else {
+					std::this_thread::sleep_for(std::chrono::milliseconds(10));
+				}
+			}
+		}
+
     public:
         /// Returns what would be the product for the next shape representation
         /// @todo Double-check and test the impl.
@@ -893,13 +915,14 @@ namespace IfcGeom {
         /// Use get() to retrieve the created geometry.
 		IfcUtil::IfcBaseClass* next() {
 			if (num_threads_ != 1) {
+				if (!wait_for_element()) {
+					return nullptr;
+				}
+
 				task_result_iterator_++;
 				native_task_result_iterator_++;
-				if (task_result_iterator_ == all_processed_elements_.end()) {
-					return nullptr;
-				} else {
-					return (*task_result_iterator_)->product();
-				}
+
+				return (*task_result_iterator_)->product();
 			} else {
 				// Increment the iterator over the list of products using the current
 				// shape representation
