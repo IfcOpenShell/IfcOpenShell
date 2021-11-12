@@ -904,10 +904,6 @@ int main(int argc, char** argv) {
 		Logger::Notice("Using " + std::to_string(num_threads) + " threads");
 	}
 
-	if (!quiet && num_threads > 1) {
-		Logger::Status("Creating geometry...");
-	}
-
 	if (vmap.count("log-file")) {
 		Logger::SetOutput(quiet ? nullptr : &cout_, &log_fs);
 	} else {
@@ -1085,11 +1081,7 @@ int main(int argc, char** argv) {
 	int old_progress = quiet ? 0 : -1;
 
 	if (!quiet) {
-		if (num_threads == 1) {
-			Logger::Status("Creating geometry...");
-		} else {
-			Logger::Status("Writing geometry...");
-		}
+		Logger::Status("Creating geometry...");
 	}
 
 	// The functions IfcGeom::Iterator::get() and IfcGeom::Iterator::next() 
