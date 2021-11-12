@@ -114,8 +114,9 @@ namespace IfcGeom {
 	class MAKE_TYPE_NAME(IteratorImplementation_) : public IteratorImplementation {
 	private:
 
-		std::atomic<bool> finished_ = false;
-		std::atomic<int> progress_ = 0;
+		std::atomic<bool> finished_{ false };
+		std::atomic<int> progress_{ 0 };
+
 		std::vector<geometry_conversion_task> tasks_;
 
 		std::list<IfcGeom::Element*> all_processed_elements_;
@@ -243,8 +244,6 @@ namespace IfcGeom {
 
 				if (num_threads_ != 1) {
 					collect();
-
-					initialization_outcome_ = !tasks_.empty();
 
 					init_future_ = std::async(std::launch::async, [this]() { process_concurrently(); });
 
