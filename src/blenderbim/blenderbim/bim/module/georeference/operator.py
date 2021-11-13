@@ -24,8 +24,8 @@ import ifcopenshell.util.attribute
 import ifcopenshell.api
 import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.georeference.data import Data
-from ifcopenshell.api.unit.data import Data as UnitData
+from blenderbim.bim.module.georeference.data import GeoreferenceData
+from ifcopenshell.api.unit.data import Data as UnitData #TODO Connect new module data
 from math import radians, degrees, atan, tan, cos, sin
 
 
@@ -42,18 +42,18 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
         props.projected_crs.clear()
 
         blenderbim.bim.helper.import_attributes(
-            "IfcProjectedCRS", props.projected_crs, Data.projected_crs, self.import_projected_crs_attributes
+            "IfcProjectedCRS", props.projected_crs, GeoreferenceData.data["projected_crs"], self.import_projected_crs_attributes
         )
 
         props.map_conversion.clear()
         blenderbim.bim.helper.import_attributes(
-            "IfcMapConversion", props.map_conversion, Data.map_conversion, self.import_map_conversion_attributes
+            "IfcMapConversion", props.map_conversion, GeoreferenceData.data["map_conversion"], self.import_map_conversion_attributes
         )
 
-        props.has_true_north = bool(Data.true_north)
-        if Data.true_north:
-            props.true_north_abscissa = str(Data.true_north[0])
-            props.true_north_ordinate = str(Data.true_north[1])
+        props.has_true_north = bool(GeoreferenceData.data["true_north"])
+        if GeoreferenceData.data["true_north"]:
+            props.true_north_abscissa = str(GeoreferenceData.data["true_north"][0])
+            props.true_north_ordinate = str(GeoreferenceData.data["true_north"][1])
 
         props.is_editing = True
         return {"FINISHED"}
@@ -122,7 +122,7 @@ class EditGeoreferencing(bpy.types.Operator):
                 "true_north": true_north,
             }
         )
-        Data.load(self.file)
+        GeoreferenceData.load()
         bpy.ops.bim.disable_editing_georeferencing()
         return {"FINISHED"}
 
@@ -202,7 +202,7 @@ class RemoveGeoreferencing(bpy.types.Operator):
 
     def _execute(self, context):
         ifcopenshell.api.run("georeference.remove_georeferencing", IfcStore.get_file())
-        Data.load(IfcStore.get_file())
+        GeoreferenceData.load()
         return {"FINISHED"}
 
 
@@ -216,7 +216,7 @@ class AddGeoreferencing(bpy.types.Operator):
 
     def _execute(self, context):
         ifcopenshell.api.run("georeference.add_georeferencing", IfcStore.get_file())
-        Data.load(IfcStore.get_file())
+        GeoreferenceData.load()
         return {"FINISHED"}
 
 
@@ -232,8 +232,8 @@ class ConvertLocalToGlobal(bpy.types.Operator):
         return file and props.coordinate_input.count(",") == 2
 
     def execute(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not GeoreferenceData.is_loaded:
+            GeoreferenceData.load()
         props = context.scene.BIMGeoreferenceProperties
         x, y, z = [float(co) for co in props.coordinate_input.split(",")]
 
@@ -253,17 +253,17 @@ class ConvertLocalToGlobal(bpy.types.Operator):
 
         # TODO: what if the project CRS units and the project units are different?
 
-        if Data.map_conversion:
+        if GeoreferenceData.data["map_conversion"]:
             results = ifcopenshell.util.geolocation.xyz2enh(
                 x,
                 y,
                 z,
-                Data.map_conversion["Eastings"],
-                Data.map_conversion["Northings"],
-                Data.map_conversion["OrthogonalHeight"],
-                Data.map_conversion.get("XAxisAbscissa", 1.0),
-                Data.map_conversion.get("XAxisOrdinate", 0.0),
-                Data.map_conversion.get("Scale", 1.0),
+                GeoreferenceData.data["map_conversion"]["Eastings"],
+                GeoreferenceData.data["map_conversion"]["Northings"],
+                GeoreferenceData.data["map_conversion"]["OrthogonalHeight"],
+                GeoreferenceData.data["map_conversion"].get("XAxisAbscissa", 1.0),
+                GeoreferenceData.data["map_conversion"].get("XAxisOrdinate", 0.0),
+                GeoreferenceData.data["map_conversion"].get("Scale", 1.0),
             )
         else:
             results = (x, y, z)
@@ -285,22 +285,22 @@ class ConvertGlobalToLocal(bpy.types.Operator):
         return file and file.by_type("IfcUnitAssignment") and props.coordinate_input.count(",") == 2
 
     def execute(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not GeoreferenceData.is_loaded:
+            GeoreferenceData.load()
         props = context.scene.BIMGeoreferenceProperties
         x, y, z = [float(co) for co in props.coordinate_input.split(",")]
 
-        if Data.map_conversion:
+        if GeoreferenceData.data["map_conversion"]:
             results = ifcopenshell.util.geolocation.enh2xyz(
                 x,
                 y,
                 z,
-                Data.map_conversion["Eastings"],
-                Data.map_conversion["Northings"],
-                Data.map_conversion["OrthogonalHeight"],
-                Data.map_conversion.get("XAxisAbscissa", 1.0),
-                Data.map_conversion.get("XAxisOrdinate", 0.0),
-                Data.map_conversion.get("Scale", 1.0),
+                GeoreferenceData.data["map_conversion"]["Eastings"],
+                GeoreferenceData.data["map_conversion"]["Northings"],
+                GeoreferenceData.data["map_conversion"]["OrthogonalHeight"],
+                GeoreferenceData.data["map_conversion"].get("XAxisAbscissa", 1.0),
+                GeoreferenceData.data["map_conversion"].get("XAxisOrdinate", 0.0),
+                GeoreferenceData.data["map_conversion"].get("Scale", 1.0),
             )
         else:
             results = (x, y, z)
