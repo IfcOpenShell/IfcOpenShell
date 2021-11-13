@@ -36,6 +36,7 @@
 #include <BRepClass3d_SolidClassifier.hxx>
 #include <TopTools_DataMapOfShapeInteger.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRepExtrema_ExtPF.hxx>
 
 namespace IfcGeom {
 
@@ -48,6 +49,52 @@ namespace IfcGeom {
 		double dot_product;
 	};
 
+	namespace {
+
+		// Approximates the distance `other` protrudes into `volume` by finding the
+		// max face-vertex distance for every face, and taking the minimal value of
+		// those. Note that this uses the internal `BRepExtrema_ExtPF` which only
+		// returns solutions whose when the vertex projected onto the face is contained
+		// within the face boundaries. In case of concave `volume` this is desirable.
+
+		double max_distance_inside(const TopoDS_Shape& volume, const TopoDS_Shape& other) {
+			TopExp_Explorer exp_v(volume.Reversed(), TopAbs_FACE);
+
+			double min_face_vertex_distance = std::numeric_limits<double>::infinity();
+
+			for (; exp_v.More(); exp_v.Next()) {
+				const TopoDS_Face& f = TopoDS::Face(exp_v.Current());
+
+				BRepExtrema_ExtPF epf;
+				epf.Initialize(f, Extrema_ExtFlag_MIN);
+
+				double face_vertex_distance = 0.;
+
+				TopExp_Explorer exp_o(other, TopAbs_VERTEX);
+				for (; exp_o.More(); exp_o.Next()) {
+					const TopoDS_Vertex& v = TopoDS::Vertex(exp_o.Current());
+					epf.Perform(v, f);
+					if (epf.IsDone() && epf.NbExt() == 1) {
+						double d = epf.SquareDistance(1);
+						if (d > face_vertex_distance) {
+							face_vertex_distance = d;
+						}
+					}
+				}
+
+				if (face_vertex_distance < min_face_vertex_distance) {
+					min_face_vertex_distance = face_vertex_distance;
+				}
+			}
+
+			if (min_face_vertex_distance == std::numeric_limits<double>::infinity()) {
+				return -1.;
+			} else {
+				return std::sqrt(min_face_vertex_distance);
+			}
+		}
+	}
+
 	namespace impl {
 		template <typename T>
 		class tree {
@@ -58,6 +105,7 @@ namespace IfcGeom {
 					if (dss.Perform() && dss.NbSolution() >= 1) {
 						if (dss.Value() <= extend) {
 							distances_.push_back(dss.Value());
+							protrusion_distances_.push_back(max_distance_inside(B, A));
 						}						
 						return dss.Value() <= extend;
 					}
@@ -83,6 +131,7 @@ namespace IfcGeom {
 
 			// @todo this is ugly, embed this in the return type
 			mutable std::vector<double> distances_;
+			mutable std::vector<double> protrusion_distances_;
 
 		public:
 
@@ -153,6 +202,7 @@ namespace IfcGeom {
 
 			std::vector<T> select(const T& t, bool completely_within = false, double extend = 0.0) const {
 				distances_.clear();
+				protrusion_distances_.clear();
 
 				std::vector<T> ts = select_box(t, completely_within, extend);
 				if (ts.empty()) {
@@ -185,6 +235,7 @@ namespace IfcGeom {
 
 			std::vector<T> select(const TopoDS_Shape& s, bool completely_within = false, double extend = -1.e-5) const {
 				distances_.clear();
+				protrusion_distances_.clear();
 
 				Bnd_Box bb;
 				BRepBndLib::AddClose(s, bb);
@@ -232,6 +283,7 @@ namespace IfcGeom {
 
 			std::vector<T> select(const gp_Pnt& p, double extend=0.0) const {
 				distances_.clear();
+				protrusion_distances_.clear();
 
 				std::vector<T> ts = select_box(p, extend);
 				if (ts.empty()) {
@@ -253,7 +305,9 @@ namespace IfcGeom {
 					if (extend > 0.0) {
 						BRepExtrema_DistShapeShape dss(v, B);
 						if (dss.Perform() && dss.NbSolution() >= 1 && dss.Value() <= extend) {
-							distances_.push_back(dss.Value());
+							distances_.push_back(dss.Value());							
+							protrusion_distances_.push_back(max_distance_inside(B, v));
+
 							ts_filtered.push_back(*it);
 						}
 					} else {
@@ -384,6 +438,10 @@ namespace IfcGeom {
 
 		const std::vector<double>& distances() const {
 			return distances_;
+		}
+
+		const std::vector<double>& protrusion_distances() const {
+			return protrusion_distances_;
 		}
 
 		std::vector<IfcGeom::ray_intersection_result> select_ray(const gp_Pnt& p0, const gp_Dir& d, double length = 1000.) const {
