@@ -768,9 +768,8 @@ class ActivateView(bpy.types.Operator):
                 ):
                     project_collection.children["Views"].children[collection.name].hide_viewport = True
                     bpy.data.collections.get(collection.name).hide_render = True
-        context.view_layer.layer_collection.children["Views"].children[
-            camera.users_collection[0].name
-        ].hide_viewport = False
+
+                    project_collection.children["Views"].children[camera.users_collection[0].name].hide_viewport = False
         bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
         bpy.ops.bim.activate_drawing_style()
         return {"FINISHED"}
