@@ -178,7 +178,16 @@ class TestGetStyles(NewFile):
         tool.Ifc.link(style, material)
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         obj.data.materials.append(material)
-        subject.get_styles(obj) == [style]
+        assert subject.get_styles(obj) == [style]
+
+
+class TestGetTextLiteral(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        item = ifc.createIfcTextLiteralWithExtent()
+        representation = ifc.createIfcShapeRepresentation(Items=[item])
+        assert subject.get_text_literal(representation) == item
 
 
 class TestGetCartesianPointCoordinateOffset(NewFile):
@@ -489,6 +498,20 @@ class TestGetIfcRepresentationClass(NewFile):
         assert (
             subject.get_ifc_representation_class(element, representation) == "IfcExtrudedAreaSolid/IfcCircleProfileDef"
         )
+
+    def test_detecting_text_representations(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcAnnotation()
+        element.ObjectType = "TEXT"
+        assert subject.get_ifc_representation_class(element, None) == "IfcTextLiteral"
+
+    def test_detecting_text_and_geometric_representations(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcAnnotation()
+        element.ObjectType = "TEXT_LEADER"
+        assert subject.get_ifc_representation_class(element, None) == "IfcGeometricCurveSet/IfcTextLiteral"
 
     def test_returning_null_for_non_parametric_representations(self):
         ifc = ifcopenshell.file()

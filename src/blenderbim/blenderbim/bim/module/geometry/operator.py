@@ -185,6 +185,7 @@ class UpdateRepresentation(bpy.types.Operator):
                 product, old_representation
             )
             representation_data["profile_set_usage"] = tool.Geometry.get_profile_set_usage(product)
+            representation_data["text_literal"] = tool.Geometry.get_text_literal(old_representation)
 
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
 

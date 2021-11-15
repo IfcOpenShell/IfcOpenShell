@@ -17,7 +17,10 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.bim.helper
+import blenderbim.tool as tool
 from bpy.types import Panel
+from blenderbim.bim.module.drawing.data import TextData
 
 
 class BIM_PT_camera(Panel):
@@ -233,39 +236,57 @@ class BIM_PT_sheets(Panel):
 
 
 class BIM_PT_text(Panel):
-    bl_label = "Text Paper Space"
+    bl_label = "IFC Text"
     bl_idname = "BIM_PT_text"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "data"
+    bl_context = "object"
 
     @classmethod
     def poll(cls, context):
-        return type(context.curve) is bpy.types.TextCurve
+        if not tool.Ifc.get() or not context.active_object:
+            return
+        element = tool.Ifc.get_entity(context.active_object)
+        if not element:
+            return
+        return element.is_a("IfcAnnotation") and element.ObjectType in ["TEXT", "TEXT_LEADER"]
 
     def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        props = context.active_object.data.BIMTextProperties
+        if not TextData.is_loaded:
+            TextData.load()
 
-        row = layout.row()
-        row.operator("bim.propagate_text_data")
+        self.layout.use_property_split = True
+        props = context.active_object.BIMTextProperties
 
-        row = layout.row()
+        if props.is_editing:
+            row = self.layout.row(align=True)
+            row.operator("bim.edit_text", icon="CHECKMARK")
+            row.operator("bim.disable_editing_text", icon="CANCEL", text="")
+            blenderbim.bim.helper.draw_attributes(props.attributes, self.layout)
+        else:
+            row = self.layout.row()
+            row.operator("bim.enable_editing_text", icon="GREASEPENCIL")
+
+            for attribute in TextData.data["attributes"]:
+                row = self.layout.row(align=True)
+                row.label(text=attribute["name"])
+                row.label(text=attribute["value"])
+
+        row = self.layout.row()
         row.prop(props, "font_size")
-        row = layout.row()
+        row = self.layout.row()
         row.prop(props, "symbol")
-        row = layout.row()
+        row = self.layout.row()
         row.prop(props, "related_element")
 
-        row = layout.row()
+        row = self.layout.row()
         row.operator("bim.add_variable")
 
         for index, variable in enumerate(props.variables):
-            row = layout.row(align=True)
+            row = self.layout.row(align=True)
             row.prop(variable, "name")
             row.operator("bim.remove_variable", icon="X", text="").index = index
-            row = layout.row()
+            row = self.layout.row()
             row.prop(variable, "prop_key")
 
 

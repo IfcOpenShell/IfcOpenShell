@@ -28,8 +28,11 @@ class Usecase:
             #  IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef
             #  IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids
             #  IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage
+            #  IfcGeometricCurveSet/IfcTextLiteral
+            #  IfcTextLiteral
             "ifc_representation_class": None,  # Whether to cast a mesh into a particular class
             "profile_set_usage": None,  # The material profile set if the extrusion requires it
+            "text_literal": None, # The text literal if the representation requires it
         }
         self.ifc_vertices = []
         for key, value in settings.items():
@@ -117,9 +120,16 @@ class Usecase:
             return self.create_lighting_representation()
 
     def create_plan_representation(self):
-        if self.settings["context"].ContextIdentifier == "Annotation":
-            if isinstance(self.settings["geometry"], bpy.types.TextCurve):
-                return self.create_text_representation()
+        if self.settings["ifc_representation_class"] == "IfcTextLiteral":
+            return self.create_text_representation()
+        elif self.settings["ifc_representation_class"] == "IfcGeometricCurveSet/IfcTextLiteral":
+            shape_representation = self.create_geometric_curve_set_representation(is_2d=True)
+            shape_representation.RepresentationType = "Annotation2D"
+            items = list(shape_representation.Items)
+            items.append(self.create_text())
+            shape_representation.Items = items
+            return shape_representation
+        elif self.settings["context"].ContextIdentifier == "Annotation":
             shape_representation = self.create_geometric_curve_set_representation(is_2d=True)
             shape_representation.RepresentationType = "Annotation2D"
             return shape_representation
@@ -143,8 +153,6 @@ class Usecase:
         elif self.settings["context"].ContextIdentifier == "SurveyPoints":
             pass
         else:
-            if isinstance(self.settings["geometry"], bpy.types.TextCurve):
-                return self.create_text_representation()
             shape_representation = self.create_geometric_curve_set_representation(is_2d=True)
             shape_representation.RepresentationType = "Annotation2D"
             return shape_representation
@@ -180,21 +188,8 @@ class Usecase:
         )
 
     def create_text(self):
-        text = self.settings["geometry"]
-        if text.align_y in ["TOP_BASELINE", "BOTTOM_BASELINE", "BOTTOM"]:
-            y = "bottom"
-        elif text.align_y == "CENTER":
-            y = "middle"
-        elif text.align_y == "TOP":
-            y = "top"
-
-        if text.align_x == "LEFT":
-            x = "left"
-        elif text.align_x == "CENTER":
-            x = "middle"
-        elif text.align_x == "RIGHT":
-            x = "right"
-
+        if self.settings["text_literal"]:
+            return self.settings["text_literal"]
         origin = self.file.createIfcAxis2Placement3D(
             self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
             self.file.createIfcDirection((0.0, 0.0, 1.0)),
@@ -203,7 +198,7 @@ class Usecase:
 
         # TODO: Planar extent right now is wrong ...
         return self.file.createIfcTextLiteralWithExtent(
-            text.body, origin, "RIGHT", self.file.createIfcPlanarExtent(1000, 1000), f"{y}-{x}"
+            "TEXT", origin, "RIGHT", self.file.createIfcPlanarExtent(1000, 1000), "bottom-left"
         )
 
     def create_variable_representation(self):

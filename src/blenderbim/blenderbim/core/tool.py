@@ -71,6 +71,16 @@ class Context:
 
 
 @interface
+class Drawing:
+    def disable_editing_text(cls, obj): pass
+    def enable_editing_text(cls, obj): pass
+    def export_text_literal_attributes(cls, obj): pass
+    def get_text_literal(cls, obj): pass
+    def import_text_attributes(cls, obj): pass
+    def update_text_value(cls, obj): pass
+
+
+@interface
 class Geometry:
     def change_object_data(cls, obj, data, is_global=False): pass
     def clear_cache(cls, element): pass
