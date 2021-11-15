@@ -469,36 +469,34 @@ class CreateDrawing(bpy.types.Operator):
         svg_writer.camera_projection = tuple(camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
 
         for obj in camera.users_collection[0].objects:
+            if "IfcAnnotation/" not in obj.name:
+                continue
             element = tool.Ifc.get_entity(obj)
             if element.ObjectType == "GRID":
                 svg_writer.annotations.setdefault("grid_objs", []).append(obj)
             elif obj.type == "CAMERA":
                 continue
-
-            if "IfcAnnotation/" not in obj.name:
-                continue
-
-            if "Leader" in obj.name:
-                svg_writer.annotations["leader_obj"] = (obj, obj.data)
-            elif "Stair" in obj.name:
+            elif element.ObjectType == "TEXT_LEADER":
+                svg_writer.annotations.setdefault("leader_objs", []).append(obj)
+            elif element.ObjectType == "STAIR_ARROW":
                 svg_writer.annotations["stair_obj"] = obj
-            elif "Equal" in obj.name:
+            elif element.ObjectType == "EQUAL_DIMENSION":
                 svg_writer.annotations.setdefault("equal_objs", []).append(obj)
-            elif "Dimension" in obj.name:
+            elif element.ObjectType == "DIMENSION":
                 svg_writer.annotations.setdefault("dimension_objs", []).append(obj)
-            elif "Break" in obj.name:
+            elif element.ObjectType == "BREAKLINE":
                 svg_writer.annotations["break_obj"] = obj
-            elif "Hidden" in obj.name:
+            elif element.ObjectType == "HIDDEN_LINE":
                 svg_writer.annotations.setdefault("hidden_objs", []).append((obj, obj.data))
-            elif "Solid" in obj.name:
+            elif element.ObjectType == "SOLID_LINE":
                 svg_writer.annotations.setdefault("solid_objs", []).append((obj, obj.data))
-            elif "Plan Level" in obj.name:
+            elif element.ObjectType == "PLAN_LEVEL":
                 svg_writer.annotations["plan_level_obj"] = obj
-            elif "Section Level" in obj.name:
+            elif element.ObjectType == "SECTION_LEVEL":
                 svg_writer.annotations["section_level_obj"] = obj
-            elif obj.type == "FONT":
+            elif element.ObjectType == "TEXT":
                 svg_writer.annotations.setdefault("text_objs", []).append(obj)
-            else:
+            elif element.ObjectType == "MISC":
                 svg_writer.annotations.setdefault("misc_objs", []).append(obj)
 
         svg_writer.annotations["attributes"] = [a.name for a in drawing_style.attributes]
@@ -558,7 +556,7 @@ class AddAnnotation(bpy.types.Operator):
     bl_idname = "bim.add_annotation"
     bl_label = "Add Annotation"
     bl_options = {"REGISTER", "UNDO"}
-    obj_name: bpy.props.StringProperty()
+    object_type: bpy.props.StringProperty()
     data_type: bpy.props.StringProperty()
 
     @classmethod

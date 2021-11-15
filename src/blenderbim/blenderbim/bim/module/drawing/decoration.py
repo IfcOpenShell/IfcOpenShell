@@ -36,7 +36,7 @@ import blenderbim.bim.module.drawing.helper as helper
 
 class BaseDecorator:
     # base name of objects to decorate
-    basename = "IfcAnnotation/Something"
+    objecttype = "NOTDEFINED"
 
     DEF_GLSL = """
         #define PI 3.141592653589793
@@ -136,11 +136,18 @@ class BaseDecorator:
 
     def get_objects(self, collection):
         """find relevant objects
-        using class.basename
+        using class.objecttype
 
         returns: iterable of blender objects
         """
-        return filter(lambda o: self.basename in o.name, collection.all_objects)
+        results = []
+        for obj in collection.all_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if element.is_a("IfcAnnotation") and element.ObjectType == self.objecttype:
+                results.append(obj)
+        return results
 
     def get_path_geom(self, obj, topo=True):
         """Parses path geometry into line segments
@@ -208,7 +215,7 @@ class BaseDecorator:
         return vertices, indices
 
     def decorate(self, context, object):
-        """perform actuall drawing stuff"""
+        """perform actual drawing stuff"""
         raise NotImplementedError()
 
     def draw_lines(self, context, obj, vertices, indices, topology=None):
@@ -311,7 +318,7 @@ class DimensionDecorator(BaseDecorator):
     - puts metric text next to each segment
     """
 
-    basename = "IfcAnnotation/Dimension"
+    objecttype = "DIMENSION"
 
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
@@ -406,7 +413,7 @@ class EqualityDecorator(DimensionDecorator):
     - puts 'EQ' label
     """
 
-    basename = "IfcAnnotation/Equal"
+    objecttype = "EQUAL_DIMENSION"
 
     def draw_labels(self, context, obj, vertices, indices):
         region = context.region
@@ -423,12 +430,11 @@ class EqualityDecorator(DimensionDecorator):
 
 
 class LeaderDecorator(BaseDecorator):
-    """Decorating stairs
+    """Decorating text with arrows
     - head point with arrow
-    - middle points w/out decorations
     """
 
-    basename = "IfcAnnotation/Leader"
+    objecttype = "TEXT_LEADER"
 
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
@@ -500,7 +506,7 @@ class StairDecorator(BaseDecorator):
     - middle points w/out decorations
     """
 
-    basename = "IfcAnnotation/Stair"
+    objecttype = "STAIR_ARROW"
 
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
@@ -583,7 +589,7 @@ class StairDecorator(BaseDecorator):
 
 
 class HiddenDecorator(BaseDecorator):
-    basename = "IfcAnnotation/Hidden"
+    objecttype = "HIDDEN_LINE"
 
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
@@ -649,7 +655,7 @@ class HiddenDecorator(BaseDecorator):
 
 
 class MiscDecorator(HiddenDecorator):
-    basename = "IfcAnnotation/Misc"
+    objecttype = "MISC"
 
     FRAG_GLSL = BaseDecorator.FRAG_GLSL
 
@@ -677,7 +683,7 @@ class LevelDecorator(BaseDecorator):
 
 
 class PlanLevelDecorator(LevelDecorator):
-    basename = "IfcAnnotation/Plan Level"
+    objecttype = "PLAN_LEVEL"
 
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
@@ -762,7 +768,7 @@ class PlanLevelDecorator(LevelDecorator):
 
 
 class SectionLevelDecorator(LevelDecorator):
-    basename = "IfcAnnotation/Section Level"
+    objecttype = "SECTION_LEVEL"
 
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
@@ -850,7 +856,7 @@ class BreakDecorator(BaseDecorator):
     Uses first two vertices in verts list.
     """
 
-    basename = "IfcAnnotation/Break"
+    objecttype = "BREAKLINE"
 
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
@@ -928,7 +934,7 @@ class BreakDecorator(BaseDecorator):
 
 
 class GridDecorator(BaseDecorator):
-    basename = "IfcGridAxis/"
+    objecttype = "GRID"
 
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
@@ -1045,7 +1051,7 @@ class GridDecorator(BaseDecorator):
 
 
 class SectionViewDecorator(LevelDecorator):
-    basename = "IfcAnnotation/Section"
+    objecttype = "SECTION"
 
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
