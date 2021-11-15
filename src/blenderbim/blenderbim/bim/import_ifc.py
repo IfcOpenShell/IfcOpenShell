@@ -809,6 +809,9 @@ class IfcImporter:
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             mesh = self.create_camera(element, shape)
             self.link_mesh(shape, mesh)
+        elif element.is_a("IfcAnnotation") and self.is_curve_annotation(element):
+            mesh = self.create_curve(element, shape)
+            self.link_mesh(shape, mesh)
         elif shape:
             mesh_name = self.get_mesh_name(shape.geometry)
             mesh = self.meshes.get(mesh_name)
@@ -923,6 +926,34 @@ class IfcImporter:
         return mesh
 
     def create_native_swept_disk_solid(self, element, mesh_name):
+        # TODO: georeferencing?
+        curve = bpy.data.curves.new(mesh_name, type="CURVE")
+        curve.dimensions = "3D"
+        curve.resolution_u = 2
+        polyline = curve.splines.new("POLY")
+
+        for representation in self.native_data[element.GlobalId]["representations"]:
+            for item in representation["raw"].Items:
+                # TODO: support inner radius, start param, and end param
+                geometry = ifcopenshell.geom.create_shape(self.settings_native, item.Directrix)
+                e = geometry.edges
+                v = geometry.verts
+                vertices = [[v[i], v[i + 1], v[i + 2], 1] for i in range(0, len(v), 3)]
+                edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+                v2 = None
+                for edge in edges:
+                    v1 = vertices[edge[0]]
+                    if v1 != v2:
+                        polyline = curve.splines.new("POLY")
+                        polyline.points[-1].co = representation["matrix"] @ mathutils.Vector(v1)
+                    v2 = vertices[edge[1]]
+                    polyline.points.add(1)
+                    polyline.points[-1].co = representation["matrix"] @ mathutils.Vector(v2)
+
+        curve.bevel_depth = self.unit_scale * item.Radius
+        return curve
+
+    def create_native_annotation(self, element, mesh_name):
         # TODO: georeferencing?
         curve = bpy.data.curves.new(mesh_name, type="CURVE")
         curve.dimensions = "3D"
@@ -1098,6 +1129,7 @@ class IfcImporter:
     def create_spatial_decomposition_collections(self):
         for rel_aggregate in self.project["ifc"].IsDecomposedBy or []:
             self.create_spatial_decomposition_collection(self.project["blender"], rel_aggregate.RelatedObjects)
+        self.create_views_collection()
         self.create_type_collection()
 
     def create_type_collection(self):
@@ -1108,6 +1140,22 @@ class IfcImporter:
         if not self.type_collection:
             self.type_collection = bpy.data.collections.new("Types")
             self.project["blender"].children.link(self.type_collection)
+
+    def create_views_collection(self):
+        view_collection = None
+        for collection in self.project["blender"].children:
+            if collection.name == "Views":
+                view_collection = collection
+                break
+        if not view_collection:
+            view_collection = bpy.data.collections.new("Views")
+            self.project["blender"].children.link(view_collection)
+        for element in self.file.by_type("IfcAnnotation"):
+            if element.ObjectType == "DRAWING":
+                group = [r for r in element.HasAssignments if r.is_a("IfcRelAssignsToGroup")][0].RelatingGroup
+                collection = bpy.data.collections.new("IfcGroup/" + group.Name)
+                self.collections[group.GlobalId] = collection
+                view_collection.children.link(collection)
 
     def create_spatial_decomposition_collection(self, parent, related_objects):
         for element in related_objects:
@@ -1251,16 +1299,9 @@ class IfcImporter:
             return self.structural_member_collection.objects.link(obj)
         elif element.is_a("IfcStructuralConnection"):
             return self.structural_connection_collection.objects.link(obj)
-        elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-            view_collection = bpy.data.collections.get("Views")
-            if not view_collection:
-                view_collection = bpy.data.collections.new("Views")
-                bpy.context.scene.collection.children.link(view_collection)
+        elif element.is_a("IfcAnnotation") and self.is_drawing_annotation(element):
             group = [r for r in element.HasAssignments if r.is_a("IfcRelAssignsToGroup")][0].RelatingGroup
-            drawing_collection = bpy.data.collections.new("IfcGroup/" + group.Name)
-            view_collection.children.link(drawing_collection)
-            drawing_collection.objects.link(obj)
-            return
+            return self.collections[group.GlobalId].objects.link(obj)
 
         container = ifcopenshell.util.element.get_container(element)
         if container:
@@ -1275,6 +1316,31 @@ class IfcImporter:
         else:
             self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
             bpy.context.scene.collection.objects.link(obj)
+
+    def is_curve_annotation(self, element):
+        return element.ObjectType in [
+            "DIMENSION",
+            "EQUAL_DIMENSION",
+            "LEVEL",
+            "STAIR_ARROW",
+            "TEXT_LEADER",
+            "MISC",
+        ]
+
+    def is_drawing_annotation(self, element):
+        return element.ObjectType in [
+            "BREAKLINE",
+            "DIMENSION",
+            "DRAWING",
+            "EQUAL_DIMENSION",
+            "GRID",
+            "HIDDEN_LINE",
+            "LEVEL",
+            "MISC",
+            "STAIR_ARROW",
+            "TEXT",
+            "TEXT_LEADER",
+        ]
 
     def get_element_matrix(self, element):
         result = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
@@ -1401,6 +1467,31 @@ class IfcImporter:
                     camera.BIMCameraProperties.diagram_scale = "CUSTOM"
                     camera.BIMCameraProperties.custom_diagram_scale = pset["Scale"]
         return camera
+
+    def create_curve(self, element, shape):
+        if hasattr(shape, "geometry"):
+            geometry = shape.geometry
+        else:
+            geometry = shape
+
+        curve = bpy.data.curves.new(self.get_mesh_name(geometry), type="CURVE")
+        curve.dimensions = "3D"
+        curve.resolution_u = 2
+
+        e = geometry.edges
+        v = geometry.verts
+        vertices = [[v[i], v[i + 1], v[i + 2], 1] for i in range(0, len(v), 3)]
+        edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+        v2 = None
+        for edge in edges:
+            v1 = vertices[edge[0]]
+            if v1 != v2:
+                polyline = curve.splines.new("POLY")
+                polyline.points[-1].co = mathutils.Vector(v1)
+            v2 = vertices[edge[1]]
+            polyline.points.add(1)
+            polyline.points[-1].co = mathutils.Vector(v2)
+        return curve
 
     def create_mesh(self, element, shape):
         try:
