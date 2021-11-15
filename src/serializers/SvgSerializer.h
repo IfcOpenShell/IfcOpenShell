@@ -239,7 +239,7 @@ public:
 	void setFile(IfcParse::IfcFile* f);
     void setBoundingRectangle(double width, double height);
 	void setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey = 0);
-	void setSectionHeightsFromStoreys(double offset=1.);
+	void setSectionHeightsFromStoreys(double offset=1.2);
 	void setPrintSpaceNames(bool b) { print_space_names_ = b; }
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
 	void setDrawStoreyHeights(storey_height_display_types sh) { storey_height_display_ = sh; }

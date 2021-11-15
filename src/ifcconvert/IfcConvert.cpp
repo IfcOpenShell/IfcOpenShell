@@ -415,7 +415,7 @@ int main(int argc, char** argv) {
 		("door-arcs", "Draw door openings arcs for IfcDoor elements")
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
-		("section-height-from-storeys", "Derives section height from storey elevation. Use --section-height to override default offset of 1")
+		("section-height-from-storeys", "Derives section height from storey elevation. Use --section-height to override default offset of 1.2")
 		("use-element-names",
             "Use entity instance IfcRoot.Name instead of unique IDs for naming elements upon serialization. "
             "Applicable for OBJ, DAE, and SVG output.")
