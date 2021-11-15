@@ -16,22 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Viewport decorations"""
+import os
+import gpu
+import bpy
+import blf
+import bgl
 import math
+import bmesh
+import blenderbim.tool as tool
+import blenderbim.bim.module.drawing.helper as helper
 from functools import reduce
 from itertools import chain
-
 from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
-import bpy
-import bmesh
-import blf
 from bpy_extras.view3d_utils import location_3d_to_region_2d
-import gpu
-import bgl
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
-import blenderbim.bim.module.drawing.helper as helper
 
 
 class BaseDecorator:
@@ -40,8 +40,8 @@ class BaseDecorator:
 
     DEF_GLSL = """
         #define PI 3.141592653589793
-        #define MAX_POINTS 64
-        #define CIRCLE_SEGS 24
+        #define MAX_POINTS 32
+        #define CIRCLE_SEGS 12
     """
 
     LIB_GLSL = """
@@ -90,6 +90,7 @@ class BaseDecorator:
 
     GEOM_GLSL = """
     uniform vec2 winsize;
+    uniform float viewportDrawingScale;
 
     layout(lines) in;
     layout(line_strip, max_vertices=2) out;
@@ -133,6 +134,34 @@ class BaseDecorator:
             geocode=self.LIB_GLSL + self.GEOM_GLSL,
             defines=self.DEF_GLSL,
         )
+
+        # Horrific prototype code to ensure bgl draws at drawing scales
+        # https://blender.stackexchange.com/questions/16493/is-there-a-way-to-fit-the-viewport-to-the-current-field-of-view
+        def is_landscape(render):
+            return render.resolution_x > render.resolution_y
+
+        def get_scale(camera):
+            if camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
+                human_scale, fraction = camera.data.BIMCameraProperties.custom_diagram_scale.split("|")
+            else:
+                human_scale, fraction = camera.data.BIMCameraProperties.diagram_scale.split("|")
+            numerator, denominator = fraction.split("/")
+            return float(numerator) / float(denominator)
+
+        camera = bpy.context.scene.camera
+        render = bpy.context.scene.render
+        if is_landscape(render):
+            camera_width_model = camera.data.ortho_scale
+        else:
+            camera_width_model = camera.data.ortho_scale / render.resolution_y * render.resolution_x
+        self.camera_width_mm = get_scale(camera) * camera_width_model
+
+        self.font_id = blf.load(
+            os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
+        )
+
+    def camera_zoom_to_factor(self, zoom):
+        return math.pow(((zoom / 50) + math.sqrt(2)) / 2, 2)
 
     def get_objects(self, collection):
         """find relevant objects
@@ -248,6 +277,15 @@ class BaseDecorator:
         self.shader.uniform_float("winsize", (region.width, region.height))
         self.shader.uniform_float("color", color)
 
+        # Horrific prototype code
+        factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
+        camera_width_px = factor * context.region.width
+        mm_to_px = camera_width_px / self.camera_width_mm
+        # 0.00025 is a magic constant number I visually discovered to get the right number.
+        # It probably should be dynamically calculated using system.dpi or something.
+        viewport_drawing_scale = 0.00025 * mm_to_px
+        self.shader.uniform_float("viewportDrawingScale", viewport_drawing_scale)
+
         batch.draw(self.shader)
 
     def draw_label(self, context, text, pos, dir, gap=4, center=True, vcenter=False):
@@ -258,8 +296,9 @@ class BaseDecorator:
 
         aligned and centered at segment middle
         """
-        font_id = 0
-        font_size = 16
+        # 0 is the default font, but we're fancier than that
+        font_id = self.font_id
+
         dpi = context.preferences.system.dpi
 
         color = context.scene.DocProperties.decorations_colour
@@ -267,6 +306,16 @@ class BaseDecorator:
         ang = -Vector((1, 0)).angle_signed(dir)
         cos = math.cos(ang)
         sin = math.sin(ang)
+
+        # Horrific prototype code
+        factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
+        camera_width_px = factor * context.region.width
+        mm_to_px = camera_width_px / self.camera_width_mm
+        # 0.004118616 is a magic constant number I visually discovered to get the right number.
+        # In particular it works only for the OpenGOST font and produces a 2.5mm font size.
+        # It probably should be dynamically calculated using system.dpi or something.
+        # font_size = 16 <-- this is a good default
+        font_size = int(0.004118616 * mm_to_px)
 
         blf.size(font_id, font_size, dpi)
 
@@ -330,6 +379,7 @@ class DimensionDecorator(BaseDecorator):
 
     GEOM_GLSL = """
     uniform vec2 winsize;
+    uniform float viewportDrawingScale;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
@@ -346,7 +396,7 @@ class DimensionDecorator(BaseDecorator):
         vec4 p;
 
         vec4 head[3];
-        arrow_head(dir, ARROW_SIZE, ARROW_ANGLE, head);
+        arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
 
         // start edge arrow
         gl_Position = p0;
@@ -446,6 +496,7 @@ class LeaderDecorator(BaseDecorator):
 
     GEOM_GLSL = """
     uniform vec2 winsize;
+    uniform float viewportDrawingScale;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
@@ -467,7 +518,7 @@ class LeaderDecorator(BaseDecorator):
         // end edge arrow for last segment
         if (t1 == 2u) {
             vec4 head[3];
-            arrow_head(dir, ARROW_SIZE, ARROW_ANGLE, head);
+            arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
 
             gl_Position = p1;
             EmitVertex();
@@ -481,7 +532,7 @@ class LeaderDecorator(BaseDecorator):
             EmitVertex();
             EndPrimitive();
 
-            gap1 = dir * ARROW_SIZE;
+            gap1 = dir * viewportDrawingScale * ARROW_SIZE;
         }
 
         // stem, adjusted for and arrow
@@ -494,9 +545,24 @@ class LeaderDecorator(BaseDecorator):
     }
     """
 
+    def get_spline_end(self, obj):
+        spline = obj.data.splines[0]
+        spline_points = spline.bezier_points if spline.bezier_points else spline.points
+        if not spline_points:
+            return Vector((0, 0, 0))
+        return obj.matrix_world @ spline_points[0].co
+
     def decorate(self, context, obj):
         verts, idxs, topo = self.get_path_geom(obj)
         self.draw_lines(context, obj, verts, idxs, topo)
+        self.draw_labels(context, obj)
+
+    def draw_labels(self, context, obj):
+        region = context.region
+        region3d = context.region_data
+        dir = Vector((1, 0))
+        pos = location_3d_to_region_2d(region, region3d, self.get_spline_end(obj))
+        self.draw_label(context, obj.BIMTextProperties.value, pos, dir, gap=0, center=False, vcenter=False)
 
 
 class StairDecorator(BaseDecorator):
@@ -519,6 +585,7 @@ class StairDecorator(BaseDecorator):
 
     GEOM_GLSL = """
     uniform vec2 winsize;
+    uniform float viewportDrawingScale;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
@@ -601,6 +668,7 @@ class HiddenDecorator(BaseDecorator):
 
     GEOM_GLSL = """
     uniform vec2 winsize;
+    uniform float viewportDrawingScale;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
@@ -695,6 +763,7 @@ class PlanLevelDecorator(LevelDecorator):
 
     GEOM_GLSL = """
     uniform vec2 winsize;
+    uniform float viewportDrawingScale;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
@@ -780,6 +849,7 @@ class SectionLevelDecorator(LevelDecorator):
 
     GEOM_GLSL = """
     uniform vec2 winsize;
+    uniform float viewportDrawingScale;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
@@ -868,6 +938,7 @@ class BreakDecorator(BaseDecorator):
 
     GEOM_GLSL = """
     uniform vec2 winsize;
+    uniform float viewportDrawingScale;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
@@ -947,6 +1018,7 @@ class GridDecorator(BaseDecorator):
 
     GEOM_GLSL = """
     uniform vec2 winsize;
+    uniform float viewportDrawingScale;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
@@ -961,12 +1033,12 @@ class GridDecorator(BaseDecorator):
 
         vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
         vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap = dir * CIRCLE_SIZE;
+        vec4 gap = dir * CIRCLE_SIZE * viewportDrawingScale;
 
         vec4 p;
 
         vec4 head[CIRCLE_SEGS];
-        circle_head(CIRCLE_SIZE, head);
+        circle_head(CIRCLE_SIZE * viewportDrawingScale, head);
 
         dist = 0;
 
@@ -1064,6 +1136,7 @@ class SectionViewDecorator(LevelDecorator):
 
     GEOM_GLSL = """
     uniform vec2 winsize;
+    uniform float viewportDrawingScale;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;

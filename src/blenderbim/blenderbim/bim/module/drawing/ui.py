@@ -289,41 +289,42 @@ class BIM_PT_annotation_utilities(Panel):
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Dim", icon="ARROW_LEFTRIGHT")
-        op.obj_name = "Dimension"
+        op.object_type = "DIMENSION"
         op.data_type = "curve"
         op = row.operator("bim.add_annotation", text="Dim (Eq)", icon="ARROW_LEFTRIGHT")
-        op.obj_name = "Equal"
+        op.object_type = "EQUAL_DIMENSION"
         op.data_type = "curve"
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Text", icon="SMALL_CAPS")
-        op.data_type = "text"
+        op.object_type = "TEXT"
+        op.data_type = "empty"
         op = row.operator("bim.add_annotation", text="Leader", icon="TRACKING_BACKWARDS")
-        op.obj_name = "Leader"
+        op.object_type = "TEXT_LEADER"
         op.data_type = "curve"
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Stair Arrow", icon="SCREEN_BACK")
-        op.obj_name = "Stair"
+        op.object_type = "STAIR_ARROW"
         op.data_type = "curve"
         op = row.operator("bim.add_annotation", text="Hidden", icon="CON_TRACKTO")
-        op.obj_name = "Hidden"
+        op.object_type = "HIDDEN_LINE"
         op.data_type = "mesh"
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Level (Plan)", icon="SORTBYEXT")
-        op.obj_name = "Plan Level"
+        op.object_type = "PLAN_LEVEL"
         op.data_type = "curve"
         op = row.operator("bim.add_annotation", text="Level (Section)", icon="TRIA_DOWN")
-        op.obj_name = "Section Level"
+        op.object_type = "SECTION_LEVEL"
         op.data_type = "curve"
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Breakline", icon="FCURVE")
-        op.obj_name = "Break"
+        op.object_type = "BREAKLINE"
         op.data_type = "mesh"
         op = row.operator("bim.add_annotation", text="Misc", icon="MESH_MONKEY")
-        op.obj_name = "Misc"
+        op.object_type = "MISC"
         op.data_type = "mesh"
 
         props = context.scene.DocProperties
