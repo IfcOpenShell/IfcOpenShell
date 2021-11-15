@@ -18,6 +18,7 @@
 
 import bpy
 import os
+import blenderbim.tool as tool
 from mathutils import Vector
 
 
@@ -150,18 +151,30 @@ class Annotator:
         return obj
 
     @staticmethod
-    def get_annotation_obj(name, data_type, context):
+    def get_annotation_obj(object_type, data_type, context):
         collection = context.scene.camera.users_collection[0]
-        for obj in collection.objects:
-            if name in obj.name:
-                return obj
-        if data_type == "mesh":
-            data = bpy.data.meshes.new(name)
-        elif data_type == "curve":
-            data = bpy.data.curves.new(name, type="CURVE")
+        if object_type == "TEXT":
+            obj = bpy.data.objects.new(object_type, None)
+            collection.objects.link(obj)
+            return obj
+        elif object_type == "TEXT_LEADER":
+            data = bpy.data.curves.new(object_type, type="CURVE")
             data.dimensions = "3D"
             data.resolution_u = 2
-        obj = bpy.data.objects.new(name, data)
+            obj = bpy.data.objects.new(object_type, data)
+            collection.objects.link(obj)
+            return obj
+        for obj in collection.objects:
+            element = tool.Ifc.get_entity(obj)
+            if element and element.ObjectType == object_type:
+                return obj
+        if data_type == "mesh":
+            data = bpy.data.meshes.new(object_type)
+        elif data_type == "curve":
+            data = bpy.data.curves.new(object_type, type="CURVE")
+            data.dimensions = "3D"
+            data.resolution_u = 2
+        obj = bpy.data.objects.new(object_type, data)
         collection.objects.link(obj)
         return obj
 
