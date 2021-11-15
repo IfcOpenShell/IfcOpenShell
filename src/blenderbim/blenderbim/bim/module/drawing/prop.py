@@ -169,6 +169,10 @@ def refreshTitleblocks(self, context):
 def toggleDecorations(self, context):
     toggle = self.should_draw_decorations
     if toggle:
+        # TODO: design a proper text variable templating renderer
+        collection = context.scene.camera.users_collection[0]
+        for obj in collection.objects:
+            tool.Drawing.update_text_value(obj)
         decoration.DecorationsHandler.install(context)
     else:
         decoration.DecorationsHandler.uninstall()
@@ -353,6 +357,9 @@ class BIMCameraProperties(PropertyGroup):
 
 
 class BIMTextProperties(PropertyGroup):
+    is_editing: BoolProperty(name="Is Editing", default=False)
+    attributes: CollectionProperty(name="Attributes", type=Attribute)
+    value: StringProperty(name="Value", default="TEXT")
     font_size: EnumProperty(
         items=[
             ("1.8", "1.8 - Small", ""),
@@ -361,6 +368,7 @@ class BIMTextProperties(PropertyGroup):
             ("5.0", "5.0 - Header", ""),
             ("7.0", "7.0 - Title", ""),
         ],
+        default="2.5",
         update=refreshFontSize,
         name="Font Size",
     )

@@ -1228,6 +1228,90 @@ class SectionViewDecorator(LevelDecorator):
         self.draw_lines(context, obj, verts, [(0, 1)])
 
 
+class TextDecorator(BaseDecorator):
+    """Decorator for text objects
+    - draws the text next to the origin
+    """
+
+    objecttype = "TEXT"
+
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
+        #define ARROW_ANGLE PI / 12.0
+        #define ARROW_SIZE 16.0
+    """
+    )
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+    uniform float viewportDrawingScale;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+
+        vec4 p;
+
+        vec4 head[3];
+        arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
+
+        // start edge arrow
+        gl_Position = p0;
+        EmitVertex();
+        p = p0w + head[1];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head[2];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        gl_Position = p0;
+        EmitVertex();
+        EndPrimitive();
+
+        // end edge arrow
+        gl_Position = p1;
+        EmitVertex();
+        p = p1w - head[1];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w - head[2];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        gl_Position = p1;
+        EmitVertex();
+        EndPrimitive();
+
+        // stem, with gaps for arrows
+        p = p0w + head[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w - head[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def decorate(self, context, obj):
+        self.draw_labels(context, obj)
+
+    def draw_labels(self, context, obj):
+        region = context.region
+        region3d = context.region_data
+        dir = Vector((1, 0))
+        pos = location_3d_to_region_2d(region, region3d, obj.matrix_world.translation)
+        self.draw_label(context, obj.BIMTextProperties.value, pos, dir, gap=0, center=False, vcenter=False)
+
+
 class DecorationsHandler:
     decorators_classes = [
         DimensionDecorator,
@@ -1241,6 +1325,7 @@ class DecorationsHandler:
         StairDecorator,
         BreakDecorator,
         SectionViewDecorator,
+        TextDecorator,
     ]
 
     installed = None

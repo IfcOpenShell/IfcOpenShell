@@ -35,7 +35,6 @@ classes = (
     operator.ResizeText,
     operator.AddVariable,
     operator.RemoveVariable,
-    operator.PropagateTextData,
     operator.RemoveDrawing,
     operator.AddDrawingStyle,
     operator.RemoveDrawingStyle,
@@ -54,6 +53,9 @@ classes = (
     operator.CleanWireframes,
     operator.CopyGrid,
     operator.AddSectionsAnnotations,
+    operator.EditText,
+    operator.DisableEditingText,
+    operator.EnableEditingText,
     prop.Variable,
     prop.Drawing,
     prop.Schedule,
@@ -81,6 +83,7 @@ classes = (
 def register():
     bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
     bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
+    bpy.types.Object.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
     bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
     bpy.app.handlers.load_post.append(handler.toggleDecorationsOnLoad)
     bpy.app.handlers.depsgraph_update_pre.append(handler.depsgraph_update_pre_handler)

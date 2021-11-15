@@ -64,6 +64,13 @@ def context():
 
 
 @pytest.fixture
+def drawing():
+    prophet = Prophecy(blenderbim.core.tool.Drawing)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def geometry():
     prophet = Prophecy(blenderbim.core.tool.Geometry)
     yield prophet

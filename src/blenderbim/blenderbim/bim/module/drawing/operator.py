@@ -32,6 +32,7 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import blenderbim.bim.schema
 import blenderbim.tool as tool
+import blenderbim.core.drawing as core
 import blenderbim.bim.module.drawing.svgwriter as svgwriter
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.sheeter as sheeter
@@ -57,6 +58,13 @@ def open_with_user_command(user_command, path):
         webbrowser.open("file://" + path)
 
 
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
+
+
 class AddDrawing(bpy.types.Operator):
     bl_idname = "bim.add_drawing"
     bl_label = "Add Drawing"
@@ -79,7 +87,7 @@ class AddDrawing(bpy.types.Operator):
         view_collection = bpy.data.collections.new("IfcGroup/" + new.name)
         views_collection.children.link(view_collection)
         camera = bpy.data.objects.new(new.name, bpy.data.cameras.new(new.name))
-        camera.location = (0, 0, 1.7)  # The view shall be 1.7m above the origin
+        camera.location = (0, 0, 1.5)  # The view shall be 1.5m above the origin
         camera.data.type = "ORTHO"
         camera.data.ortho_scale = 50  # The default of 6m is too small
         camera.data.clip_end = 10  # A slightly more reasonable default
@@ -573,28 +581,45 @@ class AddAnnotation(bpy.types.Operator):
         )
         if not subcontext:
             return {"FINISHED"}
-        if self.data_type == "text":
-            if context.selected_objects:
-                for selected_object in context.selected_objects:
-                    obj = annotation.Annotator.add_text(context, related_element=selected_object)
-            else:
-                obj = annotation.Annotator.add_text(context)
-        else:
-            obj = annotation.Annotator.get_annotation_obj(self.obj_name, self.data_type, context)
-            if self.obj_name == "Break":
-                obj = annotation.Annotator.add_plane_to_annotation(obj, context)
-            else:
-                obj = annotation.Annotator.add_line_to_annotation(obj, context)
+        # TODO: reimplement bulk smart tagging
+        # if self.data_type == "text":
+        #    if context.selected_objects:
+        #        for selected_object in context.selected_objects:
+        #            obj = annotation.Annotator.add_text(context, related_element=selected_object)
+        #    else:
+        #        obj = annotation.Annotator.add_text(context)
+        # else:
+        obj = annotation.Annotator.get_annotation_obj(self.object_type, self.data_type, context)
+        if self.object_type == "BREAKLINE":
+            obj = annotation.Annotator.add_plane_to_annotation(obj, context)
+        elif self.object_type != "TEXT":
+            obj = annotation.Annotator.add_line_to_annotation(obj, context)
 
         if not obj.BIMObjectProperties.ifc_definition_id:
-            bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcAnnotation", context_id=subcontext.id())
+            ifc_representation_class = ""
+            if self.object_type == "TEXT":
+                ifc_representation_class = "IfcTextLiteral"
+            elif self.object_type == "TEXT_LEADER":
+                ifc_representation_class = "IfcGeometricCurveSet/IfcTextLiteral"
+            bpy.ops.bim.assign_class(
+                obj=obj.name,
+                ifc_class="IfcAnnotation",
+                context_id=subcontext.id(),
+                ifc_representation_class=ifc_representation_class,
+            )
+            element = tool.Ifc.get_entity(obj)
+            element.ObjectType = self.object_type
+            camera = tool.Ifc.get_entity(context.scene.camera)
+            group = [r for r in camera.HasAssignments if r.is_a("IfcRelAssignsToGroup")][0].RelatingGroup
+            bpy.ops.bim.assign_group(product=obj.name, group=group.id())
         else:
             bpy.ops.bim.update_representation(obj=obj.name)
 
         bpy.ops.object.select_all(action="DESELECT")
         context.view_layer.objects.active = obj
         obj.select_set(True)
-        bpy.ops.object.mode_set(mode="EDIT")
+        if obj.data:
+            bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
 
 
@@ -885,29 +910,6 @@ class RemoveVariable(bpy.types.Operator):
 
     def execute(self, context):
         context.active_object.data.BIMTextProperties.variables.remove(self.index)
-        return {"FINISHED"}
-
-
-class PropagateTextData(bpy.types.Operator):
-    bl_idname = "bim.propagate_text_data"
-    bl_label = "Propagate Text Data"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        source = context.active_object
-        for obj in context.selected_objects:
-            if obj == source:
-                continue
-            obj.data.body = source.data.body
-            obj.data.align_x = source.data.align_x
-            obj.data.align_y = source.data.align_y
-            obj.data.BIMTextProperties.font_size = source.data.BIMTextProperties.font_size
-            obj.data.BIMTextProperties.symbol = source.data.BIMTextProperties.symbol
-            obj.data.BIMTextProperties.variables.clear()
-            for variable in source.data.BIMTextProperties.variables:
-                new_variable = obj.data.BIMTextProperties.variables.add()
-                new_variable.name = variable.name
-                new_variable.prop_key = variable.prop_key
         return {"FINISHED"}
 
 
@@ -1380,3 +1382,30 @@ class AddSectionsAnnotations(bpy.types.Operator):
             view_coll.objects.link(obj)
 
         return {"FINISHED"}
+
+
+class EditText(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_text"
+    bl_label = "Edit Text"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.edit_text(tool.Ifc, tool.Drawing, obj=context.active_object)
+
+
+class EnableEditingText(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_text"
+    bl_label = "Enable Editing Text"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.enable_editing_text(tool.Drawing, obj=context.active_object)
+
+
+class DisableEditingText(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_text"
+    bl_label = "Disable Editing Text"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disable_editing_text(tool.Drawing, obj=context.active_object)

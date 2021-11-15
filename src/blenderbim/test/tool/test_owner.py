@@ -18,18 +18,18 @@
 
 import bpy
 import ifcopenshell
-import test.bim.bootstrap
 import blenderbim.core.tool
 import blenderbim.tool as tool
+from test.bim.bootstrap import NewFile
 from blenderbim.tool.owner import Owner as subject
 
 
-class TestImplementsTool(test.bim.bootstrap.NewFile):
+class TestImplementsTool(NewFile):
     def test_run(self):
         assert isinstance(subject(), blenderbim.core.tool.Owner)
 
 
-class TestSetUser(test.bim.bootstrap.NewFile):
+class TestSetUser(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
@@ -38,7 +38,7 @@ class TestSetUser(test.bim.bootstrap.NewFile):
         assert bpy.context.scene.BIMOwnerProperties.active_user_id == user.id()
 
 
-class TestGetUser(test.bim.bootstrap.NewFile):
+class TestGetUser(NewFile):
     def test_run(self):
         assert subject.get_user() is None
         TestSetUser().test_run()
@@ -56,14 +56,14 @@ class TestGetUser(test.bim.bootstrap.NewFile):
         assert subject.get_user() == user2
 
 
-class TestClearUser(test.bim.bootstrap.NewFile):
+class TestClearUser(NewFile):
     def test_run(self):
         TestSetUser().test_run()
         subject.clear_user()
         assert bpy.context.scene.BIMOwnerProperties.active_user_id == 0
 
 
-class TestSetAddress(test.bim.bootstrap.NewFile):
+class TestSetAddress(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         address = ifc.createIfcPostalAddress()
@@ -71,7 +71,7 @@ class TestSetAddress(test.bim.bootstrap.NewFile):
         assert bpy.context.scene.BIMOwnerProperties.active_address_id == address.id()
 
 
-class TestImportAddressAttributes(test.bim.bootstrap.NewFile):
+class TestImportAddressAttributes(NewFile):
     def test_importing_a_postal_address(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
@@ -152,7 +152,7 @@ class TestImportAddressAttributes(test.bim.bootstrap.NewFile):
         assert len(props.messaging_ids) == 0
 
 
-class TestClearAddress(test.bim.bootstrap.NewFile):
+class TestClearAddress(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         address = ifc.createIfcPostalAddress()
@@ -161,7 +161,7 @@ class TestClearAddress(test.bim.bootstrap.NewFile):
         assert bpy.context.scene.BIMOwnerProperties.active_address_id == 0
 
 
-class TestGetAddress(test.bim.bootstrap.NewFile):
+class TestGetAddress(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
@@ -170,7 +170,7 @@ class TestGetAddress(test.bim.bootstrap.NewFile):
         assert subject().get_address() == address
 
 
-class TestExportAttributes(test.bim.bootstrap.NewFile):
+class TestExportAttributes(NewFile):
     def test_exporting_a_postal_address(self):
         TestImportAddressAttributes().test_importing_a_postal_address()
         assert subject().export_address_attributes() == {
@@ -201,7 +201,7 @@ class TestExportAttributes(test.bim.bootstrap.NewFile):
         }
 
 
-class TestAddAddressAttribute(test.bim.bootstrap.NewFile):
+class TestAddAddressAttribute(NewFile):
     def test_run(self):
         subject().add_address_attribute("AddressLines")
         subject().add_address_attribute("TelephoneNumbers")
@@ -216,7 +216,7 @@ class TestAddAddressAttribute(test.bim.bootstrap.NewFile):
         assert len(props.messaging_ids) == 1
 
 
-class TestRemoveAddressAttribute(test.bim.bootstrap.NewFile):
+class TestRemoveAddressAttribute(NewFile):
     TestAddAddressAttribute().test_run()
     subject().remove_address_attribute("AddressLines", 0)
     subject().remove_address_attribute("TelephoneNumbers", 0)
@@ -231,14 +231,14 @@ class TestRemoveAddressAttribute(test.bim.bootstrap.NewFile):
     assert len(props.messaging_ids) == 0
 
 
-class TestSetOrganisation(test.bim.bootstrap.NewFile):
+class TestSetOrganisation(NewFile):
     def test_run(self):
         organisation = ifcopenshell.file().createIfcOrganization()
         subject().set_organisation(organisation)
         assert bpy.context.scene.BIMOwnerProperties.active_organisation_id == organisation.id()
 
 
-class TestImportOrganisationAttributes(test.bim.bootstrap.NewFile):
+class TestImportOrganisationAttributes(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
@@ -269,7 +269,7 @@ class TestImportOrganisationAttributes(test.bim.bootstrap.NewFile):
         assert props.organisation_attributes.get("Description").string_value == ""
 
 
-class TestClearOrganisation(test.bim.bootstrap.NewFile):
+class TestClearOrganisation(NewFile):
     def test_run(self):
         props = bpy.context.scene.BIMOwnerProperties
         props.active_organisation_id = 1
@@ -277,7 +277,7 @@ class TestClearOrganisation(test.bim.bootstrap.NewFile):
         assert props.active_organisation_id == 0
 
 
-class TestExportOrganisationAttributes(test.bim.bootstrap.NewFile):
+class TestExportOrganisationAttributes(NewFile):
     def test_run(self):
         TestImportOrganisationAttributes().test_run()
         assert subject().export_organisation_attributes() == {
@@ -287,7 +287,7 @@ class TestExportOrganisationAttributes(test.bim.bootstrap.NewFile):
         }
 
 
-class TestGetOrganisation(test.bim.bootstrap.NewFile):
+class TestGetOrganisation(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
@@ -296,14 +296,14 @@ class TestGetOrganisation(test.bim.bootstrap.NewFile):
         assert subject().get_organisation() == organisation
 
 
-class TestSetPerson(test.bim.bootstrap.NewFile):
+class TestSetPerson(NewFile):
     def test_run(self):
         person = ifcopenshell.file().createIfcPerson()
         subject().set_person(person)
         assert bpy.context.scene.BIMOwnerProperties.active_person_id == person.id()
 
 
-class TestImportPersonAttributes(test.bim.bootstrap.NewFile):
+class TestImportPersonAttributes(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
@@ -346,7 +346,7 @@ class TestImportPersonAttributes(test.bim.bootstrap.NewFile):
         assert props.person_attributes.get("GivenName").string_value == ""
 
 
-class TestClearPerson(test.bim.bootstrap.NewFile):
+class TestClearPerson(NewFile):
     def test_run(self):
         props = bpy.context.scene.BIMOwnerProperties
         props.active_person_id = 1
@@ -354,7 +354,7 @@ class TestClearPerson(test.bim.bootstrap.NewFile):
         assert props.active_person_id == 0
 
 
-class TestExportPersonAttributes(test.bim.bootstrap.NewFile):
+class TestExportPersonAttributes(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
@@ -385,7 +385,7 @@ class TestExportPersonAttributes(test.bim.bootstrap.NewFile):
         assert result["SuffixTitles"] is None
 
 
-class TestGetPerson(test.bim.bootstrap.NewFile):
+class TestGetPerson(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
@@ -394,7 +394,7 @@ class TestGetPerson(test.bim.bootstrap.NewFile):
         assert subject().get_person() == person
 
 
-class TestAddPersonAttribute(test.bim.bootstrap.NewFile):
+class TestAddPersonAttribute(NewFile):
     def test_run(self):
         subject().add_person_attribute("MiddleNames")
         subject().add_person_attribute("PrefixTitles")
@@ -405,7 +405,7 @@ class TestAddPersonAttribute(test.bim.bootstrap.NewFile):
         assert len(props.suffix_titles) == 1
 
 
-class TestRemovePersonAttribute(test.bim.bootstrap.NewFile):
+class TestRemovePersonAttribute(NewFile):
     def test_run(self):
         subject().add_person_attribute("MiddleNames")
         subject().remove_person_attribute("MiddleNames", 0)
@@ -419,14 +419,14 @@ class TestRemovePersonAttribute(test.bim.bootstrap.NewFile):
         assert len(props.suffix_titles) == 0
 
 
-class TestSetRole(test.bim.bootstrap.NewFile):
+class TestSetRole(NewFile):
     def test_run(self):
         role = ifcopenshell.file().createIfcActorRole()
         subject().set_role(role)
         assert bpy.context.scene.BIMOwnerProperties.active_role_id == role.id()
 
 
-class TestImportRoleAttributes(test.bim.bootstrap.NewFile):
+class TestImportRoleAttributes(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
@@ -454,7 +454,7 @@ class TestImportRoleAttributes(test.bim.bootstrap.NewFile):
         assert props.role_attributes.get("Role").enum_value == "ARCHITECT"
 
 
-class TestClearRole(test.bim.bootstrap.NewFile):
+class TestClearRole(NewFile):
     def test_run(self):
         role = ifcopenshell.file().createIfcActorRole()
         subject().set_role(role)
@@ -462,7 +462,7 @@ class TestClearRole(test.bim.bootstrap.NewFile):
         assert bpy.context.scene.BIMOwnerProperties.active_role_id == 0
 
 
-class TestGetRole(test.bim.bootstrap.NewFile):
+class TestGetRole(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
@@ -471,7 +471,7 @@ class TestGetRole(test.bim.bootstrap.NewFile):
         assert subject().get_role() == role
 
 
-class TestExportRoleAttributes(test.bim.bootstrap.NewFile):
+class TestExportRoleAttributes(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)

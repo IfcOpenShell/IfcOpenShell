@@ -24,6 +24,7 @@ import pystache
 import xml.etree.ElementTree as ET
 import svgwrite
 import ifcopenshell
+import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.module.drawing.annotation as annotation
@@ -208,8 +209,7 @@ class SvgWriter:
         for obj_data in self.annotations.get("solid_objs", []):
             self.draw_line_annotation(obj_data, ["solid"])
 
-        if self.annotations.get("leader_obj"):
-            self.draw_line_annotation(self.annotations["leader_obj"], ["leader"])
+        self.draw_leader_annotations()
 
         if self.annotations.get("plan_level_obj"):
             matrix_world = self.annotations["plan_level_obj"].matrix_world
@@ -456,71 +456,98 @@ class SvgWriter:
                 self.svg.line(start=tuple(start * self.scale), end=tuple(end * self.scale), class_=" ".join(classes))
             )
 
+    def draw_leader_annotations(self):
+        for obj in self.annotations.get("leader_objs", []):
+            self.draw_line_annotation((obj, obj.data), ["leader"])
+            spline = obj.data.splines[0]
+            spline_points = spline.bezier_points if spline.bezier_points else spline.points
+            if spline_points:
+                position = obj.matrix_world @ spline_points[0].co.xyz
+            else:
+                position = Vector((0, 0, 0))
+            self.draw_text_annotation(obj, position)
+
     def draw_text_annotations(self):
+        for text_obj in self.annotations.get("text_objs", []):
+            self.draw_text_annotation(text_obj, text_obj.location)
+
+    def draw_text_annotation(self, text_obj, position):
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
+        element = tool.Ifc.get_entity(text_obj)
+        rep = ifcopenshell.util.representation.get_representation(element, "Plan", "Annotation")
+        text_literal = [i for i in rep.Items if i.is_a("IfcTextLiteral")][0]
 
-        for text_obj in self.annotations.get("text_objs", []):
-            text_position = self.project_point_onto_camera(text_obj.location)
-            text_position = Vector(((x_offset + text_position.x), (y_offset - text_position.y)))
+        text_position = self.project_point_onto_camera(position)
+        text_position = Vector(((x_offset + text_position.x), (y_offset - text_position.y)))
 
-            local_x_axis = text_obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
-            projected_x_axis = self.project_point_onto_camera(text_obj.location + local_x_axis)
-            angle = math.degrees(
-                (Vector((x_offset + projected_x_axis.x, y_offset - projected_x_axis.y)) - text_position).angle_signed(
-                    Vector((1, 0))
-                )
+        local_x_axis = text_obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
+        projected_x_axis = self.project_point_onto_camera(position + local_x_axis)
+        angle = math.degrees(
+            (Vector((x_offset + projected_x_axis.x, y_offset - projected_x_axis.y)) - text_position).angle_signed(
+                Vector((1, 0))
+            )
+        )
+
+        transform = "rotate({}, {}, {})".format(
+            angle,
+            (text_position * self.scale)[0],
+            (text_position * self.scale)[1],
+        )
+
+        if text_obj.BIMTextProperties.symbol != "None":
+            self.svg.add(
+                self.svg.use("#{}".format(text_obj.BIMTextProperties.symbol), insert=tuple(text_position * self.scale))
             )
 
-            transform = "rotate({}, {}, {})".format(
-                angle,
-                (text_position * self.scale)[0],
-                (text_position * self.scale)[1],
+        if text_literal.BoxAlignment == "top-left":
+            alignment_baseline = "hanging"
+            text_anchor = "start"
+        elif text_literal.BoxAlignment == "top-middle":
+            alignment_baseline = "hanging"
+            text_anchor = "middle"
+        elif text_literal.BoxAlignment == "top-right":
+            alignment_baseline = "hanging"
+            text_anchor = "end"
+        elif text_literal.BoxAlignment == "middle-left":
+            alignment_baseline = "middle"
+            text_anchor = "start"
+        elif text_literal.BoxAlignment == "center":
+            alignment_baseline = "middle"
+            text_anchor = "middle"
+        elif text_literal.BoxAlignment == "middle-right":
+            alignment_baseline = "middle"
+            text_anchor = "end"
+        elif text_literal.BoxAlignment == "bottom-left":
+            alignment_baseline = "baseline"
+            text_anchor = "start"
+        elif text_literal.BoxAlignment == "bottom-middle":
+            alignment_baseline = "baseline"
+            text_anchor = "middle"
+        elif text_literal.BoxAlignment == "bottom-right":
+            alignment_baseline = "baseline"
+            text_anchor = "end"
+
+        text_body = text_literal.Literal
+        if text_obj.name in self.annotations.get("template_variables", {}):
+            text_body = pystache.render(text_body, self.annotations["template_variables"][text_obj.name])
+
+        for line_number, text_line in enumerate(text_body.split("\n")):
+            self.svg.add(
+                self.svg.text(
+                    text_line,
+                    insert=tuple((text_position * self.scale) + Vector((0, 3.5 * line_number))),
+                    class_=" ".join(self.get_attribute_classes(text_obj)),
+                    **{
+                        "font-size": annotation.Annotator.get_svg_text_size(text_obj.BIMTextProperties.font_size),
+                        "font-family": "OpenGost Type B TT",
+                        "text-anchor": text_anchor,
+                        "alignment-baseline": alignment_baseline,
+                        "dominant-baseline": alignment_baseline,
+                        "transform": transform,
+                    },
+                )
             )
-
-            if text_obj.data.BIMTextProperties.symbol != "None":
-                self.svg.add(
-                    self.svg.use(
-                        "#{}".format(text_obj.data.BIMTextProperties.symbol), insert=tuple(text_position * self.scale)
-                    )
-                )
-
-            if text_obj.data.align_x == "CENTER":
-                text_anchor = "middle"
-            elif text_obj.data.align_x == "RIGHT":
-                text_anchor = "end"
-            else:
-                text_anchor = "start"
-
-            if text_obj.data.align_y == "CENTER":
-                alignment_baseline = "middle"
-            elif text_obj.data.align_y == "TOP":
-                alignment_baseline = "hanging"
-            else:
-                alignment_baseline = "baseline"
-
-            text_body = text_obj.data.body
-            if text_obj.name in self.annotations.get("template_variables", {}):
-                text_body = pystache.render(text_body, self.annotations["template_variables"][text_obj.name])
-
-            for line_number, text_line in enumerate(text_body.split("\n")):
-                self.svg.add(
-                    self.svg.text(
-                        text_line,
-                        insert=tuple((text_position * self.scale) + Vector((0, 3.5 * line_number))),
-                        class_=" ".join(self.get_attribute_classes(text_obj)),
-                        **{
-                            "font-size": annotation.Annotator.get_svg_text_size(
-                                text_obj.data.BIMTextProperties.font_size
-                            ),
-                            "font-family": "OpenGost Type B TT",
-                            "text-anchor": text_anchor,
-                            "alignment-baseline": alignment_baseline,
-                            "dominant-baseline": alignment_baseline,
-                            "transform": transform,
-                        },
-                    )
-                )
 
     def draw_break_annotations(self, break_obj):
         x_offset = self.raw_width / 2

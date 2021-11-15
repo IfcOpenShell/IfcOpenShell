@@ -105,6 +105,12 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def get_ifc_representation_class(cls, element, representation):
+        if element.is_a("IfcAnnotation"):
+            if element.ObjectType == "TEXT":
+                return "IfcTextLiteral"
+            elif element.ObjectType == "TEXT_LEADER":
+                return "IfcGeometricCurveSet/IfcTextLiteral"
+
         material = ifcopenshell.util.element.get_material(element)
         if material and material.is_a("IfcMaterialProfileSetUsage"):
             return "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
@@ -150,6 +156,12 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def get_styles(cls, obj):
         return [tool.Style.get_style(s.material) for s in obj.material_slots if s.material]
+
+    @classmethod
+    def get_text_literal(cls, representation):
+        texts = [i for i in representation.Items if i.is_a("IfcTextLiteral")]
+        if texts:
+            return texts[0]
 
     @classmethod
     def get_total_representation_items(cls, obj):
