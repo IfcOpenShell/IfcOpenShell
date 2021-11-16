@@ -46,11 +46,11 @@ def get_relating_type(self, context):
     return TypeData.data["relating_types"]
 
 
-def update_is_editing_type(self, context):
+def update_relating_type_class(self, context):
     TypeData.is_loaded = False
 
 
 class BIMTypeProperties(PropertyGroup):
-    is_editing_type: BoolProperty(name="Is Editing Type", update=update_is_editing_type)
-    relating_type_class: EnumProperty(items=get_relating_type_class, name="Relating Type Class")
+    is_editing_type: BoolProperty(name="Is Editing Type")
+    relating_type_class: EnumProperty(items=get_relating_type_class, name="Relating Type Class", update=update_relating_type_class)
     relating_type: EnumProperty(items=get_relating_type, name="Relating Type")
