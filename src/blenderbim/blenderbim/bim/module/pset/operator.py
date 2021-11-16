@@ -361,9 +361,16 @@ class CopyPropertyToSelection(bpy.types.Operator, Operator):
     name: bpy.props.StringProperty()
 
     def _execute(self, context):
+        is_pset = tool.Ifc.get().by_id(context.active_object.PsetProperties.active_pset_id).is_a("IfcPropertySet")
         pset_name = context.active_object.PsetProperties.active_pset_name
         prop_value = context.active_object.PsetProperties.properties.get(self.name).get_value()
         for obj in context.selected_objects:
             core.copy_property_to_selection(
-                tool.Ifc, tool.Pset, obj=obj, pset_name=pset_name, prop_name=self.name, prop_value=prop_value
+                tool.Ifc,
+                tool.Pset,
+                obj=obj,
+                is_pset=is_pset,
+                pset_name=pset_name,
+                prop_name=self.name,
+                prop_value=prop_value,
             )

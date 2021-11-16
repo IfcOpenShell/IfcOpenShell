@@ -24,7 +24,7 @@ class TestCopyPropertyToSelection:
     def test_doing_nothing_if_object_is_not_an_element(self, ifc, pset):
         ifc.get_entity("obj").should_be_called().will_return(None)
         subject.copy_property_to_selection(
-            ifc, pset, obj="obj", pset_name="pset_name", prop_name="prop_name", prop_value="prop_value"
+            ifc, pset, is_pset=True, obj="obj", pset_name="pset_name", prop_name="prop_name", prop_value="prop_value"
         )
 
     def test_copying_the_property_to_an_existing_pset(self, ifc, pset):
@@ -32,7 +32,7 @@ class TestCopyPropertyToSelection:
         pset.get_element_pset("element", "pset_name").should_be_called().will_return("pset")
         ifc.run("pset.edit_pset", pset="pset", properties={"prop_name": "prop_value"}).should_be_called()
         subject.copy_property_to_selection(
-            ifc, pset, obj="obj", pset_name="pset_name", prop_name="prop_name", prop_value="prop_value"
+            ifc, pset, is_pset=True, obj="obj", pset_name="pset_name", prop_name="prop_name", prop_value="prop_value"
         )
 
     def test_creating_a_new_pset_if_it_doesnt_exist(self, ifc, pset):
@@ -41,5 +41,22 @@ class TestCopyPropertyToSelection:
         ifc.run("pset.add_pset", product="element", name="pset_name").should_be_called().will_return("pset")
         ifc.run("pset.edit_pset", pset="pset", properties={"prop_name": "prop_value"}).should_be_called()
         subject.copy_property_to_selection(
-            ifc, pset, obj="obj", pset_name="pset_name", prop_name="prop_name", prop_value="prop_value"
+            ifc, pset, is_pset=True, obj="obj", pset_name="pset_name", prop_name="prop_name", prop_value="prop_value"
+        )
+
+    def test_copying_the_quantity_to_an_existing_qto(self, ifc, pset):
+        ifc.get_entity("obj").should_be_called().will_return("element")
+        pset.get_element_pset("element", "qto_name").should_be_called().will_return("qto")
+        ifc.run("pset.edit_qto", qto="qto", properties={"prop_name": "prop_value"}).should_be_called()
+        subject.copy_property_to_selection(
+            ifc, pset, is_pset=False, obj="obj", pset_name="qto_name", prop_name="prop_name", prop_value="prop_value"
+        )
+
+    def test_creating_a_new_qto_if_it_doesnt_exist(self, ifc, pset):
+        ifc.get_entity("obj").should_be_called().will_return("element")
+        pset.get_element_pset("element", "qto_name").should_be_called().will_return(None)
+        ifc.run("pset.add_qto", product="element", name="qto_name").should_be_called().will_return("qto")
+        ifc.run("pset.edit_qto", qto="qto", properties={"prop_name": "prop_value"}).should_be_called()
+        subject.copy_property_to_selection(
+            ifc, pset, is_pset=False, obj="obj", pset_name="qto_name", prop_name="prop_name", prop_value="prop_value"
         )
