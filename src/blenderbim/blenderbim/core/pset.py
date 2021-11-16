@@ -17,11 +17,14 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def copy_property_to_selection(ifc, pset, obj=None, pset_name=None, prop_name=None, prop_value=None):
+def copy_property_to_selection(ifc, pset, is_pset=True, obj=None, pset_name=None, prop_name=None, prop_value=None):
     element = ifc.get_entity(obj)
     if not element:
         return
     ifc_pset = pset.get_element_pset(element, pset_name)
     if not ifc_pset:
-        ifc_pset = ifc.run("pset.add_pset", product=element, name=pset_name)
-    ifc.run("pset.edit_pset", pset=ifc_pset, properties={prop_name: prop_value})
+        ifc_pset = ifc.run("pset.add_pset" if is_pset else "pset.add_qto", product=element, name=pset_name)
+    if is_pset:
+        ifc.run("pset.edit_pset", pset=ifc_pset, properties={prop_name: prop_value})
+    else:
+        ifc.run("pset.edit_qto", qto=ifc_pset, properties={prop_name: prop_value})
