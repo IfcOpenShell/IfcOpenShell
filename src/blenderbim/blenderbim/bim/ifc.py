@@ -258,7 +258,7 @@ class IfcStore:
         except:
             pass
 
-        if element.is_a("IfcSurfaceStyle"):
+        if element and element.is_a("IfcSurfaceStyle"):
             obj.BIMMaterialProperties.ifc_style_id = 0
         elif obj:
             obj.BIMObjectProperties.ifc_definition_id = 0
