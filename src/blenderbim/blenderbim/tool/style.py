@@ -46,7 +46,10 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def get_style(cls, obj):
         if obj.BIMMaterialProperties.ifc_style_id:
-            return tool.Ifc.get().by_id(obj.BIMMaterialProperties.ifc_style_id)
+            try:
+                return tool.Ifc.get().by_id(obj.BIMMaterialProperties.ifc_style_id)
+            except:
+                return
 
     @classmethod
     def get_surface_rendering_attributes(cls, obj):

@@ -74,6 +74,11 @@ class TestGetStyle(NewFile):
         obj.BIMMaterialProperties.ifc_style_id = style.id()
         assert subject.get_style(obj) == style
 
+    def test_getting_nothing_for_a_broken_link_style(self):
+        obj = bpy.data.materials.new("Material")
+        obj.BIMMaterialProperties.ifc_style_id = 1
+        assert subject.get_style(obj) == None
+
 
 class TestGetSurfaceRenderingAttributes(NewFile):
     def test_get_colours_from_a_basic_material(self):
