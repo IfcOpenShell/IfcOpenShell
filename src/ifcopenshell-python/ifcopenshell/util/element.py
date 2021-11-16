@@ -101,6 +101,22 @@ def get_material(element, should_skip_usage=False):
         return get_material(relating_type, should_skip_usage)
 
 
+def get_layers(ifc_file, element):
+    layers = []
+    representations = []
+    if getattr(element, "Representation", None):
+        representations = [element.Representation]
+    elif getattr(element, "RepresentationMaps", None):
+        representations = element.RepresentationMaps
+    for representation in representations:
+        for subelement in ifc_file.traverse(representation):
+            if subelement.is_a("IfcShapeRepresentation"):
+                layers.extend(subelement.LayerAssignments or [])
+            elif subelement.is_a("IfcGeometricRepresentationItem"):
+                layers.extend(subelement.LayerAssignment or [])
+    return layers
+
+
 def get_container(element, should_get_direct=False):
     if should_get_direct:
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
