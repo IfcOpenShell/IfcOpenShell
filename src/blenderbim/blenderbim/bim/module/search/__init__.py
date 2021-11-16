@@ -30,6 +30,8 @@ classes = (
     operator.SelectGlobalId,
     operator.SelectIfcClass,
     operator.SelectPset,
+    operator.CreateIfcClassSelSet,
+    operator.CreatePropSelSet,
     prop.BIMFilterClasses,
     prop.BIMSearchProperties,
     ui.BIM_PT_search,

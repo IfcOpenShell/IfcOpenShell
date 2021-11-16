@@ -381,3 +381,106 @@ class ActivateIfcTypeFilter(bpy.types.Operator):
         row = self.layout.row(align=True)
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
         row.operator("bim.toggle_filter_selection", text="Deselect All").action = "DESELECT"
+
+
+class CreateIfcClassSelSet(bpy.types.Operator):
+    "Click to generate a selection set for all ifc classes"
+    bl_idname = "bim.create_ifcclass_ss"
+    bl_label = "Create IfcClass Selection Set"
+
+    def execute(self, context):
+        if "Selection Sets" in bpy.data.collections:
+            ss = bpy.data.collections["Selection Sets"]  
+        else:
+            ss = bpy.data.collections.new("Selection Sets")
+            ss.color_tag = "COLOR_04"
+
+        if "Ifc Classes" in bpy.data.collections:
+            ifc_classes = bpy.data.collections["Ifc Classes"]
+        else:
+            ifc_classes = bpy.data.collections.new("Ifc Classes")
+            ifc_classes.color_tag = "COLOR_04"
+            ss.children.link(ifc_classes)
+            
+        objects = context.selectable_objects
+        
+        for obj in objects:
+            ifc_element = tool.Ifc.get_entity(obj)
+            if not ifc_element:
+                continue     
+            
+            ifc_type = ifc_element.is_a()
+            if ifc_type in bpy.data.collections:
+                ifc_class = bpy.data.collections[ifc_type]
+            else:
+                ifc_class = bpy.data.collections.new(f"{ifc_type}")
+                ifc_class.color_tag = "COLOR_04"
+                ifc_classes.children.link(ifc_class)
+            
+            if obj.name not in bpy.data.collections[ifc_type].objects.keys():
+                ifc_class.objects.link(obj)
+            
+            try:#Try to link the collection to the scene, do nothing if already linked
+                bpy.context.scene.collection.children.link(ss)
+            except:
+                pass
+                
+        return {"FINISHED"}        
+    
+   
+class CreatePropSelSet(bpy.types.Operator):
+    "Click to generate a selection set for all unique property values"
+    bl_idname = "bim.create_prop_ss"
+    bl_label = "Create Property Selection Set"
+    
+
+    def execute(self, context):
+        pset = context.scene.BIMSearchProperties.search_attribute_name
+        prop = context.scene.BIMSearchProperties.search_attribute_value
+        
+        if "Selection Sets" in bpy.data.collections:
+            ss = bpy.data.collections["Selection Sets"]  
+        else:
+            ss = bpy.data.collections.new("Selection Sets")
+            ss.color_tag = "COLOR_04"
+
+        if f"{pset}.{prop}" in bpy.data.collections:
+            property = bpy.data.collections[f"{pset}.{prop}"]
+        else:
+            property = bpy.data.collections.new(f"{pset}.{prop}")
+            property.color_tag = "COLOR_04"
+            ss.children.link(property)
+            
+        objects = context.selectable_objects
+        
+        for obj in objects:
+            ifc_element = tool.Ifc.get_entity(obj)
+            if not ifc_element:
+                continue     
+            
+            psets = ifcopenshell.util.element.get_psets(ifc_element)
+            
+            if pset not in psets:
+                continue
+            else:
+                if prop not in psets[pset]:
+                    continue
+                else:
+                    propval = psets[pset][prop]
+                    
+                if propval in bpy.data.collections:
+                    propval_col = bpy.data.collections[propval]
+                else:
+                    propval_col = bpy.data.collections.new(f"{propval}")
+                    propval_col.color_tag = "COLOR_04"
+                    property.children.link(propval_col)
+            
+            if obj.name not in bpy.data.collections[propval].objects.keys():
+                propval_col.objects.link(obj)    
+                
+            try:#Try to link the collection to the scene, do nothing if already linked
+                bpy.context.scene.collection.children.link(ss)
+            except:
+                pass
+                
+        return {"FINISHED"}  

@@ -52,12 +52,14 @@ class BIM_PT_search(Panel):
         row.prop(props, "ifc_class", text="", icon="OBJECT_DATA")
         row.operator("bim.select_ifc_class", text="", icon="VIEWZOOM").ifc_class = props.ifc_class
         row.operator("bim.colour_by_class", text="", icon="BRUSH_DATA")
+        row.operator("bim.create_ifcclass_ss", text="", icon="COLLECTION_NEW")
 
         row = self.layout.row(align=True)
         row.prop(props, "search_attribute_name", text="", icon="PROPERTIES")
         row.prop(props, "search_attribute_value", text="")
         row.operator("bim.select_attribute", text="", icon="VIEWZOOM")
         row.operator("bim.colour_by_attribute", text="", icon="BRUSH_DATA")
+        row.operator("bim.create_prop_ss", text="", icon="COLLECTION_NEW")
 
         row = self.layout.row(align=True)
         row.prop(props, "search_pset_name", text="", icon="COPY_ID")
