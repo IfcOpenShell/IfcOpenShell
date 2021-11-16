@@ -420,10 +420,10 @@ class CreateIfcClassSelSet(bpy.types.Operator):
             if obj.name not in bpy.data.collections[ifc_type].objects.keys():
                 ifc_class.objects.link(obj)
             
-            try:#Try to link the collection to the scene, do nothing if already linked
-                bpy.context.scene.collection.children.link(ss)
-            except:
-                pass
+        try:#Try to link the collection to the scene, do nothing if already linked
+            bpy.context.scene.collection.children.link(ss)
+        except:
+            pass
                 
         return {"FINISHED"}        
     
@@ -478,9 +478,9 @@ class CreatePropSelSet(bpy.types.Operator):
             if obj.name not in bpy.data.collections[propval].objects.keys():
                 propval_col.objects.link(obj)    
                 
-            try:#Try to link the collection to the scene, do nothing if already linked
-                bpy.context.scene.collection.children.link(ss)
-            except:
-                pass
+        try:#Try to link the collection to the scene, do nothing if already linked
+            bpy.context.scene.collection.children.link(ss)
+        except:
+            pass
                 
         return {"FINISHED"}  
