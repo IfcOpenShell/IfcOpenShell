@@ -81,6 +81,8 @@ def get_type(element):
 def get_types(type):
     for rel in getattr(type, "Types", []):
         return rel.RelatedObjects
+    for rel in getattr(type, "ObjectTypeOf", []):
+        return rel.RelatedObjects
     return []
 
 

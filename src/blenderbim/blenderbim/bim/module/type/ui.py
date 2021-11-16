@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.type.data import Data
+from blenderbim.bim.module.type.data import TypeData
 
 
 class BIM_PT_type(Panel):
@@ -33,23 +34,20 @@ class BIM_PT_type(Panel):
     def poll(cls, context):
         if not context.active_object:
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        element = tool.Ifc.get_entity(context.active_object)
+        if not element:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
-            return False
-        if props.ifc_definition_id not in Data.products and props.ifc_definition_id not in Data.types:
-            Data.load(IfcStore.get_file(), props.ifc_definition_id)
-        if props.ifc_definition_id not in Data.products and props.ifc_definition_id not in Data.types:
-            return False
-        if not Data.products.get(props.ifc_definition_id, None) and not Data.types.get(props.ifc_definition_id, None):
-            return False
+        if not element.is_a("IfcProduct") and not element.is_a("IfcTypeProduct"):
+            return True
         return True
 
     def draw(self, context):
+        if not TypeData.is_loaded:
+            TypeData.load()
+
         oprops = context.active_object.BIMObjectProperties
 
-        if oprops.ifc_definition_id in Data.products:
+        if TypeData.data["is_product"]:
             self.draw_product_ui(context)
         else:
             self.draw_type_ui(context)
@@ -58,7 +56,7 @@ class BIM_PT_type(Panel):
         props = context.active_object.BIMTypeProperties
         oprops = context.active_object.BIMObjectProperties
         row = self.layout.row(align=True)
-        row.label(text=f"{len(Data.types[oprops.ifc_definition_id])} Typed Objects")
+        row.label(text=f"{TypeData.data['total_instances']} Typed Objects")
         row.operator("bim.select_type_objects", icon="RESTRICT_SELECT_OFF", text="")
 
     def draw_product_ui(self, context):
@@ -69,7 +67,7 @@ class BIM_PT_type(Panel):
             row = self.layout.row(align=True)
 
             row.prop(props, "relating_type_class", text="")
-            if type_prop.get_object_relating_type(None, context):
+            if type_prop.get_relating_type(None, context):
                 row.prop(props, "relating_type", text="")
                 row.operator("bim.assign_type", icon="CHECKMARK", text="")
             else:
@@ -77,18 +75,15 @@ class BIM_PT_type(Panel):
             row.operator("bim.disable_editing_type", icon="CANCEL", text="")
         else:
             row = self.layout.row(align=True)
-            name = "{}/{}".format(
-                Data.products[oprops.ifc_definition_id]["type"], Data.products[oprops.ifc_definition_id]["Name"]
-            )
-            if name == "None/None":
-                row.label(text="This object has no type")
-                row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
-            else:
-                row.label(text=name)
+            if TypeData.data["type_name"]:
+                row.label(text=TypeData.data["type_name"])
                 row.operator("bim.select_type", icon="TRACKER", text="")
                 row.operator("bim.select_similar_type", icon="RESTRICT_SELECT_OFF", text="")
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
                 row.operator("bim.unassign_type", icon="X", text="")
+            else:
+                row.label(text="This object has no type")
+                row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
 
 
 def add_object_button(self, context):
