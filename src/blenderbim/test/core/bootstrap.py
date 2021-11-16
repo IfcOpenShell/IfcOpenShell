@@ -78,6 +78,13 @@ def geometry():
 
 
 @pytest.fixture
+def library():
+    prophet = Prophecy(blenderbim.core.tool.Library)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def material():
     prophet = Prophecy(blenderbim.core.tool.Material)
     yield prophet

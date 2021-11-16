@@ -126,10 +126,25 @@ class Geometry:
 class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
-    def get_object(cls, obj): pass
+    def get_object(cls, entity): pass
     def link(cls, element, obj): pass
     def run(cls, command, **kwargs): pass
     def unlink(cls, element=None, obj=None): pass
+
+
+@interface
+class Library:
+    def clear_editing_mode(cls): pass
+    def export_library_attributes(cls): pass
+    def export_reference_attributes(cls): pass
+    def get_active_library(cls): pass
+    def get_active_reference(cls): pass
+    def import_library_attributes(cls, library): pass
+    def import_reference_attributes(cls, reference): pass
+    def import_references(cls, library): pass
+    def set_active_library(cls, library): pass
+    def set_active_reference(cls, reference): pass
+    def set_editing_mode(cls, mode): pass
 
 
 @interface
