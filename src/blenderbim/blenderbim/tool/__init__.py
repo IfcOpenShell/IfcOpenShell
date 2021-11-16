@@ -24,6 +24,7 @@ from blenderbim.tool.context import Context
 from blenderbim.tool.drawing import Drawing
 from blenderbim.tool.geometry import Geometry
 from blenderbim.tool.ifc import Ifc
+from blenderbim.tool.library import Library
 from blenderbim.tool.material import Material
 from blenderbim.tool.misc import Misc
 from blenderbim.tool.owner import Owner

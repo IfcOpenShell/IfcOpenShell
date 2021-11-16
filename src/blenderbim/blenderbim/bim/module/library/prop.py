@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -17,10 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.util.type
-from blenderbim.bim.module.type.data import TypeData
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.library.data import LibrariesData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -34,25 +32,20 @@ from bpy.props import (
 )
 
 
-def get_relating_type_class(self, context):
-    if not TypeData.is_loaded:
-        TypeData.load()
-    return TypeData.data["relating_type_classes"]
+def update_active_reference_index(self, context):
+    LibrariesData.is_loaded = False
 
 
-def get_relating_type(self, context):
-    if not TypeData.is_loaded:
-        TypeData.load()
-    return TypeData.data["relating_types"]
+class LibraryReference(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
-def update_relating_type_class(self, context):
-    TypeData.is_loaded = False
-
-
-class BIMTypeProperties(PropertyGroup):
-    is_editing_type: BoolProperty(name="Is Editing Type")
-    relating_type_class: EnumProperty(
-        items=get_relating_type_class, name="Relating Type Class", update=update_relating_type_class
-    )
-    relating_type: EnumProperty(items=get_relating_type, name="Relating Type")
+class BIMLibraryProperties(PropertyGroup):
+    editing_mode: StringProperty(name="Editing Mode")
+    library_attributes: CollectionProperty(name="Library Attributes", type=Attribute)
+    active_library_id: IntProperty(name="Active Library Id")
+    reference_attributes: CollectionProperty(name="Library Attributes", type=Attribute)
+    active_reference_id: IntProperty(name="Active Reference Id")
+    references: CollectionProperty(type=LibraryReference, name="References")
+    active_reference_index: IntProperty(name="Active Reference Index", update=update_active_reference_index)

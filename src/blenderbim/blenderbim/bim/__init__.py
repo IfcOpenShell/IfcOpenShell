@@ -54,6 +54,7 @@ modules = {
     "pset": None,
     "qto": None,
     "classification": None,
+    "library": None,
     "constraint": None,
     "document": None,
     "pset_template": None,
