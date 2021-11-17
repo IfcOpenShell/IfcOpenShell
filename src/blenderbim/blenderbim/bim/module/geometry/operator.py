@@ -209,6 +209,7 @@ class UpdateRepresentation(bpy.types.Operator):
                     "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
                 },
             )
+            tool.Geometry.record_object_materials(obj)
 
         # TODO: move this into a replace_representation usecase or something
         for inverse in self.file.get_inverse(old_representation):
