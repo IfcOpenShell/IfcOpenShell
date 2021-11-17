@@ -49,6 +49,18 @@ class Brick(blenderbim.core.tool.Brick):
         bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
 
     @classmethod
+    def export_brick_attributes(cls, brick_uri):
+        return {"Identification": brick_uri, "Name": brick_uri.split("#")[-1]}
+
+    @classmethod
+    def get_brick_path(cls):
+        return BrickStore.path
+
+    @classmethod
+    def get_brick_path_name(cls):
+        return os.path.basename(BrickStore.path)
+
+    @classmethod
     def get_item_class(cls, item):
         query = BrickStore.graph.query(
             """
@@ -63,6 +75,17 @@ class Brick(blenderbim.core.tool.Brick):
         )
         for row in query:
             return row.get("class").toPython().split("#")[-1]
+
+    @classmethod
+    def get_library_brick_reference(cls, library, brick_uri):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            for reference in library.LibraryReference:
+                if reference.ItemReference == brick_uri:
+                    return reference
+        else:
+            for reference in library.HasLibraryReferences:
+                if reference.Identification == brick_uri:
+                    return reference
 
     @classmethod
     def import_brick_classes(cls, brick_class):
@@ -115,6 +138,7 @@ class Brick(blenderbim.core.tool.Brick):
             schema_path = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
             BrickStore.schema.load_file(schema_path)
         BrickStore.graph = brickschema.Graph().load_file(filepath) + BrickStore.schema
+        BrickStore.path = filepath
 
     @classmethod
     def pop_brick_breadcrumb(cls):
@@ -138,8 +162,10 @@ class Brick(blenderbim.core.tool.Brick):
 class BrickStore:
     schema = None
     graph = None
+    path = None
 
     @staticmethod
     def purge():
         BrickStore.schema = None
         BrickStore.graph = None
+        BrickStore.path = None

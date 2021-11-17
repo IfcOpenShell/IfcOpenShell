@@ -23,6 +23,7 @@ from blenderbim.tool.brick import BrickStore
 
 def refresh():
     BrickschemaData.is_loaded = False
+    BrickschemaReferencesData.is_loaded = False
 
 
 class BrickschemaData:
@@ -75,4 +76,46 @@ class BrickschemaData:
                     "value_uri": row.get("value").toPython(),
                 }
             )
+        return results
+
+
+class BrickschemaReferencesData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"is_loaded": cls.get_is_loaded(), "libraries": cls.libraries(), "references": cls.references()}
+
+    @classmethod
+    def get_is_loaded(cls):
+        return BrickStore.graph is not None
+
+    @classmethod
+    def libraries(cls):
+        results = []
+        for library in tool.Ifc.get().by_type("IfcLibraryInformation"):
+            results.append((str(library.id()), library.Name or "Unnamed", ""))
+        return results
+
+    @classmethod
+    def references(cls):
+        results = []
+        for rel in getattr(tool.Ifc.get_entity(bpy.context.active_object), "HasAssociations", []):
+            if rel.is_a("IfcRelAssociatesLibrary"):
+                reference = rel.RelatingLibrary
+                if tool.Ifc.get_schema() == "IFC2X3" and "#" not in reference.ItemReference:
+                    continue
+                if tool.Ifc.get_schema() != "IFC2X3" and "#" not in reference.Identification:
+                    continue
+                results.append(
+                    {
+                        "id": reference.id(),
+                        "identification": reference.ItemReference
+                        if tool.Ifc.get_schema() == "IFC2X3"
+                        else reference.Identification,
+                        "name": reference.Name or "Unnamed",
+                    }
+                )
         return results

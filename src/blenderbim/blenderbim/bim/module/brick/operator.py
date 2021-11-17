@@ -82,3 +82,28 @@ class CloseBrickProject(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.close_brick_project(tool.Brick)
+
+
+class ConvertBrickProject(bpy.types.Operator, Operator):
+    bl_idname = "bim.convert_brick_project"
+    bl_label = "Convert Brick Project"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.convert_brick_project(tool.Ifc, tool.Brick)
+
+
+class AssignBrickReference(bpy.types.Operator, Operator):
+    bl_idname = "bim.assign_brick_reference"
+    bl_label = "Assign Brick Reference"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMBrickProperties
+        core.assign_brick_reference(
+            tool.Ifc,
+            tool.Brick,
+            obj=context.active_object,
+            library=tool.Ifc.get().by_id(int(props.libraries)),
+            brick_uri=props.bricks[props.active_brick_index].uri,
+        )

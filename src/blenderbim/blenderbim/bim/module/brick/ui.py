@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blenderbim.tool as tool
 from bpy.types import Panel, UIList
-from blenderbim.bim.module.brick.data import BrickschemaData
+from blenderbim.bim.module.brick.data import BrickschemaData, BrickschemaReferencesData
 
 
 class BIM_PT_brickschema(Panel):
@@ -53,6 +54,54 @@ class BIM_PT_brickschema(Panel):
             if attribute["is_uri"]:
                 op = row.operator("bim.view_brick_item", text="", icon="DISCLOSURE_TRI_RIGHT")
                 op.item = attribute["value_uri"]
+
+
+class BIM_PT_ifc_brickschema_references(Panel):
+    bl_label = "IFC Brickschema References"
+    bl_idname = "BIM_PT_ifc_brickschema_references"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_brickschema"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+
+    def draw(self, context):
+        if not BrickschemaReferencesData.is_loaded:
+            BrickschemaReferencesData.load()
+        self.props = context.scene.BIMBrickProperties
+
+        if not BrickschemaReferencesData.data["is_loaded"]:
+            row = self.layout.row()
+            row.label(text="No Brickschema Project Loaded")
+            return
+
+        if not BrickschemaReferencesData.data["libraries"]:
+            row = self.layout.row(align=True)
+            row.label(text="No IFC Libraries")
+            row.operator("bim.convert_brick_project", text="", icon="ADD")
+            return
+
+        row = self.layout.row(align=True)
+        row.prop(self.props, "libraries")
+        row.operator("bim.convert_brick_project", text="", icon="ADD")
+
+        row = self.layout.row()
+        row.operator("bim.assign_brick_reference", icon="ADD")
+
+        if not BrickschemaReferencesData.data["references"]:
+            row = self.layout.row()
+            row.label(text="No References")
+
+        for reference in BrickschemaReferencesData.data["references"]:
+            row = self.layout.row(align=True)
+            row.label(text=reference["identification"], icon="ASSET_MANAGER")
+            row.label(text=reference["name"])
+            row.operator("bim.unassign_library_reference", text="", icon="X").reference = reference["id"]
+            row.operator("bim.view_brick_item", text="", icon="DISCLOSURE_TRI_RIGHT").item = reference["identification"]
 
 
 class BIM_UL_bricks(UIList):

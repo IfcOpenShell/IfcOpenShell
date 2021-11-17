@@ -11,4 +11,10 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        if self.file.schema == "IFC2X3":
+            reference = self.file.createIfcLibraryReference()
+            references = list(self.settings["library"].LibraryReference or [])
+            references.append(reference)
+            self.settings["library"].LibraryReference = references
+            return reference
         return self.file.createIfcLibraryReference(ReferencedLibrary=self.settings["library"])

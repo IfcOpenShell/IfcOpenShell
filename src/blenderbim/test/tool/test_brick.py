@@ -59,10 +59,43 @@ class TestClearProject(NewFile):
         assert len(bpy.context.scene.BIMBrickProperties.brick_breadcrumbs) == 0
 
 
+class TestExportBrickAttributes(NewFile):
+    def test_run(self):
+        assert subject.export_brick_attributes("ex:#floor") == {"Identification": "ex:#floor", "Name": "floor"}
+
+
+class TestGetBrickPath(NewFile):
+    def test_run(self):
+        TestLoadBrickFile().test_run()
+        cwd = os.path.dirname(os.path.realpath(__file__))
+        assert subject.get_brick_path() == os.path.join(cwd, "..", "files", "spaces.ttl")
+
+
+class TestGetBrickPathName(NewFile):
+    def test_run(self):
+        TestLoadBrickFile().test_run()
+        assert subject.get_brick_path_name() == "spaces.ttl"
+
+
 class TestGetItemClass(NewFile):
     def test_run(self):
         TestLoadBrickFile().test_run()
         assert subject.get_item_class("ex:#floor") == "Floor"
+
+
+class TestGetLibraryBrickReference(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        library = ifc.createIfcLibraryInformation()
+        reference = ifc.createIfcLibraryReference(Identification="ex:#floor", ReferencedLibrary=library)
+        assert subject.get_library_brick_reference(library, "ex:#floor") == reference
+
+    def test_run_ifc2x3(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        reference = ifc.createIfcLibraryReference(ItemReference="ex:#floor")
+        library = ifc.createIfcLibraryInformation(LibraryReference=[reference])
+        assert subject.get_library_brick_reference(library, "ex:#floor") == reference
 
 
 class TestImportBrickClasses(NewFile):
