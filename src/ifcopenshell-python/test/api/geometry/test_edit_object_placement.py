@@ -367,3 +367,46 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
             ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), shifted_submatrix
         )
         assert subelement.ObjectPlacement.PlacementRelTo == element.ObjectPlacement
+
+    def test_changing_placements_with_children_using_non_si_units(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.run("unit.assign_unit", self.file)
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        matrix = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 1000.0),
+                (0.0, 1.0, 0.0, 1000.0),
+                (0.0, 0.0, 1.0, 1000.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        matrix_si = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 1.0),
+                (0.0, 1.0, 0.0, 1.0),
+                (0.0, 0.0, 1.0, 1.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        submatrix = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 1000.0),
+                (0.0, 1.0, 0.0, 2000.0),
+                (0.0, 0.0, 1.0, 3000.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=element, matrix=matrix.copy(), is_si=False
+        )
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=subelement, matrix=submatrix.copy(), is_si=False
+        )
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=element, matrix=matrix_si.copy(), is_si=True
+        )
+        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), matrix)
+        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), submatrix)
+        assert subelement.ObjectPlacement.PlacementRelTo == element.ObjectPlacement

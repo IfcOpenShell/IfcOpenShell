@@ -79,7 +79,7 @@ class Usecase:
         for referenced_placement in placement.ReferencedByPlacements:
             matrix = ifcopenshell.util.placement.get_local_placement(referenced_placement)
             for obj in referenced_placement.PlacesObject:
-                results.append({"product": obj, "matrix": matrix, "is_si": self.settings["is_si"], "should_transform_children": False})
+                results.append({"product": obj, "matrix": matrix, "is_si": False, "should_transform_children": False})
             results.extend(self.get_children_settings(referenced_placement))
         return results
 
