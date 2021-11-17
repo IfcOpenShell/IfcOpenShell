@@ -1321,10 +1321,11 @@ class IfcImporter:
         return element.ObjectType in [
             "DIMENSION",
             "EQUAL_DIMENSION",
-            "LEVEL",
+            "MISC",
+            "PLAN_LEVEL",
+            "SECTION_LEVEL",
             "STAIR_ARROW",
             "TEXT_LEADER",
-            "MISC",
         ]
 
     def is_drawing_annotation(self, element):
@@ -1335,8 +1336,9 @@ class IfcImporter:
             "EQUAL_DIMENSION",
             "GRID",
             "HIDDEN_LINE",
-            "LEVEL",
             "MISC",
+            "PLAN_LEVEL",
+            "SECTION_LEVEL",
             "STAIR_ARROW",
             "TEXT",
             "TEXT_LEADER",

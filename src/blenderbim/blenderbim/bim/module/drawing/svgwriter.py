@@ -211,50 +211,8 @@ class SvgWriter:
 
         self.draw_leader_annotations()
 
-        if self.annotations.get("plan_level_obj"):
-            matrix_world = self.annotations["plan_level_obj"].matrix_world
-            for spline in self.annotations["plan_level_obj"].data.splines:
-                classes = ["annotation", "plan-level"]
-                points = self.get_spline_points(spline)
-                projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
-                d = " ".join(
-                    [
-                        "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
-                        for p in projected_points
-                    ]
-                )
-                d = "M{}".format(d[1:])
-                path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
-                path["marker-end"] = "url(#plan-level-marker)"
-                text_position = Vector(
-                    (
-                        (x_offset + projected_points[0].x) * self.scale,
-                        ((y_offset - projected_points[0].y) * self.scale) - 2.5,
-                    )
-                )
-                # TODO: allow metric to be configurable
-                rl = ((matrix_world @ points[0].co).xyz + self.annotations["plan_level_obj"].location).z
-                if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                    rl = helper.format_distance(rl)
-                else:
-                    rl = "{:.3f}m".format(rl)
-                if projected_points[0].x > projected_points[-1].x:
-                    text_anchor = "end"
-                else:
-                    text_anchor = "start"
-                self.svg.add(
-                    self.svg.text(
-                        "RL +{}".format(rl),
-                        insert=tuple(text_position),
-                        **{
-                            "font-size": annotation.Annotator.get_svg_text_size(2.5),
-                            "font-family": "OpenGost Type B TT",
-                            "text-anchor": text_anchor,
-                            "alignment-baseline": "baseline",
-                            "dominant-baseline": "baseline",
-                        },
-                    )
-                )
+        for obj in self.annotations.get("plan_level_objs", []):
+            self.draw_plan_level_annotation(obj)
 
         if self.annotations.get("section_level_obj"):
             matrix_world = self.annotations["section_level_obj"].matrix_world
@@ -576,6 +534,54 @@ class SvgWriter:
             )
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(["breakline"])))
+
+    def draw_plan_level_annotation(self, obj):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+        matrix_world = obj.matrix_world
+        for spline in obj.data.splines:
+            classes = ["annotation", "plan-level"]
+            points = self.get_spline_points(spline)
+            projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
+            d = " ".join(
+                [
+                    "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    for p in projected_points
+                ]
+            )
+            d = "M{}".format(d[1:])
+            path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
+            path["marker-end"] = "url(#plan-level-marker)"
+            text_position = Vector(
+                (
+                    (x_offset + projected_points[0].x) * self.scale,
+                    ((y_offset - projected_points[0].y) * self.scale) - 2.5,
+                )
+            )
+            # TODO: allow metric to be configurable
+            rl = ((matrix_world @ points[0].co).xyz + obj.location).z
+            if bpy.context.scene.unit_settings.system == "IMPERIAL":
+                rl = helper.format_distance(rl)
+            else:
+                rl = "{:.3f}m".format(rl)
+            if projected_points[0].x > projected_points[-1].x:
+                text_anchor = "end"
+            else:
+                text_anchor = "start"
+            self.svg.add(
+                self.svg.text(
+                    "RL +{}".format(rl),
+                    insert=tuple(text_position),
+                    **{
+                        "font-size": annotation.Annotator.get_svg_text_size(2.5),
+                        "font-family": "OpenGost Type B TT",
+                        "text-anchor": text_anchor,
+                        "alignment-baseline": "baseline",
+                        "dominant-baseline": "baseline",
+                    },
+                )
+            )
+
 
     def draw_dimension_annotations(self, dimension_obj, text_override=None):
         matrix_world = dimension_obj.matrix_world
