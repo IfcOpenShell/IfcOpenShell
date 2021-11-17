@@ -141,3 +141,27 @@ class EditLibraryReference(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.edit_library_reference(tool.Ifc, tool.Library)
+
+
+class AssignLibraryReference(bpy.types.Operator, Operator):
+    bl_idname = "bim.assign_library_reference"
+    bl_label = "Assign Library Reference"
+    bl_options = {"REGISTER", "UNDO"}
+    reference: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.assign_library_reference(
+            tool.Ifc, obj=context.active_object, reference=tool.Ifc.get().by_id(self.reference)
+        )
+
+
+class UnassignLibraryReference(bpy.types.Operator, Operator):
+    bl_idname = "bim.unassign_library_reference"
+    bl_label = "Unassign Library Reference"
+    bl_options = {"REGISTER", "UNDO"}
+    reference: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.unassign_library_reference(
+            tool.Ifc, obj=context.active_object, reference=tool.Ifc.get().by_id(self.reference)
+        )

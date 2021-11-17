@@ -47,11 +47,13 @@ class Library(blenderbim.core.tool.Library):
     @classmethod
     def import_library_attributes(cls, library):
         props = bpy.context.scene.BIMLibraryProperties
+        props.library_attributes.clear()
         blenderbim.bim.helper.import_attributes2(library, props.library_attributes)
 
     @classmethod
     def import_reference_attributes(cls, reference):
         props = bpy.context.scene.BIMLibraryProperties
+        props.reference_attributes.clear()
         blenderbim.bim.helper.import_attributes2(reference, props.reference_attributes)
 
     @classmethod
