@@ -9,8 +9,7 @@ We need an IFC file
 
 Scénario: Recevoir e fichier
 
- * The IFC file has been provided through an argument
- * Les données IFC doivent utiliser le schéma IFC2X3
+ * Les données IFC doivent utiliser le schéma "IFC2X3"
 
  
 Scénario: Project information
