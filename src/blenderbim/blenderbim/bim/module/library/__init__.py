@@ -21,21 +21,25 @@ from . import ui, prop, operator
 
 classes = (
     operator.AddLibrary,
-    operator.RemoveLibrary,
-    operator.EnableEditingLibraryReferences,
-    operator.DisableEditingLibraryReferences,
-    operator.EnableEditingLibrary,
-    operator.DisableEditingLibrary,
-    operator.EditLibrary,
     operator.AddLibraryReference,
-    operator.RemoveLibraryReference,
-    operator.EnableEditingLibraryReference,
+    operator.AssignLibraryReference,
+    operator.DisableEditingLibrary,
     operator.DisableEditingLibraryReference,
+    operator.DisableEditingLibraryReferences,
+    operator.EditLibrary,
     operator.EditLibraryReference,
+    operator.EnableEditingLibrary,
+    operator.EnableEditingLibraryReference,
+    operator.EnableEditingLibraryReferences,
+    operator.RemoveLibrary,
+    operator.RemoveLibraryReference,
+    operator.UnassignLibraryReference,
     prop.LibraryReference,
     prop.BIMLibraryProperties,
     ui.BIM_PT_libraries,
+    ui.BIM_PT_library_references,
     ui.BIM_UL_library_references,
+    ui.BIM_UL_object_library_references,
 )
 
 

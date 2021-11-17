@@ -19,7 +19,7 @@
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
-from blenderbim.bim.module.library.data import LibrariesData
+from blenderbim.bim.module.library.data import LibrariesData, LibraryReferencesData
 
 
 class BIM_PT_libraries(Panel):
@@ -87,9 +87,42 @@ class BIM_PT_libraries(Panel):
         row.operator("bim.add_library", icon="ADD")
         for library in LibrariesData.data["libraries"]:
             row = self.layout.row(align=True)
-            row.label(text=library["name"])
+            row.label(text=library["name"], icon="ASSET_MANAGER")
             row.operator("bim.enable_editing_library_references", text="", icon="OUTLINER").library = library["id"]
             row.operator("bim.remove_library", text="", icon="X").library = library["id"]
+
+
+class BIM_PT_library_references(Panel):
+    bl_label = "IFC Library References"
+    bl_idname = "BIM_PT_library_references"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+
+    def draw(self, context):
+        if not LibraryReferencesData.is_loaded:
+            LibraryReferencesData.load()
+        self.props = context.scene.BIMLibraryProperties
+
+        if self.props.editing_mode == "REFERENCES":
+            self.layout.template_list(
+                "BIM_UL_object_library_references", "", self.props, "references", self.props, "active_reference_index"
+            )
+
+        if not LibraryReferencesData.data["references"]:
+            row = self.layout.row()
+            row.label(text="No References")
+
+        for reference in LibraryReferencesData.data["references"]:
+            row = self.layout.row(align=True)
+            row.label(text=reference["identification"], icon="ASSET_MANAGER")
+            row.label(text=reference["name"])
+            row.operator("bim.unassign_library_reference", text="", icon="X").reference = reference["id"]
 
 
 class BIM_UL_library_references(UIList):
@@ -100,4 +133,13 @@ class BIM_UL_library_references(UIList):
             op = row.operator("bim.enable_editing_library_reference", text="", icon="GREASEPENCIL")
             op.reference = item.ifc_definition_id
             op = row.operator("bim.remove_library_reference", text="", icon="X")
+            op.reference = item.ifc_definition_id
+
+
+class BIM_UL_object_library_references(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
+            op = row.operator("bim.assign_library_reference", text="", icon="ADD")
             op.reference = item.ifc_definition_id

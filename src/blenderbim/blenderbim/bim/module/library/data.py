@@ -22,6 +22,7 @@ import blenderbim.tool as tool
 
 def refresh():
     LibrariesData.is_loaded = False
+    LibraryReferencesData.is_loaded = False
 
 
 class LibrariesData:
@@ -77,4 +78,33 @@ class LibrariesData:
                 continue
             if value is not None:
                 results.append({"name": key, "value": str(value)})
+        return results
+
+
+class LibraryReferencesData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {
+            "references": cls.references(),
+        }
+
+    @classmethod
+    def references(cls):
+        results = []
+        for rel in getattr(tool.Ifc.get_entity(bpy.context.active_object), "HasAssociations", []):
+            if rel.is_a("IfcRelAssociatesLibrary"):
+                library = rel.RelatingLibrary
+                results.append(
+                    {
+                        "id": library.id(),
+                        "identification": library.ItemReference
+                        if tool.Ifc.get_schema() == "IFC2X3"
+                        else library.Identification,
+                        "name": library.Name or "Unnamed",
+                    }
+                )
         return results
