@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.module.brick.data import BrickschemaData
+from blenderbim.bim.module.brick.data import BrickschemaData, BrickschemaReferencesData
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -36,6 +36,12 @@ def update_active_brick_index(self, context):
     BrickschemaData.is_loaded = False
 
 
+def get_libraries(self, context):
+    if not BrickschemaReferencesData.is_loaded:
+        BrickschemaReferencesData.load()
+    return BrickschemaReferencesData.data["libraries"]
+
+
 class Brick(PropertyGroup):
     name: StringProperty(name="Name")
     uri: StringProperty(name="URI")
@@ -47,3 +53,4 @@ class BIMBrickProperties(PropertyGroup):
     brick_breadcrumbs: CollectionProperty(name="Brick Breadcrumbs", type=StrProperty)
     bricks: CollectionProperty(name="Bricks", type=Brick)
     active_brick_index: IntProperty(name="Active Brick Index", update=update_active_brick_index)
+    libraries: EnumProperty(name="Libraries", items=get_libraries)

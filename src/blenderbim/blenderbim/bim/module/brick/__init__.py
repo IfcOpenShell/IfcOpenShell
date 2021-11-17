@@ -20,7 +20,9 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AssignBrickReference,
     operator.CloseBrickProject,
+    operator.ConvertBrickProject,
     operator.LoadBrickProject,
     operator.RewindBrickClass,
     operator.ViewBrickClass,
@@ -28,6 +30,7 @@ classes = (
     prop.Brick,
     prop.BIMBrickProperties,
     ui.BIM_PT_brickschema,
+    ui.BIM_PT_ifc_brickschema_references,
     ui.BIM_UL_bricks,
 )
 

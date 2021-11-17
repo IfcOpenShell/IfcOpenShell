@@ -47,3 +47,16 @@ def rewind_brick_class(brick):
 
 def close_brick_project(brick):
     brick.clear_project()
+
+
+def convert_brick_project(ifc, brick):
+    library = ifc.run("library.add_library", name=brick.get_brick_path_name())
+    ifc.run("library.edit_library", library=library, attributes={"Location": brick.get_brick_path()})
+
+
+def assign_brick_reference(ifc, brick, obj=None, library=None, brick_uri=None):
+    reference = brick.get_library_brick_reference(library, brick_uri)
+    if not reference:
+        reference = ifc.run("library.add_reference", library=library)
+        ifc.run("library.edit_reference", reference=reference, attributes=brick.export_brick_attributes(brick_uri))
+    ifc.run("library.assign_reference", product=ifc.get_entity(obj), reference=reference)

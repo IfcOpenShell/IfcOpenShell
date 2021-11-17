@@ -46,7 +46,11 @@ class Brick:
     def add_brick_breadcrumb(cls): pass
     def clear_brick_browser(cls): pass
     def clear_project(cls): pass
+    def export_brick_attributes(cls, brick_uri): pass
+    def get_brick_path(cls): pass
+    def get_brick_path_name(cls): pass
     def get_item_class(cls, item): pass
+    def get_library_brick_reference(cls, library, brick_uri): pass
     def import_brick_classes(cls, brick_class): pass
     def import_brick_items(cls, brick_class): pass
     def load_brick_file(cls, filepath): pass
