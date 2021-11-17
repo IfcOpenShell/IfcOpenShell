@@ -9,8 +9,7 @@ We hebben een IFC-bestand nodig
 
 Scenario: Bestand ontvangen
 
- * The IFC file has been provided through an argument
- * IFC-gegevens moeten het IFC2X3 -schema gebruiken
+ * IFC-gegevens moeten het "IFC2X3" -schema gebruiken
 
  
  Scenario: Project informatie

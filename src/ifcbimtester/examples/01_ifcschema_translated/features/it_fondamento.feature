@@ -9,8 +9,7 @@ serve un file IFC
 
 Scenario: Preparare Dati IFC
 
- * Il file IFC è stato fornito attraverso un argumento
- * I dati IFC devono seguire lo schema IFC2X3
+ * I dati IFC devono seguire lo schema "IFC2X3"
 
 
 Scenario: Project information
