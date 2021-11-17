@@ -499,7 +499,7 @@ class CreateDrawing(bpy.types.Operator):
             elif element.ObjectType == "SOLID_LINE":
                 svg_writer.annotations.setdefault("solid_objs", []).append((obj, obj.data))
             elif element.ObjectType == "PLAN_LEVEL":
-                svg_writer.annotations["plan_level_obj"] = obj
+                svg_writer.annotations.setdefault("plan_level_objs", []).append(obj)
             elif element.ObjectType == "SECTION_LEVEL":
                 svg_writer.annotations["section_level_obj"] = obj
             elif element.ObjectType == "TEXT":

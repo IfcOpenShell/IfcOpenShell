@@ -340,6 +340,9 @@ class BaseDecorator:
 
         blf.rotation(font_id, ang)
         blf.color(font_id, *color)
+        #blf.enable(font_id, blf.SHADOW)
+        #blf.shadow(font_id, 5, 0, 0, 0, 1)
+        #blf.shadow_offset(font_id, 1, -1)
         blf.draw(font_id, text)
         blf.disable(font_id, blf.ROTATION)
 
@@ -577,7 +580,7 @@ class StairDecorator(BaseDecorator):
     DEF_GLSL = (
         BaseDecorator.DEF_GLSL
         + """
-        #define CIRCLE_SIZE 8.0
+        #define CIRCLE_SIZE 6.0
         #define ARROW_ANGLE PI / 3.0
         #define ARROW_SIZE 24.0
     """
@@ -607,7 +610,7 @@ class StairDecorator(BaseDecorator):
         // start edge circle for first segment
         if (t0 == 1u) {
             vec4 head[CIRCLE_SEGS];
-            circle_head(CIRCLE_SIZE, head);
+            circle_head(viewportDrawingScale * CIRCLE_SIZE, head);
 
             for(int i=0; i<CIRCLE_SEGS; i++) {
                 p = p0w + head[i];
@@ -619,13 +622,13 @@ class StairDecorator(BaseDecorator):
             EmitVertex();
             EndPrimitive();
 
-            gap0 = dir * CIRCLE_SIZE;
+            gap0 = dir * viewportDrawingScale * CIRCLE_SIZE;
         }
 
         // end edge arrow for last segment
         if (t1 == 2u) {
             vec4 head[3];
-            arrow_head(dir, ARROW_SIZE, ARROW_ANGLE, head);
+            arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
 
             p = p1w - head[1];
             gl_Position = WIN2CLIP(p);
@@ -668,7 +671,6 @@ class HiddenDecorator(BaseDecorator):
 
     GEOM_GLSL = """
     uniform vec2 winsize;
-    uniform float viewportDrawingScale;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
@@ -702,13 +704,14 @@ class HiddenDecorator(BaseDecorator):
     """
 
     FRAG_GLSL = """
+    uniform float viewportDrawingScale;
     uniform vec4 color;
     in vec2 gl_FragCoord;
     in float dist;
     out vec4 fragColor;
 
     void main() {
-        uint bit = uint(fract(dist / DASH_SIZE) * 32);
+        uint bit = uint(fract(dist / (viewportDrawingScale * DASH_SIZE)) * 32);
         if ((DASH_PATTERN & (1U<<bit)) == 0U) discard;
         fragColor = color;
     }
@@ -785,7 +788,7 @@ class PlanLevelDecorator(LevelDecorator):
         // end edge cross+circle for last segment
         if (t1 == 2u) {
             vec4 head_o[CIRCLE_SEGS];
-            circle_head(CIRCLE_SIZE, head_o);
+            circle_head(viewportDrawingScale * CIRCLE_SIZE, head_o);
 
             for(int i=0; i<CIRCLE_SEGS; i++) {
                 p = p1w + head_o[i];
@@ -798,7 +801,7 @@ class PlanLevelDecorator(LevelDecorator):
             EndPrimitive();
 
             vec4 head_x[3];
-            cross_head(dir, CROSS_SIZE, head_x);
+            cross_head(dir, viewportDrawingScale * CROSS_SIZE, head_x);
 
             p = p1w + head_x[1];
             gl_Position = WIN2CLIP(p);
@@ -857,8 +860,8 @@ class SectionLevelDecorator(LevelDecorator):
     out float dist; // distance from starging point along segment
 
     void callout_head(in vec4 dir, out vec4 head[4]) {
-        vec2 gap = dir.xy * CALLOUT_GAP;
-        vec2 tail = dir.xy * -CALLOUT_SIZE;
+        vec2 gap = dir.xy * viewportDrawingScale * CALLOUT_GAP;
+        vec2 tail = dir.xy * viewportDrawingScale * -CALLOUT_SIZE;
         vec2 side = cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy * CALLOUT_GAP;
 
         head[0] = vec4(tail + side, 0, 0);
@@ -955,8 +958,8 @@ class BreakDecorator(BaseDecorator):
 
         vec4 p;
 
-        vec4 quart = dir * BREAK_LENGTH * .25;
-        vec4 side = vec4(cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy, 0, 0) * BREAK_WIDTH;
+        vec4 quart = dir * viewportDrawingScale * BREAK_LENGTH * .25;
+        vec4 side = vec4(cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy, 0, 0) * viewportDrawingScale * BREAK_WIDTH;
 
         // TODO: check if there's enough length for zigzag
 
@@ -1157,12 +1160,12 @@ class SectionViewDecorator(LevelDecorator):
 
         vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
         vec4 edge = p1w - p0w, dir = normalize(edge);
-        vec4 gap = dir * TRIANGLE_L * .5;
+        vec4 gap = dir * viewportDrawingScale * TRIANGLE_L * .5;
         vec4 side = vec4(cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy, 0, 0);
         vec4 p;
 
         vec4 head[CIRCLE_SEGS];
-        circle_head(CIRCLE_SIZE, head);
+        circle_head(viewportDrawingScale * CIRCLE_SIZE, head);
 
         vec4 head3[3];
 
@@ -1178,7 +1181,7 @@ class SectionViewDecorator(LevelDecorator):
         EndPrimitive();
 
         // start edge triangle
-        triangle_head(dir, -side, TRIANGLE_L, TRIANGLE_W, head3);
+        triangle_head(dir, -side, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, head3);
         p = p0w + head3[0];
         gl_Position = WIN2CLIP(p);
         EmitVertex();
@@ -1202,7 +1205,7 @@ class SectionViewDecorator(LevelDecorator):
         EndPrimitive();
 
         // end edge triangle
-        triangle_head(-dir, -side, TRIANGLE_L, TRIANGLE_W, head3);
+        triangle_head(-dir, -side, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, head3);
         p = p1w + head3[0];
         gl_Position = WIN2CLIP(p);
         EmitVertex();
