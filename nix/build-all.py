@@ -799,7 +799,14 @@ if "IfcOpenShell-Python" in targets:
 
     if USE_CURRENT_PYTHON_VERSION:
         python_info = sysconfig.get_paths()
-        compile_python_wrapper(platform.python_version(), python_info["purelib"], python_info["include"], sys.executable)
+        # Because of https://bugs.launchpad.net/ubuntu/+source/python3-defaults/+bug/1408092
+        # We must check if site-packages directory exists and fallback if not
+        site_packages = python_info["purelib"]
+        if not os.path.exists(site_packages):
+            import distutils
+            site_packages = next((path for path in distutils.sys.path if "dist-packages" in path))
+
+        compile_python_wrapper(platform.python_version(), site_packages, python_info["include"], sys.executable)
     else:
         for python_version in PYTHON_VERSIONS:
             python_library = run([bash, "-c", f"ls    {DEPS_DIR}/install/python-{python_version}/lib/libpython*.*"])
