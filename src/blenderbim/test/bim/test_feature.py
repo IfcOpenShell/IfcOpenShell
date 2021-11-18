@@ -51,8 +51,7 @@ def an_empty_ifc_project():
     IfcStore.purge()
     bpy.ops.wm.read_homefile(app_template="")
     if len(bpy.data.objects) > 0:
-        while bpy.data.objects:
-            bpy.data.objects.remove(bpy.data.objects[0])
+        bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
 
 
@@ -61,8 +60,7 @@ def an_empty_ifc_project():
     IfcStore.purge()
     bpy.ops.wm.read_homefile(app_template="")
     if len(bpy.data.objects) > 0:
-        while bpy.data.objects:
-            bpy.data.objects.remove(bpy.data.objects[0])
+        bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
     bpy.ops.bim.create_project()
 
