@@ -1,11 +1,12 @@
-from behave import step, use_step_matcher
+from behave import step
+from behave import use_step_matcher
 
 from bimtester.ifc import IfcStore
 from bimtester.util import assert_elements
 from bimtester.lang import _
 
 
-@step("All {ifc_class} elements have an {aproperty} property in the {pset} pset")
+@step('All "{ifc_class}" elements have an "{aproperty}" property in the "{pset}" pset')
 def step_impl(context, ifc_class, aproperty, pset):
     eleclass_has_property_in_pset(
         context,
