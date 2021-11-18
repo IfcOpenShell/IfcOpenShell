@@ -29,7 +29,7 @@ def get_containing_spatial_elements(element):
 
 @step('There is a datum element "{guid}" as an "{ifc_class}"')
 def step_impl(context, guid, ifc_class):
-    element = utils.assert_guid(IfcStore.file, guid)
+    element = util.assert_guid(IfcStore.file, guid)
     util.assert_type(element, ifc_class)
 
 
@@ -46,7 +46,7 @@ def step_impl(context, guid, easting, northing, elevation):
                 site = potential_sites[0]
             else:
                 assert False, _("The datum element does not belong to a geolocated site")
-        map_conversion = assert_pset(site, "EPset_MapConversion")
+        map_conversion = util.assert_pset(site, "EPset_MapConversion")
     else:
         map_conversion = IfcStore.file.by_type("IfcMapConversion")
         if map_conversion:
@@ -54,7 +54,7 @@ def step_impl(context, guid, easting, northing, elevation):
         else:
             assert False, _("No map conversion was found in the file")
 
-    element = utils.assert_guid(IfcStore.file, guid)
+    element = util.assert_guid(IfcStore.file, guid)
     if not element.ObjectPlacement:
         assert False, _("The element does not have an object placement: {}").format(element)
     m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
@@ -81,7 +81,7 @@ def step_impl(context, guid, easting, northing, elevation):
 
 @step('The element "{guid}" has a local X, Y, and Z coordinate of "{x}", "{y}", and "{z}" respectively')
 def step_impl(context, guid, x, y, z):
-    element = utils.assert_guid(IfcStore.file, guid)
+    element = util.assert_guid(IfcStore.file, guid)
     if not element.ObjectPlacement:
         assert False, _("The element does not have an object placement: {}").format(element)
     m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
