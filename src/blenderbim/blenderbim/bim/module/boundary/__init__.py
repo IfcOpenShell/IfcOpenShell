@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, operator
+from . import ui, operator, prop
 
 classes = (
     operator.LoadProjectSpaceBoundaries,
@@ -25,14 +25,19 @@ classes = (
     operator.LoadBoundary,
     operator.SelectProjectBoundaries,
     operator.ColourByRelatedBuildingElement,
+    operator.EnableEditingBoundary,
+    operator.DisableEditingBoundary,
+    operator.EditBoundaryAttributes,
     ui.BIM_PT_Boundary,
+    ui.BIM_PT_SpaceBoundaries,
     ui.BIM_PT_SceneBoundaries,
+    prop.BIMBoundaryProperties,
 )
 
 
 def register():
-    pass
+    bpy.types.Object.bim_boundary_properties = bpy.props.PointerProperty(type=prop.BIMBoundaryProperties)
 
 
 def unregister():
-    pass
+    del bpy.types.Object.bim_boundary_properties

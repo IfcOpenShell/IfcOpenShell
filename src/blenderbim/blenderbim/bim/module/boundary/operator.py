@@ -202,3 +202,64 @@ class ColourByRelatedBuildingElement(bpy.types.Operator):
     def commit(self, data):
         if data:
             data["area"].spaces[0].shading.color_type = "OBJECT"
+
+
+EDITABLE_ATTRIBUTES = {
+    "RelatingSpace": "relating_space",
+    "RelatedBuildingElement": "related_building_element",
+    "ParentBoundary": "parent_boundary",
+    "CorrespondingBoundary": "corresponding_boundary",
+}
+
+
+class EnableEditingBoundary(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_boundary"
+    bl_label = "Edit boundary relations"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bprops = context.active_object.bim_boundary_properties
+        bprops.is_editing = True
+        boundary = tool.Ifc.get_entity(context.active_object)
+        for ifc_attribute, blender_property in EDITABLE_ATTRIBUTES.items():
+            entity = getattr(boundary, ifc_attribute, None)
+            if not entity:
+                continue
+            obj = tool.Ifc.get_object(entity)
+            if entity and obj:
+                setattr(bprops, blender_property, obj)
+        return {"FINISHED"}
+
+
+class DisableEditingBoundary(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_boundary"
+    bl_label = "Disable editing boundary relations"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bprops = context.active_object.bim_boundary_properties
+        bprops.is_editing = False
+        for ifc_attribute, blender_property in EDITABLE_ATTRIBUTES.items():
+            setattr(bprops, blender_property, None)
+        return {"FINISHED"}
+
+
+class EditBoundaryAttributes(bpy.types.Operator):
+    bl_idname = "bim.edit_boundary_attributes"
+    bl_label = "Disable editing boundary relations"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        bprops = context.active_object.bim_boundary_properties
+        boundary = tool.Ifc.get_entity(context.active_object)
+        for ifc_attribute, blender_property in EDITABLE_ATTRIBUTES.items():
+            if not hasattr(boundary, ifc_attribute):
+                continue
+            obj = getattr(bprops, blender_property, None)
+            entity = tool.Ifc.get_entity(obj)
+            setattr(boundary, ifc_attribute, entity)
+        bpy.ops.bim.disable_editing_boundary()
+        return {"FINISHED"}

@@ -37,15 +37,80 @@ class BIM_PT_SceneBoundaries(Panel):
         return IfcStore.get_file()
 
     def draw(self, context):
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         row.operator("bim.load_project_space_boundaries")
         row.operator("bim.select_project_space_boundaries", text="", icon="RESTRICT_SELECT_OFF")
         row.operator("bim.colour_by_related_building_element", text="", icon="BRUSH_DATA")
 
 
 class BIM_PT_Boundary(Panel):
-    bl_label = "IFC Space Boundaries"
+    bl_label = "IFC Space Boundary"
     bl_idname = "BIM_PT_Boundary"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        props = context.active_object.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_element(props.ifc_definition_id):
+            return False
+        entity = IfcStore.get_file().by_id(props.ifc_definition_id)
+        return entity.is_a("IfcRelSpaceBoundary")
+
+    def draw(self, context):
+        props = context.active_object.BIMObjectProperties
+        ifc_file = tool.Ifc.get()
+        element = ifc_file.by_id(props.ifc_definition_id)
+        boundary = ifc_file.by_id(props.ifc_definition_id)
+        self.bprops = context.active_object.bim_boundary_properties
+        if self.bprops.is_editing:
+            row = self.layout.row(align=True)
+            row.operator("bim.edit_boundary_attributes", icon="CHECKMARK", text="Save Attributes")
+            row.operator("bim.disable_editing_boundary", icon="CANCEL", text="")
+            self.draw_relation_editor(boundary, "RelatingSpace", "relating_space")
+            self.draw_relation_editor(boundary, "RelatedBuildingElement", "related_building_element")
+            self.draw_relation_editor(boundary, "ParentBoundary", "parent_boundary")
+            self.draw_relation_editor(boundary, "CorrespondingBoundary", "corresponding_boundary")
+        else:
+            row = self.layout.row()
+            row.operator("bim.enable_editing_boundary", icon="GREASEPENCIL", text="Edit")
+            self.draw_relation_data(boundary, "RelatingSpace")
+            self.draw_relation_data(boundary, "RelatedBuildingElement")
+            self.draw_relation_data(boundary, "ParentBoundary")
+            self.draw_relation_data(boundary, "CorrespondingBoundary")
+            if hasattr(boundary, "InnerBoundaries"):
+                for i, inner_boundary in enumerate(getattr(boundary, "InnerBoundaries", ())):
+                    row = self.layout.row(align=True)
+                    row.label(text="InnerBoundaries")
+                    row.label(text=f"[{i}]")
+                    row.label(text=f"{inner_boundary.is_a()}/{inner_boundary.Name}")
+
+    def draw_relation_data(self, boundary, ifc_attribute: str):
+        row = self.layout.row(align=True)
+        if hasattr(boundary, ifc_attribute):
+            row.label(text=ifc_attribute)
+            entity = getattr(boundary, ifc_attribute)
+            if entity:
+                row.label(text=f"{entity.is_a()}/{entity.Name}")
+                op = row.operator("bim.select_global_id", text="", icon="TRACKER")
+                op.global_id = entity.GlobalId
+            else:
+                row.label(text="")
+
+    def draw_relation_editor(self, boundary, ifc_attribute: str, blender_property: str):
+        if hasattr(boundary, ifc_attribute):
+            row = self.layout.row(align=True)
+            row.prop(self.bprops, blender_property)
+
+
+class BIM_PT_SpaceBoundaries(Panel):
+    bl_label = "IFC Space Boundaries"
+    bl_idname = "BIM_PT_SpaceBoundaries"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -60,20 +125,23 @@ class BIM_PT_Boundary(Panel):
             return False
         if not IfcStore.get_element(props.ifc_definition_id):
             return False
-        if IfcStore.get_file().by_id(props.ifc_definition_id).is_a() not in ["IfcSpace", "IfcExternalSpatialElement"]:
-            return False
-        return True
+        valid_classes = ("IfcSpace", "IfcExternalSpatialElement")
+        entity = IfcStore.get_file().by_id(props.ifc_definition_id)
+        for ifc_class in valid_classes:
+            if entity.is_a(ifc_class):
+                return True
+        return False
 
     def draw(self, context):
-        self.oprops = context.active_object.BIMObjectProperties
+        self.props = context.active_object.BIMObjectProperties
+        self.ifc_file = tool.Ifc.get()
         row = self.layout.row()
         row.operator("bim.load_space_boundaries")
-        ifc_file = tool.Ifc.get()
         if not Data.is_loaded:
-            Data.load(ifc_file)
-        for boundary_id in Data.spaces.get(self.oprops.ifc_definition_id, []):
-            boundary = Data.boundaries[boundary_id]
-            building_element = ifc_file.by_id(boundary["RelatedBuildingElement"])
+            Data.load(self.ifc_file)
+        for boundary_id in Data.spaces.get(self.props.ifc_definition_id, []):
+            boundary_data = Data.boundaries[boundary_id]
+            building_element = self.ifc_file.by_id(boundary_data["RelatedBuildingElement"])
             row = self.layout.row()
             row.label(text=f"{boundary_id} > {building_element.is_a()}/{building_element.Name}", icon="GHOST_ENABLED")
             op = row.operator("bim.load_boundary", text="", icon="RESTRICT_SELECT_OFF")

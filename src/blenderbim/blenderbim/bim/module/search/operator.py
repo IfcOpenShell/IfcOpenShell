@@ -63,16 +63,13 @@ class SelectGlobalId(bpy.types.Operator):
     global_id: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        ifc_file = tool.Ifc.get()
         props = context.scene.BIMSearchProperties
         global_id = self.global_id or props.global_id
-        for obj in context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if element.GlobalId == global_id:
-                obj.select_set(True)
-                break
+        entity = ifc_file.by_guid(global_id)
+        obj = tool.Ifc.get_object(entity)
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
         return {"FINISHED"}
 
 
