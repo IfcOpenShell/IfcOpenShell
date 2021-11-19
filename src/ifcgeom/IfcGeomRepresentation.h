@@ -200,8 +200,6 @@ namespace IfcGeom {
 							std::map<std::pair<int,int>,int> edgecount;
 							std::vector<std::pair<int,int> > edges_temp;
 
-							const TColgp_Array1OfPnt& nodes = tri->Nodes();
-							const TColgp_Array1OfPnt2d& uvs = tri->UVNodes();
 							std::vector<gp_XYZ> coords;
 							BRepGProp_Face prop(face);
 							std::map<int,int> dict;
@@ -210,13 +208,13 @@ namespace IfcGeom {
                             const bool calculate_normals = !settings().get(IteratorSettings::WELD_VERTICES) &&
                                 !settings().get(IteratorSettings::NO_NORMALS);
 
-							for( int i = 1; i <= nodes.Length(); ++ i ) {
-								coords.push_back(nodes(i).Transformed(loc).XYZ());
+							for( int i = 1; i <= tri->NbNodes(); ++ i ) {
+								coords.push_back(tri->Node(i).Transformed(loc).XYZ());
 								trsf.Transforms(*coords.rbegin());
 								dict[i] = addVertex(surface_style_id, *coords.rbegin());
 					
 								if ( calculate_normals ) {
-									const gp_Pnt2d& uv = uvs(i);
+									const gp_Pnt2d& uv = tri->UVNode(i);
 									gp_Pnt p;
 									gp_Vec normal_direction;
 									prop.Normal(uv.X(),uv.Y(),p,normal_direction);
