@@ -113,7 +113,10 @@ def get_layers(ifc_file, element):
             if subelement.is_a("IfcShapeRepresentation"):
                 layers.extend(subelement.LayerAssignments or [])
             elif subelement.is_a("IfcGeometricRepresentationItem"):
-                layers.extend(subelement.LayerAssignment or [])
+                if ifc_file.schema == "IFC2X3":
+                    layers.extend(subelement.LayerAssignments or [])
+                else:
+                    layers.extend(subelement.LayerAssignment or [])
     return layers
 
 
