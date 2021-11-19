@@ -879,6 +879,8 @@ IfcUtil::ArgumentType TokenArgument::type() const {
 		return IfcUtil::Argument_INT;
 	} else if (TokenFunc::isBool(token)) {
 		return IfcUtil::Argument_BOOL;
+	} else if (TokenFunc::isLogical(token)) {
+		return IfcUtil::Argument_LOGICAL;
 	} else if (TokenFunc::isFloat(token)) {
 		return IfcUtil::Argument_DOUBLE;
 	} else if (TokenFunc::isString(token)) {
@@ -1106,6 +1108,30 @@ void IfcEntityInstanceData::load() const {
 	attributes_ = tmp_data;
 }
 
+namespace {
+	// @todo remove redundancy with python wrapper code (which is not identical due to
+	// different handling of enumerations)
+	IfcUtil::ArgumentType get_argument_type(const IfcParse::declaration* decl, size_t i) {
+		const IfcParse::parameter_type* pt = 0;
+		if (decl->as_entity()) {
+			pt = decl->as_entity()->attribute_by_index(i)->type_of_attribute();
+			if (decl->as_entity()->derived()[i]) {
+				return IfcUtil::Argument_DERIVED;
+			}
+		} else if (decl->as_type_declaration() && i == 0) {
+			pt = decl->as_type_declaration()->declared_type();
+		} else if (decl->as_enumeration_type() && i == 0) {
+			return IfcUtil::Argument_ENUMERATION;
+		}
+
+		if (pt == 0) {
+			return IfcUtil::Argument_UNKNOWN;
+		} else {
+			return IfcUtil::from_parameter_type(pt);
+		}
+	}
+}
+
 IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
 	file = 0;
 	type_ = e.type_;
@@ -1118,7 +1144,7 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
 
 	for (unsigned int i = 0; i < count; ++i) {
 		attributes_[i] = 0;
-		this->setArgument(i, e.getArgument(i));
+		this->setArgument(i, e.getArgument(i), get_argument_type(e.type(), i));
 	}
 }
 
@@ -1242,6 +1268,8 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 
 	if (attr_type == IfcUtil::Argument_UNKNOWN) {
 		attr_type = a->type();
+	} else if (a->isNull()) {
+		attr_type = IfcUtil::Argument_NULL;
 	}
 
 	IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
