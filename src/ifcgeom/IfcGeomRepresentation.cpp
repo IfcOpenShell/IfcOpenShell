@@ -148,12 +148,11 @@ namespace {
 				TopLoc_Location loc;
 				Handle(Poly_Triangulation) tri = BRep_Tool::Triangulation(face, loc);
 				if (!tri.IsNull()) {
-					const TColgp_Array1OfPnt& nodes = tri->Nodes();
 					std::vector<gp_XYZ> coords;
-					coords.reserve(nodes.Length());
+					coords.reserve(tri->NbNodes());
 
-					for (int i = 1; i <= nodes.Length(); ++i) {
-						coords.push_back(nodes(i).Transformed(loc).XYZ());
+					for (int i = 1; i <= tri->NbNodes(); ++i) {
+						coords.push_back(tri->Node(i).Transformed(loc).XYZ());
 					}
 
 					const Poly_Array1OfTriangle& triangles = tri->Triangles();
