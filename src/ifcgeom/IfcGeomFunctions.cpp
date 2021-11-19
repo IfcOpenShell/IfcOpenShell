@@ -154,6 +154,10 @@
 #include <ShapeAnalysis_Edge.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
 
+#if OCC_VERSION_HEX >= 0x70200
+#include <BOPAlgo_Alerts.hxx>
+#endif
+
 #include "../ifcparse/macros.h"
 #include "../ifcparse/IfcSIPrefix.h"
 #include "../ifcparse/IfcFile.h"
@@ -4438,6 +4442,15 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 		}
 	} else {
 		std::stringstream str;
+
+#if OCC_VERSION_HEX >= 0x70200
+		if (builder->HasError(STANDARD_TYPE(BOPAlgo_AlertBOPNotAllowed))) {
+			Logger::Error("Invalid operands using first operand");
+			result = a;
+			success = true;
+		}
+#endif
+
 #if OCC_VERSION_HEX >= 0x70000
 		builder->DumpErrors(str);
 #else
@@ -4457,7 +4470,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 			Logger::Notice("No longer attempting boolean operation with higher fuzziness");
 		}
 	}
-	return success;
+	return success && !result.IsNull();
 }
 
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
