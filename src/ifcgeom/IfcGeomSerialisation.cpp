@@ -688,10 +688,9 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(tesselate_)(const TopoDS_Shape& s
 		Handle(Poly_Triangulation) tri = BRep_Tool::Triangulation(face, loc);
 
 		if (!tri.IsNull()) {
-			const TColgp_Array1OfPnt& nodes = tri->Nodes();
 			std::vector<IfcSchema::IfcCartesianPoint*> vertices;
-			for (int i = 1; i <= nodes.Length(); ++i) {
-				gp_Pnt pnt = nodes(i).Transformed(loc);
+			for (int i = 1; i <= tri->NbNodes(); ++i) {
+				gp_Pnt pnt = tri->Node(i).Transformed(loc);
 				std::vector<double> xyz; xyz.push_back(pnt.X()); xyz.push_back(pnt.Y()); xyz.push_back(pnt.Z());
 				IfcSchema::IfcCartesianPoint* cpnt = new IfcSchema::IfcCartesianPoint(xyz);
 				vertices.push_back(cpnt);

@@ -3692,7 +3692,6 @@ bool IfcGeom::Kernel::triangulate_wire(const std::vector<TopoDS_Wire>& wires, To
 	Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
 
 	if (!tri.IsNull()) {
-		const TColgp_Array1OfPnt& nodes = tri->Nodes();
 
 		const Poly_Array1OfTriangle& triangles = tri->Triangles();
 		for (int i = 1; i <= triangles.Length(); ++i) {			
@@ -3708,7 +3707,7 @@ bool IfcGeom::Kernel::triangulate_wire(const std::vector<TopoDS_Wire>& wires, To
 				TopoDS_Vertex vs[2];
 
 				for (int k = 0; k < 2; ++k) {
-					const gp_Pnt& uv = nodes.Value(n123[(j + k) % 3]);
+					const gp_Pnt& uv = tri->Node(n123[(j + k) % 3]);
 					uvnodes[k] = std::make_pair(uv.X(), uv.Y());
 
 					auto it = mapping.find(uvnodes[k]);
