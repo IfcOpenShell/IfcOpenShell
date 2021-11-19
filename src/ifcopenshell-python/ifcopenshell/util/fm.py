@@ -114,6 +114,10 @@ def get_cobie_components(ifc_file):
 
 def get_fmhem_types(ifc_file):
     elements = []
+    if ifc_file.schema == "IFC2X3":
+        fmhem_classes = fmhem_classes_ifc2x3
+    else:
+        fmhem_classes = fmhem_classes_ifc4
     for ifc_class in fmhem_classes:
         try:
             if ifc_class == "IfcEnergyConversionDeviceType":
