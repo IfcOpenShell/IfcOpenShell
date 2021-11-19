@@ -250,6 +250,26 @@ class TestGetlayers(test.bootstrap.IFC4):
         assert subject.get_layers(self.file, element) == [layer]
 
 
+class TestGetlayers(test.bootstrap.IFC2X3):
+    def test_getting_the_layer_of_a_product_item(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        layer = ifcopenshell.api.run("layer.add_layer", self.file)
+        item = self.file.createIfcExtrudedAreaSolid()
+        representation = self.file.createIfcShapeRepresentation(Items=[item])
+        element.Representation = self.file.createIfcProductDefinitionShape(Representations=[representation])
+        ifcopenshell.api.run("layer.assign_layer", self.file, item=item, layer=layer)
+        assert subject.get_layers(self.file, element) == [layer]
+
+    def test_getting_the_layer_of_a_type_product_item(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        layer = ifcopenshell.api.run("layer.add_layer", self.file)
+        item = self.file.createIfcExtrudedAreaSolid()
+        representation = self.file.createIfcShapeRepresentation(Items=[item])
+        element.RepresentationMaps = [self.file.createIfcRepresentationMap(MappedRepresentation=representation)]
+        ifcopenshell.api.run("layer.assign_layer", self.file, item=item, layer=layer)
+        assert subject.get_layers(self.file, element) == [layer]
+
+
 class TestGetContainerIFC4(test.bootstrap.IFC4):
     def test_getting_the_spatial_container_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
