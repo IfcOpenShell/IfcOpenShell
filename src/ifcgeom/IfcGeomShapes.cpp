@@ -598,7 +598,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	}
 
 	if ( shape_type(operand1) == ST_SHAPELIST ) {
-		if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, false))) {
+		if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, true))) {
 			return false;
 		}
 	} else if ( shape_type(operand1) == ST_SHAPE ) {
@@ -697,7 +697,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	
 	bool valid_result;
 
-	if (s1.ShapeType() == TopAbs_COMPOUND) {
+	if (s1.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(s1).More() && TopoDS_Iterator(s1).Value().ShapeType() == TopAbs_SOLID) {
 		TopoDS_Compound C;
 		BRep_Builder B;
 		B.MakeCompound(C);
@@ -705,8 +705,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		valid_result = true;
 		for (; it.More(); it.Next()) {
 			TopoDS_Shape part;
-			valid_result = valid_result && boolean_operation(it.Value(), second_operand_shapes, occ_op, part);
-			B.Add(C, part);
+			if (boolean_operation(it.Value(), second_operand_shapes, occ_op, part)) {
+				B.Add(C, part);
+			} else {
+				valid_result = false;
+			}
 		}
 		shape = C;
 	} else {
