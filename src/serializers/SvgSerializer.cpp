@@ -1072,6 +1072,89 @@ void SvgSerializer::write(const geometry_data& data) {
 					}
 				}
 
+				TopoDS_Compound profile_edges;
+				if (profile_threshold_ != -1) {
+					TopTools_IndexedDataMapOfShapeListOfShape map;
+					TopExp::MapShapesAndAncestors(*compound_to_hlr, TopAbs_EDGE, TopAbs_FACE, map);
+					if (map.Extent() > profile_threshold_) {
+						BRep_Builder BB;
+						BB.MakeCompound(profile_edges);
+						compound_to_hlr = &profile_edges;
+
+						for (int i = 1; i <= map.Extent(); ++i) {
+							auto& edge = TopoDS::Edge(map.FindKey(i));
+							TopoDS_Vertex v0, v1;
+							TopExp::Vertices(edge, v0, v1);
+							auto pnt0 = BRep_Tool::Pnt(v0);
+							auto pnt1 = BRep_Tool::Pnt(v1);
+							
+							// Exclude edges that have both vertices behind plane;
+							if (infront_or_behind(projection_plane, pnt0) != -1 && infront_or_behind(projection_plane, pnt1) != -1) {
+								continue;
+							}
+							
+							double u0, u1;
+							auto crv = BRep_Tool::Curve(edge, u0, u1);
+							gp_Pnt _;
+							gp_Vec crvd1;
+							crv->D1((u0 + u1) / 2., _, crvd1);
+							if (crvd1.SquareMagnitude() < 1.e-5) {
+								continue;
+							}
+							crvd1.Normalize();
+							// Exclude edges parallel to view direction
+							if (std::fabs(crvd1.Dot(projection_direction)) > 0.99) {
+								continue;
+							}
+
+							auto faces = map.FindFromIndex(i);
+							
+							// Add non-manifold edges
+							bool add = faces.Extent() != 2;
+
+							// Add profile edges
+							if (!add) {
+								const auto& f0 = TopoDS::Face(faces.First());
+								const auto& f1 = TopoDS::Face(faces.Last());
+
+								auto s0 = BRep_Tool::Surface(f0);
+								auto s1 = BRep_Tool::Surface(f1);
+
+								// Only supported for planar faces at the moment
+								if (s0->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+									continue;
+								}
+								if (s1->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+									continue;
+								}
+
+								// Look up direction
+								auto p0 = Handle(Geom_Plane)::DownCast(s0);
+								auto p1 = Handle(Geom_Plane)::DownCast(s1);
+								auto d0 = p0->Axis().Direction();
+								auto d1 = p1->Axis().Direction();
+
+								auto dot0 = projection_direction.Dot(d0);
+								auto dot1 = projection_direction.Dot(d1);
+
+								if (std::fabs(dot0) < 1.e-5 || std::fabs(dot1)) {
+									// In case one face is co planar with the view
+									// direction, add the edge in between
+									add = true;
+								} else {
+									// Profile edges are adges where the sign of the
+									// dot product Vdir . Fnormal flips sign.
+									add = std::signbit(dot0) != std::signbit(dot1);
+								}								
+							}
+
+							if (add) {
+								BB.Add(profile_edges, edge);
+							}							
+						}
+					}
+				}
+
 				if (is_floor_plan_ && storey) {
 					if (storey_hlr.find(storey) == storey_hlr.end()) {
 						if (use_hlr_poly_) {

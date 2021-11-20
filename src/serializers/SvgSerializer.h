@@ -165,6 +165,8 @@ protected:
 	bool emit_building_storeys_;
 	bool no_css_;
 
+	int profile_threshold_;
+
 	IfcParse::IfcFile* file;
 	IfcUtil::IfcBaseEntity* storey_;
 	std::multimap<drawing_key, path_object, storey_sorter> paths;
@@ -212,6 +214,7 @@ public:
 		, polygonal_(false)
 		, emit_building_storeys_(true)
 		, no_css_(false)
+		, profile_threshold_(-1)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
@@ -324,6 +327,14 @@ public:
 
 	subtract_before_project getSubtractionSettings() const {
 		return subtraction_settings_;
+	}
+
+	void setProfileThreshold(int i) {
+		profile_threshold_ = i;
+	}
+
+	int getProfileThreshold() const {
+		return profile_threshold_;
 	}
 
 protected:
