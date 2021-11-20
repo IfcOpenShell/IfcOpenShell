@@ -312,7 +312,20 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
 
 if __name__ == "__main__":
     import sys
+    import time
     import argparse
+    
+    times = []
+    
+    def measure(task, fn):
+        t0 = time.time()
+        r = fn()
+        dt = time.time() - t0
+        times.append((task, dt))
+        return r
+        
+    def print_progress(*args):
+        print("\r", *args, " "*10, end="", flush=True)
 
     parser = argparse.ArgumentParser()
 
@@ -339,6 +352,12 @@ if __name__ == "__main__":
 
     settings = draw_settings(**args)
 
-    files = list(map(ifcopenshell.open, files))
-    open(output, "wb").write(main(settings, files, progress_function=lambda *args: print("\r", *args, " "*10, end="", flush=True)))
-    print("\r Done!", " " * 10)
+    files = measure("open files", lambda: list(map(ifcopenshell.open, files)))
+    result = measure("processing", lambda: main(settings, files, progress_function=print_progress))
+    open(output, "wb").write(result)
+    
+    print("\r Done!", " " * 20)
+    
+    for t, dt in times:
+        print(f"{t}: {dt}")
+
