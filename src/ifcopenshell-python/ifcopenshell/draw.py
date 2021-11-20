@@ -54,6 +54,8 @@ class draw_settings:
     include_entities: str = ""
     exclude_entities: str = "IfcOpeningElement"
     drawing_guid: str = ""
+    profile_threshold: int = -1
+    cells: bool = True
 
 
 def main(settings, files, iterators=None, merge_projection=True, progress_function=DO_NOTHING):
@@ -115,6 +117,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
     # sane default?
     sr.setAlwaysProject(True)
 
+    sr.setProfileThreshold(settings.profile_threshold)
     sr.setBoundingRectangle(settings.width, settings.height)
     sr.setScale(settings.scale)
     sr.setAutoElevation(settings.auto_elevation)
@@ -167,6 +170,9 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
 
     if not merge_projection:
         return svg_data_1
+    
+    if not settings.cells:
+        return svg_data_1.encode("ascii", "xmlcharrefreplace")
 
     # Parse SVG into vector of line segments
     #
