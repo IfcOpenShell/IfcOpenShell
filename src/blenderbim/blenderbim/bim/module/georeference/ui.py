@@ -44,11 +44,12 @@ class BIM_PT_gis(Panel):
 
         if props.is_editing:
             return self.draw_editable_ui(context)
-        self.draw_ui(context)
+        self.draw_ui(context, GeoreferenceData.data["georeferencing"])
 
     def draw_editable_ui(self, context):
         props = context.scene.BIMGeoreferenceProperties
         row = self.layout.row(align=True)
+        
         row.label(text="Projected CRS", icon="WORLD")
         row.operator("bim.edit_georeferencing", icon="CHECKMARK", text="")
         row.operator("bim.disable_editing_georeferencing", icon="CANCEL", text="")
@@ -78,7 +79,7 @@ class BIM_PT_gis(Panel):
             row.operator("bim.set_ifc_true_north", text="Set IFC North")
             row.operator("bim.set_blender_true_north", text="Set Blender North")
 
-    def draw_ui(self, context):
+    def draw_ui(self, context, georeferencing):
         props = context.scene.BIMGeoreferenceProperties
 
         if not GeoreferenceData.data["projected_crs"]:
@@ -125,7 +126,7 @@ class BIM_PT_gis(Panel):
         if GeoreferenceData.data["projected_crs"]:
             row = self.layout.row(align=True)
             row.label(text="Projected CRS", icon="WORLD")
-            row.operator("bim.enable_editing_georeferencing", icon="GREASEPENCIL", text="")
+            row.operator("bim.enable_editing_georeferencing", icon="GREASEPENCIL", text="").georeferencing = georeferencing["id"]
             row.operator("bim.remove_georeferencing", icon="X", text="")
 
         for key, value in GeoreferenceData.data["projected_crs"].items():

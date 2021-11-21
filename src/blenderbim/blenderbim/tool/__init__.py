@@ -22,6 +22,7 @@ from blenderbim.tool.brick import Brick
 from blenderbim.tool.collector import Collector
 from blenderbim.tool.context import Context
 from blenderbim.tool.geometry import Geometry
+from blenderbim.tool.georeference import Georeference
 from blenderbim.tool.ifc import Ifc
 from blenderbim.tool.material import Material
 from blenderbim.tool.misc import Misc

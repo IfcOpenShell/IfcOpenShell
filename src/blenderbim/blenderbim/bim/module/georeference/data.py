@@ -24,6 +24,7 @@ def refresh():
 class GeoreferenceData:
     is_loaded = False
     data = {
+        "georeferencing" : {},
         "map_conversion" : {},
         "projected_crs" : {},
         "true_north" : {},
@@ -36,10 +37,21 @@ class GeoreferenceData:
         if cls.file.schema == "IFC2X3":
             return
 
+        cls.data["georeferencing"] = cls.get_georeferencing()
         cls.data["map_conversion"] = cls.get_map_conversion()
         cls.data["projected_crs"] = cls.get_projected_crs()
         cls.data["true_north"] = cls.get_true_north()
         cls.is_loaded = True
+
+    @classmethod
+    def get_georeferencing(cls):
+        results = {}
+        for context in cls.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+            if not context.HasCoordinateOperation:
+                continue
+            map_conversion = context.HasCoordinateOperation[0]
+            results["id"] = map_conversion.id()
+        return results
 
     @classmethod
     def get_map_conversion(cls):

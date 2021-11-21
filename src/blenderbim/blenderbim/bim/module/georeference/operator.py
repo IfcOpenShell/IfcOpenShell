@@ -17,125 +17,50 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import json
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.attribute
 import ifcopenshell.api
 import blenderbim.bim.helper
+import blenderbim.bim.handler
+import blenderbim.core.georeference as core
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.georeference.data import GeoreferenceData
 from ifcopenshell.api.unit.data import Data as UnitData #TODO Connect new module data
 from math import radians, degrees, atan, tan, cos, sin
 
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
 
-class EnableEditingGeoreferencing(bpy.types.Operator):
+class EnableEditingGeoreferencing(bpy.types.Operator, Operator):
     bl_idname = "bim.enable_editing_georeferencing"
     bl_label = "Enable Editing Georeferencing"
     bl_options = {"REGISTER", "UNDO"}
+    georeferencing: bpy.props.IntProperty()
 
-    def execute(self, context):
-        self.file = IfcStore.get_file()
-        props = context.scene.BIMGeoreferenceProperties
-        self.props = props
+    def _execute(self, context):
+        core.enable_editing_georeferencing(tool.Georeference, georeferencing = tool.Ifc.get().by_id(self.georeferencing))
 
-        props.projected_crs.clear()
-
-        blenderbim.bim.helper.import_attributes(
-            "IfcProjectedCRS", props.projected_crs, GeoreferenceData.data["projected_crs"], self.import_projected_crs_attributes
-        )
-
-        props.map_conversion.clear()
-        blenderbim.bim.helper.import_attributes(
-            "IfcMapConversion", props.map_conversion, GeoreferenceData.data["map_conversion"], self.import_map_conversion_attributes
-        )
-
-        props.has_true_north = bool(GeoreferenceData.data["true_north"])
-        if GeoreferenceData.data["true_north"]:
-            props.true_north_abscissa = str(GeoreferenceData.data["true_north"][0])
-            props.true_north_ordinate = str(GeoreferenceData.data["true_north"][1])
-
-        props.is_editing = True
-        return {"FINISHED"}
-
-    def import_projected_crs_attributes(self, name, prop, data):
-        if name == "MapUnit":
-            new = self.props.projected_crs.add()
-            new.name = name
-            new.data_type = "enum"
-            new.is_null = data[name] is None
-            new.is_optional = True
-            new.enum_items = json.dumps(
-                {u["id"]: u["Name"] for u in UnitData.units.values() if u["UnitType"] == "LENGTHUNIT"}
-            )
-            if data["MapUnit"]:
-                new.enum_value = str(data["MapUnit"]["id"])
-            return True
-
-    def import_map_conversion_attributes(self, name, prop, data):
-        if name not in ["SourceCRS", "TargetCRS"]:
-            # Enforce a string data type to prevent data loss in single-precision Blender props
-            prop.data_type = "string"
-            prop.string_value = "" if prop.is_null else str(data[name])
-            return True
-
-
-class DisableEditingGeoreferencing(bpy.types.Operator):
+class DisableEditingGeoreferencing(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_editing_georeferencing"
     bl_label = "Disable Editing Georeferencing"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        props = context.scene.BIMGeoreferenceProperties
-        props.is_editing = False
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.disable_editing_georeferencing(tool.Georeference)
 
 
-class EditGeoreferencing(bpy.types.Operator):
+class EditGeoreferencing(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_georeferencing"
     bl_label = "Edit Georeferencing"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        props = context.scene.BIMGeoreferenceProperties
-
-        projected_crs = blenderbim.bim.helper.export_attributes(props.projected_crs, self.export_crs_attributes)
-        map_conversion = blenderbim.bim.helper.export_attributes(props.map_conversion, self.export_map_attributes)
-
-        true_north = None
-        if props.has_true_north:
-            try:
-                true_north = [float(props.true_north_abscissa), float(props.true_north_ordinate)]
-            except ValueError:
-                self.report({"ERROR"}, "True North Abscissa and Ordinate expect a number")
-
-        ifcopenshell.api.run(
-            "georeference.edit_georeferencing",
-            self.file,
-            **{
-                "map_conversion": map_conversion,
-                "projected_crs": projected_crs,
-                "true_north": true_north,
-            }
-        )
-        GeoreferenceData.load()
-        bpy.ops.bim.disable_editing_georeferencing()
-        return {"FINISHED"}
-
-    def export_map_attributes(self, attributes, prop):
-        if not prop.is_null and prop.data_type == "string":
-            # We store our floats as string to prevent single precision data loss
-            attributes[prop.name] = float(prop.string_value)
-            return True
-
-    def export_crs_attributes(self, attributes, prop):
-        if not prop.is_null and prop.name == "MapUnit":
-            attributes[prop.name] = self.file.by_id(int(prop.enum_value))
-            return True
+        core.edit_georeferencing(tool.Ifc, tool.Georeference)
 
 
 class SetBlenderGridNorth(bpy.types.Operator):
