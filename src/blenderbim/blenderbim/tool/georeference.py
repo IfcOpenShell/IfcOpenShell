@@ -119,6 +119,11 @@ class Georeference(blenderbim.core.tool.Georeference):
         ifcopenshell.api.run("georeference.add_georeferencing", file)
 
     @classmethod
+    def remove_georeferencing(cls):
+        file = IfcStore.get_file()
+        ifcopenshell.api.run("georeference.remove_georeferencing", file)
+
+    @classmethod
     def set_blender_grid_north(cls):
         bpy.context.scene.sun_pos_properties.north_offset = -radians(
             ifcopenshell.util.geolocation.xaxis2angle(

@@ -30,5 +30,8 @@ def edit_georeferencing(ifc, georeference):
 def add_georeferencing(georeference):
     georeference.add_georeferencing()
 
+def remove_georeferencing(georeference):
+    georeference.remove_georeferencing()
+
 def set_blender_grid_north(georeference):
     georeference.set_blender_grid_north()
