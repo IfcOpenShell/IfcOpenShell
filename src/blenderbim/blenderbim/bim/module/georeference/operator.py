@@ -80,14 +80,6 @@ class RemoveGeoreferencing(bpy.types.Operator, Operator):
     def _execute(self, context):
         core.remove_georeferencing(tool.Georeference)
 
-    # def execute(self, context):
-    #     return IfcStore.execute_ifc_operator(self, context)
-
-    # def _execute(self, context):
-    #     ifcopenshell.api.run("georeference.remove_georeferencing", IfcStore.get_file())
-    #     GeoreferenceData.load()
-    #     return {"FINISHED"}
-
 
 class SetBlenderGridNorth(bpy.types.Operator, Operator):
     bl_idname = "bim.set_blender_grid_north"
