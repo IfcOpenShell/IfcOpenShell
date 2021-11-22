@@ -121,6 +121,8 @@ class Georeference:
     def export_georeferencing_attributes(cls): pass
     def export_map_attributes(self, attributes, prop): pass
     def export_crs_attributes(self, attributes, prop): pass
+    def add_georeferencing(cls): pass
+    def set_blender_grid_north(cls): pass
 
 
 @interface

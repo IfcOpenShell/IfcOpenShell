@@ -7,6 +7,7 @@ import ifcopenshell
 import blenderbim.bim.helper
 from blenderbim.bim.module.georeference.data import GeoreferenceData
 from ifcopenshell.api.unit.data import Data as UnitData #TODO Connect new module data
+from math import radians, degrees, atan, tan, cos, sin
 
 class Georeference(blenderbim.core.tool.Georeference):
     @classmethod
@@ -111,5 +112,17 @@ class Georeference(blenderbim.core.tool.Georeference):
         if not prop.is_null and prop.name == "MapUnit":
             attributes[prop.name] = self.file.by_id(int(prop.enum_value))
             return True
-
     
+    @classmethod
+    def add_georeferencing(cls):
+        file = IfcStore.get_file()
+        ifcopenshell.api.run("georeference.add_georeferencing", file)
+
+    @classmethod
+    def set_blender_grid_north(cls):
+        bpy.context.scene.sun_pos_properties.north_offset = -radians(
+            ifcopenshell.util.geolocation.xaxis2angle(
+                float(bpy.context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").string_value),
+                float(bpy.context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").string_value),
+            )
+        )

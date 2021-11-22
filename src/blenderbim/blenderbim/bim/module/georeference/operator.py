@@ -63,19 +63,44 @@ class EditGeoreferencing(bpy.types.Operator, Operator):
         core.edit_georeferencing(tool.Ifc, tool.Georeference)
 
 
-class SetBlenderGridNorth(bpy.types.Operator):
+class AddGeoreferencing(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_georeferencing"
+    bl_label = "Add Georeferencing"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.add_georeferencing(tool.Georeference)
+
+    # def execute(self, context):
+    #     return IfcStore.execute_ifc_operator(self, context)
+
+    # def _execute(self, context):
+    #     ifcopenshell.api.run("georeference.add_georeferencing", IfcStore.get_file())
+    #     GeoreferenceData.load()
+    #     return {"FINISHED"}
+
+
+class RemoveGeoreferencing(bpy.types.Operator):
+    bl_idname = "bim.remove_georeferencing"
+    bl_label = "Remove Georeferencing"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        ifcopenshell.api.run("georeference.remove_georeferencing", IfcStore.get_file())
+        GeoreferenceData.load()
+        return {"FINISHED"}
+
+
+class SetBlenderGridNorth(bpy.types.Operator, Operator):
     bl_idname = "bim.set_blender_grid_north"
     bl_label = "Set Blender Grid North"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        context.scene.sun_pos_properties.north_offset = -radians(
-            ifcopenshell.util.geolocation.xaxis2angle(
-                float(context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").string_value),
-                float(context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").string_value),
-            )
-        )
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.set_blender_grid_north(tool.Georeference)
 
 
 class SetIfcGridNorth(bpy.types.Operator):
@@ -114,34 +139,6 @@ class SetIfcTrueNorth(bpy.types.Operator):
         y_angle = -context.scene.sun_pos_properties.north_offset + radians(90)
         context.scene.BIMGeoreferenceProperties.true_north_abscissa = str(cos(y_angle))
         context.scene.BIMGeoreferenceProperties.true_north_ordinate = str(sin(y_angle))
-        return {"FINISHED"}
-
-
-class RemoveGeoreferencing(bpy.types.Operator):
-    bl_idname = "bim.remove_georeferencing"
-    bl_label = "Remove Georeferencing"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
-        ifcopenshell.api.run("georeference.remove_georeferencing", IfcStore.get_file())
-        GeoreferenceData.load()
-        return {"FINISHED"}
-
-
-class AddGeoreferencing(bpy.types.Operator):
-    bl_idname = "bim.add_georeferencing"
-    bl_label = "Add Georeferencing"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
-        ifcopenshell.api.run("georeference.add_georeferencing", IfcStore.get_file())
-        GeoreferenceData.load()
         return {"FINISHED"}
 
 
