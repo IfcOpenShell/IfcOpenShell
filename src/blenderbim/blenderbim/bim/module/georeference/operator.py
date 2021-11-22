@@ -71,14 +71,6 @@ class AddGeoreferencing(bpy.types.Operator, Operator):
     def _execute(self, context):
         core.add_georeferencing(tool.Georeference)
 
-    # def execute(self, context):
-    #     return IfcStore.execute_ifc_operator(self, context)
-
-    # def _execute(self, context):
-    #     ifcopenshell.api.run("georeference.add_georeferencing", IfcStore.get_file())
-    #     GeoreferenceData.load()
-    #     return {"FINISHED"}
-
 
 class RemoveGeoreferencing(bpy.types.Operator):
     bl_idname = "bim.remove_georeferencing"
