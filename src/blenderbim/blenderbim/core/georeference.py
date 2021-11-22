@@ -24,6 +24,7 @@ def disable_editing_georeferencing(georeference):
     georeference.clear_georeferencing()
 
 def edit_georeferencing(ifc, georeference):
-    ifc.run("georeference.edit_georeferencing", georeferencing=georeference.get_georeferencing(), attributes=georeference.export_georeferencing_attributes())
+    georeference.export_georeferencing_attributes()
+    #ifc.run("georeference.edit_georeferencing", georeferencing=georeference.get_georeferencing(), attributes=georeference.export_georeferencing_attributes())
     disable_editing_georeferencing(georeference)
 

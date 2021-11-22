@@ -75,25 +75,17 @@ class Georeference(blenderbim.core.tool.Georeference):
     @classmethod
     def export_georeferencing_attributes(cls):
         props = bpy.context.scene.BIMGeoreferenceProperties
-
         file = IfcStore.get_file()
-        #attributes = {}
-        #attributes["projected_crs"] = blenderbim.bim.helper.export_attributes(props.projected_crs, cls.export_crs_attributes)
-        #attributes["map_conversion"] = blenderbim.bim.helper.export_attributes(props.map_conversion, cls.export_map_attributes)
-
-        #attributes["true_north"] = None
 
         projected_crs = blenderbim.bim.helper.export_attributes(props.projected_crs, cls.export_crs_attributes)
         map_conversion = blenderbim.bim.helper.export_attributes(props.map_conversion, cls.export_map_attributes)
 
         true_north = None
-
         if props.has_true_north:
             try:
                 true_north = [float(props.true_north_abscissa), float(props.true_north_ordinate)]
             except ValueError:
                 cls.report({"ERROR"}, "True North Abscissa and Ordinate expect a number")
-
 
         #TODO is it correct to run the api here??? Other modules runs api in core
         
@@ -106,8 +98,6 @@ class Georeference(blenderbim.core.tool.Georeference):
                 "true_north": true_north,
             }
         )
-
-        return {"FINISHED"}
 
     @classmethod
     def export_map_attributes(self, attributes, prop):
