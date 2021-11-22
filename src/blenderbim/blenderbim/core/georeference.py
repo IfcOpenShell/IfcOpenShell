@@ -23,7 +23,7 @@ def enable_editing_georeferencing(georeference, georeferencing = None):
 def disable_editing_georeferencing(georeference):
     georeference.clear_georeferencing()
 
-def edit_georeferencing(ifc, georeference):
+def edit_georeferencing(georeference):
     georeference.export_georeferencing_attributes()
     disable_editing_georeferencing(georeference)
 

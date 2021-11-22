@@ -60,7 +60,7 @@ class EditGeoreferencing(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_georeferencing(tool.Ifc, tool.Georeference)
+        core.edit_georeferencing(tool.Georeference)
 
 
 class AddGeoreferencing(bpy.types.Operator, Operator):
