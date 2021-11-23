@@ -1,7 +1,8 @@
 from behave import step, given, when, then, use_step_matcher
+
+from bimtester import util
 from bimtester.ifc import IfcStore
 from bimtester.table import TableModel
-from bimtester import util
 
 use_step_matcher("parse")
 

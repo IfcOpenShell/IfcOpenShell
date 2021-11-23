@@ -4,7 +4,9 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.geolocation
+
 from behave import step
+
 from bimtester import util
 from bimtester.ifc import IfcStore
 from bimtester.lang import _
