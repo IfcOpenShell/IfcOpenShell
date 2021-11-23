@@ -19,6 +19,8 @@
 import os
 import re
 import logging
+import operator
+import os
 import numpy as np
 from datetime import date
 
@@ -154,10 +156,10 @@ class ids:
             },
         )
 
-        with open(filepath, "w") as f:
-            f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-            f.write("<!-- IDS (INFORMATION DELIVERY SPECIFICATION) CREATED USING IFCOPENSHELL -->\n")
-            f.write(ids_str)
+        with open(filepath, "wb") as f:
+            f.write('<?xml version="1.0" encoding="UTF-8"?>\n'.encode("utf-8"))
+            f.write("<!-- IDS (INFORMATION DELIVERY SPECIFICATION) CREATED USING IFCOPENSHELL -->\n".encode("utf-8"))
+            f.write(ids_str.encode("utf-8"))
             f.close()
 
         # ids_schema.validate(filepath)
@@ -500,10 +502,13 @@ class entity(facet):
         :rtype: dict
         """
         fac_dict = {"name": parameter_asdict(self.name)}
-        try:
-            fac_dict["predefinedtype"] = parameter_asdict(self.predefinedtype)
-        except (RecursionError, UnboundLocalError) as e:
-            print(e)
+        if "predefinedtype" in self:
+            if self.predefinedtype:
+                fac_dict["predefinedtype"] = parameter_asdict(self.predefinedtype)
+        # try:
+        #     fac_dict["predefinedtype"] = parameter_asdict(self.predefinedtype)
+        # except (RecursionError, UnboundLocalError) as e:
+        #     print(e)
         return fac_dict
 
     def __call__(self, inst, logger):
@@ -852,6 +857,8 @@ def parameter_asdict(parameter):
             x = p.asdict()
             restrictions[list(x)[1]] = x[list(x)[1]]
         parameter_dict = {"xs:restriction": [restrictions]}
+    else:
+        raise Exception(str(parameter) + " was not able to be converted into 'Parameter_dict'")
     return parameter_dict
 
 
@@ -943,10 +950,7 @@ class restriction:
                     rest_dict["xs:enumeration"].append({"@value": option})
         elif self.type == "bounds":
             for option in self.options:
-                if "xs:option" not in rest_dict:
-                    rest_dict["xs:" + option] = [{"@value": option}]
-                else:
-                    rest_dict["xs:" + option].append({"@value": self.options[option], "@fixed": False})
+                rest_dict["xs:" + option] = [{"@value": self.options[option], "@fixed": False}]
         elif self.type == "pattern":
             if "xs:pattern" not in rest_dict:
                 rest_dict["xs:pattern"] = [{"@value": self.options}]
@@ -982,7 +986,7 @@ class restriction:
             ):
                 rest.options = options
             else:
-                Exception("Options were not properly defined.")
+                raise Exception("Options were not properly defined.")
             return rest
         else:
             raise Exception(
@@ -1076,6 +1080,64 @@ class SimpleHandler(logging.StreamHandler):
         self.statements.append(mymsg.msg)
 
 
+class SimpleHandler(logging.StreamHandler):
+    """Logging handler listing all cases in python list."""
+
+    def __init__(self, report_valid=False):
+        """Logging handler listing all cases in python list.
+
+        :param report_valid: True if you want to list all the compliant cases as well, defaults to False
+        :type report_valid: bool, optional
+        """
+        logging.StreamHandler.__init__(self)
+        self.statements = []
+        if report_valid:
+            self.setLevel(logging.INFO)
+        else:
+            self.setLevel(logging.ERROR)
+
+    def emit(self, mymsg):
+        """Triggered on each use of logging with the Simple handler enabled.
+
+        :param log_content: default logger message
+        :type log_content: string|dict
+        """
+        self.statements.append(mymsg.msg)
+
+
+class CsvHandler(logging.StreamHandler):
+    """Logging handler listing all cases in csv file."""
+
+    def __init__(self, filepath="./Report.csv", report_valid=False):
+        """Logging handler listing all cases in csv file.
+
+        :param report_valid: True if you want to list all the compliant cases as well, defaults to False
+        :type report_valid: bool, optional
+        """
+        import csv
+
+        logging.StreamHandler.__init__(self)
+        if report_valid:
+            self.setLevel(logging.INFO)
+        else:
+            self.setLevel(logging.ERROR)
+        self.file = open(filepath, "w", encoding="UTF8", newline="")
+        self.csvwriter = csv.writer(self.file)
+        self.csvwriter.writerow(["guid", "result", "sentence"])  # header
+
+    def emit(self, mymsg):
+        """Triggered on each use of logging with the Simple handler enabled.
+
+        :param log_content: default logger message
+        :type log_content: string|dict
+        """
+        # BUG  bytes-like object is required, not 'str'
+        self.csvwriter.writerow(mymsg.msg)
+
+    def flush(self):
+        self.file.close()
+
+
 class BcfHandler(logging.StreamHandler):
     """Logging handler for creation of BCF report files.
 
@@ -1093,7 +1155,7 @@ class BcfHandler(logging.StreamHandler):
         bcf_handler = BcfHandler(
             project_name="Default IDS Project",
             author="your@email.com",
-            filepath="example.bcf",
+            filepath=r".\example.bcf",
         )
         logger = logging.getLogger("IDS_Logger")
         logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -1124,55 +1186,55 @@ class BcfHandler(logging.StreamHandler):
         topic.title = log_content.msg["sentence"].split(".\n")[1]
         topic.description = log_content.msg["sentence"].split(".\n")[0]
         self.bcf.add_topic(topic)
-        try:  # Add viewpoint and link to ifc object
-            viewpoint = bcf.Viewpoint()
-            viewpoint.perspective_camera = bcf.PerspectiveCamera()
-            ifc_elem = log_content.msg["ifc_element"]
-            # ifc_elem = ifc_file.by_guid(log_content.msg["guid"])
-            target_position = np.array(ifcopenshell.util.placement.get_local_placement(ifc_elem.ObjectPlacement))
-            target_position = target_position[:, 3][0:3]
-            camera_position = target_position + np.array((5, 5, 5))
-            viewpoint.perspective_camera.camera_view_point.x = camera_position[0]
-            viewpoint.perspective_camera.camera_view_point.y = camera_position[1]
-            viewpoint.perspective_camera.camera_view_point.z = camera_position[2]
-            camera_direction = camera_position - target_position
-            camera_direction = camera_direction / np.linalg.norm(camera_direction)
-            camera_right = np.cross(np.array([0.0, 0.0, 1.0]), camera_direction)
-            camera_right = camera_right / np.linalg.norm(camera_right)
-            camera_up = np.cross(camera_direction, camera_right)
-            camera_up = camera_up / np.linalg.norm(camera_up)
-            rotation_transform = np.zeros((4, 4))
-            rotation_transform[0, :3] = camera_right
-            rotation_transform[1, :3] = camera_up
-            rotation_transform[2, :3] = camera_direction
-            rotation_transform[-1, -1] = 1
-            translation_transform = np.eye(4)
-            translation_transform[:3, -1] = -camera_position
-            look_at_transform = np.matmul(rotation_transform, translation_transform)
-            mat = np.linalg.inv(look_at_transform)
-            viewpoint.perspective_camera.camera_direction.x = mat[0][2] * -1
-            viewpoint.perspective_camera.camera_direction.y = mat[1][2] * -1
-            viewpoint.perspective_camera.camera_direction.z = mat[2][2] * -1
-            viewpoint.perspective_camera.camera_up_vector.x = mat[0][1]
-            viewpoint.perspective_camera.camera_up_vector.y = mat[1][1]
-            viewpoint.perspective_camera.camera_up_vector.z = mat[2][1]
-            viewpoint.components = bcf.Components()
-            c = bcf.Component()
-            c.ifc_guid = log_content.msg["guid"]
-            viewpoint.components.selection.append(c)
-            viewpoint.components.visibility = bcf.ComponentVisibility()
-            viewpoint.components.visibility.default_visibility = True
-            viewpoint.snapshot = None
-            self.bcf.add_viewpoint(topic, viewpoint)
-        except:
-            pass
+        # try:  # Add viewpoint and link to ifc object
+        viewpoint = bcf.Viewpoint()
+        viewpoint.perspective_camera = bcf.PerspectiveCamera()
+        ifc_elem = log_content.msg["ifc_element"]
+        # ifc_elem = ifc_file.by_guid(log_content.msg["guid"])
+        target_position = np.array(ifcopenshell.util.placement.get_local_placement(ifc_elem.ObjectPlacement))
+        target_position = target_position[:, 3][0:3]
+        camera_position = target_position + np.array((5, 5, 5))
+        viewpoint.perspective_camera.camera_view_point.x = camera_position[0]
+        viewpoint.perspective_camera.camera_view_point.y = camera_position[1]
+        viewpoint.perspective_camera.camera_view_point.z = camera_position[2]
+        camera_direction = camera_position - target_position
+        camera_direction = camera_direction / np.linalg.norm(camera_direction)
+        camera_right = np.cross(np.array([0.0, 0.0, 1.0]), camera_direction)
+        camera_right = camera_right / np.linalg.norm(camera_right)
+        camera_up = np.cross(camera_direction, camera_right)
+        camera_up = camera_up / np.linalg.norm(camera_up)
+        rotation_transform = np.zeros((4, 4))
+        rotation_transform[0, :3] = camera_right
+        rotation_transform[1, :3] = camera_up
+        rotation_transform[2, :3] = camera_direction
+        rotation_transform[-1, -1] = 1
+        translation_transform = np.eye(4)
+        translation_transform[:3, -1] = -camera_position
+        look_at_transform = np.matmul(rotation_transform, translation_transform)
+        mat = np.linalg.inv(look_at_transform)
+        viewpoint.perspective_camera.camera_direction.x = mat[0][2] * -1
+        viewpoint.perspective_camera.camera_direction.y = mat[1][2] * -1
+        viewpoint.perspective_camera.camera_direction.z = mat[2][2] * -1
+        viewpoint.perspective_camera.camera_up_vector.x = mat[0][1]
+        viewpoint.perspective_camera.camera_up_vector.y = mat[1][1]
+        viewpoint.perspective_camera.camera_up_vector.z = mat[2][1]
+        viewpoint.components = bcf.Components()
+        c = bcf.Component()
+        c.ifc_guid = log_content.msg["guid"]
+        viewpoint.components.selection.append(c)
+        viewpoint.components.visibility = bcf.ComponentVisibility()
+        viewpoint.components.visibility.default_visibility = True
+        viewpoint.snapshot = None
+        self.bcf.add_viewpoint(topic, viewpoint)
+        # except:
+        #     pass
 
     def flush(self):
         """Saves the BCF report to file. Triggered at the end of the validation process."""
         if not self.filepath:
-            self.filepath = os.getcwd() + r"\IDS_report.bcfzip"
+            self.filepath = os.getcwd() + r"\IDS_report.bcf"
         if not (self.filepath.endswith(".bcf") or self.filepath.endswith(".bcfzip")):
-            self.filepath = self.filepath + r"\IDS_report.bcfzip"
+            self.filepath = self.filepath + r"\IDS_report.bcf"
         self.bcf.save_project(self.filepath)
 
 
