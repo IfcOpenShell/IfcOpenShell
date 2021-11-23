@@ -8,7 +8,19 @@ import ifcopenshell
 from ifcopenshell import ids
 
 
+TEST_PATH = os.path.join(tempfile.gettempdir(), "test.ifc")
+IFC_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IFC/", "IFC4_Wall_3_with_properties.ifc")
+IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_all_fields.xml")
 
+logger = logging.getLogger("IDS_Logger")
+# logging.basicConfig(level=logging.INFO, format="%(message)s")
+# logging.basicConfig(filename=os.path.join(os.path.dirname(__file__), "log.txt"), level=logging.INFO, format="%(message)s")
+
+file = open(os.path.join(tempfile.gettempdir(), "test.ifc"), "w")
+file.write(IFC_URL)
+file.close()
+ifc_file = ifcopenshell.open(IFC_URL)
+os.remove(os.path.join(tempfile.gettempdir(), "test.ifc"))
 
 class TestIdsParsing(unittest.TestCase):
 
@@ -194,7 +206,6 @@ class TestIdsAuthoring(unittest.TestCase):
         i = ids.ids()
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
-        # r = ids.restriction.create(options="^(Wanddurchbruch.*|Deckendurchbruch.*)", type="pattern", base="string")
         r = ids.restriction.create(options="(Wanddurchbruch|Deckendurchbruch).*", type="pattern", base="string")
         p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
         i.specifications[0].add_requirement(p)
@@ -202,36 +213,46 @@ class TestIdsAuthoring(unittest.TestCase):
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "Deckendurchbruch")
         self.assertNotEqual(i.specifications[0].requirements.terms[0].value, "Deeckendurchbruch")
 
+    def test_create_restrictions_pattern_utf(self):
+        i = ids.ids()
+        i.specifications.append(ids.specification(name="Test_Specification"))
+        i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
+        r = ids.restriction.create(options="èêóòâôæøåążźćęóʑʒʓʔʕʗʘʙʚʛʜʝʞ", type="pattern", base="string")
+        p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
+        i.specifications[0].add_requirement(p)
+        self.assertEqual(i.specifications[0].requirements.terms[0].value, "èêóòâôæøåążźćęóʑʒʓʔʕʗʘʙʚʛʜʝʞ")
+
     """ Saving created IDS to IDS.xml """
 
-
-    # def test_created_ids_to_xml(self):
-    #     i = ids.ids()
-    #     i.specifications.append(ids.specification(name="Test_Specification"))
-    #     e = ids.entity.create(name="Test_Name", predefinedtype="Test_PredefinedType")
-    #     c = ids.classification.create(location="any", value="Test_Value", system="Test_System")
-    #     m = ids.material.create(location="any", value="Test_Value")
-    #     re = ids.restriction.create(options=["testA", "testB"], type="enumeration", base="string")
-    #     rb = ids.restriction.create(options={"minInclusive": 0, "maxExclusive": 10}, type="bounds", base="integer")
-    #     rp = ids.restriction.create(options="[A-Z]{2,4}", type="pattern", base="string")
-    #     p1 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=re)
-    #     p2 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=rb)
-    #     p3 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=rp)
-    #     p4 = ids.property.create(
-    #         location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=[re, rb, rp]
-    #     )
-    #     i.specifications[0].add_applicability(e)
-    #     i.specifications[0].add_applicability(m)
-    #     i.specifications[0].add_requirement(c)
-    #     i.specifications[0].add_requirement(p1)
-    #     i.specifications[0].add_requirement(p2)
-    #     i.specifications[0].add_requirement(p3)
-    #     i.specifications[0].add_requirement(p4)
-    #     fn = "TEST_FILE.xml"
-    #     result = i.to_xml(fn)
-    #     os.remove(fn)
-    #     self.assertTrue(result)
-
+    def test_created_ids_to_xml(self):
+        i = ids.ids()
+        i.specifications.append(ids.specification(name="Test_Specification"))
+        e = ids.entity.create(name="Test_Name", predefinedtype="Test_PredefinedType")
+        c = ids.classification.create(location="any", value="Test_Value", system="Test_System")
+        m = ids.material.create(location="any", value="Test_Value")
+        re = ids.restriction.create(options=["testA", "testB"], type="enumeration", base="string")
+        rb = ids.restriction.create(options={"minInclusive": 0, "maxExclusive": 10}, type="bounds", base="integer")
+        rp1 = ids.restriction.create(options="[A-Z]{2,4}", type="pattern", base="string")
+        rp2 = ids.restriction.create(options="èêóòâôæøåążźćęóʑʒʓʔʕʗʘʙʚʛʜʝʞ", type="pattern", base="string")
+        p1 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=re)
+        p2 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=rb)
+        p3 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=rp1)
+        p4 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=rp2)
+        p5 = ids.property.create(
+            location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=[re, rb, rp1]
+        )
+        i.specifications[0].add_applicability(e)
+        i.specifications[0].add_applicability(m)
+        i.specifications[0].add_requirement(c)
+        i.specifications[0].add_requirement(p1)
+        #TODO i.specifications[0].add_requirement(p2)
+        i.specifications[0].add_requirement(p3)
+        i.specifications[0].add_requirement(p4)
+        #TODO i.specifications[0].add_requirement(p5)
+        fn = "TEST_FILE.xml"
+        result = i.to_xml(fn)
+        os.remove(fn)
+        self.assertTrue(result)
     
     """ IDS information """
 
@@ -250,13 +271,39 @@ class TestIdsAuthoring(unittest.TestCase):
 
 
 class TestIfcValidation(unittest.TestCase):
-    def test_validate_simple(self):
-        # TODO
-        pass
 
-    def test_validate_all_facets(self):
-        # TODO
-        pass
+    def test_validate_simple(self):
+        #Same test as in reporting...
+        ids_file = ids.ids.open(IDS_URL)
+        report = ids.SimpleHandler()
+        logger.addHandler(report)
+        ids_file.validate(ifc_file, logger)
+        self.assertEqual(len(report.statements), 5)
+
+    # def test_validate_all_facets(self):
+    #     #Those are true: 
+    #     p1 = ids.property.create(location="any", propertyset="MySet", name="Param1", value="banan")
+    #     p2 = ids.property.create(location="any", propertyset="MySet", name="Param2", value=120.0)
+    #     # p3 = ids.property.create(location="any", propertyset="Pset_WallCommon", name="LoadBearing", value=False)
+    #     # #Those are false:
+    #     # p4 = ids.property.create(location="any", propertyset="MySet", name="Param1", value="orange")
+    #     # p5 = ids.property.create(location="any", propertyset="MySet", name="Param2", value=123.4)
+    #     # p6 = ids.property.create(location="any", propertyset="Pset_WallCommon", name="LoadBearing", value=True)
+        
+    #     i = ids.ids()
+    #     i.specifications.append(ids.specification(name="Test_Specification"))
+    #     i.specifications[0].add_applicability(p1)
+    #     i.specifications[0].add_requirement(p2)
+    #     # i.specifications[0].add_requirement(p2)
+    #     # i.specifications[0].add_requirement(p3)
+    #     # i.specifications[0].add_requirement(p4)
+    #     # i.specifications[0].add_requirement(p5)
+    #     # i.specifications[0].add_requirement(p6)
+
+    #     report = ids.SimpleHandler()
+    #     logger.addHandler(report)
+    #     i.validate(ifc_file, logger)
+    #     self.assertEqual(len(report.statements), 3) #three should fail
 
     """ Validating IDS files with restrictions """
 
@@ -289,39 +336,25 @@ class TestIfcValidation(unittest.TestCase):
     #     # self.assertTrue(   )
 
 
-# class TestIdsReporting(unittest.TestCase):
+class TestIdsReporting(unittest.TestCase):
 
-#     TEST_PATH = os.path.join(os.path.dirname(__file__), "test.ifc")
-#     IFC_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IFC/", "IFC4_Wall_3_with_properties.ifc")
-#     IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_all_fields.xml")
-    
-#     logger = logging.getLogger("IDS_Logger")
-#     # logging.basicConfig(level=logging.INFO, format="%(message)s")
-#     # logging.basicConfig(filename=os.path.join(os.path.dirname(__file__), "log.txt"), level=logging.INFO, format="%(message)s")
+    def test_simple_report(self):
+        #Same test as in validation...
+        ids_file = ids.ids.open(IDS_URL)
+        report = ids.SimpleHandler()
+        logger.addHandler(report)
+        ids_file.validate(ifc_file, logger)
+        self.assertEqual(len(report.statements), 5)
 
-#     content = IFC_URL
-#     file = open(TEST_PATH, "w")
-#     file.write(content)
-#     file.close()
-#     ifc_file = ifcopenshell.open(TEST_PATH)
-#     os.remove(TEST_PATH)
-
-#     def test_simple_report(self):
-#         ids_file = ids.ids.open(self.IDS_URL)
-#         report = ids.SimpleHandler()
-#         self.logger.addHandler(report)
-#         ids_file.validate(self.ifc_file, self.logger)
-#         self.assertEqual(len(report.statements), 5)
-
-#     def test_bcf_report(self):
-#         ids_file = ids.ids.open(self.IDS_URL)
-#         fn = os.path.join(tempfile.gettempdir(), "test.bcf")
-#         bcf_handler = ids.BcfHandler(project_name="Default IDS Project", author="your@email.com", filepath=fn)
-#         self.logger.addHandler(bcf_handler)
-#         ids_file.validate(self.ifc_file, self.logger)
-#         my_bcfxml = bcfxml.load(fn)
-#         topics = my_bcfxml.get_topics()
-#         self.assertEqual(len(topics), 5)
+    def test_bcf_report(self):
+        ids_file = ids.ids.open(IDS_URL)
+        fn = os.path.join(tempfile.gettempdir(), "test.bcf")
+        bcf_handler = ids.BcfHandler(project_name="Default IDS Project", author="your@email.com", filepath=fn)
+        logger.addHandler(bcf_handler)
+        ids_file.validate(ifc_file, logger)
+        my_bcfxml = bcfxml.load(fn)
+        topics = my_bcfxml.get_topics()
+        self.assertEqual(len(topics), 5)
 
 
 if __name__ == "__main__":
