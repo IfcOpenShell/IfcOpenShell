@@ -1,7 +1,4 @@
 from behave import step
-from behave import use_step_matcher
-
-use_step_matcher("parse")
 
 
 @step('Alle "{ifc_class}" Bauteile haben das Attribut "{aproperty}" im PSet "{pset}"')

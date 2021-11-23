@@ -1,8 +1,8 @@
 from behave import step
 from behave import use_step_matcher
 
+from bimtester import util
 from bimtester.ifc import IfcStore
-from bimtester.util import assert_elements
 from bimtester.lang import _
 
 
@@ -78,7 +78,7 @@ def eleclass_has_property_in_pset(
 
     context.elemcount = len(elements)
     context.falsecount = len(context.falseelems)
-    assert_elements(
+    util.assert_elements(
         ifc_class,
         context.elemcount,
         context.falsecount,
