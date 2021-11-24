@@ -124,6 +124,30 @@ class TestEditPset(test.bootstrap.IFC4):
         assert pset.HasProperties[0].NominalValue.is_a("IfcContextDependentMeasure")
         assert pset.HasProperties[0].NominalValue.wrappedValue == 34
 
+    def test_editing_properties_with_an_explicit_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            self.file,
+            pset=pset,
+            properties={
+                "MyCustom": self.file.createIfcLabel("True"),
+            },
+        )
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            self.file,
+            pset=pset,
+            properties={
+                "MyCustom": self.file.createIfcBoolean(True),
+            },
+        )
+        pset = element.IsDefinedBy[0].RelatingPropertyDefinition
+        assert pset.HasProperties[0].Name == "MyCustom"
+        assert pset.HasProperties[0].NominalValue.is_a("IfcBoolean")
+        assert pset.HasProperties[0].NominalValue.wrappedValue is True
+
     def test_editing_properties_of_non_rooted_elements(self):
         element = self.file.createIfcMaterial()
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")

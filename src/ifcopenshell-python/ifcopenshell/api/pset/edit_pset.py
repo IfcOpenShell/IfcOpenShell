@@ -38,6 +38,8 @@ class Usecase:
         value = self.settings["properties"][prop.Name]
         if value is None:
             prop.NominalValue = None
+        elif isinstance(value, ifcopenshell.entity_instance):
+            prop.NominalValue = value
         else:
             primary_measure_type = self.get_primary_measure_type(prop.Name, old_value=prop.NominalValue, new_value=value)
             prop.NominalValue = self.file.create_entity(primary_measure_type, value)
