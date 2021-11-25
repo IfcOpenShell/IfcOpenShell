@@ -687,6 +687,14 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		ifcopenshell_log_stream.str("");
 		return log;
 	}
+	void turn_on_detailed_logging() {
+		Logger::SetOutput(&std::cout, &std::cout);
+		Logger::Verbosity(Logger::LOG_DEBUG);
+	}
+	void turn_off_detailed_logging() {
+		Logger::SetOutput(0, &ifcopenshell_log_stream);
+		Logger::Verbosity(Logger::LOG_WARNING);
+	}
 %}
 
 %{
