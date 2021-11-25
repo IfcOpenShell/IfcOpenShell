@@ -288,6 +288,10 @@ namespace IfcGeom {
 		size_t processed_ = 0;
 
 		void process_finished_rep(geometry_conversion_task* rep) {
+			if (rep->elements.empty()) {
+				return;
+			}
+
 			std::lock_guard<std::mutex> lk(element_ready_mutex_);
 
 			all_processed_elements_.insert(all_processed_elements_.end(), rep->elements.begin(), rep->elements.end());
