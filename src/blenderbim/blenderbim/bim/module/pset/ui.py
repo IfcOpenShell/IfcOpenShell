@@ -375,3 +375,92 @@ class BIM_PT_work_schedule_psets(Panel):
 
         for pset in WorkSchedulePsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "WorkSchedule")
+
+
+class BIM_PT_BulkPropertyEditor(Panel):
+    bl_label = "IFC Bulk Property Editor"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
+
+    def draw(self, context):
+        pass
+    
+
+class BIM_PT_RenameParameters(Panel):
+    bl_label = "Rename all building elements"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_BulkPropertyEditor"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_order = 0
+    
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.PropertiesToRename
+
+        if props:          
+            for index, property in enumerate(props):
+                row = layout.row()
+                row.prop(property, "pset_name", text="")
+                row.prop(property, "existing_property_name", text="")
+                row.prop(property, "new_property_name", text="")
+                op = row.operator("bim.remove_property_to_edit",icon="PANEL_CLOSE", text="")
+                op.index = index
+                op.type = "properties_to_map"
+                
+        row = layout.row()
+        row.label()
+        op = row.operator("bim.add_property_to_edit", icon="ADD",text="")
+        op.type = "PropertiesToRename"
+        
+        if props:  
+            row = layout.row()
+            clear = row.operator("bim.clear_list")
+            clear.type = "PropertiesToRename"
+            row.operator("bim.rename_parameters")
+
+
+class BIM_PT_AddPropertiesOrEditValues(Panel):
+    """Creates a Panel in the Object properties window"""
+    bl_label = "Add/Edit Custom Properties and Values (to selected objects)"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_BulkPropertyEditor"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_order = 1
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.PropertiesToAddOrEdit 
+        
+        if props:
+            for index, property in enumerate(props):
+                    row = layout.row()
+                    row.prop(property, "pset_name", text="")
+                    row.prop(property, "property_name", text="")
+                    if property.value_type == "String":
+                        row.prop(property, "string_value", text="")
+                    elif property.value_type == "Boolean":
+                        row.prop(property, "bool_value", text="")
+                    elif property.value_type == "Integer":
+                        row.prop(property, "int_value", text="")
+                    elif property.value_type == "Number":
+                        row.prop(property, "float_value", text="")
+                    row.prop(property, "value_type", text="")
+                    op = row.operator("bim.remove_property_to_edit",icon="PANEL_CLOSE", text="")
+                    op.index = index
+                    op.type = "PropertiesToAddOrEdit"
+        
+        row = layout.row()
+        row.label()
+        op = row.operator("bim.add_property_to_edit", icon="ADD",text="")
+        op.type = "PropertiesToAddOrEdit"
+        
+        if props:
+            row = layout.row()
+            clear = row.operator("bim.clear_list")
+            clear.type = "PropertiesToAddOrEdit"
+            op = row.operator("bim.add_edit_custom_property",icon="ADD", text="Apply Changes")
