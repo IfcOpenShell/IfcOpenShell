@@ -217,7 +217,7 @@ int main(int argc, char** argv) {
 	generic_options.add_options()
 		("help,h", "display usage information")
 		("version", "display version information")
-		("verbose,v", po::value(&vcounter)->zero_tokens(), "more verbose log messages")
+		("verbose,v", po::value(&vcounter)->zero_tokens(), "more verbose log messages. Use twice (-vv) for debugging level.")
 		("quiet,q", "less status and progress output")
 #ifdef WITH_HDF5
 		("cache", "cache geometry creation. Use --cache-file to specify cache file path.")
