@@ -89,6 +89,8 @@ class BIM_PT_Boundary(Panel):
                     row.label(text="InnerBoundaries")
                     row.label(text=f"[{i}]")
                     row.label(text=f"{inner_boundary.is_a()}/{inner_boundary.Name}")
+        row = self.layout.row()
+        row.operator("bim.update_boundary_geometry")
 
     def draw_relation_data(self, boundary, ifc_attribute: str):
         row = self.layout.row(align=True)
