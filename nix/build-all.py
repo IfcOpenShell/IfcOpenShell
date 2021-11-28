@@ -664,13 +664,12 @@ if "cgal" in targets:
 cecho("Building IfcOpenShell:", GREEN)
 
 IFCOS_DIR = os.path.join(DEPS_DIR, "build", "ifcopenshell")
-if os.path.exists(IFCOS_DIR):
-    shutil.rmtree(IFCOS_DIR)
-os.makedirs(IFCOS_DIR)
-
+if os.environ.get("NO_CLEAN", "").lower() not in {"1", "on", "true"}:
+    if os.path.exists(IFCOS_DIR):
+        shutil.rmtree(IFCOS_DIR)
+os.makedirs(IFCOS_DIR, exist_ok=True)
 executables_dir = os.path.join(IFCOS_DIR, "executables")
-if not os.path.exists(executables_dir):
-    os.makedirs(executables_dir)
+os.makedirs(executables_dir, exist_ok=True)
 
 logger.info("\rConfiguring executables...")
 
