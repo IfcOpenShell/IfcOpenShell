@@ -58,13 +58,38 @@ HdfSerializer::HdfSerializer(const std::string& hdf_filename, const SerializerSe
 	, settings_(settings)
 {
 	H5E_auto2_t fn = &print_stack;
-	H5::Exception::setAutoPrint(fn, nullptr);
+	// H5::Exception::setAutoPrint(fn, nullptr);
+	
+	/*
+	static std::array<std::pair<unsigned, std::string>, 3> modes = {{
+		{ H5F_ACC_RDWR | H5F_ACC_CREAT, "Opened cache file read-write"},
+		{ H5F_ACC_RDONLY, "Open cache file read-only"}, 
+		{ H5F_ACC_TRUNC, "Truncated cache file"},
+	}};
+	
+	for (size_t i = 0; i < modes.size(); ++i) {
+		try {
+			std::cout << "Trying " << modes[i].second << std::endl;
+			file = H5::H5File(hdf_filename, modes[i].first);
+			std::cout << modes[i].second << std::endl;
+			break;
+		} catch (H5::Exception& e) {
+			if (i == modes.size() - 1) {
+				throw IfcParse::IfcException(e.getDetailMsg());
+			}
+		}
+	}
+	*/
+	
+	open_file:
 	
 	try {
-		file = H5::H5File(hdf_filename, read_only
-			? H5F_ACC_RDONLY
-			: (H5F_ACC_RDWR | H5F_ACC_CREAT));
+		file = H5::H5File(hdf_filename, read_only ? H5F_ACC_RDONLY : (H5F_ACC_RDWR | H5F_ACC_CREAT));
 	} catch (H5::Exception& e) {
+		if (!read_only) {
+			read_only = true;
+			goto open_file;
+		} 
 		throw IfcParse::IfcException(e.getDetailMsg());
 	}
 	
