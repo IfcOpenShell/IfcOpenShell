@@ -781,6 +781,7 @@ if "IfcOpenShell-Python" in targets:
                 "-DPYTHON_INCLUDE_DIR="      +python_include,
                 "-DSWIG_EXECUTABLE="         f"{DEPS_DIR}/install/swig/bin/swig",
                 "-DCMAKE_INSTALL_PREFIX="    f"{DEPS_DIR}/install/ifcopenshell/tmp",
+                "-DUSERSPACE_PYTHON_PREFIX=" +["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}]
             ], cmake_dir=CMAKE_DIR, cwd=python_dir)
 
         logger.info(f"\rBuilding python {python_version} wrapper...   ")
