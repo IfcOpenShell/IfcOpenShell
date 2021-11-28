@@ -91,7 +91,7 @@ private:
 	void write_style(surface_style_serialization& data, const IfcGeom::SurfaceStyle& s);
 
 public:
-	HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings, bool read_only=false);
+	HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings);
 	virtual ~HdfSerializer() {}
 	bool ready();
 	void writeHeader();
