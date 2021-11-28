@@ -799,7 +799,12 @@ if "IfcOpenShell-Python" in targets:
 
     if USE_CURRENT_PYTHON_VERSION:
         python_info = sysconfig.get_paths()
-        compile_python_wrapper(platform.python_version(), python_info["purelib"], python_info["include"], sys.executable)
+        python_lib = os.path.join(
+            sysconfig.get_config_var('LIBDIR'), 
+            sysconfig.get_config_var('multiarchsubdir').replace("/", ""), 
+            sysconfig.get_config_var("INSTSONAME")
+        )
+        compile_python_wrapper(platform.python_version(), python_lib, python_info["include"], sys.executable)
     else:
         for python_version in PYTHON_VERSIONS:
             python_library = run([bash, "-c", f"ls    {DEPS_DIR}/install/python-{python_version}/lib/libpython*.*"])
