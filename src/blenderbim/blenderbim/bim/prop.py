@@ -341,4 +341,4 @@ class BIMMeshProperties(PropertyGroup):
     is_parametric: BoolProperty(name="Is Parametric", default=False)
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
-    material_checksum: StringProperty(name="Material Checksum")
+    material_checksum: StringProperty(name="Material Checksum", default="[]")
