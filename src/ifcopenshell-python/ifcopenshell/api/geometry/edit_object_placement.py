@@ -35,7 +35,7 @@ class Usecase:
             if len(inverses) == 1:
                 self.settings["product"].ObjectPlacement = None
                 old_placement.PlacementRelTo = None
-                ifcopenshell.util.element.remove_deep(self.file, old_placement)
+                ifcopenshell.util.element.remove_deep2(self.file, old_placement)
             else:
                 for inverse in inverses:
                     if inverse.is_a("IfcLocalPlacement"):
