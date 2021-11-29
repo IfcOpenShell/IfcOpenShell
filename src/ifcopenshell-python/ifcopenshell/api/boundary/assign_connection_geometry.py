@@ -2,34 +2,32 @@ import ifcopenshell.util.unit
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, **kwargs):
         """location, axis and ref_direction defines the plane"""
         self.file = file
-        self.settings = {
-            "rel_space_boundary": None,
-            "outer_boundary": None,
-            "inner_boundaries": (),
-            "location": None,
-            "axis": None,
-            "ref_direction": None,
-            "unit_scale": None,
-        }
+        self.rel_space_boundary = None
+        self.outer_boundary = None
+        self.inner_boundaries = ()
+        self.location = None
+        self.axis = None
+        self.ref_direction = None
+        self.unit_scale = None
         self.ifc_vertices = []
-        for key, value in settings.items():
-            self.settings[key] = value
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def execute(self):
-        if self.settings["unit_scale"] is None:
-            self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        outer_boundary = self.create_polyline(self.settings["outer_boundary"])
-        inner_boundaries = tuple(self.create_polyline(boundary) for boundary in self.settings["inner_boundaries"])
-        plane = self.create_plane(self.settings["location"], self.settings["axis"], self.settings["ref_direction"])
+        if self.unit_scale is None:
+            self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        outer_boundary = self.create_polyline(self.outer_boundary)
+        inner_boundaries = tuple(self.create_polyline(boundary) for boundary in self.inner_boundaries)
+        plane = self.create_plane(self.location, self.axis, self.ref_direction)
         curve_bounded_plane = self.file.createIfcCurveBoundedPlane(plane, outer_boundary, inner_boundaries)
         connection_geometry = self.file.createIfcConnectionSurfaceGeometry(curve_bounded_plane)
-        self.settings["rel_space_boundary"].ConnectionGeometry = connection_geometry
+        self.rel_space_boundary.ConnectionGeometry = connection_geometry
 
     def create_point(self, point):
-        return self.file.createIfcCartesianPoint(point / self.settings["unit_scale"])
+        return self.file.createIfcCartesianPoint(point / self.unit_scale)
 
     def close_polyline(self, points):
         return points + (points[0],)
