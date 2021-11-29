@@ -1,6 +1,11 @@
 import os
+import json
 import sys
+import webbrowser
+
+import bimtester.reports
 import bimtester.run
+
 from PySide2 import QtCore
 from PySide2 import QtGui
 from PySide2 import QtWidgets
@@ -14,9 +19,25 @@ def run():
 
 
 class GuiWidgetBimTester(QtWidgets.QWidget):
-    def __init__(self, args=[]):
+    def __init__(self, args=None):
         super(GuiWidgetBimTester, self).__init__()
-        self.args = args
+
+        if args is not None:
+            self.args = args
+        else:
+            self.args = {
+                "action": "",
+                "advanced_arguments": "",
+                "console": False,  # has to be False to get a report file
+                "feature": "",
+                "ifc": "",
+                "path": "",
+                "report": "",
+                "steps": "",
+                "schema_file": "",
+                "schema_name": "",
+                "lang": "",
+            }
 
         self._setup_ui()
 
@@ -26,7 +47,9 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
 
     def _setup_ui(self):
         package_path = os.path.dirname(os.path.realpath(__file__))
-        iconpath = os.path.join(package_path, "resources", "icons", "bimtester.ico")
+        iconpath = os.path.join(
+            package_path, "resources", "icons", "bimtester.ico"
+        )
 
         """
         # as svg
@@ -54,23 +77,22 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         _ifcfile_browse_btn.setText("...")
         _ifcfile_browse_btn.clicked.connect(self.select_ifcfile)
 
-        # feature files path
-        # use a layout with a frame and a title, see solver framework tp
-        # beside button
-        ffifc_str = "Feature files in a directory 'features' beside the IFC file."
-        featuredirfromifc_label = QtWidgets.QLabel(ffifc_str, self)
-
-        # path browser and line edit
-        _ffdir_str = "Feature files directory. " "'features' directory has to be in there."
-        _featurefilesdir_label = QtWidgets.QLabel(_ffdir_str, self)
-        self.featurefilesdir_text = QtWidgets.QLineEdit()
-        self.feafilesdir_browse_btn = QtWidgets.QToolButton()
-        self.feafilesdir_browse_btn.setText("...")
-        self.feafilesdir_browse_btn.clicked.connect(self.select_featurefilesdir)
+        # feature file
+        _featurefile_label = QtWidgets.QLabel("Feature file", self)
+        self.featurefile_text = QtWidgets.QLineEdit()
+        _featurefile_browse_btn = QtWidgets.QToolButton()
+        _featurefile_browse_btn.setText("...")
+        _featurefile_browse_btn.clicked.connect(self.select_featurefile)
 
         # buttons
-        self.run_button = QtWidgets.QPushButton(QtGui.QIcon.fromTheme("document-new"), "Run")
-        self.close_button = QtWidgets.QPushButton(QtGui.QIcon.fromTheme("window-close"), "Close")
+        self.run_button = QtWidgets.QPushButton(
+            QtGui.QIcon.fromTheme("document-new"),
+            "Run"
+        )
+        self.close_button = QtWidgets.QPushButton(
+            QtGui.QIcon.fromTheme("window-close"),
+            "Close"
+        )
         self.run_button.clicked.connect(self.run_bimtester)
         self.close_button.clicked.connect(self.close_widget)
         _buttons = QtWidgets.QHBoxLayout()
@@ -81,17 +103,15 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         layout = QtWidgets.QGridLayout()
         layout.addWidget(theicon, 1, 0, alignment=QtCore.Qt.AlignRight)
 
-        layout.addWidget(featuredirfromifc_label, 2, 0)
+        layout.addWidget(_featurefile_label, 2, 0)
+        layout.addWidget(self.featurefile_text, 3, 0)
+        layout.addWidget(_featurefile_browse_btn, 3, 1)
 
-        layout.addWidget(_featurefilesdir_label, 3, 0)
-        layout.addWidget(self.featurefilesdir_text, 4, 0)
-        layout.addWidget(self.feafilesdir_browse_btn, 4, 1)
+        layout.addWidget(_ifcfile_label, 4, 0)
+        layout.addWidget(self.ifcfile_text, 5, 0)
+        layout.addWidget(_ifcfile_browse_btn, 5, 1)
 
-        layout.addWidget(_ifcfile_label, 5, 0)
-        layout.addWidget(self.ifcfile_text, 6, 0)
-        layout.addWidget(_ifcfile_browse_btn, 6, 1)
-
-        layout.addLayout(_buttons, 7, 0)
+        layout.addLayout(_buttons, 6, 0)
         # row stretches by 10 compared to the others, std is 0
         # first parameter is the row number
         # second is the stretch factor.
@@ -99,50 +119,81 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def select_ifcfile(self):
-        ifcfile = QtWidgets.QFileDialog.getOpenFileName(self, dir=self.get_ifcfile())[0]
+        ifcfile = QtWidgets.QFileDialog.getOpenFileName(
+            self, dir=self.get_ifcfile()
+        )[0]
         self.set_ifcfile(ifcfile)
 
     def set_ifcfile(self, a_file):
         self.ifcfile_text.setText(a_file)
 
     def get_ifcfile(self):
-        return self.ifcfile_text.text()
+        # get rid of all spaces, new lines etc, might because of copy the text
+        # https://stackoverflow.com/a/37001613
+        return " ".join(self.ifcfile_text.text().split())
 
-    def select_featurefilesdir(self):
-        thedir = self.featurefilesdir_text.text()
-        features_path = QtWidgets.QFileDialog.getExistingDirectory(
-            self,
-            caption="Choose features directory ...",
-            dir=thedir,
-            options=QtWidgets.QFileDialog.HideNameFilterDetails,
-        )
-        self.set_featurefilesdir(features_path)
+    def select_featurefile(self):
+        featurefile = QtWidgets.QFileDialog.getOpenFileName(
+            self, dir=self.get_ifcfile()
+        )[0]
+        self.set_featurefile(featurefile)
 
-    def set_featurefilesdir(self, a_directory):
-        self.featurefilesdir_text.setText(a_directory)
+    def set_featurefile(self, a_file):
+        self.featurefile_text.setText(a_file)
 
-    def get_featurefilesdir(self):
-        return self.featurefilesdir_text.text()
+    def get_featurefile(self):
+        # get rid of all spaces, new lines etc, might because of copy the text
+        # https://stackoverflow.com/a/37001613
+        return " ".join(self.featurefile_text.text().split())
 
     def run_bimtester(self):
         print("Run BIMTester by the GUI")
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
 
-        the_features_path = self.get_featurefilesdir()
-        print(the_features_path)
-
-        # get ifc file
+        # set the_feature file and ifc file in args
+        the_featurefile = self.get_featurefile()
         the_ifcfile = self.get_ifcfile()
-        print(the_ifcfile)
+        if os.path.isfile(the_featurefile):
+            self.args["feature"] = the_featurefile
+            has_feature_file = True
+        else:
+            print("Feature file does not exist: {}".format(the_featurefile))
+            # TODO Qt messagebox
+            has_feature_file = False
+        if os.path.isfile(the_ifcfile):
+            self.args["ifc"] = the_ifcfile
+            has_ifc_file = True
+        else:
+            print("IFC file does not exist: {}".format(the_ifcfile))
+            # TODO Qt messagebox
+            has_ifc_file = False
+        print(json.dumps(self.args, indent=4))
 
-        # overwrite the_features_path and ifcfile in args
-        patched_args = self.args
-        patched_args["featuresdir"] = the_features_path
-        patched_args["ifcfile"] = the_ifcfile
+        # run bimtester
+        if has_feature_file is True and has_ifc_file is True:
+            report_json = bimtester.run.TestRunner(
+                self.args["ifc"],
+                self.args["schema_file"]
+            ).run(self.args)
 
-        bimtester.run.TestRunner("file.ifc").run({})
+        # create html report
+        if os.path.isfile(report_json):
+            report_html = os.path.join(
+                os.path.dirname(os.path.realpath(report_json)),
+                "report.html"
+            )
+            bimtester.reports.ReportGenerator().generate(
+                report_json,
+                report_html
+            )
+            print("HTML report generated: {}".format(report_html))
+        else:
+            print("JSON report file does not exist: {}".format(report_json))
 
         QtWidgets.QApplication.restoreOverrideCursor()
+
+        if os.path.isfile(report_html):
+            webbrowser.open(report_html)
 
     def close_widget(self):
         self.close()
