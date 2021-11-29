@@ -12,7 +12,10 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        rels = self.settings["reference"].LibraryRefForObjects
+        if self.file.schema == "IFC2X3":
+            rels = self.get_ifc2x3_rels()
+        else:
+            rels = self.settings["reference"].LibraryRefForObjects
         if not rels:
             return self.file.create_entity(
                 "IfcRelAssociatesLibrary",
@@ -32,3 +35,8 @@ class Usecase:
         rel.RelatedObjects = related_objects
         ifcopenshell.api.run("owner.update_owner_history", self.file, element=rel)
         return rel
+
+    def get_ifc2x3_rels(self):
+        return [
+            r for r in self.file.by_type("IfcRelAssociatesLibrary") if r.RelatingLibrary == self.settings["reference"]
+        ]
