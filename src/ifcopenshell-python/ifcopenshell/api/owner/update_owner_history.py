@@ -1,6 +1,7 @@
 import time
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
 
 
