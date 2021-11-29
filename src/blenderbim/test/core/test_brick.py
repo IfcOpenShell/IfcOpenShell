@@ -70,10 +70,17 @@ class TestConvertBrickProject:
     def test_run(self, ifc, brick):
         brick.get_brick_path_name().should_be_called().will_return("foo.ttl")
         ifc.run("library.add_library", name="foo.ttl").should_be_called().will_return("library")
+        ifc.get_schema().should_be_called().will_return("IFC4")
         brick.get_brick_path().should_be_called().will_return("/path/to/foo.ttl")
         ifc.run(
             "library.edit_library", library="library", attributes={"Location": "/path/to/foo.ttl"}
         ).should_be_called()
+        subject.convert_brick_project(ifc, brick)
+
+    def test_not_editing_in_ifc2x3(self, ifc, brick):
+        brick.get_brick_path_name().should_be_called().will_return("foo.ttl")
+        ifc.run("library.add_library", name="foo.ttl").should_be_called().will_return("library")
+        ifc.get_schema().should_be_called().will_return("IFC2X3")
         subject.convert_brick_project(ifc, brick)
 
 

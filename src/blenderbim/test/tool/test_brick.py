@@ -63,6 +63,10 @@ class TestExportBrickAttributes(NewFile):
     def test_run(self):
         assert subject.export_brick_attributes("ex:#floor") == {"Identification": "ex:#floor", "Name": "floor"}
 
+    def test_run_ifc2x3(self):
+        tool.Ifc.set(ifcopenshell.file(schema="IFC2X3"))
+        assert subject.export_brick_attributes("ex:#floor") == {"ItemReference": "ex:#floor", "Name": "floor"}
+
 
 class TestGetBrickPath(NewFile):
     def test_run(self):
