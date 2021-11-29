@@ -359,6 +359,33 @@ class TestRemoveDeepIFC4(test.bootstrap.IFC4):
         assert self.file.by_guid("id2")
 
 
+class TestRemoveDeep2IFC4(test.bootstrap.IFC4):
+    def test_removing_an_element_along_with_all_direct_attributes_recursively(self):
+        owner = self.file.createIfcOwnerHistory()
+        element = self.file.createIfcWall(GlobalId="id", OwnerHistory=owner)
+        subject.remove_deep2(self.file, element)
+        with pytest.raises(RuntimeError):
+            self.file.by_id(1)
+            self.file.by_id(2)
+
+    def test_removing_an_element_recursively_except_if_an_element_is_referenced_elsewhere(self):
+        owner = self.file.createIfcOwnerHistory()
+        element = self.file.createIfcWall(GlobalId="id1", OwnerHistory=owner)
+        element2 = self.file.createIfcWall(GlobalId="id2", OwnerHistory=owner)
+        subject.remove_deep2(self.file, element)
+        with pytest.raises(RuntimeError):
+            self.file.by_guid("id1")
+        assert self.file.by_id(1)
+        assert self.file.by_guid("id2")
+
+    def test_removing_an_element_still_referenced_somewhere(self):
+        owner = self.file.createIfcOwnerHistory()
+        element = self.file.createIfcWall(GlobalId="id1", OwnerHistory=owner)
+        subject.remove_deep2(self.file, owner)
+        assert self.file.by_id(1)
+        assert self.file.by_guid("id1")
+
+
 class TestCopyIFC4(test.bootstrap.IFC4):
     def test_copying_an_element(self):
         element = self.file.createIfcWall(GlobalId="id", Name="name")
