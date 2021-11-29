@@ -161,9 +161,8 @@ class SelectTypeObjects(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         relating_type = bpy.data.objects.get(self.relating_type) if self.relating_type else context.active_object
-        oprops = relating_type.BIMObjectProperties
-        related_objects = Data.types[oprops.ifc_definition_id]
-        for obj in context.visible_objects:
-            if obj.BIMObjectProperties.ifc_definition_id in related_objects:
+        for element in ifcopenshell.util.element.get_types(tool.Ifc.get_entity(relating_type)):
+            obj = tool.Ifc.get_object(element)
+            if obj:
                 obj.select_set(True)
         return {"FINISHED"}

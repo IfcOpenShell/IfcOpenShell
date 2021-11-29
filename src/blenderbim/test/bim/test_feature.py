@@ -153,6 +153,12 @@ def the_object_name_is_selected(name):
     additionally_the_object_name_is_selected(name)
 
 
+@then(parsers.parse('the object "{name}" is selected'))
+def then_the_object_name_is_selected(name):
+    obj = the_object_name_exists(name)
+    assert obj in bpy.context.selected_objects
+
+
 @given(parsers.parse('the object "{name}" is moved to "{location}"'))
 @when(parsers.parse('the object "{name}" is moved to "{location}"'))
 def the_object_name_is_moved_to_location(name, location):
