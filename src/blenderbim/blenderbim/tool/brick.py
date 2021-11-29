@@ -50,7 +50,10 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def export_brick_attributes(cls, brick_uri):
-        return {"Identification": brick_uri, "Name": brick_uri.split("#")[-1]}
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return {"ItemReference": brick_uri, "Name": brick_uri.split("#")[-1]}
+        else:
+            return {"Identification": brick_uri, "Name": brick_uri.split("#")[-1]}
 
     @classmethod
     def get_brick_path(cls):
@@ -79,11 +82,11 @@ class Brick(blenderbim.core.tool.Brick):
     @classmethod
     def get_library_brick_reference(cls, library, brick_uri):
         if tool.Ifc.get_schema() == "IFC2X3":
-            for reference in library.LibraryReference:
+            for reference in library.LibraryReference or []:
                 if reference.ItemReference == brick_uri:
                     return reference
         else:
-            for reference in library.HasLibraryReferences:
+            for reference in library.HasLibraryReferences or []:
                 if reference.Identification == brick_uri:
                     return reference
 

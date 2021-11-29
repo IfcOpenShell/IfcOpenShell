@@ -131,6 +131,7 @@ class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
     def get_object(cls, entity): pass
+    def get_schema(cls): pass
     def link(cls, element, obj): pass
     def run(cls, command, **kwargs): pass
     def unlink(cls, element=None, obj=None): pass

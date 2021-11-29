@@ -51,7 +51,8 @@ def close_brick_project(brick):
 
 def convert_brick_project(ifc, brick):
     library = ifc.run("library.add_library", name=brick.get_brick_path_name())
-    ifc.run("library.edit_library", library=library, attributes={"Location": brick.get_brick_path()})
+    if ifc.get_schema() != "IFC2X3":
+        ifc.run("library.edit_library", library=library, attributes={"Location": brick.get_brick_path()})
 
 
 def assign_brick_reference(ifc, brick, obj=None, library=None, brick_uri=None):
