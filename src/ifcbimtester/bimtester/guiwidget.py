@@ -147,8 +147,11 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         return " ".join(self.featurefile_text.text().split())
 
     def run_bimtester(self):
-        print("Run BIMTester by the GUI")
+
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+
+        print("Try to run BIMTester by the GUI")
+        # TODO Qt messageboxes on errors
 
         # set the_feature file and ifc file in args
         the_featurefile = self.get_featurefile()
@@ -158,7 +161,6 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
             has_feature_file = True
         else:
             print("Feature file does not exist: {}".format(the_featurefile))
-            # TODO Qt messagebox
             has_feature_file = False
         if os.path.isfile(the_ifcfile):
             self.args["ifc"] = the_ifcfile
@@ -167,14 +169,18 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
             print("IFC file does not exist: {}".format(the_ifcfile))
             # TODO Qt messagebox
             has_ifc_file = False
-        print(json.dumps(self.args, indent=4))
 
         # run bimtester
         if has_feature_file is True and has_ifc_file is True:
+            print("Args passed from BIMtester GUI:")
+            print(json.dumps(self.args, indent=4))
             report_json = bimtester.run.TestRunner(
                 self.args["ifc"],
                 self.args["schema_file"]
             ).run(self.args)
+        else:
+            print("Missing files, BIMTester can not run.")
+            report_json = ""
 
         # create html report
         if os.path.isfile(report_json):
@@ -187,7 +193,11 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
                 report_html
             )
             print("HTML report generated: {}".format(report_html))
+        elif report_json == "":
+            report_html = ""
+            print("JSON report file has not been written.")
         else:
+            report_html = ""
             print("JSON report file does not exist: {}".format(report_json))
 
         QtWidgets.QApplication.restoreOverrideCursor()
