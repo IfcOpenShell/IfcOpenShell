@@ -59,6 +59,7 @@ class EnableReassignClass(bpy.types.Operator):
             "IfcPositioningElement",
             "IfcContext",
             "IfcAnnotation",
+            "IfcRelSpaceBoundary",
         ]
         for ifc_product in ifc_products:
             if ifcopenshell.util.schema.is_a(IfcStore.get_schema().declaration_by_name(ifc_class), ifc_product):
