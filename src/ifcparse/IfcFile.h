@@ -249,6 +249,7 @@ public:
 	aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level=-1);
 
 	aggregate_of_instance::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
+	int getInverseCardinality(int instance_id);
 
 	template <class T>
 	typename T::list::ptr getInverse(int instance_id, int attribute_index) {
