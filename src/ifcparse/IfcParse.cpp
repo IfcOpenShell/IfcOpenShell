@@ -2387,6 +2387,25 @@ aggregate_of_instance::ptr IfcFile::getInverse(int instance_id, const IfcParse::
 	return return_value;
 }
 
+
+int IfcFile::getInverseCardinality(int instance_id) {
+	auto lower = byref_excl.lower_bound({ instance_id,-1,-1 });
+	auto upper = byref_excl.upper_bound({ instance_id, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+
+	int total_references = 0;
+	for (auto it = lower; it != upper; it++) {
+		for (auto& i : it->second) {
+			total_references++;
+			if (total_references > 1) {
+				return total_references;
+			}
+		}
+	}
+
+	return total_references;
+}
+
+
 void IfcFile::setDefaultHeaderValues() {
 	const std::string empty_string = "";
 	std::vector<std::string> file_description, schema_identifiers, empty_vector;
