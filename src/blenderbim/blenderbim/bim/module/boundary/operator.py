@@ -257,12 +257,12 @@ class EditBoundaryAttributes(bpy.types.Operator):
     def _execute(self, context):
         bprops = context.active_object.bim_boundary_properties
         boundary = tool.Ifc.get_entity(context.active_object)
+        attributes = dict()
         for ifc_attribute, blender_property in EDITABLE_ATTRIBUTES.items():
-            if not hasattr(boundary, ifc_attribute):
-                continue
             obj = getattr(bprops, blender_property, None)
             entity = tool.Ifc.get_entity(obj)
-            setattr(boundary, ifc_attribute, entity)
+            attributes[blender_property] = entity
+        ifcopenshell.api.run("boundary.edit_attributes", tool.Ifc.get(), entity=boundary, **attributes)
         bpy.ops.bim.disable_editing_boundary()
         return {"FINISHED"}
 
