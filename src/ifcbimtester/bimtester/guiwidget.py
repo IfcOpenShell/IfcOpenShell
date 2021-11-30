@@ -22,7 +22,7 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
     def __init__(self, args=None):
         super(GuiWidgetBimTester, self).__init__()
 
-        if args is not None:
+        if args is not None and args != {}:
             self.args = args
         else:
             self.args = {
@@ -70,19 +70,21 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         iconpixmap = iconpixmap.scaled(100, 100, QtCore.Qt.KeepAspectRatio)
         theicon.setPixmap(iconpixmap)
 
-        # ifc file
-        _ifcfile_label = QtWidgets.QLabel("IFC file", self)
-        self.ifcfile_text = QtWidgets.QLineEdit()
-        _ifcfile_browse_btn = QtWidgets.QToolButton()
-        _ifcfile_browse_btn.setText("...")
-        _ifcfile_browse_btn.clicked.connect(self.select_ifcfile)
-
         # feature file
         _featurefile_label = QtWidgets.QLabel("Feature file", self)
         self.featurefile_text = QtWidgets.QLineEdit()
+        self.featurefile_text.setText(self.args["feature"])
         _featurefile_browse_btn = QtWidgets.QToolButton()
         _featurefile_browse_btn.setText("...")
         _featurefile_browse_btn.clicked.connect(self.select_featurefile)
+
+        # ifc file
+        _ifcfile_label = QtWidgets.QLabel("IFC file", self)
+        self.ifcfile_text = QtWidgets.QLineEdit()
+        self.ifcfile_text.setText(self.args["ifc"])
+        _ifcfile_browse_btn = QtWidgets.QToolButton()
+        _ifcfile_browse_btn.setText("...")
+        _ifcfile_browse_btn.clicked.connect(self.select_ifcfile)
 
         # buttons
         self.run_button = QtWidgets.QPushButton(
