@@ -90,6 +90,7 @@ def getIfcProducts(self, context):
                     "IfcStructuralItem",
                     "IfcContext",
                     "IfcAnnotation",
+                    "IfcRelSpaceBoundary",
                 ]
             ]
         )
