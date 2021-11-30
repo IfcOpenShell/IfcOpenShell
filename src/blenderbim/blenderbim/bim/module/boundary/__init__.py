@@ -28,6 +28,7 @@ classes = (
     operator.EnableEditingBoundary,
     operator.DisableEditingBoundary,
     operator.EditBoundaryAttributes,
+    operator.UpdateBoundaryGeometry,
     ui.BIM_PT_Boundary,
     ui.BIM_PT_SpaceBoundaries,
     ui.BIM_PT_SceneBoundaries,

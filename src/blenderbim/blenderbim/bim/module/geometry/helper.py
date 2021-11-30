@@ -22,7 +22,7 @@ import mathutils
 import ifcopenshell
 import ifcopenshell.util.unit
 from math import pi
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, geometry
 
 
 class Helper:
@@ -214,6 +214,95 @@ class Helper:
         bm.free()
 
         return {"profile": outer_loop, "inner_curves": inner_loops, "extrusion": extrusion}
+
+    # An arbitrary face with voids is similar to a profile with voids for extrusion.
+    # Before we begin we check that all faces are coplanar instead of finding suitable face.
+    # Then we process the same way.
+    # Only 2 parameters are returned as there is no extrusion.
+    def auto_detect_curve_bounded_plane(self, mesh, tolerance=0.001):
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
+
+        bm.faces.ensure_lookup_table()
+        faces = bm.faces
+        normal = faces[0].normal
+        point = faces[0].verts[0].co
+        for face in faces:
+            pt_f = face.verts[0].co
+            if (
+                normal.dot(face.normal) < 1 - tolerance
+                or abs(geometry.distance_point_to_plane(pt_f, point, normal)) > tolerance
+            ):
+                raise ValueError("All faces must be coplanar and have same orientation")
+
+        loop_edges = set()
+        for face in faces:
+            potential_edges = set(face.edges)
+            for face2 in faces:
+                if face == face2:
+                    continue
+                potential_edges -= set(face2.edges)
+            loop_edges |= potential_edges
+
+        # Create loops from edges
+        loops = []
+        while loop_edges:
+            edge = loop_edges.pop()
+            loop = [edge]
+            has_found_connected_edge = True
+            while has_found_connected_edge:
+                has_found_connected_edge = False
+                for edge in loop_edges.copy():
+                    edge_verts = set(edge.verts)
+                    if edge_verts & set(loop[0].verts):
+                        loop.insert(0, edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+                    elif edge_verts & set(loop[-1].verts):
+                        loop.append(edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+            loops.append(loop)
+
+        # Determine outer loop
+        max_area = 0
+        outer_loop = None
+        inner_loops = []
+
+        for loop in loops:
+            loop_vertices = []
+            total_edges = len(loop)
+            for i, edge in enumerate(loop):
+                if i + 1 == total_edges and edge.verts[0] in loop[i - 1].verts:
+                    loop_vertices.append(edge.verts[0])
+                elif i + 1 == total_edges and edge.verts[1] in loop[i - 1].verts:
+                    loop_vertices.append(edge.verts[1])
+                elif edge.verts[0] in loop[i + 1].verts:
+                    loop_vertices.append(edge.verts[1])
+                elif edge.verts[1] in loop[i + 1].verts:
+                    loop_vertices.append(edge.verts[0])
+
+            loop_bm = bmesh.new()
+            for vert in loop_vertices:
+                loop_bm.verts.new(vert.co)
+            face = loop_bm.faces.new(loop_bm.verts)
+
+            loop_vertex_indices = [v.index for v in loop_vertices]
+            face_area = face.calc_area()
+            if face_area > max_area:
+                max_area = face_area
+                outer_loop = loop_vertex_indices
+            inner_loops.append(loop_vertex_indices)
+            loop_bm.free()
+
+        inner_loops.remove(outer_loop)
+
+        bm.to_mesh(mesh)
+        mesh.update()
+        bm.free()
+
+        return {"outer_curve": outer_loop, "inner_curves": inner_loops}
 
     # An extrusion edge is an edge that shares a single vertex with a profile
     # face and is not on the plane of the face.
