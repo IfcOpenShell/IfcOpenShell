@@ -18,12 +18,14 @@
 
 import logging
 import bpy
+import mathutils
 import ifcopenshell.util.attribute
 import ifcopenshell.api
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.boundary.data import Data
 import blenderbim.bim.import_ifc as import_ifc
+from blenderbim.bim.module.geometry.helper import Helper
 
 
 def get_boundaries_collection(blender_space):
@@ -262,4 +264,56 @@ class EditBoundaryAttributes(bpy.types.Operator):
             entity = tool.Ifc.get_entity(obj)
             setattr(boundary, ifc_attribute, entity)
         bpy.ops.bim.disable_editing_boundary()
+        return {"FINISHED"}
+
+
+def polyline_from_indexes(mesh, indexes):
+    return tuple(mesh.vertices[i].co for i in indexes)
+
+
+def polyline_to_2d(polyline, placement_matrix):
+    matrix_inv = placement_matrix.inverted()
+    return tuple((matrix_inv @ v).to_2d() for v in polyline)
+
+
+class UpdateBoundaryGeometry(bpy.types.Operator):
+    bl_idname = "bim.update_boundary_geometry"
+    bl_label = "Update boundary geometry"
+    bl_description = """
+    Update boundary connection geometry from mesh. 
+    Mesh must lie on a single plane. It should look like a face or a face with holes.
+    """
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        helper = Helper(ifc_file)
+        mesh = context.active_object.data
+        curves = helper.auto_detect_curve_bounded_plane(mesh)
+        outer_boundary = polyline_from_indexes(mesh, curves["outer_curve"])
+        inner_boundaries = tuple(polyline_from_indexes(mesh, boundary) for boundary in curves["inner_curves"])
+
+        # Create placement matrix
+        location = outer_boundary[0]
+        i = (outer_boundary[1] - outer_boundary[0]).normalized()
+        k = mesh.polygons[0].normal
+        j = k.cross(i)
+        matrix = mathutils.Matrix()
+        matrix[0].xyz = i
+        matrix[1].xyz = j
+        matrix[2].xyz = k
+        matrix.translation = location
+
+        settings = {
+            "rel_space_boundary": tool.Ifc.get_entity(context.active_object),
+            "outer_boundary": polyline_to_2d(outer_boundary, matrix),
+            "inner_boundaries": tuple(polyline_to_2d(boundary, matrix) for boundary in inner_boundaries),
+            "location": location,
+            "axis": k,
+            "ref_direction": i,
+        }
+        ifcopenshell.api.run("boundary.assign_connection_geometry", ifc_file, **settings)
         return {"FINISHED"}
