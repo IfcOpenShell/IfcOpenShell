@@ -391,15 +391,15 @@ class file(object):
             return inverses
         return set(inverses)
 
-    def get_inverse_cardinality(self, inst):
+    def get_total_inverses(self, inst):
         """Returns the number of entities that reference this entity
 
         :param inst: The entity instance to get inverse relationships
         :type inst: ifcopenshell.entity_instance.entity_instance
-        :returns: 0 if no references, 1 if one reference, or 2 if more than one reference
+        :returns: The total number of references
         :rtype: int
         """
-        return self.wrapped_data.get_inverse_cardinality(inst.wrapped_data)
+        return self.wrapped_data.get_total_inverses(inst.wrapped_data)
 
     def remove(self, inst):
         """Deletes an IFC object in the file.

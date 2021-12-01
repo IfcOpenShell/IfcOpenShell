@@ -88,8 +88,8 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	aggregate_of_instance::ptr get_inverse(IfcUtil::IfcBaseClass* e) {
 		return $self->getInverse(e->data().id(), 0, -1);
 	}
-	int get_inverse_cardinality(IfcUtil::IfcBaseClass* e) {
-		return $self->getInverseCardinality(e->data().id());
+	int get_total_inverses(IfcUtil::IfcBaseClass* e) {
+		return $self->getTotalInverses(e->data().id());
 	}
 
 	void write(const std::string& fn) {
