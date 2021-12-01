@@ -135,7 +135,6 @@ private:
 	entities_by_type_t bytype_excl;
 	entities_by_ref_t byref;
 	entities_by_ref_excl_t byref_excl;
-	ref_map_t by_ref_cached_;
 	entity_by_guid_t byguid;
 	entity_entity_map_t entity_file_map;
 
@@ -264,10 +263,6 @@ public:
 		}
 		return return_value;
 	}
-
-	/// Marks entity as modified so that potential cache for it is invalidated.
-	/// @todo Currently the whole cache is invalidated. Implement more fine-grained invalidation.
-	void mark_entity_as_modified(int id);
 
 	unsigned int FreshId() { return ++MaxId; }
 
