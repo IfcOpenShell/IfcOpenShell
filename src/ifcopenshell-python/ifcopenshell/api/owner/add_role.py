@@ -6,6 +6,8 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        element = self.file.createIfcActorRole("ARCHITECT")
         roles = list(self.settings["assigned_object"].Roles) if self.settings["assigned_object"].Roles else []
-        roles.append(self.file.createIfcActorRole("ARCHITECT"))
+        roles.append(element)
         self.settings["assigned_object"].Roles = roles
+        return element

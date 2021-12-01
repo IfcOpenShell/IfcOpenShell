@@ -1,7 +1,26 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import draw_attributes
 from ifcopenshell.api.structural.data import Data
 
 
@@ -20,7 +39,7 @@ def draw_boundary_condition_ui(layout, boundary_condition_id, connection_id, pro
     if props.active_boundary_condition and props.active_boundary_condition == boundary_condition_id:
         row.label(text=data["type"], icon="CON_TRACKTO")
         row.operator("bim.edit_structural_boundary_condition", text="", icon="CHECKMARK").connection = connection_id
-        row.operator("bim.disable_editing_structural_boundary_condition", text="", icon="X")
+        row.operator("bim.disable_editing_structural_boundary_condition", text="", icon="CANCEL")
     elif props.active_boundary_condition and props.active_boundary_condition != boundary_condition_id:
         row.label(text=data["type"], icon="CON_TRACKTO")
         row.operator("bim.remove_structural_boundary_condition", text="", icon="X").connection = connection_id
@@ -261,7 +280,8 @@ class BIM_PT_structural_analysis_models(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not Data.is_loaded:
@@ -292,14 +312,7 @@ class BIM_PT_structural_analysis_models(Panel):
             self.draw_editable_ui(context)
 
     def draw_editable_ui(self, context):
-        for attribute in self.props.structural_analysis_model_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(self.props.structural_analysis_model_attributes, self.layout)
 
 
 class BIM_UL_structural_analysis_models(UIList):
@@ -324,7 +337,7 @@ class BIM_UL_structural_analysis_models(UIList):
 
             if context.scene.BIMStructuralProperties.active_structural_analysis_model_id == item.ifc_definition_id:
                 row.operator("bim.edit_structural_analysis_model", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_structural_analysis_model", text="", icon="X")
+                row.operator("bim.disable_editing_structural_analysis_model", text="", icon="CANCEL")
             elif context.scene.BIMStructuralProperties.active_structural_analysis_model_id:
                 op = row.operator("bim.remove_structural_analysis_model", text="", icon="X")
                 op.structural_analysis_model = item.ifc_definition_id
@@ -345,7 +358,8 @@ class BIM_PT_structural_load_cases(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         self.props = context.scene.BIMStructuralProperties
@@ -387,16 +401,7 @@ class BIM_PT_structural_load_cases(Panel):
                 self.draw_editable_load_case_group_ui(load_case)
 
     def draw_editable_load_case_ui(self):
-        for attribute in self.props.load_case_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "float":
-                row.prop(attribute, "float_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(self.props.load_case_attributes, self.layout)
 
     def draw_editable_load_case_group_ui(self, load_case):
         box = self.layout.box()
@@ -449,7 +454,8 @@ class BIM_PT_structural_loads(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not Data.is_loaded:
@@ -516,7 +522,8 @@ class BIM_PT_boundary_conditions(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not Data.is_loaded:

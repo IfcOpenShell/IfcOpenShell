@@ -1,0 +1,14 @@
+"Hierarchy","Identification","Name","Quantity","Unit","Foo","Bar","Baz","Subtotal"
+1,1,"Demolition",,,,,,301
+,,,,,,,,
+2,1.1,"Building A",,,,,,96
+,,,,,,,,
+3,"1.1.1","Soft strip",1,"m",5,4,3,12
+3,"1.1.2","Hard Strip",2,"m2",6,5,4,30
+3,"1.1.3","Hazmat",3,"m3",7,6,5,54
+,,,,,,,,
+2,1.2,"Building B",,,,,,205
+,,,,,,,,
+3,"1.2.1","Soft strip",4,"hr",8,7,,60
+3,"1.2.2","Hard Strip",5,,9,,8,85
+3,"1.2.3","Hazmat",6,"kg",10,,,60

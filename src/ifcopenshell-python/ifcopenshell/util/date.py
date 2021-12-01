@@ -42,7 +42,7 @@ def ifc2datetime(element):
             element.DateComponent.DayComponent,
             element.TimeComponent.HourComponent,
             element.TimeComponent.MinuteComponent,
-            element.TimeComponent.SecondComponent,
+            int(element.TimeComponent.SecondComponent),
             # TODO: implement TimeComponent timezone
         )
     elif element.is_a("IfcCalendarDate"):

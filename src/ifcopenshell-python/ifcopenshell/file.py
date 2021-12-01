@@ -23,6 +23,7 @@ from __future__ import print_function
 
 import numbers
 import functools
+import ifcopenshell.util.element
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
@@ -39,6 +40,10 @@ class Transaction:
     def __init__(self, ifc_file):
         self.file = ifc_file
         self.operations = []
+        self.is_batched = False
+        self.batch_delete_index = 0
+        self.batch_delete_ids = set()
+        self.batch_inverses = []
 
     def serialise_entity_instance(self, element):
         info = element.get_info()
@@ -47,13 +52,37 @@ class Transaction:
         return info
 
     def serialise_value(self, element, value):
-        return element.walk(lambda v: isinstance(v, entity_instance), lambda v: {"id": v.id()}, value)
+        return element.walk(
+            lambda v: isinstance(v, entity_instance),
+            lambda v: {"id": v.id()} if v.id() else {"type": v.is_a(), "value": v.wrappedValue},
+            value,
+        )
 
     def unserialise_value(self, element, value):
-        return element.walk(lambda v: isinstance(v, dict), lambda v: self.file.by_id(v["id"]), value)
+        return element.walk(
+            lambda v: isinstance(v, dict),
+            lambda v: self.file.by_id(v["id"]) if v.get("id") else self.file.create_entity(v["type"], v["value"]),
+            value,
+        )
+
+    def batch(self):
+        self.is_batched = True
+        self.batch_delete_index = len(self.operations)
+        self.batch_delete_ids = set()
+        self.batch_inverses = []
+
+    def unbatch(self):
+        for inverses in self.batch_inverses:
+            if inverses:
+                self.operations.insert(self.batch_delete_index, {"action": "batch_delete", "inverses": inverses})
+        self.is_batched = False
+        self.batch_delete_index = 0
+        self.batch_delete_ids = set()
+        self.batch_inverses = []
 
     def store_create(self, element):
-        self.operations.append({"action": "create", "value": self.serialise_entity_instance(element)})
+        if element.id():
+            self.operations.append({"action": "create", "value": self.serialise_entity_instance(element)})
 
     def store_edit(self, element, index, value):
         self.operations.append(
@@ -68,27 +97,31 @@ class Transaction:
 
     def store_delete(self, element):
         inverses = {}
-        for inverse in self.file.get_inverse(element):
-            inverse_references = []
-            for i, attribute in enumerate(inverse):
-                if self.has_element_reference(attribute, element):
-                    inverse_references.append((i, self.serialise_value(inverse, attribute)))
-            inverses[inverse.id()] = inverse_references
+        if self.is_batched:
+            if element.id() not in self.batch_delete_ids:
+                self.batch_inverses.append(self.get_element_inverses(element))
+            self.batch_delete_ids.add(element.id())
+        else:
+            inverses = self.get_element_inverses(element)
         self.operations.append(
             {"action": "delete", "inverses": inverses, "value": self.serialise_entity_instance(element)}
         )
 
-    def has_element_reference(self, value, element):
-        if isinstance(value, (tuple, list)):
-            for v in value:
-                return self.has_element_reference(v, element)
-        return value == element
+    def get_element_inverses(self, element):
+        inverses = {}
+        for inverse in self.file.get_inverse(element):
+            inverse_references = []
+            for i, attribute in enumerate(inverse):
+                if ifcopenshell.util.element.has_element_reference(attribute, element):
+                    inverse_references.append((i, self.serialise_value(inverse, attribute)))
+            inverses[inverse.id()] = inverse_references
+        return inverses
 
     def rollback(self):
         for operation in self.operations[::-1]:
             if operation["action"] == "create":
                 element = self.file.by_id(operation["value"]["id"])
-                if hasattr(element, "GlobalId"):
+                if hasattr(element, "GlobalId") and element.GlobalId is None:
                     # hack, otherwise ifcopenshell gets upset
                     element.GlobalId = "x"
                 self.file.remove(element)
@@ -111,6 +144,11 @@ class Transaction:
                     inverse = self.file.by_id(inverse_id)
                     for index, value in data:
                         inverse[index] = self.unserialise_value(inverse, value)
+            elif operation["action"] == "batch_delete":
+                for inverse_id, data in operation["inverses"].items():
+                    inverse = self.file.by_id(inverse_id)
+                    for index, value in data:
+                        inverse[index] = self.unserialise_value(inverse, value)
 
     def commit(self):
         for operation in self.operations:
@@ -128,6 +166,8 @@ class Transaction:
             elif operation["action"] == "delete":
                 element = self.file.by_id(operation["value"]["id"])
                 self.file.remove(element)
+            elif operation["action"] == "batch_delete":
+                pass
 
 
 class file(object):
@@ -214,19 +254,45 @@ class file(object):
             f.create_entity('IfcPerson', Identification='Foobar')
             >>> #3=IfcPerson('Foobar',$,$,$,$,$,$,$)
         """
-        eid = -1
-        try:
-            eid = kwargs.pop("id", -1)
-        except:
-            pass
+        eid = kwargs.pop("id", -1)
+
         e = entity_instance((self.schema, type), self)
-        self.wrapped_data.add(e.wrapped_data, eid)
-        e.wrapped_data.this.disown()
+
+        # Create pairs of {attribute index, attribute value}.
+        # Keyword arguments are mapped to their corresponding
+        # numeric index with get_argument_index().
+
+        # @todo we should probably check that values for
+        # attributes are not passed as duplicates using
+        # both regular arguments and keyword arguments.
         attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+
+        # Don't store these attributes as transactions
+        # as the creation it self is already stored with
+        # it's arguments
+        if attrs:
+            transaction = self.transaction
+            self.transaction = None
+
         for idx, arg in attrs:
             e[idx] = arg
+
+        # Restore transaction status
+        if attrs:
+            self.transaction = transaction
+
+        # Once the values are populated add the instance
+        # to the file.
+        self.wrapped_data.add(e.wrapped_data, eid)
+
+        # The file container now handles the lifetime of
+        # this instance. Tell SWIG that it is no longer
+        # the owner.
+        e.wrapped_data.this.disown()
+
         if self.transaction:
             self.transaction.store_create(e)
+
         return e
 
     def __getattr__(self, attr):
@@ -265,8 +331,14 @@ class file(object):
         """Adds an entity including any dependent entities to an IFC file.
 
         If the entity already exists, it is not re-added."""
+        if self.transaction:
+            max_id = self.wrapped_data.getMaxId()
         inst.wrapped_data.this.disown()
-        return entity_instance(self.wrapped_data.add(inst.wrapped_data, -1 if _id is None else _id), self)
+        result = entity_instance(self.wrapped_data.add(inst.wrapped_data, -1 if _id is None else _id), self)
+        if self.transaction:
+            added_elements = [e for e in self.traverse(result) if e.id() > max_id]
+            [self.transaction.store_create(e) for e in reversed(added_elements)]
+        return result
 
     def by_type(self, type, include_subtypes=True):
         """Return IFC objects filtered by IFC Type and wrapped with the entity_instance class.
@@ -284,19 +356,27 @@ class file(object):
             return [entity_instance(e, self) for e in self.wrapped_data.by_type(type)]
         return [entity_instance(e, self) for e in self.wrapped_data.by_type_excl_subtypes(type)]
 
-    def traverse(self, inst, max_levels=None):
+    def traverse(self, inst, max_levels=None, breadth_first=False):
         """Get a list of all referenced instances for a particular instance including itself
 
         :param inst: The entity instance to get all sub instances
         :type inst: ifcopenshell.entity_instance.entity_instance
         :param max_levels: How far deep to recursively fetch sub instances. None or -1 means infinite.
         :type max_levels: None|int
+        :param breadth_first: Whether to use breadth-first search, the default is depth-first.
+        :type max_levels: bool
         :returns: A list of ifcopenshell.entity_instance.entity_instance objects
         :rtype: list
         """
         if max_levels is None:
             max_levels = -1
-        return [entity_instance(e, self) for e in self.wrapped_data.traverse(inst.wrapped_data, max_levels)]
+
+        if breadth_first:
+            fn = self.wrapped_data.traverse_breadth_first
+        else:
+            fn = self.wrapped_data.traverse
+
+        return [entity_instance(e, self) for e in fn(inst.wrapped_data, max_levels)]
 
     def get_inverse(self, inst):
         """Return a list of entities that reference this entity
@@ -325,10 +405,14 @@ class file(object):
 
     def batch(self):
         """Low-level mechanism to speed up deletion of large subgraphs"""
+        if self.transaction:
+            self.transaction.batch()
         return self.wrapped_data.batch()
 
     def unbatch(self):
         """Low-level mechanism to speed up deletion of large subgraphs"""
+        if self.transaction:
+            self.transaction.unbatch()
         return self.wrapped_data.unbatch()
 
     def __iter__(self):

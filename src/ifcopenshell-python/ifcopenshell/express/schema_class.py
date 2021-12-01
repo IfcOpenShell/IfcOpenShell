@@ -488,10 +488,12 @@ class SchemaClass(codegen.Base):
         for name, tys in subtypes.items():
             x.entity_subtypes(name, tys)
 
-        can_be_instantiated_set = set(list(mapping.schema.entities.keys()) + \
-            list(mapping.schema.simpletypes.keys()) + \
-            list(mapping.schema.enumerations.keys()))
-            
+        can_be_instantiated_set = set(
+            list(mapping.schema.entities.keys())
+            + list(mapping.schema.simpletypes.keys())
+            + list(mapping.schema.enumerations.keys())
+        )
+
         x.finalize(can_be_instantiated_set)
 
         self.str = str(x)

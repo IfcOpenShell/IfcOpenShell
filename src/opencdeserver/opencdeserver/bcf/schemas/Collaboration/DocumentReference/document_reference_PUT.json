@@ -1,0 +1,15 @@
+{
+    "title": "document_reference_PUT",
+    "type": "object",
+    "properties": {
+        "document_guid": {
+            "type": ["string", "null"]
+        },
+        "url": {
+            "type": ["string", "null"]
+        },
+        "description": {
+            "type": ["string", "null"]
+        }
+    }
+}

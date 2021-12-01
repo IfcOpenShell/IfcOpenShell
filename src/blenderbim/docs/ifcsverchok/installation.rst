@@ -78,6 +78,16 @@ repository, and see the changes in our Blender installation.
 
     # Link the repository to blender
     $ ln -s src/ifcsverchok /path/to/blender/2.XX/scripts/addons/ifcsverchok
+    
+On Windows:
+
+::
+
+    $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+    $ cd IfcOpenShell
+
+    # Link the repository to blender
+    $ mklink /D "\path\to\blender\2.XX\scripts\addons\ifcsverchok" "\path\to\src\ifcsverchok"
 
 After you modify your code in the Git repository, you will need to restart
 Blender for the changes to take effect. In ``Edit > Preferences > Add-ons`` you

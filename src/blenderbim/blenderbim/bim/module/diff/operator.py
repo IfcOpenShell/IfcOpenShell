@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import ifccsv
 import ifcopenshell
@@ -5,14 +23,14 @@ import json
 from blenderbim.bim.ifc import IfcStore
 
 
-
 class SelectDiffJsonFile(bpy.types.Operator):
     bl_idname = "bim.select_diff_json_file"
     bl_label = "Select Diff JSON File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.DiffProperties.diff_json_file = self.filepath
+        context.scene.DiffProperties.diff_json_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -23,24 +41,25 @@ class SelectDiffJsonFile(bpy.types.Operator):
 class VisualiseDiff(bpy.types.Operator):
     bl_idname = "bim.visualise_diff"
     bl_label = "Visualise Diff"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        #ifc_file = IfcStore.get_file() # In case we get from Store
-        ifc_file = ifcopenshell.open(context.scene.DiffProperties.diff_new_file) # for Now refer to the new file
-        with open(bpy.context.scene.DiffProperties.diff_json_file, "r") as file:
+        # ifc_file = IfcStore.get_file() # In case we get from Store
+        ifc_file = ifcopenshell.open(context.scene.DiffProperties.diff_new_file)  # for Now refer to the new file
+        with open(context.scene.DiffProperties.diff_json_file, "r") as file:
             diff = json.load(file)
-        for obj in bpy.context.visible_objects:
+        for obj in context.visible_objects:
             obj.color = (1.0, 1.0, 1.0, 0.2)
             global_id = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId
             if not global_id:
                 continue
-            if global_id.string_value in diff["deleted"]:
+            if global_id in diff["deleted"]:
                 obj.color = (1.0, 0.0, 0.0, 0.2)
-            elif global_id.string_value in diff["added"]:
+            elif global_id in diff["added"]:
                 obj.color = (0.0, 1.0, 0.0, 0.2)
-            elif global_id.string_value in diff["changed"]:
+            elif global_id in diff["changed"]:
                 obj.color = (0.0, 0.0, 1.0, 0.2)
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
 
@@ -48,10 +67,11 @@ class VisualiseDiff(bpy.types.Operator):
 class SelectDiffOldFile(bpy.types.Operator):
     bl_idname = "bim.select_diff_old_file"
     bl_label = "Select Diff Old File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.DiffProperties.diff_old_file = self.filepath
+        context.scene.DiffProperties.diff_old_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -62,10 +82,11 @@ class SelectDiffOldFile(bpy.types.Operator):
 class SelectDiffNewFile(bpy.types.Operator):
     bl_idname = "bim.select_diff_new_file"
     bl_label = "Select Diff New File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.DiffProperties.diff_new_file = self.filepath
+        context.scene.DiffProperties.diff_new_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -89,12 +110,12 @@ class ExecuteIfcDiff(bpy.types.Operator):
         import ifcdiff
 
         ifc_diff = ifcdiff.IfcDiff(
-            bpy.context.scene.DiffProperties.diff_old_file,
-            bpy.context.scene.DiffProperties.diff_new_file,
+            context.scene.DiffProperties.diff_old_file,
+            context.scene.DiffProperties.diff_new_file,
             self.filepath,
-            bpy.context.scene.DiffProperties.diff_relationships.split(),
+            context.scene.DiffProperties.diff_relationships.split(),
         )
         ifc_diff.diff()
         ifc_diff.export()
-        bpy.context.scene.DiffProperties.diff_json_file = self.filepath
+        context.scene.DiffProperties.diff_json_file = self.filepath
         return {"FINISHED"}

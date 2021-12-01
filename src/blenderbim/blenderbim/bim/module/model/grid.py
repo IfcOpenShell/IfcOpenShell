@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import ifcopenshell.api
 from bpy.types import Operator
@@ -12,7 +30,7 @@ def add_object(self, context):
 
     collection = bpy.data.collections.new(obj.name)
     has_site_collection = False
-    for child in bpy.context.view_layer.layer_collection.children:
+    for child in context.view_layer.layer_collection.children:
         if "IfcProject/" not in child.name:
             continue
         for grandchild in child.children:
@@ -22,7 +40,7 @@ def add_object(self, context):
             grandchild.collection.children.link(collection)
             break
     if not has_site_collection:
-        bpy.context.view_layer.active_layer_collection.collection.children.link(collection)
+        context.view_layer.active_layer_collection.collection.children.link(collection)
     collection.objects.link(obj)
 
     self.file = IfcStore.get_file()
@@ -101,6 +119,9 @@ class BIM_OT_add_object(Operator):
     total_v: IntProperty(name="Number of V Grids", default=3)
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         add_object(self, context)
         return {"FINISHED"}
 

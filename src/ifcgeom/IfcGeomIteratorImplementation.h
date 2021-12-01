@@ -604,6 +604,10 @@ namespace IfcGeom {
 				return false;
 			}
 
+			if (products->size() == 1) {
+				return true;
+			}
+
 			std::set<const IfcSchema::IfcMaterial*> associated_single_materials;
 
 			for (IfcSchema::IfcProduct::list::it it = products->begin(); it != products->end(); ++it) {

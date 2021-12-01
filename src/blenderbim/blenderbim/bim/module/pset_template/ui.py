@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
@@ -29,7 +47,7 @@ class BIM_PT_pset_template(Panel):
 
         if props.active_pset_template_id:
             row.operator("bim.edit_pset_template", text="", icon="CHECKMARK")
-            row.operator("bim.disable_editing_pset_template", text="", icon="X")
+            row.operator("bim.disable_editing_pset_template", text="", icon="CANCEL")
         else:
             row.operator("bim.add_pset_template", text="", icon="ADD")
             row.operator("bim.enable_editing_pset_template", text="", icon="GREASEPENCIL")
@@ -78,7 +96,7 @@ class BIM_PT_pset_template(Panel):
 
             if props.active_prop_template_id and props.active_prop_template_id == prop_template_id:
                 op = row.operator("bim.edit_prop_template", icon="CHECKMARK", text="")
-                row.operator("bim.disable_editing_prop_template", icon="X", text="")
+                row.operator("bim.disable_editing_prop_template", icon="CANCEL", text="")
             elif props.active_prop_template_id and props.active_prop_template_id != prop_template_id:
                 row.operator("bim.remove_prop_template", icon="X", text="").prop_template = prop_template_id
             else:

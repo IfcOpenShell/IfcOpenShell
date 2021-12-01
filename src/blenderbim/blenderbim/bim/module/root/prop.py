@@ -1,4 +1,24 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
+import ifcopenshell
+import ifcopenshell.util.schema
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -51,7 +71,8 @@ def refreshPredefinedTypes(self, context):
     global types_enum
     types_enum.clear()
     enum = getIfcPredefinedTypes(self, context)
-    context.scene.BIMRootProperties.ifc_predefined_type = enum[0][0]
+    if enum:
+        context.scene.BIMRootProperties.ifc_predefined_type = enum[0][0]
 
 
 def getIfcProducts(self, context):
@@ -82,17 +103,8 @@ def getIfcClasses(self, context):
     file = IfcStore.get_file()
     if len(classes_enum) < 1 and file:
         declaration = IfcStore.get_schema().declaration_by_name(context.scene.BIMRootProperties.ifc_product)
-
-        def get_classes(declaration):
-            results = []
-            if not declaration.is_abstract():
-                results.append(declaration.name())
-            for subtype in declaration.subtypes():
-                results.extend(get_classes(subtype))
-            return results
-
-        classes = get_classes(declaration)
-        classes_enum.extend([(c, c, "") for c in sorted(classes)])
+        declarations = ifcopenshell.util.schema.get_subtypes(declaration)
+        classes_enum.extend([(c, c, "") for c in sorted([d.name() for d in declarations])])
     return classes_enum
 
 

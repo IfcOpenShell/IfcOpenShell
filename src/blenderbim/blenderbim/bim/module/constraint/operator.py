@@ -1,7 +1,26 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import json
 import ifcopenshell.api
 import ifcopenshell.util.attribute
+import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.constraint.data import Data
 
@@ -13,8 +32,7 @@ class LoadObjectives(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMConstraintProperties
-        while len(props.constraints) > 0:
-            props.constraints.remove(0)
+        props.constraints.clear()
         for constraint_id, constraint in Data.objectives.items():
             new = props.constraints.add()
             new.name = constraint["Name"] or "Unnamed"
@@ -43,27 +61,12 @@ class EnableEditingConstraint(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMConstraintProperties
-        while len(props.constraint_attributes) > 0:
-            props.constraint_attributes.remove(0)
+        props.constraint_attributes.clear()
 
         if props.is_editing == "IfcObjective":
             data = Data.objectives[self.constraint]
 
-        for attribute in IfcStore.get_schema().declaration_by_name(props.is_editing).all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity" or (isinstance(data_type, tuple) and "entity" in ".".join(data_type)):
-                continue
-            new = props.constraint_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+        blenderbim.bim.helper.import_attributes(props.is_editing, props.constraint_attributes, data)
         props.active_constraint_id = self.constraint
         return {"FINISHED"}
 
@@ -183,17 +186,21 @@ class AssignConstraint(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "constraint.assign_constraint",
-            self.file,
-            **{
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "constraint": self.file.by_id(self.constraint),
-            }
-        )
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:
+            obj_id = obj.BIMObjectProperties.ifc_definition_id
+            if not obj_id:
+                continue
+            ifcopenshell.api.run(
+                "constraint.assign_constraint",
+                self.file,
+                **{
+                    "product": self.file.by_id(obj_id),
+                    "constraint": self.file.by_id(self.constraint),
+                }
+            )
+            Data.load(self.file, obj_id)
         return {"FINISHED"}
 
 
@@ -208,15 +215,19 @@ class UnassignConstraint(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "constraint.unassign_constraint",
-            self.file,
-            **{
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "constraint": self.file.by_id(self.constraint),
-            }
-        )
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:
+            obj_id = obj.BIMObjectProperties.ifc_definition_id
+            if not obj_id:
+                continue
+            ifcopenshell.api.run(
+                "constraint.unassign_constraint",
+                self.file,
+                **{
+                    "product": self.file.by_id(obj_id),
+                    "constraint": self.file.by_id(self.constraint),
+                }
+            )
+            Data.load(self.file, obj_id)
         return {"FINISHED"}

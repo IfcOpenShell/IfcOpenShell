@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json-schema.org/draft-03/schema#",
+    "title": "related_topic_PUT",
+    "description": "Schema for related topic PUT, BCF REST API.",
+    "type": "object",
+    "properties": {
+        "related_topic_guid": {
+            "required": true,
+            "type": "string"
+        }
+    }
+}

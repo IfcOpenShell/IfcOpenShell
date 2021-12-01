@@ -1,0 +1,23 @@
+{
+    "title": "bim_snippet",
+    "type": ["object",
+    "null"],
+    "properties": {
+        "snippet_type": {
+            "required": true,
+            "type": "string"
+        },
+        "is_external": {
+            "required": true,
+            "type": "boolean"
+        },
+        "reference": {
+            "required": true,
+            "type": "string"
+        },
+        "reference_schema": {
+            "required": true,
+            "type": "string"
+        }
+    }
+}

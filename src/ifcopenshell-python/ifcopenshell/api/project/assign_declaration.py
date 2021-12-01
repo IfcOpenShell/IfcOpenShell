@@ -17,6 +17,9 @@ class Usecase:
         if self.settings["relating_context"].Declares:
             declares = self.settings["relating_context"].Declares[0]
 
+        if not hasattr(self.settings["definition"], "HasContext"):
+            return
+
         has_context = None
         if self.settings["definition"].HasContext:
             has_context = self.settings["definition"].HasContext[0]

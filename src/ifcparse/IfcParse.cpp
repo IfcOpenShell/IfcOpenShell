@@ -1216,8 +1216,10 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 		// Remove leading and trailing '.'
 		enum_literal = enum_literal.substr(1, enum_literal.size() - 2);
 		
-		const IfcParse::enumeration_type* enum_type = type()->as_entity()->
-			attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
+		const IfcParse::enumeration_type* enum_type = type()->as_enumeration_type()
+			? type()->as_enumeration_type()
+			: type()->as_entity()->attribute_by_index(i)->type_of_attribute()->
+			as_named_type()->declared_type()->as_enumeration_type();
 		
 		std::vector<std::string>::const_iterator it = std::find(
 			enum_type->enumeration_items().begin(), 
@@ -1504,15 +1506,52 @@ void IfcFile::recalculate_id_counter() {
 	MaxId = (unsigned int)k;
 }
 
+class traversal_recorder {
+	IfcEntityList::ptr list_;
+	std::map<int, IfcEntityList::ptr> instances_by_level_;
+	int mode_;
+
+public:
+	traversal_recorder(int mode) : mode_(mode) {
+		if (mode == 0) {
+			list_.reset(new IfcEntityList);
+		}
+	};
+
+	void push_back(int level, IfcUtil::IfcBaseClass* instance) {
+		if (mode_ == 0) {
+			list_->push(instance);
+		} else {
+			auto& l = instances_by_level_[level];
+			if (!l) {
+				l.reset(new IfcEntityList);
+			}
+			l->push(instance);
+		}
+	}
+
+	IfcEntityList::ptr get_list() const {
+		if (mode_ == 0) {
+			return list_;
+		} else {
+			IfcEntityList::ptr l(new IfcEntityList);
+			for (auto& p : instances_by_level_) {
+				l->push(p.second);
+			}
+			return l;
+		}
+	}
+};
+
 class traversal_visitor {
 private:
 	std::set<IfcUtil::IfcBaseClass*>& visited_;
-	IfcEntityList::ptr& list_;
+	traversal_recorder& list_;
 	int level_;
 	int max_level_;
 
 public:
-	traversal_visitor(std::set<IfcUtil::IfcBaseClass*>& visited, IfcEntityList::ptr& list, int level, int max_level)
+	traversal_visitor(std::set<IfcUtil::IfcBaseClass*>& visited, traversal_recorder& list, int level, int max_level)
 		: visited_(visited)
 		, list_(list)
 		, level_(level)
@@ -1522,12 +1561,12 @@ public:
 	void operator()(IfcUtil::IfcBaseClass* inst);
 };
 
-void traverse_(IfcUtil::IfcBaseClass* instance, std::set<IfcUtil::IfcBaseClass*>& visited, IfcEntityList::ptr list, int level, int max_level) {
+void traverse_(IfcUtil::IfcBaseClass* instance, std::set<IfcUtil::IfcBaseClass*>& visited, traversal_recorder& list, int level, int max_level) {
 	if (visited.find(instance) != visited.end()) {
 		return;
 	}
 	visited.insert(instance);
-	list->push(instance);
+	list.push_back(level, instance);
 
 	if (level >= max_level && max_level > 0) return;
 
@@ -1541,14 +1580,28 @@ void traversal_visitor::operator()(IfcUtil::IfcBaseClass* inst) {
 
 IfcEntityList::ptr IfcParse::traverse(IfcUtil::IfcBaseClass* instance, int max_level) {
 	std::set<IfcUtil::IfcBaseClass*> visited;
-	IfcEntityList::ptr return_value(new IfcEntityList);
-	traverse_(instance, visited, return_value, 0, max_level);
-	return return_value;
+	traversal_recorder r(0);
+	traverse_(instance, visited, r, 0, max_level);
+	return r.get_list();
+}
+
+// I'm cheating this isn't breadth-first, but rather we record visited instances
+// keeping track of their rank and return a list ordered by rank. Is this equivalent?
+IfcEntityList::ptr IfcParse::traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level) {
+	std::set<IfcUtil::IfcBaseClass*> visited;
+	traversal_recorder r(1);
+	traverse_(instance, visited, r, 0, max_level);
+	return r.get_list();
 }
 
 /// @note: for backwards compatibility
 IfcEntityList::ptr IfcFile::traverse(IfcUtil::IfcBaseClass* instance, int max_level) {
 	return IfcParse::traverse(instance, max_level);
+}
+
+/// @note: for backwards compatibility
+IfcEntityList::ptr IfcFile::traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level) {
+	return IfcParse::traverse_breadth_first(instance, max_level);
 }
 
 void IfcFile::mark_entity_as_modified(int /*id*/)
@@ -1694,6 +1747,18 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 					IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
 					copy->set(v);
 					we->setArgument(i, copy);
+				} else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
+					std::vector<std::vector<double>> v = *attr;
+					for (std::vector<std::vector<double>>::iterator it = v.begin(); it != v.end(); ++it) {
+						std::vector<double>& v2 = (*it);
+						for (std::vector<double>::iterator jt = v2.begin(); jt != v2.end(); ++jt) {
+							(*jt) *= conversion_factor;
+						}
+					}
+
+					IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
+					copy->set(v);
+					we->setArgument(i, copy);
 				}
 			}
 		}
@@ -1792,6 +1857,10 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 		build_inverses_(new_entity);
 	}
 
+	// @todo the id isn't actually used here, but instead
+	// clears the entire inverse cache map.
+	mark_entity_as_modified(0);
+
 	return new_entity;
 }
 
@@ -1819,7 +1888,7 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 		throw IfcParse::IfcException("Instance not part of this file");
 	}
 
-	batch_deletion_ids_.insert(id);
+	batch_deletion_ids_.push_back(id);
 
 	if (!batch_mode_) {
 		process_deletion_();
@@ -1828,7 +1897,7 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 
 void IfcFile::process_deletion_() {
 
-	for (auto& id : batch_deletion_ids_) {
+	for (auto& id : batch_deletion_ids_.get<0>()) {
 		auto entity = instance_by_id(id);
 
 		IfcEntityList::ptr references = instances_by_reference(id);
@@ -1974,10 +2043,10 @@ void IfcFile::process_deletion_() {
 	
 	if (batch_mode_) {
 		for (auto it = byref.begin(); it != byref.end();) {
-			bool do_delete = batch_deletion_ids_.find(it->first) != batch_deletion_ids_.end();
+			bool do_delete = batch_deletion_ids_.get<1>().find(it->first) != batch_deletion_ids_.get<1>().end();
 			if (!do_delete) {
 				it->second.erase(std::remove_if(it->second.begin(), it->second.end(), [this](int x) {
-					return batch_deletion_ids_.find(x) != batch_deletion_ids_.end();
+					return batch_deletion_ids_.get<1>().find(x) != batch_deletion_ids_.get<1>().end();
 				}), it->second.end());
 				do_delete = it->second.empty();
 			}
@@ -2137,21 +2206,23 @@ IfcEntityList::ptr IfcFile::getInverse(int instance_id, const IfcParse::declarat
 	IfcEntityList::ptr all = instances_by_reference(instance_id);
 	if (!all) return l;
 
-	for(IfcEntityList::it it = all->begin(); it != all->end(); ++it) {
+	for (IfcEntityList::it it = all->begin(); it != all->end(); ++it) {
 		bool valid = type == 0 || (*it)->declaration().is(*type);
 		if (valid && attribute_index >= 0) {
-            try {
-                Argument* arg = (*it)->data().getArgument(attribute_index);
-                if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
-                    valid = instance == *arg;
-                } else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-                    IfcEntityList::ptr li = *arg;
-                    valid = li->contains(instance);
-                } else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
-                    IfcEntityListList::ptr li = *arg;
-                    valid = li->contains(instance);
-                }
-            } catch (const IfcException& e) {
+			try {
+				Argument* arg = (*it)->data().getArgument(attribute_index);
+				if (arg->isNull()) {
+					valid = false;
+				} else if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
+					valid = instance == *arg;
+				} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+					IfcEntityList::ptr li = *arg;
+					valid = li->contains(instance);
+				} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
+					IfcEntityListList::ptr li = *arg;
+					valid = li->contains(instance);
+				}
+			} catch (const IfcException& e) {
 				valid = false;
 				Logger::Error(e);
 			}
@@ -2190,6 +2261,11 @@ void IfcFile::setDefaultHeaderValues() {
 std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& unit_type) {
 	std::pair<IfcUtil::IfcBaseClass*, double> return_value(0, 1.);
 	IfcEntityList::ptr projects = instances_by_type(schema()->declaration_by_name("IfcProject"));
+	if ( ! projects) {
+		try {
+			projects = instances_by_type(schema()->declaration_by_name("IfcContext"));
+		} catch ( IfcException& e ) {}
+	}
 
 	if (projects && projects->size() == 1) {
 		IfcUtil::IfcBaseClass* project = *projects->begin();

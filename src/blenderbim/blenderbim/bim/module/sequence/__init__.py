@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 from . import ui, prop, operator
 
@@ -76,19 +94,30 @@ classes = (
     operator.AddTaskColumn,
     operator.RemoveTaskColumn,
     operator.SetTaskSortColumn,
+    operator.LoadTaskInputs,
+    operator.LoadTaskResources,
+    operator.LoadTaskOutputs,
+    operator.CalculateTaskDuration,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
+    prop.TaskResource,
+    prop.TaskProduct,
     prop.BIMWorkScheduleProperties,
     prop.BIMTaskTreeProperties,
     prop.WorkCalendar,
     prop.RecurrenceComponent,
     prop.BIMWorkCalendarProperties,
     prop.DatePickerProperties,
+    prop.BIMDateTextProperties,
     ui.BIM_PT_work_plans,
     ui.BIM_PT_work_schedules,
     ui.BIM_PT_work_calendars,
+    ui.BIM_PT_task_icom,
     ui.BIM_UL_task_columns,
+    ui.BIM_UL_task_inputs,
+    ui.BIM_UL_task_resources,
+    ui.BIM_UL_task_outputs,
     ui.BIM_UL_tasks,
 )
 
@@ -104,6 +133,7 @@ def register():
     bpy.types.Scene.BIMTaskTreeProperties = bpy.props.PointerProperty(type=prop.BIMTaskTreeProperties)
     bpy.types.Scene.BIMWorkCalendarProperties = bpy.props.PointerProperty(type=prop.BIMWorkCalendarProperties)
     bpy.types.Scene.DatePickerProperties = bpy.props.PointerProperty(type=prop.DatePickerProperties)
+    bpy.types.TextCurve.BIMDateTextProperties = bpy.props.PointerProperty(type=prop.BIMDateTextProperties)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
 
@@ -113,4 +143,5 @@ def unregister():
     del bpy.types.Scene.BIMTaskTreeProperties
     del bpy.types.Scene.BIMWorkCalendarProperties
     del bpy.types.Scene.DatePickerProperties
+    del bpy.types.TextCurve.BIMDateTextProperties
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)

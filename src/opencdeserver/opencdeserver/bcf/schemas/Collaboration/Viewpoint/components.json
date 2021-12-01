@@ -1,0 +1,18 @@
+{
+    "title": "components",
+    "type": ["object", "null"],
+    "properties": {
+        "selection": {
+            "$ref": "component_list.json"
+        },
+        "coloring": {
+            "type": ["array", "null"],
+            "items": {
+                "$ref": "coloring.json"
+            }
+        },
+        "visibility": {
+            "$ref": "visibility.json"
+        }
+    }
+}

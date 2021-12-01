@@ -9,15 +9,8 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        to_remove = [] # See bug #1224
-        for rel in self.file.by_type("IfcRelVoidsElement"):
-            if rel.RelatedOpeningElement == self.settings["opening"]:
-                to_remove.append(rel)
-                break
-        for rel in self.file.by_type("IfcRelFillsElement"):
-            if rel.RelatingOpeningElement == self.settings["opening"]:
-                to_remove.append(rel)
-                break
+        for rel in self.settings["opening"].VoidsElements:
+            self.file.remove(rel)
+        for rel in self.settings["opening"].HasFillings:
+            self.file.remove(rel)
         ifcopenshell.api.run("root.remove_product", self.file, product=self.settings["opening"])
-        for element in to_remove:
-            self.file.remove(element)

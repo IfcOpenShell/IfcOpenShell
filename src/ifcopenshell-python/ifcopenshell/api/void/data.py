@@ -40,9 +40,9 @@ class Data:
             cls.fillings[filling_id] = {"Name": filling.Name, "FillsVoid": opening_id}
             cls.openings[opening_id]["HasFillings"].add(filling_id)
         return  # See bug #1224
-        #if not hasattr(product, "HasOpenings") or not product.HasOpenings:
+        # if not hasattr(product, "HasOpenings") or not product.HasOpenings:
         #    return
-        #for rel_voids_element in product.HasOpenings:
+        # for rel_voids_element in product.HasOpenings:
         #    opening = rel_voids_element.RelatedOpeningElement
         #    opening_id = int(opening.id())
         #    fillings = []

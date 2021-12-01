@@ -1,6 +1,3 @@
-import ifcopenshell
-
-
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file

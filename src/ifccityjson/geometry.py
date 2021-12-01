@@ -1,3 +1,22 @@
+
+# ifccityjson - Python CityJSON to IFC converter
+# Copyright (C) 2021 Laurens J.N. Oostwegel <l.oostwegel@gmail.com>
+#
+# This file is part of ifccityjson.
+#
+# ifccityjson is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# ifccityjson is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with ifccityjson.  If not, see <http://www.gnu.org/licenses/>.
+
 import warnings
 
 class GeometryIO:
@@ -16,16 +35,50 @@ class GeometryIO:
             IFC_cartesian_point = IFC_model.create_entity("IfcCartesianPoint", IFC_vertex)
             self.vertices[tuple(coord)] = IFC_cartesian_point
 
+    # See for CityJSON geometries:
+    # https://www.cityjson.org/dev/geom-arrays/
+    # https://www.cityjson.org/specs/1.0.3/#geometry-objects
     def create_IFC_geometry(self, IFC_model, geometry):
-        if geometry.type == "Solid":
-            return self.create_IFC_closed_shell(IFC_model, geometry)
-        elif geometry.type in ["CompositeSolid", "MultiSolid"]:
-            return self.create_IFC_composite_closed_shell(IFC_model, geometry)
+        IFC_Geometry = None
+        geometry_type = 'brep'
+        if geometry.type in ["MultiPoint"]:
+            IFC_geometry = self.create_IFC_cartesian_point_list3D(IFC_model, geometry)
+            geometry_type = 'PointCloud'
+        elif geometry.type in ["MultiLineString"]:
+            IFC_geometry = self.create_IFC_composite_curve(IFC_model, geometry)
+            geometry_type = 'Curve3D'
         elif geometry.type in ["CompositeSurface", "MultiSurface"]:
-            return self.create_IFC_surface(IFC_model, geometry)
+            IFC_geometry = self.create_IFC_surface(IFC_model, geometry)
+        elif geometry.type == "Solid":
+            IFC_geometry = self.create_IFC_closed_shell(IFC_model, geometry)
+        elif geometry.type in ["CompositeSolid", "MultiSolid"]:
+            IFC_geometry = self.create_IFC_composite_closed_shell(IFC_model, geometry)
+        elif geometry.type in ["GeometryInstance"]:
+            warnings.warn("GeometryInstance is not supported.")
+            return None, None
         else:
-            warnings.warn("Types other than solids are not yet supported")
-            return
+            warnings.warn("Custom CityJSON geometries are not supported.")
+            return None, None
+        return IFC_geometry, geometry_type
+
+    def create_IFC_cartesian_point_list3D(self, IFC_model, geometry):
+        # https://www.cityjson.org/dev/geom-arrays/
+        # https://standards.buildingsmart.org/IFC/DEV/IFC4_2/FINAL/HTML/schema/ifcgeometricmodelresource/lexical/ifccartesianpointlist3d.htm
+        IFC_geometry = IFC_model.create_entity("IfcCartesianPointList3D", geometry.boundaries)
+        return IFC_geometry
+
+    def create_IFC_composite_curve(self, IFC_model, geometry):
+        # https://www.cityjson.org/dev/geom-arrays/
+        # https://standards.buildingsmart.org/IFC/DEV/IFC4_2/FINAL/HTML/schema/ifcgeometryresource/lexical/ifccompositecurve.htm
+        # https://standards.buildingsmart.org/IFC/DEV/IFC4_2/FINAL/HTML/schema/ifcgeometryresource/lexical/ifccompositecurvesegment.htm
+        IFC_geometry = []
+        for line in geometry.boundaries:
+            vertices = []
+            for vertex in line:
+                vertices.append(self.vertices[tuple(vertex)])
+            polyline = IFC_model.create_entity("IfcPolyLine", vertices)
+            IFC_geometry.append(polyline)
+        return IFC_geometry
 
     def create_IFC_composite_closed_shell(self, IFC_model, geometry):
         shells = []

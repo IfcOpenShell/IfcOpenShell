@@ -34,7 +34,7 @@ class json_logger:
         self.instance = instance
 
     def log(self, level, message, *args, **kwargs):
-        self.statements.append(log_entry_type(level, message % args, kwargs.get('instance'))._asdict())
+        self.statements.append(log_entry_type(level, message % args, kwargs.get("instance"))._asdict())
 
     def __getattr__(self, level):
         return functools.partial(self.log, level, instance=self.instance)
@@ -75,7 +75,7 @@ def assert_valid(attr, val, schema):
 
     while isinstance(attr_type, type_wrappers):
         attr_type = attr_type.declared_type()
-        
+
     invalid = False
 
     if isinstance(attr_type, simple_type):
@@ -120,10 +120,10 @@ def validate(f, logger):
     numeric identifiers or invalidate entity names are not caught by this function. Some of these might have been
     logged and can be retrieved by calling `ifcopenshell.get_log()`. A verification of the type, entity and global
     WHERE rules is also not implemented.
-    
+
     For every entity instance in the model, it is checked that the entity is not abstract that every attribute value
     is of the correct type and that the inverse attributes are of the correct cardinality.
-    
+
     Express simple types are checked for their valuation type. For select types it is asserted that the value conforms
     to one of the leaves. For enumerations it is checked that the value is indeed on of the items. For aggregations it
     is checked that the elements and the cardinality conforms. Type declarations (IfcInteger which is an integer) are
@@ -135,6 +135,7 @@ def validate(f, logger):
             logger.set_instance(inst)
 
         entity = schema.declaration_by_name(inst.is_a())
+        attrs = entity.all_attributes()
 
         if entity.is_abstract():
             e = "Entity %s is abstract" % entity.name()
@@ -143,20 +144,38 @@ def validate(f, logger):
             else:
                 logger.error("In %s\n%s", inst, e)
 
-        for attr, val, is_derived in zip(entity.all_attributes(), inst, entity.derived()):
+        has_invalid_value = False
+        for i in range(len(attrs)):
+            try:
+                inst[i]
+                pass
+            except:
+                if hasattr(logger, "set_instance"):
+                    logger.error("Invalid attribute value for %s.%s", entity, attrs[i])
+                else:
+                    logger.error(
+                        "In %s\nInvalid attribute value for %s.%s",
+                        inst,
+                        entity,
+                        attrs[i],
+                    )
+                has_invalid_value = True
 
-            if val is None and not (is_derived or attr.optional()):
-                logger.error("Attribute %s.%s not optional", entity, attr)
+        if not has_invalid_value:
+            for attr, val, is_derived in zip(attrs, inst, entity.derived()):
 
-            if val is not None:
-                attr_type = attr.type_of_attribute()
-                try:
-                    assert_valid(attr, val, schema)
-                except ValidationError as e:
-                    if hasattr(logger, "set_instance"):
-                        logger.error(str(e))
-                    else:
-                        logger.error("In %s\n%s", inst, e)
+                if val is None and not (is_derived or attr.optional()):
+                    logger.error("Attribute %s.%s not optional", entity, attr)
+
+                if val is not None:
+                    attr_type = attr.type_of_attribute()
+                    try:
+                        assert_valid(attr, val, schema)
+                    except ValidationError as e:
+                        if hasattr(logger, "set_instance"):
+                            logger.error(str(e))
+                        else:
+                            logger.error("In %s\n%s", inst, e)
 
         for attr in entity.all_inverse_attributes():
             val = getattr(inst, attr.name())

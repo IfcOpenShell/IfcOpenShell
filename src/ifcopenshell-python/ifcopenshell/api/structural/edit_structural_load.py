@@ -1,10 +1,7 @@
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {
-            "structural_load": None,
-            "attributes": {}
-        }
+        self.settings = {"structural_load": None, "attributes": {}}
         for key, value in settings.items():
             self.settings[key] = value
 

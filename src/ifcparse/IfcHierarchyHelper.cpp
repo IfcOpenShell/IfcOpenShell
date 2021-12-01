@@ -403,55 +403,93 @@ void IfcHierarchyHelper<Schema>::clipRepresentation(typename Schema::IfcRepresen
 }
 
 template <typename Schema>
-typename Schema::IfcPresentationStyleAssignment* IfcHierarchyHelper<Schema>::addStyleAssignment(double r, double g, double b, double a) {
-	typename Schema::IfcColourRgb* colour = new typename Schema::IfcColourRgb(boost::none, r, g, b);
-	typename Schema::IfcSurfaceStyleRendering* rendering = a == 1.0
-		? new typename Schema::IfcSurfaceStyleRendering(colour, boost::none, 0, 0, 0, 0, 
-			0, 0, Schema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT)
-		: new typename Schema::IfcSurfaceStyleRendering(colour, 1.0-a, 0, 0, 0, 0, 
-			0, 0, Schema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT);
+typename Schema::IfcSurfaceStyle* getSurfaceStyle(IfcHierarchyHelper<Schema>& file, double r, double g, double b, double a = 1.0)
+{
+   typename Schema::IfcColourRgb* colour = new typename Schema::IfcColourRgb(boost::none, r, g, b);
+   typename Schema::IfcSurfaceStyleRendering* rendering = a == 1.0
+      ? new typename Schema::IfcSurfaceStyleRendering(colour, boost::none, 0, 0, 0, 0,
+         0, 0, Schema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT)
+      : new typename Schema::IfcSurfaceStyleRendering(colour, 1.0 - a, 0, 0, 0, 0,
+         0, 0, Schema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT);
 
-	IfcEntityList::ptr styles(new IfcEntityList());
-	styles->push(rendering);
-	typename Schema::IfcSurfaceStyle* surface_style = new typename Schema::IfcSurfaceStyle(
-		boost::none, Schema::IfcSurfaceSide::IfcSurfaceSide_BOTH, styles);
-	IfcEntityList::ptr surface_styles(new IfcEntityList());
-	surface_styles->push(surface_style);
-	typename Schema::IfcPresentationStyleAssignment* style_assignment = 
-		new typename Schema::IfcPresentationStyleAssignment(surface_styles);
-	addEntity(colour);
-	addEntity(rendering);
-	addEntity(surface_style);
-	addEntity(style_assignment);
-	return style_assignment;
+   IfcEntityList::ptr styles(new IfcEntityList());
+   styles->push(rendering);
+   typename Schema::IfcSurfaceStyle* surface_style = new typename Schema::IfcSurfaceStyle(
+      boost::none, Schema::IfcSurfaceSide::IfcSurfaceSide_BOTH, styles);
+
+   file.addEntity(colour);
+   file.addEntity(rendering);
+   file.addEntity(surface_style);
+
+   return surface_style;
+}
+
+template<typename Schema>
+typename Schema::IfcPresentationStyleAssignment* addStyleAssignment_2x3(IfcHierarchyHelper<Schema>& file, double r, double g, double b, double a = 1.0)
+{
+   auto surface_style = getSurfaceStyle<Schema>(file, r, g, b, a);
+   IfcEntityList::ptr surface_styles(new IfcEntityList());
+   surface_styles->push(surface_style);
+   typename Schema::IfcPresentationStyleAssignment* style_assignment =
+      new typename Schema::IfcPresentationStyleAssignment(surface_styles);
+   file.addEntity(style_assignment);
+   return style_assignment;
+}
+
+template<typename Schema>
+typename Schema::IfcPresentationStyle* addStyleAssignment_4x3(IfcHierarchyHelper<Schema>& file, double r, double g, double b, double a = 1.0)
+{
+   return getSurfaceStyle<Schema>(file, r, g, b, a);
 }
 
 template <typename Schema>
-typename Schema::IfcPresentationStyleAssignment* IfcHierarchyHelper<Schema>::setSurfaceColour(
-	typename Schema::IfcProductRepresentation* shape, double r, double g, double b, double a) 
+typename Schema::IfcPresentationStyleAssignment* setSurfaceColour_2x3(IfcHierarchyHelper<Schema>& file, typename Schema::IfcProductRepresentation* shape, double r, double g, double b, double a)
 {
-	typename Schema::IfcPresentationStyleAssignment* style_assignment = addStyleAssignment(r, g, b, a);
-	setSurfaceColour(shape, style_assignment);
-	return style_assignment;
+   typename Schema::IfcPresentationStyleAssignment* style_assignment = addStyleAssignment_2x3(file, r, g, b, a);
+   setSurfaceColour_2x3(file, shape, style_assignment);
+   return style_assignment;
 }
 
 template <typename Schema>
-typename Schema::IfcPresentationStyleAssignment* IfcHierarchyHelper<Schema>::setSurfaceColour(
-	typename Schema::IfcRepresentation* shape, double r, double g, double b, double a) 
+typename Schema::IfcPresentationStyle* setSurfaceColour_4x3(IfcHierarchyHelper<Schema>& file, typename Schema::IfcProductRepresentation* shape, double r, double g, double b, double a)
 {
-	typename Schema::IfcPresentationStyleAssignment* style_assignment = addStyleAssignment(r, g, b, a);
-	setSurfaceColour(shape, style_assignment);
-	return style_assignment;
+   typename Schema::IfcPresentationStyle* style_assignment = addStyleAssignment_4x3(file, r, g, b, a);
+   setSurfaceColour_4x3(file, shape, style_assignment);
+   return style_assignment;
 }
 
 template <typename Schema>
-void IfcHierarchyHelper<Schema>::setSurfaceColour(typename Schema::IfcProductRepresentation* shape, 
-	typename Schema::IfcPresentationStyleAssignment* style_assignment) 
+typename Schema::IfcPresentationStyleAssignment* setSurfaceColour_2x3(IfcHierarchyHelper<Schema>& file, typename Schema::IfcRepresentation* shape, double r, double g, double b, double a)
 {
-	typename Schema::IfcRepresentation::list::ptr reps = shape->Representations();
-	for (typename Schema::IfcRepresentation::list::it j = reps->begin(); j != reps->end(); ++j) {
-		setSurfaceColour(*j, style_assignment);
-	}
+   typename Schema::IfcPresentationStyleAssignment* style_assignment = addStyleAssignment_2x3(file, r, g, b, a);
+   setSurfaceColour_2x3(file, shape, style_assignment);
+   return style_assignment;
+}
+
+template <typename Schema>
+typename Schema::IfcPresentationStyle* setSurfaceColour_4x3(IfcHierarchyHelper<Schema>& file, typename Schema::IfcRepresentation* shape, double r, double g, double b, double a)
+{
+   typename Schema::IfcPresentationStyle* style_assignment = addStyleAssignment_4x3(file, r, g, b, a);
+   setSurfaceColour_4x3(file, shape, style_assignment);
+   return style_assignment;
+}
+
+template <typename Schema>
+void setSurfaceColour_2x3(IfcHierarchyHelper<Schema>& file, typename Schema::IfcProductRepresentation* shape, typename Schema::IfcPresentationStyleAssignment* style_assignment)
+{
+   typename Schema::IfcRepresentation::list::ptr reps = shape->Representations();
+   for (typename Schema::IfcRepresentation::list::it j = reps->begin(); j != reps->end(); ++j) {
+      setSurfaceColour_2x3(file, *j, style_assignment);
+   }
+}
+
+template <typename Schema>
+void setSurfaceColour_4x3(IfcHierarchyHelper<Schema>& file, typename Schema::IfcProductRepresentation* shape, typename Schema::IfcPresentationStyle* style)
+{
+   typename Schema::IfcRepresentation::list::ptr reps = shape->Representations();
+   for (typename Schema::IfcRepresentation::list::it j = reps->begin(); j != reps->end(); ++j) {
+      setSurfaceColour_4x3(file, *j, style);
+   }
 }
 
 #ifdef HAS_SCHEMA_2x3
@@ -502,17 +540,263 @@ Ifc4x3_rc2::IfcStyledItem* create_styled_item(Ifc4x3_rc2::IfcRepresentationItem*
 }
 #endif
 
+#ifdef HAS_SCHEMA_4x3_rc3
+Ifc4x3_rc3::IfcStyledItem* create_styled_item(Ifc4x3_rc3::IfcRepresentationItem* item, Ifc4x3_rc3::IfcPresentationStyle* style) {
+   boost::shared_ptr<IfcTemplatedEntityList<Ifc4x3_rc3::IfcPresentationStyle>> styles(new IfcTemplatedEntityList<Ifc4x3_rc3::IfcPresentationStyle>());
+   styles->push(style);
+   return new Ifc4x3_rc3::IfcStyledItem(item, styles, boost::none);
+}
+#endif
+
+#ifdef HAS_SCHEMA_4x3_rc4
+Ifc4x3_rc4::IfcStyledItem* create_styled_item(Ifc4x3_rc4::IfcRepresentationItem* item, Ifc4x3_rc4::IfcPresentationStyle* style) {
+   boost::shared_ptr<IfcTemplatedEntityList<Ifc4x3_rc4::IfcPresentationStyle>> styles(new IfcTemplatedEntityList<Ifc4x3_rc4::IfcPresentationStyle>());
+   styles->push(style);
+   return new Ifc4x3_rc4::IfcStyledItem(item, styles, boost::none);
+}
+#endif
+
 template <typename Schema>
-void IfcHierarchyHelper<Schema>::setSurfaceColour(typename Schema::IfcRepresentation* rep, 
-	typename Schema::IfcPresentationStyleAssignment* style_assignment) 
+void setSurfaceColour_2x3(IfcHierarchyHelper<Schema>& file, typename Schema::IfcRepresentation* rep, typename Schema::IfcPresentationStyleAssignment* style_assignment)
 {
 	typename Schema::IfcRepresentationItem::list::ptr items = rep->Items();
 	for (typename Schema::IfcRepresentationItem::list::it i = items->begin(); i != items->end(); ++i) {
 		typename Schema::IfcRepresentationItem* item = *i;
 		typename Schema::IfcStyledItem* styled_item = create_styled_item(item, style_assignment);
-		addEntity(styled_item);
+		file.addEntity(styled_item);
 	}
 }
+
+template <typename Schema>
+void setSurfaceColour_4x3(IfcHierarchyHelper<Schema>& file, typename Schema::IfcRepresentation* rep, typename Schema::IfcPresentationStyle* style)
+{
+   typename Schema::IfcRepresentationItem::list::ptr items = rep->Items();
+   for (typename Schema::IfcRepresentationItem::list::it i = items->begin(); i != items->end(); ++i) {
+      typename Schema::IfcRepresentationItem* item = *i;
+      typename Schema::IfcStyledItem* styled_item = create_styled_item(item, style);
+      file.addEntity(styled_item);
+   }
+}
+
+#ifdef HAS_SCHEMA_2x3
+Ifc2x3::IfcPresentationStyleAssignment* addStyleAssignment(IfcHierarchyHelper<Ifc2x3>& file, double r, double g, double b, double a)
+{
+   return addStyleAssignment_2x3(file, r, g, b, a);
+}
+
+Ifc2x3::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, Ifc2x3::IfcProductRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_2x3(file, shape, r, g, b, a);
+}
+
+Ifc2x3::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, Ifc2x3::IfcRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_2x3(file, shape, r, g, b, a);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, Ifc2x3::IfcProductRepresentation* shape, Ifc2x3::IfcPresentationStyleAssignment* style_assignment)
+{
+   setSurfaceColour_2x3(file, shape, style_assignment);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, Ifc2x3::IfcRepresentation* shape, Ifc2x3::IfcPresentationStyleAssignment* style_assignment)
+{
+   setSurfaceColour_2x3(file, shape, style_assignment);
+}
+#endif
+
+#ifdef HAS_SCHEMA_4
+Ifc4::IfcPresentationStyleAssignment* addStyleAssignment(IfcHierarchyHelper<Ifc4>& file, double r, double g, double b, double a)
+{
+   return addStyleAssignment_2x3(file, r, g, b, a);
+}
+
+Ifc4::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, Ifc4::IfcProductRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_2x3(file, shape, r, g, b, a);
+}
+
+Ifc4::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, Ifc4::IfcRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_2x3(file, shape, r, g, b, a);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, Ifc4::IfcProductRepresentation* shape, Ifc4::IfcPresentationStyleAssignment* style_assignment)
+{
+   setSurfaceColour_2x3(file, shape, style_assignment);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, Ifc4::IfcRepresentation* shape, Ifc4::IfcPresentationStyleAssignment* style_assignment)
+{
+   setSurfaceColour_2x3(file, shape, style_assignment);
+}
+#endif
+
+
+#ifdef HAS_SCHEMA_4x1
+Ifc4x1::IfcPresentationStyleAssignment* addStyleAssignment(IfcHierarchyHelper<Ifc4x1>& file, double r, double g, double b, double a)
+{
+   return addStyleAssignment_2x3(file, r, g, b, a);
+}
+
+Ifc4x1::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, Ifc4x1::IfcProductRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_2x3(file, shape, r, g, b, a);
+}
+
+Ifc4x1::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, Ifc4x1::IfcRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_2x3(file, shape, r, g, b, a);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, Ifc4x1::IfcProductRepresentation* shape, Ifc4x1::IfcPresentationStyleAssignment* style_assignment)
+{
+   setSurfaceColour_2x3(file, shape, style_assignment);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, Ifc4x1::IfcRepresentation* shape, Ifc4x1::IfcPresentationStyleAssignment* style_assignment)
+{
+   setSurfaceColour_2x3(file, shape, style_assignment);
+}
+#endif
+
+
+#ifdef HAS_SCHEMA_4x2
+Ifc4x2::IfcPresentationStyleAssignment* addStyleAssignment(IfcHierarchyHelper<Ifc4x2>& file, double r, double g, double b, double a)
+{
+   return addStyleAssignment_2x3(file, r, g, b, a);
+}
+
+Ifc4x2::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, Ifc4x2::IfcProductRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_2x3(file, shape, r, g, b, a);
+}
+
+Ifc4x2::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, Ifc4x2::IfcRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_2x3(file, shape, r, g, b, a);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, Ifc4x2::IfcProductRepresentation* shape, Ifc4x2::IfcPresentationStyleAssignment* style_assignment)
+{
+   setSurfaceColour_2x3(file, shape, style_assignment);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, Ifc4x2::IfcRepresentation* shape, Ifc4x2::IfcPresentationStyleAssignment* style_assignment)
+{
+   setSurfaceColour_2x3(file, shape, style_assignment);
+}
+#endif
+
+#ifdef HAS_SCHEMA_4x3_rc1
+Ifc4x3_rc1::IfcPresentationStyleAssignment* addStyleAssignment(IfcHierarchyHelper<Ifc4x3_rc1>& file, double r, double g, double b, double a)
+{
+   return addStyleAssignment_2x3(file, r, g, b, a);
+}
+
+Ifc4x3_rc1::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, Ifc4x3_rc1::IfcProductRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_2x3(file, shape, r, g, b, a);
+}
+
+Ifc4x3_rc1::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, Ifc4x3_rc1::IfcRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_2x3(file, shape, r, g, b, a);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, Ifc4x3_rc1::IfcProductRepresentation* shape, Ifc4x3_rc1::IfcPresentationStyleAssignment* style_assignment)
+{
+   setSurfaceColour_2x3(file, shape, style_assignment);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, Ifc4x3_rc1::IfcRepresentation* shape, Ifc4x3_rc1::IfcPresentationStyleAssignment* style_assignment)
+{
+   setSurfaceColour_2x3(file, shape, style_assignment);
+}
+#endif
+
+#ifdef HAS_SCHEMA_4x3_rc2
+Ifc4x3_rc2::IfcPresentationStyleAssignment* addStyleAssignment(IfcHierarchyHelper<Ifc4x3_rc2>& file, double r, double g, double b, double a)
+{
+   return addStyleAssignment_2x3(file, r, g, b, a);
+}
+
+Ifc4x3_rc2::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, Ifc4x3_rc2::IfcProductRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_2x3(file, shape, r, g, b, a);
+}
+
+Ifc4x3_rc2::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, Ifc4x3_rc2::IfcRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_2x3(file, shape, r, g, b, a);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, Ifc4x3_rc2::IfcProductRepresentation* shape, Ifc4x3_rc2::IfcPresentationStyleAssignment* style_assignment)
+{
+   setSurfaceColour_2x3(file, shape, style_assignment);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, Ifc4x3_rc2::IfcRepresentation* shape, Ifc4x3_rc2::IfcPresentationStyleAssignment* style_assignment)
+{
+   setSurfaceColour_2x3(file, shape, style_assignment);
+}
+#endif
+
+#ifdef HAS_SCHEMA_4x3_rc3
+Ifc4x3_rc3::IfcPresentationStyle* addStyleAssignment(IfcHierarchyHelper<Ifc4x3_rc3>& file, double r, double g, double b, double a)
+{
+   return addStyleAssignment_4x3(file, r, g, b, a);
+}
+
+Ifc4x3_rc3::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, Ifc4x3_rc3::IfcProductRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_4x3(file, shape, r, g, b, a);
+}
+
+Ifc4x3_rc3::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, Ifc4x3_rc3::IfcRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_4x3(file, shape, r, g, b, a);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, Ifc4x3_rc3::IfcProductRepresentation* shape, Ifc4x3_rc3::IfcPresentationStyle* style)
+{
+   setSurfaceColour_4x3(file, shape, style);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, Ifc4x3_rc3::IfcRepresentation* shape, Ifc4x3_rc3::IfcPresentationStyle* style)
+{
+   setSurfaceColour_4x3(file, shape, style);
+}
+#endif
+
+#ifdef HAS_SCHEMA_4x3_rc4
+Ifc4x3_rc4::IfcPresentationStyle* addStyleAssignment(IfcHierarchyHelper<Ifc4x3_rc4>& file, double r, double g, double b, double a)
+{
+   return addStyleAssignment_4x3(file, r, g, b, a);
+}
+
+Ifc4x3_rc4::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, Ifc4x3_rc4::IfcProductRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_4x3(file, shape, r, g, b, a);
+}
+
+Ifc4x3_rc4::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, Ifc4x3_rc4::IfcRepresentation* shape, double r, double g, double b, double a)
+{
+   return setSurfaceColour_4x3(file, shape, r, g, b, a);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, Ifc4x3_rc4::IfcProductRepresentation* shape, Ifc4x3_rc4::IfcPresentationStyle* style)
+{
+   setSurfaceColour_4x3(file, shape, style);
+}
+
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, Ifc4x3_rc4::IfcRepresentation* shape, Ifc4x3_rc4::IfcPresentationStyle* style)
+{
+   setSurfaceColour_4x3(file, shape, style);
+}
+#endif
+
+
 
 template <typename Schema>
 typename Schema::IfcProductDefinitionShape* IfcHierarchyHelper<Schema>::addMappedItem(
@@ -611,4 +895,10 @@ template IFC_PARSE_API class IfcHierarchyHelper<Ifc4x3_rc1>;
 #endif
 #ifdef HAS_SCHEMA_4x3_rc2
 template IFC_PARSE_API class IfcHierarchyHelper<Ifc4x3_rc2>;
+#endif
+#ifdef HAS_SCHEMA_4x3_rc3
+template IFC_PARSE_API class IfcHierarchyHelper<Ifc4x3_rc3>;
+#endif
+#ifdef HAS_SCHEMA_4x3_rc4
+template IFC_PARSE_API class IfcHierarchyHelper<Ifc4x3_rc4>;
 #endif

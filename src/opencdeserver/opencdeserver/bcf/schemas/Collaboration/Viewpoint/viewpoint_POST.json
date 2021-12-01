@@ -1,0 +1,46 @@
+{
+    "title": "viewpoint_POST",
+    "type": [ "object" ],
+    "properties": {
+        "guid": {
+            "type": ["string",
+            "null"]
+        },
+        "index": {
+            "type": [
+                "integer",
+                "null"
+            ]
+        },
+        "orthogonal_camera": {
+            "$ref": "orthogonal_camera.json"
+        },
+        "perspective_camera": {
+            "$ref": "perspective_camera.json"
+        },
+        "lines": {
+            "type": ["array", "null"],
+            "items": {
+                "$ref": "line.json"
+            }
+        },
+        "clipping_planes": {
+            "type": ["array", "null"],
+            "items": {
+                "$ref": "clipping_plane.json"
+            }
+        },
+        "bitmaps": {
+            "type": ["array", "null"],
+            "items": {
+                "$ref": "bitmap_POST.json"
+            }
+        },
+        "snapshot": {
+            "$ref": "snapshot_POST.json"
+        },
+        "components": {
+            "$ref": "components.json"
+        }
+    }
+}

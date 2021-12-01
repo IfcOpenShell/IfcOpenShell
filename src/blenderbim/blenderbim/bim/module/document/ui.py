@@ -1,5 +1,24 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import draw_attributes
 from ifcopenshell.api.document.data import Data
 
 
@@ -26,7 +45,7 @@ class BIM_PT_documents(Panel):
             row.label(text="{} Documents Found".format(len(Data.information)), icon="FILE")
             if self.props.is_editing == "information":
                 row.operator("bim.add_information", text="", icon="ADD")
-                row.operator("bim.disable_document_editing_ui", text="", icon="X")
+                row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
             else:
                 row.operator("bim.load_information", text="", icon="IMPORT")
 
@@ -35,7 +54,7 @@ class BIM_PT_documents(Panel):
             row.label(text="{} References Found".format(len(Data.references)), icon="FILE_HIDDEN")
             if self.props.is_editing == "reference":
                 row.operator("bim.add_document_reference", text="", icon="ADD")
-                row.operator("bim.disable_document_editing_ui", text="", icon="X")
+                row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
             else:
                 row.operator("bim.load_document_references", text="", icon="IMPORT")
 
@@ -48,14 +67,7 @@ class BIM_PT_documents(Panel):
             self.draw_editable_ui(context)
 
     def draw_editable_ui(self, context):
-        for attribute in self.props.document_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(self.props.document_attributes, self.layout)
 
 
 class BIM_PT_object_documents(Panel):
@@ -116,7 +128,7 @@ class BIM_PT_object_documents(Panel):
             row = self.layout.row(align=True)
             icon = "FILE" if self.props.is_adding == "IfcDocumentInformation" else "FILE_HIDDEN"
             row.label(text="Adding {}".format(self.props.is_adding), icon=icon)
-            row.operator("bim.disable_assigning_document", text="", icon="X")
+            row.operator("bim.disable_assigning_document", text="", icon="CANCEL")
             self.layout.template_list(
                 "BIM_UL_object_documents",
                 "",
@@ -142,7 +154,7 @@ class BIM_UL_documents(UIList):
                     row.operator("bim.edit_information", text="", icon="CHECKMARK")
                 elif context.scene.BIMDocumentProperties.is_editing == "reference":
                     row.operator("bim.edit_document_reference", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_document", text="", icon="X")
+                row.operator("bim.disable_editing_document", text="", icon="CANCEL")
             elif context.scene.BIMDocumentProperties.active_document_id:
                 row.operator("bim.remove_document", text="", icon="X").document = item.ifc_definition_id
             else:

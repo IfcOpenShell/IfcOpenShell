@@ -64,3 +64,15 @@ class Usecase:
                     "Material": self.settings["product"],
                 }
             )
+        elif self.settings["product"].is_a("IfcProfileDef"):
+            for definition in self.settings["product"].HasProperties or []:
+                if definition.Name == self.settings["name"]:
+                    return definition
+
+            return self.file.create_entity(
+                "IfcProfileProperties",
+                **{
+                    "Name": self.settings["name"],
+                    "ProfileDefinition": self.settings["product"],
+                }
+            )

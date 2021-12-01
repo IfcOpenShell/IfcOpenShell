@@ -176,12 +176,14 @@ const IfcParse::enumeration_type& %(schema_name)s::%(name)s::Class() { return *%
 }
 
 %(schema_name)s::%(name)s::%(name)s(Value v) {
+    data_ = new IfcEntityInstanceData(%(schema_name_upper)s_%(name)s_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 %(schema_name)s::%(name)s::%(name)s(const std::string& v) {
+    data_ = new IfcEntityInstanceData(%(schema_name_upper)s_%(name)s_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);

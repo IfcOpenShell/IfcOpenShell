@@ -217,7 +217,44 @@ Usage examples
     >>> # Writing IFC-SPF files to disk:
     >>> f.write("out.ifc")
 
-[LGPL]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/COPYING "LGPL"
+Extra tools
+-----------
+
+Also available are a series of utilities that are based on or related to IfcOpenShell.
+
+Those marked with an asterisk are part of IfcOpenShell.
+
+Name | License
+--- | ---
+bcf | LGPL-3.0-or-later
+blenderbim | GPL-3.0-or-later
+bsdd | LGPL-3.0-or-later
+ifc2ca | LGPL-3.0-or-later
+ifc4d | LGPL-3.0-or-later
+ifc5d | LGPL-3.0-or-later
+ifcbimtester | LGPL-3.0-or-later
+ifcblender | LGPL-3.0-or-later\*
+ifccityjson | LGPL-3.0-or-later
+ifcclash | LGPL-3.0-or-later
+ifccobie | LGPL-3.0-or-later
+ifcconvert | LGPL-3.0-or-later\*
+ifccsv | LGPL-3.0-or-later
+ifcdiff | LGPL-3.0-or-later
+ifcfm | LGPL-3.0-or-later
+ifcgeom | LGPL-3.0-or-later\*
+ifcgeom\_schema\_agnostic | LGPL-3.0-or-later\*
+ifcgeomserver | LGPL-3.0-or-later\*
+ifcjni | LGPL-3.0-or-later\*
+ifcmax | LGPL-3.0-or-later\*
+ifcopenshell-python | LGPL-3.0-or-later\*
+ifcparse | LGPL-3.0-or-later\*
+ifcpatch | LGPL-3.0-or-later
+ifcsverchok | GPL-3.0-or-later
+ifcwrap | LGPL-3.0-or-later\*
+qtviewer | LGPL-3.0-or-later\*
+serializers | LGPL-3.0-or-later\*
+
+[LGPL]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/COPYING.LESSER "LGPL-3.0-or-later"
 [IFC]: https://technical.buildingsmart.org/standards/ifc/ "IFC"
 [IFC2x3 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ "IFC2x3 TC1"
 [IFC4 Add2 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/ "IFC4 Add2 TC1"

@@ -1,0 +1,47 @@
+{
+    "title": "comment_GET",
+    "type": "object",
+    "properties": {
+        "guid": {
+            "required": true,
+            "type": "string"
+        },
+        "date": {
+            "required": true,
+            "type": "string"
+        },
+        "author": {
+            "required": true,
+            "type": "string"
+        },
+        "comment": {
+            "required": true,
+            "type": "string"
+        },
+        "topic_guid": {
+            "required": true,
+            "type": "string"
+        },
+        "viewpoint_guid": {
+            "type": ["string",
+            "null"]
+        },
+        "modified_date": {
+            "type": ["string",
+            "null"]
+        },
+        "modified_author": {
+            "type": ["string",
+            "null"]
+        },
+        "authorization": {
+            "type": "object",
+            "required": false,
+            "properties": {
+                "comment_actions": {
+                    "$ref": "../Action/comment_actions.json"
+                }
+            }
+        }
+    }
+}

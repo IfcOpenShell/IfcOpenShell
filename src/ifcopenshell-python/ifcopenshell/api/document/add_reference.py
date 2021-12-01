@@ -1,5 +1,6 @@
 import ifcopenshell
 
+
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
@@ -9,6 +10,4 @@ class Usecase:
 
     def execute(self):
         id_attribute = "ItemReference" if self.file.schema == "IFC2X3" else "Identification"
-        return self.file.create_entity("IfcDocumentReference", **{
-            id_attribute: ifcopenshell.guid.new()
-        })
+        return self.file.create_entity("IfcDocumentReference", **{id_attribute: ifcopenshell.guid.new()})

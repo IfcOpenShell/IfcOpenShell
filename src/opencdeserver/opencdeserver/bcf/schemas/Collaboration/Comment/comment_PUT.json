@@ -1,0 +1,14 @@
+{
+    "title": "comment_PUT",
+    "type": "object",
+    "properties": {
+        "comment": {
+            "required": true,
+            "type": "string"
+        },
+        "viewpoint_guid": {
+            "type": ["string",
+            "null"]
+        }
+    }
+}

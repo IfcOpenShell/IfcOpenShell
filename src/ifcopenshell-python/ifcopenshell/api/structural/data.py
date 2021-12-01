@@ -144,8 +144,6 @@ class Data:
 
     @classmethod
     def load_structural_connection(cls, product_id):
-        cls.connects_structural_members = {}
-
         connection = cls._file.by_id(product_id)
         data = connection.get_info()
         del data["OwnerHistory"]
@@ -155,7 +153,9 @@ class Data:
         if connection.is_a("IfcStructuralCurveConnection"):
             data["Axis"] = data["Axis"].id() if data["Axis"] is not None else None
         if connection.is_a("IfcStructuralPointConnection"):
-            data["ConditionCoordinateSystem"] = data["ConditionCoordinateSystem"].id() if data["ConditionCoordinateSystem"] is not None else None
+            data["ConditionCoordinateSystem"] = (
+                data["ConditionCoordinateSystem"].id() if data["ConditionCoordinateSystem"] is not None else None
+            )
 
         data["ConnectsStructuralMembers"] = []
 
@@ -238,7 +238,7 @@ class Data:
         data["Representation"] = data["Representation"].id() if data["Representation"] is not None else None
         if member.is_a("IfcStructuralCurveMember"):
             data["Axis"] = data["Axis"].id() if data["Axis"] is not None else None
-        
+
         data["ConnectsStructuralActivities"] = []
         data["ConnectedBy"] = []
 
@@ -249,6 +249,5 @@ class Data:
         for rel in member.ConnectedBy or []:
             cls.load_connects_structural_member(rel)
             data["ConnectedBy"].append(rel.id())
-        
 
         cls.members[member.id()] = data

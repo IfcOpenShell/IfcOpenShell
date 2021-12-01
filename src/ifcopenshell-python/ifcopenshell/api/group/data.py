@@ -21,4 +21,4 @@ class Data:
             data = group.get_info()
             del data["OwnerHistory"]
             cls.groups[group.id()] = data
-        cls.is_loaded=True
+        cls.is_loaded = True

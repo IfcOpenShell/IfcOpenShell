@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import os
 import logging
@@ -11,10 +29,11 @@ from blenderbim.bim.ifc import IfcStore
 class SelectCobieIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_cobie_ifc_file"
     bl_label = "Select COBie IFC File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.COBieProperties.cobie_ifc_file = self.filepath
+        context.scene.COBieProperties.cobie_ifc_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -25,10 +44,11 @@ class SelectCobieIfcFile(bpy.types.Operator):
 class SelectCobieJsonFile(bpy.types.Operator):
     bl_idname = "bim.select_cobie_json_file"
     bl_label = "Select COBie JSON File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.COBieProperties.cobie_json_file = self.filepath
+        context.scene.COBieProperties.cobie_json_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -41,15 +61,21 @@ class ExecuteIfcCobie(bpy.types.Operator):
     bl_label = "Execute IFCCOBie"
     file_format: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.COBieProperties
+        return props.should_load_from_memory or props.cobie_ifc_file
+
     def execute(self, context):
         from cobie import IfcCobieParser
-        props = bpy.context.scene.COBieProperties
-        
-        output_dir = os.path.dirname(props.cobie_ifc_file)
-        
+
+        props = context.scene.COBieProperties
+
         if props.should_load_from_memory:
             output_dir = tempfile.gettempdir()
-        
+        else:
+            output_dir = os.path.dirname(props.cobie_ifc_file)
+
         output = os.path.join(output_dir, "output")
         logger = logging.getLogger("IFCtoCOBie")
         fh = logging.FileHandler(os.path.join(output_dir, "cobie.log"))
@@ -66,10 +92,10 @@ class ExecuteIfcCobie(bpy.types.Operator):
         parser = IfcCobieParser(logger, selector)
 
         ifc_file = IfcStore.get_file()
-        
+
         if not (ifc_file and props.should_load_from_memory):
             ifc_file = props.cobie_ifc_file
-        
+
         parser.parse(
             ifc_file,
             props.cobie_types,
@@ -96,4 +122,3 @@ class ExecuteIfcCobie(bpy.types.Operator):
             webbrowser.open("file://" + output_dir)
         webbrowser.open("file://" + output_dir + "/cobie.log")
         return {"FINISHED"}
-

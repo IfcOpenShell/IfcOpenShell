@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
@@ -17,7 +35,7 @@ class AssignObject(bpy.types.Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         )
         relating_object = bpy.data.objects.get(self.relating_object)
         if not relating_object or not relating_object.BIMObjectProperties.ifc_definition_id:
@@ -40,7 +58,7 @@ class AssignObject(bpy.types.Operator):
             spatial_collection = bpy.data.collections.get(related_object.name)
             relating_collection = bpy.data.collections.get(relating_object.name)
             if spatial_collection:
-                self.remove_collection(bpy.context.scene.collection, spatial_collection)
+                self.remove_collection(context.scene.collection, spatial_collection)
                 for collection in bpy.data.collections:
                     if collection == relating_collection:
                         if not collection.children.get(spatial_collection.name):
@@ -67,8 +85,8 @@ class EnableEditingAggregate(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.relating_object = None
-        bpy.context.active_object.BIMObjectProperties.is_editing_aggregate = True
+        context.active_object.BIMObjectProperties.relating_object = None
+        context.active_object.BIMObjectProperties.is_editing_aggregate = True
         return {"FINISHED"}
 
 
@@ -79,7 +97,7 @@ class DisableEditingAggregate(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         obj.BIMObjectProperties.is_editing_aggregate = False
         return {"FINISHED"}
 
@@ -94,9 +112,9 @@ class AddAggregate(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         aggregate_collection = bpy.data.collections.new("IfcElementAssembly/Assembly")
-        bpy.context.scene.collection.children.link(aggregate_collection)
+        context.scene.collection.children.link(aggregate_collection)
         aggregate = bpy.data.objects.new("Assembly", None)
         aggregate_collection.objects.link(aggregate)
         bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class="IfcElementAssembly")

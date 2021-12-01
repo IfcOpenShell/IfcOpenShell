@@ -1,13 +1,38 @@
+
+# IfcPatch - IFC patching utiliy
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcPatch.
+#
+# IfcPatch is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcPatch is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell
 import ifcopenshell.util.selector
 
 
 class Patcher:
-    def __init__(self, src, file, logger, args=None):
+    def __init__(self, src, file, logger, query: str = ".IfcWall"):
+        """Extract Elements
+
+        Extract a subset of elements from an existing IFC data set and save it to a new IFC file.
+
+        :param query: A query to select the subset of IFC elements.
+        """
         self.src = src
         self.file = file
         self.logger = logger
-        self.args = args
+        self.query = query
 
     def patch(self):
         self.contained_ins = {}
@@ -18,7 +43,7 @@ class Patcher:
             self.owner_history = self.new.add(owner_history)
             break
         selector = ifcopenshell.util.selector.Selector()
-        for element in selector.parse(self.file, self.args[0]):
+        for element in selector.parse(self.file, self.query):
             self.add_element(element)
         self.create_spatial_tree()
         self.file = self.new

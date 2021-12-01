@@ -1,0 +1,15 @@
+{
+    "title": "component",
+    "type": ["object"],
+    "properties": {
+        "ifc_guid": {
+            "type": ["string", "null"]
+        },
+        "originating_system": {
+            "type": ["string", "null"]
+        },
+        "authoring_tool_id": {
+            "type": ["string", "null"]
+        }
+    }
+}

@@ -9,9 +9,12 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        self.file.create_entity("IfcPropertySetTemplate", **{
-            "GlobalId": ifcopenshell.guid.new(),
-            "Name": "New_Pset",
-            "TemplateType": "PSET_TYPEDRIVENONLY",
-            "ApplicableEntity": "IfcTypeObject"
-        })
+        self.file.create_entity(
+            "IfcPropertySetTemplate",
+            **{
+                "GlobalId": ifcopenshell.guid.new(),
+                "Name": "New_Pset",
+                "TemplateType": "PSET_TYPEDRIVENONLY",
+                "ApplicableEntity": "IfcTypeObject",
+            }
+        )

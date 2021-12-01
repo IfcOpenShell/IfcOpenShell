@@ -51,4 +51,5 @@ class Usecase:
                 self.file,
                 product=self.settings["product"],
                 matrix=ifcopenshell.util.placement.get_local_placement(self.settings["product"].ObjectPlacement),
+                is_si=False,
             )
