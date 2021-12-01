@@ -1400,8 +1400,6 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 	if (this->file) {
 		register_inverse_visitor visitor(*this->file, *this);
 		apply_individual_instance_visitor(copy, i).apply(visitor);
-
-		this->file->mark_entity_as_modified(id_);
 	}
 
 	attributes_[i] = copy;
@@ -1732,11 +1730,6 @@ aggregate_of_instance::ptr IfcFile::traverse_breadth_first(IfcUtil::IfcBaseClass
 	return IfcParse::traverse_breadth_first(instance, max_level);
 }
 
-void IfcFile::mark_entity_as_modified(int /*id*/)
-{
-	by_ref_cached_.clear();
-}
-
 void IfcFile::addEntities(aggregate_of_instance::ptr es) {
 	for( aggregate_of_instance::it i = es->begin(); i != es->end(); ++ i ) {
 		addEntity(*i);
@@ -1984,10 +1977,6 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 		build_inverses_(new_entity);
 	}
 
-	// @todo the id isn't actually used here, but instead
-	// clears the entire inverse cache map.
-	mark_entity_as_modified(0);
-
 	return new_entity;
 }
 
@@ -2123,7 +2112,6 @@ void IfcFile::process_deletion_() {
 					{
 						byref_excl.erase(name);
 					}
-					by_ref_cached_.erase(name);
 				}
 			}
 		}
@@ -2215,8 +2203,6 @@ void IfcFile::process_deletion_() {
 			}
 		}
 	}
-
-	by_ref_cached_.clear();
 
 	batch_deletion_ids_.clear();
 }
