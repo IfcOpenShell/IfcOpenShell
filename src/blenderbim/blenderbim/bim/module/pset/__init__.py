@@ -29,19 +29,19 @@ classes = (
     operator.GuessQuantity,
     operator.RemovePset,
     operator.TogglePsetExpansion,
-    operator.AddPropertyToEdit,
-    operator.RemovePropertyToEdit,
-    operator.ClearList,
-    operator.RenameParameters,
-    operator.AddEditCustomProperty,
+    operator.BIM_OT_add_property_to_edit,
+    operator.BIM_OT_remove_property_to_edit,
+    operator.BIM_OT_clear_list,
+    operator.BIM_OT_rename_parameters,
+    operator.BIM_OT_add_edit_custom_property,
     prop.PsetProperties,
     prop.MaterialPsetProperties,
     prop.TaskPsetProperties,
     prop.ResourcePsetProperties,
     prop.ProfilePsetProperties,
     prop.WorkSchedulePsetProperties,
-    prop.PropertiesToRename,
-    prop.PropertiesToAddOrEdit,
+    prop.RenameProperties,
+    prop.AddEditProperties,
     ui.BIM_PT_object_psets,
     ui.BIM_PT_object_qtos,
     ui.BIM_PT_material_psets,
@@ -50,9 +50,9 @@ classes = (
     ui.BIM_PT_resource_psets,
     ui.BIM_PT_profile_psets,
     ui.BIM_PT_work_schedule_psets,
-    ui.BIM_PT_BulkPropertyEditor,
-    ui.BIM_PT_RenameParameters,
-    ui.BIM_PT_AddPropertiesOrEditValues
+    ui.BIM_PT_bulk_property_editor,
+    ui.BIM_PT_rename_parameters,
+    ui.BIM_PT_add_edit_custom_properties
 )
 
 
@@ -63,8 +63,8 @@ def register():
     bpy.types.Scene.ResourcePsetProperties = bpy.props.PointerProperty(type=prop.ResourcePsetProperties)
     bpy.types.Scene.ProfilePsetProperties = bpy.props.PointerProperty(type=prop.ProfilePsetProperties)
     bpy.types.Scene.WorkSchedulePsetProperties = bpy.props.PointerProperty(type=prop.WorkSchedulePsetProperties)
-    bpy.types.Scene.PropertiesToRename = bpy.props.CollectionProperty(type=prop.PropertiesToRename)
-    bpy.types.Scene.PropertiesToAddOrEdit = bpy.props.CollectionProperty(type=prop.PropertiesToAddOrEdit)
+    bpy.types.Scene.RenameProperties = bpy.props.CollectionProperty(type=prop.RenameProperties)
+    bpy.types.Scene.AddEditProperties = bpy.props.CollectionProperty(type=prop.AddEditProperties)
 
 
 def unregister():
@@ -74,5 +74,5 @@ def unregister():
     del bpy.types.Scene.ResourcePsetProperties
     del bpy.types.Scene.ProfilePsetProperties
     del bpy.types.Scene.WorkSchedulePsetProperties
-    del bpy.types.Scene.PropertiesToRename
-    del bpy.types.Scene.PropertiesToAddOrEdit
+    del bpy.types.Scene.RenameProperties
+    del bpy.types.Scene.AddEditProperties

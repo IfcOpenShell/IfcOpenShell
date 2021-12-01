@@ -101,7 +101,6 @@ class EnablePsetEditing(bpy.types.Operator):
 
     def execute(self, context):
         self.props = get_pset_props(context, self.obj, self.obj_type)
-
         self.props.properties.clear()
 
         data = Data.psets if self.pset_id in Data.psets else Data.qtos
@@ -376,56 +375,41 @@ class CopyPropertyToSelection(bpy.types.Operator, Operator):
             )
 
 
-class AddPropertyToEdit(bpy.types.Operator):
+class BIM_OT_add_property_to_edit(bpy.types.Operator):
     bl_label = "Add new row"
     bl_idname = "bim.add_property_to_edit"
     bl_options = {"REGISTER", "UNDO"}
-    type: bpy.props.StringProperty()
+    option: bpy.props.StringProperty()
 
     def execute(self, context):
-        if self.type == "PropertiesToRename":
-            props = context.scene.PropertiesToRename
-            props.add()
-        elif self.type == "PropertiesToAddOrEdit":
-            props = context.scene.PropertiesToAddOrEdit
-            props.add()         
+        getattr(context.scene, self.option).add()
         return {"FINISHED"}
-    
-    
-class RemovePropertyToEdit(bpy.types.Operator):
+
+
+class BIM_OT_remove_property_to_edit(bpy.types.Operator):
     bl_label = "Remove property to be renamed"
     bl_idname = "bim.remove_property_to_edit"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
-    type: bpy.props.StringProperty()
+    option: bpy.props.StringProperty()
 
     def execute(self, context):
-        if self.type == "PropertiesToRename":
-            props = context.scene.PropertiesToRename
-            props.remove(self.index)
-        if self.type == "PropertiesToAddOrEdit":
-            props = context.scene.PropertiesToAddOrEdit
-            props.remove(self.index)
+        getattr(context.scene, self.option).remove()
         return {"FINISHED"}
-    
 
-class ClearList(bpy.types.Operator):
+
+class BIM_OT_clear_list(bpy.types.Operator):
     bl_label = "Clear list of properties"
     bl_idname = "bim.clear_list"
     bl_options = {"REGISTER", "UNDO"}
-    type: bpy.props.StringProperty()
-    
-    def execute(self, context):
-        if self.type == "PropertiesToRename":
-            props = context.scene.PropertiesToRename
-            props.clear()
-        if self.type == "PropertiesToAddOrEdit":
-            props = context.scene.PropertiesToAddOrEdit
-            props.clear()
-        return {"FINISHED"}
-    
+    option: bpy.props.StringProperty()
 
-class RenameParameters(bpy.types.Operator):
+    def execute(self, context):
+        getattr(context.scene, self.option).clear()
+        return {"FINISHED"}
+
+
+class BIM_OT_rename_parameters(bpy.types.Operator):
     bl_label = "Rename Parameters"
     bl_idname = "bim.rename_parameters"
     bl_options = {"REGISTER", "UNDO"}
@@ -435,7 +419,7 @@ class RenameParameters(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        props_to_map = context.scene.PropertiesToRename
+        props_to_map = context.scene.RenameProperties
         ifc_file = IfcStore.get_file()
         all_ifc_elements = ifc_file.by_type("IfcElement")
 
@@ -447,23 +431,23 @@ class RenameParameters(bpy.types.Operator):
 
         self.report({'INFO'}, 'Finished applying changes')
         return {"FINISHED"}
-                                    
+
     def rename_property(self, property_set, properties_to_map, ifc_element):
         if property_set.is_a() == "IfcPropertySet":
             property_container = property_set.HasProperties
         elif property_set.is_a() == "IfcElementQuantity":
             property_container = property_set.Quantities
-            
+
         for obj_prop in property_container:
             for prop2map in properties_to_map:
                 if prop2map.pset_name != property_set.Name:
                     continue
                 if prop2map.existing_property_name == obj_prop.Name:
                     obj_prop.Name = prop2map.new_property_name
-                    Data.load(IfcStore.get_file(), ifc_element.id())    
+                    Data.load(IfcStore.get_file(), ifc_element.id())
 
 
-class AddEditCustomProperty(bpy.types.Operator):
+class BIM_OT_add_edit_custom_property(bpy.types.Operator):
     bl_label = "Add or edit a custom property"
     bl_idname = "bim.add_edit_custom_property"
     bl_options = {"REGISTER", "UNDO"}
@@ -475,46 +459,28 @@ class AddEditCustomProperty(bpy.types.Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         selected_objects = context.selected_objects
-        props = context.scene.PropertiesToAddOrEdit     
+        props = context.scene.AddEditProperties
 
-        for object in selected_objects:
-            ifc_definition_id = object.BIMObjectProperties.ifc_definition_id
+        for obj in selected_objects:
+            ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
             if not ifc_definition_id:
                 continue
             ifc_element = tool.Ifc.get().by_id(ifc_definition_id)
-            psets = ifcopenshell.util.element.get_psets(ifc_element)
+
             for prop in props:
-                if prop.value_type == "String":
-                    value = prop.string_value
-                elif prop.value_type == "Boolean":
-                    value = prop.bool_value
-                elif prop.value_type == "Integer":
-                    value = prop.int_value
-                elif prop.value_type == "Number":
-                    value = prop.float_value
-                    
-                if prop.pset_name not in psets:
-                    new_pset = ifcopenshell.api.run("pset.add_pset", self.file, product=ifc_element, name=prop.pset_name)
-                    ifcopenshell.api.run("pset.edit_pset", self.file, pset=new_pset, properties={prop.property_name:value})
-                    
-                else:#1) delete the existing property first, in case the value type has also been changed, and then
-                    #2) re-add the property
-                    #TODOUpdate this code to incorporate the dion's latest commit
-                    self.delete_ifc_property(ifc_element, prop)
-                    ifcopenshell.api.run("pset.edit_pset", self.file, pset=self.file.by_id(psets[prop.pset_name]["id"]), properties={prop.property_name:value})
-        
+                value = getattr(prop, prop.get_value_name())
+                new_pset = ifcopenshell.api.run(
+                    "pset.add_pset",
+                    self.file,
+                    product=ifc_element,
+                    name=prop.pset_name
+                    )
+                ifcopenshell.api.run(
+                    "pset.edit_pset",
+                    self.file,
+                    pset=new_pset,
+                    properties={prop.property_name:value}
+                    )
+
         self.report({'INFO'}, 'Finished applying changes')
         return {"FINISHED"}
-
-    def delete_ifc_property(self, element, property):
-        for definition in element.IsDefinedBy:
-            if definition.is_a('IfcRelDefinesByProperties'):
-                prop_set = definition.RelatingPropertyDefinition
-                if prop_set.Name != property.pset_name:
-                    continue
-                for hasprop in prop_set.HasProperties:
-                    if hasprop.Name != property.property_name:
-                        continue
-                    self.file.remove(hasprop)
-                    Data.load(IfcStore.get_file(), element.id())
-                    return

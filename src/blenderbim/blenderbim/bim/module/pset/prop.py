@@ -173,26 +173,36 @@ class WorkSchedulePsetProperties(PropertyGroup):
     active_pset_name: StringProperty(name="Pset Name")
     properties: CollectionProperty(name="Properties", type=Attribute)
     pset_name: EnumProperty(items=getWorkSchedulePsetNames, name="Pset Name")
-    
 
-class PropertiesToRename(PropertyGroup):
+
+class RenameProperties(PropertyGroup):
     pset_name: StringProperty(name="Pset")
     existing_property_name: StringProperty(name="Existing Property Name")
     new_property_name: StringProperty(name="New Property Name")
-    
-    
-class PropertiesToAddOrEdit(PropertyGroup):
+
+
+class AddEditProperties(PropertyGroup):
     pset_name: StringProperty(name="Pset")
     property_name: StringProperty(name="Property")
     string_value: StringProperty(name="Value")
-    bool_value: BoolProperty(name="Property Value")
-    int_value: IntProperty(name="Property Value")
-    float_value: FloatProperty(name="Property Value")
-    value_type: EnumProperty(
+    bool_value: BoolProperty(name="Value")
+    int_value: IntProperty(name="Value")
+    float_value: FloatProperty(name="Value")
+    data_type: EnumProperty(
         items=[
-            ("String", "String", "" ),
-            ("Boolean", "True/False", "" ),
-            ("Integer", "Integer", "" ),
-            ("Number", "Number", "" )],
-        default="String"
-    )    
+            ("string", "String", "" ),
+            ("boolean", "True/False", "" ),
+            ("integer", "Integer", "" ),
+            ("float", "Number", "" )],
+        default="string"
+    )
+
+    def get_value_name(self):
+        if self.data_type == "string":
+            return "string_value"
+        elif self.data_type == "boolean":
+            return "bool_value"
+        elif self.data_type == "integer":
+            return "int_value"
+        elif self.data_type == "float":
+            return "float_value"

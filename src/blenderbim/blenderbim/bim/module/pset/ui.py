@@ -377,7 +377,7 @@ class BIM_PT_work_schedule_psets(Panel):
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "WorkSchedule")
 
 
-class BIM_PT_BulkPropertyEditor(Panel):
+class BIM_PT_bulk_property_editor(Panel):
     bl_label = "IFC Bulk Property Editor"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -385,82 +385,74 @@ class BIM_PT_BulkPropertyEditor(Panel):
 
     def draw(self, context):
         pass
-    
 
-class BIM_PT_RenameParameters(Panel):
+
+class BIM_PT_rename_parameters(Panel):
     bl_label = "Rename all building elements"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "object"
-    bl_parent_id = "BIM_PT_BulkPropertyEditor"
+    bl_parent_id = "BIM_PT_bulk_property_editor"
     bl_options = {"DEFAULT_CLOSED"}
     bl_order = 0
-    
+
     def draw(self, context):
         layout = self.layout
-        props = context.scene.PropertiesToRename
+        props = context.scene.RenameProperties
 
-        if props:          
-            for index, property in enumerate(props):
+        if props:
+            for index, prop in enumerate(props):
                 row = layout.row()
-                row.prop(property, "pset_name", text="")
-                row.prop(property, "existing_property_name", text="")
-                row.prop(property, "new_property_name", text="")
+                row.prop(prop, "pset_name", text="")
+                row.prop(prop, "existing_property_name", text="")
+                row.prop(prop, "new_property_name", text="")
                 op = row.operator("bim.remove_property_to_edit",icon="PANEL_CLOSE", text="")
                 op.index = index
-                op.type = "properties_to_map"
-                
+                op.option = "RenameProperties"
+
         row = layout.row()
         row.label()
         op = row.operator("bim.add_property_to_edit", icon="ADD",text="")
-        op.type = "PropertiesToRename"
-        
-        if props:  
+        op.option = "RenameProperties"
+
+        if props:
             row = layout.row()
             clear = row.operator("bim.clear_list")
-            clear.type = "PropertiesToRename"
+            clear.option = "RenameProperties"
             row.operator("bim.rename_parameters")
 
 
-class BIM_PT_AddPropertiesOrEditValues(Panel):
-    """Creates a Panel in the Object properties window"""
+class BIM_PT_add_edit_custom_properties(Panel):
     bl_label = "Add/Edit Custom Properties and Values (to selected objects)"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "object"
-    bl_parent_id = "BIM_PT_BulkPropertyEditor"
+    bl_parent_id = "BIM_PT_bulk_property_editor"
     bl_options = {"DEFAULT_CLOSED"}
     bl_order = 1
 
     def draw(self, context):
         layout = self.layout
-        props = context.scene.PropertiesToAddOrEdit 
-        
+        props = context.scene.AddEditProperties
+
         if props:
-            for index, property in enumerate(props):
-                    row = layout.row()
-                    row.prop(property, "pset_name", text="")
-                    row.prop(property, "property_name", text="")
-                    if property.value_type == "String":
-                        row.prop(property, "string_value", text="")
-                    elif property.value_type == "Boolean":
-                        row.prop(property, "bool_value", text="")
-                    elif property.value_type == "Integer":
-                        row.prop(property, "int_value", text="")
-                    elif property.value_type == "Number":
-                        row.prop(property, "float_value", text="")
-                    row.prop(property, "value_type", text="")
-                    op = row.operator("bim.remove_property_to_edit",icon="PANEL_CLOSE", text="")
-                    op.index = index
-                    op.type = "PropertiesToAddOrEdit"
-        
+            for index, prop in enumerate(props):
+                row = layout.row()
+                row.prop(prop, "pset_name", text="")
+                row.prop(prop, "property_name", text="")
+                row.prop(prop, prop.get_value_name(), text="")
+                row.prop(prop, "data_type", text="")
+                op = row.operator("bim.remove_property_to_edit",icon="PANEL_CLOSE", text="")
+                op.index = index
+                op.option = "AddEditProperties"
+
         row = layout.row()
         row.label()
         op = row.operator("bim.add_property_to_edit", icon="ADD",text="")
-        op.type = "PropertiesToAddOrEdit"
-        
+        op.option = "AddEditProperties"
+
         if props:
             row = layout.row()
             clear = row.operator("bim.clear_list")
-            clear.type = "PropertiesToAddOrEdit"
+            clear.option = "AddEditProperties"
             op = row.operator("bim.add_edit_custom_property",icon="ADD", text="Apply Changes")
