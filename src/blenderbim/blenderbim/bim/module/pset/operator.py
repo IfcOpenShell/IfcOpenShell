@@ -484,3 +484,45 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator):
 
         self.report({'INFO'}, 'Finished applying changes')
         return {"FINISHED"}
+
+
+class BIM_OT_bulk_remove_psets(bpy.types.Operator):
+    bl_label = "Bulk remove psets from selected objects"
+    bl_idname = "bim.bulk_remove_psets"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Bulk remove psets from selected objects"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        selected_objects = context.selected_objects
+        props = context.scene.DeletePsets
+
+        for obj in selected_objects:
+            ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+            if not ifc_definition_id:
+                continue
+            ifc_element = tool.Ifc.get().by_id(ifc_definition_id)   
+            psets = ifcopenshell.util.element.get_psets(ifc_element)
+
+            for prop in props:
+                pset = prop.pset_name
+                if pset in psets:
+                    try:
+                        ifcopenshell.api.run(
+                        "pset.remove_pset",
+                        self.file,
+                        **{
+                            "product": self.file.by_id(ifc_definition_id),
+                            "pset": self.file.by_id(psets[pset]["id"]),
+                        },
+                        )
+                    except KeyError:
+                        pass #Sometimes the pset id is not found, I'm not sure why this happens though. - vulevukusej
+                    Data.load(IfcStore.get_file(), ifc_definition_id)
+
+        self.report({'INFO'}, 'Finished applying changes')
+        return {"FINISHED"}

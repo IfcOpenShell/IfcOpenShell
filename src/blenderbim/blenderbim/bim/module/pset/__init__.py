@@ -34,6 +34,7 @@ classes = (
     operator.BIM_OT_clear_list,
     operator.BIM_OT_rename_parameters,
     operator.BIM_OT_add_edit_custom_property,
+    operator.BIM_OT_bulk_remove_psets,
     prop.PsetProperties,
     prop.MaterialPsetProperties,
     prop.TaskPsetProperties,
@@ -42,6 +43,7 @@ classes = (
     prop.WorkSchedulePsetProperties,
     prop.RenameProperties,
     prop.AddEditProperties,
+    prop.DeletePsets,
     ui.BIM_PT_object_psets,
     ui.BIM_PT_object_qtos,
     ui.BIM_PT_material_psets,
@@ -52,7 +54,8 @@ classes = (
     ui.BIM_PT_work_schedule_psets,
     ui.BIM_PT_bulk_property_editor,
     ui.BIM_PT_rename_parameters,
-    ui.BIM_PT_add_edit_custom_properties
+    ui.BIM_PT_add_edit_custom_properties,
+    ui.BIM_PT_delete_psets
 )
 
 
@@ -65,7 +68,7 @@ def register():
     bpy.types.Scene.WorkSchedulePsetProperties = bpy.props.PointerProperty(type=prop.WorkSchedulePsetProperties)
     bpy.types.Scene.RenameProperties = bpy.props.CollectionProperty(type=prop.RenameProperties)
     bpy.types.Scene.AddEditProperties = bpy.props.CollectionProperty(type=prop.AddEditProperties)
-
+    bpy.types.Scene.DeletePsets = bpy.props.CollectionProperty(type=prop.DeletePsets)
 
 def unregister():
     del bpy.types.Object.PsetProperties
@@ -76,3 +79,4 @@ def unregister():
     del bpy.types.Scene.WorkSchedulePsetProperties
     del bpy.types.Scene.RenameProperties
     del bpy.types.Scene.AddEditProperties
+    del bpy.types.Scene.DeletePsets

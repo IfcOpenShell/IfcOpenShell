@@ -206,3 +206,7 @@ class AddEditProperties(PropertyGroup):
             return "int_value"
         elif self.data_type == "float":
             return "float_value"
+
+
+class DeletePsets(PropertyGroup):
+    pset_name: StringProperty(name="Pset")

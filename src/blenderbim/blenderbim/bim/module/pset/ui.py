@@ -456,3 +456,36 @@ class BIM_PT_add_edit_custom_properties(Panel):
             clear = row.operator("bim.clear_list")
             clear.option = "AddEditProperties"
             op = row.operator("bim.add_edit_custom_property",icon="ADD", text="Apply Changes")
+
+
+class BIM_PT_delete_psets(Panel):
+    bl_label = "Bulk remove psets from selected objects"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_bulk_property_editor"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_order = 2
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.DeletePsets
+        
+        if props:
+            for index, prop in enumerate(props):
+                row = layout.row()
+                row.prop(prop, "pset_name", text="Pset")
+                op = row.operator("bim.remove_property_to_edit",icon="PANEL_CLOSE", text="")
+                op.index = index
+                op.option = "DeletePsets"
+
+        row = layout.row(align=True)
+        row.label()
+        op = row.operator("bim.add_property_to_edit", icon="ADD",text="")
+        op.option = "DeletePsets"
+        
+        if props:
+            row = layout.row()
+            clear = row.operator("bim.clear_list")
+            clear.option = "DeletePsets"
+            op = row.operator("bim.bulk_remove_psets", text="Apply Changes")
