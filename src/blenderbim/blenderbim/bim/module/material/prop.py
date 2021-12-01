@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 from ifcopenshell.api.material.data import Data
 from blenderbim.bim.ifc import IfcStore
@@ -49,6 +67,13 @@ def getParameterizedProfileClasses(self, context):
             (t.name(), t.name(), "")
             for t in IfcStore.get_schema().declaration_by_name("IfcParameterizedProfileDef").subtypes()
         ]
+        for ifc_class in parameterizedprofileclasses_enum:
+            parameterizedprofileclasses_enum.extend(
+                [
+                    (t.name(), t.name(), "")
+                    for t in IfcStore.get_schema().declaration_by_name(ifc_class[0]).subtypes() or []
+                ]
+            )
     return parameterizedprofileclasses_enum
 
 
@@ -87,7 +112,9 @@ class BIMObjectMaterialProperties(PropertyGroup):
     material_set_attributes: CollectionProperty(name="Material Set Attributes", type=Attribute)
     active_material_set_item_id: IntProperty(name="Active Material Set ID")
     material_set_item_attributes: CollectionProperty(name="Material Set Item Attributes", type=Attribute)
-    material_set_item_profile_attributes: CollectionProperty(name="Material Set Item Profile Attributes", type=Attribute)
+    material_set_item_profile_attributes: CollectionProperty(
+        name="Material Set Item Profile Attributes", type=Attribute
+    )
     material_set_item_material: EnumProperty(items=getMaterials, name="Material")
     profile_classes: EnumProperty(items=getProfileClasses, name="Profile Classes")
     parameterized_profile_classes: EnumProperty(

@@ -46,7 +46,7 @@ struct get_factory_type<double, double> {
 };
 
 template <typename P, typename PP>
-class IteratorFactoryImplementation : public std::map<std::string, typename get_factory_type<P, PP>::type> {
+class IFC_GEOM_API IteratorFactoryImplementation : public std::map<std::string, typename get_factory_type<P, PP>::type> {
 public:
 	IteratorFactoryImplementation();
 	void bind(const std::string& schema_name, typename get_factory_type<P, PP>::type fn);

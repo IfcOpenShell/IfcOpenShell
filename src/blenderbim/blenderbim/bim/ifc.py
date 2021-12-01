@@ -1,7 +1,28 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import uuid
+import zipfile
+import tempfile
 import ifcopenshell
 import blenderbim.bim.handler
+from pathlib import Path
 
 
 class IfcStore:
@@ -16,6 +37,7 @@ class IfcStore:
     library_path = ""
     library_file = None
     element_listeners = set()
+    undo_redo_stack_objects = set()
     current_transaction = ""
     last_transaction = ""
     history = []
@@ -40,10 +62,25 @@ class IfcStore:
             IfcStore.path = bpy.context.scene.BIMProperties.ifc_file
             if IfcStore.path:
                 try:
-                    IfcStore.file = ifcopenshell.open(IfcStore.path)
+                    IfcStore.load_file(IfcStore.path)
                 except:
-                    IfcStore.file
+                    pass
         return IfcStore.file
+
+    @staticmethod
+    def load_file(path):
+        extension = path.split(".")[-1]
+        if extension.lower() == "ifczip":
+            with tempfile.TemporaryDirectory() as unzipped_path:
+                with zipfile.ZipFile(path, "r") as zip_ref:
+                    zip_ref.extractall(unzipped_path)
+                for filename in Path(unzipped_path).glob("**/*.ifc"):
+                    IfcStore.file = ifcopenshell.open(filename)
+                    return
+        elif extension.lower() == "ifcxml":
+            IfcStore.file = ifcopenshell.file(ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(path))
+        elif extension.lower() == "ifc":
+            IfcStore.file = ifcopenshell.open(path)
 
     @staticmethod
     def get_schema():
@@ -61,7 +98,7 @@ class IfcStore:
             map_object = IfcStore.guid_map
         try:
             obj = map_object[id_or_guid]
-            obj.type  # In case the object has been deleted, this triggers an exception
+            obj.name  # In case the object has been deleted, this triggers an exception
         except:
             return
         return obj
@@ -71,18 +108,38 @@ class IfcStore:
         IfcStore.element_listeners.add(callback)
 
     @staticmethod
-    def reload_linked_elements(should_reload_selected=False):
+    def update_undo_redo_stack_objects():
+        """Keeps track of selected object names, typically during undo and redo
+
+        When any Blender object is stored outside a Blender PointerProperty, such as
+        in a regular Python list, there is the likely probability that the object
+        will be invalidated when undo or redo occurs. Object invalidation seems to
+        only occur for selected objects either pre/post undo/redo event, including
+        selected objects for consecutive undo/redos, and all children.
+
+        So if I first select o1, then o2, then o3, then press undo, o3 will be
+        invalidated. If instead I press undo twice, o3 and o2 will be invalidated.
+        """
+        if bpy.context.active_object:
+            objects = set([o.name for o in bpy.context.selected_objects + [bpy.context.active_object]])
+            objects.update([o.name for o in bpy.context.active_object.children])
+        else:
+            objects = set([o.name for o in bpy.context.selected_objects])
+        for obj in bpy.context.selected_objects:
+            objects.update([o.name for o in obj.children])
+        IfcStore.undo_redo_stack_objects |= objects
+
+    @staticmethod
+    def reload_linked_elements(objects=None):
         file = IfcStore.get_file()
         if not file:
             return
-        if should_reload_selected:
-            objects = bpy.context.selected_objects
-            if bpy.context.active_object:
-                objects += [bpy.context.active_object]
-        else:
+        if objects is None:
             objects = bpy.data.objects
 
         for obj in objects:
+            if not obj:
+                continue
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
@@ -96,9 +153,19 @@ class IfcStore:
         IfcStore.id_map[element.id()] = obj
         if hasattr(element, "GlobalId"):
             IfcStore.guid_map[element.GlobalId] = obj
-        obj.BIMObjectProperties.ifc_definition_id = element.id()
-        blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
+
+        if element.is_a("IfcSurfaceStyle"):
+            obj.BIMMaterialProperties.ifc_style_id = element.id()
+        else:
+            obj.BIMObjectProperties.ifc_definition_id = element.id()
+
         blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
+
+        if isinstance(obj, bpy.types.Material):
+            blenderbim.bim.handler.subscribe_to(obj, "diffuse_color", blenderbim.bim.handler.color_callback)
+        elif isinstance(obj, bpy.types.Object):
+            blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
+
         for listener in IfcStore.element_listeners:
             listener(element, obj)
 
@@ -118,10 +185,14 @@ class IfcStore:
     def commit_link_element(data):
         obj = bpy.data.objects.get(data["obj"])
         IfcStore.id_map[data["id"]] = obj
-        if data["guid"]:
+        if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
         blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
         blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
+        if isinstance(obj, bpy.types.Material):
+            blenderbim.bim.handler.subscribe_to(obj, "diffuse_color", blenderbim.bim.handler.color_callback)
+        # TODO Listeners are not re-registered. Does this cause nasty problems to debug later on?
+        # TODO We're handling id_map and guid_map, but what about edited_objs? This might cause big problems.
 
     @staticmethod
     def unlink_element(element=None, obj=None):
@@ -165,24 +236,15 @@ class IfcStore:
         if is_top_level_operator:
             IfcStore.get_file().end_transaction()
             IfcStore.add_transaction_operation(
-                operator, rollback=IfcStore.rollback_ifc_operator, commit=IfcStore.commit_ifc_operator
+                operator, rollback=lambda d: IfcStore.get_file().undo(), commit=lambda d: IfcStore.get_file().redo()
             )
             IfcStore.end_transaction(operator)
 
         return result
 
     @staticmethod
-    def rollback_ifc_operator(data):
-        IfcStore.get_file().undo()
-        blenderbim.bim.handler.purge_module_data()
-
-    @staticmethod
-    def commit_ifc_operator(data):
-        IfcStore.get_file().redo()
-        blenderbim.bim.handler.purge_module_data()
-
-    @staticmethod
     def begin_transaction(operator):
+        IfcStore.undo_redo_stack_objects = set()
         IfcStore.current_transaction = str(uuid.uuid4())
         operator.transaction_key = IfcStore.current_transaction
 

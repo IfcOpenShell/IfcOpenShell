@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import json
 import ifcopenshell
@@ -20,7 +38,7 @@ class AddStructuralMemberConnection(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
         file = IfcStore.get_file()
@@ -46,7 +64,7 @@ class EnableEditingStructuralConnectionCondition(bpy.types.Operator):
     connects_structural_member: bpy.props.IntProperty()
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
         applied_condition_id = Data.connects_structural_members[self.connects_structural_member]["AppliedCondition"]
@@ -60,7 +78,7 @@ class DisableEditingStructuralConnectionCondition(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         props = obj.BIMStructuralProperties
         props.active_connects_structural_member = 0
         return {"FINISHED"}
@@ -134,8 +152,7 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
     def execute(self, context):
         obj = context.active_object
         props = obj.BIMStructuralProperties
-        while len(props.boundary_condition_attributes) > 0:
-            props.boundary_condition_attributes.remove(0)
+        props.boundary_condition_attributes.clear()
 
         data = Data.boundary_conditions[self.boundary_condition]
 
@@ -146,7 +163,7 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
             new.name = attribute.name()
             new.is_null = value is None
             new.is_optional = attribute.optional()
-            if data_type == "select":
+            if isinstance(data_type, tuple) and data_type[0] == "select":
                 enum_items = [s.name() for s in ifcopenshell.util.attribute.get_select_items(attribute)]
                 new.enum_items = json.dumps(enum_items)
             if isinstance(value, bool):
@@ -221,8 +238,7 @@ class LoadStructuralAnalysisModels(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMStructuralProperties
-        while len(props.structural_analysis_models) > 0:
-            props.structural_analysis_models.remove(0)
+        props.structural_analysis_models.clear()
         for ifc_definition_id, structural_analysis_model in Data.structural_analysis_models.items():
             new = props.structural_analysis_models.add()
             new.ifc_definition_id = ifc_definition_id
@@ -279,15 +295,7 @@ class EditStructuralAnalysisModel(bpy.types.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMStructuralProperties
-        attributes = {}
-        for attribute in props.structural_analysis_model_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
+        attributes = blenderbim.bim.helper.export_attributes(props.structural_analysis_model_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "structural.edit_structural_analysis_model",
@@ -332,8 +340,7 @@ class EnableEditingStructuralAnalysisModel(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMStructuralProperties
-        while len(props.structural_analysis_model_attributes) > 0:
-            props.structural_analysis_model_attributes.remove(0)
+        props.structural_analysis_model_attributes.clear()
 
         data = Data.structural_analysis_models[self.structural_analysis_model]
 
@@ -423,7 +430,7 @@ class EnableEditingStructuralItemAxis(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
 
@@ -463,7 +470,7 @@ class DisableEditingStructuralItemAxis(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         props = obj.BIMStructuralProperties
         props.is_editing_axis = False
         if props.axis_empty:
@@ -479,7 +486,7 @@ class EditStructuralItemAxis(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
         relative_matrix = props.axis_empty.matrix_world @ obj.matrix_world.inverted()
@@ -501,7 +508,7 @@ class EnableEditingStructuralConnectionCS(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
 
@@ -553,7 +560,7 @@ class DisableEditingStructuralConnectionCS(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         props = obj.BIMStructuralProperties
         props.is_editing_connection_cs = False
         if props.ccs_empty:
@@ -570,7 +577,7 @@ class EditStructuralConnectionCS(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
         relative_matrix = props.ccs_empty.matrix_world @ obj.matrix_world.inverted()
@@ -599,7 +606,10 @@ class AssignStructuralLoadCase(bpy.types.Operator):
         ifcopenshell.api.run(
             "aggregate.assign_object",
             self.file,
-            **{"relating_object": self.file.by_id(self.work_plan), "product": self.file.by_id(self.load_case),},
+            **{
+                "relating_object": self.file.by_id(self.work_plan),
+                "product": self.file.by_id(self.load_case),
+            },
         )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
@@ -616,7 +626,10 @@ class UnassignStructuralLoadCase(bpy.types.Operator):
         ifcopenshell.api.run(
             "aggregate.unassign_object",
             self.file,
-            **{"relating_object": self.file.by_id(self.work_plan), "product": self.file.by_id(self.load_case),},
+            **{
+                "relating_object": self.file.by_id(self.work_plan),
+                "product": self.file.by_id(self.load_case),
+            },
         )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
@@ -686,8 +699,7 @@ class EnableEditingStructuralLoadCase(bpy.types.Operator):
         self.props = context.scene.BIMStructuralProperties
         self.props.active_load_case_id = self.load_case
         self.props.load_case_editing_type = "ATTRIBUTES"
-        while len(self.props.load_case_attributes) > 0:
-            self.props.load_case_attributes.remove(0)
+        self.props.load_case_attributes.clear()
         data = Data.load_cases[self.load_case]
         blenderbim.bim.helper.import_attributes(
             "IfcStructuralLoadCase", self.props.load_case_attributes, data, self.import_attributes
@@ -773,8 +785,7 @@ class EnableEditingStructuralLoadGroupActivities(bpy.types.Operator):
         return {"FINISHED"}
 
     def load_structural_activities(self):
-        while len(self.props.load_group_activities) > 0:
-            self.props.load_group_activities.remove(0)
+        self.props.load_group_activities.clear()
         for activity_id in Data.load_groups[self.load_group]["IsGroupedBy"]:
             activity = Data.structural_activities[activity_id]
             new = self.props.load_group_activities.add()
@@ -845,8 +856,7 @@ class LoadStructuralLoads(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMStructuralProperties
-        while len(props.structural_loads) > 0:
-            props.structural_loads.remove(0)
+        props.structural_loads.clear()
         if props.filtered_structural_loads:
             names = [structural_load["Name"] or "Unnamed" for _, structural_load in Data.structural_loads.items()]
             for ifc_definition_id, structural_load in Data.structural_loads.items():
@@ -908,8 +918,7 @@ class EnableEditingStructuralLoad(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMStructuralProperties
-        while len(props.structural_load_attributes) > 0:
-            props.structural_load_attributes.remove(0)
+        props.structural_load_attributes.clear()
 
         data = Data.structural_loads[self.structural_load]
         blenderbim.bim.helper.import_attributes(data["type"], props.structural_load_attributes, data)
@@ -964,7 +973,10 @@ class EditStructuralLoad(bpy.types.Operator):
         ifcopenshell.api.run(
             "structural.edit_structural_load",
             self.file,
-            **{"structural_load": self.file.by_id(props.active_structural_load_id), "attributes": attributes,},
+            **{
+                "structural_load": self.file.by_id(props.active_structural_load_id),
+                "attributes": attributes,
+            },
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_structural_loads()
@@ -991,8 +1003,7 @@ class LoadBoundaryConditions(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMStructuralProperties
-        while len(props.boundary_conditions) > 0:
-            props.boundary_conditions.remove(0)
+        props.boundary_conditions.clear()
         if props.filtered_boundary_conditions:
             names = [
                 boundary_condition["Name"] or "Unnamed" for _, boundary_condition in Data.boundary_conditions.items()
@@ -1071,8 +1082,7 @@ class EnableEditingBoundaryCondition(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMStructuralProperties
-        while len(props.boundary_condition_attributes) > 0:
-            props.boundary_condition_attributes.remove(0)
+        props.boundary_condition_attributes.clear()
 
         data = Data.boundary_conditions[self.boundary_condition]
         # blenderbim.bim.helper.import_attributes(data["type"], props.boundary_condition_attributes, data)

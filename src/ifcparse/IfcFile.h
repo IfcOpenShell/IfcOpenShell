@@ -24,6 +24,10 @@
 #include <set>
 #include <iterator>
 #include <boost/unordered_map.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/sequenced_index.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/random_access_index.hpp>
 
 #include "ifc_parse_api.h"
 
@@ -132,7 +136,16 @@ private:
 
 	void build_inverses_(IfcUtil::IfcBaseClass*);
 
-	std::set<int> batch_deletion_ids_;
+	typedef boost::multi_index_container<
+		int,
+		boost::multi_index::indexed_by<
+			boost::multi_index::sequenced<>,
+			boost::multi_index::ordered_unique<
+				boost::multi_index::identity<int>
+			>
+		>
+	> batch_deletion_ids_t;
+	batch_deletion_ids_t batch_deletion_ids_;
 	bool batch_mode_ = false;
 	void process_deletion_();
 
@@ -220,6 +233,10 @@ public:
 	/// in the first function argument.
 	IfcEntityList::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
 
+	/// Same as traverse() but maintains topological order by using a
+	/// breadth-first search
+	IfcEntityList::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level = -1);
+
 	IfcEntityList::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
 
 	/// Marks entity as modified so that potential cache for it is invalidated.
@@ -227,6 +244,8 @@ public:
 	void mark_entity_as_modified(int id);
 
 	unsigned int FreshId() { return ++MaxId; }
+
+	unsigned int getMaxId() { return MaxId; }
 
 	void recalculate_id_counter();
 

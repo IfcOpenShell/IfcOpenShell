@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import json
 import ifcopenshell
@@ -21,8 +39,7 @@ class EnableEditingAttributes(bpy.types.Operator):
             obj = bpy.data.materials.get(self.obj)
         oprops = obj.BIMObjectProperties
         props = obj.BIMAttributeProperties
-        while len(props.attributes) > 0:
-            props.attributes.remove(0)
+        props.attributes.clear()
         for attribute in Data.products[oprops.ifc_definition_id]:
             new = props.attributes.add()
             if attribute["type"] == "entity" or (attribute["type"] == "list" and attribute["list_type"] == "entity"):
@@ -101,15 +118,7 @@ class EditAttributes(bpy.types.Operator):
             elif attribute["type"] == "enum":
                 attributes[attribute["name"]] = blender_attribute.enum_value
         product = self.file.by_id(oprops.ifc_definition_id)
-        ifcopenshell.api.run(
-            "attribute.edit_attributes", self.file, **{"product": product, "attributes": attributes}
-        )
-        if "Name" in attributes:
-            new_name = "{}/{}".format(product.is_a(), product.Name or "Unnamed")
-            collection = bpy.data.collections.get(obj.name)
-            if collection:
-                collection.name = new_name
-            obj.name = new_name
+        ifcopenshell.api.run("attribute.edit_attributes", self.file, **{"product": product, "attributes": attributes})
         Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name, obj_type=self.obj_type)
         return {"FINISHED"}
@@ -121,11 +130,11 @@ class GenerateGlobalId(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        index = bpy.context.active_object.BIMAttributeProperties.attributes.find("GlobalId")
+        index = context.active_object.BIMAttributeProperties.attributes.find("GlobalId")
         if index >= 0:
-            global_id = bpy.context.active_object.BIMAttributeProperties.attributes[index]
+            global_id = context.active_object.BIMAttributeProperties.attributes[index]
         else:
-            global_id = bpy.context.active_object.BIMAttributeProperties.attributes.add()
+            global_id = context.active_object.BIMAttributeProperties.attributes.add()
         global_id.name = "GlobalId"
         global_id.data_type = "string"
         global_id.string_value = ifcopenshell.guid.new()

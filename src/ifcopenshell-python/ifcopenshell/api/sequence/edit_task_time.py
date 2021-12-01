@@ -16,12 +16,12 @@ class Usecase:
 
         # If the user specifies both an end date and a duration, the duration takes priority
         if (
-            "ScheduleDuration" in self.settings["attributes"].keys()
+            self.settings["attributes"].get("ScheduleDuration", None)
             and "ScheduleFinish" in self.settings["attributes"].keys()
         ):
             del self.settings["attributes"]["ScheduleFinish"]
         if (
-            "ActualDuration" in self.settings["attributes"].keys()
+            self.settings["attributes"].get("ActualDuration", None)
             and "ActualFinish" in self.settings["attributes"].keys()
         ):
             del self.settings["attributes"]["ActualFinish"]
@@ -55,13 +55,10 @@ class Usecase:
         elif "ScheduleFinish" in self.settings["attributes"].keys() and self.settings["task_time"].ScheduleStart:
             self.calculate_duration()
 
-        if (
-            self.settings["task_time"].ScheduleDuration
-            and (
-                "ScheduleStart" in self.settings["attributes"].keys()
-                or "ScheduleFinish" in self.settings["attributes"].keys()
-                or "ScheduleDuration" in self.settings["attributes"].keys()
-            )
+        if self.settings["task_time"].ScheduleDuration and (
+            "ScheduleStart" in self.settings["attributes"].keys()
+            or "ScheduleFinish" in self.settings["attributes"].keys()
+            or "ScheduleDuration" in self.settings["attributes"].keys()
         ):
             ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=self.task)
 

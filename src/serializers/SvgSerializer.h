@@ -157,6 +157,7 @@ protected:
 	bool auto_section_, auto_elevation_;
 	bool use_namespace_, use_hlr_poly_, always_project_, polygonal_;
 	bool emit_building_storeys_;
+	bool no_css_;
 
 	IfcParse::IfcFile* file;
 	IfcUtil::IfcBaseEntity* storey_;
@@ -167,7 +168,7 @@ protected:
 	float_item_list xcoords, ycoords, radii;
 	size_t xcoords_begin, ycoords_begin, radii_begin;
 
-	boost::optional<std::string> section_ref_, elevation_ref_;
+	boost::optional<std::string> section_ref_, elevation_ref_, elevation_ref_guid_;
 	
 	std::list<geometry_data> element_buffer_;
 
@@ -201,6 +202,7 @@ public:
 		, always_project_(false)
 		, polygonal_(false)
 		, emit_building_storeys_(true)
+		, no_css_(false)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
@@ -242,8 +244,15 @@ public:
 	void setSectionRef(const boost::optional<std::string>& s) { 
 		section_ref_ = s; 
 	}
+
 	void setElevationRef(const boost::optional<std::string>& s) {
 		elevation_ref_ = s; 
+		elevation_ref_guid_ = boost::none;
+	}
+
+	void setElevationRefGuid(const boost::optional<std::string>& s) {
+		elevation_ref_ = boost::none;
+		elevation_ref_guid_ = s;
 	}
 
 	void setAutoSection(bool b) {
@@ -273,6 +282,10 @@ public:
 
 	void setWithoutStoreys(bool b) {
 		emit_building_storeys_ = !b;
+	}
+
+	void setNoCSS(bool b) {
+		no_css_ = b;
 	}
 
 	void setScale(double s) { scale_ = s; }

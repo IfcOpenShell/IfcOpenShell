@@ -12,9 +12,9 @@ class Usecase:
 
     def execute(self):
         self.calendar_cache = {}
-        self.cascade_task(self.settings["task"])
+        self.cascade_task(self.settings["task"], is_first_task=True)
 
-    def cascade_task(self, task):
+    def cascade_task(self, task, is_first_task=False):
         if not task.TaskTime:
             return
 
@@ -88,13 +88,13 @@ class Usecase:
             )
             if potential_finish > finish:
                 start_ifc = ifcopenshell.util.date.datetime2ifc(start, "IfcDateTime")
-                if task.TaskTime.ScheduleStart == start_ifc:
+                if task.TaskTime.ScheduleStart == start_ifc and not is_first_task:
                     return
                 task.TaskTime.ScheduleStart = start_ifc
                 task.TaskTime.ScheduleFinish = ifcopenshell.util.date.datetime2ifc(potential_finish, "IfcDateTime")
             else:
                 finish_ifc = ifcopenshell.util.date.datetime2ifc(finish, "IfcDateTime")
-                if task.TaskTime.ScheduleFinish == finish_ifc:
+                if task.TaskTime.ScheduleFinish == finish_ifc and not is_first_task:
                     return
                 task.TaskTime.ScheduleFinish = finish_ifc
                 task.TaskTime.ScheduleStart = ifcopenshell.util.date.datetime2ifc(
@@ -109,7 +109,7 @@ class Usecase:
         elif finishes:
             finish = max(finishes)
             finish_ifc = ifcopenshell.util.date.datetime2ifc(finish, "IfcDateTime")
-            if task.TaskTime.ScheduleFinish == finish_ifc:
+            if task.TaskTime.ScheduleFinish == finish_ifc and not is_first_task:
                 return
             task.TaskTime.ScheduleFinish = finish_ifc
             task.TaskTime.ScheduleStart = ifcopenshell.util.date.datetime2ifc(
@@ -124,7 +124,7 @@ class Usecase:
         elif starts:
             start = max(starts)
             start_ifc = ifcopenshell.util.date.datetime2ifc(start, "IfcDateTime")
-            if task.TaskTime.ScheduleStart == start_ifc:
+            if task.TaskTime.ScheduleStart == start_ifc and not is_first_task:
                 return
             task.TaskTime.ScheduleStart = start_ifc
             task.TaskTime.ScheduleFinish = ifcopenshell.util.date.datetime2ifc(

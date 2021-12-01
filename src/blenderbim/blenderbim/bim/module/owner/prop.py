@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
 from blenderbim.bim.ifc import IfcStore
@@ -14,27 +32,39 @@ from bpy.props import (
     CollectionProperty,
 )
 
+_persons_enum = []
+_organisations_enum = []
+
+
+def purge():
+    global _persons_enum
+    global _organisations_enum
+    _persons_enum.clear()
+    _organisations_enum.clear()
+
 
 def getPersons(self, context):
+    global _persons_enum
     if not Data.is_loaded:
         Data.load(IfcStore.get_file())
-    results = []
+    _persons_enum.clear()
     for ifc_id, person in Data.people.items():
         if "Id" in person:
             identifier = person["Id"] or ""
         else:
             identifier = person["Identification"] or ""
-        results.append((str(ifc_id), identifier, ""))
-    return results
+        _persons_enum.append((str(ifc_id), identifier, ""))
+    return _persons_enum
 
 
 def getOrganisations(self, context):
+    global _organisations_enum
     if not Data.is_loaded:
         Data.load(IfcStore.get_file())
-    results = []
+    _organisations_enum.clear()
     for ifc_id, organisation in Data.organisations.items():
-        results.append((str(ifc_id), organisation["Name"], ""))
-    return results
+        _organisations_enum.append((str(ifc_id), organisation["Name"], ""))
+    return _organisations_enum
 
 
 class Address(PropertyGroup):
@@ -54,19 +84,19 @@ class Address(PropertyGroup):
     user_defined_purpose: StringProperty(name="Custom Purpose")
 
     internal_location: StringProperty(name="Internal Location")
-    address_lines: StringProperty(name="Address")
+    address_lines: CollectionProperty(type=StrProperty, name="Address")
     postal_box: StringProperty(name="Postal Box")
     town: StringProperty(name="Town")
     region: StringProperty(name="Region")
     postal_code: StringProperty(name="Postal Code")
     country: StringProperty(name="Country")
 
-    telephone_numbers: StringProperty(name="Telephone Numbers")
-    facsimile_numbers: StringProperty(name="Facsimile Numbers")
+    telephone_numbers: CollectionProperty(type=StrProperty, name="Telephone Numbers")
+    facsimile_numbers: CollectionProperty(type=StrProperty, name="Facsimile Numbers")
     pager_number: StringProperty(name="Pager Number")
-    electronic_mail_addresses: StringProperty(name="Emails")
-    www_home_page_url: StringProperty(name="Websites")
-    messaging_ids: StringProperty(name="IMs")
+    electronic_mail_addresses: CollectionProperty(type=StrProperty, name="Emails")
+    www_home_page_url: StringProperty(name="Website")
+    messaging_ids: CollectionProperty(type=StrProperty, name="IMs")
 
 
 class Role(PropertyGroup):
@@ -112,9 +142,9 @@ class Person(PropertyGroup):
     name: StringProperty(name="Identification")
     family_name: StringProperty(name="Family Name")
     given_name: StringProperty(name="Given Name")
-    middle_names: StringProperty(name="Middle Names")
-    prefix_titles: StringProperty(name="Prefixes")
-    suffix_titles: StringProperty(name="Suffixes")
+    middle_names: CollectionProperty(type=StrProperty, name="Middle Names")
+    prefix_titles: CollectionProperty(type=StrProperty, name="Prefixes")
+    suffix_titles: CollectionProperty(type=StrProperty, name="Suffixes")
 
 
 class BIMOwnerProperties(PropertyGroup):

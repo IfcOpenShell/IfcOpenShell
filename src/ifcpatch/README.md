@@ -21,6 +21,13 @@ If you want something more Unix-like ...
 $ alias ifcpatch='python -m ifcpatch'
 ```
 
+Alternatively, you can package it as a distributable.
+
+```
+$ python make.py
+$ ./dist/ifcpatch
+```
+
 ## Usage
 
 Usage is like any other CLI app.
@@ -59,8 +66,10 @@ $ ifcpatch -i input.ifc -o output.ifc -r ExtractElements -a ".IfcWall"
 
 You can also use it as a library.
 
-```
+```python
 import ifcpatch
+
+
 ifcpatch.execute({
     "input": "input.ifc",
     "output": "output.ifc",

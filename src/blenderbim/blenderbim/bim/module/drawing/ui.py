@@ -1,7 +1,23 @@
-import os
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 from bpy.types import Panel
-from bpy.props import StringProperty, BoolProperty
 
 
 class BIM_PT_camera(Panel):
@@ -13,7 +29,6 @@ class BIM_PT_camera(Panel):
 
     @classmethod
     def poll(cls, context):
-        engine = context.engine
         return context.camera and hasattr(context.active_object.data, "BIMCameraProperties")
 
     def draw(self, context):
@@ -24,7 +39,7 @@ class BIM_PT_camera(Panel):
             return
 
         layout.use_property_split = True
-        dprops = bpy.context.scene.DocProperties
+        dprops = context.scene.DocProperties
         props = context.active_object.data.BIMCameraProperties
 
         col = layout.column(align=True)
@@ -86,13 +101,12 @@ class BIM_PT_drawing_underlay(Panel):
 
     @classmethod
     def poll(cls, context):
-        engine = context.engine
         return context.camera and hasattr(context.active_object.data, "BIMCameraProperties")
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        dprops = bpy.context.scene.DocProperties
+        dprops = context.scene.DocProperties
         props = context.active_object.data.BIMCameraProperties
 
         row = layout.row(align=True)
@@ -131,7 +145,6 @@ class BIM_PT_drawing_underlay(Panel):
                 row.operator("bim.activate_drawing_style")
 
 
-
 class BIM_PT_drawings(Panel):
     bl_label = "SVG Drawings"
     bl_idname = "BIM_PT_drawings"
@@ -142,7 +155,7 @@ class BIM_PT_drawings(Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
 
         row = layout.row(align=True)
         row.operator("bim.add_drawing")
@@ -151,9 +164,9 @@ class BIM_PT_drawings(Panel):
         if props.drawings:
             if props.active_drawing_index < len(props.drawings):
                 op = row.operator("bim.open_view", icon="URL", text="")
-                op.view = props.drawings[props.active_drawing_index].name
+                op.view = props.active_drawing.name
                 row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
-            layout.template_list("BIM_UL_generic", "", props, "drawings", props, "active_drawing_index")
+            layout.template_list("BIM_UL_drawinglist", "", props, "drawings", props, "active_drawing_index")
 
         row = layout.row()
         row.operator("bim.add_ifc_file")
@@ -175,7 +188,7 @@ class BIM_PT_schedules(Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
 
         row = layout.row(align=True)
         row.operator("bim.add_schedule")
@@ -187,7 +200,7 @@ class BIM_PT_schedules(Panel):
             layout.template_list("BIM_UL_generic", "", props, "schedules", props, "active_schedule_index")
 
             row = layout.row()
-            row.prop(props.schedules[props.active_schedule_index], "file")
+            row.prop(props.active_schedule, "file")
             row.operator("bim.select_schedule_file", icon="FILE_FOLDER", text="")
 
 
@@ -200,7 +213,7 @@ class BIM_PT_sheets(Panel):
 
     def draw(self, context):
         layout = self.layout
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
 
         row = layout.row(align=True)
         row.prop(props, "titleblock", text="")
@@ -270,8 +283,6 @@ class BIM_PT_annotation_utilities(Panel):
         row = layout.row(align=True)
         row.operator("bim.clean_wireframes")
         row = layout.row(align=True)
-        row.operator("bim.link_ifc")
-        row = layout.row(align=True)
         row.operator("bim.add_grid")
         row = layout.row(align=True)
         row.operator("bim.add_sections_annotations")
@@ -315,7 +326,7 @@ class BIM_PT_annotation_utilities(Panel):
         op.obj_name = "Misc"
         op.data_type = "mesh"
 
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
 
         row = layout.row(align=True)
         row.operator("bim.add_drawing")
@@ -324,7 +335,7 @@ class BIM_PT_annotation_utilities(Panel):
         if props.drawings:
             if props.active_drawing_index < len(props.drawings):
                 op = row.operator("bim.open_view", icon="URL", text="")
-                op.view = props.drawings[props.active_drawing_index].name
+                op.view = props.active_drawing.name
                 row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
             layout.template_list("BIM_UL_drawinglist", "", props, "drawings", props, "active_drawing_index")
 

@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import json
 import ifcopenshell.api
@@ -14,8 +32,7 @@ class LoadInformation(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMDocumentProperties
-        while len(props.documents) > 0:
-            props.documents.remove(0)
+        props.documents.clear()
         for information_id, information in Data.information.items():
             new = props.documents.add()
             new.name = information["Name"] or "Unnamed"
@@ -37,8 +54,7 @@ class LoadDocumentReferences(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMDocumentProperties
-        while len(props.documents) > 0:
-            props.documents.remove(0)
+        props.documents.clear()
         for reference_id, reference in Data.references.items():
             new = props.documents.add()
             new.name = reference["Name"] or "Unnamed"
@@ -71,8 +87,7 @@ class EnableEditingDocument(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMDocumentProperties
-        while len(props.document_attributes) > 0:
-            props.document_attributes.remove(0)
+        props.document_attributes.clear()
 
         if props.is_editing == "information":
             data = Data.information[self.document]
@@ -260,17 +275,21 @@ class AssignDocument(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "document.assign_document",
-            self.file,
-            **{
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "document": self.file.by_id(self.document),
-            }
-        )
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:
+            obj_id = obj.BIMObjectProperties.ifc_definition_id
+            if not obj_id:
+                continue
+            ifcopenshell.api.run(
+                "document.assign_document",
+                self.file,
+                **{
+                    "product": self.file.by_id(obj_id),
+                    "document": self.file.by_id(self.document),
+                }
+            )
+            Data.load(self.file, obj_id)
         return {"FINISHED"}
 
 
@@ -285,15 +304,19 @@ class UnassignDocument(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "document.unassign_document",
-            self.file,
-            **{
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "document": self.file.by_id(self.document),
-            }
-        )
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        for obj in objs:
+            obj_id = obj.BIMObjectProperties.ifc_definition_id
+            if not obj_id:
+                continue
+            ifcopenshell.api.run(
+                "document.unassign_document",
+                self.file,
+                **{
+                    "product": self.file.by_id(obj_id),
+                    "document": self.file.by_id(self.document),
+                }
+            )
+            Data.load(self.file, obj_id)
         return {"FINISHED"}

@@ -543,14 +543,19 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	const gp_Trsf& trsf = brep_obj->transformation().data();
 
 	const bool is_section = (section_ref_ && object_type && *section_ref_ == *object_type);
-	const bool is_elevation = (elevation_ref_ && object_type && *elevation_ref_ == *object_type);
+	bool is_elevation = false;
+	if (elevation_ref_ && object_type) {
+		is_elevation = *elevation_ref_ == *object_type;
+	} else if (elevation_ref_guid_) {
+		is_elevation = *elevation_ref_guid_ == brep_obj->guid();
+	}
+	
+	BRepBuilderAPI_Transform make_transform_global(compound_local, trsf, true);
+	make_transform_global.Build();
+	// (When determinant < 0, copy is implied and the input is not mutated.)
+	auto compound_unmirrored = make_transform_global.Shape();
 
 	if (is_section || is_elevation) {
-		BRepBuilderAPI_Transform make_transform_global(compound_local, trsf, true);
-		make_transform_global.Build();
-		// (When determinant < 0, copy is implied and the input is not mutated.)
-		auto compound_unmirrored = make_transform_global.Shape();
-
 		boost::optional<double> scale;
 		boost::optional<std::pair<double, double>> size;
 
@@ -663,9 +668,13 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	// @todo is it correct to call nameElement() here with a single storey (what if this element spans multiple?)
 	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
 
-	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_) {
+	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_ || elevation_ref_guid_) {
 		element_buffer_.push_back(data);
 	}
+
+	// Augment bnd_ regardless of whether emitting storeys as we depend
+	// on the global bounds also for the storey height annotations.
+	BRepBndLib::Add(compound_unmirrored, bnd_);
 
 	if (emit_building_storeys_) {
 		write(data);
@@ -695,6 +704,19 @@ namespace {
 			algo->Load(shape_);
 		}
 	};
+}
+
+namespace {
+	int infront_or_behind(const gp_Pln& pln, const gp_Pnt& p) {
+		auto d = (p.XYZ() - pln.Location().XYZ()).Dot(pln.Axis().Direction().XYZ());
+		int state;
+		if (std::abs(d) < 1.e-5) {
+			state = 0;
+		} else {
+			state = d < 0. ? -1 : 1;
+		}
+		return state;
+	}
 }
 
 void SvgSerializer::write(const geometry_data& data) {
@@ -727,10 +749,6 @@ void SvgSerializer::write(const geometry_data& data) {
 		}
 	}
 #endif
-
-	if (is_floor_plan_) {
-		BRepBndLib::Add(compound_unmirrored, bnd_);
-	}
 
 	// SVG has a coordinate system with the origin in the *upper*-left corner
 	// therefore we mirror the shape along the XZ-plane.	
@@ -894,13 +912,7 @@ void SvgSerializer::write(const geometry_data& data) {
 			// See if any of the vertices is in the negative Z-axis of the projection plane
 			for (int i = 0; i < 8; ++i) {
 				gp_Pnt p(xs[(i & 1) == 1], ys[(i & 2) == 2], zs[(i & 4) == 4]);
-				auto d = (p.XYZ() - projection_plane.Location().XYZ()).Dot(projection_plane.Axis().Direction().XYZ());
-				int state;
-				if (std::abs(d) < 1.e-5) {
-					state = 0;
-				} else {
-					state = d < 0. ? -1 : 1;
-				}
+				int state = infront_or_behind(projection_plane, p);
 				if (state == -1) {
 					any_in_front = true;
 				} else if (state == +1) {
@@ -939,13 +951,7 @@ void SvgSerializer::write(const geometry_data& data) {
 							TopExp_Explorer exp2(face, TopAbs_VERTEX);
 							for (; exp2.More(); exp2.Next()) {
 								gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(exp2.Current()));
-								auto d = (p.XYZ() - projection_plane.Location().XYZ()).Dot(projection_plane.Axis().Direction().XYZ());
-								int state;
-								if (std::abs(d) < 1.e-5) {
-									state = 0;
-								} else {
-									state = d < 0. ? -1 : 1;
-								}
+								int state = infront_or_behind(projection_plane, p);
 								if (state == -1) {
 									any_in_front_face = true;
 								} else if (state == +1) {
@@ -1056,15 +1062,17 @@ void SvgSerializer::write(const geometry_data& data) {
 				object_type.erase(std::remove_if(object_type.begin(), object_type.end(), [](char c) { return !std::isalnum(c); }), object_type.end());
 			}
 
-			auto z_local = gp::DZ().Transformed(data.trsf.Inverted());
+			auto z_global = gp::DZ().Transformed(data.trsf);
+			auto xyz_global = gp_Pnt().Transformed(data.trsf);
+			int state = infront_or_behind(projection_plane, xyz_global);
 
 			if (data.product->declaration().is("IfcAnnotation") &&     // is an Annotation
 				(proj.Magnitude() > 1.e-5) && 					       // when projected onto the view has a length
-				is_floor_plan_
+				(is_floor_plan_
 					? (zmin >= range.first && zmin < (range.second - 1.e-5)) // the Z-coords are within the range of the building storey,
 				                                                             // this excludes the upper bound with a small tolerance
-					: (projection_direction.Dot(z_local) < -0.99)            // For elevations only include annotations that are "facing" the view direction
-				)
+					: (projection_direction.Dot(z_global) > 0.99 && state == -1)            // For elevations only include annotations that are "facing" the view direction
+				))
 			{
 				auto svg_name = data.svg_name;
 
@@ -1196,11 +1204,17 @@ void SvgSerializer::write(const geometry_data& data) {
 
 			emitted = true;
 
+			auto svg_name = data.svg_name;
+			if (object_type.size()) {
+				// prefix class to indicate this is a cut element
+				boost::replace_all(svg_name, "class=\"", "class=\"cut ");
+			}
+
 			if (po == nullptr) {
 				if (storey) {
-					po = &start_path(pln, storey, data.svg_name);
+					po = &start_path(pln, storey, svg_name);
 				} else {
-					po = &start_path(pln, drawing_name, data.svg_name);
+					po = &start_path(pln, drawing_name, svg_name);
 				}
 			}
 
@@ -1960,13 +1974,19 @@ void SvgSerializer::finalize() {
 				svg_file << "    <g " << namespace_prefix_  << "name=\"" << n << "\" class=\"section\" " << writeMetadata(drawing_metadata[it->first]) << ">\n";
 			}
 		}
+
+		previous = it->first;
+
+		if (it->second.second.empty()) {
+			continue;
+		}
+
 		svg_file << "        <g " << it->second.first << ">\n";
 		std::vector<util::string_buffer>::const_iterator jt;
 		for (jt = it->second.second.begin(); jt != it->second.second.end(); ++jt) {
 			svg_file << jt->str();
 		}
 		svg_file << "        </g>\n";
-		previous = it->first;
 	}
 	
 	if (previous) {
@@ -2000,45 +2020,49 @@ void SvgSerializer::doWriteHeader() {
 		"        <marker id=\"arrowstart\" markerWidth=\"10\" markerHeight=\"7\" refX=\"0\" refY=\"3.5\" orient=\"auto\">\n"
 		"          <polygon points=\"10 0, 0 3.5, 10 7\" />\n"
 		"        </marker>\n"
-		"    </defs>\n"
-		"    <style type=\"text/css\" >\n"
-		"    <![CDATA[\n"
-		"        path {\n"
-		"            stroke: #222222;\n"
-		"            fill: #444444;\n"
-		"        }\n"
-		"        .IfcDoor path,\n"
-		"        .Symbol path {\n"
-		"            fill: none;\n"
-		"        }\n"
-		"        .Symbol path {\n"
-		"            stroke-width: 0.5px;\n"
-		"        }\n"
-		"        .IfcSpace path {\n"
-		"            fill-opacity: .2;\n"
-		"        }\n"
-		"        .Dimension path {\n"
-		"            marker-end: url(#arrowend);\n"
-		"            marker-start: url(#arrowstart);\n"
-		"        }\n";
-	
-	if (scale_) {
-		// previously:
-		//       (pt)  (px)  (in)  (mm)
-		// approx 12 / 0.75 / 96 * 25.4
+		"    </defs>\n";
+
+	if (!no_css_) {
+		svg_file <<
+			"    <style type=\"text/css\" >\n"
+			"    <![CDATA[\n"
+			"        path {\n"
+			"            stroke: #222222;\n"
+			"            fill: #444444;\n"
+			"        }\n"
+			"        .IfcDoor path,\n"
+			"        .Symbol path {\n"
+			"            fill: none;\n"
+			"        }\n"
+			"        .Symbol path {\n"
+			"            stroke-width: 0.5px;\n"
+			"        }\n"
+			"        .IfcSpace path {\n"
+			"            fill-opacity: .2;\n"
+			"        }\n"
+			"        .Dimension path {\n"
+			"            marker-end: url(#arrowend);\n"
+			"            marker-start: url(#arrowstart);\n"
+			"        }\n";
+
+		if (scale_) {
+			// previously:
+			//       (pt)  (px)  (in)  (mm)
+			// approx 12 / 0.75 / 96 * 25.4
+
+			svg_file <<
+				"        text {\n"
+				"            font-size: 2;\n" //  (reduced to two).
+				"        }\n"
+				"        path {\n"
+				"            stroke-width: 0.3;\n"
+				"        }\n";
+		}
 
 		svg_file <<
-		"        text {\n"
-		"            font-size: 2;\n" //  (reduced to two).
-		"        }\n"
-		"        path {\n"
-		"            stroke-width: 0.3;\n"
-		"        }\n";
+			"    ]]>\n"
+			"    </style>\n";
 	}
-
-	svg_file << 
-		"    ]]>\n"
-		"    </style>\n";
 }
 
 namespace {

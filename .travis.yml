@@ -22,10 +22,15 @@ addons:
     - nlohmann-json3-dev
     - opencollada-dev
     - python3-all-dev
+    - python3-pip
     - swig
 
 before_script:
   - if [ $TRAVIS_OS_NAME == "linux" ]; then ccache -z; fi
+  
+install:
+  # for IDS
+  - python3 -m pip install xmlschema
 
 script:
   - pwd
@@ -39,23 +44,24 @@ script:
     -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
     -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \
     -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.8.so \
+    "-DSCHEMA_VERSIONS=2x3;4" \
     -DGLTF_SUPPORT=On \
     -DJSON_INCLUDE_DIR=/usr/include \
     ../cmake
 
   # TODO: Drop sudo
   - sudo make -j $(nproc) install
-    
+
   - cd ../test
   - /usr/bin/python tests.py
+  - /usr/bin/python ../src/ifcopenshell-python/ifcopenshell/test_ids.py
 
   - cd input
-  
+
   - /usr/local/bin/IfcConvert -yv acad2010_walls.ifc acad2010_walls.glb
-  # - gltf_validator acad2010_walls.glb
-  
+
   - /usr/bin/python -c "from io import open; import ifcopenshell; f = ifcopenshell.open('encoding.ifc'); assert list(map(ord, f[1][0])) == [39, 97, 39, 32, 49, 109, 179, 32, 8804, 32, 53, 109, 179, 32, 8805, 32, 49, 48, 109, 179]"
-  
+
   - |
     (for i in *.ifc; do \
     echo $i | tee -a log; \

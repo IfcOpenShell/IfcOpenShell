@@ -1,7 +1,26 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell.util.geolocation
 from bpy.types import Panel
 from ifcopenshell.api.georeference.data import Data
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import draw_attributes, draw_attribute
 
 
 class BIM_PT_gis(Panel):
@@ -32,27 +51,9 @@ class BIM_PT_gis(Panel):
         row = self.layout.row(align=True)
         row.label(text="Projected CRS", icon="WORLD")
         row.operator("bim.edit_georeferencing", icon="CHECKMARK", text="")
-        row.operator("bim.disable_editing_georeferencing", icon="X", text="")
+        row.operator("bim.disable_editing_georeferencing", icon="CANCEL", text="")
 
-        for attribute in props.projected_crs:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "float":
-                row.prop(attribute, "float_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
-
-        row = self.layout.row(align=True)
-        row.prop(props, "map_unit_type", text="MapUnit")
-        if props.map_unit_type == "IfcSIUnit":
-            row.prop(props, "map_unit_si", text="")
-        elif props.map_unit_type == "IfcConversionBasedUnit":
-            row.prop(props, "map_unit_imperial", text="")
-        row.prop(props, "is_map_unit_null", icon="RADIOBUT_OFF" if props.is_map_unit_null else "RADIOBUT_ON", text="")
+        draw_attributes(props.projected_crs, self.layout)
 
         row = self.layout.row()
         row.label(text="Map Conversion", icon="GRID")
@@ -62,17 +63,7 @@ class BIM_PT_gis(Panel):
                 row = self.layout.row(align=True)
                 row.operator("bim.set_ifc_grid_north", text="Set IFC North")
                 row.operator("bim.set_blender_grid_north", text="Set Blender North")
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "float":
-                row.prop(attribute, "float_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+            draw_attribute(attribute, self.layout.row())
 
         row = self.layout.row()
         row.label(text="True North", icon="LIGHT_SUN")
@@ -90,18 +81,16 @@ class BIM_PT_gis(Panel):
     def draw_ui(self, context):
         props = context.scene.BIMGeoreferenceProperties
 
-        if not Data.projected_crs and IfcStore.get_file().schema != "IFC2X3":
+        if not Data.projected_crs:
             row = self.layout.row(align=True)
             row.label(text="Not Georeferenced")
-            row.operator("bim.add_georeferencing", icon="ADD", text="")
+            if IfcStore.get_file().schema != "IFC2X3":
+                row.operator("bim.add_georeferencing", icon="ADD", text="")
 
         if props.has_blender_offset:
             row = self.layout.row()
             row.label(text="Blender Offset", icon="TRACKING_REFINE_FORWARDS")
 
-            row = self.layout.row(align=True)
-            row.label(text="Type")
-            row.label(text=props.blender_offset_type)
             row = self.layout.row(align=True)
             row.label(text="Eastings")
             row.label(text=props.blender_eastings)

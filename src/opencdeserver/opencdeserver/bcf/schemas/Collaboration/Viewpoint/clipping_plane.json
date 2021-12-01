@@ -1,0 +1,13 @@
+{
+    "title": "clipping_plane",
+    "type": ["object",
+    "null"],
+    "properties": {
+        "location": {
+            "$ref": "location.json"
+        },
+        "direction": {
+            "$ref": "direction.json"
+        }
+    }
+}

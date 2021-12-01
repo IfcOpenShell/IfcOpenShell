@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 from bpy.types import Panel
 from ifcopenshell.api.geometry.data import Data
@@ -30,7 +48,7 @@ class BIM_PT_representations(Panel):
             layout.label(text="No representations found")
 
         row = layout.row(align=True)
-        row.prop(bpy.context.scene.BIMProperties, "contexts", text="")
+        row.prop(context.scene.BIMProperties, "contexts", text="")
         row.operator("bim.add_representation", icon="ADD", text="")
 
         for ifc_definition_id in representations:
@@ -41,6 +59,7 @@ class BIM_PT_representations(Panel):
             row.label(text=representation["ContextOfItems"]["TargetView"])
             row.label(text=representation["RepresentationType"])
             op = row.operator("bim.switch_representation", icon="OUTLINER_DATA_MESH", text="")
+            op.should_switch_all_meshes = True
             op.should_reload = True
             op.ifc_definition_id = ifc_definition_id
             op.disable_opening_subtractions = False
@@ -71,10 +90,12 @@ class BIM_PT_mesh(Panel):
 
         row = layout.row(align=True)
         op = row.operator("bim.switch_representation", text="Bake Voids", icon="SELECT_SUBTRACT")
+        op.should_switch_all_meshes = True
         op.should_reload = True
         op.ifc_definition_id = props.ifc_definition_id
         op.disable_opening_subtractions = False
         op = row.operator("bim.switch_representation", text="Dynamic Voids", icon="SELECT_INTERSECT")
+        op.should_switch_all_meshes = True
         op.should_reload = True
         op.ifc_definition_id = props.ifc_definition_id
         op.disable_opening_subtractions = True
@@ -109,6 +130,10 @@ class BIM_PT_mesh(Panel):
 
 def BIM_PT_transform(self, context):
     if context.active_object and context.active_object.BIMObjectProperties.ifc_definition_id:
+        row = self.layout.row(align=True)
+        row.label(text="Blender Offset")
+        row.label(text=context.active_object.BIMObjectProperties.blender_offset_type)
+
         row = self.layout.row()
         row.operator("bim.edit_object_placement")
 

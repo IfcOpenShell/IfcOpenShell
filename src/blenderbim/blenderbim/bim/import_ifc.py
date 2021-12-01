@@ -1,28 +1,38 @@
-import ifcopenshell
-import ifcopenshell.geom
-import ifcopenshell.util.geolocation
-import ifcopenshell.util.selector
-import ifcopenshell.util.element
-import ifcopenshell.util.unit
-import bpy
-import bmesh
-import os
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import re
+import bpy
+import time
+import bmesh
 import shutil
 import threading
-import json
-import time
 import mathutils
-import math
-import multiprocessing
-import zipfile
-import tempfile
 import numpy as np
-from blenderbim.bim.module.drawing.prop import getDiagramScales
-from pathlib import Path
-from itertools import cycle
-from datetime import datetime
+import multiprocessing
+import ifcopenshell
+import ifcopenshell.geom
+import ifcopenshell.util.unit
+import ifcopenshell.util.element
+import ifcopenshell.util.selector
+import ifcopenshell.util.geolocation
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.drawing.prop import get_diagram_scales
 
 
 class FileCopy(threading.Thread):
@@ -54,8 +64,34 @@ class MaterialCreator:
         if not self.mesh or self.mesh.name in self.parsed_meshes:
             return
         self.parsed_meshes.add(self.mesh.name)
+        self.add_default_material(element)
         if self.parse_representations(element):
             self.assign_material_slots_to_faces()
+
+    def add_default_material(self, element):
+        element_material = ifcopenshell.util.element.get_material(element)
+        if not element_material:
+            return
+        for material in [m for m in self.ifc_importer.file.traverse(element_material) if m.is_a("IfcMaterial")]:
+            if not material.HasRepresentation:
+                continue
+            surface_style = [
+                s for s in self.ifc_importer.file.traverse(material.HasRepresentation[0]) if s.is_a("IfcSurfaceStyle")
+            ]
+            if surface_style:
+                self.mesh.materials.append(self.styles[surface_style[0].id()])
+                return
+        # For authoring convenience, we choose to assign a material, even if it has no surface style. See #1585.
+        for material in [m for m in self.ifc_importer.file.traverse(element_material) if m.is_a("IfcMaterial")]:
+            self.mesh.materials.append(self.materials[material.id()])
+            return
+
+    def load_existing_materials(self):
+        for material in bpy.data.materials:
+            if material.BIMObjectProperties.ifc_definition_id:
+                self.materials[material.BIMObjectProperties.ifc_definition_id] = material
+            if material.BIMMaterialProperties.ifc_style_id:
+                self.styles[material.BIMMaterialProperties.ifc_style_id] = material
 
     def parse_representations(self, element):
         has_parsed = False
@@ -127,12 +163,9 @@ class IfcImporter:
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
-        self.filter_mode = "BLACKLIST"
-        self.include_elements = set()
-        self.exclude_elements = set()
         self.project = None
-        self.spatial_structure_elements = {}
-        self.elements = {}
+        self.collections = {}
+        self.elements = set()
         self.type_collection = None
         self.type_products = {}
         self.openings = {}
@@ -143,7 +176,6 @@ class IfcImporter:
         self.added_data = {}
         self.native_elements = set()
         self.native_data = {}
-        self.aggregates = {}
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
 
@@ -152,17 +184,19 @@ class IfcImporter:
             self.time = time.time()
         print("{} :: {:.2f}".format(message, time.time() - self.time))
         self.time = time.time()
+        self.update_progress(self.progress + 1)
+
+    def update_progress(self, progress):
+        if progress <= 100:
+            self.progress = progress
+        bpy.context.window_manager.progress_update(self.progress)
 
     def execute(self):
+        bpy.context.window_manager.progress_begin(0, 100)
+        self.progress = 0
         self.profile_code("Starting import process")
-        self.load_diff()
-        self.profile_code("Load diff")
-        self.purge_diff()
-        self.profile_code("Purge diffs")
         self.load_file()
         self.profile_code("Loading file")
-        self.set_ifc_file()
-        self.profile_code("Setting file")
         self.calculate_unit_scale()
         self.profile_code("Calculate unit scale")
         self.calculate_model_offset()
@@ -171,47 +205,41 @@ class IfcImporter:
         self.profile_code("Set units")
         self.create_project()
         self.profile_code("Create project")
-        self.create_spatial_hierarchy()
-        self.profile_code("Create spatial hierarchy")
-        self.create_aggregates()
-        self.profile_code("Create aggregates")
-        self.create_aggregate_tree()
-        self.profile_code("Create aggregate tree")
+        self.process_element_filter()
+        self.profile_code("Process element filter")
+        self.create_collections()
+        self.profile_code("Create collections")
         self.create_openings_collection()
         self.profile_code("Create opening collection")
         self.create_materials()
         self.profile_code("Create materials")
         self.create_styles()
         self.profile_code("Create styles")
-        self.process_element_filter()
-        self.profile_code("Process element filter")
-        self.parse_native_elements()
-        self.profile_code("Parsing native elements")
-        self.create_grids()
-        self.profile_code("Create grids")
-        self.create_native_products()
-        self.profile_code("Create native products")
-        self.create_products()
-        self.profile_code("Create products")
-        self.create_empty_products()
-        self.profile_code("Create empty products")
-        self.create_type_products()
-        self.profile_code("Create type products")
         self.create_annotation()
         self.profile_code("Create annotation")
-        self.create_structural_elements()
-        self.profile_code("Create structural elements")
-        self.place_objects_in_spatial_tree()
-        self.profile_code("Placing objects in spatial tree")
+        self.parse_native_elements()
+        self.profile_code("Parsing native elements")
+        self.create_native_elements()
+        self.profile_code("Create native elements")
+        self.create_elements()
+        self.profile_code("Create elements")
+        self.create_grids()
+        self.profile_code("Create grids")
+        self.create_spatial_elements()
+        self.profile_code("Create spatial elements")
+        self.create_structural_items()
+        self.profile_code("Create structural items")
+        self.create_type_products()
+        self.profile_code("Create type products")
+        self.place_objects_in_collections()
+        self.profile_code("Place objects in collections")
         if self.ifc_import_settings.should_merge_by_class:
             self.merge_by_class()
             self.profile_code("Merging by class")
         elif self.ifc_import_settings.should_merge_by_material:
             self.merge_by_material()
             self.profile_code("Merging by material")
-        if self.ifc_import_settings.should_merge_materials_by_colour or (
-            self.ifc_import_settings.should_auto_set_workarounds and len(self.material_creator.materials) > 300
-        ):
+        if self.ifc_import_settings.should_merge_materials_by_colour or len(self.material_creator.materials) > 300:
             self.merge_materials_by_colour()
             self.profile_code("Merging by colour")
         self.add_project_to_scene()
@@ -221,43 +249,50 @@ class IfcImporter:
             self.profile_code("Mesh cleaning")
         self.set_default_context()
         self.profile_code("Setting default context")
+        self.update_progress(100)
+        bpy.context.window_manager.progress_end()
 
-    def is_element_far_away(self, element):
+    def is_element_far_away(self, element, is_meters=True):
         try:
-            return self.is_point_far_away(element.ObjectPlacement.RelativePlacement.Location)
+            return self.is_point_far_away(element.ObjectPlacement.RelativePlacement.Location, is_meters=is_meters)
         except:
             pass
 
-    def is_point_far_away(self, point):
-        # Arbitrary threshold based on experience
+    def is_point_far_away(self, point, is_meters=True):
+        # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
+        limit = 1000 if is_meters else (1000 / self.unit_scale)
         coords = point
         if hasattr(point, "Coordinates"):
             coords = point.Coordinates
-        return abs(coords[0]) > 1000000 or abs(coords[1]) > 1000000 or abs(coords[2]) > 1000000
+        return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
 
     def process_element_filter(self):
-        if not self.ifc_import_settings.ifc_selector:
-            return
-        selector = ifcopenshell.util.selector.Selector()
-        elements = selector.parse(self.file, self.ifc_import_settings.ifc_selector)
-        if self.ifc_import_settings.ifc_import_filter == "WHITELIST":
-            self.filter_mode = "WHITELIST"
-            self.include_elements = set(elements)
-        elif self.ifc_import_settings.ifc_import_filter == "BLACKLIST":
-            self.exclude_elements = set(elements)
-            self.filter_mode = "BLACKLIST"
+        if self.ifc_import_settings.has_filter:
+            self.elements = set(self.ifc_import_settings.elements)
+            self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
+        else:
+            self.elements = set(self.file.by_type("IfcElement"))
+            if self.file.schema == "IFC2X3":
+                self.spatial_elements = set(self.file.by_type("IfcSpatialStructureElement"))
+            else:
+                self.spatial_elements = set(self.file.by_type("IfcSpatialElement"))
+
+    def get_spatial_elements_filtered_by_elements(self, elements):
+        leaf_spatial_elements = set([ifcopenshell.util.element.get_container(e) for e in elements])
+        results = set()
+        for spatial_element in leaf_spatial_elements:
+            while True:
+                results.add(spatial_element)
+                spatial_element = ifcopenshell.util.element.get_aggregate(spatial_element)
+                if not spatial_element or spatial_element.is_a("IfcContext"):
+                    break
+        return results
 
     def parse_native_elements(self):
-        if self.filter_mode == "WHITELIST":
-            for element in self.include_elements:
-                if self.is_native(element):
-                    self.native_elements[element.GlobalId] = element
-            self.include_elements -= self.native_elements
-        elif self.filter_mode == "BLACKLIST":
-            for element in set(self.file.by_type("IfcElement")) - self.exclude_elements:
-                if self.is_native(element):
-                    self.native_elements.add(element)
-            self.exclude_elements |= self.native_elements
+        for element in self.elements:
+            if self.is_native(element):
+                self.native_elements.add(element)
+        self.elements -= self.native_elements
 
     def is_native(self, element):
         if (
@@ -312,12 +347,15 @@ class IfcImporter:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             return
-        project = self.file.by_type("IfcProject")[0]
+        if self.file.schema == "IFC2X3":
+            project = self.file.by_type("IfcProject")[0]
+        else:
+            project = self.file.by_type("IfcContext")[0]
         site = self.find_decomposed_ifc_class(project, "IfcSite")
-        if site and self.is_element_far_away(site[0]):
+        if site and self.is_element_far_away(site[0], is_meters=False):
             return self.guess_georeferencing(site[0])
         building = self.find_decomposed_ifc_class(project, "IfcBuilding")
-        if building and self.is_element_far_away(building[0]):
+        if building and self.is_element_far_away(building[0], is_meters=False):
             return self.guess_georeferencing(building[0])
         return self.guess_absolute_coordinate()
 
@@ -333,7 +371,6 @@ class IfcImporter:
             props.blender_x_axis_abscissa = str(placement.RefDirection.DirectionRatios[0])
             props.blender_x_axis_ordinate = str(placement.RefDirection.DirectionRatios[1])
         props.has_blender_offset = True
-        props.blender_offset_type = "OBJECT_PLACEMENT"
 
     def guess_absolute_coordinate(self):
         # Civil BIM applications like to work in absolute coordinates, where the ObjectPlacement is 0,0,0 but each
@@ -346,10 +383,8 @@ class IfcImporter:
         props.blender_northings = str(offset_point[1])
         props.blender_orthogonal_height = str(offset_point[2])
         props.has_blender_offset = True
-        props.blender_offset_type = "CARTESIAN_POINT"
 
     def get_offset_point(self):
-        offset_point = None
         elements_checked = 0
         # If more than these points aren't far away, the file probably isn't absolutely positioned
         element_checking_threshold = 100
@@ -363,7 +398,7 @@ class IfcImporter:
             if elements_checked > element_checking_threshold:
                 return
             for i, point in enumerate(point_list.CoordList):
-                if len(point) == 3 and self.is_point_far_away(point):
+                if len(point) == 3 and self.is_point_far_away(point, is_meters=False):
                     return point
 
         for point in self.file.by_type("IfcCartesianPoint"):
@@ -377,35 +412,41 @@ class IfcImporter:
             elements_checked += 1
             if elements_checked > element_checking_threshold:
                 return
-            if len(point.Coordinates) == 3 and self.is_point_far_away(point):
+            if len(point.Coordinates) == 3 and self.is_point_far_away(point, is_meters=False):
                 return point.Coordinates
 
-    def apply_blender_offset_to_matrix(self, matrix):
+    def apply_blender_offset_to_matrix_world(self, obj, matrix):
         props = bpy.context.scene.BIMGeoreferenceProperties
-        if props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
-            return mathutils.Matrix(
-                ifcopenshell.util.geolocation.global2local(
+        if props.has_blender_offset:
+            if self.is_point_far_away((matrix[0, 3], matrix[1, 3], matrix[2, 3])):
+                obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
+                matrix = ifcopenshell.util.geolocation.global2local(
                     matrix,
                     float(props.blender_eastings) * self.unit_scale,
                     float(props.blender_northings) * self.unit_scale,
                     float(props.blender_orthogonal_height) * self.unit_scale,
                     float(props.blender_x_axis_abscissa),
                     float(props.blender_x_axis_ordinate),
-                ).tolist()
-            )
+                )
+            else:
+                obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
+
+        if self.ifc_import_settings.should_offset_model:
+            matrix[0, 3] += self.ifc_import_settings.model_offset_coordinates[0]
+            matrix[1, 3] += self.ifc_import_settings.model_offset_coordinates[1]
+            matrix[2, 3] += self.ifc_import_settings.model_offset_coordinates[2]
+
         return mathutils.Matrix(matrix.tolist())
 
     def find_decomposed_ifc_class(self, element, ifc_class):
-        results = []
+        if element.is_a(ifc_class):
+            return element
         rel_aggregates = element.IsDecomposedBy
-        if not rel_aggregates:
-            return results
         for rel_aggregate in rel_aggregates:
             for part in rel_aggregate.RelatedObjects:
-                if part.is_a(ifc_class):
-                    results.append(part)
-                results.extend(self.find_decomposed_ifc_class(part, ifc_class))
-        return results
+                result = self.find_decomposed_ifc_class(part, ifc_class)
+                if result:
+                    return result
 
     def create_grids(self):
         grids = self.file.by_type("IfcGrid")
@@ -419,40 +460,36 @@ class IfcImporter:
                 shape = ifcopenshell.geom.create_shape(self.settings_2d, grid)
             grid_obj = self.create_product(grid, shape)
             collection = bpy.data.collections.new(self.get_name(grid))
-            element_matrix = self.get_local_placement(grid.ObjectPlacement)
-            element_matrix[0][3] *= self.unit_scale
-            element_matrix[1][3] *= self.unit_scale
-            element_matrix[2][3] *= self.unit_scale
             u_axes = bpy.data.collections.new("UAxes")
             collection.children.link(u_axes)
             v_axes = bpy.data.collections.new("VAxes")
             collection.children.link(v_axes)
-            self.create_grid_axes(grid.UAxes, u_axes, element_matrix)
-            self.create_grid_axes(grid.VAxes, v_axes, element_matrix)
+            self.create_grid_axes(grid.UAxes, u_axes, grid_obj)
+            self.create_grid_axes(grid.VAxes, v_axes, grid_obj)
             if grid.WAxes:
                 w_axes = bpy.data.collections.new("WAxes")
                 collection.children.link(w_axes)
-                self.create_grid_axes(grid.WAxes, w_axes, element_matrix)
+                self.create_grid_axes(grid.WAxes, w_axes, grid_obj)
 
-    def create_grid_axes(self, axes, grid, matrix_world):
+    def create_grid_axes(self, axes, grid_collection, grid_obj):
         for axis in axes:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
             obj.BIMObjectProperties.ifc_definition_id = axis.id()
-            obj.matrix_world = matrix_world
-            grid.objects.link(obj)
+            obj.matrix_world = grid_obj.matrix_world
+            grid_collection.objects.link(obj)
 
     def create_type_products(self):
-        type_products = self.file.by_type("IfcTypeProduct")
-        for collection in self.project["blender"].children:
-            if collection.name == "Types":
-                self.type_collection = collection
-                break
-        if not self.type_collection:
-            self.type_collection = bpy.data.collections.new("Types")
-            self.project["blender"].children.link(self.type_collection)
+        # TODO allow filtering of spatial elements too
+        if self.ifc_import_settings.has_filter:
+            type_products = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
+        else:
+            type_products = self.file.by_type("IfcTypeProduct")
+
         for type_product in type_products:
+            if not type_product:
+                continue
             self.create_type_product(type_product)
 
     def create_type_product(self, element):
@@ -487,7 +524,7 @@ class IfcImporter:
             ):
                 return representation_map
 
-    def create_native_products(self):
+    def create_native_elements(self):
         total = 0
         checkpoint = time.time()
         bm = bmesh.new()
@@ -520,32 +557,51 @@ class IfcImporter:
                 bm.to_mesh(mesh)
                 bm.clear()
         bm.free()
-
         print("Done creating geometry")
 
-    def create_products(self):
+    def create_spatial_elements(self):
+        products = self.create_products(self.spatial_elements)
+        self.spatial_elements -= products
+        products = self.create_curve_products(self.spatial_elements)
+        self.spatial_elements -= products
+        for element in self.spatial_elements:
+            self.create_product(element)
+
+    def create_elements(self):
+        products = self.create_products(self.elements)
+        self.elements -= products
+        products = self.create_curve_products(self.elements)
+        self.elements -= products
+        for element in self.elements:
+            self.create_product(element)
+
+    def create_products(self, products):
+        results = set()
+        if not products:
+            return results
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
             iterator = ifcopenshell.geom.iterator(
-                self.settings,
-                self.file,
-                multiprocessing.cpu_count(),
-                include=self.include_elements or None,
-                exclude=self.exclude_elements or None,
+                self.settings, self.file, multiprocessing.cpu_count(), include=products
             )
         else:
-            iterator = ifcopenshell.geom.iterator(
-                self.settings, self.file, include=self.include_elements or None, exclude=self.exclude_elements or None
-            )
+            iterator = ifcopenshell.geom.iterator(self.settings, self.file, include=products)
         valid_file = iterator.initialize()
         if not valid_file:
-            return False
+            return results
         checkpoint = time.time()
         total = 0
+        start_progress = self.progress
+        progress_range = 85 - start_progress
         while True:
             total += 1
             if total % 250 == 0:
-                print("{} elements processed in {:.2f}s ...".format(total, time.time() - checkpoint))
+                print(
+                    "{} ({}%) elements processed in {:.2f}s ...".format(
+                        total, iterator.progress(), time.time() - checkpoint
+                    )
+                )
                 checkpoint = time.time()
+                #self.update_progress(((total / approx_total_products) * progress_range) + start_progress)
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.guid)
@@ -554,28 +610,18 @@ class IfcImporter:
                 if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.guid):
                     # We only load a single context, and we prioritise the Body context. See #1290.
                     pass
-                elif product.is_a("IfcAnnotation") and product.ObjectType == "DRAWING":
-                    # We have already processed this during the create_annotation step
-                    pass
                 else:
                     self.create_product(product, shape)
+                    results.add(product)
             if not iterator.next():
                 break
         print("Done creating geometry")
-
-    def create_empty_products(self):
-        for element in self.file.by_type("IfcProduct"):
-            if element.id() in self.added_data:
-                continue
-            if element.is_a("IfcPort"):
-                continue
-            if not element.Representation:
-                self.create_product(element)
+        return results
 
     def create_annotation(self):
         self.create_curve_products(self.file.by_type("IfcAnnotation"))
 
-    def create_structural_elements(self):
+    def create_structural_items(self):
         # Create structural collections
         self.structural_member_collection = bpy.data.collections.new("Members")
         self.structural_connection_collection = bpy.data.collections.new("Connections")
@@ -610,10 +656,13 @@ class IfcImporter:
             mesh.from_pydata([mathutils.Vector(vertex) * self.unit_scale], [], [])
 
             obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
-            obj.matrix_world = mathutils.Matrix(placement_matrix.tolist())
+            obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, placement_matrix)
             self.link_element(product, obj)
 
     def create_curve_products(self, products):
+        results = set()
+        if not products:
+            return results
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
             iterator = ifcopenshell.geom.iterator(
                 self.settings_2d, self.file, multiprocessing.cpu_count(), include=products
@@ -622,7 +671,7 @@ class IfcImporter:
             iterator = ifcopenshell.geom.iterator(self.settings_2d, self.file, include=products)
         valid_file = iterator.initialize()
         if not valid_file:
-            return False
+            return results
         checkpoint = time.time()
         total = 0
         while True:
@@ -632,10 +681,13 @@ class IfcImporter:
                 checkpoint = time.time()
             shape = iterator.get()
             if shape:
+                product = self.file.by_id(shape.guid)
                 self.create_product(self.file.by_id(shape.guid), shape)
+                results.add(product)
             if not iterator.next():
                 break
         print("Done creating geometry")
+        return results
 
     def create_product(self, element, shape=None, mesh=None):
         if element is None:
@@ -666,16 +718,16 @@ class IfcImporter:
         if shape:
             m = shape.transformation.matrix.data
             # We use numpy here because Blender mathutils.Matrix is not accurate enough
-            mat = np.matrix(
+            mat = np.array(
                 ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
             )
-            obj.matrix_world = self.apply_blender_offset_to_matrix(mat)
+            obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, mat)
             self.material_creator.create(element, obj, mesh)
         elif mesh:
-            obj.matrix_world = self.apply_blender_offset_to_matrix(self.get_element_matrix(element))
+            obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
             self.material_creator.create(element, obj, mesh)
         elif hasattr(element, "ObjectPlacement"):
-            obj.matrix_world = self.apply_blender_offset_to_matrix(self.get_element_matrix(element))
+            obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
 
         self.add_opening_relation(element, obj)
 
@@ -686,7 +738,7 @@ class IfcImporter:
     def get_representation_item_material_name(self, item):
         if not item.StyledByItem:
             return
-        style_ids = [e.id() for e in self.ifc_importer.file.traverse(item.StyledByItem[0]) if e.is_a("IfcSurfaceStyle")]
+        style_ids = [e.id() for e in self.file.traverse(item.StyledByItem[0]) if e.is_a("IfcSurfaceStyle")]
         return style_ids[0] if style_ids else None
 
     def create_native_faceted_brep(self, element, mesh_name):
@@ -794,6 +846,8 @@ class IfcImporter:
     def merge_by_class(self):
         merge_set = {}
         for obj in self.added_data.values():
+            if not isinstance(obj, bpy.types.Object):
+                continue
             if "/" not in obj.name or "IfcRelAggregates" in obj.users_collection[0].name:
                 continue
             merge_set.setdefault(obj.name.split("/")[0], []).append(obj)
@@ -802,6 +856,8 @@ class IfcImporter:
     def merge_by_material(self):
         merge_set = {}
         for obj in self.added_data.values():
+            if not isinstance(obj, bpy.types.Object):
+                continue
             if "/" not in obj.name or "IfcRelAggregates" in obj.users_collection[0].name:
                 continue
             if not obj.material_slots:
@@ -828,6 +884,8 @@ class IfcImporter:
             cleaned_material["material"].diffuse_color = cleaned_material["diffuse_color"]
 
         for obj in self.added_data.values():
+            if not isinstance(obj, bpy.types.Object):
+                continue
             if not hasattr(obj, "material_slots") or not obj.material_slots:
                 continue
             for slot in obj.material_slots:
@@ -852,6 +910,8 @@ class IfcImporter:
         obj = None
         last_obj = None
         for obj in self.added_data.values():
+            if not isinstance(obj, bpy.types.Object):
+                continue
             if obj.type == "MESH":
                 obj.select_set(True)
                 last_obj = obj
@@ -871,34 +931,11 @@ class IfcImporter:
             return
         self.openings[element.GlobalId] = obj
 
-    def load_diff(self):
-        if not self.ifc_import_settings.diff_file:
-            return
-        with open(self.ifc_import_settings.diff_file, "r") as file:
-            self.diff = json.load(file)
-
     def load_file(self):
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)
-        extension = self.ifc_import_settings.input_file.split(".")[-1]
-        if extension.lower() == "ifczip":
-            with tempfile.TemporaryDirectory() as unzipped_path:
-                with zipfile.ZipFile(self.ifc_import_settings.input_file, "r") as zip_ref:
-                    zip_ref.extractall(unzipped_path)
-                for filename in Path(unzipped_path).glob("**/*.ifc"):
-                    self.file = ifcopenshell.open(filename)
-                    break
-        elif extension.lower() == "ifcxml":
-            self.file = ifcopenshell.file(
-                ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(self.ifc_import_settings.input_file)
-            )
-        elif extension.lower() == "ifc":
-            self.file = ifcopenshell.open(self.ifc_import_settings.input_file)
-        IfcStore.file = self.file
-
-    def set_ifc_file(self):
-        bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
-        IfcStore.file = self.file
-        IfcStore.path = self.ifc_import_settings.input_file
+        if not bpy.context.scene.BIMProperties.ifc_file:
+            bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
+        self.file = IfcStore.get_file()
 
     def calculate_unit_scale(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
@@ -934,62 +971,76 @@ class IfcImporter:
 
     def create_project(self):
         self.project = {"ifc": self.file.by_type("IfcProject")[0]}
-        self.project["blender"] = bpy.data.collections.new("IfcProject/{}".format(self.project["ifc"].Name))
+        self.project["blender"] = bpy.data.collections.new(
+            "{}/{}".format(self.project["ifc"].is_a(), self.project["ifc"].Name)
+        )
         obj = self.create_product(self.project["ifc"])
         if obj:
             self.project["blender"].objects.link(obj)
 
-    def create_spatial_hierarchy(self):
-        if self.project["ifc"].IsDecomposedBy:
-            for rel_aggregate in self.project["ifc"].IsDecomposedBy:
-                self.add_related_objects(self.project["blender"], rel_aggregate.RelatedObjects)
+    def create_collections(self):
+        if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
+            self.create_decomposition_collections()
+        elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
+            self.create_spatial_decomposition_collections()
 
-    def add_related_objects(self, parent, related_objects):
+    def create_decomposition_collections(self):
+        self.create_spatial_decomposition_collections()
+        self.create_aggregate_collections()
+
+    def create_spatial_decomposition_collections(self):
+        for rel_aggregate in self.project["ifc"].IsDecomposedBy or []:
+            self.create_spatial_decomposition_collection(self.project["blender"], rel_aggregate.RelatedObjects)
+        self.create_type_collection()
+
+    def create_type_collection(self):
+        for collection in self.project["blender"].children:
+            if collection.name == "Types":
+                self.type_collection = collection
+                break
+        if not self.type_collection:
+            self.type_collection = bpy.data.collections.new("Types")
+            self.project["blender"].children.link(self.type_collection)
+
+    def create_spatial_decomposition_collection(self, parent, related_objects):
         for element in related_objects:
+            if element not in self.spatial_elements:
+                continue
             global_id = element.GlobalId
             collection = bpy.data.collections.new(self.get_name(element))
-            self.spatial_structure_elements[global_id] = {"blender": collection}
+            self.collections[global_id] = collection
             parent.children.link(collection)
-            obj = self.create_product(element)
-            if obj:
-                self.spatial_structure_elements[global_id]["blender_obj"] = obj
-                collection.objects.link(obj)
             if element.IsDecomposedBy:
                 for rel_aggregate in element.IsDecomposedBy:
-                    self.add_related_objects(collection, rel_aggregate.RelatedObjects)
+                    self.create_spatial_decomposition_collection(collection, rel_aggregate.RelatedObjects)
 
-    def create_aggregates(self):
-        rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
+    def create_aggregate_collections(self):
+        if self.ifc_import_settings.has_filter:
+            rel_aggregates = [e.IsDecomposedBy[0] for e in self.elements if e.IsDecomposedBy]
+        else:
+            rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
+
+        if len(rel_aggregates) > 10000:
+            # More than 10,000 collections makes Blender unhappy
+            print("Skipping aggregate collections for performance.")
+            self.ifc_import_settings.collection_mode = "SPATIAL_DECOMPOSITION"
+            return
+
+        aggregates = {}
         for rel_aggregate in rel_aggregates:
-            self.create_aggregate(rel_aggregate)
+            element = rel_aggregate.RelatingObject
+            collection = bpy.data.collections.new(self.get_name(element))
+            aggregates[element.GlobalId] = {"element": element, "collection": collection}
+            self.collections[element.GlobalId] = collection
 
-    def create_aggregate_tree(self):
-        for aggregate in self.aggregates.values():
-            if aggregate["container"].is_a("IfcSpatialStructureElement"):
-                self.spatial_structure_elements[aggregate["container"].GlobalId]["blender"].children.link(
-                    aggregate["blender"]
-                )
-            else:
-                self.aggregates[aggregate["container"].GlobalId]["blender"].children.link(aggregate["blender"])
-
-    def create_aggregate(self, rel_aggregate):
-        element = rel_aggregate.RelatingObject
-        obj = bpy.data.objects.new("{}/{}".format(element.is_a(), element.Name), None)
-        self.link_element(element, obj)
-        collection = bpy.data.collections.new(obj.name)
-        collection.objects.link(obj)
-        self.aggregates[element.GlobalId] = {
-            "blender": collection,
-            "blender_obj": obj,
-            "container": self.get_aggregate_container(element),
-        }
-
-    def get_aggregate_container(self, element):
-        if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
-            container = element.ContainedInStructure[0].RelatingStructure
-        elif hasattr(element, "Decomposes") and element.Decomposes:
-            container = element.Decomposes[0].RelatingObject
-        return container
+        for global_id, aggregate in aggregates.items():
+            parent = ifcopenshell.util.element.get_aggregate(aggregate["element"])
+            if parent:
+                self.collections[parent.GlobalId].children.link(aggregate["collection"])
+                continue
+            parent = ifcopenshell.util.element.get_container(aggregate["element"])
+            if parent:
+                self.collections[parent.GlobalId].children.link(aggregate["collection"])
 
     def create_openings_collection(self):
         self.opening_collection = bpy.data.collections.new("IfcOpeningElements")
@@ -997,10 +1048,14 @@ class IfcImporter:
 
     def create_materials(self):
         for material in self.file.by_type("IfcMaterial"):
-            blender_material = bpy.data.materials.new(material.Name)
-            blender_material.BIMObjectProperties.ifc_definition_id = material.id()
-            self.material_creator.materials[material.id()] = blender_material
-            blender_material.use_fake_user = True
+            self.create_material(material)
+
+    def create_material(self, material):
+        blender_material = bpy.data.materials.new(material.Name)
+        self.link_element(material, blender_material)
+        self.material_creator.materials[material.id()] = blender_material
+        blender_material.use_fake_user = True
+        return blender_material
 
     def create_styles(self):
         parsed_styles = set()
@@ -1016,11 +1071,18 @@ class IfcImporter:
         for style in self.file.by_type("IfcSurfaceStyle"):
             if style.id() in parsed_styles:
                 continue
+            self.create_style(style)
+
+    def create_style(self, style, blender_material=None):
+        if not blender_material:
             name = style.Name or str(style.id())
             blender_material = bpy.data.materials.new(name)
-            self.create_style(style, blender_material)
 
-    def create_style(self, style, blender_material):
+        old_definition_id = blender_material.BIMObjectProperties.ifc_definition_id
+        if not old_definition_id:
+            self.link_element(style, blender_material)
+        blender_material.BIMObjectProperties.ifc_definition_id = old_definition_id
+
         blender_material.BIMMaterialProperties.ifc_style_id = style.id()
         self.material_creator.styles[style.id()] = blender_material
         for surface_style in style.Styles:
@@ -1039,78 +1101,41 @@ class IfcImporter:
     def get_name(self, element):
         return "{}/{}".format(element.is_a(), element.Name)
 
-    def purge_diff(self):
-        if not self.diff:
-            return
-        objects_to_purge = []
-        for obj in bpy.data.objects:
-            if "GlobalId" not in obj.BIMObjectProperties.attributes:
-                continue
-            global_id = obj.BIMObjectProperties.attributes["GlobalId"].string_value
-            if global_id in self.diff["deleted"] or global_id in self.diff["changed"].keys():
-                objects_to_purge.append(obj)
-        bpy.ops.object.delete({"selected_objects": objects_to_purge})
-
-    def place_objects_in_spatial_tree(self):
+    def place_objects_in_collections(self):
         for ifc_definition_id, obj in self.added_data.items():
-            self.place_object_in_spatial_tree(self.file.by_id(ifc_definition_id), obj)
+            if isinstance(obj, bpy.types.Object):
+                self.place_object_in_collection(self.file.by_id(ifc_definition_id), obj)
 
-    def place_object_in_spatial_tree(self, element, obj):
+    def place_object_in_collection(self, element, obj):
+        if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
+            self.place_object_in_decomposition_collection(element, obj)
+        elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
+            self.place_object_in_spatial_decomposition_collection(element, obj)
+
+    def place_object_in_decomposition_collection(self, element, obj):
         if element.is_a("IfcProject"):
             return
-        elif element.is_a("IfcTypeObject"):
-            self.type_collection.objects.link(obj)
-        elif element.GlobalId in self.aggregates:
+        elif element.GlobalId in self.collections:
+            return self.collections[element.GlobalId].objects.link(obj)
+        elif getattr(element, "Decomposes", None):
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            return self.collections[aggregate.GlobalId].objects.link(obj)
+        else:
+            return self.place_object_in_spatial_decomposition_collection(element, obj)
+
+    def place_object_in_spatial_decomposition_collection(self, element, obj):
+        if element.is_a("IfcProject"):
             return
-        elif element.GlobalId in self.spatial_structure_elements:
-            if not obj.data:
-                return
-            # Since spatial structure elements are generated as empties, we'll replace it with the representation
-            spatial_obj = self.spatial_structure_elements[element.GlobalId]["blender_obj"]
-            spatial_collection = self.spatial_structure_elements[element.GlobalId]["blender"]
-            spatial_name = spatial_obj.name
-            spatial_collection.objects.link(obj)
-            bpy.data.objects.remove(spatial_obj)
-            obj.name = spatial_name
-        elif (
-            hasattr(element, "ContainedInStructure")
-            and element.ContainedInStructure
-            and element.ContainedInStructure[0].RelatingStructure
-        ):
-            container = element.ContainedInStructure[0].RelatingStructure
-            if element.is_a("IfcGrid"):
-                grid_collection = bpy.data.collections.get(obj.name)
-                if grid_collection:  # Just in case we ran into invalid grids from Revit
-                    self.spatial_structure_elements[container.GlobalId]["blender"].children.link(grid_collection)
-                    grid_collection.objects.link(obj)
-            else:
-                self.spatial_structure_elements[container.GlobalId]["blender"].objects.link(obj)
-        elif hasattr(element, "Decomposes") and element.Decomposes:
-            collection = None
-            if element.Decomposes[0].RelatingObject.is_a("IfcProject"):
-                collection = self.project["blender"]
-            elif element.Decomposes[0].RelatingObject.is_a("IfcSpatialStructureElement"):
-                if element.is_a("IfcSpatialStructureElement"):
-                    global_id = element.GlobalId
-                if global_id in self.spatial_structure_elements:
-                    if (
-                        element.is_a("IfcSpatialStructureElement")
-                        and "blender_obj" in self.spatial_structure_elements[global_id]
-                    ):
-                        bpy.data.objects.remove(self.spatial_structure_elements[global_id]["blender_obj"])
-                    collection = self.spatial_structure_elements[global_id]["blender"]
-            else:
-                collection = self.aggregates[element.Decomposes[0].RelatingObject.GlobalId]["blender"]
-            if collection:
-                collection.objects.link(obj)
-            else:
-                self.ifc_import_settings.logger.error("An element could not be placed in the spatial tree %s", element)
+        elif element.GlobalId in self.collections:
+            return self.collections[element.GlobalId].objects.link(obj)
+        elif element.is_a("IfcTypeObject"):
+            return self.type_collection.objects.link(obj)
         elif element.is_a("IfcOpeningElement"):
-            self.opening_collection.objects.link(obj)
+            return self.opening_collection.objects.link(obj)
         elif element.is_a("IfcStructuralMember"):
-            self.structural_member_collection.objects.link(obj)
+            return self.structural_member_collection.objects.link(obj)
         elif element.is_a("IfcStructuralConnection"):
-            self.structural_connection_collection.objects.link(obj)
+            return self.structural_connection_collection.objects.link(obj)
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             view_collection = bpy.data.collections.get("Views")
             if not view_collection:
@@ -1120,11 +1145,23 @@ class IfcImporter:
             drawing_collection = bpy.data.collections.new("IfcGroup/" + group.Name)
             view_collection.children.link(drawing_collection)
             drawing_collection.objects.link(obj)
+            return
+
+        container = ifcopenshell.util.element.get_container(element)
+        if container:
+            if element.is_a("IfcGrid"): # TODO: refactor into a more holistic collection mode feature
+                grid_collection = bpy.data.collections.get(obj.name)
+                if grid_collection:  # Just in case we run into invalid grids from Revit
+                    self.collections[container.GlobalId].children.link(grid_collection)
+                    grid_collection.objects.link(obj)
+            else:
+                self.collections[container.GlobalId].objects.link(obj)
+
         else:
             self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
             bpy.context.scene.collection.objects.link(obj)
 
-    def get_element_matrix(self, element, mesh_name=None):
+    def get_element_matrix(self, element):
         result = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
         result[0][3] *= self.unit_scale
         result[1][3] *= self.unit_scale
@@ -1240,7 +1277,9 @@ class IfcImporter:
             if "TargetView" in pset:
                 camera.BIMCameraProperties.target_view = pset["TargetView"]
             if "Scale" in pset:
-                valid_scales = [i[0] for i in getDiagramScales(None, None) if pset["Scale"] == i[0].split("|")[-1]]
+                valid_scales = [
+                    i[0] for i in get_diagram_scales(None, bpy.context) if pset["Scale"] == i[0].split("|")[-1]
+                ]
                 if valid_scales:
                     camera.BIMCameraProperties.diagram_scale = valid_scales[0]
                 else:
@@ -1258,7 +1297,11 @@ class IfcImporter:
             mesh = bpy.data.meshes.new(self.get_mesh_name(geometry))
 
             props = bpy.context.scene.BIMGeoreferenceProperties
-            if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
+            if (
+                props.has_blender_offset
+                and geometry.verts
+                and self.is_point_far_away((geometry.verts[0], geometry.verts[1], geometry.verts[2]))
+            ):
                 ordinate_index = 0
                 verts = [None] * len(geometry.verts)
                 offset_point = (
@@ -1283,13 +1326,7 @@ class IfcImporter:
                 num_vertex_indices = len(geometry.faces)
 
                 mesh.vertices.add(num_vertices)
-                if self.ifc_import_settings.should_offset_model:
-                    # Potentially, there is a smarter way to do this. See #1047
-                    v_index = cycle((0, 1, 2))
-                    verts = [v + self.ifc_import_settings.model_offset_coordinates[next(v_index)] for v in verts]
-                    mesh.vertices.foreach_set("co", verts)
-                else:
-                    mesh.vertices.foreach_set("co", verts)
+                mesh.vertices.foreach_set("co", verts)
                 mesh.loops.add(num_vertex_indices)
                 mesh.loops.foreach_set("vertex_index", geometry.faces)
                 mesh.polygons.add(num_loops)
@@ -1364,7 +1401,6 @@ class IfcImportSettings:
         self.logger = None
         self.input_file = None
         self.diff_file = None
-        self.should_auto_set_workarounds = True
         self.should_use_cpu_multiprocessing = True
         self.should_merge_by_class = False
         self.should_merge_by_material = False
@@ -1374,12 +1410,12 @@ class IfcImportSettings:
         self.angular_tolerance = 0.5
         self.should_offset_model = False
         self.model_offset_coordinates = (0, 0, 0)
-        self.ifc_import_filter = "NONE"
-        self.ifc_selector = ""
+        self.has_filter = None
+        self.elements = ""
+        self.collection_mode = "DECOMPOSITION"
 
     @staticmethod
     def factory(context, input_file, logger):
-        scene_bim = context.scene.BIMProperties
         scene_diff = context.scene.DiffProperties
         settings = IfcImportSettings()
         settings.input_file = input_file

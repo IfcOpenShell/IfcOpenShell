@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import re
 import bpy
@@ -26,9 +44,9 @@ class External(svgwrite.container.Group):
         self.xml = xml
 
         # Remove namespace
-        ns = u"{http://www.w3.org/2000/svg}"
+        ns = "{http://www.w3.org/2000/svg}"
         nsl = len(ns)
-        for elem in self.xml.getiterator():
+        for elem in self.xml.iter():
             if elem.tag.startswith(ns):
                 elem.tag = elem.tag[nsl:]
 
@@ -85,31 +103,31 @@ class SvgWriter:
     def add_markers(self):
         tree = ET.parse(os.path.join(self.data_dir, "templates", "markers.svg"))
         root = tree.getroot()
-        for child in root.getchildren():
+        for child in root:
             self.svg.defs.add(External(child))
 
     def add_symbols(self):
         tree = ET.parse(os.path.join(self.data_dir, "templates", "symbols.svg"))
         root = tree.getroot()
-        for child in root.getchildren():
+        for child in root:
             self.svg.defs.add(External(child))
 
     def add_patterns(self):
         tree = ET.parse(os.path.join(self.data_dir, "templates", "patterns.svg"))
         root = tree.getroot()
-        for child in root.getchildren():
+        for child in root:
             self.svg.defs.add(External(child))
 
     def draw_background_image(self):
         self.svg.add(
             self.svg.image(
                 os.path.join("..", "diagrams", os.path.basename(self.background_image)),
-                **{"width": self.width, "height": self.height}
+                **{"width": self.width, "height": self.height},
             )
         )
 
     def draw_background_elements(self):
-        return # TODO purge?
+        return  # TODO purge?
         for element in self.ifc_cutter.background_elements:
             if element["type"] == "polygon":
                 self.draw_polygon(element, "background")
@@ -161,7 +179,7 @@ class SvgWriter:
                             "text-anchor": "middle",
                             "alignment-baseline": "middle",
                             "dominant-baseline": "middle",
-                        }
+                        },
                     )
                 )
                 self.svg.add(
@@ -174,7 +192,7 @@ class SvgWriter:
                             "text-anchor": "middle",
                             "alignment-baseline": "middle",
                             "dominant-baseline": "middle",
-                        }
+                        },
                     )
                 )
 
@@ -233,7 +251,7 @@ class SvgWriter:
                             "text-anchor": text_anchor,
                             "alignment-baseline": "baseline",
                             "dominant-baseline": "baseline",
-                        }
+                        },
                     )
                 )
 
@@ -275,7 +293,7 @@ class SvgWriter:
                             "text-anchor": "start",
                             "alignment-baseline": "baseline",
                             "dominant-baseline": "baseline",
-                        }
+                        },
                     )
                 )
 
@@ -306,7 +324,7 @@ class SvgWriter:
                             "text-anchor": "middle",
                             "alignment-baseline": "middle",
                             "dominant-baseline": "middle",
-                        }
+                        },
                     )
                 )
         self.draw_text_annotations()
@@ -454,7 +472,9 @@ class SvgWriter:
             )
 
             transform = "rotate({}, {}, {})".format(
-                angle, (text_position * self.scale)[0], (text_position * self.scale)[1],
+                angle,
+                (text_position * self.scale)[0],
+                (text_position * self.scale)[1],
             )
 
             if text_obj.data.BIMTextProperties.symbol != "None":
@@ -497,7 +517,7 @@ class SvgWriter:
                             "alignment-baseline": alignment_baseline,
                             "dominant-baseline": alignment_baseline,
                             "transform": transform,
-                        }
+                        },
                     )
                 )
 
@@ -588,7 +608,7 @@ class SvgWriter:
                     "font-size": annotation.Annotator.get_svg_text_size(2.5),
                     "font-family": "OpenGost Type B TT",
                     "text-anchor": "middle",
-                }
+                },
             )
         )
 
@@ -604,7 +624,7 @@ class SvgWriter:
         return spline.bezier_points if spline.bezier_points else spline.points
 
     def draw_cut_polygons(self):
-        return # deprecate?
+        return  # deprecate?
         for polygon in self.ifc_cutter.cut_polygons:
             self.draw_polygon(polygon, "cut")
 

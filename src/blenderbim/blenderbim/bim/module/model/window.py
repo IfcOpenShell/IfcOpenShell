@@ -1,3 +1,21 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import math
 import ifcopenshell
@@ -10,7 +28,7 @@ from blenderbim.bim.ifc import IfcStore
 def add_object(self, context):
     guid = ifcopenshell.guid.new()
     leaf_width = self.overall_width - 0.045 - 0.045
-    #verts = [
+    # verts = [
     #    # Left lining
     #    Vector((0, 0, 0)),
     #    Vector((0, self.depth, 0)),
@@ -31,8 +49,8 @@ def add_object(self, context):
     #    Vector((0.04, (self.depth / 2) - 0.005, 0)),
     #    Vector((self.overall_width - 0.04, (self.depth / 2) - 0.005, 0)),
     #    Vector((self.overall_width - 0.04, (self.depth / 2) + 0.005, 0)),
-    #]
-    #edges = [
+    # ]
+    # edges = [
     #    [0, 1],
     #    [1, 2],
     #    [2, 3],
@@ -47,11 +65,11 @@ def add_object(self, context):
     #    [13, 14],
     #    [14, 15],
     #    [15, 12],  # Window panel
-    #]
-    #faces = []
-    #mesh = bpy.data.meshes.new(name="Plan/Annotation/PLAN_VIEW/" + guid)
-    #mesh.use_fake_user = True
-    #mesh.from_pydata(verts, edges, faces)
+    # ]
+    # faces = []
+    # mesh = bpy.data.meshes.new(name="Plan/Annotation/PLAN_VIEW/" + guid)
+    # mesh.use_fake_user = True
+    # mesh.from_pydata(verts, edges, faces)
 
     # Window lining profile
     verts = [
@@ -67,7 +85,7 @@ def add_object(self, context):
     obj = bpy.data.objects.new("Window Profile", mesh)
 
     context.view_layer.active_layer_collection.collection.objects.link(obj)
-    bpy.context.view_layer.objects.active = obj
+    context.view_layer.objects.active = obj
     obj.select_set(True)
     bpy.ops.object.convert(target="CURVE")
 
@@ -85,7 +103,7 @@ def add_object(self, context):
     obj2 = bpy.data.objects.new("Window", mesh)
 
     context.view_layer.active_layer_collection.collection.objects.link(obj2)
-    bpy.context.view_layer.objects.active = obj2
+    context.view_layer.objects.active = obj2
     obj2.select_set(True)
     bpy.ops.object.convert(target="CURVE")
     obj2.data.splines[0].use_cyclic_u = True
@@ -116,11 +134,11 @@ def add_object(self, context):
     modifier.thickness = self.overall_height - 0.08
 
     context.view_layer.active_layer_collection.collection.objects.link(obj3)
-    bpy.context.view_layer.objects.active = obj3
+    context.view_layer.objects.active = obj3
     obj3.select_set(True)
     bpy.ops.object.convert(target="MESH")
 
-    ctx = bpy.context.copy()
+    ctx = context.copy()
     ctx["active_object"] = obj2
     ctx["selected_editable_objects"] = [obj2, obj3]
     bpy.ops.object.join(ctx)
@@ -142,7 +160,7 @@ def add_object(self, context):
     modifier.thickness = self.overall_height
 
     context.view_layer.active_layer_collection.collection.objects.link(obj4)
-    bpy.context.view_layer.objects.active = obj4
+    context.view_layer.objects.active = obj4
     obj4.select_set(True)
     bpy.ops.object.convert(target="MESH")
     obj4.display_type = "WIRE"
@@ -155,29 +173,33 @@ def add_object(self, context):
         bpy.ops.bim.assign_class(obj=obj2.name, ifc_class="IfcWindow")
     obj2.name = "Window"
     obj2.location = context.scene.cursor.location
-    #obj2.data.name = "Model/Body/MODEL_VIEW/" + guid
-    #obj2.data.use_fake_user = True
+    # obj2.data.name = "Model/Body/MODEL_VIEW/" + guid
+    # obj2.data.use_fake_user = True
 
-    #rep = obj2.BIMObjectProperties.representation_contexts.add()
-    #rep.context = "Model"
-    #rep.name = "Body"
-    #rep.target_view = "MODEL_VIEW"
+    # rep = obj2.BIMObjectProperties.representation_contexts.add()
+    # rep.context = "Model"
+    # rep.name = "Body"
+    # rep.target_view = "MODEL_VIEW"
 
-    #rep = obj2.BIMObjectProperties.representation_contexts.add()
-    #rep.context = "Plan"
-    #rep.name = "Annotation"
-    #rep.target_view = "PLAN_VIEW"
+    # rep = obj2.BIMObjectProperties.representation_contexts.add()
+    # rep.context = "Plan"
+    # rep.name = "Annotation"
+    # rep.target_view = "PLAN_VIEW"
 
 
 class BIM_OT_add_object(Operator):
     bl_idname = "mesh.add_window"
     bl_label = "Dumb Window"
+    bl_options = {"REGISTER", "UNDO"}
 
     overall_width: FloatProperty(name="Overall Width", default=0.7)
     overall_height: FloatProperty(name="Overall Height", default=1)
     depth: FloatProperty(name="Depth", default=0.1)
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         add_object(self, context)
         return {"FINISHED"}
 

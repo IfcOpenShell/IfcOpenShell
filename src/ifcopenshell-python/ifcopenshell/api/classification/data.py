@@ -57,7 +57,7 @@ class Data:
         for reference in cls._file.by_type("IfcClassificationReference"):
             data = reference.get_info()
             if reference.ReferencedSource:
-                #data["ReferencedSource"] = cls.get_referenced_source(reference.ReferencedSource)
+                # data["ReferencedSource"] = cls.get_referenced_source(reference.ReferencedSource)
                 data["ReferencedSource"] = reference.ReferencedSource.id()
             cls.references[reference.id()] = data
 

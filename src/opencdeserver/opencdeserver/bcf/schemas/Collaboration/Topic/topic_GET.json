@@ -1,0 +1,101 @@
+{
+    "title": "topic_GET",
+    "type": "object",
+    "properties": {
+        "guid": {
+            "required": true,
+            "type": "string"
+        },
+        "server_assigned_id": {
+            "required": true,
+            "type": "string"
+        },
+        "topic_type": {
+            "type": ["string",
+            "null"]
+        },
+        "topic_status": {
+            "type": ["string",
+            "null"]
+        },
+        "reference_links": {
+            "type": ["array",
+            "null"],
+            "items": {
+                "type": "string"
+            }
+        },
+        "title": {
+            "required": true,
+            "type": "string"
+        },
+        "priority": {
+            "type": ["string",
+            "null"]
+        },
+        "index": {
+            "type": [
+                "integer",
+                "null"
+            ]
+        },
+        "labels": {
+            "type": ["array",
+            "null"],
+            "items": {
+                "type": ["string",
+                "null"]
+            }
+        },
+        "creation_date": {
+            "required": true,
+            "type": "string"
+        },
+        "creation_author": {
+            "required": true,
+            "type": "string"
+        },
+        "modified_date": {
+            "type": "string"
+        },
+        "modified_author": {
+            "type": ["string",
+            "null"]
+        },
+        "assigned_to": {
+            "type": ["string",
+            "null"]
+        },
+        "stage": {
+            "type": ["string",
+            "null"]
+        },
+        "description": {
+            "type": ["string",
+            "null"]
+        },
+        "bim_snippet": {
+            "$ref": "bim_snippet.json"
+        },
+        "due_date": {
+            "type": ["string",
+            "null"]
+        },
+        "authorization": {
+            "type": "object",
+            "required": false,
+            "properties": {
+                "topic_actions": {
+                    "$ref": "../Action/topic_actions.json"
+                },
+                "topic_status": {
+                    "type": ["array",
+                    "null"],
+                    "items": {
+                      "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}
