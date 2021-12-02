@@ -2110,7 +2110,11 @@ void IfcFile::process_deletion_() {
 						}
 					}
 					{
-						byref_excl.erase(name);
+						auto byref_it = byref_excl.find(name);
+						if (byref_it != byref_excl.end()) {
+							auto& ids = byref_it->second;
+							ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
+						}
 					}
 				}
 			}
