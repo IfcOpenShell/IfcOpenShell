@@ -54,7 +54,7 @@ _method_dict = {}
 for nm in ifcopenshell_wrapper.schema_names():
     schema = ifcopenshell_wrapper.schema_by_name(nm)
     for decl in schema.declarations():
-        if isinstance(decl, ifcopenshell_wrapper.entity):
+        if hasattr(decl, "argument_types"):
             fq_name = ".".join((nm, decl.name()))
             
             # get type strings as reported by IfcOpenShell C++

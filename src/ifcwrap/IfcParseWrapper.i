@@ -610,6 +610,16 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		def __repr__(self):
 			return "<type %s: %r>" % (self.name(), self.declared_type())
 	%}
+	std::vector<std::string> argument_types() {
+		std::vector<std::string> r;
+		auto at = IfcUtil::Argument_UNKNOWN;
+		auto pt = $self->declared_type();
+		if (pt) {
+			at = IfcUtil::from_parameter_type(pt);
+		}
+		r.push_back(IfcUtil::ArgumentTypeToString(at));
+		return r;
+	}
 }
 
 %extend IfcParse::select_type {
@@ -624,6 +634,11 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		def __repr__(self):
 			return "<enumeration %s: (%s)>" % (self.name(), ", ".join(self.enumeration_items()))
 	%}
+	std::vector<std::string> argument_types() {
+		std::vector<std::string> r;
+		r.push_back(IfcUtil::ArgumentTypeToString(IfcUtil::Argument_STRING));
+		return r;
+	}
 }
 
 %extend IfcParse::attribute {
