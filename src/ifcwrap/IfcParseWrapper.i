@@ -225,8 +225,12 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return self->declaration().is(s);
 	}
 
-	std::string is_a() const {
-		return self->declaration().name();
+	std::string is_a(bool with_schema=false) const {
+		auto t = self->declaration().name();
+		if (with_schema) {
+			t = self->declaration().schema()->name() + "." + t;
+		}
+		return t;
 	}
 
 	std::pair<IfcUtil::ArgumentType,Argument*> get_argument(unsigned i) {
@@ -661,11 +665,12 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 			auto pt = attr->type_of_attribute();
 			if ($self->derived()[i++]) {
 				at = IfcUtil::Argument_DERIVED;
-			}
-			if (pt == 0) {
+			} else if (!pt) {
 				at = IfcUtil::Argument_UNKNOWN;
+			} else {
+				at = IfcUtil::from_parameter_type(pt);
 			}
-			r.push_back(IfcUtil::ArgumentTypeToString(IfcUtil::from_parameter_type(pt)));
+			r.push_back(IfcUtil::ArgumentTypeToString(at));
 		}
 		return r;
 	}
