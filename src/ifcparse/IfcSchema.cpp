@@ -134,3 +134,18 @@ const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& n
 	}
 	return it->second;
 }
+
+std::vector<std::string> IfcParse::schema_names() {
+	// Load schema modules
+	try {
+		IfcParse::schema_by_name("IFC2X3");
+	} catch (IfcParse::IfcException&) {}
+
+	// Populate vector with map keys
+	std::vector<std::string> return_value;
+	for (auto& pair : schemas) {
+		return_value.push_back(pair.first);
+	}
+
+	return return_value;
+}

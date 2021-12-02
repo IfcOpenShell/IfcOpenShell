@@ -448,7 +448,9 @@ namespace IfcParse {
 
 	IFC_PARSE_API const schema_definition* schema_by_name(const std::string&);
 
-	void register_schema(schema_definition*);
+	IFC_PARSE_API std::vector<std::string> schema_names();
+
+	IFC_PARSE_API void register_schema(schema_definition*);
 }
 
 #endif
