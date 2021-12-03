@@ -106,7 +106,7 @@ class ReassignClass(bpy.types.Operator):
                     "predefined_type": predefined_type,
                 },
             )
-            obj.name = "{}/{}".format(product.is_a(), "/".join(obj.name.split("/")[1:]))
+            obj.name = "{}/{}".format(product.is_a(), getattr(product, "Name", "None"))
             IfcStore.link_element(product, obj)
             obj.BIMObjectProperties.is_reassigning_class = False
         return {"FINISHED"}
