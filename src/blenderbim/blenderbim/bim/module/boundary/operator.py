@@ -70,7 +70,7 @@ class Loader:
             surface.InnerBoundaries = ()
         shape = ifcopenshell.geom.create_shape(self.settings, surface)
         mesh = self.ifc_importer.create_mesh(None, shape)
-        obj = bpy.data.objects.new(f"{boundary.is_a()}/{boundary_id}", mesh)
+        obj = bpy.data.objects.new(f"{boundary.is_a()}/{boundary.Name}", mesh)
         obj.matrix_world = blender_space.matrix_world
         boundaries_collection = get_boundaries_collection(blender_space)
         boundaries_collection.objects.link(obj)
