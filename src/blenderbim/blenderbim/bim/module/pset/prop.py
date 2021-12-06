@@ -18,7 +18,8 @@
 
 import bpy
 import blenderbim.bim.schema
-from blenderbim.bim.prop import Attribute
+from blenderbim.bim.prop import Attribute, PRIMARY_MEASURE_TYPE
+import ifcopenshell
 from ifcopenshell.api.pset.data import Data
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
@@ -188,23 +189,25 @@ class AddEditProperties(PropertyGroup):
     bool_value: BoolProperty(name="Value")
     int_value: IntProperty(name="Value")
     float_value: FloatProperty(name="Value")
-    data_type: EnumProperty(
+    primary_measure_type: EnumProperty(
         items=[
-            ("string", "String", "" ),
-            ("boolean", "True/False", "" ),
-            ("integer", "Integer", "" ),
-            ("float", "Number", "" )],
-        default="string"
+            (x, x, "")
+            for x in PRIMARY_MEASURE_TYPE
+        ],
+        default="IfcLabel",
+        name="Primary Measure Type"
     )
 
     def get_value_name(self):
-        if self.data_type == "string":
+        ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)
+        data_type = ifcopenshell.util.attribute.get_primitive_type(ifc_data_type)
+        if data_type == "string":
             return "string_value"
-        elif self.data_type == "boolean":
+        elif data_type == "boolean":
             return "bool_value"
-        elif self.data_type == "integer":
+        elif data_type == "integer":
             return "int_value"
-        elif self.data_type == "float":
+        elif data_type == "float":
             return "float_value"
 
 

@@ -441,7 +441,7 @@ class BIM_PT_add_edit_custom_properties(Panel):
                 row.prop(prop, "pset_name", text="")
                 row.prop(prop, "property_name", text="")
                 row.prop(prop, prop.get_value_name(), text="")
-                row.prop(prop, "data_type", text="")
+                row.prop(prop, "primary_measure_type", text="")
                 op = row.operator("bim.remove_property_to_edit",icon="PANEL_CLOSE", text="")
                 op.index = index
                 op.option = "AddEditProperties"

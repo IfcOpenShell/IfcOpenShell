@@ -394,7 +394,7 @@ class BIM_OT_remove_property_to_edit(bpy.types.Operator):
     option: bpy.props.StringProperty()
 
     def execute(self, context):
-        getattr(context.scene, self.option).remove()
+        getattr(context.scene, self.option).remove(self.index)
         return {"FINISHED"}
 
 
@@ -469,6 +469,9 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator):
 
             for prop in props:
                 value = getattr(prop, prop.get_value_name())
+                primary_measure_type = prop.primary_measure_type
+                value_ifc_entity = getattr(self.file, f"create{primary_measure_type}")(value)
+                
                 new_pset = ifcopenshell.api.run(
                     "pset.add_pset",
                     self.file,
@@ -479,7 +482,7 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator):
                     "pset.edit_pset",
                     self.file,
                     pset=new_pset,
-                    properties={prop.property_name:value}
+                    properties={prop.property_name:value_ifc_entity}
                     )
 
         self.report({'INFO'}, 'Finished applying changes')
