@@ -256,11 +256,19 @@ class InspectFromObject(bpy.types.Operator):
     bl_label = "Inspect From Object"
     bl_description = "Inspect the Active Object's attributes and references"
 
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            if bpy.app.version >= (3, 0, 0):
+                cls.poll_message_set("No Active Object")
+        elif not context.active_object.BIMObjectProperties.ifc_definition_id:
+            if bpy.app.version >= (3, 0, 0):
+                cls.poll_message_set("Active Object doesn't have an IFC definition")
+        else:
+            return True
+
     def execute(self, context):
-        ifc_definition_id = context.active_object.BIMObjectProperties.ifc_definition_id
-        if not ifc_definition_id:
-            return {"FINISHED"}
-        bpy.ops.bim.inspect_from_step_id(step_id=ifc_definition_id)
+        bpy.ops.bim.inspect_from_step_id(step_id=context.active_object.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
