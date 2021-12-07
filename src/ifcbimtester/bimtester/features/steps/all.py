@@ -2,6 +2,9 @@ use_step_matcher("parse")
 from bimtester.features.steps.aggregation import en
 
 use_step_matcher("parse")
+from bimtester.features.steps.application import en
+
+use_step_matcher("parse")
 from bimtester.features.steps.attributes_psets import en, de
 
 use_step_matcher("parse")
