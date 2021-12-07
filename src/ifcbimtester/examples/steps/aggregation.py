@@ -3,13 +3,6 @@ from behave import step, given, when, then, use_step_matcher
 use_step_matcher("parse")
 
 
-@step("There must be exactly {number} {ifc_class} element")
-@step("There must be exactly {number} {ifc_class} elements")
-def step_impl(context, number, ifc_class):
-    num = len(IfcStore.file.by_type(ifc_class))
-    assert num == int(number), "Could not find {} elements of {}. Found {} element(s).".format(number, ifc_class, num)
-
-
 @given("a set of specific related elements")
 def step_impl(context):
     model = getattr(context, "model", None)
