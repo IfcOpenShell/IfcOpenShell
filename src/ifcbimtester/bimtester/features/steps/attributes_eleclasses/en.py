@@ -7,6 +7,14 @@ from bimtester.ifc import IfcStore
 from bimtester.lang import _
 
 
+@step('There are exclusively "{ifc_classes}" elements only')
+def step_impl(context, ifc_classes):
+    only_eleclasses(
+        context,
+        ifc_classes
+    )
+
+
 @step('There are no "{ifc_class}" elements')
 def step_impl(context, ifc_class):
     no_eleclass(
@@ -44,14 +52,6 @@ def step_impl(context, ifc_class):
     eleclass_has_description_with_a_value(
         context,
         ifc_class
-    )
-
-
-@step('There are exclusively "{ifc_class}" elements only')
-def step_impl(context, ifc_classes):
-    only_eleclasses(
-        context,
-        ifc_classes
     )
 
 
@@ -188,8 +188,8 @@ def eleclass_have_class_attributes_with_a_value(
     context.falseprops = {}
 
     elements = IfcStore.file.by_type(ifc_class)
+    failed_attribs = []
     for elem in elements:
-        failed_attribs = []
         elem_failed = False
         for cl_attrib in class_attributes:
             attrib_value = getattr(elem, cl_attrib)
@@ -235,7 +235,7 @@ def eleclass_has_name_with_a_value(context, ifc_class):
         context.elemcount,
         context.falsecount,
         context.falseelems,
-        message_all_falseelems=_("The name of all {elemcount} {elemcount} elements is not set."),
+        message_all_falseelems=_("The name of all {elemcount} elements is not set."),
         message_some_falseelems=_("The name of {falsecount} out of {elemcount} {ifc_class} elements is not set: {falseelems}"),
         message_no_elems=_("There are no {ifc_class} elements in the IFC file."),
     )
@@ -262,7 +262,7 @@ def eleclass_has_description_with_a_value(
         context.elemcount,
         context.falsecount,
         context.falseelems,
-        message_all_falseelems=_("The description of all {elemcount} {elemcount} elements is not set."),
+        message_all_falseelems=_("The description of all {elemcount} elements is not set."),
         message_some_falseelems=_("The description of {falsecount} out of {elemcount} {ifc_class} elements is not set: {falseelems}"),
         message_no_elems=_("There are no {ifc_class} elements in the IFC file."),
     )
