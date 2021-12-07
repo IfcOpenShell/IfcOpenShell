@@ -1,10 +1,11 @@
 from behave import step
 
-from utils import IfcFile
+from bimtester.ifc import IfcStore
+from bimtester.lang import _
 
 
-@step("all buildings have an address")
+@step('All buildings have an address')
 def step_impl(context):
-    for building in IfcFile.get().by_type("IfcBuilding"):
+    for building in IfcStore.file.by_type("IfcBuilding"):
         if not building.BuildingAddress:
             assert False, f'The building "{building.Name}" has no address.'

@@ -31,3 +31,5 @@ from bimtester.features.steps.model_federation import en
 use_step_matcher("parse")
 from bimtester.features.steps.project_setup import de, en, fr, it, nl
 
+use_step_matcher("parse")
+from bimtester.features.steps.spatial_structure import en
