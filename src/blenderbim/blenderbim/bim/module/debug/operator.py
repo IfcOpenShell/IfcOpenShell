@@ -30,6 +30,7 @@ from blenderbim.bim.ifc import IfcStore
 class PrintIfcFile(bpy.types.Operator):
     bl_idname = "bim.print_ifc_file"
     bl_label = "Print IFC File"
+    bl_description = "Prints the file contents in the system console.\nAccess it with Window > Toggle System Console"
 
     @classmethod
     def poll(cls, context):
@@ -43,6 +44,7 @@ class PrintIfcFile(bpy.types.Operator):
 class PurgeIfcLinks(bpy.types.Operator):
     bl_idname = "bim.purge_ifc_links"
     bl_label = "Purge IFC Links"
+    bl_description = "Purge all definitions and references from the file.\nWarning : Cannot be undone."
 
     def execute(self, context):
         for obj in bpy.data.objects:
@@ -96,7 +98,8 @@ class ProfileImportIFC(bpy.types.Operator):
 
 class CreateAllShapes(bpy.types.Operator):
     bl_idname = "bim.create_all_shapes"
-    bl_label = "Create All Shapes"
+    bl_label = "Test All Shapes"
+    bl_description = "Look for errors in all the shapes contained in the file"
 
     @classmethod
     def poll(cls, context):
@@ -126,7 +129,7 @@ class CreateAllShapes(bpy.types.Operator):
             except:
                 failures.append(element)
                 print("***** FAILURE *****")
-        print("Failures:")
+        print(f"Failures: {len(failures)}")
         for failure in failures:
             print(failure)
         return {"FINISHED"}
@@ -135,6 +138,7 @@ class CreateAllShapes(bpy.types.Operator):
 class CreateShapeFromStepId(bpy.types.Operator):
     bl_idname = "bim.create_shape_from_step_id"
     bl_label = "Create Shape From STEP ID"
+    bl_description = "Recreate a mesh object from a STEP ID"
     bl_options = {"REGISTER", "UNDO"}
     should_include_curves: bpy.props.BoolProperty()
 
@@ -165,6 +169,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
 class SelectHighPolygonMeshes(bpy.types.Operator):
     bl_idname = "bim.select_high_polygon_meshes"
     bl_label = "Select High Polygon Meshes"
+    bl_description = "Select objects containing more polygons than the specified number"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -179,6 +184,7 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
 class RewindInspector(bpy.types.Operator):
     bl_idname = "bim.rewind_inspector"
     bl_label = "Rewind Inspector"
+    bl_description = "Rewind the Inspector to the previously inspected element"
 
     def execute(self, context):
         props = context.scene.BIMDebugProperties
@@ -195,6 +201,7 @@ class RewindInspector(bpy.types.Operator):
 class InspectFromStepId(bpy.types.Operator):
     bl_idname = "bim.inspect_from_step_id"
     bl_label = "Inspect From STEP ID"
+    bl_description = "Inspect the attributes and references by looking up the specified STEP ID"
     step_id: bpy.props.IntProperty()
 
     @classmethod
@@ -245,6 +252,7 @@ class InspectFromStepId(bpy.types.Operator):
 class InspectFromObject(bpy.types.Operator):
     bl_idname = "bim.inspect_from_object"
     bl_label = "Inspect From Object"
+    bl_description = "Inspect the Active Object's attributes and references"
 
     def execute(self, context):
         ifc_definition_id = context.active_object.BIMObjectProperties.ifc_definition_id
