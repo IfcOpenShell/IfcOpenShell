@@ -1,11 +1,14 @@
 from behave import step
 
-from utils import IfcFile
+# from bimtester import util
+from bimtester.ifc import IfcStore
+from bimtester.lang import _
 
 
-@step("all {ifc_class} elements have a {qto_name}.{quantity_name} quantity")
+# TODO: use get_psets from ifcopenshell.util.element
+@step('All "{ifc_class}" elements have a "{qto_name}.{quantity_name}" quantity')
 def step_impl(context, ifc_class, qto_name, quantity_name):
-    elements = IfcFile.get().by_type(ifc_class)
+    elements = IfcStore.file.by_type(ifc_class)
     for element in elements:
         is_successful = False
         if not element.IsDefinedBy:
