@@ -158,9 +158,12 @@ class CreateShapeFromStepId(bpy.types.Operator):
         if self.should_include_curves:
             settings.set(settings.INCLUDE_CURVES, True)
         shape = ifcopenshell.geom.create_shape(settings, element)
+        if shape:
         ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
         ifc_importer.file = self.file
         mesh = ifc_importer.create_mesh(element, shape)
+        else:
+            mesh = None
         obj = bpy.data.objects.new("Debug", mesh)
         context.scene.collection.objects.link(obj)
         return {"FINISHED"}
