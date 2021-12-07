@@ -159,9 +159,9 @@ class CreateShapeFromStepId(bpy.types.Operator):
             settings.set(settings.INCLUDE_CURVES, True)
         shape = ifcopenshell.geom.create_shape(settings, element)
         if shape:
-        ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
-        ifc_importer.file = self.file
-        mesh = ifc_importer.create_mesh(element, shape)
+            ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
+            ifc_importer.file = self.file
+            mesh = ifc_importer.create_mesh(element, shape)
         else:
             mesh = None
         obj = bpy.data.objects.new("Debug", mesh)
@@ -180,6 +180,22 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
         for obj in context.view_layer.objects:
             if obj.type == "MESH" and len(obj.data.polygons) > self.threshold:
                 obj.select_set(True)
+        return {"FINISHED"}
+
+
+class SelectHighestPolygonMeshes(bpy.types.Operator):
+    bl_idname = "bim.select_highest_polygon_meshes"
+    bl_label = "Select Highest Polygon Meshes"
+    bl_description = "Select objects with a number of polygons superior to the specified percentile"
+    bl_options = {"REGISTER", "UNDO"}
+    percentile: bpy.props.IntProperty()
+
+    def execute(self, context):
+        objects = [obj for obj in context.view_layer.objects if obj.type == "MESH"]
+        if objects:
+            percentile = len(max(objects, key=lambda o: len(o.data.polygons)).data.polygons) * self.percentile / 100
+            print(f"Selected all Meshes with more than {int(percentile)} polygons")
+            [obj.select_set(True) for obj in objects if len(obj.data.polygons) > percentile]
         return {"FINISHED"}
 
 
