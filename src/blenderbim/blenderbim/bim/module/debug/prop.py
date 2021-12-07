@@ -33,7 +33,7 @@ from bpy.props import (
 class BIMDebugProperties(PropertyGroup):
     step_id: IntProperty(name="STEP ID")
     number_of_polygons: IntProperty(name="Number of Polygons", min=0)
-    active_step_id: IntProperty(name="STEP ID")
+    active_step_id: IntProperty(name="STEP ID", default=1, soft_min=1)
     step_id_breadcrumb: CollectionProperty(name="STEP ID Breadcrumb", type=StrProperty)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     inverse_attributes: CollectionProperty(name="Inverse Attributes", type=Attribute)
