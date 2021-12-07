@@ -171,13 +171,12 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
     bl_label = "Select High Polygon Meshes"
     bl_description = "Select objects containing more polygons than the specified number"
     bl_options = {"REGISTER", "UNDO"}
+    threshold: bpy.props.IntProperty()
 
     def execute(self, context):
-        [
-            o.select_set(True)
-            for o in context.view_layer.objects
-            if o.type == "MESH" and len(o.data.polygons) > context.scene.BIMDebugProperties.number_of_polygons
-        ]
+        for obj in context.view_layer.objects:
+            if obj.type == "MESH" and len(obj.data.polygons) > self.threshold:
+                obj.select_set(True)
         return {"FINISHED"}
 
 

@@ -56,7 +56,7 @@ class BIM_PT_debug(Panel):
         row.prop(props, "step_id", text="")
 
         row = layout.split(factor=0.7, align=True)
-        row.operator("bim.select_high_polygon_meshes")
+        row.operator("bim.select_high_polygon_meshes").threshold = context.scene.BIMDebugProperties.number_of_polygons
         row.prop(props, "number_of_polygons", text="")
 
         layout.label(text="Inspector:")
