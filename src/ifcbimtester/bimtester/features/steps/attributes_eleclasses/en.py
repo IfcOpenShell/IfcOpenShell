@@ -95,36 +95,18 @@ def only_eleclasses(
         if elem.is_a() not in target_ifc_classes:
             context.falseelems.append(str(elem))
             context.falseguids.append(elem.GlobalId)
-
-    out_falseelems = "\n"
-    for e in context.falseelems:
-        out_falseelems += e + "\n"
     context.falsecount = len(context.falseelems)
-    # print(context.falsecount)
-    # print(context.elemcount)
 
-    if context.falsecount == 0:
-        return  # Test OK, thus we can not use the assert_elements method ... really ?
-    elif context.falsecount == context.elemcount:
-        assert False, (
-            _("All {elemcount} false elements in the file are {ifc_classes}.")
-            .format(
-                elemcount=context.elemcount,
-                ifc_classes=ifc_classes
-            )
-        )
-    elif context.falsecount > 0 and context.falsecount < context.elemcount:
-        assert False, (
-            _("{falsecount} of {elemcount} false_elements are {ifc_classes} false_elements: {falseelems}")
-            .format(
-                falsecount=context.falsecount,
-                elemcount=context.elemcount,
-                ifc_classes=ifc_classes,
-                falseelems=out_falseelems,
-            )
-        )
-    else:
-        assert False, _("Error in falsecount, something went wrong.")
+    # use ifc_classes in method parameter but ifc_class in string parameter
+    # be careful somehow the opposite of most other tests is tested
+    util.assert_elements(
+        ifc_classes,
+        context.elemcount,
+        context.falsecount,
+        context.falseelems,
+        message_all_falseelems=_("All {elemcount} elements in the file are not {ifc_class} elements."),
+        message_some_falseelems=_("{falsecount} of {elemcount} false_elements are not {ifc_class} elements: {falseelems}"),
+    )
 
 
 def no_eleclass(
@@ -139,36 +121,17 @@ def no_eleclass(
     for elem in elements:
         context.falseelems.append(str(elem))
         context.falseguids.append(elem.GlobalId)
-
-    out_falseelems = "\n"
-    for e in context.falseelems:
-        out_falseelems += e + "\n"
     context.falsecount = len(context.falseelems)
-    # print(context.falsecount)
-    # print(context.elemcount)
 
-    if context.falsecount == 0:
-        return  # Test OK, thus we can not use the assert_elements method ... really ?
-    elif context.falsecount == context.elemcount:
-        assert False, (
-            _("All {elemcount} elements in the file are {ifc_class}.")
-            .format(
-                elemcount=context.elemcount,
-                ifc_class=ifc_class
-            )
-        )
-    elif context.falsecount > 0 and context.falsecount < context.elemcount:
-        assert False, (
-            _("{falsecount} of {elemcount} elements are {ifc_class} elements: {falseelems}")
-            .format(
-                falsecount=context.falsecount,
-                elemcount=context.elemcount,
-                ifc_class=ifc_class,
-                falseelems=out_falseelems,
-            )
-        )
-    else:
-        assert False, _("Error in falsecount, something went wrong.")
+    # be careful somehow the opposite of most other tests is tested
+    util.assert_elements(
+        ifc_class,
+        context.elemcount,
+        context.falsecount,
+        context.falseelems,
+        message_all_falseelems=_("All {elemcount} elements in the file are {ifc_class} elements."),
+        message_some_falseelems=_("{falsecount} of {elemcount} false_elements are {ifc_class} elements: {falseelems}"),
+    )
 
 
 def eleclass_have_class_attributes_with_a_value(
