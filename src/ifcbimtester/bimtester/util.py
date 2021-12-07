@@ -94,7 +94,7 @@ def assert_elements(
     falseelems,
     message_all_falseelems,
     message_some_falseelems,
-    message_no_elems,
+    message_no_elems="",
     parameter=None
 ):
     out_falseelems = "\n"
@@ -112,7 +112,7 @@ def assert_elements(
     #         )
     #     )
     if falsecount == 0:
-        return # test ok for elemcount == 0 !!!
+        return # test ok for elemcount == 0 and elemcount > 0
     elif falsecount == elemcount:
         if parameter is None:
             assert False, (
@@ -150,4 +150,4 @@ def assert_elements(
                 )
             )
     else:
-        assert False, _("Error in falsecount, something went wrong.")
+        assert False, _("Error in falsecount calculation, something went wrong.")
