@@ -3,7 +3,7 @@ from behave import step
 
 @step('Es sind ausschliesslich "{ifc_classes}" Bauteile vorhanden')
 def step_impl(context, ifc_classes):
-    context.execute_steps(f'* There are exclusively "{ifc_class}" elements only')
+    context.execute_steps(f'* There are exclusively "{ifc_classes}" elements only')
 
 
 @step('Es sind keine "{ifc_class}" Bauteile vorhanden')
