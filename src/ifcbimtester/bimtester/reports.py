@@ -52,6 +52,12 @@ class ReportGenerator:
         except ZeroDivisionError:
             data["pass_rate"] = 0
 
+        # get language and switch locale
+        the_lang = self.get_feature_lang(feature["keyword"])
+        from bimtester.lang import switch_locale
+        switch_locale(os.path.join(self.base_path, "locale"), the_lang)
+        data["_lang"] = the_lang
+
         data.update(self.get_template_strings())
 
         with open(output_file, "w", encoding="utf8") as out:
@@ -120,7 +126,7 @@ class ReportGenerator:
 
     def get_template_strings(self):
         return {
-            "_lang": _("en"),
+            # "_lang": _("en"),
             "_success": _("Success"),
             "_failure": _("Failure"),
             "_tests_passed": _("Tests passed"),
@@ -128,3 +134,20 @@ class ReportGenerator:
             "_auditing": _("OpenBIM auditing is a feature of"),
             "_and": _("and"),
         }
+
+    def get_feature_lang(self, feature_key):
+        # I do not know any better ATM
+        print(feature_key)
+        if feature_key == "Feature":
+            return "en"
+        elif feature_key == "Funktionalität":
+            return "de"
+        elif feature_key == "Fonctionnalité":
+            return "fr"
+        elif feature_key == "Funzionalità":
+            return "it"
+        elif feature_key == "Functionaliteit":
+            return "nl"
+        else:
+            # standard English
+            return "en"
