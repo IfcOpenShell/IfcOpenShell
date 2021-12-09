@@ -6,6 +6,7 @@ There are different methods of installation, depending on your situation.
 1. **Packaged installation** is recommended for regular users.
 2. **Daily build installation** is recommended for power users helping with testing.
 3. **Unpackaged installation** is recommended for package managers.
+3. **Distro installation** is recommended for those who use a Linux package manager.
 4. **Source installation** is recommended for developers.
 
 Packaged installation
@@ -120,12 +121,22 @@ Required static assets are:
     bim/data/gantt/jsgantt.js (from jsgantt-improved)
     bim/data/gantt/jsgantt.css (from jsgantt-improved)
 
+Distro installation
+-------------------
+
+Those on Arch Linux can check out this `AUR package <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
+
 Source installation
 -------------------
 
 It is possible to run the latest bleeding edge version of BlenderBIM without
 having to wait for an official release, since BlenderBIM is coded in Python and
 doesn't require any compilation.
+
+Note that the BlenderBIM Add-on does depend on IfcOpenShell, and IfcOpenShell
+does require compilation. The following instructions will use a pre-built
+IfcOpenShell (using an IfcOpenBot build) for convenience. Instructions on how to
+compile IfcOpenShell is out of scope of this document.
 
 You can create your own package by using the Makefile as shown below. You can
 choose between a ``PLATFORM`` of ``linux``, ``macos``, and ``win``. You can
@@ -244,3 +255,17 @@ button in the Blender preferences window.
 
 Alternatively, you may uninstall manually by deleting the ``blenderbim/``
 directory in your Blender add-ons directory.
+
+FAQ
+---
+
+1. I get an error similar to "ImportError: IfcOpenShell not built for 'linux/64bit/python3.7'"
+
+If you are using Blender <2.93, then you need to use a daily build. See the
+instructions above for a daily build installation.
+
+2. I am on Ubuntu and get an error similar to "ImportError: /lib/x86_64-linux-gnu/libm.so.6: version GLIBC_2.29 not found"
+
+Our latest package which uses IfcOpenShell v0.7.0 is built using Ubuntu 20 LTS.
+If you have an older Ubuntu version, you can either upgrade to 19.10 or above,
+or you'll need to compile IfcOpenShell yourself.
