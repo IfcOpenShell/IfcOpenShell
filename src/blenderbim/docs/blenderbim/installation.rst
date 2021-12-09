@@ -6,8 +6,8 @@ There are different methods of installation, depending on your situation.
 1. **Packaged installation** is recommended for regular users.
 2. **Daily build installation** is recommended for power users helping with testing.
 3. **Unpackaged installation** is recommended for package managers.
-3. **Distro installation** is recommended for those who use a Linux package manager.
-4. **Source installation** is recommended for developers.
+4. **Distro installation** is recommended for those who use a Linux package manager.
+5. **Source installation** is recommended for developers.
 
 Packaged installation
 ---------------------
