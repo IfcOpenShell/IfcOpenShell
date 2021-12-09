@@ -1,6 +1,5 @@
 @root
 Feature: Root
-    Covers IFC class operations on Blender objects
 
 Scenario: Reassign class
     Given an empty IFC project

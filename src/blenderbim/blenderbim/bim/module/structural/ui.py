@@ -154,7 +154,7 @@ class BIM_PT_connected_structural_members(Panel):
             row = self.layout.row(align=True)
             row.label(text=f"To Member #{IfcStore.get_file().by_id(rel['RelatingStructuralMember']).Name}")
             if self.props.active_connects_structural_member and self.props.active_connects_structural_member == rel_id:
-                row.operator("bim.disable_editing_structural_connection_condition", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_structural_connection_condition", text="", icon="CANCEL")
                 row.enabled = self.props.active_boundary_condition != rel["AppliedCondition"]
                 self.draw_editable_ui(context, self.layout, rel)
             elif self.props.active_connects_structural_member:
@@ -294,7 +294,7 @@ class BIM_PT_structural_analysis_models(Panel):
         )
         if self.props.is_editing:
             row.operator("bim.add_structural_analysis_model", text="", icon="ADD")
-            row.operator("bim.disable_structural_analysis_model_editing_ui", text="", icon="CHECKMARK")
+            row.operator("bim.disable_structural_analysis_model_editing_ui", text="", icon="CANCEL")
         else:
             row.operator("bim.load_structural_analysis_models", text="", icon="GREASEPENCIL")
 
