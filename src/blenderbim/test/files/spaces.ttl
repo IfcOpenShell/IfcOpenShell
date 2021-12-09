@@ -1,24 +1,24 @@
-@prefix : <ex:#> .
+@prefix digitaltwin: <http://example.org/digitaltwin#> .
 @prefix brick: <https://brickschema.org/schema/Brick#> .
 @prefix unit: <http://qudt.org/vocab/unit/> .
 
-:site a brick:Site ;
+digitaltwin:site a brick:Site ;
     brick:buildingPrimaryFunction [ brick:value "Library" ] ;
-    brick:hasPart :bldg .
+    brick:hasPart digitaltwin:bldg .
 
-:bldg a brick:Building ;
-    brick:hasPart :floor .
+digitaltwin:bldg a brick:Building ;
+    brick:hasPart digitaltwin:floor .
 
-:floor a brick:Floor ;
+digitaltwin:floor a brick:Floor ;
     brick:area [ brick:value 5000 ; brick:hasUnit unit:M_2 ] ;
-    brick:hasPart :space, :hvac_zone, :lighting_zone_1, :lighting_zone_2 .
+    brick:hasPart digitaltwin:space, digitaltwin:hvac_zone, digitaltwin:lighting_zone_1, digitaltwin:lighting_zone_2 .
 
-:space a brick:Space ;
+digitaltwin:space a brick:Space ;
     brick:netArea [ brick:value 500 ; brick:hasUnit unit:M_2 ] ;
     brick:grossArea [ brick:value 650 ; brick:hasUnit unit:M_2 ] ;
-    brick:isPartOf :hvac_zone ;
-    brick:hasPart :lighting_zone_1, :lighting_zone_2 .
+    brick:isPartOf digitaltwin:hvac_zone ;
+    brick:hasPart digitaltwin:lighting_zone_1, digitaltwin:lighting_zone_2 .
 
-:hvac_zone a brick:HVAC_Zone .
-:lighting_zone_1 a brick:Lighting_Zone .
-:lighting_zone_2 a brick:Lighting_Zone .
+digitaltwin:hvac_zone a brick:HVAC_Zone .
+digitaltwin:lighting_zone_1 a brick:Lighting_Zone .
+digitaltwin:lighting_zone_2 a brick:Lighting_Zone .
