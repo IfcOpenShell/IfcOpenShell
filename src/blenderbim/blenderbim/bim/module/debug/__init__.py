@@ -28,6 +28,7 @@ classes = (
     operator.CreateAllShapes,
     operator.CreateShapeFromStepId,
     operator.SelectHighPolygonMeshes,
+    operator.SelectHighestPolygonMeshes,
     operator.InspectFromStepId,
     operator.InspectFromObject,
     operator.RewindInspector,
