@@ -73,3 +73,9 @@ def add_brick(ifc, brick, obj=None, namespace=None, brick_class=None, library=No
     brick_uri = brick.add_brick(product, namespace, brick_class)
     if library:
         brick.run_assign_brick_reference(obj=obj, library=library, brick_uri=brick_uri)
+
+
+def add_brick_feed(ifc, brick, source=None, destination=None):
+    source_element = ifc.get_entity(source)
+    destination_element = ifc.get_entity(destination)
+    brick.add_feed(brick.get_brick(source_element), brick.get_brick(destination_element))

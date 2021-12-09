@@ -118,7 +118,7 @@ class AddBrick(bpy.types.Operator, Operator):
         props = context.scene.BIMBrickProperties
         library = None
         if props.libraries:
-            library=tool.Ifc.get().by_id(int(props.libraries))
+            library = tool.Ifc.get().by_id(int(props.libraries))
         core.add_brick(
             tool.Ifc,
             tool.Brick,
@@ -126,4 +126,18 @@ class AddBrick(bpy.types.Operator, Operator):
             namespace=props.namespace,
             brick_class=props.brick_equipment_class,
             library=library,
+        )
+
+
+class AddBrickFeed(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_brick_feed"
+    bl_label = "Add Brick Feed"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.add_brick_feed(
+            tool.Ifc,
+            tool.Brick,
+            source=[o for o in context.selected_objects if o != context.active_object][0],
+            destination=context.active_object,
         )

@@ -80,6 +80,11 @@ class Brick(blenderbim.core.tool.Brick):
         )
 
     @classmethod
+    def add_feed(cls, source, destination):
+        ns_brick = Namespace("https://brickschema.org/schema/Brick#")
+        BrickStore.graph.add((URIRef(source), ns_brick["feeds"], URIRef(destination)))
+
+    @classmethod
     def clear_brick_browser(cls):
         bpy.context.scene.BIMBrickProperties.bricks.clear()
 
@@ -95,6 +100,15 @@ class Brick(blenderbim.core.tool.Brick):
             return {"ItemReference": brick_uri, "Name": brick_uri.split("#")[-1]}
         else:
             return {"Identification": brick_uri, "Name": brick_uri.split("#")[-1]}
+
+    @classmethod
+    def get_brick(cls, element):
+        for rel in element.HasAssociations:
+            if rel.is_a("IfcRelAssociatesLibrary"):
+                if tool.Ifc.get_schema() == "IFC2X3" and "#" in rel.RelatingLibrary.ItemReference:
+                    return rel.RelatingLibrary.ItemReference
+                if tool.Ifc.get_schema() != "IFC2X3" and "#" in rel.RelatingLibrary.Identification:
+                    return rel.RelatingLibrary.Identification
 
     @classmethod
     def get_brick_path(cls):

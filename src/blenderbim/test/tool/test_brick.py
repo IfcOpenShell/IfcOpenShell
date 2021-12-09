@@ -121,6 +121,21 @@ class TestAddBrickifcReference(NewFile):
         )
 
 
+class TestAddFeed(NewFile):
+    def test_run(self):
+        BrickStore.graph = brickschema.Graph()
+        subject.add_feed("http://example.org/digitaltwin#source", "http://example.org/digitaltwin#destination")
+        assert list(
+            BrickStore.graph.triples(
+                (
+                    URIRef("http://example.org/digitaltwin#source"),
+                    URIRef("https://brickschema.org/schema/Brick#feeds"),
+                    URIRef("http://example.org/digitaltwin#destination"),
+                )
+            )
+        )
+
+
 class TestClearBrickBrowser(NewFile):
     def test_run(self):
         bpy.context.scene.BIMBrickProperties.bricks.add()
@@ -141,11 +156,34 @@ class TestClearProject(NewFile):
 
 class TestExportBrickAttributes(NewFile):
     def test_run(self):
-        assert subject.export_brick_attributes("http://example.org/digitaltwin#floor") == {"Identification": "http://example.org/digitaltwin#floor", "Name": "floor"}
+        assert subject.export_brick_attributes("http://example.org/digitaltwin#floor") == {
+            "Identification": "http://example.org/digitaltwin#floor",
+            "Name": "floor",
+        }
 
     def test_run_ifc2x3(self):
         tool.Ifc.set(ifcopenshell.file(schema="IFC2X3"))
-        assert subject.export_brick_attributes("http://example.org/digitaltwin#floor") == {"ItemReference": "http://example.org/digitaltwin#floor", "Name": "floor"}
+        assert subject.export_brick_attributes("http://example.org/digitaltwin#floor") == {
+            "ItemReference": "http://example.org/digitaltwin#floor",
+            "Name": "floor",
+        }
+
+
+class TestGetBrick(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcChiller()
+        library = ifc.createIfcLibraryReference(Identification="http://example.org/digitaltwin#globalid")
+        ifc.createIfcRelAssociatesLibrary(RelatedObjects=[element], RelatingLibrary=library)
+        assert subject.get_brick(element) == "http://example.org/digitaltwin#globalid"
+
+    def test_run_ifc2x3(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcEnergyConversionDevice()
+        library = ifc.createIfcLibraryReference(ItemReference="http://example.org/digitaltwin#globalid")
+        ifc.createIfcRelAssociatesLibrary(RelatedObjects=[element], RelatingLibrary=library)
+        assert subject.get_brick(element) == "http://example.org/digitaltwin#globalid"
 
 
 class TestGetBrickPath(NewFile):
@@ -180,7 +218,9 @@ class TestGetLibraryBrickReference(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         library = ifc.createIfcLibraryInformation()
-        reference = ifc.createIfcLibraryReference(Identification="http://example.org/digitaltwin#floor", ReferencedLibrary=library)
+        reference = ifc.createIfcLibraryReference(
+            Identification="http://example.org/digitaltwin#floor", ReferencedLibrary=library
+        )
         assert subject.get_library_brick_reference(library, "http://example.org/digitaltwin#floor") == reference
 
     def test_run_ifc2x3(self):
