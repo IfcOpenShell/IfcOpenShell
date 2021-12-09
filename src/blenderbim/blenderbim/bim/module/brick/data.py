@@ -20,6 +20,12 @@ import bpy
 import blenderbim.tool as tool
 from blenderbim.tool.brick import BrickStore
 
+try:
+    from rdflib import URIRef, BNode
+except:
+    # See #1860
+    print("Warning: brickschema not available.")
+
 
 def refresh():
     BrickschemaData.is_loaded = False
@@ -67,15 +73,30 @@ class BrickschemaData:
                 "{uri}", uri
             )
         )
+
         for row in query:
+            name = row.get("name").toPython().split("#")[-1]
+            value = row.get("value")
             results.append(
                 {
-                    "name": row.get("name").toPython().split("#")[-1],
-                    "value": row.get("value").toPython().split("#")[-1],
-                    "is_uri": "#" in row.get("value").toPython(),
-                    "value_uri": row.get("value").toPython(),
+                    "name": name,
+                    "value": value.toPython().split("#")[-1],
+                    "is_uri": isinstance(value, URIRef),
+                    "value_uri": value.toPython(),
+                    "is_globalid": name == "globalID",
                 }
             )
+            if isinstance(row.get("value"), BNode):
+                for s, p, o in BrickStore.graph.triples((value, None, None)):
+                    results.append(
+                        {
+                            "name": name + ":" + p.toPython().split("#")[-1],
+                            "value": o.toPython().split("#")[-1],
+                            "is_uri": isinstance(o, URIRef),
+                            "value_uri": o.toPython(),
+                            "is_globalid": p.toPython().split("#")[-1] == "globalID",
+                        }
+                    )
         return results
 
 
@@ -96,7 +117,10 @@ class BrickschemaReferencesData:
     def libraries(cls):
         results = []
         for library in tool.Ifc.get().by_type("IfcLibraryInformation"):
-            results.append((str(library.id()), library.Name or "Unnamed", ""))
+            if tool.Ifc.get_schema() == "IFC2X3":
+                results.append((str(library.id()), library.Name or "Unnamed", ""))
+            elif ".ttl" in library.Location:
+                results.append((str(library.id()), library.Name or "Unnamed", ""))
         return results
 
     @classmethod

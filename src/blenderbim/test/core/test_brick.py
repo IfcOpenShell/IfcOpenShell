@@ -92,10 +92,24 @@ class TestAssignBrickReference:
         ifc.run("library.edit_reference", reference="reference", attributes="attributes").should_be_called()
         ifc.get_entity("obj").should_be_called().will_return("product")
         ifc.run("library.assign_reference", product="product", reference="reference").should_be_called()
+        brick.get_brickifc_project().should_be_called().will_return("project")
+        brick.add_brickifc_reference("brick", "product", "project").should_be_called()
         subject.assign_brick_reference(ifc, brick, obj="obj", library="library", brick_uri="brick")
 
     def test_assigning_to_an_existing_reference(self, ifc, brick):
         brick.get_library_brick_reference("library", "brick").should_be_called().will_return("reference")
         ifc.get_entity("obj").should_be_called().will_return("product")
         ifc.run("library.assign_reference", product="product", reference="reference").should_be_called()
+        brick.get_brickifc_project().should_be_called().will_return("project")
+        brick.add_brickifc_reference("brick", "product", "project").should_be_called()
+        subject.assign_brick_reference(ifc, brick, obj="obj", library="library", brick_uri="brick")
+
+    def test_adding_a_brickifc_project_if_it_doesnt_exist(self, ifc, brick):
+        brick.get_library_brick_reference("library", "brick").should_be_called().will_return("reference")
+        ifc.get_entity("obj").should_be_called().will_return("product")
+        ifc.run("library.assign_reference", product="product", reference="reference").should_be_called()
+        brick.get_brickifc_project().should_be_called().will_return(None)
+        brick.get_namespace("brick").should_be_called().will_return("namespace")
+        brick.add_brickifc_project("namespace").should_be_called().will_return("project")
+        brick.add_brickifc_reference("brick", "product", "project").should_be_called()
         subject.assign_brick_reference(ifc, brick, obj="obj", library="library", brick_uri="brick")

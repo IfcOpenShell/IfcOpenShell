@@ -30,3 +30,22 @@ Scenario: Close Brick project
     And I press "bim.load_brick_project(filepath='{cwd}/test/files/spaces.ttl')"
     When I press "bim.close_brick_project"
     Then nothing happens
+
+Scenario: Convert brick project
+    Given an empty IFC project
+    And I press "bim.load_brick_project(filepath='{cwd}/test/files/spaces.ttl')"
+    When I press "bim.convert_brick_project"
+    Then nothing happens
+
+Scenario: Assign brick reference
+    Given an empty IFC project
+    And I press "bim.load_brick_project(filepath='{cwd}/test/files/spaces.ttl')"
+    And I press "bim.view_brick_item(item='https://brickschema.org/schema/Brick#Chiller')"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcChiller"
+    And I press "bim.assign_class"
+    And the object "IfcChiller/Cube" is selected
+    And I press "bim.convert_brick_project"
+    When I press "bim.assign_brick_reference"
+    Then nothing happens
