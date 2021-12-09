@@ -60,4 +60,9 @@ def assign_brick_reference(ifc, brick, obj=None, library=None, brick_uri=None):
     if not reference:
         reference = ifc.run("library.add_reference", library=library)
         ifc.run("library.edit_reference", reference=reference, attributes=brick.export_brick_attributes(brick_uri))
-    ifc.run("library.assign_reference", product=ifc.get_entity(obj), reference=reference)
+    product = ifc.get_entity(obj)
+    ifc.run("library.assign_reference", product=product, reference=reference)
+    project = brick.get_brickifc_project()
+    if not project:
+        project = brick.add_brickifc_project(brick.get_namespace(brick_uri))
+    brick.add_brickifc_reference(brick_uri, product, project)

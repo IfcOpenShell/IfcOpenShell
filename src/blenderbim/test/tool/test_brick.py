@@ -22,6 +22,8 @@ import brickschema
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
+from rdflib.namespace import RDF
+from rdflib import Literal, URIRef, Namespace
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.brick import Brick as subject
 from blenderbim.tool.brick import BrickStore
@@ -39,6 +41,62 @@ class TestAddBrickBreadcrumb(NewFile):
         assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[0].name == "brick_class"
         subject.add_brick_breadcrumb()
         assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[1].name == "brick_class"
+
+
+class TestAddBrickifcProject(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        project = ifc.createIfcProject(ifcopenshell.guid.new())
+        project.Name = "My Project"
+        BrickStore.graph = brickschema.Graph()
+        result = subject.add_brickifc_project("http://example.org/digitaltwin#")
+        assert result == f"http://example.org/digitaltwin#{project.GlobalId}"
+        brick = URIRef(result)
+        assert list(
+            BrickStore.graph.triples((brick, RDF.type, URIRef("https://brickschema.org/extension/ifc#Project")))
+        )
+        assert list(
+            BrickStore.graph.triples(
+                (brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("My Project"))
+            )
+        )
+        assert list(
+            BrickStore.graph.triples(
+                (brick, URIRef("https://brickschema.org/extension/ifc#projectID"), Literal(project.GlobalId))
+            )
+        )
+        assert list(
+            BrickStore.graph.triples(
+                (
+                    brick,
+                    URIRef("https://brickschema.org/extension/ifc#fileLocation"),
+                    Literal(bpy.context.scene.BIMProperties.ifc_file),
+                )
+            )
+        )
+
+
+class TestAddBrickifcReference(NewFile):
+    def test_run(self):
+        TestAddBrickifcProject().test_run()
+        element = tool.Ifc.get().createIfcChiller(ifcopenshell.guid.new())
+        project = URIRef(f"http://example.org/digitaltwin#{tool.Ifc.get().by_type('IfcProject')[0].GlobalId}")
+        subject.add_brickifc_reference("http://example.org/digitaltwin#foo", element, project)
+        brick = URIRef("http://example.org/digitaltwin#foo")
+        bnode = list(
+            BrickStore.graph.triples((brick, URIRef("https://brickschema.org/extension/ifc#hasIFCReference"), None))
+        )[0][2]
+        assert list(
+            BrickStore.graph.triples(
+                (bnode, URIRef("https://brickschema.org/extension/ifc#hasProjectReference"), project)
+            )
+        )
+        assert list(
+            BrickStore.graph.triples(
+                (bnode, URIRef("https://brickschema.org/extension/ifc#globalID"), Literal(element.GlobalId))
+            )
+        )
 
 
 class TestClearBrickBrowser(NewFile):
@@ -81,6 +139,15 @@ class TestGetBrickPathName(NewFile):
         assert subject.get_brick_path_name() == "spaces.ttl"
 
 
+class TestGetBrickifcProject(NewFile):
+    def test_run(self):
+        TestAddBrickifcProject().test_run()
+        assert (
+            subject.get_brickifc_project()
+            == f"http://example.org/digitaltwin#{tool.Ifc.get().by_type('IfcProject')[0].GlobalId}"
+        )
+
+
 class TestGetItemClass(NewFile):
     def test_run(self):
         TestLoadBrickFile().test_run()
@@ -100,6 +167,11 @@ class TestGetLibraryBrickReference(NewFile):
         reference = ifc.createIfcLibraryReference(ItemReference="ex:#floor")
         library = ifc.createIfcLibraryInformation(LibraryReference=[reference])
         assert subject.get_library_brick_reference(library, "ex:#floor") == reference
+
+
+class TestGetNamespace(NewFile):
+    def test_run(self):
+        assert subject.get_namespace("http://example.org/digitaltwin#globalid") == "http://example.org/digitaltwin#"
 
 
 class TestImportBrickClasses(NewFile):
