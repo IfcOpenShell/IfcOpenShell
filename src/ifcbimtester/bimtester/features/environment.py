@@ -15,9 +15,10 @@ this_path = os.path.dirname(os.path.realpath(__file__))
 def before_all(context):
 
     userdata = context.config.userdata
+    context.locale_dir = userdata.get("localedir")
 
     if context.config.lang:
-        switch_locale(userdata.get("localedir"), context.config.lang)
+        switch_locale(context.locale_dir, context.config.lang)
 
     continue_after_failed = userdata.getbool("runner.continue_after_failed_step", True)
     Scenario.continue_after_failed_step = continue_after_failed
@@ -43,6 +44,19 @@ def before_all(context):
 
 
 def before_feature(context, feature):
+
+    # https://github.com/IfcOpenShell/IfcOpenShell/issues/1910#issuecomment-989732600
+    # messages language, parsed by behaves lang argument
+    print("Messages language: {}".format(context.config.lang))
+    # features file language, set in feature files first line
+    # html report will use this too
+    print("Features language: {}".format(context.feature.language))
+
+    # if messages lang is not set use features lang
+    if context.config.lang == "" or context.config.lang is None:
+        context.config.lang = context.feature.language
+        print("Switch messages language to: {}".format(context.config.lang))
+        switch_locale(context.locale_dir, context.config.lang)
 
     # TODO: refactor zoom smart view support into a decoupled module
     if context.create_smartview is True:
