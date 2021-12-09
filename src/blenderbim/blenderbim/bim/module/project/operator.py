@@ -620,7 +620,9 @@ class LoadProjectElements(bpy.types.Operator):
             while container:
                 containers.add(container)
                 container = ifcopenshell.util.element.get_aggregate(container)
-                if container.is_a("IfcContext"):
+                if self.file.schema == "IFC2X3" and container.is_a("IfcProject"):
+                    container = None
+                elif self.file.schema != "IFC2X3" and container.is_a("IfcContext"):
                     container = None
         elements = set()
         for container in containers:
