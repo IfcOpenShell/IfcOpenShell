@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import numpy as np
 import ifcopenshell
 import blenderbim.bim.handler
 import blenderbim.tool as tool
@@ -211,17 +212,51 @@ class DrawSystemArrows(bpy.types.Operator, Operator):
         for obj in bpy.context.selected_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            e = tool.Ifc.get().by_id(obj.BIMObjectProperties.ifc_definition_id)
+            element = tool.Ifc.get_entity(obj)
             sources = []
             sinks = []
-            for rel in getattr(e, "HasPorts", []) or []:
+            for rel in getattr(element, "HasPorts", []) or []:
                 if rel.RelatingPort.FlowDirection == "SOURCE":
-                    sources.append(ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement))
+                    sources.append(
+                        self.get_absolute_matrix(
+                            ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement)
+                        )
+                    )
                 elif rel.RelatingPort.FlowDirection == "SINK":
-                    sinks.append(ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement))
+                    sinks.append(
+                        self.get_absolute_matrix(
+                            ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement)
+                        )
+                    )
+                else:
+                    sources.append(
+                        self.get_absolute_matrix(
+                            ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement)
+                        )
+                    )
+                    sinks.append(
+                        self.get_absolute_matrix(
+                            ifcopenshell.util.placement.get_local_placement(rel.RelatingPort.ObjectPlacement)
+                        )
+                    )
             for sink in sinks:
                 for source in sources:
                     polyline = curve.data.splines.new("POLY")
                     polyline.points.add(1)
                     polyline.points[0].co = (Matrix(sink).translation * unit_scale).to_4d()
                     polyline.points[1].co = (Matrix(source).translation * unit_scale).to_4d()
+
+    def get_absolute_matrix(self, matrix):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        if props.has_blender_offset:
+            matrix = np.array(
+                ifcopenshell.util.geolocation.global2local(
+                    matrix,
+                    float(props.blender_eastings),
+                    float(props.blender_northings),
+                    float(props.blender_orthogonal_height),
+                    float(props.blender_x_axis_abscissa),
+                    float(props.blender_x_axis_ordinate),
+                )
+            )
+        return matrix
