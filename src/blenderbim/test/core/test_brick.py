@@ -126,3 +126,13 @@ class TestAddBrick:
         brick.add_brick("product", "namespace", "brick_class").should_be_called().will_return("brick_uri")
         brick.run_assign_brick_reference(obj="obj", library="library", brick_uri="brick_uri").should_be_called()
         subject.add_brick(ifc, brick, obj="obj", namespace="namespace", brick_class="brick_class", library="library")
+
+
+class TestAddBrickFeed:
+    def test_run(self, ifc, brick):
+        ifc.get_entity("source").should_be_called().will_return("source_element")
+        ifc.get_entity("destination").should_be_called().will_return("destination_element")
+        brick.get_brick("source_element").should_be_called().will_return("source_brick")
+        brick.get_brick("destination_element").should_be_called().will_return("destination_brick")
+        brick.add_feed("source_brick", "destination_brick").should_be_called()
+        subject.add_brick_feed(ifc, brick, source="source", destination="destination")

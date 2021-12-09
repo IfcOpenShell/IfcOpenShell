@@ -47,9 +47,11 @@ class Brick:
     def add_brick_breadcrumb(cls): pass
     def add_brickifc_project(cls, namespace): pass
     def add_brickifc_reference(cls, brick, element, project): pass
+    def add_feed(cls, source, destination): pass
     def clear_brick_browser(cls): pass
     def clear_project(cls): pass
     def export_brick_attributes(cls, brick_uri): pass
+    def get_brick(cls, element): pass
     def get_brick_path(cls): pass
     def get_brick_path_name(cls): pass
     def get_brickifc_project(cls): pass

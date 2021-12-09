@@ -74,3 +74,25 @@ Scenario: Add brick - with a brick IFC library
     And I set "scene.BIMBrickProperties.namespace" to "http://example.org/digitaltwin#"
     When I press "bim.add_brick"
     Then nothing happens
+
+Scenario: Add brick feed
+    Given an empty IFC project
+    And I press "bim.load_brick_project(filepath='{cwd}/test/files/spaces.ttl')"
+    And I press "bim.convert_brick_project"
+    And I set "scene.BIMBrickProperties.namespace" to "http://example.org/digitaltwin#"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcUnitaryEquipment"
+    And I set "scene.BIMRootProperties.ifc_predefined_type" to "AIRHANDLER"
+    And I press "bim.assign_class"
+    And I press "bim.add_brick"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcAirTerminalBox"
+    And I set "scene.BIMRootProperties.ifc_predefined_type" to "VARIABLEFLOWPRESSUREDEPENDANT"
+    And I press "bim.assign_class"
+    And I press "bim.add_brick"
+    And the object "IfcUnitaryEquipment/Cube" is selected
+    And additionally the object "IfcAirTerminalBox/Cube" is selected
+    When I press "bim.add_brick_feed"
+    Then nothing happens
