@@ -4387,21 +4387,23 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 
 			if (success) {
 
-				TopTools_IndexedMapOfShape faces;
-				TopExp::MapShapes(r, TopAbs_FACE, faces);
 				bool all_faces_included_in_result = true;
-				for (TopExp_Explorer exp(a, TopAbs_FACE); exp.More(); exp.Next()) {
-					auto& f = TopoDS::Face(exp.Current());
-					if (!faces.Contains(f)) {
-						all_faces_included_in_result = false;
-						break;
+				if (op == BOPAlgo_CUT) {
+					TopTools_IndexedMapOfShape faces;
+					TopExp::MapShapes(r, TopAbs_FACE, faces);
+					for (TopExp_Explorer exp(a, TopAbs_FACE); exp.More(); exp.Next()) {
+						auto& f = TopoDS::Face(exp.Current());
+						if (!faces.Contains(f)) {
+							all_faces_included_in_result = false;
+							break;
+						}
 					}
 				}
 
 				int result_n_faces = count(r, TopAbs_FACE);
 				int first_op_n_faces = count(a, TopAbs_FACE);
 
-				if (all_faces_included_in_result && result_n_faces > first_op_n_faces) {
+				if (op == BOPAlgo_CUT && all_faces_included_in_result && result_n_faces > first_op_n_faces) {
 					success = false;
 					Logger::Notice("Boolean result discarded because subtractions results in only the addition of faces");
 				} else {
