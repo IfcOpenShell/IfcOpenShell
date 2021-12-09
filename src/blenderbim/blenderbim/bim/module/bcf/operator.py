@@ -842,6 +842,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 obj.data.angle = 2 * atan(
                     (0.5 * cam_height) / (0.5 * cam_width / tan(radians(camera.field_of_view) / 2))
                 )
+        else:
+            return
 
         z_axis = Vector(
             (-camera.camera_direction.x, -camera.camera_direction.y, -camera.camera_direction.z)
