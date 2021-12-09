@@ -60,7 +60,11 @@ class Library(blenderbim.core.tool.Library):
     def import_references(cls, library):
         props = bpy.context.scene.BIMLibraryProperties
         props.references.clear()
-        for reference in library.HasLibraryReferences:
+        if tool.Ifc.get_schema() == "IFC2X3":
+            references = library.LibraryReference
+        else:
+            references = library.HasLibraryReferences
+        for reference in references:
             new = props.references.add()
             new.ifc_definition_id = reference.id()
             new.name = reference.Name or "Unnamed"
