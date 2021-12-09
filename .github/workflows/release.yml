@@ -39,7 +39,7 @@ jobs:
            -DCMAKE_PREFIX_PATH=/usr \
            -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
            -DBUILD_PACKAGE=On \
-           -DOCC_INCLUDE_DIR=/usr/include/oce \
+           -DOCC_INCLUDE_DIR=/usr/include/opencascade \
            -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
            -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
            -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \
