@@ -34,6 +34,28 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.Brick)
 
 
+class TestAddBrick(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcChiller()
+        element.Name = "Chiller"
+        element.GlobalId = ifcopenshell.guid.new()
+        BrickStore.graph = brickschema.Graph()
+        result = subject.add_brick(
+            element, "http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment"
+        )
+        uri = f"http://example.org/digitaltwin#{element.GlobalId}"
+        assert result == uri
+        assert list(
+            BrickStore.graph.triples((URIRef(uri), RDF.type, URIRef("https://brickschema.org/schema/Brick#Equipment")))
+        )
+        assert list(
+            BrickStore.graph.triples(
+                (URIRef(uri), URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Chiller"))
+            )
+        )
+
+
 class TestAddBrickBreadcrumb(NewFile):
     def test_run(self):
         subject.set_active_brick_class("brick_class")
@@ -119,11 +141,11 @@ class TestClearProject(NewFile):
 
 class TestExportBrickAttributes(NewFile):
     def test_run(self):
-        assert subject.export_brick_attributes("ex:#floor") == {"Identification": "ex:#floor", "Name": "floor"}
+        assert subject.export_brick_attributes("http://example.org/digitaltwin#floor") == {"Identification": "http://example.org/digitaltwin#floor", "Name": "floor"}
 
     def test_run_ifc2x3(self):
         tool.Ifc.set(ifcopenshell.file(schema="IFC2X3"))
-        assert subject.export_brick_attributes("ex:#floor") == {"ItemReference": "ex:#floor", "Name": "floor"}
+        assert subject.export_brick_attributes("http://example.org/digitaltwin#floor") == {"ItemReference": "http://example.org/digitaltwin#floor", "Name": "floor"}
 
 
 class TestGetBrickPath(NewFile):
@@ -151,22 +173,22 @@ class TestGetBrickifcProject(NewFile):
 class TestGetItemClass(NewFile):
     def test_run(self):
         TestLoadBrickFile().test_run()
-        assert subject.get_item_class("ex:#floor") == "Floor"
+        assert subject.get_item_class("http://example.org/digitaltwin#floor") == "Floor"
 
 
 class TestGetLibraryBrickReference(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         library = ifc.createIfcLibraryInformation()
-        reference = ifc.createIfcLibraryReference(Identification="ex:#floor", ReferencedLibrary=library)
-        assert subject.get_library_brick_reference(library, "ex:#floor") == reference
+        reference = ifc.createIfcLibraryReference(Identification="http://example.org/digitaltwin#floor", ReferencedLibrary=library)
+        assert subject.get_library_brick_reference(library, "http://example.org/digitaltwin#floor") == reference
 
     def test_run_ifc2x3(self):
         ifc = ifcopenshell.file(schema="IFC2X3")
         tool.Ifc.set(ifc)
-        reference = ifc.createIfcLibraryReference(ItemReference="ex:#floor")
+        reference = ifc.createIfcLibraryReference(ItemReference="http://example.org/digitaltwin#floor")
         library = ifc.createIfcLibraryInformation(LibraryReference=[reference])
-        assert subject.get_library_brick_reference(library, "ex:#floor") == reference
+        assert subject.get_library_brick_reference(library, "http://example.org/digitaltwin#floor") == reference
 
 
 class TestGetNamespace(NewFile):
@@ -196,7 +218,7 @@ class TestImportBrickItems(NewFile):
         assert len(bpy.context.scene.BIMBrickProperties.bricks) == 1
         brick = bpy.context.scene.BIMBrickProperties.bricks[0]
         assert brick.name == "bldg"
-        assert brick.uri == "ex:#bldg"
+        assert brick.uri == "http://example.org/digitaltwin#bldg"
         assert brick.total_items == 0
 
 
@@ -222,6 +244,11 @@ class TestPopBrickBreadcrumb(NewFile):
         assert subject.pop_brick_breadcrumb() == "bar"
         assert len(bpy.context.scene.BIMBrickProperties.brick_breadcrumbs) == 1
         assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[0].name == "foo"
+
+
+class TestRunAssignBrickReference(NewFile):
+    def test_nothing(self):
+        pass
 
 
 class TestSelectBrowserItem(NewFile):

@@ -45,6 +45,10 @@ class BIM_PT_brickschema(Panel):
         row.label(text=self.props.active_brick_class)
         row.operator("bim.close_brick_project", text="", icon="CANCEL")
 
+        row = self.layout.row(align=True)
+        row.prop(self.props, "namespace", text="")
+        row.prop(self.props, "brick_equipment_class", text="")
+        row.operator("bim.add_brick", text="", icon="ADD")
         self.layout.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
 
         for attribute in BrickschemaData.data["attributes"]:
@@ -54,6 +58,9 @@ class BIM_PT_brickschema(Panel):
             if attribute["is_uri"]:
                 op = row.operator("bim.view_brick_item", text="", icon="DISCLOSURE_TRI_RIGHT")
                 op.item = attribute["value_uri"]
+            if attribute["is_globalid"]:
+                op = row.operator("bim.select_global_id", icon="RESTRICT_SELECT_OFF", text="")
+                op.global_id = attribute["value"]
 
 
 class BIM_PT_ifc_brickschema_references(Panel):

@@ -33,8 +33,13 @@ except:
 
 class Brick(blenderbim.core.tool.Brick):
     @classmethod
-    def set_user(cls, user):
-        bpy.context.scene.BIMOwnerProperties.active_user_id = user.id()
+    def add_brick(cls, element, namespace, brick_class):
+        ns = Namespace(namespace)
+        brick = ns[element.GlobalId]
+        BrickStore.graph.add((brick, RDF.type, URIRef(brick_class)))
+        if element.Name:
+            BrickStore.graph.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(element.Name)))
+        return str(brick)
 
     @classmethod
     def add_brick_breadcrumb(cls):
@@ -209,6 +214,12 @@ class Brick(blenderbim.core.tool.Brick):
         last_index = len(bpy.context.scene.BIMBrickProperties.brick_breadcrumbs) - 1
         bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.remove(last_index)
         return name
+
+    @classmethod
+    def run_assign_brick_reference(cls, obj=None, library=None, brick_uri=None):
+        return blenderbim.core.brick.assign_brick_reference(
+            tool.Ifc, tool.Brick, obj=obj, library=library, brick_uri=brick_uri
+        )
 
     @classmethod
     def select_browser_item(cls, item):

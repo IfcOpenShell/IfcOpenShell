@@ -43,6 +43,7 @@ class Blender: pass
 
 @interface
 class Brick:
+    def add_brick(cls, element, namespace, brick_class): pass
     def add_brick_breadcrumb(cls): pass
     def add_brickifc_project(cls, namespace): pass
     def add_brickifc_reference(cls, brick, element, project): pass
@@ -59,6 +60,7 @@ class Brick:
     def import_brick_items(cls, brick_class): pass
     def load_brick_file(cls, filepath): pass
     def pop_brick_breadcrumb(cls): pass
+    def run_assign_brick_reference(cls, obj=None, library=None, brick_uri=None): pass
     def select_browser_item(cls, item): pass
     def set_active_brick_class(cls, brick_class): pass
 

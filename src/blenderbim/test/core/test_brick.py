@@ -113,3 +113,16 @@ class TestAssignBrickReference:
         brick.add_brickifc_project("namespace").should_be_called().will_return("project")
         brick.add_brickifc_reference("brick", "product", "project").should_be_called()
         subject.assign_brick_reference(ifc, brick, obj="obj", library="library", brick_uri="brick")
+
+
+class TestAddBrick:
+    def test_adding_a_brick(self, ifc, brick):
+        ifc.get_entity("obj").should_be_called().will_return("product")
+        brick.add_brick("product", "namespace", "brick_class").should_be_called().will_return("brick_uri")
+        subject.add_brick(ifc, brick, obj="obj", namespace="namespace", brick_class="brick_class", library=None)
+
+    def test_adding_a_brick_an_auto_assigning_it_to_the_ifc_element(self, ifc, brick):
+        ifc.get_entity("obj").should_be_called().will_return("product")
+        brick.add_brick("product", "namespace", "brick_class").should_be_called().will_return("brick_uri")
+        brick.run_assign_brick_reference(obj="obj", library="library", brick_uri="brick_uri").should_be_called()
+        subject.add_brick(ifc, brick, obj="obj", namespace="namespace", brick_class="brick_class", library="library")
