@@ -30,6 +30,7 @@ from blenderbim.bim.ifc import IfcStore
 class PrintIfcFile(bpy.types.Operator):
     bl_idname = "bim.print_ifc_file"
     bl_label = "Print IFC File"
+    bl_description = "Prints the file contents in the system console.\nAccess it with Window > Toggle System Console"
 
     @classmethod
     def poll(cls, context):
@@ -43,6 +44,7 @@ class PrintIfcFile(bpy.types.Operator):
 class PurgeIfcLinks(bpy.types.Operator):
     bl_idname = "bim.purge_ifc_links"
     bl_label = "Purge IFC Links"
+    bl_description = "Purge all definitions and references from the file.\nWarning : Cannot be undone."
 
     def execute(self, context):
         for obj in bpy.data.objects:
@@ -96,7 +98,8 @@ class ProfileImportIFC(bpy.types.Operator):
 
 class CreateAllShapes(bpy.types.Operator):
     bl_idname = "bim.create_all_shapes"
-    bl_label = "Create All Shapes"
+    bl_label = "Test All Shapes"
+    bl_description = "Look for errors in all the shapes contained in the file"
 
     @classmethod
     def poll(cls, context):
@@ -126,7 +129,7 @@ class CreateAllShapes(bpy.types.Operator):
             except:
                 failures.append(element)
                 print("***** FAILURE *****")
-        print("Failures:")
+        print(f"Failures: {len(failures)}")
         for failure in failures:
             print(failure)
         return {"FINISHED"}
@@ -135,6 +138,7 @@ class CreateAllShapes(bpy.types.Operator):
 class CreateShapeFromStepId(bpy.types.Operator):
     bl_idname = "bim.create_shape_from_step_id"
     bl_label = "Create Shape From STEP ID"
+    bl_description = "Recreate a mesh object from a STEP ID"
     bl_options = {"REGISTER", "UNDO"}
     should_include_curves: bpy.props.BoolProperty()
 
@@ -154,9 +158,12 @@ class CreateShapeFromStepId(bpy.types.Operator):
         if self.should_include_curves:
             settings.set(settings.INCLUDE_CURVES, True)
         shape = ifcopenshell.geom.create_shape(settings, element)
-        ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
-        ifc_importer.file = self.file
-        mesh = ifc_importer.create_mesh(element, shape)
+        if shape:
+            ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
+            ifc_importer.file = self.file
+            mesh = ifc_importer.create_mesh(element, shape)
+        else:
+            mesh = None
         obj = bpy.data.objects.new("Debug", mesh)
         context.scene.collection.objects.link(obj)
         return {"FINISHED"}
@@ -165,20 +172,37 @@ class CreateShapeFromStepId(bpy.types.Operator):
 class SelectHighPolygonMeshes(bpy.types.Operator):
     bl_idname = "bim.select_high_polygon_meshes"
     bl_label = "Select High Polygon Meshes"
+    bl_description = "Select objects containing more polygons than the specified number"
     bl_options = {"REGISTER", "UNDO"}
+    threshold: bpy.props.IntProperty()
 
     def execute(self, context):
-        [
-            o.select_set(True)
-            for o in context.view_layer.objects
-            if o.type == "MESH" and len(o.data.polygons) > context.scene.BIMDebugProperties.number_of_polygons
-        ]
+        for obj in context.view_layer.objects:
+            if obj.type == "MESH" and len(obj.data.polygons) > self.threshold:
+                obj.select_set(True)
+        return {"FINISHED"}
+
+
+class SelectHighestPolygonMeshes(bpy.types.Operator):
+    bl_idname = "bim.select_highest_polygon_meshes"
+    bl_label = "Select Highest Polygon Meshes"
+    bl_description = "Select objects with a number of polygons superior to the specified percentile"
+    bl_options = {"REGISTER", "UNDO"}
+    percentile: bpy.props.IntProperty()
+
+    def execute(self, context):
+        objects = [obj for obj in context.view_layer.objects if obj.type == "MESH"]
+        if objects:
+            percentile = len(max(objects, key=lambda o: len(o.data.polygons)).data.polygons) * self.percentile / 100
+            print(f"Selected all Meshes with more than {int(percentile)} polygons")
+            [obj.select_set(True) for obj in objects if len(obj.data.polygons) > percentile]
         return {"FINISHED"}
 
 
 class RewindInspector(bpy.types.Operator):
     bl_idname = "bim.rewind_inspector"
     bl_label = "Rewind Inspector"
+    bl_description = "Rewind the Inspector to the previously inspected element"
 
     def execute(self, context):
         props = context.scene.BIMDebugProperties
@@ -195,6 +219,7 @@ class RewindInspector(bpy.types.Operator):
 class InspectFromStepId(bpy.types.Operator):
     bl_idname = "bim.inspect_from_step_id"
     bl_label = "Inspect From STEP ID"
+    bl_description = "Inspect the attributes and references by looking up the specified STEP ID"
     step_id: bpy.props.IntProperty()
 
     @classmethod
@@ -245,12 +270,21 @@ class InspectFromStepId(bpy.types.Operator):
 class InspectFromObject(bpy.types.Operator):
     bl_idname = "bim.inspect_from_object"
     bl_label = "Inspect From Object"
+    bl_description = "Inspect the Active Object's attributes and references"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            if bpy.app.version >= (3, 0, 0):
+                cls.poll_message_set("No Active Object")
+        elif not context.active_object.BIMObjectProperties.ifc_definition_id:
+            if bpy.app.version >= (3, 0, 0):
+                cls.poll_message_set("Active Object doesn't have an IFC definition")
+        else:
+            return True
 
     def execute(self, context):
-        ifc_definition_id = context.active_object.BIMObjectProperties.ifc_definition_id
-        if not ifc_definition_id:
-            return {"FINISHED"}
-        bpy.ops.bim.inspect_from_step_id(step_id=ifc_definition_id)
+        bpy.ops.bim.inspect_from_step_id(step_id=context.active_object.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
