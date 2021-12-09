@@ -21,6 +21,8 @@ import json
 import ifcopenshell
 import ifcopenshell.api
 import blenderbim.bim.helper
+import blenderbim.tool as tool
+import blenderbim.core.context
 from math import degrees
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
@@ -269,15 +271,16 @@ class AddStructuralAnalysisModel(bpy.types.Operator):
     def _execute(self, context):
         result = ifcopenshell.api.run("structural.add_structural_analysis_model", IfcStore.get_file())
 
-        has_context = False
-        ContextData.load(IfcStore.get_file())
-        for context in ContextData.contexts.values():
-            if context["ContextType"] == "Model":
-                for subcontext in context["HasSubContexts"].values():
-                    if subcontext["ContextIdentifier"] == "Reference" and subcontext["TargetView"] == "GRAPH_VIEW":
-                        has_context = True
-        if not has_context:
-            bpy.ops.bim.add_subcontext(context="Model", subcontext="Reference", target_view="GRAPH_VIEW")
+        model = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model")
+        if not model:
+            model = blenderbim.core.context.add_context(
+                tool.Ifc, context_type="Model", context_identifier="", target_view="", parent=0
+            )
+        graph = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Reference", "GRAPH_VIEW")
+        if not graph:
+            model = blenderbim.core.context.add_context(
+                tool.Ifc, context_type="Model", context_identifier="Reference", target_view="GRAPH_VIEW", parent=model
+            )
 
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_structural_analysis_models()
