@@ -2,6 +2,19 @@
 Feature: Root
     Covers IFC class operations on Blender objects
 
+Scenario: Reassign class
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "object.duplicate_move"
+    When the object "IfcWall/Cube.001" is selected
+    And I press "bim.enable_reassign_class"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcSlab"
+    And I press "bim.reassign_class"
+    Then the object "IfcSlab/Cube" is an "IfcSlab"
+
 Scenario: Unlink object
     Given an empty IFC project
     And I add a cube
