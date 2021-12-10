@@ -513,7 +513,7 @@ class RemoveTask(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
         self.file = IfcStore.get_file()
-        active_task_ifc = self.file.by_id(props.active_task_id)
+        edited_task_ifc = self.file.by_id(props.active_task_id) if props.active_task_id else None
 
         ifcopenshell.api.run(
             "sequence.remove_task",
@@ -523,13 +523,14 @@ class RemoveTask(bpy.types.Operator):
         Data.load(self.file)
         bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
 
-        if not any(
-            task
-            for task in context.scene.BIMTaskTreeProperties.tasks
-            if task.ifc_definition_id == props.active_task_id
-            and self.file.by_id(props.active_task_id) == active_task_ifc
-        ):  # Task was deleted
-            bpy.ops.bim.disable_editing_task()
+        if edited_task_ifc:
+            if not any(
+                task
+                for task in context.scene.BIMTaskTreeProperties.tasks
+                if task.ifc_definition_id == props.active_task_id
+                and self.file.by_id(props.active_task_id) == edited_task_ifc
+            ):  # Task was deleted
+                bpy.ops.bim.disable_editing_task()
 
         return {"FINISHED"}
 
