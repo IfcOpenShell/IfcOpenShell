@@ -60,6 +60,7 @@ if (${BUILD_CONVERT})
 OPTION(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
 endif()
 OPTION(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
+OPTION(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
 
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
 # OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
@@ -789,6 +790,7 @@ INSTALL(TARGETS IfcGeomServer
 
 endif()
 
+if (ADD_COMMIT_SHA)
 find_package (Git)
 if (GIT_FOUND)
 	message("git found: ${GIT_EXECUTABLE} with version ${GIT_VERSION_STRING}")
@@ -815,6 +817,7 @@ if (GIT_FOUND)
 	message(STATUS "IfcOpenShell commit ${git_sha}")
 	add_definitions(-DIFCOPENSHELL_BRANCH=${git_branch})
 	add_definitions(-DIFCOPENSHELL_COMMIT=${git_sha})
+endif()
 endif()
 
 # Documentation
