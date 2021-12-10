@@ -91,8 +91,8 @@ class CreateProject(bpy.types.Operator):
             tool.Ifc, context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan
         )
 
-        ContextData.load(tool.Ifc.get())
-        context.scene.BIMProperties.contexts = str(body_context.id())
+        blenderbim.bim.handler.refresh_ui_data()
+        context.scene.BIMRootProperties.contexts = str(body_context.id())
 
         bpy.ops.bim.assign_class(obj=site.name, ifc_class="IfcSite")
         bpy.ops.bim.assign_class(obj=building.name, ifc_class="IfcBuilding")

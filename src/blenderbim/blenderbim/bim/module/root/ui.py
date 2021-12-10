@@ -21,6 +21,7 @@ import blenderbim.bim.module.root.prop as root_prop
 from bpy.types import Panel
 from ifcopenshell.api.root.data import Data
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.root.data import IfcClassData
 
 
 class BIM_PT_class(Panel):
@@ -37,6 +38,8 @@ class BIM_PT_class(Panel):
         return IfcStore.get_file()
 
     def draw(self, context):
+        if not IfcClassData.is_loaded:
+            IfcClassData.load()
         props = context.active_object.BIMObjectProperties
         if props.ifc_definition_id:
             if props.ifc_definition_id not in Data.products:
@@ -100,4 +103,4 @@ class BIM_PT_class(Panel):
             row = self.layout.row()
             row.prop(props, "ifc_userdefined_type")
         row = self.layout.row()
-        row.prop(context.scene.BIMProperties, "contexts")
+        row.prop(context.scene.BIMRootProperties, "contexts")
