@@ -523,14 +523,13 @@ class RemoveTask(bpy.types.Operator):
         Data.load(self.file)
         bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
 
-        for i, task in enumerate(context.scene.BIMTaskTreeProperties.tasks):
-            if (
-                task.ifc_definition_id == props.active_task_id
-                and self.file.by_id(props.active_task_id) == active_task_ifc
-            ):  # Task was not deleted
-                break
-            if i == len(context.scene.BIMTaskTreeProperties.tasks) - 1:  # Task was deleted
-                bpy.ops.bim.disable_editing_task()
+        if not any(
+            task
+            for task in context.scene.BIMTaskTreeProperties.tasks
+            if task.ifc_definition_id == props.active_task_id
+            and self.file.by_id(props.active_task_id) == active_task_ifc
+        ):  # Task was deleted
+            bpy.ops.bim.disable_editing_task()
 
         return {"FINISHED"}
 
