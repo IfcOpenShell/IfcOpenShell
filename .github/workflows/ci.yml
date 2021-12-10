@@ -41,7 +41,7 @@ jobs:
           python3-all-dev python3-pip \
           swig libpcre3-dev libxml2-dev \
           libtbb-dev nlohmann-json3-dev \
-          libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev \
+          libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
           libhdf5-dev libcgal-dev
           
       - name: ccache
