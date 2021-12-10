@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
+from blenderbim.bim.module.root.data import IfcClassData
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -109,7 +110,14 @@ def getIfcClasses(self, context):
     return classes_enum
 
 
+def get_contexts(self, context):
+    if not IfcClassData.is_loaded:
+        IfcClassData.load()
+    return IfcClassData.data["contexts"]
+
+
 class BIMRootProperties(PropertyGroup):
+    contexts: EnumProperty(items=get_contexts, name="Contexts")
     ifc_product: EnumProperty(items=getIfcProducts, name="Products", update=refreshClasses)
     ifc_class: EnumProperty(items=getIfcClasses, name="Class", update=refreshPredefinedTypes)
     ifc_predefined_type: EnumProperty(items=getIfcPredefinedTypes, name="Predefined Type", default=None)

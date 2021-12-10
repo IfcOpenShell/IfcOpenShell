@@ -41,7 +41,7 @@ Scenario: Add type instance - add a mesh where existing instances have changed c
     And the object "IfcWall/Instance" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcWall/Instance" is selected
     And the variable "context" is "{ifc}.by_type('IfcGeometricRepresentationSubContext')[-1].id()"
-    And I set "scene.BIMProperties.contexts" to "{context}"
+    And I set "scene.BIMRootProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     And the object "IfcWall/Instance" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
     When I press "bim.add_type_instance"

@@ -30,12 +30,13 @@ import blenderbim.core.style
 import blenderbim.core.root
 import blenderbim.tool as tool
 import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim import import_ifc
+from mathutils import Vector
 from ifcopenshell.api.geometry.data import Data
 from ifcopenshell.api.context.data import Data as ContextData
 from ifcopenshell.api.void.data import Data as VoidData
-from mathutils import Vector
+from blenderbim.bim import import_ifc
+from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.root.prop import get_contexts
 
 
 class Operator:
@@ -67,7 +68,9 @@ class AddRepresentation(bpy.types.Operator, Operator):
     profile_set_usage: bpy.props.IntProperty()
 
     def _execute(self, context):
-        ifc_context = self.context_id or int(context.scene.BIMProperties.contexts or "0") or None
+        ifc_context = self.context_id
+        if not ifc_context and get_contexts(self, context):
+            ifc_context = int(context.scene.BIMRootProperties.contexts or "0") or None
         if ifc_context:
             ifc_context = tool.Ifc.get().by_id(ifc_context)
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object

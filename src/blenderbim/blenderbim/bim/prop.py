@@ -114,27 +114,6 @@ def getMaterialPsetNames(self, context):
     return materialpsetnames_enum
 
 
-def getContexts(self, context):
-    from ifcopenshell.api.context.data import Data
-
-    if not Data.is_loaded:
-        Data.load(IfcStore.get_file())
-    results = []
-    for ifc_id, context in Data.contexts.items():
-        results.append((str(ifc_id), context["ContextType"], ""))
-        for ifc_id2, subcontext in context["HasSubContexts"].items():
-            results.append(
-                (
-                    str(ifc_id2),
-                    "{}/{}/{}".format(
-                        subcontext["ContextType"], subcontext["ContextIdentifier"], subcontext["TargetView"]
-                    ),
-                    "",
-                )
-            )
-    return results
-
-
 class StrProperty(PropertyGroup):
     pass
 
@@ -235,7 +214,6 @@ class BIMProperties(PropertyGroup):
     ifc_file: StringProperty(name="IFC File", update=update_ifc_file)
     export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")
     last_transaction: StringProperty(name="Last Transaction")
-    contexts: EnumProperty(items=getContexts, name="Contexts")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
     section_plane_colour: FloatVectorProperty(
         name="Temporary Section Cutaway Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0
