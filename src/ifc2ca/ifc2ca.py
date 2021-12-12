@@ -1,4 +1,3 @@
-
 # Ifc2CA - IFC Code_Aster utility
 # Copyright (C) 2020, 2021 Ioannis P. Christovasilis <ipc@aethereng.com>
 #
@@ -22,6 +21,7 @@ from __future__ import print_function
 import json
 import ifcopenshell
 import numpy as np
+from pathlib import Path
 
 
 class IFC2CA:
@@ -104,19 +104,12 @@ class IFC2CA:
             material_profile = self.get_material_profile(item)
             if not representation:
                 self.warnings.append(
-                    "No representation defined for %s. Member excluded"
-                    % (item.is_a() + "|" + str(item.id()))
+                    f"No representation defined for {item.is_a()}|{item.id()}. Member excluded"
                 )
                 return
             if not material_profile:
-                self.warnings.append(
-                    "No material defined for in %s"
-                    % (item.is_a() + "|" + str(item.id()))
-                )
-                self.warnings.append(
-                    "No profile defined for in %s"
-                    % (item.is_a() + "|" + str(item.id()))
-                )
+                self.warnings.append(f"No material defined for {item.is_a()}|{item.id()}")
+                self.warnings.append(f"No profile defined for {item.is_a()}|{item.id()}")
                 materialId = None
                 profileId = None
             else:
@@ -143,7 +136,7 @@ class IFC2CA:
                             f"{np.linalg.norm(np.array(c['eccentricity']['pointOnElement']))} > {length}"
                         )
                         self.warnings.append(
-                            f"Eccentricity in {item.is_a()}|{str(item.id())} corrected"
+                            f"Eccentricity in {item.is_a()}|{item.id()} corrected"
                         )
                         c["eccentricity"]["pointOnElement"][0] = length
             # End <--
@@ -164,7 +157,7 @@ class IFC2CA:
                         )
 
             return {
-                "ifcName": item.is_a() + "|" + str(item.id()),
+                "ifcName": f"{item.is_a()}|{item.id()}",
                 "name": item.Name,
                 "id": item.GlobalId,
                 "geometryType": "line",
@@ -181,15 +174,11 @@ class IFC2CA:
             material = self.get_material_profile(item)
             if not representation:
                 self.warnings.append(
-                    "No representation defined for %s. Member excluded"
-                    % (item.is_a() + "|" + str(item.id()))
+                    f"No representation defined for {item.is_a()}|{item.id()}. Member excluded"
                 )
                 return
             if not material:
-                self.warnings.append(
-                    "No material defined for in %s"
-                    % (item.is_a() + "|" + str(item.id()))
-                )
+                self.warnings.append(f"No material defined for {item.is_a()}|{item.id()}")
                 materialId = None
             else:
                 materialId = material.is_a() + "|" + str(material.id())
@@ -211,7 +200,7 @@ class IFC2CA:
                     )
 
             return {
-                "ifcName": item.is_a() + "|" + str(item.id()),
+                "ifcName": f"{item.is_a()}|{item.id()}",
                 "name": item.Name,
                 "id": item.GlobalId,
                 "geometryType": "surface",
@@ -227,8 +216,7 @@ class IFC2CA:
             representation = self.get_representation(item, "Vertex")
             if not representation:
                 self.warnings.append(
-                    "No representation defined for %s. Connection excluded"
-                    % (item.is_a() + "|" + str(item.id()))
+                    f"No representation defined for {item.is_a()}|{item.id()}. Member excluded"
                 )
                 return
 
@@ -243,7 +231,7 @@ class IFC2CA:
                 )
 
             return {
-                "ifcName": item.is_a() + "|" + str(item.id()),
+                "ifcName": f"{item.is_a()}|{item.id()}",
                 "name": item.Name,
                 "id": item.GlobalId,
                 "geometryType": "point",
@@ -251,8 +239,7 @@ class IFC2CA:
                 "orientation": orientation,
                 "appliedCondition": self.get_connection_input(item, "point"),
                 "relatedElements": [
-                    con.is_a() + "|" + str(con.id())
-                    for con in item.ConnectsStructuralMembers
+                    f"{con.is_a()}|{con.id()}" for con in item.ConnectsStructuralMembers
                 ],
             }
 
@@ -260,8 +247,7 @@ class IFC2CA:
             representation = self.get_representation(item, "Edge")
             if not representation:
                 self.warnings.append(
-                    "No representation defined for %s. Connection excluded"
-                    % (item.is_a() + "|" + str(item.id()))
+                    f"No representation defined for {item.is_a()}|{item.id()}. Member excluded"
                 )
                 return
 
@@ -276,7 +262,7 @@ class IFC2CA:
                 )
 
             return {
-                "ifcName": item.is_a() + "|" + str(item.id()),
+                "ifcName": f"{item.is_a()}|{item.id()}",
                 "name": item.Name,
                 "id": item.GlobalId,
                 "geometryType": "line",
@@ -284,8 +270,7 @@ class IFC2CA:
                 "orientation": orientation,
                 "appliedCondition": self.get_connection_input(item, "line"),
                 "relatedElements": [
-                    con.is_a() + "|" + str(con.id())
-                    for con in item.ConnectsStructuralMembers
+                    f"{con.is_a()}|{con.id()}" for con in item.ConnectsStructuralMembers
                 ],
             }
 
@@ -336,9 +321,7 @@ class IFC2CA:
         if not element.Representation:
             return None
         for representation in element.Representation.Representations:
-            rep = self.get_specific_representation(
-                representation, "Reference", rep_type
-            )
+            rep = self.get_specific_representation(representation, "Reference", rep_type)
             if rep:
                 return rep
         else:
@@ -419,9 +402,13 @@ class IFC2CA:
     def get_2D_orientation(self, representation):
         item = representation.Items[0]
         if item.is_a("IfcFaceSurface"):
-            item.SameSense
             axes = item.FaceSurface.Position
             orientation = self.get_0D_orientation(axes)
+            if not orientation:
+                self.warnings.append(
+                    f"No local placement for Plane related to {item.is_a()}|{item.id()}. A unit orientation is considered"
+                )
+                return np.eye(3).tolist()
             if not item.SameSense:
                 orientation = [[-v for v in vec] for vec in orientation]
             return orientation
@@ -516,7 +503,7 @@ class IFC2CA:
                 mechProps = self.get_i_section_properties(profile, "iSymmetrical")
 
             return {
-                "ifcName": profile.is_a() + "|" + str(profile.id()),
+                "ifcName": f"{profile.is_a()}|{profile.id()}",
                 "profileName": profile.ProfileName,
                 "profileType": profile.ProfileType,
                 "profileShape": "iSymmetrical",
@@ -533,14 +520,10 @@ class IFC2CA:
     def get_connection_data(self, itemList):
         return [
             {
-                "ifcName": rel.is_a() + "|" + str(rel.id()),
+                "ifcName": f"{rel.is_a()}|{rel.id()}",
                 "id": rel.GlobalId,
-                "relatingElement": rel.RelatingStructuralMember.is_a()
-                + "|"
-                + str(rel.RelatingStructuralMember.id()),
-                "relatedConnection": rel.RelatedStructuralConnection.is_a()
-                + "|"
-                + str(rel.RelatedStructuralConnection.id()),
+                "relatingElement": f"{rel.RelatingStructuralMember.is_a()}|{rel.RelatingStructuralMember.id()}",
+                "relatedConnection": f"{rel.RelatedStructuralConnection.is_a()}|{rel.RelatedStructuralConnection.id()}",
                 "orientation": self.get_0D_orientation(rel.ConditionCoordinateSystem),
                 "appliedCondition": self.get_connection_input(
                     rel,
@@ -641,8 +624,10 @@ if __name__ == "__main__":
     files = fileNames
 
     for fileName in files:
-        BASE_PATH = "/home/jesusbill/Dev-Projects/github.com/IfcOpenShell/analysis-models/ifcFiles/"
-        ifc2ca = IFC2CA(BASE_PATH + fileName + ".ifc")
+        BASE_PATH = Path(
+            "/home/jesusbill/Dev-Projects/github.com/IfcOpenShell/analysis-models/ifcFiles/"
+        )
+        ifc2ca = IFC2CA(BASE_PATH / f"{fileName}.ifc")
         ifc2ca.convert()
-        with open(BASE_PATH + fileName + ".json", "w") as f:
+        with open(BASE_PATH / f"{fileName}.json", "w") as f:
             f.write(json.dumps(ifc2ca.result, indent=4))

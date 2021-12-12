@@ -1,4 +1,3 @@
-
 # Ifc2CA - IFC Code_Aster utility
 # Copyright (C) 2020, 2021 Ioannis P. Christovasilis <ipc@aethereng.com>
 #
@@ -27,6 +26,7 @@ import salome_notebook
 import salome_version
 import numpy as np
 import itertools
+from pathlib import Path
 
 flatten = itertools.chain.from_iterable
 
@@ -44,7 +44,7 @@ class MODEL:
     def getGroupName(self, name):
         info = name.split("|")
         sortName = "".join(c for c in info[0] if c.isupper())
-        return str(sortName + "_" + info[1])
+        return f"{sortName[2:]}_{info[1]}"
 
     def makePoint(self, pl):
         """Function to define a Point from
@@ -212,15 +212,14 @@ class MODEL:
                             "Eccentricity defined for a %s geometryType"
                             % conn["geometryType"]
                         )
-
             el["partObj"] = self.makePartition(
                 [el["elemObj"]] + el["connObjs"], el["geometryType"]
             )
-
-            el["elemObj"] = geompy.GetInPlace(el["partObj"], el["elemObj"])
+            el["elemObj"] = geompy.GetInPlace(el["partObj"], el["elemObj"], True)
             for j, rel in enumerate(el["connections"]):
-                el["connObjs"][j] = geompy.GetInPlace(el["partObj"], el["connObjs"][j])
-
+                el["connObjs"][j] = geompy.GetInPlace(
+                    el["partObj"], el["connObjs"][j], True
+                )
         for conn in connections:
             conn["connObj"] = self.makeObject(conn["geometry"], conn["geometryType"])
 
@@ -283,7 +282,7 @@ class MODEL:
                 [e["elemObj"] for e in elements if e["geometryType"] == "line"]
             )
             # Define group object and add to study
-            curveCompound = geompy.GetInPlace(bldComp, compoundTemp)
+            curveCompound = geompy.GetInPlace(bldComp, compoundTemp, True)
             geompy.addToStudyInFather(bldComp, curveCompound, "CurveMembers")
 
         if len([e for e in elements if e["geometryType"] == "surface"]) > 0:
@@ -292,7 +291,7 @@ class MODEL:
                 [e["elemObj"] for e in elements if e["geometryType"] == "surface"]
             )
             # Define group object and add to study
-            surfaceCompound = geompy.GetInPlace(bldComp, compoundTemp)
+            surfaceCompound = geompy.GetInPlace(bldComp, compoundTemp, True)
             geompy.addToStudyInFather(bldComp, surfaceCompound, "SurfaceMembers")
 
         # Loop 3
@@ -393,9 +392,7 @@ class MODEL:
             smesh.SetName(tempgroup, "CurveMembers")
 
         if len([e for e in elements if e["geometryType"] == "surface"]) > 0:
-            tempgroup = bldMesh.GroupOnGeom(
-                surfaceCompound, "SurfaceMembers", SMESH.FACE
-            )
+            tempgroup = bldMesh.GroupOnGeom(surfaceCompound, "SurfaceMembers", SMESH.FACE)
             smesh.SetName(tempgroup, "SurfaceMembers")
 
         # Define groups in Mesh
@@ -562,7 +559,9 @@ if __name__ == "__main__":
     meshSize = 0.1
 
     for fileName in files:
-        BASE_PATH = "/home/jesusbill/Dev-Projects/github.com/IfcOpenShell/analysis-models/models/"
-        DATAFILENAME = BASE_PATH + fileName + "/" + fileName + ".json"
-        MEDFILENAME = BASE_PATH + fileName + "/" + fileName + ".med"
-        model = MODEL(DATAFILENAME, MEDFILENAME, meshSize)
+        BASE_PATH = Path(
+            "/home/jesusbill/Dev-Projects/github.com/IfcOpenShell/analysis-models/models/"
+        )
+        DATAFILENAME = BASE_PATH / fileName / f"{fileName}.json"
+        MEDFILENAME = BASE_PATH / fileName / f"{fileName}.med"
+        model = MODEL(DATAFILENAME, str(MEDFILENAME), meshSize)

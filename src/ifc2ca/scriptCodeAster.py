@@ -1,4 +1,3 @@
-
 # Ifc2CA - IFC Code_Aster utility
 # Copyright (C) 2020, 2021 Ioannis P. Christovasilis <ipc@aethereng.com>
 #
@@ -20,6 +19,7 @@
 import json
 import numpy as np
 import itertools
+from pathlib import Path
 
 flatten = itertools.chain.from_iterable
 
@@ -33,7 +33,7 @@ class COMMANDFILE:
     def getGroupName(self, name):
         info = name.split("|")
         sortName = "".join(c for c in info[0] if c.isupper())
-        return str(sortName + "_" + info[1])
+        return f"{sortName[2:]}_{info[1]}"
 
     def create(self):
 
@@ -1083,7 +1083,9 @@ if __name__ == "__main__":
     files = fileNames
 
     for fileName in files:
-        BASE_PATH = "/home/jesusbill/Dev-Projects/github.com/IfcOpenShell/analysis-models/models/"
-        DATAFILENAME = BASE_PATH + fileName + "/" + fileName + ".json"
-        ASTERFILENAME = BASE_PATH + fileName + "/" + fileName + ".comm"
+        BASE_PATH = Path(
+            "/home/jesusbill/Dev-Projects/github.com/IfcOpenShell/analysis-models/models/"
+        )
+        DATAFILENAME = BASE_PATH / fileName / f"{fileName}.json"
+        ASTERFILENAME = BASE_PATH / fileName / f"{fileName}.comm"
         COMMANDFILE(DATAFILENAME, ASTERFILENAME)
