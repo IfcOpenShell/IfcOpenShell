@@ -806,18 +806,24 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 				auto value_cpp = v->data().getArgument(std::distance(attrs.begin(), it));
 				auto value_py = convert_cpp_attribute_to_python(attr_type, *value_cpp);
 				PyDict_SetItem(d, name_py, value_py);
+				Py_DECREF(name_py);
+				Py_DECREF(value_py);
 			}
 
 			const std::string& id_cpp = "id";
 			auto id_py = pythonize(id_cpp);
 			auto id_v_py = pythonize(v->data().id());
 			PyDict_SetItem(d, id_py, id_v_py);
+			Py_DECREF(id_py);
+			Py_DECREF(id_v_py);
 		} else {
 			const std::string& name_cpp = "wrappedValue";
 			auto name_py = pythonize(name_cpp);
 			auto value_cpp = v->data().getArgument(0);
 			auto value_py = convert_cpp_attribute_to_python(value_cpp->type(), *value_cpp);
 			PyDict_SetItem(d, name_py, value_py);
+			Py_DECREF(name_py);
+			Py_DECREF(value_py);
 		}
 
 		// @todo type and id can be static?
@@ -826,6 +832,8 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		const std::string& type_v_cpp = v->declaration().name();
 		auto type_v_py = pythonize(type_v_cpp);
 		PyDict_SetItem(d, type_py, type_v_py);
+		Py_DECREF(type_py);
+		Py_DECREF(type_v_py);
 
 		return d;
 	}
