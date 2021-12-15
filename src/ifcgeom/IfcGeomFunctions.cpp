@@ -4387,22 +4387,48 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 			if (success) {
 
 				bool all_faces_included_in_result = true;
+				bool has_open_shells = false;
+				
 				if (op == BOPAlgo_CUT) {
-					TopTools_IndexedMapOfShape faces;
-					TopExp::MapShapes(r, TopAbs_FACE, faces);
-					for (TopExp_Explorer exp(a, TopAbs_FACE); exp.More(); exp.Next()) {
-						auto& f = TopoDS::Face(exp.Current());
-						if (!faces.Contains(f)) {
-							all_faces_included_in_result = false;
+					for (TopExp_Explorer exp(a, TopAbs_SHELL); exp.More(); exp.Next()) {
+						if (!exp.Current().Closed()) {
+							// This 'face addition check' is only done when the first operand
+							// contains open shells (which was initially the aim of this check
+							// see #1472).
+							// Later in #1914 we found that the logic to apply openings in groups
+							// of similar edge lengths can create a situation of inner voids, which
+							// trigger a false positive in this check. This could have also been
+							// solved below by checking whether the opening(s) are included as a
+							// unmodified (interior) shell within a solid of multiple shells.
+							// Checking for open shells in first operand was quicker and more
+							// straightforward. The question still is whether in cases like #1472
+							// we need to first try the boolean union as solid/solid interference
+							// to trigger this case or whether we can immediately proceed to a face/
+							// solid operation.
+							has_open_shells = true;
 							break;
 						}
+					}
+
+					if (has_open_shells) {
+						TopTools_IndexedMapOfShape faces;
+						TopExp::MapShapes(r, TopAbs_FACE, faces);
+						for (TopExp_Explorer exp(a, TopAbs_FACE); exp.More(); exp.Next()) {
+							auto& f = TopoDS::Face(exp.Current());
+							if (!faces.Contains(f)) {
+								all_faces_included_in_result = false;
+								break;
+							}
+						}
+					} else {
+						all_faces_included_in_result = false;
 					}
 				}
 
 				int result_n_faces = count(r, TopAbs_FACE);
 				int first_op_n_faces = count(a, TopAbs_FACE);
 
-				if (op == BOPAlgo_CUT && all_faces_included_in_result && result_n_faces > first_op_n_faces) {
+				if (op == BOPAlgo_CUT && has_open_shells && all_faces_included_in_result && result_n_faces > first_op_n_faces) {
 					success = false;
 					Logger::Notice("Boolean result discarded because subtractions results in only the addition of faces");
 				} else {
