@@ -155,7 +155,7 @@ class Attribute(PropertyGroup):
             return None
         if self.data_type == "enum":
             type_map = blenderbim.bim.schema.ifc.type_map
-            type_fn = {'integer':int, 'string':str, 'float':float, 'bool': bool}[type_map[self.enum_data_type] ]
+            type_fn = {'integer':int, 'string':str, 'float':float, 'bool': bool}[type_map[self.enum_data_type]]
             return type_fn(self.enum_value)
         else:    
             return getattr(self, str(self.get_value_name()), None)
