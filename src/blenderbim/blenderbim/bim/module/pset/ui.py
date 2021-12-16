@@ -19,6 +19,7 @@
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attribute
+from blenderbim.bim.prop import getAttributeEnumValues
 from blenderbim.bim.module.pset.data import (
     ObjectPsetsData,
     ObjectQtosData,
@@ -95,6 +96,7 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
 
 def draw_psetqto_editable_ui(box, props, prop):
     row = box.row(align=True)
+    getAttributeEnumValues(prop, "")
     draw_attribute(prop, row, copy_operator="bim.copy_property_to_selection")
     if (
         "length" in prop.name.lower()

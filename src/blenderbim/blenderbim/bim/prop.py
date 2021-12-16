@@ -84,8 +84,8 @@ def getAttributeEnumValues(self, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
     data = json.loads(self.enum_items)
     if isinstance(data, dict):
-        return [(str(k), v, "") for k, v in data.items()]
-    return [(e, e, "") for e in data]
+        getAttributeEnumValues.enum_values = [(str(k), v, "") for k, v in data.items()]
+    getAttributeEnumValues.enum_values = [(e, e, "") for e in data]
 
 
 def update_schema_dir(self, context):
@@ -146,7 +146,10 @@ class Attribute(PropertyGroup):
     is_null: BoolProperty(name="Is Null")
     is_optional: BoolProperty(name="Is Optional")
     enum_items: StringProperty(name="Value")
-    enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeValue)
+    enum_value: EnumProperty(
+        items=lambda self, context: getAttributeEnumValues.enum_values, 
+        name="Value", 
+        update=updateAttributeValue)
 
     def get_value(self):
         if self.is_null:
