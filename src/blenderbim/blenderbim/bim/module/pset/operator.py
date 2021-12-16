@@ -149,6 +149,7 @@ class EnablePsetEditing(bpy.types.Operator):
             new.is_null = data.get(prop_template.Name, None) is None
             new.is_optional = True
             new.data_type = data_type
+            new.enum_data_type = prop_template.PrimaryMeasureType
 
             if data_type == "string":
                 new.string_value = "" if new.is_null else data[prop_template.Name]
