@@ -46,7 +46,7 @@ class IFC2CA:
                 id = int(mat.split("|")[1])
                 material = self.get_material_properties(self.file.by_id(id))
                 material["relatedElements"] = [
-                    e["ifcName"]
+                    e["referenceName"]
                     for e in elements
                     if "material" in e and e["material"] == mat
                 ]
@@ -60,14 +60,14 @@ class IFC2CA:
                 id = int(prof.split("|")[1])
                 profile = self.get_profile_properties(self.file.by_id(id))
                 profile["relatedElements"] = [
-                    e["ifcName"]
+                    e["referenceName"]
                     for e in elements
                     if "profile" in e and e["profile"] == prof
                 ]
                 profiledb.append(profile)
 
             self.result = {
-                "ifcName": model.is_a() + "|" + str(model.id()),
+                "referenceName": model.is_a() + "|" + str(model.id()),
                 "name": model.Name,
                 "id": model.GlobalId,
                 "elements": elements,
@@ -157,7 +157,7 @@ class IFC2CA:
                         )
 
             return {
-                "ifcName": f"{item.is_a()}|{item.id()}",
+                "referenceName": f"{item.is_a()}|{item.id()}",
                 "name": item.Name,
                 "id": item.GlobalId,
                 "geometryType": "line",
@@ -200,7 +200,7 @@ class IFC2CA:
                     )
 
             return {
-                "ifcName": f"{item.is_a()}|{item.id()}",
+                "referenceName": f"{item.is_a()}|{item.id()}",
                 "name": item.Name,
                 "id": item.GlobalId,
                 "geometryType": "surface",
@@ -231,7 +231,7 @@ class IFC2CA:
                 )
 
             return {
-                "ifcName": f"{item.is_a()}|{item.id()}",
+                "referenceName": f"{item.is_a()}|{item.id()}",
                 "name": item.Name,
                 "id": item.GlobalId,
                 "geometryType": "point",
@@ -262,7 +262,7 @@ class IFC2CA:
                 )
 
             return {
-                "ifcName": f"{item.is_a()}|{item.id()}",
+                "referenceName": f"{item.is_a()}|{item.id()}",
                 "name": item.Name,
                 "id": item.GlobalId,
                 "geometryType": "line",
@@ -460,7 +460,7 @@ class IFC2CA:
             commonProps = self.get_pset_properties(psets, None)
 
         return {
-            "ifcName": material.is_a() + "|" + str(material.id()),
+            "referenceName": material.is_a() + "|" + str(material.id()),
             "name": material.Name,
             "category": material.Category,
             "mechProps": mechProps,
@@ -486,7 +486,7 @@ class IFC2CA:
     def get_profile_properties(self, profile):
         if profile.is_a("IfcRectangleProfileDef"):
             return {
-                "ifcName": profile.is_a() + "|" + str(profile.id()),
+                "referenceName": profile.is_a() + "|" + str(profile.id()),
                 "profileName": profile.ProfileName,
                 "profileType": profile.ProfileType,
                 "profileShape": "rectangular",
@@ -503,7 +503,7 @@ class IFC2CA:
                 mechProps = self.get_i_section_properties(profile, "iSymmetrical")
 
             return {
-                "ifcName": f"{profile.is_a()}|{profile.id()}",
+                "referenceName": f"{profile.is_a()}|{profile.id()}",
                 "profileName": profile.ProfileName,
                 "profileType": profile.ProfileType,
                 "profileShape": "iSymmetrical",
@@ -520,7 +520,7 @@ class IFC2CA:
     def get_connection_data(self, itemList):
         return [
             {
-                "ifcName": f"{rel.is_a()}|{rel.id()}",
+                "referenceName": f"{rel.is_a()}|{rel.id()}",
                 "id": rel.GlobalId,
                 "relatingElement": f"{rel.RelatingStructuralMember.is_a()}|{rel.RelatingStructuralMember.id()}",
                 "relatedConnection": f"{rel.RelatedStructuralConnection.is_a()}|{rel.RelatedStructuralConnection.id()}",

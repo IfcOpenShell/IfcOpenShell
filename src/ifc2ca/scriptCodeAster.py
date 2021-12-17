@@ -32,9 +32,12 @@ class COMMANDFILE:
         self.create()
 
     def getGroupName(self, name):
-        info = name.split("|")
-        sortName = "".join(c for c in info[0] if c.isupper())
-        return f"{sortName[2:]}_{info[1]}"
+        if "|" in name:
+            info = name.split("|")
+            sortName = "".join(c for c in info[0] if c.isupper())
+            return f"{sortName[2:]}_{info[1]}"
+        else:
+            return name
 
     def create(self):
 
@@ -54,7 +57,7 @@ class COMMANDFILE:
         for el in elements:
             for rel in el["connections"]:
                 conn = [
-                    c for c in connections if c["ifcName"] == rel["relatedConnection"]
+                    c for c in connections if c["referenceName"] == rel["relatedConnection"]
                 ][0]
                 rel["conn_string"] = None
                 if conn["geometryType"] == "point":
@@ -98,21 +101,21 @@ class COMMANDFILE:
 
         edgeGroupNames = tuple(
             [
-                self.getGroupName(el["ifcName"])
+                self.getGroupName(el["referenceName"])
                 for el in elements
                 if el["geometryType"] == "line"
             ]
         )
         faceGroupNames = tuple(
             [
-                self.getGroupName(el["ifcName"])
+                self.getGroupName(el["referenceName"])
                 for el in elements
                 if el["geometryType"] == "surface"
             ]
         )
         point0DGroupNames = tuple(
             [
-                self.getGroupName(el["ifcName"]) + "_0D"
+                self.getGroupName(el["referenceName"]) + "_0D"
                 for el in connections
                 if el["geometryType"] == "point"
             ]
@@ -132,7 +135,7 @@ class COMMANDFILE:
             )
         point1DGroupNames = tuple(
             [
-                self.getGroupName(el["ifcName"]) + "_0D"
+                self.getGroupName(el["referenceName"]) + "_0D"
                 for el in connections
                 if el["geometryType"] == "line"
             ]
@@ -153,14 +156,14 @@ class COMMANDFILE:
             #         'dz': True
             #     }
             if len(conn["unifiedGroupNames"]) >= 1:
-                conn["unifiedGroupNames"].insert(0, self.getGroupName(conn["ifcName"]))
+                conn["unifiedGroupNames"].insert(0, self.getGroupName(conn["referenceName"]))
                 conn["unifiedGroupNames"] = tuple(conn["unifiedGroupNames"])
                 unifiedConnection = True
             rigidLinkGroupNames.extend(
                 [
                     self.getGroupName(rel["relatingElement"])
                     + "_1DR_"
-                    + self.getGroupName(conn["ifcName"])
+                    + self.getGroupName(conn["referenceName"])
                     for rel in conn["relatedElements"]
                     if rel["eccentricity"]
                 ]
@@ -442,7 +445,7 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(el["ifcName"]),
+                "groupName": self.getGroupName(el["referenceName"]),
                 "thickness": el["thickness"],
                 "localAxisX": tuple(el["orientation"][0]),
             }
@@ -469,7 +472,7 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(conn["ifcName"]) + "_0D",
+                "groupName": self.getGroupName(conn["referenceName"]) + "_0D",
                 "stiffnesses": conn["stiffnesses"],
             }
 
@@ -504,7 +507,7 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(conn["ifcName"]) + "_0D",
+                "groupName": self.getGroupName(conn["referenceName"]) + "_0D",
                 "stiffnesses": conn["stiffnesses"],
             }
 
@@ -530,7 +533,7 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(el["ifcName"]),
+                "groupName": self.getGroupName(el["referenceName"]),
                 "localAxisY": tuple(el["orientation"][1]),
             }
 
@@ -546,7 +549,7 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(conn["ifcName"]) + "_0D",
+                "groupName": self.getGroupName(conn["referenceName"]) + "_0D",
                 "localAxesXY": tuple(conn["orientation"][0] + conn["orientation"][1]),
             }
 
@@ -581,7 +584,7 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(conn["ifcName"]) + "_0D",
+                "groupName": self.getGroupName(conn["referenceName"]) + "_0D",
                 "localAxesXY": tuple(conn["orientation"][0] + conn["orientation"][1]),
             }
 
@@ -999,7 +1002,7 @@ FIN()
         rel["stiffnesses"] = tuple(stiffnesses)
 
     def calculateRestraints(self, conn):
-        group = self.getGroupName(conn["ifcName"])
+        group = self.getGroupName(conn["referenceName"])
         o = np.array(conn["orientation"]).transpose().tolist()
         liaisons = {"groupNames": (group, group, group), "coeffs": [], "dofs": []}
         stiffnesses = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
