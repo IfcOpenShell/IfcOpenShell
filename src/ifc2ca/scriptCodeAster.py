@@ -23,6 +23,7 @@ from pathlib import Path
 
 flatten = itertools.chain.from_iterable
 
+includeZeroLength1DSprings = True
 
 class COMMANDFILE:
     def __init__(self, dataFilename, asterFilename):
@@ -116,18 +117,19 @@ class COMMANDFILE:
                 if el["geometryType"] == "point"
             ]
         )
-        spring1DGroupNames = tuple(
-            flatten(
-                [
+        if includeZeroLength1DSprings:
+            spring1DGroupNames = tuple(
+                flatten(
                     [
-                        rel["springGroupName"]
-                        for rel in el["connections"]
-                        if rel["springGroupName"]
+                        [
+                            rel["springGroupName"]
+                            for rel in el["connections"]
+                            if rel["springGroupName"]
+                        ]
+                        for el in elements
                     ]
-                    for el in elements
-                ]
+                )
             )
-        )
         point1DGroupNames = tuple(
             [
                 self.getGroupName(el["ifcName"]) + "_0D"
@@ -238,7 +240,14 @@ model = AFFE_MODELE(
         ),"""
 
             context = {
-                "groupNames": tuple(flatten([point0DGroupNames, spring1DGroupNames]))
+                "groupNames": tuple(
+                    flatten(
+                        [
+                            point0DGroupNames,
+                            spring1DGroupNames if includeZeroLength1DSprings else [],
+                        ]
+                    )
+                )
             }
 
             f.write(template.format(**context))
@@ -466,9 +475,10 @@ element = AFFE_CARA_ELEM(
 
             f.write(template.format(**context))
 
-            for rel in conn["relatedElements"]:
+            if includeZeroLength1DSprings:
+                for rel in conn["relatedElements"]:
 
-                template = """
+                    template = """
         _F(
             GROUP_MA = '{groupName}',
             CARA = 'K_TR_D_L',
@@ -476,12 +486,12 @@ element = AFFE_CARA_ELEM(
             REPERE = 'LOCAL'
         ),"""
 
-                context = {
-                    "groupName": rel["springGroupName"],
-                    "stiffnesses": rel["stiffnesses"],
-                }
+                    context = {
+                        "groupName": rel["springGroupName"],
+                        "stiffnesses": rel["stiffnesses"],
+                    }
 
-                f.write(template.format(**context))
+                    f.write(template.format(**context))
 
         for conn in [conn for conn in connections if conn["geometryType"] == "line"]:
 
@@ -542,21 +552,24 @@ element = AFFE_CARA_ELEM(
 
             f.write(template.format(**context))
 
-            for rel in conn["relatedElements"]:
+            if includeZeroLength1DSprings:
+                for rel in conn["relatedElements"]:
 
-                template = """
+                    template = """
         _F(
             GROUP_MA = '{groupName}',
             CARA = 'VECT_X_Y',
             VALE = {localAxesXY}
         ),"""
 
-                context = {
-                    "groupName": rel["springGroupName"],
-                    "localAxesXY": tuple(rel["orientation"][0] + rel["orientation"][1]),
-                }
+                    context = {
+                        "groupName": rel["springGroupName"],
+                        "localAxesXY": tuple(
+                            rel["orientation"][0] + rel["orientation"][1]
+                        ),
+                    }
 
-                f.write(template.format(**context))
+                    f.write(template.format(**context))
 
         for conn in [conn for conn in connections if conn["geometryType"] == "line"]:
 
