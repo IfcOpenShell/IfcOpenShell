@@ -30,10 +30,6 @@ from pathlib import Path
 
 flatten = itertools.chain.from_iterable
 
-ScaleFactor = 1.0
-decimals = 2
-
-
 class MODEL:
     def __init__(self, dataFilename, medFilename, meshSize, zGround):
         self.dataFilename = dataFilename
@@ -46,9 +42,12 @@ class MODEL:
         self.create()
 
     def getGroupName(self, name):
-        info = name.split("|")
-        sortName = "".join(c for c in info[0] if c.isupper())
-        return f"{sortName[2:]}_{info[1]}"
+        if "|" in name:
+            info = name.split("|")
+            sortName = "".join(c for c in info[0] if c.isupper())
+            return f"{sortName[2:]}_{info[1]}"
+        else:
+            return name
 
     def makePoint(self, pl):
         """Function to define a Point from
@@ -84,8 +83,6 @@ class MODEL:
         return self.geompy.MakeFaceWires(LineList, 1)
 
     def makeObject(self, geometry, geometryType):
-        geometry = np.round(np.array(geometry), decimals=decimals) / ScaleFactor
-        geometry = geometry.tolist()
         if geometryType == "point":
             return self.makePoint(geometry)
         if geometryType == "line":
@@ -144,8 +141,8 @@ class MODEL:
             conn["relatedElements"] = []
         # End <--
 
-        meshSize = self.meshSize / ScaleFactor
-        zGround = self.zGround / ScaleFactor
+        meshSize = self.meshSize
+        zGround = self.zGround
 
         dec = 5  # 4 decimals for length in mm
         tol = 10 ** (-dec - 3 + 1)
@@ -199,7 +196,7 @@ class MODEL:
             el["linkObjs"] = [None for _ in el["connections"]]
             for j, rel in enumerate(el["connections"]):
                 conn = [
-                    c for c in connections if c["ifcName"] == rel["relatedConnection"]
+                    c for c in connections if c["referenceName"] == rel["relatedConnection"]
                 ][0]
                 if rel["eccentricity"]:
                     rel["index"] = len(conn["relatedElements"]) + 1
@@ -260,7 +257,7 @@ class MODEL:
             # el['partObj'] = geompy.RestoreGivenSubShapes(bldComp, [el['partObj']], GEOM.FSM_GetInPlace, False, False)[0]
             el["elemObj"] = geompy.GetInPlace(bldComp, el["elemObj"], True)
             geompy.addToStudyInFather(
-                bldComp, el["elemObj"], self.getGroupName(el["ifcName"])
+                bldComp, el["elemObj"], self.getGroupName(el["referenceName"])
             )
 
             for j, rel in enumerate(el["connections"]):
@@ -271,7 +268,7 @@ class MODEL:
                     geompy.addToStudyInFather(
                         bldComp,
                         el["linkObjs"][j],
-                        self.getGroupName(el["ifcName"])
+                        self.getGroupName(el["referenceName"])
                         + "_1DR_"
                         + self.getGroupName(rel["relatedConnection"]),
                     )
@@ -353,22 +350,22 @@ class MODEL:
             if el["geometryType"] == "surface":
                 shapeType = SMESH.FACE
             tempgroup = bldMesh.GroupOnGeom(
-                el["elemObj"], self.getGroupName(el["ifcName"]), shapeType
+                el["elemObj"], self.getGroupName(el["referenceName"]), shapeType
             )
-            smesh.SetName(tempgroup, self.getGroupName(el["ifcName"]))
+            smesh.SetName(tempgroup, self.getGroupName(el["referenceName"]))
 
             for j, rel in enumerate(el["connections"]):
                 if rel["eccentricity"]:
                     tempgroup = bldMesh.GroupOnGeom(
                         el["linkObjs"][j],
-                        self.getGroupName(el["ifcName"])
+                        self.getGroupName(el["referenceName"])
                         + "_1DR_"
                         + self.getGroupName(rel["relatedConnection"]),
                         SMESH.EDGE,
                     )
                     smesh.SetName(
                         tempgroup,
-                        self.getGroupName(el["ifcName"])
+                        self.getGroupName(el["referenceName"])
                         + "_1DR_"
                         + self.getGroupName(rel["relatedConnection"]),
                     )
@@ -416,10 +413,10 @@ class MODEL:
 
 
 if __name__ == "__main__":
-    fileNames = ["building_02"]
+    fileNames = ["test"]
     files = fileNames
 
-    meshSize = 500
+    meshSize = 0.5
     zGround = 0
 
     for fileName in files:
