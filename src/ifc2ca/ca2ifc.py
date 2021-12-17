@@ -94,8 +94,8 @@ class CA2IFC:
         )
         ifcMaterialProfileSets = [None for _ in range(len(mpSets))]
         for i, mpSet in enumerate(mpSets):
-            materialIndex = [mat["ifcName"] for mat in self.data["db"]["materials"]].index(mpSet.split("-")[0])
-            profileIndex = [prof["ifcName"] for prof in self.data["db"]["profiles"]].index(mpSet.split("-")[1])
+            materialIndex = [mat["referenceName"] for mat in self.data["db"]["materials"]].index(mpSet.split("-")[0])
+            profileIndex = [prof["referenceName"] for prof in self.data["db"]["profiles"]].index(mpSet.split("-")[1])
             material = ifcMaterials[materialIndex]
             profile = ifcProfiles[profileIndex]
             matProf = self.f.createIfcMaterialProfile(
@@ -218,7 +218,7 @@ class CA2IFC:
         for i, mat in enumerate(self.data["db"]["materials"]):
             groupOfElements = []
             for j, el in enumerate(self.data["elements"]):
-                if el["geometryType"] == "surface" and el["material"] == mat["ifcName"]:
+                if el["geometryType"] == "surface" and el["material"] == mat["referenceName"]:
                     groupOfElements.append(ifcElements[j])
             if groupOfElements:
                 self.f.createIfcRelAssociatesMaterial(
@@ -228,7 +228,7 @@ class CA2IFC:
         # create connections with elements
         for i, el in enumerate(self.data["elements"]):
             for conn in el["connections"]:
-                j = [c["ifcName"] for c in self.data["connections"]].index(conn["relatedConnection"])
+                j = [c["referenceName"] for c in self.data["connections"]].index(conn["relatedConnection"])
                 geometryType = self.data["connections"][j]["geometryType"]
 
                 if conn["appliedCondition"]:
