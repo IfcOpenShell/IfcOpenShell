@@ -35,9 +35,12 @@ class COMMANDFILE:
         self.create()
 
     def getGroupName(self, name):
-        info = name.split("|")
-        sortName = "".join(c for c in info[0] if c.isupper())
-        return f"{sortName[2:]}_{info[1]}"
+        if "|" in name:
+            info = name.split("|")
+            sortName = "".join(c for c in info[0] if c.isupper())
+            return f"{sortName[2:]}_{info[1]}"
+        else:
+            return name
 
     def create(self):
         # Read data from input file
@@ -53,7 +56,7 @@ class COMMANDFILE:
         for el in elements:
             for rel in el["connections"]:
                 conn = [
-                    c for c in connections if c["ifcName"] == rel["relatedConnection"]
+                    c for c in connections if c["referenceName"] == rel["relatedConnection"]
                 ][0]
                 conn["relatedElements"].append(rel)
         # End <--
@@ -63,14 +66,14 @@ class COMMANDFILE:
 
         edgeGroupNames = tuple(
             [
-                self.getGroupName(el["ifcName"])
+                self.getGroupName(el["referenceName"])
                 for el in elements
                 if el["geometryType"] == "line"
             ]
         )
         faceGroupNames = tuple(
             [
-                self.getGroupName(el["ifcName"])
+                self.getGroupName(el["referenceName"])
                 for el in elements
                 if el["geometryType"] == "surface"
             ]
@@ -82,7 +85,7 @@ class COMMANDFILE:
                 [
                     self.getGroupName(rel["relatingElement"])
                     + "_1DR_"
-                    + self.getGroupName(conn["ifcName"])
+                    + self.getGroupName(conn["referenceName"])
                     for rel in conn["relatedElements"]
                     if rel["eccentricity"]
                 ]
@@ -336,7 +339,7 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(el["ifcName"]),
+                "groupName": self.getGroupName(el["referenceName"]),
                 "thickness": el["thickness"] / ScaleFactor,
                 "localAxisX": tuple(el["orientation"][0]),
             }
@@ -363,7 +366,7 @@ element = AFFE_CARA_ELEM(
         ),"""
 
             context = {
-                "groupName": self.getGroupName(el["ifcName"]),
+                "groupName": self.getGroupName(el["referenceName"]),
                 "localAxisY": tuple(el["orientation"][1]),
             }
 
@@ -565,7 +568,7 @@ FIN()
 
 
 if __name__ == "__main__":
-    fileNames = ["building_02"]
+    fileNames = ["test"]
     files = fileNames
 
     for fileName in files:
