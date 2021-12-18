@@ -796,7 +796,7 @@ int main(int argc, char** argv) {
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
 	settings.set(IfcGeom::IteratorSettings::EDGE_ARROWS, edge_arrows);
-	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy || output_extension == SVG);
+	settings.set(IfcGeom::IteratorSettings::ELEMENT_HIERARCHY, use_element_hierarchy || output_extension == SVG);
 	settings.set(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT, site_local_placement);
 	settings.set(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
 	settings.set(IfcGeom::IteratorSettings::VALIDATE_QUANTITIES, validate);

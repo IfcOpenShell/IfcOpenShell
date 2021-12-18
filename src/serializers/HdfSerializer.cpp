@@ -325,7 +325,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			IfcGeom::IteratorSettings::WELD_VERTICES | IfcGeom::IteratorSettings::NO_NORMALS |
 			IfcGeom::IteratorSettings::GENERATE_UVS | IfcGeom::IteratorSettings::EDGE_ARROWS |
 			// Is applied in the serializer
-			IfcGeom::IteratorSettings::SEARCH_FLOOR;
+			IfcGeom::IteratorSettings::ELEMENT_HIERARCHY;
 		
 		auto stored_settings = read_scalar_attribute<uint64_t>(brepDataset, "settings");
 		auto requested_settings = settings_.get_raw();
