@@ -121,9 +121,9 @@
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepBuilderAPI_GTransform.hxx>
 
-#include <BRepCheck_Analyzer.hxx>
-
 #include <BRepGProp_Face.hxx>
+#include <BRepCheck.hxx>
+#include <BRepCheck_Analyzer.hxx>
 
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <BRepTools.hxx>
@@ -4320,7 +4320,8 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 			Logger::Error("Shape healing failed on boolean result");
 		}
 
-		success = BRepCheck_Analyzer(r).IsValid() != 0;
+		BRepCheck_Analyzer ana(r);
+		success = ana.IsValid() != 0;
 
 		if (success) {
 
@@ -4466,13 +4467,44 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 			}
 		} else {
 			Logger::Notice("Boolean operation yields invalid result");
+
+			std::stringstream str;
+			bool any_emitted = false;
+
+			std::function<void(const TopoDS_Shape&)> dump;
+			dump = [&ana, &str, &dump, &any_emitted](const TopoDS_Shape& s) {
+				if (!ana.Result(s).IsNull()) {
+					BRepCheck_ListIteratorOfListOfStatus itl;
+					itl.Initialize(ana.Result(s)->Status());
+					for (; itl.More(); itl.Next()) {
+						if (itl.Value() != BRepCheck_NoError) {
+							if (any_emitted) {
+								str << ", ";
+							}
+							BRepCheck::Print(itl.Value(), str);
+							str.seekp(str.tellp() - (std::streamoff)1);
+							str << " on ";
+							TopAbs::Print(s.ShapeType(), str);
+							any_emitted = true;
+						}
+					}
+				}
+				for (TopoDS_Iterator it(s); it.More(); it.Next()) {
+					dump(it.Value());
+				}
+			};
+
+			dump(r);
+
+			Logger::Notice(str.str());
+
 		}
 	} else {
 		std::stringstream str;
 
 #if OCC_VERSION_HEX >= 0x70200
 		if (builder->HasError(STANDARD_TYPE(BOPAlgo_AlertBOPNotAllowed))) {
-			Logger::Error("Invalid operands using first operand");
+			Logger::Error("Invalid operands. Using first operand");
 			result = a;
 			success = true;
 		}
