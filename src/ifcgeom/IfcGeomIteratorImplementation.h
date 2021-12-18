@@ -956,7 +956,7 @@ namespace IfcGeom {
 			}
 
 			// If we want to organize the element considering their hierarchy
-			if (settings.get(IteratorSettings::SEARCH_FLOOR))
+			if (settings.get(IteratorSettings::ELEMENT_HIERARCHY))
 			{
 				// We are going to build a vector with the element parents.
 				// First, create the parent vector
