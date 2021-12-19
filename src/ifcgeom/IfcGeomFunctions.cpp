@@ -4501,9 +4501,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 
 		ShapeFix_Shape fix(r);
 		try {
-			fix.SetMinTolerance(fuzz);
 			fix.SetMaxTolerance(fuzz);
-			fix.SetPrecision(fuzz);
 			fix.Perform();
 			r = fix.Shape();
 		} catch (...) {
