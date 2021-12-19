@@ -1171,9 +1171,9 @@ namespace IfcGeom {
 				if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
 					Logger::Message(Logger::LOG_WARNING, "building-local-placement takes precedence over site-local-placement");
 				}
-				kernel.set_conversion_placement_rel_to(&IfcSchema::IfcBuilding::Class());
+				kernel.set_conversion_placement_rel_to_type(&IfcSchema::IfcBuilding::Class());
 			} else if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
-				kernel.set_conversion_placement_rel_to(&IfcSchema::IfcSite::Class());
+				kernel.set_conversion_placement_rel_to_type(&IfcSchema::IfcSite::Class());
 			}
 			kernel.set_offset(settings.offset);
 			kernel.set_rotation(settings.rotation);

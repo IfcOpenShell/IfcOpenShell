@@ -275,7 +275,8 @@ private:
 	double precision_factor;
 
 	// For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
-	const IfcParse::declaration* placement_rel_to;
+	const IfcParse::declaration* placement_rel_to_type_;
+	const IfcUtil::IfcBaseEntity* placement_rel_to_instance_;
 
 	faceset_helper<>* faceset_helper_;
 	double disable_boolean_result;
@@ -305,7 +306,8 @@ public:
 		, no_wire_intersection_check(-1)
 		, no_wire_intersection_tolerance(-1)
 		, precision_factor(10.)
-		, placement_rel_to(nullptr)
+		, placement_rel_to_type_(nullptr)
+		, placement_rel_to_instance_(nullptr)
 		, faceset_helper_(nullptr)
 		, disable_boolean_result(-1.)
 	{}
@@ -320,7 +322,8 @@ public:
 		, dimensionality(other.dimensionality)
 		// @nb faceset_helper_ always initialized to 0
 		, layerset_first(other.layerset_first)
-		, placement_rel_to(other.placement_rel_to)
+		, placement_rel_to_type_(other.placement_rel_to_type_)
+		, placement_rel_to_instance_(other.placement_rel_to_instance_)
 		, faceset_helper_(nullptr)
 		, disable_boolean_result(other.disable_boolean_result)
 
@@ -337,7 +340,8 @@ public:
 		ifc_planeangle_unit = other.ifc_planeangle_unit;
 		modelling_precision = other.modelling_precision;
 		dimensionality = other.dimensionality;
-		placement_rel_to = other.placement_rel_to;
+		placement_rel_to_type_ = other.placement_rel_to_type_;
+		placement_rel_to_instance_ = other.placement_rel_to_instance_;
 		layerset_first = other.layerset_first;
 		disable_boolean_result = other.disable_boolean_result;
 
@@ -534,7 +538,8 @@ public:
 #endif
 	}
 
-	void set_conversion_placement_rel_to(const IfcParse::declaration* type);
+	void set_conversion_placement_rel_to_type(const IfcParse::declaration* type);
+	void set_conversion_placement_rel_to_instance(const IfcUtil::IfcBaseEntity* instance);
 
 #include "mapping_kernel_header.i"
 

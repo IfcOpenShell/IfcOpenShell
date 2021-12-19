@@ -1020,6 +1020,23 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 		if (fes->declaration().is(IfcSchema::IfcOpeningElement::Class())) {
 			if (!fes->Representation()) continue;
 
+			/*
+			// Not yet implemented and tested, process opening placement up to parent wall
+			// placement so that the matrix inverse can be eliminated.
+			// @todo property check and handle the decomposition into parts (where element
+			// carying geom and opening are in different branches).
+			// @todo properly check whether opening correctly references wall placement
+			// and fallback to matrix inverse when not the case.
+			auto relative = entity;
+			{
+				auto ds = relative->Decomposes();
+				if (ds->size() == 1) {
+					relative = (*ds->begin())->RelatingObject()->as<IfcSchema::IfcProduct>();
+				}
+			}			
+			set_conversion_placement_rel_to_instance(relative);
+			*/
+
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
 			if (fes->ObjectPlacement()) {
@@ -1031,6 +1048,8 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 					Logger::Error("Failed to construct placement");
 				}
 			}
+
+			// set_conversion_placement_rel_to_instance(nullptr);
 
 			// Move the opening into the coordinate system of the IfcProduct
 			opening_trsf.PreMultiply(entity_trsf.Inverted());
@@ -1102,8 +1121,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 					TopoDS_Shape intermediate_result;
 					if (boolean_operation(result, opening_list, BOPAlgo_CUT, intermediate_result)) {
 						result = intermediate_result;
-					}
-					else {
+					} else {
 						Logger::Message(Logger::LOG_ERROR, "Opening subtraction failed for " + boost::lexical_cast<std::string>(std::distance(jt, it)) + " openings", entity);
 					}
 
