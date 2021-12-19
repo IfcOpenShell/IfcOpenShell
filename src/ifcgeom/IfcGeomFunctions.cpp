@@ -496,6 +496,145 @@ namespace {
 		}
 	}
 
+
+	int eliminate_touching_operands(double prec, const TopoDS_Shape& a, const TopTools_ListOfShape& bs, TopTools_ListOfShape& c) {
+		TopTools_IndexedMapOfShape a_faces;
+		TopExp::MapShapes(a, TopAbs_FACE, a_faces);
+
+		// Check if any of the faces in a are non-planar, which is
+		// not supported by this quick check.
+		for (int i = 1; i <= a_faces.Extent(); ++i) {
+			auto surf = BRep_Tool::Surface(TopoDS::Face(a_faces(i)));
+			if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+				return 0;
+			}
+		}
+
+		TopTools_IndexedMapOfShape a_vertices;
+		TopExp::MapShapes(a, TopAbs_VERTEX, a_vertices);
+
+		IfcGeom::impl::tree<int> tree;
+
+		// Add faces to tree
+		for (int i = 1; i <= a_faces.Extent(); ++i) {
+			tree.add(i, a_faces(i));
+		}
+
+		int N = 0;
+
+		TopTools_ListIteratorOfListOfShape it(bs);
+		for (; it.More(); it.Next()) {
+			bool is_touching = false;
+
+			auto& b = it.Value();
+
+			TopTools_IndexedMapOfShape b_faces;
+			TopExp::MapShapes(b, TopAbs_FACE, b_faces);
+
+			// Check if any of the faces in b are non-planar, which is
+			// not supported by this quick check.
+			for (int i = 1; i <= b_faces.Extent(); ++i) {
+				auto surf = BRep_Tool::Surface(TopoDS::Face(b_faces(i)));
+				if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+					continue;
+				}
+			}
+
+			TopTools_IndexedMapOfShape b_vertices;
+			TopExp::MapShapes(b, TopAbs_VERTEX, b_vertices);
+
+			for (int k = 1; k <= b_faces.Extent(); ++k) {
+				const TopoDS_Face& f_b = TopoDS::Face(b_faces(k));
+				Bnd_Box B;
+				BRepBndLib::Add(f_b, B);
+				
+				// Query tree using b_face bounding box
+				for (auto& i : tree.select_box(B, false)) {
+					const TopoDS_Face& f_a = TopoDS::Face(a_faces(i));
+
+					TopTools_IndexedMapOfShape f_a_vertices;
+					TopExp::MapShapes(f_a, TopAbs_VERTEX, f_a_vertices);
+										
+					BRepGProp_Face prop_a(f_a);
+					BRepGProp_Face prop_b(f_b);
+
+					gp_Pnt p_a, p_b;
+					gp_Vec v_a, v_b;
+
+					double u0, u1, v0, v1;
+					prop_a.Bounds(u0, u1, v0, v1);
+					prop_a.Normal((u0 + u1) / 2., (u0 + u1) / 2., p_a, v_a);
+
+					prop_b.Bounds(u0, u1, v0, v1);
+					prop_b.Normal((u0 + u1) / 2., (u0 + u1) / 2., p_b, v_b);
+
+					bool all_vertices_behind_f_a = true;
+
+					// Check if all 'other' vertices in a are pointing
+					// away from the face in a, so that there is no geometry
+					// from a in front of the face that could participate
+					// in the boolean subtraction.
+					for (int j = 1; j <= a_vertices.Extent(); ++j) {
+						if (!f_a_vertices.Contains(a_vertices(j))) {
+							auto p = BRep_Tool::Pnt(TopoDS::Vertex(a_vertices(j)));
+							if ((p.XYZ() - p_a.XYZ()).Dot(v_a.XYZ()) > prec) {
+								all_vertices_behind_f_a = false;
+								break;
+							}
+						}
+					}
+
+					if (!all_vertices_behind_f_a) {
+						continue;
+					}
+
+					// Check if surface normals are opposite
+					if (v_a.IsOpposite(v_b, 1.e-5)) {
+						// Check if faces are co-planar
+						if ((p_b.XYZ() - p_a.XYZ()).Dot(v_a.XYZ()) <= prec) {
+							
+							TopTools_IndexedMapOfShape f_b_vertices;
+							TopExp::MapShapes(f_b, TopAbs_VERTEX, f_b_vertices);
+
+							bool all_vertices_behind_f_b = true;
+
+							// Check if all 'other' vertices in b are pointing
+							// away from the face in a. So that a boolean subtraction
+							// would not alter a.
+							for (int j = 1; j <= b_vertices.Extent(); ++j) {
+								if (!f_b_vertices.Contains(b_vertices(j))) {
+									auto p = BRep_Tool::Pnt(TopoDS::Vertex(b_vertices(j)));
+									if ((p.XYZ() - p_a.XYZ()).Dot(v_a.XYZ()) < prec * 10.) {
+										all_vertices_behind_f_b = false;
+										break;
+									}
+								}
+							}
+
+							if (all_vertices_behind_f_b) {
+								is_touching = true;
+								break;
+							}
+
+						}
+					}
+				}
+
+				if (is_touching) {
+					break;
+				}
+			}
+
+			if (!is_touching) {
+				c.Append(it.Value());
+			} else {
+				++N;
+			}
+		}
+
+		return N;
+	}
+
 	TopoDS_Shape unify(const TopoDS_Shape& s, double tolerance) {
 		tolerance = (std::min)(min_edge_length(s) / 2., tolerance);
 		ShapeUpgrade_UnifySameDomain usd(s);
@@ -4292,10 +4431,14 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 
 	bool success = false;
 	BRepAlgoAPI_BooleanOperation* builder;
-	TopTools_ListOfShape B, b;
+	TopTools_ListOfShape B, b, b_x;
 	if (op == BOPAlgo_CUT) {
 		builder = new BRepAlgoAPI_Cut();
-		bounding_box_overlap(getValue(GV_PRECISION), a, b_, b);
+		bounding_box_overlap(fuzziness, a, b_, b_x);
+		auto N = eliminate_touching_operands(fuzziness, a, b_x, b);
+		if (N) {
+			Logger::Notice("Eliminated " + std::to_string(N) + " touching operands");
+		}
 	} else if (op == BOPAlgo_COMMON) {
 		builder = new BRepAlgoAPI_Common();
 		b = b_;
