@@ -4704,200 +4704,203 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 	builder->SetTools(B);
 	builder->Build();
 	if (builder->IsDone()) {
-		TopoDS_Shape r = *builder;
+		if (builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
+			Logger::Notice("Builder reports self-intersection in output");
+			success = false;
+		} else {
+			TopoDS_Shape r = *builder;
 
-		ShapeFix_Shape fix(r);
-		try {
-			fix.SetMaxTolerance(fuzz);
-			fix.Perform();
-			r = fix.Shape();
-		} catch (...) {
-			Logger::Error("Shape healing failed on boolean result");
-		}
-
-		BRepCheck_Analyzer ana(r);
-		success = ana.IsValid() != 0;
-
-		if (success) {
-
-			success = !is_manifold(a) || is_manifold(r);
-
-			if (!success) {
-				// An excemption for the requirement to be manifold: When the cut operands have overlapping edge belonging to faces that do not overlap.
-				bool operands_nonmanifold = false;
-				if (op == BOPAlgo_CUT) {
-					TopTools_IndexedMapOfShape edges;
-					TopTools_IndexedDataMapOfShapeListOfShape map;
-					for (TopTools_ListIteratorOfListOfShape it2(B); it2.More(); it2.Next()) {
-						auto& bb = it2.Value();
-						TopExp::MapShapes(bb, TopAbs_EDGE, edges);
-						TopExp::MapShapesAndAncestors(bb, TopAbs_EDGE, TopAbs_FACE, map);
-					}
-					IfcGeom::impl::tree<int> tree;
-					for (int i = 1; i <= edges.Extent(); ++i) {
-						tree.add(i, edges.FindKey(i));
-					}
-					for (int i = 1; i <= edges.Extent(); ++i) {
-						const TopoDS_Edge& ei = TopoDS::Edge(edges.FindKey(i));
-						Bnd_Box bb;
-						BRepBndLib::Add(ei, bb);
-						bb.Enlarge(fuzziness);
-						auto ii = tree.select_box(bb, false);
-						for (int j : ii) {
-							if (j != i) {
-								const TopoDS_Edge& ej = TopoDS::Edge(edges.FindKey(j));
-								ShapeAnalysis_Edge sae;
-								double f = fuzziness;
-								bool edges_overlapping = sae.CheckOverlapping(ei, ej, f, 0.) ||
-									sae.CheckOverlapping(ej, ei, f, 0.);
-
-								if (edges_overlapping) {
-									auto faces_i = map.FindFromKey(edges.FindKey(i));
-									auto faces_j = map.FindFromKey(edges.FindKey(j));
-									bool overlap = false;
-									for (TopTools_ListIteratorOfListOfShape it4(faces_i); it4.More(); it4.Next()) {
-										auto& fi = it4.Value();
-										for (TopTools_ListIteratorOfListOfShape it2(faces_j); it2.More(); it2.Next()) {
-											auto& fj = it2.Value();
-											if (faces_overlap(TopoDS::Face(fi), TopoDS::Face(fj))) {
-												overlap = true;
-											}
-										}
-										if (overlap) {
-											break;
-										}
-									}
-									operands_nonmanifold = !overlap;
-									break;
-								}
-							}
-						}
-						if (operands_nonmanifold) {
-							break;
-						}
-					}
-				}
-				success = operands_nonmanifold;
+			ShapeFix_Shape fix(r);
+			try {
+				fix.SetMaxTolerance(fuzz);
+				fix.Perform();
+				r = fix.Shape();
+			} catch (...) {
+				Logger::Error("Shape healing failed on boolean result");
 			}
+
+			BRepCheck_Analyzer ana(r);
+			success = ana.IsValid() != 0;
 
 			if (success) {
 
-				bool all_faces_included_in_result = true;
-				bool has_open_shells = false;
-				
-				if (op == BOPAlgo_CUT) {
-					for (TopExp_Explorer exp(a, TopAbs_SHELL); exp.More(); exp.Next()) {
-						if (!exp.Current().Closed()) {
-							// This 'face addition check' is only done when the first operand
-							// contains open shells (which was initially the aim of this check
-							// see #1472).
-							// Later in #1914 we found that the logic to apply openings in groups
-							// of similar edge lengths can create a situation of inner voids, which
-							// trigger a false positive in this check. This could have also been
-							// solved below by checking whether the opening(s) are included as a
-							// unmodified (interior) shell within a solid of multiple shells.
-							// Checking for open shells in first operand was quicker and more
-							// straightforward. The question still is whether in cases like #1472
-							// we need to first try the boolean union as solid/solid interference
-							// to trigger this case or whether we can immediately proceed to a face/
-							// solid operation.
-							has_open_shells = true;
-							break;
-						}
-					}
+				success = !is_manifold(a) || is_manifold(r);
 
-					if (has_open_shells) {
-						TopTools_IndexedMapOfShape faces;
-						TopExp::MapShapes(r, TopAbs_FACE, faces);
-						for (TopExp_Explorer exp(a, TopAbs_FACE); exp.More(); exp.Next()) {
-							auto& f = TopoDS::Face(exp.Current());
-							if (!faces.Contains(f)) {
-								all_faces_included_in_result = false;
+				if (!success) {
+					// An excemption for the requirement to be manifold: When the cut operands have overlapping edge belonging to faces that do not overlap.
+					bool operands_nonmanifold = false;
+					if (op == BOPAlgo_CUT) {
+						TopTools_IndexedMapOfShape edges;
+						TopTools_IndexedDataMapOfShapeListOfShape map;
+						for (TopTools_ListIteratorOfListOfShape it2(B); it2.More(); it2.Next()) {
+							auto& bb = it2.Value();
+							TopExp::MapShapes(bb, TopAbs_EDGE, edges);
+							TopExp::MapShapesAndAncestors(bb, TopAbs_EDGE, TopAbs_FACE, map);
+						}
+						IfcGeom::impl::tree<int> tree;
+						for (int i = 1; i <= edges.Extent(); ++i) {
+							tree.add(i, edges.FindKey(i));
+						}
+						for (int i = 1; i <= edges.Extent(); ++i) {
+							const TopoDS_Edge& ei = TopoDS::Edge(edges.FindKey(i));
+							Bnd_Box bb;
+							BRepBndLib::Add(ei, bb);
+							bb.Enlarge(fuzziness);
+							auto ii = tree.select_box(bb, false);
+							for (int j : ii) {
+								if (j != i) {
+									const TopoDS_Edge& ej = TopoDS::Edge(edges.FindKey(j));
+									ShapeAnalysis_Edge sae;
+									double f = fuzziness;
+									bool edges_overlapping = sae.CheckOverlapping(ei, ej, f, 0.) ||
+										sae.CheckOverlapping(ej, ei, f, 0.);
+
+									if (edges_overlapping) {
+										auto faces_i = map.FindFromKey(edges.FindKey(i));
+										auto faces_j = map.FindFromKey(edges.FindKey(j));
+										bool overlap = false;
+										for (TopTools_ListIteratorOfListOfShape it4(faces_i); it4.More(); it4.Next()) {
+											auto& fi = it4.Value();
+											for (TopTools_ListIteratorOfListOfShape it2(faces_j); it2.More(); it2.Next()) {
+												auto& fj = it2.Value();
+												if (faces_overlap(TopoDS::Face(fi), TopoDS::Face(fj))) {
+													overlap = true;
+												}
+											}
+											if (overlap) {
+												break;
+											}
+										}
+										operands_nonmanifold = !overlap;
+										break;
+									}
+								}
+							}
+							if (operands_nonmanifold) {
 								break;
 							}
 						}
-					} else {
-						all_faces_included_in_result = false;
 					}
+					success = operands_nonmanifold;
 				}
 
-				int result_n_faces = count(r, TopAbs_FACE);
-				int first_op_n_faces = count(a, TopAbs_FACE);
-
-				if (op == BOPAlgo_CUT && has_open_shells && all_faces_included_in_result && result_n_faces > first_op_n_faces) {
-					success = false;
-					Logger::Notice("Boolean result discarded because subtractions results in only the addition of faces");
-				} else {
-					// when there are edges or vertex-edge distances close to the used fuzziness, the  
-					// output is not trusted and the operation is attempted with a higher fuzziness.
-					int reason = 0;
-					double v;
-					if ((v = min_edge_length(r)) < fuzziness * 3.) {
-						reason = 0;
-						success = false;
-					}
-					else if ((v = min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 3.)) < fuzziness * 3.) {
-						reason = 1;
-						success = false;
-					}
-					else if ((v = min_face_face_distance(r, 1.e-4)) < 1.e-4) {
-						reason = 2;
-						success = false;
-					}
-
-					if (!success) {
-						static const char* const reason_strings[] = { "edge length", "vertex-edge", "face-face" };
-						std::stringstream str;
-						str << "Boolean operation result failing " << reason_strings[reason] << " interference check, with fuzziness " << fuzziness << " with length " << v;
-						Logger::Notice(str.str());
-					}
-				}
-				
 				if (success) {
-					result = r;
-				}
 
-			} else {
-				Logger::Notice("Boolean operation yields non-manifold result");
-			}
-		} else {
-			Logger::Notice("Boolean operation yields invalid result");
+					bool all_faces_included_in_result = true;
+					bool has_open_shells = false;
 
-			std::stringstream str;
-			bool any_emitted = false;
-
-			std::function<void(const TopoDS_Shape&)> dump;
-			dump = [&ana, &str, &dump, &any_emitted](const TopoDS_Shape& s) {
-				if (!ana.Result(s).IsNull()) {
-					BRepCheck_ListIteratorOfListOfStatus itl;
-					itl.Initialize(ana.Result(s)->Status());
-					for (; itl.More(); itl.Next()) {
-						if (itl.Value() != BRepCheck_NoError) {
-							if (any_emitted) {
-								str << ", ";
+					if (op == BOPAlgo_CUT) {
+						for (TopExp_Explorer exp(a, TopAbs_SHELL); exp.More(); exp.Next()) {
+							if (!exp.Current().Closed()) {
+								// This 'face addition check' is only done when the first operand
+								// contains open shells (which was initially the aim of this check
+								// see #1472).
+								// Later in #1914 we found that the logic to apply openings in groups
+								// of similar edge lengths can create a situation of inner voids, which
+								// trigger a false positive in this check. This could have also been
+								// solved below by checking whether the opening(s) are included as a
+								// unmodified (interior) shell within a solid of multiple shells.
+								// Checking for open shells in first operand was quicker and more
+								// straightforward. The question still is whether in cases like #1472
+								// we need to first try the boolean union as solid/solid interference
+								// to trigger this case or whether we can immediately proceed to a face/
+								// solid operation.
+								has_open_shells = true;
+								break;
 							}
-							BRepCheck::Print(itl.Value(), str);
-							str.seekp(str.tellp() - (std::streamoff)1);
-							str << " on ";
-							TopAbs::Print(s.ShapeType(), str);
-							any_emitted = true;
+						}
+
+						if (has_open_shells) {
+							TopTools_IndexedMapOfShape faces;
+							TopExp::MapShapes(r, TopAbs_FACE, faces);
+							for (TopExp_Explorer exp(a, TopAbs_FACE); exp.More(); exp.Next()) {
+								auto& f = TopoDS::Face(exp.Current());
+								if (!faces.Contains(f)) {
+									all_faces_included_in_result = false;
+									break;
+								}
+							}
+						} else {
+							all_faces_included_in_result = false;
 						}
 					}
+
+					int result_n_faces = count(r, TopAbs_FACE);
+					int first_op_n_faces = count(a, TopAbs_FACE);
+
+					if (op == BOPAlgo_CUT && has_open_shells && all_faces_included_in_result && result_n_faces > first_op_n_faces) {
+						success = false;
+						Logger::Notice("Boolean result discarded because subtractions results in only the addition of faces");
+					} else {
+						// when there are edges or vertex-edge distances close to the used fuzziness, the  
+						// output is not trusted and the operation is attempted with a higher fuzziness.
+						int reason = 0;
+						double v;
+						if ((v = min_edge_length(r)) < fuzziness * 3.) {
+							reason = 0;
+							success = false;
+						} else if ((v = min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 3.)) < fuzziness * 3.) {
+							reason = 1;
+							success = false;
+						} else if ((v = min_face_face_distance(r, 1.e-4)) < 1.e-4) {
+							reason = 2;
+							success = false;
+						}
+
+						if (!success) {
+							static const char* const reason_strings[] = { "edge length", "vertex-edge", "face-face" };
+							std::stringstream str;
+							str << "Boolean operation result failing " << reason_strings[reason] << " interference check, with fuzziness " << fuzziness << " with length " << v;
+							Logger::Notice(str.str());
+						}
+					}
+
+					if (success) {
+						result = r;
+					}
+
+				} else {
+					Logger::Notice("Boolean operation yields non-manifold result");
 				}
-				for (TopoDS_Iterator it(s); it.More(); it.Next()) {
-					dump(it.Value());
-				}
-			};
+			} else {
+				Logger::Notice("Boolean operation yields invalid result");
 
-			dump(r);
+				std::stringstream str;
+				bool any_emitted = false;
 
-			Logger::Notice(str.str());
+				std::function<void(const TopoDS_Shape&)> dump;
+				dump = [&ana, &str, &dump, &any_emitted](const TopoDS_Shape& s) {
+					if (!ana.Result(s).IsNull()) {
+						BRepCheck_ListIteratorOfListOfStatus itl;
+						itl.Initialize(ana.Result(s)->Status());
+						for (; itl.More(); itl.Next()) {
+							if (itl.Value() != BRepCheck_NoError) {
+								if (any_emitted) {
+									str << ", ";
+								}
+								BRepCheck::Print(itl.Value(), str);
+								str.seekp(str.tellp() - (std::streamoff)1);
+								str << " on ";
+								TopAbs::Print(s.ShapeType(), str);
+								any_emitted = true;
+							}
+						}
+					}
+					for (TopoDS_Iterator it(s); it.More(); it.Next()) {
+						dump(it.Value());
+					}
+				};
 
+				dump(r);
+
+				Logger::Notice(str.str());
+			}
 		}
 	} else {
 		std::stringstream str;
 
 #if OCC_VERSION_HEX >= 0x70200
+
 		if (builder->HasError(STANDARD_TYPE(BOPAlgo_AlertBOPNotAllowed))) {
 			Logger::Error("Invalid operands. Using first operand");
 			result = a;
