@@ -218,6 +218,7 @@ int main(int argc, char** argv) {
 		("help,h", "display usage information")
 		("version", "display version information")
 		("verbose,v", po::value(&vcounter)->zero_tokens(), "more verbose log messages. Use twice (-vv) for debugging level.")
+		("debug,d", "write boolean operands to file in current directory for debugging purposes")
 		("quiet,q", "less status and progress output")
 #ifdef WITH_HDF5
 		("cache", "cache geometry creation. Use --cache-file to specify cache file path.")
@@ -793,6 +794,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
 	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
 	settings.set(IfcGeom::IteratorSettings::LAYERSET_FIRST,               layerset_first);
+	settings.set(IfcGeom::IteratorSettings::DEBUG_BOOLEAN,                vmap.count("debug"));
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
 	settings.set(IfcGeom::IteratorSettings::EDGE_ARROWS, edge_arrows);

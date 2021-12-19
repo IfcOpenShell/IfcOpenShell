@@ -76,6 +76,7 @@ namespace IfcGeom {
 			GV_NO_WIRE_INTERSECTION_CHECK,
 			GV_PRECISION_FACTOR,
 			GV_NO_WIRE_INTERSECTION_TOLERANCE,
+			GV_DEBUG_BOOLEAN
 		};
 
 		Kernel(IfcParse::IfcFile* file_ = 0);

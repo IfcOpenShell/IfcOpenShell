@@ -165,6 +165,7 @@
 #include "../ifcgeom/IfcGeomTree.h"
 
 #include <memory>
+#include <thread>
 
 #if OCC_VERSION_HEX < 0x60900
 #ifdef _MSC_VER
@@ -1487,6 +1488,9 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_NO_WIRE_INTERSECTION_TOLERANCE:
 		no_wire_intersection_tolerance = value;
 		break;
+	case GV_DEBUG_BOOLEAN:
+		boolean_debug_setting = value;
+		break;
 	default:
 		throw std::runtime_error("Invalid setting");
 	}
@@ -1522,6 +1526,8 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 		return precision_factor;
 	case GV_NO_WIRE_INTERSECTION_TOLERANCE:
 		return no_wire_intersection_tolerance;
+	case GV_DEBUG_BOOLEAN:
+		return boolean_debug_setting;
 	}
 	throw std::runtime_error("Invalid setting");
 }
@@ -4260,6 +4266,15 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_ListOfShape& b__, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	
+	const bool debug = getValue(GV_DEBUG_BOOLEAN) > 0.;
+	std::string debug_identifier;
+	if (debug) {
+		std::stringstream ss;
+		ss << "bool-" << std::this_thread::get_id() << "-" << (operation_counter_++);
+		debug_identifier = ss.str();
+		Logger::Notice("Boolean debug identifier: " + debug_identifier);
+	}
+
 	if (fuzziness < 0.) {
 		fuzziness = getValue(GV_PRECISION) / 10.;
 	}
@@ -4314,8 +4329,22 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 
 	const double fuzz = (std::min)(min_length_orig / 3., fuzziness);
 
+	Logger::Notice("Used fuzziness: " + std::to_string(fuzz));
+	
 	TopTools_ListOfShape s1s;
 	s1s.Append(copy_operand(a));
+
+	if (debug) {
+		TopTools_ListOfShape* lists[2] = { &s1s, &b };
+		static std::string operand_names[2] = { "a", "b" };
+		for (int i = 0; i < 2; ++i) {
+			TopTools_ListIteratorOfListOfShape it(*lists[i]);
+			for (int j = 0; it.More(); it.Next(), ++j) {
+				std::string fn = debug_identifier + "-" + operand_names[i] + "-" + std::to_string(j) + ".brep";
+				BRepTools::Write(it.Value(), fn.c_str());
+			}
+		}
+	}
 #if OCC_VERSION_HEX >= 0x70000
 	builder->SetNonDestructive(true);
 #endif
