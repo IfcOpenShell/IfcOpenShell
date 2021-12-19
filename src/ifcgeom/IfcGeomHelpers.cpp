@@ -415,8 +415,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement2D* l, gp_Trsf2d
 	return true;
 }
 
-void IfcGeom::Kernel::set_conversion_placement_rel_to(const IfcParse::declaration* type) {
-	placement_rel_to = type;
+void IfcGeom::Kernel::set_conversion_placement_rel_to_type(const IfcParse::declaration* type) {
+	placement_rel_to_type_ = type;
+}
+
+void IfcGeom::Kernel::set_conversion_placement_rel_to_instance(const IfcUtil::IfcBaseEntity* instance) {
+	placement_rel_to_instance_ = instance;
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf) {
@@ -427,26 +431,42 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& t
 	}
 	IfcSchema::IfcLocalPlacement* current = (IfcSchema::IfcLocalPlacement*)l;
 	for (;;) {
+
 		gp_Trsf trsf2;
 		IfcSchema::IfcAxis2Placement* relplacement = current->RelativePlacement();
 		if (relplacement->as<IfcSchema::IfcAxis2Placement3D>()) {
 			IfcGeom::Kernel::convert(relplacement->as<IfcSchema::IfcAxis2Placement3D>(),trsf2);
 			trsf.PreMultiply(trsf2);
 		}
-		if ( current->PlacementRelTo() ) {
+
+		if (current->PlacementRelTo()) {
 			IfcSchema::IfcObjectPlacement* parent = current->PlacementRelTo();
-			IfcSchema::IfcProduct::list::ptr parentPlaces = parent->PlacesObject();
-			bool parentPlacesType = false;
-			for ( IfcSchema::IfcProduct::list::it iter = parentPlaces->begin();
-				  iter != parentPlaces->end(); ++iter) {
-				if ( (*iter)->declaration().is(*placement_rel_to) ) parentPlacesType = true;
+
+			bool parent_placement_ignored = false;
+			if (placement_rel_to_type_ || placement_rel_to_instance_) {
+				IfcSchema::IfcProduct::list::ptr parent_places = parent->PlacesObject();
+				for (auto iter = parent_places->begin(); iter != parent_places->end(); ++iter) {
+					if ((placement_rel_to_type_ && (*iter)->declaration().is(*placement_rel_to_type_)) ||
+						(placement_rel_to_instance_ && (*iter)->as<IfcUtil::IfcBaseEntity>() == placement_rel_to_instance_)) {
+						parent_placement_ignored = true;
+					}
+				}
 			}
 
-			if ( parentPlacesType ) break;
-			else if ( parent->declaration().is(IfcSchema::IfcLocalPlacement::Class()) )
+			if (parent_placement_ignored) {
+				// The parent placement of the current is a placement for a type that is
+				// being ignored (Site or Building) or it is the host element of an opening.
+				break;
+			} else if (parent->declaration().is(IfcSchema::IfcLocalPlacement::Class())) {
+				// Keep processing parent placements
 				current = current->PlacementRelTo()->as<IfcSchema::IfcLocalPlacement>();
-			else break;
-		} else break;
+			} else {
+				// This is the root placement (typically Site).
+				break;
+			}
+		} else {
+			break;
+		}
 	}
 
 	trsf.PreMultiply(offset_and_rotation);
