@@ -1167,6 +1167,12 @@ namespace IfcGeom {
 				: -1.0
 			);
 
+			kernel.setValue(IfcGeom::Kernel::GV_DEBUG_BOOLEAN,
+				settings.get(IteratorSettings::DEBUG_BOOLEAN)
+				? +1.0
+				: -1.0
+			);
+
 			if (settings.get(IteratorSettings::BUILDING_LOCAL_PLACEMENT)) {
 				if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
 					Logger::Message(Logger::LOG_WARNING, "building-local-placement takes precedence over site-local-placement");

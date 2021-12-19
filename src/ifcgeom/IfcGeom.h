@@ -273,6 +273,9 @@ private:
 	double no_wire_intersection_check;
 	double no_wire_intersection_tolerance;
 	double precision_factor;
+	double boolean_debug_setting;
+
+	size_t operation_counter_ = 0;
 
 	// For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
 	const IfcParse::declaration* placement_rel_to_type_;

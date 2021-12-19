@@ -111,8 +111,10 @@ namespace IfcGeom
 			/// Strictly use the tolerance from the IFC model. Typically this value is
 			/// increased 10-fold to have more reliable boolean subtraction results.
 			STRICT_TOLERANCE = 1 << 22,
+			/// Write boolean operands to file in current directory for debugging purposes
+			DEBUG_BOOLEAN = 1 << 23,
 			/// Number of different setting flags.
-			NUM_SETTINGS = 23,
+			NUM_SETTINGS = 24,
         };
 
         IteratorSettings()
