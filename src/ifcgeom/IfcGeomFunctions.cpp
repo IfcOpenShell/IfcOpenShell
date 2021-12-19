@@ -59,6 +59,7 @@
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <Geom_TrimmedCurve.hxx>
+#include <Geom_BSplineCurve.hxx>
 
 #include <Geom_Plane.hxx>
 #include <Geom_OffsetCurve.hxx>
@@ -496,6 +497,151 @@ namespace {
 		}
 	}
 
+	bool get_edge_axis(const TopoDS_Edge& e, gp_Ax1& ax) {
+		double _, __;
+
+		auto crv = BRep_Tool::Curve(e, _, __);
+		auto line = Handle_Geom_Line::DownCast(crv);
+		auto bsple = Handle_Geom_BSplineCurve::DownCast(crv);
+
+		if (line) {
+			ax = line->Position();
+			return true;
+		} else if (bsple) {
+			if (bsple->NbPoles() == 2 && bsple->Degree() == 1) {
+				gp_Dir V(bsple->Poles().Last().XYZ() - bsple->Poles().First().XYZ());
+				ax = gp_Ax1(bsple->Poles().First(), V);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool is_subset(const TopTools_IndexedMapOfShape& lhs, const TopTools_IndexedMapOfShape& rhs) {
+		if (rhs.Extent() < lhs.Extent()) {
+			return false;
+		}
+		for (int i = 1; i < lhs.Extent(); ++i) {
+			auto& s = lhs.FindKey(i);
+			if (!rhs.Contains(s)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool is_extrusion(const gp_Vec& v, const TopoDS_Shape& s, TopoDS_Face& base, std::pair<double, double>& interval) {
+		// This assumes UnifySameDomain has been processed on s, so that
+		// the extrusion top and bottom are a single face.
+
+		TopTools_IndexedDataMapOfShapeListOfShape mapping;
+		TopExp::MapShapesAndAncestors(s, TopAbs_EDGE, TopAbs_FACE, mapping);
+		TopExp::MapShapesAndAncestors(s, TopAbs_VERTEX, TopAbs_FACE, mapping);
+
+		TopTools_ListOfShape parallel;
+		TopTools_IndexedMapOfShape curved_orthogonal;
+		gp_Ax1 ax;
+		gp_Ax1 V(gp::Origin(), v);
+
+		// Segment edges in parallel to extrusion direction, and orthogonal or curved,
+		// where the latter two categories have to make the edges part of the base or
+		// top face. When neither of these categories the shape is not a extrusion
+		// or the extrusion direction is not orthogonal to its basis.
+		for (int i = 1; i < mapping.Extent(); ++i) {
+			auto& s = mapping.FindKey(i);
+			if (s.ShapeType() != TopAbs_EDGE) {
+				continue;
+			}
+
+			const TopoDS_Edge& e = TopoDS::Edge(s);
+			if (!get_edge_axis(e, ax)) {
+				// curved
+				curved_orthogonal.Add(e);
+			} else if (ax.IsParallel(V, 1.e-5)) {
+				parallel.Append(e);
+			} else if (ax.IsNormal(V, 1.e-5)) {
+				// ortho
+				curved_orthogonal.Add(e);
+			} else {
+				return false;
+			}
+		}
+
+		// Select the two faces for which their edges are subsets
+		// of the ortho/curved edges
+		TopTools_IndexedMapOfShape ortho_faces;
+		for (TopExp_Explorer exp(s, TopAbs_FACE); exp.More(); exp.Next()) {
+			TopTools_IndexedMapOfShape face_edges;
+			TopExp::MapShapes(exp.Current(), TopAbs_EDGE, face_edges);
+			if (is_subset(face_edges, curved_orthogonal)) {
+				ortho_faces.Add(exp.Current());
+			}
+		}
+
+		// There should be a basis and top face
+		if (ortho_faces.Extent() != 2) {
+			return false;
+		}
+
+		// For the parallel edges assert that its two vertices are part
+		// of both the basis and the top face.
+		for (TopTools_ListIteratorOfListOfShape it(parallel);
+			it.More(); it.Next()) {
+			TopoDS_Vertex v01[2];
+			TopExp::Vertices(TopoDS::Edge(it.Value()), v01[0], v01[1]);
+
+			TopTools_IndexedMapOfShape v_ortho_faces;
+			int nb_ortho_faces[2] = { 0,0 };
+
+			for (int i = 0; i < 2; ++i) {
+				auto& faces = mapping.FindFromKey(v01[i]);
+
+				for (TopTools_ListIteratorOfListOfShape jt(faces);
+					jt.More(); jt.Next()) {
+					if (ortho_faces.Contains(jt.Value())) {
+						nb_ortho_faces[i] ++;
+						v_ortho_faces.Add(jt.Value());
+					}
+				}
+			}
+
+			bool sets_equal = v_ortho_faces.Size() == ortho_faces.Size() && is_subset(v_ortho_faces, ortho_faces);
+			if (!sets_equal) {
+				return false;
+			}
+		}
+
+		// Assert the base/top faces are planar and get the interval
+		// (dot products along axis) for which the extrusion is defined
+		// If necessary swap the two faces so that the basis face has
+		// the smallest dot product along the axis.
+		auto f0 = TopoDS::Face(ortho_faces.FindKey(1));
+		auto f1 = TopoDS::Face(ortho_faces.FindKey(2));
+
+		const Handle(Geom_Surface)& f0_s = BRep_Tool::Surface(f0);
+		const Handle(Geom_Surface)& f1_s = BRep_Tool::Surface(f1);
+
+		auto p0 = Handle(Geom_Plane)::DownCast(f0_s);
+		auto p1 = Handle(Geom_Plane)::DownCast(f1_s);
+
+		if (p0.IsNull() || p1.IsNull()) {
+			return false;
+		}
+
+		auto dot0 = p0->Location().XYZ().Dot(v.XYZ());
+		auto dot1 = p1->Location().XYZ().Dot(v.XYZ());
+
+		if (dot0 > dot1) {
+			std::swap(dot0, dot1);
+			std::swap(f0, f1);
+		}
+
+		base = f0;
+		interval = { dot0, dot1 };
+
+		return true;
+	}
 
 	int eliminate_touching_operands(double prec, const TopoDS_Shape& a, const TopTools_ListOfShape& bs, TopTools_ListOfShape& c) {
 		TopTools_IndexedMapOfShape a_faces;
@@ -4488,6 +4634,67 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 			}
 		}
 	}
+
+	if (op == BOPAlgo_CUT) {
+		TopoDS_Face a_face;
+		std::pair<double, double> a_interval;
+
+		TopTools_ListOfShape b_faces, b_remainder_3d;
+
+		if (is_extrusion(gp::DY(), a, a_face, a_interval)) {
+			Logger::Notice("Operand A 1/1 is an extrusion");
+
+			TopTools_ListIteratorOfListOfShape it(b);
+			for (int nb = 1; it.More(); it.Next(), ++nb) {
+				bool process_2d = false;
+				TopoDS_Face b_face;
+				std::pair<double, double> b_interval;
+				if (is_extrusion(gp::DY(), it.Value(), b_face, b_interval)) {
+					Logger::Notice("Operand B " + std::to_string(nb) + "/" + std::to_string(b.Extent()) + " is an extrusion");
+					if (b_interval.first < a_interval.first + fuzz && b_interval.second > a_interval.second - fuzz) {
+						Logger::Notice("Operand B creates a through hole");
+
+						// Align b with a operand
+						gp_Trsf trsf;
+						trsf.SetTranslation(gp_Vec(gp::DY()) * (a_interval.first - b_interval.first));
+
+						b_faces.Append(b_face.Moved(trsf));
+						process_2d = true;
+					}
+				}
+
+				if (!process_2d) {
+					b_remainder_3d.Append(it.Value());
+				}
+			}
+
+			if (b_faces.Extent()) {
+				TopoDS_Shape face_result;
+				if (boolean_operation(a_face, b_faces, op, face_result, fuzziness)) {
+					BRepPrimAPI_MakePrism mp(face_result, gp_Vec(gp::DY()) * (a_interval.second - a_interval.first));
+					if (mp.IsDone()) {
+						if (b_remainder_3d.Extent()) {
+							Logger::Notice(std::to_string(b_remainder_3d.Extent()) + " operands remaining to process in 3D");
+							b = b_remainder_3d;
+							s1s.Clear();
+							s1s.Append(mp.Shape());
+						} else {
+							Logger::Notice("Processed fully in 2D");
+							result = mp.Shape();
+							return true;
+						}
+					} else {
+						Logger::Notice("Failed to extrude 2D boolean result. Retrying in 3D.");
+					}
+				} else {
+					Logger::Notice("Failed to perform 2D boolean operation. Retrying in 3D.");
+				}
+			} else {
+				Logger::Notice("No second operands can be processed as 2D inner bounds. Retrying in 3D.");
+			}
+		}
+	}	
+
 #if OCC_VERSION_HEX >= 0x70000
 	builder->SetNonDestructive(true);
 #endif
