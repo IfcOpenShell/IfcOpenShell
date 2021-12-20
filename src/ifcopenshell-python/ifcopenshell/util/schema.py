@@ -86,6 +86,7 @@ class Migrator:
             "TransverseBarSpacing": 1,
             # Manual additions from experience
             "InteriorOrExteriorSpace": "NOTDEFINED",
+            "AssemblyPlace": "NOTDEFINED", # See bug https://github.com/Autodesk/revit-ifc/issues/395
         }
         self.default_entities = {
             "CurrentValue": None,
