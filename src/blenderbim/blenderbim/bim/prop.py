@@ -24,7 +24,6 @@ import ifcopenshell
 import ifcopenshell.util.pset
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
-from collections import defaultdict
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -192,36 +191,12 @@ def update_is_visible(self, context):
                 pass
 
 
-def InternStr(s):
-    if not hasattr(InternStr, "StringCache"):  # Another way to define a function attribute
-        InternStr.StringCache = defaultdict(str)
-    InternStr.StringCache[s] = s
-    return InternStr.StringCache[s]
-
-InternStr.StringCache = {}
-
-def getAttributeEnumValues(prop, context):
+def getAttributeEnumValues(self, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
-    items = []
-    
-    data = json.loads(prop.enum_items)
+    data = json.loads(self.enum_items)
     if isinstance(data, dict):
-        for k, v in data.items():
-            for e in data:
-                items.append((
-                InternStr(k),
-                InternStr(v),
-                "",
-        ))
-    else:
-        for e in data:
-            items.append((
-            InternStr(e),
-            InternStr(e),
-            "",
-        ))
-            
-    return items
+        return [(str(k), v, "") for k, v in data.items()]
+    return [(e, e, "") for e in data]
 
 
 def update_schema_dir(self, context):
