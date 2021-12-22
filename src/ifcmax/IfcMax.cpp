@@ -46,6 +46,11 @@ public:
     void *                  Create(BOOL /*loading = FALSE*/) { return new IFCImp; }
     // TODO Delete() function?
     const TCHAR *			ClassName() { return _T("IFCImp"); }
+
+#if MAX_VERSION_MAJOR >= 24
+	const TCHAR *	NonLocalizedClassName() { return ClassName(); }
+#endif 
+
     SClass_ID               SuperClassID() { return SCENE_IMPORT_CLASS_ID; }
     Class_ID                ClassID() { return Class_ID(0x3f230dbf, 0x5b3015c2); }
     const TCHAR*			Category() { return _T("Chrutilities"); }
