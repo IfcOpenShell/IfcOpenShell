@@ -434,23 +434,28 @@ class facet(metaclass=meta_facet):
     """
 
     def __init__(self, node=None, location=None):
+
         if node:
             self.node = node
             if "@location" in self:
                 self.location = self.node["@location"]
             else:
                 self.location = "any"
+
         if location:
             self.location = location
         else:
             self.location = "any"
 
-    def __getattr__(self, k):
-        if k in self.node:
-            v = self.node[k]
+    def __getattr__(self, attr):
+        
+        if attr in getattr(self, 'node', None):
+            v = self.node[attr]
+            
             # BUG list of dictionaries should not happen
             if isinstance(v, list):
                 v = v[0]
+
             if "simpleValue" in list(v):
                 return v["simpleValue"]
             elif "restriction" in list(v):
@@ -458,6 +463,7 @@ class facet(metaclass=meta_facet):
                 # TODO handle more than one restriction: return [restriction(r) for r in v["restriction"]]
             else:
                 raise Exception("Unknown value declaration.")
+        # except KeyError:
         else:
             return None
 
@@ -687,16 +693,24 @@ class property(facet):
         :rtype: facet_evaluation(bool, str)
         """
 
-        self.location = self.node["@location"]
+        # self.location = self.node["@location"]
 
+        #TODO add documentation that attributes should have "attribute" as propertysets
         if self.propertyset == "attribute":
             val = {k.lower(): v for k, v in inst.get_info().items()}.get(self.name, None)
         else:
             # TODO sometimes AttributeError: 'str' object has no attribute 'wrappedValue'
-            instance_props = ifcopenshell.util.element.get_psets(inst)
+            try:
+                instance_props = ifcopenshell.util.element.get_psets(inst)
+            except AttributeError:
+                instance_props = {}
 
             if ifcopenshell.util.element.get_type(inst):
-                type_props = ifcopenshell.util.element.get_psets(ifcopenshell.util.element.get_type(inst))
+                # TODO sometimes AttributeError: 'str' object has no attribute 'wrappedValue'
+                try:
+                    type_props = ifcopenshell.util.element.get_psets(ifcopenshell.util.element.get_type(inst))
+                except AttributeError:
+                    type_props = {}
             else:
                 type_props = {}
 
@@ -788,7 +802,7 @@ class material(facet):
         :rtype: facet_evaluation(bool, str)
         """
 
-        self.location = self.node["@location"]
+        # self.location = self.node["@location"]
 
         instance_material_rel = [rel for rel in inst.HasAssociations if rel.is_a("IfcRelAssociatesMaterial")]
         if ifcopenshell.util.element.get_type(inst):
@@ -1067,32 +1081,7 @@ class SimpleHandler(logging.StreamHandler):
         logging.StreamHandler.__init__(self)
         self.statements = []
         if report_valid:
-            self.setLevel(logging.INFO)
-        else:
-            self.setLevel(logging.ERROR)
-
-    def emit(self, mymsg):
-        """Triggered on each use of logging with the Simple handler enabled.
-
-        :param log_content: default logger message
-        :type log_content: string|dict
-        """
-        self.statements.append(mymsg.msg)
-
-
-class SimpleHandler(logging.StreamHandler):
-    """Logging handler listing all cases in python list."""
-
-    def __init__(self, report_valid=False):
-        """Logging handler listing all cases in python list.
-
-        :param report_valid: True if you want to list all the compliant cases as well, defaults to False
-        :type report_valid: bool, optional
-        """
-        logging.StreamHandler.__init__(self)
-        self.statements = []
-        if report_valid:
-            self.setLevel(logging.INFO)
+            self.setLevel(logging.DEBUG)
         else:
             self.setLevel(logging.ERROR)
 
