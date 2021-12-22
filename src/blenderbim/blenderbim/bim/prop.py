@@ -97,11 +97,10 @@ def getAttributeEnumValues(prop, context):
     
     if isinstance(data, dict):
         for k, v in data.items():
-            for e in data:
-                items.append((
-                InternStr(k),
-                InternStr(v),
-                "",
+            items.append((
+            InternStr(k),
+            InternStr(v),
+            "",
         ))
     else:
         for e in data:
