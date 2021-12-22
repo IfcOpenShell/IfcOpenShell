@@ -24,6 +24,7 @@ import ifcopenshell
 import ifcopenshell.util.pset
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
+from collections import defaultdict
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -80,12 +81,37 @@ def update_is_visible(self, context):
                 pass
 
 
-def getAttributeEnumValues(self, context):
+def InternStr(s):
+    if not hasattr(InternStr, "StringCache"):  # Another way to define a function attribute
+        InternStr.StringCache = defaultdict(str)
+    InternStr.StringCache[s] = s
+    return InternStr.StringCache[s]
+
+InternStr.StringCache = {}
+
+
+def getAttributeEnumValues(prop, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
-    data = json.loads(self.enum_items)
+    items = []
+    data = json.loads(prop.enum_items)
+    
     if isinstance(data, dict):
-        getAttributeEnumValues.enum_values = [(str(k), v, "") for k, v in data.items()]
-    getAttributeEnumValues.enum_values = [(e, e, "") for e in data]
+        for k, v in data.items():
+            for e in data:
+                items.append((
+                InternStr(k),
+                InternStr(v),
+                "",
+        ))
+    else:
+        for e in data:
+            items.append((
+            InternStr(e),
+            InternStr(e),
+            "",
+        ))
+            
+    return items
 
 
 def update_schema_dir(self, context):
@@ -146,10 +172,7 @@ class Attribute(PropertyGroup):
     is_null: BoolProperty(name="Is Null")
     is_optional: BoolProperty(name="Is Optional")
     enum_items: StringProperty(name="Value")
-    enum_value: EnumProperty(
-        items=lambda self, context: getAttributeEnumValues.enum_values, 
-        name="Value", 
-        update=updateAttributeValue)
+    enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeValue)
 
     def get_value(self):
         if self.is_null:
