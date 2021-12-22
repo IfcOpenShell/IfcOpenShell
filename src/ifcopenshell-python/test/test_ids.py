@@ -297,61 +297,66 @@ class TestIfcValidation(unittest.TestCase):
         logger.addHandler(report)
         ids_file.validate(ifc_file, logger)
         self.assertEqual(len(report.statements), 5)
+        logger.handlers.pop()
 
-    # def test_validate_all_facets(self):
-    #     #Those are true: 
-    #     p1 = ids.property.create(location="any", propertyset="MySet", name="Param1", value="banan")
-    #     p2 = ids.property.create(location="any", propertyset="MySet", name="Param2", value=120.0)
-    #     # p3 = ids.property.create(location="any", propertyset="Pset_WallCommon", name="LoadBearing", value=False)
-    #     # #Those are false:
-    #     # p4 = ids.property.create(location="any", propertyset="MySet", name="Param1", value="orange")
-    #     # p5 = ids.property.create(location="any", propertyset="MySet", name="Param2", value=123.4)
-    #     # p6 = ids.property.create(location="any", propertyset="Pset_WallCommon", name="LoadBearing", value=True)
+    def test_validate_all_facets(self):
+        #Those are true: 
+        e = ids.entity.create(name="IfcWall")
+        p1 = ids.property.create(location="any", propertyset="MySet", name="Param1", value="banan")
+        p2 = ids.property.create(location="any", propertyset="MySet", name="Param2", value=120.0)
+        p3 = ids.property.create(location="any", propertyset="Pset_WallCommon", name="LoadBearing", value=False)
+        #Those are false:
+        p4 = ids.property.create(location="any", propertyset="MySet", name="Param1", value="orange")
+        p5 = ids.property.create(location="any", propertyset="MySet", name="Param2", value=123.4)
+        p6 = ids.property.create(location="any", propertyset="Pset_WallCommon", name="LoadBearing", value=True)
         
-    #     i = ids.ids()
-    #     i.specifications.append(ids.specification(name="Test_Specification"))
-    #     i.specifications[0].add_applicability(p1)
-    #     i.specifications[0].add_requirement(p2)
-    #     # i.specifications[0].add_requirement(p2)
-    #     # i.specifications[0].add_requirement(p3)
-    #     # i.specifications[0].add_requirement(p4)
-    #     # i.specifications[0].add_requirement(p5)
-    #     # i.specifications[0].add_requirement(p6)
+        i = ids.ids()
+        i.specifications.append(ids.specification(name="Test_Specification"))
+        i.specifications[0].add_applicability(e)
+        i.specifications[0].add_requirement(p1)
+        i.specifications[0].add_requirement(p2)
+        i.specifications[0].add_requirement(p3)
+        i.specifications[0].add_requirement(p4)
+        i.specifications[0].add_requirement(p5)
+        i.specifications[0].add_requirement(p6)
 
-    #     report = ids.SimpleHandler()
-    #     logger.addHandler(report)
-    #     i.validate(ifc_file, logger)
-    #     self.assertEqual(len(report.statements), 3) #three should fail
+        report = ids.SimpleHandler(report_valid=True)
+        logger.addHandler(report)
+
+        i.validate(ifc_file, logger)
+        # TODO self.assertEqual(len(report.statements), 27) #there are 5 walls in the IFC, one passed 3 criteria, est should fail (27 failures)
+        logger.handlers.pop()
+
 
     """ Validating IDS files with restrictions """
 
-    # def test_validate_restrictions_enumeration(self):
-    #     IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_property_with_restriction_enumeration.xml")
-    #     ids_file = ids.ids.open(IDS_URL)
-    #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]['simpleValue'], "Test_Parameter")
-    #     self.assertEqual( [x['@value'] for x in ids_file.specifications[0].requirements.terms[0].node["value"]['restriction'][0]['enumeration'] ], ['testA', 'testB'])
-    #     # TODO actual test of validation result
-    #     # self.assertTrue(   )
+    def test_validate_restrictions_enumeration(self):
+        IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_property_with_restriction_enumeration.xml")
+        ids_file = ids.ids.open(IDS_URL)
+        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]['simpleValue'], "Test_Parameter")
+        self.assertEqual( [x['@value'] for x in ids_file.specifications[0].requirements.terms[0].node["value"]['restriction'][0]['enumeration'] ], ['testA', 'testB'])
+        # TODO actual test of validation result
+        # self.assertTrue(   )
 
-    # def test_validate_restrictions_boundsInclusive(self):
-    #     IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_property_with_restriction_bounds.xml")
-    #     ids_file = ids.ids.open(IDS_URL)
-    #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]['simpleValue'], "Test_Parameter")
-    #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"]['restriction'][0]['minInclusive']['@value'], '0')
-    #     # TODO actual test of validation result
-    #     # self.assertTrue(   )
+    def test_validate_restrictions_boundsInclusive(self):
+        IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_property_with_restriction_bounds.xml")
+        ids_file = ids.ids.open(IDS_URL)
+        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]['simpleValue'], "Test_Parameter")
+        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"]['restriction'][0]['minInclusive']['@value'], '0')
+        # TODO actual test of validation result
+        # self.assertTrue(   )
 
-    # def test_validate_restrictions_boundsExclusive(self):
-    #     #TODO
-    #     pass
+    def test_validate_restrictions_boundsExclusive(self):
+        #TODO
+        pass
 
-    # def test_validate_restrictions_pattern_simple(self):
-    #     IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_property_with_restriction_pattern.xml")
-    #     ids_file = ids.ids.open(IDS_URL)
-    #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]['simpleValue'], "Test_Parameter")
-    #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"]['restriction'][0]['pattern']['@value'], '[A-Z]{2,4}')
-    #     # TODO actual test of validation result
-    #     # self.assertTrue(   )
+    def test_validate_restrictions_pattern_simple(self):
+        IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_property_with_restriction_pattern.xml")
+        ids_file = ids.ids.open(IDS_URL)
+        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]['simpleValue'], "Test_Parameter")
+        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"]['restriction'][0]['pattern']['@value'], '[A-Z]{2,4}')
+        # TODO actual test of validation result
+        # self.assertTrue(   )
 
 
 class TestIdsReporting(unittest.TestCase):
@@ -363,6 +368,8 @@ class TestIdsReporting(unittest.TestCase):
         logger.addHandler(report)
         ids_file.validate(ifc_file, logger)
         self.assertEqual(len(report.statements), 5)
+        logger.handlers.pop()
+
 
     def test_bcf_report(self):
         ids_file = ids.ids.open(IDS_URL)
@@ -373,6 +380,7 @@ class TestIdsReporting(unittest.TestCase):
         my_bcfxml = bcfxml.load(fn)
         topics = my_bcfxml.get_topics()
         self.assertEqual(len(topics), 5)
+        logger.handlers.pop()
 
 
 if __name__ == "__main__":
