@@ -67,11 +67,27 @@ class BIM_PT_search(Panel):
         row.operator("bim.colour_by_pset", text="", icon="BRUSH_DATA")
 
         row = self.layout.row(align=True)
-        row.operator("bim.activate_ifc_type_filter", icon="FILTER")
+        row.operator("bim.activate_ifc_class_filter", icon="FILTER")
+        row.operator("bim.activate_ifc_building_storey_filter", icon="FILTER")
 
 
-class BIM_UL_ifctype_filter(bpy.types.UIList):
-    "This UI List is to list out all the selected IfcType and number of it as well as providing the BoolProperty to select/deselect"
+class BIM_UL_ifc_class_filter(bpy.types.UIList):
+    use_filter_linked: bpy.props.BoolProperty(name="Included", default=True, options=set(), description="Filter")
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        split = layout
+        split.use_property_split = True
+        split.use_property_decorate = False
+        split.prop(
+            item, "is_selected", text="", emboss=False, icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
+        )
+        split.prop(item, "name", text="", emboss=False, slider=True)
+        split = split.column()
+        split.scale_x = 0.5
+        split.label(text=str(item.total))
+
+
+class BIM_UL_ifc_building_storey_filter(bpy.types.UIList):
     use_filter_linked: bpy.props.BoolProperty(name="Included", default=True, options=set(), description="Filter")
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
