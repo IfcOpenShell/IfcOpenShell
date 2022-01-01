@@ -256,6 +256,23 @@ class Spatial:
 
 
 @interface
+class Structural:
+    def disable_editing_structural_analysis_model(cls): pass
+    def disable_structural_analysis_model_editing_ui(cls): pass
+    def enable_editing_structural_analysis_model(cls, model): pass
+    def enable_structural_analysis_model_editing_ui(cls): pass
+    def enabled_structural_analysis_model_editing_ui(cls): pass
+    def ensure_representation_contexts(cls): pass
+    def get_active_structural_analysis_model(cls): pass
+    def get_ifc_structural_analysis_model_attributes(cls, model): pass
+    def get_ifc_structural_analysis_models(cls): pass
+    def get_product_or_active_object(cls): pass
+    def get_structural_analysis_model_attributes(cls): pass
+    def load_structural_analysis_model_attributes(cls, data): pass
+    def load_structural_analysis_models(cls): pass
+
+
+@interface
 class Style:
     def disable_editing(cls, obj): pass
     def enable_editing(cls, obj): pass
