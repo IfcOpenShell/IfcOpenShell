@@ -32,6 +32,7 @@ from blenderbim.tool.pset import Pset
 from blenderbim.tool.qto import Qto
 from blenderbim.tool.root import Root
 from blenderbim.tool.spatial import Spatial
+from blenderbim.tool.structural import Structural
 from blenderbim.tool.style import Style
 from blenderbim.tool.surveyor import Surveyor
 from blenderbim.tool.type import Type

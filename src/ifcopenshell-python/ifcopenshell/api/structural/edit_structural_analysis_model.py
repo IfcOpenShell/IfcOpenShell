@@ -8,3 +8,4 @@ class Usecase:
     def execute(self):
         for name, value in self.settings["attributes"].items():
             setattr(self.settings["structural_analysis_model"], name, value)
+        return self.settings["structural_analysis_model"]

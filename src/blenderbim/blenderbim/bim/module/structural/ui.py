@@ -22,6 +22,7 @@ from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
 from ifcopenshell.api.structural.data import Data
+from blenderbim.bim.module.structural.data import StructuralData
 
 
 def draw_boundary_condition_ui(layout, boundary_condition_id, connection_id, props):
@@ -284,13 +285,14 @@ class BIM_PT_structural_analysis_models(Panel):
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not StructuralData.is_loaded:
+            StructuralData.load()
         self.props = context.scene.BIMStructuralProperties
 
         row = self.layout.row(align=True)
         row.label(
-            text="{} Structural Analysis Models Found".format(len(Data.structural_analysis_models)), icon="MOD_SIMPLIFY"
+            text="{} Structural Analysis Models Found".format(StructuralData.number_of_structural_analysis_models),
+            icon="MOD_SIMPLIFY",
         )
         if self.props.is_editing:
             row.operator("bim.add_structural_analysis_model", text="", icon="ADD")
@@ -324,8 +326,8 @@ class BIM_UL_structural_analysis_models(UIList):
             if context.active_object:
                 oprops = context.active_object.BIMObjectProperties
                 if (
-                    oprops.ifc_definition_id in Data.products
-                    and item.ifc_definition_id in Data.products[oprops.ifc_definition_id]
+                    oprops.ifc_definition_id in StructuralData.products
+                    and item.ifc_definition_id in StructuralData.products[oprops.ifc_definition_id]
                 ):
                     op = row.operator(
                         "bim.unassign_structural_analysis_model", text="", icon="KEYFRAME_HLT", emboss=False
