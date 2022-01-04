@@ -18,7 +18,8 @@
 
 import bpy
 import blenderbim.bim.schema
-from blenderbim.bim.prop import Attribute
+from blenderbim.bim.prop import Attribute, PRIMARY_MEASURE_TYPE
+import ifcopenshell
 from ifcopenshell.api.pset.data import Data
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
@@ -173,3 +174,42 @@ class WorkSchedulePsetProperties(PropertyGroup):
     active_pset_name: StringProperty(name="Pset Name")
     properties: CollectionProperty(name="Properties", type=Attribute)
     pset_name: EnumProperty(items=getWorkSchedulePsetNames, name="Pset Name")
+
+
+class RenameProperties(PropertyGroup):
+    pset_name: StringProperty(name="Pset")
+    existing_property_name: StringProperty(name="Existing Property Name")
+    new_property_name: StringProperty(name="New Property Name")
+
+
+class AddEditProperties(PropertyGroup):
+    pset_name: StringProperty(name="Pset")
+    property_name: StringProperty(name="Property")
+    string_value: StringProperty(name="Value")
+    bool_value: BoolProperty(name="Value")
+    int_value: IntProperty(name="Value")
+    float_value: FloatProperty(name="Value")
+    primary_measure_type: EnumProperty(
+        items=[
+            (x, x, "")
+            for x in PRIMARY_MEASURE_TYPE
+        ],
+        default="IfcLabel",
+        name="Primary Measure Type"
+    )
+
+    def get_value_name(self):
+        ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)
+        data_type = ifcopenshell.util.attribute.get_primitive_type(ifc_data_type)
+        if data_type == "string":
+            return "string_value"
+        elif data_type == "boolean":
+            return "bool_value"
+        elif data_type == "integer":
+            return "int_value"
+        elif data_type == "float":
+            return "float_value"
+
+
+class DeletePsets(PropertyGroup):
+    pset_name: StringProperty(name="Pset")
