@@ -9,6 +9,13 @@ For more information, see
 * [http://ifcopenshell.org](http://ifcopenshell.org)  
 * [http://academy.ifcopenshell.org](http://academy.ifcopenshell.org)
 
+
+
+## Latest Pre-built Binaries
+[See this post](https://github.com/IfcOpenBot/IfcOpenShell/commit/b4ce5be86d293246dd84f59891e2d5d7f2240284#comments)
+
+# To Build Yourself
+
 [![Build Status](https://travis-ci.org/IfcOpenShell/IfcOpenShell.svg?branch=v0.6.0)](https://travis-ci.org/IfcOpenShell/IfcOpenShell)
 
 Prerequisites
