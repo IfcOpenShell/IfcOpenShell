@@ -46,7 +46,7 @@ class RelatedTopic:
 
 class HeaderFile:
     def __init__(self):
-        self.file_name = ""
+        self.filename = ""
         self.date = None
         self.reference = ""
         self.ifc_project = None
