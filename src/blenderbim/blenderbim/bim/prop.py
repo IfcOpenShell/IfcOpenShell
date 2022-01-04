@@ -23,6 +23,7 @@ import importlib
 import ifcopenshell
 import ifcopenshell.util.pset
 import blenderbim.bim.handler
+import blenderbim.bim.schema
 from blenderbim.bim.ifc import IfcStore
 from collections import defaultdict
 from bpy.types import PropertyGroup
@@ -283,11 +284,17 @@ class Attribute(PropertyGroup):
     is_optional: BoolProperty(name="Is Optional")
     enum_items: StringProperty(name="Value")
     enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeValue)
-
+    enum_data_type: StringProperty(name="Enum Data Type")
+    
     def get_value(self):
         if self.is_null:
             return None
-        return getattr(self, str(self.get_value_name()), None)
+        if self.data_type == "enum":
+            type_map = blenderbim.bim.schema.ifc.type_map
+            type_fn = {'integer':int, 'string':str, 'float':float, 'bool': bool}[type_map[self.enum_data_type]]
+            return type_fn(self.enum_value)
+        else:    
+            return getattr(self, str(self.get_value_name()), None)
 
     def get_value_default(self):
         if self.data_type == "string":
