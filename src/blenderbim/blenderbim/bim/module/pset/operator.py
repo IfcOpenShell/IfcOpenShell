@@ -101,7 +101,6 @@ class EnablePsetEditing(bpy.types.Operator):
 
     def execute(self, context):
         self.props = get_pset_props(context, self.obj, self.obj_type)
-
         self.props.properties.clear()
 
         data = Data.psets if self.pset_id in Data.psets else Data.qtos
@@ -374,3 +373,159 @@ class CopyPropertyToSelection(bpy.types.Operator, Operator):
                 prop_name=self.name,
                 prop_value=prop_value,
             )
+
+
+class BIM_OT_add_property_to_edit(bpy.types.Operator):
+    bl_label = "Add new row"
+    bl_idname = "bim.add_property_to_edit"
+    bl_options = {"REGISTER", "UNDO"}
+    option: bpy.props.StringProperty()
+
+    def execute(self, context):
+        getattr(context.scene, self.option).add()
+        return {"FINISHED"}
+
+
+class BIM_OT_remove_property_to_edit(bpy.types.Operator):
+    bl_label = "Remove property to be renamed"
+    bl_idname = "bim.remove_property_to_edit"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()
+    option: bpy.props.StringProperty()
+
+    def execute(self, context):
+        getattr(context.scene, self.option).remove(self.index)
+        return {"FINISHED"}
+
+
+class BIM_OT_clear_list(bpy.types.Operator):
+    bl_label = "Clear list of properties"
+    bl_idname = "bim.clear_list"
+    bl_options = {"REGISTER", "UNDO"}
+    option: bpy.props.StringProperty()
+
+    def execute(self, context):
+        getattr(context.scene, self.option).clear()
+        return {"FINISHED"}
+
+
+class BIM_OT_rename_parameters(bpy.types.Operator):
+    bl_label = "Rename Parameters"
+    bl_idname = "bim.rename_parameters"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Rename parameters that are subclasses of IfcElement"
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        props_to_map = context.scene.RenameProperties
+        ifc_file = IfcStore.get_file()
+        all_ifc_elements = ifc_file.by_type("IfcElement")
+
+        for ifc_element in all_ifc_elements:
+            for definition in ifc_element.IsDefinedBy:
+                if definition.is_a('IfcRelDefinesByProperties'):
+                    prop_set = definition.RelatingPropertyDefinition
+                    self.rename_property(prop_set, props_to_map, ifc_element)
+
+        self.report({'INFO'}, 'Finished applying changes')
+        return {"FINISHED"}
+
+    def rename_property(self, property_set, properties_to_map, ifc_element):
+        if property_set.is_a() == "IfcPropertySet":
+            property_container = property_set.HasProperties
+        elif property_set.is_a() == "IfcElementQuantity":
+            property_container = property_set.Quantities
+
+        for obj_prop in property_container:
+            for prop2map in properties_to_map:
+                if prop2map.pset_name != property_set.Name:
+                    continue
+                if prop2map.existing_property_name == obj_prop.Name:
+                    obj_prop.Name = prop2map.new_property_name
+                    Data.load(IfcStore.get_file(), ifc_element.id())
+
+
+class BIM_OT_add_edit_custom_property(bpy.types.Operator):
+    bl_label = "Add or edit a custom property"
+    bl_idname = "bim.add_edit_custom_property"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        selected_objects = context.selected_objects
+        props = context.scene.AddEditProperties
+
+        for obj in selected_objects:
+            ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+            if not ifc_definition_id:
+                continue
+            ifc_element = tool.Ifc.get().by_id(ifc_definition_id)
+
+            for prop in props:
+                value = getattr(prop, prop.get_value_name())
+                primary_measure_type = prop.primary_measure_type
+                value_ifc_entity = getattr(self.file, f"create{primary_measure_type}")(value)
+                
+                new_pset = ifcopenshell.api.run(
+                    "pset.add_pset",
+                    self.file,
+                    product=ifc_element,
+                    name=prop.pset_name
+                    )
+                ifcopenshell.api.run(
+                    "pset.edit_pset",
+                    self.file,
+                    pset=new_pset,
+                    properties={prop.property_name:value_ifc_entity}
+                    )
+
+        self.report({'INFO'}, 'Finished applying changes')
+        return {"FINISHED"}
+
+
+class BIM_OT_bulk_remove_psets(bpy.types.Operator):
+    bl_label = "Bulk remove psets from selected objects"
+    bl_idname = "bim.bulk_remove_psets"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Bulk remove psets from selected objects"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        selected_objects = context.selected_objects
+        props = context.scene.DeletePsets
+
+        for obj in selected_objects:
+            ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+            if not ifc_definition_id:
+                continue
+            ifc_element = tool.Ifc.get().by_id(ifc_definition_id)   
+            psets = ifcopenshell.util.element.get_psets(ifc_element)
+
+            for prop in props:
+                pset = prop.pset_name
+                if pset in psets:
+                    try:
+                        ifcopenshell.api.run(
+                        "pset.remove_pset",
+                        self.file,
+                        **{
+                            "product": self.file.by_id(ifc_definition_id),
+                            "pset": self.file.by_id(psets[pset]["id"]),
+                        },
+                        )
+                    except KeyError:
+                        pass #Sometimes the pset id is not found, I'm not sure why this happens though. - vulevukusej
+                    Data.load(IfcStore.get_file(), ifc_definition_id)
+
+        self.report({'INFO'}, 'Finished applying changes')
+        return {"FINISHED"}

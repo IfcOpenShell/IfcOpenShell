@@ -375,3 +375,117 @@ class BIM_PT_work_schedule_psets(Panel):
 
         for pset in WorkSchedulePsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "WorkSchedule")
+
+
+class BIM_PT_bulk_property_editor(Panel):
+    bl_label = "IFC Bulk Property Editor"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_rename_parameters(Panel):
+    bl_label = "Rename all building elements"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_bulk_property_editor"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_order = 0
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.RenameProperties
+
+        if props:
+            for index, prop in enumerate(props):
+                row = layout.row()
+                row.prop(prop, "pset_name", text="")
+                row.prop(prop, "existing_property_name", text="")
+                row.prop(prop, "new_property_name", text="")
+                op = row.operator("bim.remove_property_to_edit",icon="PANEL_CLOSE", text="")
+                op.index = index
+                op.option = "RenameProperties"
+
+        row = layout.row()
+        row.label()
+        op = row.operator("bim.add_property_to_edit", icon="ADD",text="")
+        op.option = "RenameProperties"
+
+        if props:
+            row = layout.row()
+            clear = row.operator("bim.clear_list")
+            clear.option = "RenameProperties"
+            row.operator("bim.rename_parameters")
+
+
+class BIM_PT_add_edit_custom_properties(Panel):
+    bl_label = "Add/Edit Custom Properties and Values (to selected objects)"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_bulk_property_editor"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_order = 1
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.AddEditProperties
+
+        if props:
+            for index, prop in enumerate(props):
+                row = layout.row()
+                row.prop(prop, "pset_name", text="")
+                row.prop(prop, "property_name", text="")
+                row.prop(prop, prop.get_value_name(), text="")
+                row.prop(prop, "primary_measure_type", text="")
+                op = row.operator("bim.remove_property_to_edit",icon="PANEL_CLOSE", text="")
+                op.index = index
+                op.option = "AddEditProperties"
+
+        row = layout.row()
+        row.label()
+        op = row.operator("bim.add_property_to_edit", icon="ADD",text="")
+        op.option = "AddEditProperties"
+
+        if props:
+            row = layout.row()
+            clear = row.operator("bim.clear_list")
+            clear.option = "AddEditProperties"
+            op = row.operator("bim.add_edit_custom_property",icon="ADD", text="Apply Changes")
+
+
+class BIM_PT_delete_psets(Panel):
+    bl_label = "Bulk remove psets from selected objects"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_bulk_property_editor"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_order = 2
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.DeletePsets
+        
+        if props:
+            for index, prop in enumerate(props):
+                row = layout.row()
+                row.prop(prop, "pset_name", text="Pset")
+                op = row.operator("bim.remove_property_to_edit",icon="PANEL_CLOSE", text="")
+                op.index = index
+                op.option = "DeletePsets"
+
+        row = layout.row(align=True)
+        row.label()
+        op = row.operator("bim.add_property_to_edit", icon="ADD",text="")
+        op.option = "DeletePsets"
+        
+        if props:
+            row = layout.row()
+            clear = row.operator("bim.clear_list")
+            clear.option = "DeletePsets"
+            op = row.operator("bim.bulk_remove_psets", text="Apply Changes")
