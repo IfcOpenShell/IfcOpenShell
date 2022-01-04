@@ -305,6 +305,7 @@ class UpdateBoundaryGeometry(bpy.types.Operator):
         matrix[0].xyz = i
         matrix[1].xyz = j
         matrix[2].xyz = k
+        matrix.transpose()
         matrix.translation = location
 
         settings = {
