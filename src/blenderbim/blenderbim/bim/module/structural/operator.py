@@ -320,9 +320,7 @@ class AssignStructuralAnalysisModel(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.assign_structural_analysis_model(
-            tool.Ifc, tool.Structural,
-            product=self.product,
-            structural_analysis_model=self.structural_analysis_model
+            tool.Ifc, tool.Structural, product=self.product, structural_analysis_model=self.structural_analysis_model
         )
 
 
@@ -335,9 +333,7 @@ class UnassignStructuralAnalysisModel(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.unassign_structural_analysis_model(
-            tool.Ifc, tool.Structural,
-            product=self.product,
-            structural_analysis_model=self.structural_analysis_model
+            tool.Ifc, tool.Structural, product=self.product, structural_analysis_model=self.structural_analysis_model
         )
 
 
