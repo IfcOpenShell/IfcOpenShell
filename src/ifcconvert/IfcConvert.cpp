@@ -661,12 +661,24 @@ int main(int argc, char** argv) {
 		Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
 	}
 
-	Logger::Verbosity(vcounter.count
-		? (vcounter.count > 1
-		? Logger::LOG_DEBUG 
-		: Logger::LOG_NOTICE)
-		: Logger::LOG_ERROR
-	);
+	switch (vcounter.count) {
+	case 0:
+		Logger::Verbosity(Logger::LOG_ERROR);
+		break;
+	case 1:
+		Logger::Verbosity(Logger::LOG_NOTICE);
+		break;
+	case 2:
+		Logger::Verbosity(Logger::LOG_DEBUG);
+		break;
+	case 3:
+		Logger::Verbosity(Logger::LOG_PERF);
+		break;
+	case 4:
+		Logger::Verbosity(Logger::LOG_PERF);
+		Logger::PrintPerformanceStatsOnElement(true);
+		break;
+	}
 
     path_t output_temp_filename = output_filename + IfcUtil::path::from_utf8(TEMP_FILE_EXTENSION);
 	
@@ -1173,6 +1185,10 @@ int main(int argc, char** argv) {
     if (!quiet) {
         Logger::Status("\nConversion took " +  format_duration(start, end));
     }
+
+	if (!quiet && Logger::Verbosity() == Logger::LOG_PERF) {
+		Logger::PrintPerformanceStats();
+	}
 
     return successful ? EXIT_SUCCESS : EXIT_FAILURE;
 }
