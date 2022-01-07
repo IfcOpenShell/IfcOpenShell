@@ -19,7 +19,8 @@
 import os
 import bpy
 import ifcopenshell
-from blenderbim.bim.prop import StrProperty, Attribute, PRIMARY_MEASURE_TYPE
+from blenderbim.bim.module.pset_template.data import PsetTemplatesData
+from blenderbim.bim.prop import StrProperty, Attribute
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -87,6 +88,12 @@ def getPsetTemplates(self, context):
     return psettemplates_enum
 
 
+def get_primary_measure_type(self, context):
+    if not PsetTemplatesData.is_loaded:
+        PsetTemplatesData.load()
+    return PsetTemplatesData.data["primary_measure_type"]
+
+
 class PsetTemplate(PropertyGroup):
     global_id: StringProperty(name="Global ID")
     name: StringProperty(name="Name")
@@ -143,13 +150,7 @@ class PropTemplate(PropertyGroup):
     global_id: StringProperty(name="Global ID")
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
-    primary_measure_type: EnumProperty(
-        items=[
-            (x, x, "")
-            for x in PRIMARY_MEASURE_TYPE
-        ],
-        name="Primary Measure Type",
-    )
+    primary_measure_type: EnumProperty(items=get_primary_measure_type, name="Primary Measure Type")
 
 
 class BIMPsetTemplateProperties(PropertyGroup):
