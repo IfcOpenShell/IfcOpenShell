@@ -49,6 +49,22 @@ class TestEditPset(test.bootstrap.IFC4):
         assert pset.HasProperties[1].Name == "Status"
         assert pset.HasProperties[1].NominalValue is None
 
+    def test_editing_a_templated_pset_with_automatic_casting_of_primitive_data_types(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Pset_WallCommon")
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            self.file,
+            pset=pset,
+            properties={"ThermalTransmittance": "42"},
+        )
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Reference": "bar", "Status": None})
+        pset = element.IsDefinedBy[0].RelatingPropertyDefinition
+
+        assert pset.HasProperties[0].Name == "ThermalTransmittance"
+        assert pset.HasProperties[0].NominalValue.is_a("IfcThermalTransmittanceMeasure")
+        assert pset.HasProperties[0].NominalValue.wrappedValue == 42
+
     def test_not_adding_a_property_if_it_is_none(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Pset_WallCommon")
