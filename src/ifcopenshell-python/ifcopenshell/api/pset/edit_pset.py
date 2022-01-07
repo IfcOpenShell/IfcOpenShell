@@ -41,7 +41,10 @@ class Usecase:
         elif isinstance(value, ifcopenshell.entity_instance):
             prop.NominalValue = value
         else:
-            primary_measure_type = self.get_primary_measure_type(prop.Name, old_value=prop.NominalValue, new_value=value)
+            primary_measure_type = self.get_primary_measure_type(
+                prop.Name, old_value=prop.NominalValue, new_value=value
+            )
+            value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
             prop.NominalValue = self.file.create_entity(primary_measure_type, value)
         del self.settings["properties"][prop.Name]
 
@@ -50,13 +53,16 @@ class Usecase:
         for name, value in self.settings["properties"].items():
             if value is None:
                 continue
-            primary_measure_type = self.get_primary_measure_type(name, new_value=value)
-            if hasattr(value, "is_a"):
-                value = value.wrappedValue
+            if isinstance(value, ifcopenshell.entity_instance):
+                nominal_value = value
+            else:
+                primary_measure_type = self.get_primary_measure_type(name, new_value=value)
+                value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
+                nominal_value = self.file.create_entity(primary_measure_type, value)
             properties.append(
                 self.file.create_entity(
                     "IfcPropertySingleValue",
-                    **{"Name": name, "NominalValue": self.file.create_entity(primary_measure_type, value)},
+                    **{"Name": name, "NominalValue": nominal_value},
                 )
             )
         return properties
@@ -94,3 +100,22 @@ class Usecase:
                 return "IfcBoolean"
             elif isinstance(new_value, int):
                 return "IfcInteger"
+
+    def cast_value_to_primary_measure_type(self, value, primary_measure_type):
+        type_str = self.file.create_entity(primary_measure_type).attribute_type(0)
+        type_fn = {
+            "AGGREGATE OF DOUBLE": list,
+            "AGGREGATE OF INT": list,
+            "AGGREGATE OF ENTITY INSTANCE": list,
+            "BINARY": bytes,
+            "LOGICAL": str,
+            "BOOL": bool,
+            "INT": int,
+            "DOUBLE": float,
+            "STRING": str,
+        }[type_str]
+        if type_str == "AGGREGATE OF DOUBLE":
+            return [float(i) for i in value]
+        elif type_str == "AGGREGATE OF INT":
+            return [int(i) for i in value]
+        return type_fn(value)

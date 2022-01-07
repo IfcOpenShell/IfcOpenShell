@@ -82,35 +82,45 @@ def update_is_visible(self, context):
                 pass
 
 
-def InternStr(s):
-    if not hasattr(InternStr, "StringCache"):  # Another way to define a function attribute
-        InternStr.StringCache = defaultdict(str)
-    InternStr.StringCache[s] = s
-    return InternStr.StringCache[s]
+# If we don't cache strings, accents get mangled due to a Blender bug
+# https://blender.stackexchange.com/questions/216230/is-there-a-workaround-for-the-known-bug-in-dynamic-enumproperty
+# https://github.com/IfcOpenShell/IfcOpenShell/pull/1945
+# https://github.com/IfcOpenShell/IfcOpenShell/issues/1941
+def cache_string(s):
+    s = str(s)
+    if not hasattr(cache_string, "data"):  # Another way to define a function attribute
+        cache_string.data = defaultdict(str)
+    cache_string.data[s] = s
+    return cache_string.data[s]
 
-InternStr.StringCache = {}
+
+cache_string.data = {}
 
 
 def getAttributeEnumValues(prop, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
     items = []
     data = json.loads(prop.enum_items)
-    
+
     if isinstance(data, dict):
         for k, v in data.items():
-            items.append((
-            InternStr(k),
-            InternStr(v),
-            "",
-        ))
+            items.append(
+                (
+                    cache_string(k),
+                    cache_string(v),
+                    "",
+                )
+            )
     else:
         for e in data:
-            items.append((
-            InternStr(e),
-            InternStr(e),
-            "",
-        ))
-            
+            items.append(
+                (
+                    cache_string(e),
+                    cache_string(e),
+                    "",
+                )
+            )
+
     return items
 
 
@@ -173,17 +183,11 @@ class Attribute(PropertyGroup):
     is_optional: BoolProperty(name="Is Optional")
     enum_items: StringProperty(name="Value")
     enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeValue)
-    enum_data_type: StringProperty(name="Enum Data Type")
-    
+
     def get_value(self):
         if self.is_null:
             return None
-        if self.data_type == "enum":
-            type_map = blenderbim.bim.schema.ifc.type_map
-            type_fn = {'integer':int, 'string':str, 'float':float, 'bool': bool}[type_map[self.enum_data_type]]
-            return type_fn(self.enum_value)
-        else:    
-            return getattr(self, str(self.get_value_name()), None)
+        return getattr(self, str(self.get_value_name()), None)
 
     def get_value_default(self):
         if self.data_type == "string":
