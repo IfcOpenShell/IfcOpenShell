@@ -68,7 +68,7 @@ Using the official Open CASCADE release instead of community edition
 Before building the dependencies, enable the OCCT usage:
 ```
 > set IFCOS_USE_OCCT=TRUE
-> buid-deps.cmd
+> build-deps.cmd
 ```
 
 Please note that this option is not yet available in the MSYS build scripts.
@@ -80,7 +80,7 @@ Let's say you have already installed 64-bit Python 3.5.1 to `C:\Python3`.
 Before building the dependencies, disable the script from installing Python:
 ```
 > set IFCOS_INSTALL_PYTHON=FALSE
-> buid-deps.cmd
+> build-deps.cmd
 ```
 
 After building the dependencies, append Python version and installation directory information to the BuildDepsCache file
