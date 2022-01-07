@@ -36,11 +36,13 @@ class TypeData:
         # These two are loaded discretely because relating_types depends on relating_type_classes
         cls.data["relating_type_classes"] = cls.relating_type_classes()
         cls.data["relating_types"] = cls.relating_types()
-        cls.data.update({
-            "is_product": cls.is_product(),
-            "total_instances": cls.total_instances(),
-            "type_name": cls.type_name(),
-        })
+        cls.data.update(
+            {
+                "is_product": cls.is_product(),
+                "total_instances": cls.total_instances(),
+                "type_name": cls.type_name(),
+            }
+        )
 
     @classmethod
     def relating_type_classes(cls):

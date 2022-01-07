@@ -377,7 +377,7 @@ class CopyPropertyToSelection(bpy.types.Operator, Operator):
 
 
 class BIM_OT_add_property_to_edit(bpy.types.Operator):
-    bl_label = "Add new row"
+    bl_label = "Add Edit Rule"
     bl_idname = "bim.add_property_to_edit"
     bl_options = {"REGISTER", "UNDO"}
     option: bpy.props.StringProperty()
