@@ -41,6 +41,10 @@ class Ifc(blenderbim.core.tool.Ifc):
             return IfcStore.get_file().schema
 
     @classmethod
+    def schema(cls):
+        return IfcStore.get_schema()
+
+    @classmethod
     def get_entity(cls, obj):
         ifc = IfcStore.get_file()
         props = getattr(obj, "BIMObjectProperties", None)

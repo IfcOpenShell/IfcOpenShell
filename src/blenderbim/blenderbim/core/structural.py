@@ -51,7 +51,7 @@ def edit_structural_analysis_model(ifc, structural):
         **{
             "structural_analysis_model": structural.get_active_structural_analysis_model(),
             "attributes": attributes,
-        }
+        },
     )
     structural.load_structural_analysis_models()
     structural.disable_editing_structural_analysis_model()

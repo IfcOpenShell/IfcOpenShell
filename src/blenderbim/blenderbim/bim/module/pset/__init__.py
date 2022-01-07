@@ -55,7 +55,7 @@ classes = (
     ui.BIM_PT_bulk_property_editor,
     ui.BIM_PT_rename_parameters,
     ui.BIM_PT_add_edit_custom_properties,
-    ui.BIM_PT_delete_psets
+    ui.BIM_PT_delete_psets,
 )
 
 
@@ -69,6 +69,7 @@ def register():
     bpy.types.Scene.RenameProperties = bpy.props.CollectionProperty(type=prop.RenameProperties)
     bpy.types.Scene.AddEditProperties = bpy.props.CollectionProperty(type=prop.AddEditProperties)
     bpy.types.Scene.DeletePsets = bpy.props.CollectionProperty(type=prop.DeletePsets)
+
 
 def unregister():
     del bpy.types.Object.PsetProperties

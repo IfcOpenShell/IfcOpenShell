@@ -426,11 +426,11 @@ class BIM_OT_rename_parameters(bpy.types.Operator):
 
         for ifc_element in all_ifc_elements:
             for definition in ifc_element.IsDefinedBy:
-                if definition.is_a('IfcRelDefinesByProperties'):
+                if definition.is_a("IfcRelDefinesByProperties"):
                     prop_set = definition.RelatingPropertyDefinition
                     self.rename_property(prop_set, props_to_map, ifc_element)
 
-        self.report({'INFO'}, 'Finished applying changes')
+        self.report({"INFO"}, "Finished applying changes")
         return {"FINISHED"}
 
     def rename_property(self, property_set, properties_to_map, ifc_element):
@@ -472,21 +472,13 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator):
                 value = getattr(prop, prop.get_value_name())
                 primary_measure_type = prop.primary_measure_type
                 value_ifc_entity = getattr(self.file, f"create{primary_measure_type}")(value)
-                
-                new_pset = ifcopenshell.api.run(
-                    "pset.add_pset",
-                    self.file,
-                    product=ifc_element,
-                    name=prop.pset_name
-                    )
-                ifcopenshell.api.run(
-                    "pset.edit_pset",
-                    self.file,
-                    pset=new_pset,
-                    properties={prop.property_name:value_ifc_entity}
-                    )
 
-        self.report({'INFO'}, 'Finished applying changes')
+                new_pset = ifcopenshell.api.run("pset.add_pset", self.file, product=ifc_element, name=prop.pset_name)
+                ifcopenshell.api.run(
+                    "pset.edit_pset", self.file, pset=new_pset, properties={prop.property_name: value_ifc_entity}
+                )
+
+        self.report({"INFO"}, "Finished applying changes")
         return {"FINISHED"}
 
 
@@ -509,7 +501,7 @@ class BIM_OT_bulk_remove_psets(bpy.types.Operator):
             ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
             if not ifc_definition_id:
                 continue
-            ifc_element = tool.Ifc.get().by_id(ifc_definition_id)   
+            ifc_element = tool.Ifc.get().by_id(ifc_definition_id)
             psets = ifcopenshell.util.element.get_psets(ifc_element)
 
             for prop in props:
@@ -517,16 +509,16 @@ class BIM_OT_bulk_remove_psets(bpy.types.Operator):
                 if pset in psets:
                     try:
                         ifcopenshell.api.run(
-                        "pset.remove_pset",
-                        self.file,
-                        **{
-                            "product": self.file.by_id(ifc_definition_id),
-                            "pset": self.file.by_id(psets[pset]["id"]),
-                        },
+                            "pset.remove_pset",
+                            self.file,
+                            **{
+                                "product": self.file.by_id(ifc_definition_id),
+                                "pset": self.file.by_id(psets[pset]["id"]),
+                            },
                         )
                     except KeyError:
-                        pass #Sometimes the pset id is not found, I'm not sure why this happens though. - vulevukusej
+                        pass  # Sometimes the pset id is not found, I'm not sure why this happens though. - vulevukusej
                     Data.load(IfcStore.get_file(), ifc_definition_id)
 
-        self.report({'INFO'}, 'Finished applying changes')
+        self.report({"INFO"}, "Finished applying changes")
         return {"FINISHED"}
