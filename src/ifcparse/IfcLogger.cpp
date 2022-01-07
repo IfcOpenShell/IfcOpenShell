@@ -34,31 +34,39 @@
 #include <algorithm>
 #include <ctime>
 #include <iomanip>
+#include <chrono>
 
 namespace {
 
-	std::string get_time() {
+	std::string get_time(bool with_milliseconds=false) {
 		std::ostringstream oss;
 		time_t now = time(nullptr);
 		oss << std::put_time(localtime(&now), "%F %T");
+
+		if (with_milliseconds) {
+			auto now_chrono = std::chrono::system_clock::now();
+			auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now_chrono.time_since_epoch()) % 1000;
+			oss << '.' << std::setfill('0') << std::setw(3) << ms.count();
+		}
+
 		return oss.str();
 	}
 	
 	template <typename T>
 	struct severity_strings {
-		static const std::array<std::basic_string<T>, 4> value;
+		static const std::array<std::basic_string<T>, 5> value;
 	};
 
 	template <>
-	const std::array<std::basic_string<char>, 4> severity_strings<char>::value = { "Debug", "Notice", "Warning", "Error" };
+	const std::array<std::basic_string<char>, 5> severity_strings<char>::value = { "Performance", "Debug", "Notice", "Warning", "Error" };
 
 	template <>
-	const std::array<std::basic_string<wchar_t>, 4> severity_strings<wchar_t>::value = { L"Debug", L"Notice", L"Warning", L"Error" };
+	const std::array<std::basic_string<wchar_t>, 5> severity_strings<wchar_t>::value = { L"Performance", L"Debug", L"Notice", L"Warning", L"Error" };
 	
 	template <typename T>
 	void plain_text_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
 		os << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
-		os << "[" << get_time().c_str() << "] ";
+		os << "[" << get_time(type <= Logger::LOG_PERF).c_str() << "] ";
 		if (current_product) {
             std::string global_id = *((IfcUtil::IfcBaseEntity*)*current_product)->get("GlobalId");
 			os << "{" << global_id.c_str() << "} ";
@@ -107,8 +115,12 @@ namespace {
 }
 
 void Logger::SetProduct(boost::optional<IfcUtil::IfcBaseClass*> product) {
-	if (verbosity == LOG_DEBUG && product) {
+	if (verbosity <= LOG_DEBUG && product) {
 		Message(LOG_DEBUG, "Begin processing", *product);
+	}
+	if (!product && print_perf_stats_on_element) {
+		PrintPerformanceStats();
+		performance_statistics.clear();
 	}
 	current_product = product;
 }
@@ -134,6 +146,19 @@ void Logger::SetOutput(std::wostream* l1, std::wostream* l2) {
 void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
 	static std::mutex m;
 	std::lock_guard<std::mutex> lk(m);
+
+	if (type == LOG_PERF) {
+		if (!first_timepoint) {
+			first_timepoint = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+		}
+		double t0 = (std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - *first_timepoint) / 1.e9;
+		if (message.substr(0, 5) == "done ") {
+			auto orig = message.substr(5);
+			performance_statistics[orig] += t0 - performance_signal_start[orig];
+		} else {
+			performance_signal_start[message] = t0;
+		}
+	}
 
 	if (type > max_severity) {
 		max_severity = type;
@@ -185,6 +210,31 @@ std::string Logger::GetLog() {
 	return log_stream.str();
 }
 
+void Logger::PrintPerformanceStats() {
+	std::vector<std::pair<double, std::string>> items;
+	for (auto& p : performance_statistics) {
+		items.push_back({ p.second, p.first });
+	}
+
+	std::sort(items.begin(), items.end());
+	std::reverse(items.begin(), items.end());
+
+	size_t max_size = 0;
+	for (auto& p : items) {
+		if (p.second.size() > max_size) {
+			max_size = p.second.size();
+		}
+	}
+
+	for (auto& p : items) {
+		if (log2) {
+			(*log2) << p.second << std::string(max_size - p.second.size(), ' ') << ": " << p.first << std::endl;
+		} else if (wlog2) {
+			(*wlog2) << p.second.c_str() << std::string(max_size - p.second.size(), ' ').c_str() << ": " << p.first << std::endl;
+		}
+	}
+}
+
 void Logger::Verbosity(Logger::Severity v) { verbosity = v; }
 Logger::Severity Logger::Verbosity() { return verbosity; }
 
@@ -202,3 +252,7 @@ Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
 Logger::Severity Logger::max_severity = Logger::LOG_NOTICE;
 Logger::Format Logger::format = Logger::FMT_PLAIN;
 boost::optional<IfcUtil::IfcBaseClass*> Logger::current_product;
+boost::optional<long long> Logger::first_timepoint;
+std::map<std::string, double> Logger::performance_statistics;
+std::map<std::string, double> Logger::performance_signal_start;
+bool Logger::print_perf_stats_on_element = false;
