@@ -68,7 +68,7 @@ Using the official Open CASCADE release instead of community edition
 Before building the dependencies, enable the OCCT usage:
 ```
 > set IFCOS_USE_OCCT=TRUE
-> buid-deps.cmd
+> build-deps.cmd
 ```
 
 Please note that this option is not yet available in the MSYS build scripts.
