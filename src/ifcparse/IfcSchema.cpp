@@ -72,7 +72,7 @@ IfcUtil::IfcBaseClass* IfcParse::schema_definition::instantiate(IfcEntityInstanc
 }
 
 void IfcParse::register_schema(schema_definition* s) {
-	schemas.insert({ s->name(), s });
+	schemas.insert({ boost::to_upper_copy(s->name()), s });
 }
 
 
