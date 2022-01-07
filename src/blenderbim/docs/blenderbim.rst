@@ -15,6 +15,7 @@ this document.
    blenderbim/developer_guide
    blenderbim/undo_system
    blenderbim/georeferencing
+   blenderbim/running_tests
    blenderbim/scene
 
 
