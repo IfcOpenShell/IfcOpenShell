@@ -1000,6 +1000,8 @@ int main(int argc, char** argv) {
 	}
 #endif
 
+	PERF("file geometry conversion");
+
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
