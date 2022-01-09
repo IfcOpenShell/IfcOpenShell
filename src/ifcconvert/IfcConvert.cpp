@@ -305,6 +305,8 @@ int main(int argc, char** argv) {
 		("disable-boolean-results",
 			"Specifies whether to disable the boolean operation within representations "
 			"such as clippings by means of IfcBooleanResult and subtypes")
+		("no-2d-boolean",
+			"Do not attempt to process boolean subtractions in 2D.")
 		("enable-layerset-slicing",
 			"Specifies whether to enable the slicing of products according "
 			"to their associated IfcMaterialLayerSet.")
@@ -817,6 +819,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_CHECK, no_wire_intersection_check);
 	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE, no_wire_intersection_tolerance);
 	settings.set(IfcGeom::IteratorSettings::STRICT_TOLERANCE, strict_tolerance);
+	settings.set(IfcGeom::IteratorSettings::BOOLEAN_ATTEMPT_2D, !vmap.count("no-2d-boolean"));	
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);

@@ -1782,6 +1782,9 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_DEBUG_BOOLEAN:
 		boolean_debug_setting = value;
 		break;
+	case GV_BOOLEAN_ATTEMPT_2D:
+		boolean_attempt_2d = value;
+		break;
 	default:
 		throw std::runtime_error("Invalid setting");
 	}
@@ -1819,6 +1822,8 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 		return no_wire_intersection_tolerance;
 	case GV_DEBUG_BOOLEAN:
 		return boolean_debug_setting;
+	case GV_BOOLEAN_ATTEMPT_2D:
+		return boolean_attempt_2d;
 	}
 	throw std::runtime_error("Invalid setting");
 }
@@ -4665,8 +4670,8 @@ namespace {
 						if (u11 < U1 && U1 < u12 && u21 < U2 && U2 < u22) {
 							// Edge curves belonging to different operands intersect, don't process
 							// using builder.
-							return false;
 							Logger::Notice("Intersecting boundaries");
+							return false;							
 						}
 					}
 				}
@@ -4772,8 +4777,9 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTo
 	const bool do_unify = true;
 	const bool do_subtraction_eliminate_disjoint_bbox = true;
 	const bool do_subtraction_eliminate_touching = true;
-
+	const bool do_attempt_2d_boolean = getValue(GV_BOOLEAN_ATTEMPT_2D) > 0.;
 	const bool debug = getValue(GV_DEBUG_BOOLEAN) > 0.;
+
 	std::string debug_identifier;
 	if (debug) {
 		std::stringstream ss;
@@ -4906,8 +4912,8 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTo
 
 		TopTools_ListOfShape b_faces, b_remainder_3d;
 
-		bool is_extrusion_a;
-		{
+		bool is_extrusion_a = false;
+		if (do_attempt_2d_boolean) {
 			PERF("boolean subtraction: extrusion check");
 
 			is_extrusion_a = is_extrusion(gp::DY(), a, a_face, a_interval);
