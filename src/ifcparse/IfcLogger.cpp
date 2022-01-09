@@ -227,11 +227,8 @@ void Logger::PrintPerformanceStats() {
 	}
 
 	for (auto& p : items) {
-		if (log2) {
-			(*log2) << p.second << std::string(max_size - p.second.size(), ' ') << ": " << p.first << std::endl;
-		} else if (wlog2) {
-			(*wlog2) << p.second.c_str() << std::string(max_size - p.second.size(), ' ').c_str() << ": " << p.first << std::endl;
-		}
+		auto s = p.second + std::string(max_size - p.second.size(), ' ') + ": " + std::to_string(p.first);
+		Message(LOG_PERF, s);
 	}
 }
 
