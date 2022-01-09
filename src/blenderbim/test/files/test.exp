@@ -1,0 +1,19 @@
+SCHEMA IFCROGUE;
+
+TYPE IfcDonkeyPowerMeasure = REAL;
+END_TYPE;
+
+TYPE IfcLabel = STRING(255);
+END_TYPE;
+
+ENTITY IfcBurbRoot
+ SUBTYPE OF (IfcRoot);
+	AcidDamage : OPTIONAL IfcDonkeyPowerMeasure;
+END_ENTITY;
+
+ENTITY IfcRoot
+ ABSTRACT SUPERTYPE OF (IfcBurbRoot);
+	Name : OPTIONAL IfcLabel;
+END_ENTITY;
+
+END_SCHEMA;

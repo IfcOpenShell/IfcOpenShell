@@ -57,7 +57,7 @@ class CreateProject(bpy.types.Operator):
             return {"FINISHED"}
 
         IfcStore.file = ifcopenshell.api.run(
-            "project.create_file", **{"version": context.scene.BIMProperties.export_schema}
+            "project.create_file", **{"version": context.scene.BIMProjectProperties.export_schema}
         )
         self.file = IfcStore.get_file()
 

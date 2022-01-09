@@ -38,6 +38,11 @@ class BIM_PT_debug(Panel):
         row.operator("bim.validate_ifc_file", icon="CHECKMARK", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
+        row = self.layout.row(align=True)
+        row.prop(props, "express_file", text="")
+        row.operator("bim.parse_express", icon="IMPORT", text="")
+        row.operator("bim.select_express_file", icon="FILE_FOLDER", text="")
+
         row = layout.row()
         row.operator("bim.print_ifc_file")
 

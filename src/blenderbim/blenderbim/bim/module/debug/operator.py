@@ -16,14 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import time
 import logging
 import ifcopenshell
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import blenderbim.tool as tool
+import blenderbim.core.debug as core
 import blenderbim.bim.handler
 import blenderbim.bim.import_ifc as import_ifc
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -296,3 +300,31 @@ class PrintObjectPlacement(bpy.types.Operator):
     def execute(self, context):
         print(ifcopenshell.util.placement.get_local_placement(IfcStore.get_file().by_id(self.step_id)))
         return {"FINISHED"}
+
+
+class ParseExpress(bpy.types.Operator):
+    bl_idname = "bim.parse_express"
+    bl_label = "Parse Express"
+
+    def execute(self, context):
+        core.parse_express(tool.Debug, context.scene.BIMDebugProperties.express_file)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
+
+
+class SelectExpressFile(bpy.types.Operator):
+    bl_idname = "bim.select_express_file"
+    bl_label = "Select Express File"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select an IFC EXPRESS definition"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.exp", options={"HIDDEN"})
+
+    def execute(self, context):
+        if os.path.exists(self.filepath) and "exp" in os.path.splitext(self.filepath)[1]:
+            context.scene.BIMDebugProperties.express_file = self.filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
