@@ -4555,6 +4555,218 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 }
 #else
 
+namespace {
+
+	bool boolean_subtraction_2d_using_builder(const TopoDS_Shape& a_input, const TopTools_ListOfShape& b_input, TopoDS_Shape& result, double eps) {
+		IfcGeom::impl::tree<int> edge_tree;
+
+		TopTools_ListOfShape ab_input = b_input;
+		ab_input.Prepend(a_input);
+
+		TopTools_ListIteratorOfListOfShape it(ab_input);
+		int shape_index = 0;
+		int edge_index = 0;
+		std::map<int, int> edge_index_to_shape_index;
+
+		std::vector<TopoDS_Shape> shapes;
+		std::vector<std::pair<size_t, TopoDS_Edge>> edges;
+		// First is the outer wire
+		std::vector<TopoDS_Wire> wires;
+
+		for (; it.More(); it.Next(), ++shape_index) {
+			if (it.Value().ShapeType() != TopAbs_FACE) {
+				return false;
+			}
+
+			const TopoDS_Face& f = TopoDS::Face(it.Value());
+			TopoDS_Wire outer_wire;
+
+			if (shape_index == 0) {
+				outer_wire = BRepTools::OuterWire(f);
+				wires.push_back(outer_wire);
+			}
+
+			size_t num_wires = 0;
+			TopoDS_Iterator it2(it.Value());
+			for (; it2.More(); it2.Next()) {
+				++num_wires;
+
+				if (outer_wire.IsNull() || !it2.Value().IsSame(outer_wire)) {
+					wires.push_back(TopoDS::Wire(it2.Value()));
+				}
+			}
+
+			if (num_wires > 1 && shape_index != 0) {
+				// The first operand can have inner wires, but the others
+				// can't because a inner wire would result in an additional
+				// outer wire for the result.
+				return false;
+			}
+
+			shapes.push_back(it.Value());
+			TopExp_Explorer exp(it.Value(), TopAbs_EDGE);
+			for (; exp.More(); exp.Next(), ++edge_index) {
+				edge_tree.add(edge_index, exp.Current());
+				edge_index_to_shape_index[edge_index] = shape_index;
+				edges.push_back({ shape_index, TopoDS::Edge(exp.Current()) });
+			}
+		}
+
+		shape_index = 0;
+		edge_index = 0;
+
+		it.Initialize(ab_input);
+		for (; it.More(); it.Next(), ++shape_index) {
+			TopExp_Explorer exp(it.Value(), TopAbs_EDGE);
+			for (; exp.More(); exp.Next(), ++edge_index) {
+				Bnd_Box b;
+				BRepBndLib::Add(exp.Current(), b);
+				b.Enlarge(eps);
+
+				for (auto& i : edge_tree.select_box(b)) {
+					if (i == edge_index) {
+						// Skip self-selection
+						continue;
+					}
+
+					if (edges[i].first == shape_index) {
+						// Skip edges of the same operand
+						continue;
+					}
+
+					const TopoDS_Edge& e0 = TopoDS::Edge(exp.Current());
+					const TopoDS_Edge& e1 = edges[i].second;
+
+					double u11, u12, u21, u22, U1, U2;
+
+					GeomAPI_ExtremaCurveCurve ecc(
+						BRep_Tool::Curve(e0, u11, u12),
+						BRep_Tool::Curve(e1, u21, u22)
+					);
+
+					// @todo: extend this to work in case of multiple extrema and curved segments.
+					const bool unbounded_intersects = (!ecc.Extrema().IsParallel() && ecc.NbExtrema() == 1 && ecc.Distance(1) < eps);
+					if (unbounded_intersects) {
+						ecc.Parameters(1, U1, U2);
+
+						if (u11 > u12) {
+							std::swap(u11, u12);
+						}
+						if (u21 > u22) {
+							std::swap(u21, u22);
+						}
+
+						/// @todo: tfk: probably need different thresholds on non-linear curves
+						u11 -= eps;
+						u12 += eps;
+						u21 -= eps;
+						u22 += eps;
+
+						if (u11 < U1 && U1 < u12 && u21 < U2 && U2 < u22) {
+							// Edge curves belonging to different operands intersect, don't process
+							// using builder.
+							return false;
+							Logger::Notice("Intersecting boundaries");
+						}
+					}
+				}
+			}
+		}
+
+		// Only inner wires are considered that are directly contained in the outer wire
+		// Redundant subtractions are eliminated.
+
+		std::vector<bool> redundant(wires.size(), false);
+
+		std::vector<TopoDS_Face> wire_faces;
+		wire_faces.reserve(wires.size());
+
+		std::vector<BRepTopAdaptor_FClass2d> wire_clss;
+		wire_clss.reserve(wires.size());
+
+		std::vector<ShapeAnalysis_Surface> sass;
+		sass.reserve(wires.size());
+
+		for (auto& w : wires) {
+			wire_faces.push_back(BRepBuilderAPI_MakeFace(w).Face());
+			wire_clss.emplace_back(wire_faces.back(), eps);
+			sass.emplace_back(BRep_Tool::Surface(wire_faces.back()));
+		}		
+
+		// First check for containment in outer wire
+		for (auto it = wires.begin()++; it != wires.end(); ++it) {
+			// Considering a single vertex is sufficient because we have already
+			// guaranteed that the edges of different operands do not cross.
+			TopoDS_Iterator it_ed(*it);
+			auto& ed = it_ed.Value();
+
+			TopoDS_Iterator it_v(ed);
+			auto& v = TopoDS::Vertex(it_v.Value());
+
+			auto pnt = BRep_Tool::Pnt(v);
+			auto p2d = sass[0].ValueOfUV(pnt, eps);
+			if (wire_clss[0].Perform(p2d) != TopAbs_IN) {
+				// A wire is not contained in the outer wire, it's a subtraction without
+				// any effect and marked as redundant. Feeding it to the builder algo
+				// will likely cause problems.
+				redundant[std::distance(wires.begin(), it)] = true;
+				Logger::Notice("Subtraction operand outside of outer bound");
+			}
+		}
+
+		// Now build a tree to find inner wires contained in other inner wires
+		// NB first wire is *not* in this tree
+		IfcGeom::impl::tree<int> wire_tree;
+		for (size_t wire_index = 1; wire_index < wires.size(); ++wire_index) {
+			wire_tree.add(wire_index, wires[wire_index]);
+		}
+
+		for (size_t wire_index = 1; wire_index < wires.size(); ++wire_index) {
+			Bnd_Box b;
+			BRepBndLib::Add(wires[wire_index], b);
+			b.Enlarge(eps);
+
+			// We're only selecting operands completely within b because we
+			// have already guaranteed they do not intersect. So they are
+			// either fully in or out. Selecting with complete_within=true
+			// will filter out some unnecessary cases. It also means we need
+			// that due this assymetry we need to process all pairs of wire
+			// indices and not just the pairs where the first element is less
+			// than the second element.
+			for (auto& other_index : wire_tree.select_box(b, true)) {
+				// other_index is fully contained in wire_index
+				if (wire_index == other_index) {
+					continue;
+				}
+
+				TopoDS_Iterator it_ed(wires[other_index]);
+				auto& ed = it_ed.Value();
+
+				TopoDS_Iterator it_v(ed);
+				auto& v = TopoDS::Vertex(it_v.Value());
+
+				auto pnt = BRep_Tool::Pnt(v);
+				auto p2d = sass[wire_index].ValueOfUV(pnt, eps);
+				if (wire_clss[wire_index].Perform(p2d) == TopAbs_IN) {
+					// A wire is contained within another operand
+					redundant[other_index] = true;
+					Logger::Notice("Subtraction operand contained in other");
+				}
+			}
+		}
+
+		BRepBuilderAPI_MakeFace mf(wire_faces[0]);
+		for (size_t wire_index = 1; wire_index < wires.size(); ++wire_index) {
+			if (!redundant[wire_index]) {
+				mf.Add(TopoDS::Wire(wires[wire_index].Reversed()));
+			}
+		}
+		result = mf.Face();
+
+		return true;
+	}
+}
+
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTools_ListOfShape& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 
 	const bool do_unify = true;
@@ -4742,8 +4954,16 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTo
 
 				bool boolean_op_2d_success;
 				{
-					PERF("boolean operation: 2d");
+					PERF("boolean operation: 2d builder");
+					// First try using face builder
 
+					boolean_op_2d_success = boolean_subtraction_2d_using_builder(a_face, b_faces, face_result, fuzziness);
+				}
+
+				if (!boolean_op_2d_success) {
+					PERF("boolean operation: 2d");
+					// Retry using generic 2d using boolean algo on faces
+					
 					boolean_op_2d_success = boolean_operation(a_face, b_faces, op, face_result, fuzziness);
 				}
 
