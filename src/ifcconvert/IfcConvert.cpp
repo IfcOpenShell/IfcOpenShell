@@ -1003,7 +1003,7 @@ int main(int argc, char** argv) {
 	}
 #endif
 
-	PERF("file geometry conversion");
+	Logger::Message(Logger::LOG_PERF, "file geometry conversion");
 
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
@@ -1170,6 +1170,8 @@ int main(int argc, char** argv) {
     // Make sure the dtor is explicitly run here (e.g. output files are closed before renaming them).
     serializer.reset();
 
+	Logger::Message(Logger::LOG_PERF, "done file geometry conversion");
+
     // Renaming might fail (e.g. maybe the existing file was open in a viewer application)
     // Do not remove the temp file as user can salvage the conversion result from it.
     bool successful = IfcUtil::path::rename_file(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename));
@@ -1183,6 +1185,10 @@ int main(int argc, char** argv) {
 		successful = false;
 	}
 
+	if (!quiet && Logger::Verbosity() == Logger::LOG_PERF) {
+		Logger::PrintPerformanceStats();
+	}
+
 	write_log(!quiet);
 
 	time(&end);
@@ -1190,10 +1196,6 @@ int main(int argc, char** argv) {
     if (!quiet) {
         Logger::Status("\nConversion took " +  format_duration(start, end));
     }
-
-	if (!quiet && Logger::Verbosity() == Logger::LOG_PERF) {
-		Logger::PrintPerformanceStats();
-	}
 
     return successful ? EXIT_SUCCESS : EXIT_FAILURE;
 }
