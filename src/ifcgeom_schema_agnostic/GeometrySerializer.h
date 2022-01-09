@@ -48,7 +48,7 @@ public:
 		USE_ELEMENT_STEPIDS = 1U << (IfcGeom::IteratorSettings::NUM_SETTINGS + 6U),
 		/// Use Y UP .
 		/// Applicable for OBJ output.
-		USE_Y_UP = 1U << (IfcGeom::IteratorSettings::NUM_SETTINGS + 7U),
+		USE_Y_UP = 1ULL << (IfcGeom::IteratorSettings::NUM_SETTINGS + 7ULL),
 		/// Number of different setting flags.
         NUM_SETTINGS = 7
     };
