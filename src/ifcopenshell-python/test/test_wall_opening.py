@@ -142,7 +142,7 @@ class TestWallOpenings:
             result.append([fn])
             for i in range(2 if PERF else 1):
             
-                args = [shutil.which("IfcConvert") or "IfcConvert", "-qyvvv", fn, fn+".dae", "--log-format", "json", "--log-file", fn+".log.json"]
+                args = [shutil.which("IfcConvert") or "IfcConvert", "-qyvvv", fn, fn+".obj", "--log-format", "json", "--log-file", fn+".log.json"]
                 if i:
                     args.append("--no-2d-boolean")
                 
