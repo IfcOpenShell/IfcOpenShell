@@ -1185,7 +1185,7 @@ int main(int argc, char** argv) {
 		successful = false;
 	}
 
-	if (!quiet && Logger::Verbosity() == Logger::LOG_PERF) {
+	if (Logger::Verbosity() == Logger::LOG_PERF) {
 		Logger::PrintPerformanceStats();
 	}
 
