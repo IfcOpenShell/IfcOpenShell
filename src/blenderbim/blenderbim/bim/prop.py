@@ -248,7 +248,6 @@ class BIMProperties(PropertyGroup):
         default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory", update=update_data_dir
     )
     ifc_file: StringProperty(name="IFC File", update=update_ifc_file)
-    export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
     section_plane_colour: FloatVectorProperty(

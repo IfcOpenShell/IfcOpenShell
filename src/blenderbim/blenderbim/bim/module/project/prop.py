@@ -18,16 +18,24 @@
 
 import bpy
 import ifcopenshell.util.placement
+from blenderbim.bim.module.project.data import ProjectData
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
-    StringProperty,
     BoolProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     IntProperty,
-    CollectionProperty,
+    StringProperty,
 )
+
+
+def get_export_schema(self, context):
+    if not ProjectData.is_loaded:
+        ProjectData.load()
+    return ProjectData.data["export_schema"]
 
 
 def update_filter_mode(self, context):
@@ -123,6 +131,7 @@ class BIMProjectProperties(PropertyGroup):
     model_offset_coordinates: StringProperty(name="Model Offset Coordinates", default="0,0,0")
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
+    export_schema: EnumProperty(items=get_export_schema, name="IFC Schema")
 
     def get_library_element_index(self, lib_element):
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))

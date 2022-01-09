@@ -83,6 +83,12 @@ class Context:
 
 
 @interface
+class Debug:
+    def add_schema_identifier(cls, schema): pass
+    def load_express(cls, filename): pass
+
+
+@interface
 class Drawing:
     def disable_editing_text(cls, obj): pass
     def enable_editing_text(cls, obj): pass
