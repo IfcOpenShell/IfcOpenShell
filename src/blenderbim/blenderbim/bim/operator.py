@@ -75,7 +75,7 @@ class SelectIfcFile(bpy.types.Operator):
             max_lines_to_parse = 50
             for _ in range(max_lines_to_parse):
                 line = next(ifc_file)
-                if "schema" in line.lower():
+                if line.startswith("FILE_SCHEMA(('") and line.endswith("'));\n"):
                     schema = line.split("'")[1]
                     self.layout.label(text=f"File Schema : {schema}")
                     break
