@@ -105,6 +105,8 @@ class BIM_PT_object_systems(Panel):
         for system_id in systems_object:
             row = self.layout.row(align=True)
             row.label(text=Data.systems[system_id].get("Name", "Unnamed"))
+            op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
+            op.system = system_id
             op = row.operator("bim.unassign_system", text="", icon="X")
             op.system = system_id
 
