@@ -190,9 +190,12 @@ class Brick(blenderbim.core.tool.Brick):
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            SELECT ?group (count(?item) as ?total_items) WHERE {
+            SELECT ?group (count(?item) as ?total_items) ?label WHERE {
                 ?group rdfs:subClassOf brick:{brick_class} .
-                ?item rdf:type/rdfs:subClassOf* ?group
+                ?item rdf:type/rdfs:subClassOf* ?group .
+                OPTIONAL {
+                    ?group rdfs:label ?label
+                }
             }
             GROUP BY ?group
             ORDER BY asc(?group)
@@ -202,6 +205,9 @@ class Brick(blenderbim.core.tool.Brick):
         )
         for row in query:
             new = bpy.context.scene.BIMBrickProperties.bricks.add()
+            label = row.get("label")
+            if label:
+                new.label = label.toPython()
             new.name = row.get("group").toPython().split("#")[-1]
             new.uri = row.get("group").toPython()
             new.total_items = row.get("total_items").toPython()
@@ -213,8 +219,11 @@ class Brick(blenderbim.core.tool.Brick):
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            SELECT ?item WHERE {
-                ?item rdf:type brick:{brick_class}
+            SELECT ?item ?label WHERE {
+                ?item rdf:type brick:{brick_class} .
+                OPTIONAL {
+                    ?item rdfs:label ?label
+                }
             }
             ORDER BY asc(?item)
         """.replace(
@@ -223,6 +232,9 @@ class Brick(blenderbim.core.tool.Brick):
         )
         for row in query:
             new = bpy.context.scene.BIMBrickProperties.bricks.add()
+            label = row.get("label")
+            if label:
+                new.label = label.toPython()
             new.name = row.get("item").toPython().split("#")[-1]
             new.uri = row.get("item").toPython()
 

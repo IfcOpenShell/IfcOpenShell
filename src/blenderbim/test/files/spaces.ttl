@@ -1,12 +1,14 @@
 @prefix digitaltwin: <http://example.org/digitaltwin#> .
 @prefix brick: <https://brickschema.org/schema/Brick#> .
 @prefix unit: <http://qudt.org/vocab/unit/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 digitaltwin:site a brick:Site ;
     brick:buildingPrimaryFunction [ brick:value "Library" ] ;
     brick:hasPart digitaltwin:bldg .
 
 digitaltwin:bldg a brick:Building ;
+    rdfs:label "My Building" ;
     brick:hasPart digitaltwin:floor .
 
 digitaltwin:floor a brick:Floor ;
