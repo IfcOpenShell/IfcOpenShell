@@ -62,10 +62,10 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
 
     geom_settings = ifcopenshell.geom.settings(
         # this is required for serialization
-        APPLY_DEFAULT_MATERIALS = True,
-        DISABLE_TRIANGULATION = True,
+        APPLY_DEFAULT_MATERIALS=True,
+        DISABLE_TRIANGULATION=True,
         # when not doing booleans, proper solids from shells isn't a requirement
-        SEW_SHELLS = settings.subtract_before_hlr
+        SEW_SHELLS=settings.subtract_before_hlr,
     )
 
     if not iterators:
@@ -83,7 +83,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
                 files,
             )
         )
-        
+
         if settings.cache:
             cache = ifcopenshell.geom.serializers.hdf5("cache.h5", geom_settings)
             for it in iterators:
@@ -108,7 +108,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
         sr.setElevationRefGuid(settings.drawing_guid)
         sr.setWithoutStoreys(True)
         # If you want to filter by IfcAnnotation ObjectType named "DRAWING"
-        #sr.setElevationRef("DRAWING")
+        # sr.setElevationRef("DRAWING")
 
     # required for svgfill
     sr.setPolygonal(True)
@@ -130,7 +130,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
         sr.setSubtractionSettings(W.ALWAYS)
 
     try:
-        sh = ['none', 'full', 'left'].index(settings.storey_heights)
+        sh = ["none", "full", "left"].index(settings.storey_heights)
         sr.setDrawStoreyHeights(sh)
     except:
         raise ValueError("storey_heights should be one of {'none', 'full', 'left'}")
@@ -170,7 +170,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
 
     if not merge_projection:
         return svg_data_1
-    
+
     if not settings.cells:
         return svg_data_1.encode("ascii", "xmlcharrefreplace")
 
@@ -275,9 +275,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
                 # the factor determines how much white will be interpolated
                 # into the style diffuse color.
                 clr = numpy.array(style.diffuse)
-                factor = (math.log(elements[0].distance + 2.0) / 7.0) * (
-                    1.0 - 0.5 * abs(elements[0].dot_product)
-                )
+                factor = (math.log(elements[0].distance + 2.0) / 7.0) * (1.0 - 0.5 * abs(elements[0].dot_product))
                 if style.has_transparency:
                     factor *= 1.0 - style.transparency
                 clr = WHITE * (1.0 - factor) + clr * factor
@@ -314,18 +312,18 @@ if __name__ == "__main__":
     import sys
     import time
     import argparse
-    
+
     times = []
-    
+
     def measure(task, fn):
         t0 = time.time()
         r = fn()
         dt = time.time() - t0
         times.append((task, dt))
         return r
-        
+
     def print_progress(*args):
-        print("\r", *args, " "*10, end="", flush=True)
+        print("\r", *args, " " * 10, end="", flush=True)
 
     parser = argparse.ArgumentParser()
 
@@ -333,12 +331,8 @@ if __name__ == "__main__":
 
     for field in fields(draw_settings):
         if field.type == bool:
-            parser.add_argument(
-                "--" + field.name.replace("_", "-"), dest=field.name, action="store_true"
-            )
-            parser.add_argument(
-                "--no-" + field.name.replace("_", "-"), dest=field.name, action="store_false"
-            )
+            parser.add_argument("--" + field.name.replace("_", "-"), dest=field.name, action="store_true")
+            parser.add_argument("--no-" + field.name.replace("_", "-"), dest=field.name, action="store_false")
             parser.set_defaults(**{field.name: field.default})
         else:
             parser.add_argument(
@@ -355,9 +349,8 @@ if __name__ == "__main__":
     files = measure("open files", lambda: list(map(ifcopenshell.open, files)))
     result = measure("processing", lambda: main(settings, files, progress_function=print_progress))
     open(output, "wb").write(result)
-    
+
     print("\r Done!", " " * 20)
-    
+
     for t, dt in times:
         print(f"{t}: {dt}")
-
