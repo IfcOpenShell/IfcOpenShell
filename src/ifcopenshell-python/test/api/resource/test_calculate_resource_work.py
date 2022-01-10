@@ -8,11 +8,16 @@ class TestCalculateResourceWork(test.bootstrap.IFC4):
 
         resource = ifcopenshell.api.run("resource.add_resource", self.file, ifc_class="IfcLaborResource")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=resource, name="EPset_Productivity")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={
-            "BaseQuantityConsumed": "P0.5D",
-            "BaseQuantityProducedName": "GrossVolume",
-            "BaseQuantityProducedValue": 5,
-        })
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            self.file,
+            pset=pset,
+            properties={
+                "BaseQuantityConsumed": "P0.5D",
+                "BaseQuantityProducedName": "GrossVolume",
+                "BaseQuantityProducedValue": 5,
+            },
+        )
 
         slab = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
         qto = ifcopenshell.api.run("pset.add_qto", self.file, product=slab, name="Qto_SlabBaseQuantities")
@@ -24,17 +29,21 @@ class TestCalculateResourceWork(test.bootstrap.IFC4):
         ifcopenshell.api.run("resource.calculate_resource_work", self.file, resource=resource)
         assert resource.Usage.ScheduleWork == "P2.0D"
 
-
     def test_calculating_resource_work_based_on_an_hourly_productivity_rate(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
 
         resource = ifcopenshell.api.run("resource.add_resource", self.file, ifc_class="IfcLaborResource")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=resource, name="EPset_Productivity")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={
-            "BaseQuantityConsumed": "PT1H",
-            "BaseQuantityProducedName": "GrossVolume",
-            "BaseQuantityProducedValue": 5,
-        })
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            self.file,
+            pset=pset,
+            properties={
+                "BaseQuantityConsumed": "PT1H",
+                "BaseQuantityProducedName": "GrossVolume",
+                "BaseQuantityProducedValue": 5,
+            },
+        )
 
         slab = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
         qto = ifcopenshell.api.run("pset.add_qto", self.file, product=slab, name="Qto_SlabBaseQuantities")
@@ -74,11 +83,16 @@ class TestCalculateResourceWork(test.bootstrap.IFC4):
 
         resource = ifcopenshell.api.run("resource.add_resource", self.file, ifc_class="IfcLaborResource")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=resource, name="EPset_Productivity")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={
-            "BaseQuantityConsumed": "PT1H",
-            "BaseQuantityProducedName": "Count",
-            "BaseQuantityProducedValue": 2,
-        })
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            self.file,
+            pset=pset,
+            properties={
+                "BaseQuantityConsumed": "PT1H",
+                "BaseQuantityProducedName": "Count",
+                "BaseQuantityProducedValue": 2,
+            },
+        )
 
         slab = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
         qto = ifcopenshell.api.run("pset.add_qto", self.file, product=slab, name="Qto_SlabBaseQuantities")

@@ -13,8 +13,8 @@ class TestCreateOwnerHistory(test.bootstrap.IFC4):
         old_get_application = ifcopenshell.api.owner.settings.get_application
         user = self.file.createIfcPersonAndOrganization()
         application = self.file.createIfcApplication()
-        ifcopenshell.api.owner.settings.get_user = lambda x : user
-        ifcopenshell.api.owner.settings.get_application = lambda x : application
+        ifcopenshell.api.owner.settings.get_user = lambda x: user
+        ifcopenshell.api.owner.settings.get_application = lambda x: application
         history = ifcopenshell.api.run("owner.create_owner_history", self.file)
         ifcopenshell.api.owner.settings.get_user = old_get_user
         ifcopenshell.api.owner.settings.get_application = old_get_application

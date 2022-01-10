@@ -26,8 +26,10 @@ class Usecase:
 
         if conversion_offset:
             return self.file.createIfcConversionBasedUnitWithOffset(
-                exponents, unit_type, self.settings["name"], conversion_factor, conversion_offset,
+                exponents,
+                unit_type,
+                self.settings["name"],
+                conversion_factor,
+                conversion_offset,
             )
-        return self.file.createIfcConversionBasedUnit(
-            exponents, unit_type, self.settings["name"], conversion_factor
-        )
+        return self.file.createIfcConversionBasedUnit(exponents, unit_type, self.settings["name"], conversion_factor)

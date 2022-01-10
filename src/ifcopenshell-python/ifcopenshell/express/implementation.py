@@ -92,14 +92,16 @@ class Implementation(codegen.Base):
                         else:
                             return templates.get_attr_stmt
 
-                    null_check = ''
+                    null_check = ""
                     if arg["is_optional"]:
-                        attr_check = "if(!data_->getArgument(%d) || data_->getArgument(%d)->isNull()) { return %%s; }" % (arg["index"] - 1, arg["index"] - 1) 
+                        attr_check = (
+                            "if(!data_->getArgument(%d) || data_->getArgument(%d)->isNull()) { return %%s; }"
+                            % (arg["index"] - 1, arg["index"] - 1)
+                        )
                         if "boost::optional" in arg["full_type"]:
                             null_check = attr_check % "boost::none"
                         else:
                             null_check = attr_check % "nullptr"
-                    
 
                     tmpl = find_template(arg)
                     write_attr(
@@ -115,9 +117,11 @@ class Implementation(codegen.Base):
                             "index": arg["index"] - 1,
                             "type": arg["full_type"].replace("::Value", ""),
                             "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
-                            "non_optional_type_no_pointer": arg["non_optional_type"].replace("::Value", "").replace("*", ""),
+                            "non_optional_type_no_pointer": arg["non_optional_type"]
+                            .replace("::Value", "")
+                            .replace("*", ""),
                             "list_instance_type": arg["list_instance_type"],
-                            "null_check": null_check
+                            "null_check": null_check,
                         },
                     )
 
@@ -143,10 +147,10 @@ class Implementation(codegen.Base):
                         schema_name_upper=schema_name_upper,
                         body=tmpl
                         % {
-                            "index": arg["index"] - 1, 
+                            "index": arg["index"] - 1,
                             "type": arg["full_type"].replace("::Value", ""),
                             "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
-                            "star_if_optional": "*" if "boost::optional" in arg["full_type"] else ""
+                            "star_if_optional": "*" if "boost::optional" in arg["full_type"] else "",
                         },
                     )
 

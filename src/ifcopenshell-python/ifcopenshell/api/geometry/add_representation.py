@@ -32,7 +32,7 @@ class Usecase:
             #  IfcTextLiteral
             "ifc_representation_class": None,  # Whether to cast a mesh into a particular class
             "profile_set_usage": None,  # The material profile set if the extrusion requires it
-            "text_literal": None, # The text literal if the representation requires it
+            "text_literal": None,  # The text literal if the representation requires it
         }
         self.ifc_vertices = []
         for key, value in settings.items():

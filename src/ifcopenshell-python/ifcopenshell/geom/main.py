@@ -57,6 +57,7 @@ if has_occ:
 # nb: we just subclass serializer settings, so in python
 # we do not differentiate between the two setting types
 
+
 class settings(ifcopenshell_wrapper.SerializerSettings):
     if has_occ:
         USE_PYTHON_OPENCASCADE = -1
@@ -245,32 +246,35 @@ def make_shape_function(fn):
 serialise = make_shape_function(ifcopenshell_wrapper.serialise)
 tesselate = make_shape_function(ifcopenshell_wrapper.tesselate)
 
+
 def wrap_buffer_creation(fn):
-    """    
+    """
     Python does not have automatic casts. The C++ serializers accept a stream_or_filename
     which in C++ can be automatically constructed from a filename string. In Python we
     have to implement this cast/construction explicitly.
     """
-    
+
     def transform_string(v):
         if isinstance(v, str):
             return ifcopenshell_wrapper.buffer(v)
         else:
             return v
+
     def inner(*args):
         return fn(*map(transform_string, args))
+
     return inner
 
 
 serializer_dict = {}
-serializer_dict['obj'] = wrap_buffer_creation(ifcopenshell_wrapper.WaveFrontOBJSerializer)
-serializer_dict['svg'] = wrap_buffer_creation(ifcopenshell_wrapper.SvgSerializer)
-serializer_dict['buffer'] = ifcopenshell_wrapper.buffer
+serializer_dict["obj"] = wrap_buffer_creation(ifcopenshell_wrapper.WaveFrontOBJSerializer)
+serializer_dict["svg"] = wrap_buffer_creation(ifcopenshell_wrapper.SvgSerializer)
+serializer_dict["buffer"] = ifcopenshell_wrapper.buffer
 try:
     # HdfSerializer doesn't support writing to a buffer (obviously) only to filename
     # so no wrap_buffer_creation()
-    serializer_dict['hdf5'] = ifcopenshell_wrapper.HdfSerializer
-except: pass
+    serializer_dict["hdf5"] = ifcopenshell_wrapper.HdfSerializer
+except:
+    pass
 
-serializers = type('serializers', (), serializer_dict)
-
+serializers = type("serializers", (), serializer_dict)

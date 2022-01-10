@@ -14,4 +14,4 @@ class TestCreateGridAxis(test.bootstrap.IFC4):
         axis2 = ifcopenshell.api.run(
             "grid.create_grid_axis", self.file, axis_tag="axis_tag", same_sense=True, uvw_axes="UAxes", grid=grid
         )
-        assert grid.UAxes == (axis,axis2)
+        assert grid.UAxes == (axis, axis2)
