@@ -141,3 +141,16 @@ class AddBrickFeed(bpy.types.Operator, Operator):
             source=[o for o in context.selected_objects if o != context.active_object][0],
             destination=context.active_object,
         )
+
+
+class ConvertIfcToBrick(bpy.types.Operator, Operator):
+    bl_idname = "bim.convert_ifc_to_brick"
+    bl_label = "Convert IFC To Brick"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMBrickProperties
+        library = None
+        if props.libraries:
+            library = tool.Ifc.get().by_id(int(props.libraries))
+        core.convert_ifc_to_brick(tool.Brick, namespace=props.namespace, library=library)

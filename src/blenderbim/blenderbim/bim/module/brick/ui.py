@@ -98,8 +98,9 @@ class BIM_PT_ifc_brickschema_references(Panel):
         row.prop(self.props, "libraries")
         row.operator("bim.convert_brick_project", text="", icon="ADD")
 
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         row.operator("bim.assign_brick_reference", icon="ADD")
+        row.operator("bim.convert_ifc_to_brick", icon="IMPORT")
 
         if not BrickschemaReferencesData.data["references"]:
             row = self.layout.row()

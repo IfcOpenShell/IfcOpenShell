@@ -79,3 +79,11 @@ def add_brick_feed(ifc, brick, source=None, destination=None):
     source_element = ifc.get_entity(source)
     destination_element = ifc.get_entity(destination)
     brick.add_feed(brick.get_brick(source_element), brick.get_brick(destination_element))
+
+
+def convert_ifc_to_brick(brick, namespace=None, library=None):
+    for obj, element in brick.get_convertable_brick_objects_and_elements():
+        brick_class = brick.get_brick_class(element)
+        if not brick_class:
+            continue
+        brick.run_add_brick(obj=obj, namespace=namespace, brick_class=brick_class, library=library)

@@ -136,3 +136,18 @@ class TestAddBrickFeed:
         brick.get_brick("destination_element").should_be_called().will_return("destination_brick")
         brick.add_feed("source_brick", "destination_brick").should_be_called()
         subject.add_brick_feed(ifc, brick, source="source", destination="destination")
+
+
+class TestConvertIfcToBrick:
+    def test_run(self, brick):
+        brick.get_convertable_brick_objects_and_elements().should_be_called().will_return([("obj", "element")])
+        brick.get_brick_class("element").should_be_called().will_return("brick_class")
+        brick.run_add_brick(
+            obj="obj", namespace="namespace", brick_class="brick_class", library="library"
+        ).should_be_called()
+        subject.convert_ifc_to_brick(brick, namespace="namespace", library="library")
+
+    def test_not_converting_an_element_where_we_cannot_find_the_corresponding_brick_class(self, brick):
+        brick.get_convertable_brick_objects_and_elements().should_be_called().will_return([("obj", "element")])
+        brick.get_brick_class("element").should_be_called().will_return(None)
+        subject.convert_ifc_to_brick(brick, namespace="namespace", library="library")
