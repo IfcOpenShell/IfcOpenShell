@@ -65,12 +65,12 @@ class SelectIfcFile(bpy.types.Operator):
         # Access filepath & Directory https://blender.stackexchange.com/a/207665
         params  = context.space_data.params
         # Decode byte string https://stackoverflow.com/a/47737082/
-        directory = Path(params.directory.decode('utf-8'))
+        directory = Path(params.directory.decode("utf-8"))
         filepath = os.path.join(directory, params.filename)
         if self.is_existing_ifc_file(filepath):
             self.draw_ifc_specs(filepath)
     
-    def draw_ifc_specs(self, filepath):        
+    def draw_ifc_specs(self, filepath):
         with open(filepath) as ifc_file:
             max_lines_to_parse = 50
             for _ in range(max_lines_to_parse):
