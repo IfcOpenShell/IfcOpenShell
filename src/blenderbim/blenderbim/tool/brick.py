@@ -18,6 +18,8 @@
 
 import os
 import bpy
+import ifcopenshell
+import ifcopenshell.util.brick
 import blenderbim.core.tool
 import blenderbim.tool as tool
 
@@ -111,6 +113,10 @@ class Brick(blenderbim.core.tool.Brick):
                     return rel.RelatingLibrary.Identification
 
     @classmethod
+    def get_brick_class(cls, element):
+        return ifcopenshell.util.brick.get_brick_type(element)
+
+    @classmethod
     def get_brick_path(cls):
         return BrickStore.path
 
@@ -136,6 +142,15 @@ class Brick(blenderbim.core.tool.Brick):
         results = list(query)
         if results:
             return results[0][0].toPython()
+
+    @classmethod
+    def get_convertable_brick_objects_and_elements(cls):
+        results = []
+        for element in ifcopenshell.util.brick.get_brick_elements(tool.Ifc.get()):
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                results.append((obj, element))
+        return results
 
     @classmethod
     def get_item_class(cls, item):
@@ -228,6 +243,12 @@ class Brick(blenderbim.core.tool.Brick):
         last_index = len(bpy.context.scene.BIMBrickProperties.brick_breadcrumbs) - 1
         bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.remove(last_index)
         return name
+
+    @classmethod
+    def run_add_brick(cls, obj=None, namespace=None, brick_class=None, library=None):
+        return blenderbim.core.brick.add_brick(
+            tool.Ifc, tool.Brick, obj=obj, namespace=namespace, brick_class=brick_class, library=library
+        )
 
     @classmethod
     def run_assign_brick_reference(cls, obj=None, library=None, brick_uri=None):

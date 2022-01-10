@@ -96,3 +96,16 @@ Scenario: Add brick feed
     And additionally the object "IfcAirTerminalBox/Cube" is selected
     When I press "bim.add_brick_feed"
     Then nothing happens
+
+Scenario: Convert IFC to brick
+    Given an empty IFC project
+    And I press "bim.load_brick_project(filepath='{cwd}/test/files/spaces.ttl')"
+    And I press "bim.convert_brick_project"
+    And I set "scene.BIMBrickProperties.namespace" to "http://example.org/digitaltwin#"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcUnitaryEquipment"
+    And I set "scene.BIMRootProperties.ifc_predefined_type" to "AIRHANDLER"
+    And I press "bim.assign_class"
+    When I press "bim.convert_ifc_to_brick"
+    Then nothing happens

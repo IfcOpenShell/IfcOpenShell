@@ -186,6 +186,13 @@ class TestGetBrick(NewFile):
         assert subject.get_brick(element) == "http://example.org/digitaltwin#globalid"
 
 
+class TestGetBrickClass(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcAirTerminalBox()
+        assert subject.get_brick_class(element) == "https://brickschema.org/schema/Brick#TerminalUnit"
+
+
 class TestGetBrickPath(NewFile):
     def test_run(self):
         TestLoadBrickFile().test_run()
@@ -206,6 +213,17 @@ class TestGetBrickifcProject(NewFile):
             subject.get_brickifc_project()
             == f"http://example.org/digitaltwin#{tool.Ifc.get().by_type('IfcProject')[0].GlobalId}"
         )
+
+
+class TestGetConvertableBrickObjectsAndElements(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcAirTerminalBox()
+        obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(element, obj)
+        ifc.createIfcWall()
+        assert subject.get_convertable_brick_objects_and_elements() == [(obj, element)]
 
 
 class TestGetItemClass(NewFile):
@@ -284,6 +302,11 @@ class TestPopBrickBreadcrumb(NewFile):
         assert subject.pop_brick_breadcrumb() == "bar"
         assert len(bpy.context.scene.BIMBrickProperties.brick_breadcrumbs) == 1
         assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[0].name == "foo"
+
+
+class TestRunAddBrick(NewFile):
+    def test_nothing(self):
+        pass
 
 
 class TestRunAssignBrickReference(NewFile):

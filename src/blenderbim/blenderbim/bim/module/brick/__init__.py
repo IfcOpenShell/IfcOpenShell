@@ -25,6 +25,7 @@ classes = (
     operator.AssignBrickReference,
     operator.CloseBrickProject,
     operator.ConvertBrickProject,
+    operator.ConvertIfcToBrick,
     operator.LoadBrickProject,
     operator.RewindBrickClass,
     operator.ViewBrickClass,
