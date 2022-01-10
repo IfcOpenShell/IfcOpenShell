@@ -263,10 +263,12 @@ class TestImportBrickClasses(NewFile):
         assert brick.name == "Building"
         assert brick.uri == "https://brickschema.org/schema/Brick#Building"
         assert brick.total_items == 1
+        assert not brick.label
         brick = bpy.context.scene.BIMBrickProperties.bricks[1]
         assert brick.name == "Location"
         assert brick.uri == "https://brickschema.org/schema/Brick#Location"
         assert brick.total_items == 1
+        assert not brick.label
 
 
 class TestImportBrickItems(NewFile):
@@ -276,6 +278,7 @@ class TestImportBrickItems(NewFile):
         assert len(bpy.context.scene.BIMBrickProperties.bricks) == 1
         brick = bpy.context.scene.BIMBrickProperties.bricks[0]
         assert brick.name == "bldg"
+        assert brick.label == "My Building"
         assert brick.uri == "http://example.org/digitaltwin#bldg"
         assert brick.total_items == 0
 

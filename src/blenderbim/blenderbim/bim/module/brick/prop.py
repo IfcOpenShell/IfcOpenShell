@@ -56,6 +56,7 @@ def get_brick_equipment_classes(self, context):
 
 class Brick(PropertyGroup):
     name: StringProperty(name="Name")
+    label: StringProperty(name="Label")
     uri: StringProperty(name="URI")
     total_items: IntProperty(name="Total Items")
 

@@ -121,6 +121,6 @@ class BIM_UL_bricks(UIList):
             if item.total_items:
                 op = row.operator("bim.view_brick_class", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
                 op.brick_class = item.name
-            row.label(text=item.name)
+            row.label(text=item.label if item.label else item.name)
             if item.total_items:
                 row.label(text=str(item.total_items))
