@@ -32,6 +32,7 @@ class BIM_PT_pset_template(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_project_and_template_setup"
 
     def draw(self, context):
         layout = self.layout
