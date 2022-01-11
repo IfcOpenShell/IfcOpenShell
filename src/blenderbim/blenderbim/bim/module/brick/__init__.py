@@ -27,6 +27,7 @@ classes = (
     operator.ConvertBrickProject,
     operator.ConvertIfcToBrick,
     operator.LoadBrickProject,
+    operator.NewBrickFile,
     operator.RewindBrickClass,
     operator.ViewBrickClass,
     operator.ViewBrickItem,

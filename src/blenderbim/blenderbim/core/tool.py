@@ -63,6 +63,7 @@ class Brick:
     def import_brick_classes(cls, brick_class): pass
     def import_brick_items(cls, brick_class): pass
     def load_brick_file(cls, filepath): pass
+    def new_brick_file(cls): pass
     def pop_brick_breadcrumb(cls): pass
     def run_add_brick(cls, obj=None, namespace=None, brick_class=None, library=None): pass
     def run_assign_brick_reference(cls, obj=None, library=None, brick_uri=None): pass

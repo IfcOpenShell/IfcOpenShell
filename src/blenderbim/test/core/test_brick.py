@@ -151,3 +151,9 @@ class TestConvertIfcToBrick:
         brick.get_convertable_brick_objects_and_elements().should_be_called().will_return([("obj", "element")])
         brick.get_brick_class("element").should_be_called().will_return(None)
         subject.convert_ifc_to_brick(brick, namespace="namespace", library="library")
+
+
+class TestNewBrickFile:
+    def test_run(self, brick):
+        brick.new_brick_file().should_be_called()
+        subject.new_brick_file(brick)

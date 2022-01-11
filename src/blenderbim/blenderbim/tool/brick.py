@@ -249,6 +249,16 @@ class Brick(blenderbim.core.tool.Brick):
         BrickStore.path = filepath
 
     @classmethod
+    def new_brick_file(cls):
+        if not BrickStore.schema:
+            BrickStore.schema = brickschema.Graph()
+            cwd = os.path.dirname(os.path.realpath(__file__))
+            schema_path = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
+            BrickStore.schema.load_file(schema_path)
+        BrickStore.graph = brickschema.Graph() + BrickStore.schema
+        BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
+
+    @classmethod
     def pop_brick_breadcrumb(cls):
         crumb = bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[-1]
         name = crumb.name

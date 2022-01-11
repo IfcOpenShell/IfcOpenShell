@@ -35,8 +35,9 @@ class BIM_PT_brickschema(Panel):
         self.props = context.scene.BIMBrickProperties
 
         if not BrickschemaData.data["is_loaded"]:
-            row = self.layout.row()
-            row.operator("bim.load_brick_project")
+            row = self.layout.row(align=True)
+            row.operator("bim.new_brick_file", text="Create Project")
+            row.operator("bim.load_brick_project", text="Load Project")
             return
 
         row = self.layout.row(align=True)

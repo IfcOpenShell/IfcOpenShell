@@ -298,6 +298,25 @@ class TestLoadBrickFile(NewFile):
         assert BrickStore.graph
 
 
+class TestNewBrickFile(NewFile):
+    def test_run(self):
+        # We stub the schema to make tests run faster
+        BrickStore.schema = brickschema.Graph()
+        cwd = os.path.dirname(os.path.realpath(__file__))
+        schema_path = os.path.join(cwd, "..", "files", "BrickStub.ttl")
+        BrickStore.schema.load_file(schema_path)
+
+        # This is the actual test
+        ns_alias = "digitaltwin"
+        ns_uri = "https://example.org/digitaltwin#"
+        subject.new_brick_file()
+        assert BrickStore.graph
+        for ns in BrickStore.graph.namespaces():
+            if ns[0] == ns_alias and ns[1].toPython() == ns_uri:
+                return
+        assert False
+
+
 class TestPopBrickBreadcrumb(NewFile):
     def test_run(self):
         bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.add().name = "foo"

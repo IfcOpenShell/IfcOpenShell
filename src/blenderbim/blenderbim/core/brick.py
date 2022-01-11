@@ -87,3 +87,7 @@ def convert_ifc_to_brick(brick, namespace=None, library=None):
         if not brick_class:
             continue
         brick.run_add_brick(obj=obj, namespace=namespace, brick_class=brick_class, library=library)
+
+
+def new_brick_file(brick):
+    brick.new_brick_file()
