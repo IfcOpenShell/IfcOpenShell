@@ -154,3 +154,12 @@ class ConvertIfcToBrick(bpy.types.Operator, Operator):
         if props.libraries:
             library = tool.Ifc.get().by_id(int(props.libraries))
         core.convert_ifc_to_brick(tool.Brick, namespace=props.namespace, library=library)
+
+
+class NewBrickFile(bpy.types.Operator, Operator):
+    bl_idname = "bim.new_brick_file"
+    bl_label = "New Brick File"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.new_brick_file(tool.Brick)
