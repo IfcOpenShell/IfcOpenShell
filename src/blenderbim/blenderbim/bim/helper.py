@@ -97,3 +97,37 @@ def export_attributes(props, callback=None):
             continue  # Our job is done
         attributes[prop.name] = prop.get_value()
     return attributes
+
+
+class IFCHeaderSpecs:
+    def __init__(self, filepath: str):
+        # According to https://www.steptools.com/stds/step/IS_final_p21e3.html#clause-8
+        self.description = ""
+        self.implementation_level = ""
+        self.name = ""
+        self.time_stamp = ""
+        self.author = ""
+        self.organization = ""
+        self.preprocessor_version = ""
+        self.originating_system = ""
+        self.authorization = ""
+        self.schema_name = ""
+        with open(filepath) as ifc_file:
+            max_lines_to_parse = 50
+            for _ in range(max_lines_to_parse):
+                line = next(ifc_file)
+                if line.startswith("FILE_DESCRIPTION"):
+                    for i, part in enumerate(line.split("'")):
+                        if i == 1:
+                            self.description = part
+                        elif i == 3:
+                            self.implementation_level = part
+                elif line.startswith("FILE_NAME"):
+                    for i, part in enumerate(line.split("'")):
+                        if i == 1:
+                            self.name = part
+                        elif i == 3:
+                            self.time_stamp = part
+                elif line.startswith("FILE_SCHEMA"):                    
+                    self.schema_name = line.split("'")[1]
+                    break
