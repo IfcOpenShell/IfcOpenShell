@@ -19,3 +19,7 @@
 
 def parse_express(debug, filename):
     debug.add_schema_identifier(debug.load_express(filename))
+
+
+def purge_hdf5_cache(debug):
+    debug.purge_hdf5_cache()

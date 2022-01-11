@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import ifcopenshell.express
 import blenderbim.core.tool
@@ -32,3 +33,10 @@ class Debug(blenderbim.core.tool.Debug):
         schema = ifcopenshell.express.parse(filename)
         ifcopenshell.register_schema(schema)
         return schema
+
+    @classmethod
+    def purge_hdf5_cache(cls):
+        cache_dir = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache")
+        filelist = [f for f in os.listdir(cache_dir) if f.endswith(".h5")]
+        for f in filelist:
+            os.remove(os.path.join(cache_dir, f))

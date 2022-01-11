@@ -328,3 +328,12 @@ class SelectExpressFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+
+class PurgeHdf5Cache(bpy.types.Operator):
+    bl_idname = "bim.purge_hdf5_cache"
+    bl_label = "Purge HDF5 Cache"
+
+    def execute(self, context):
+        core.purge_hdf5_cache(tool.Debug)
+        return {"FINISHED"}

@@ -43,3 +43,14 @@ class TestLoadExpress(NewFile):
         schema = subject.load_express(os.path.join(cwd, "..", "files", "test.exp"))
         assert schema.schema_name == "IFCROGUE"
         return schema
+
+
+class TestPurgeHdf5Cache(NewFile):
+    def test_run(self):
+        cache_dir = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache")
+        test_file = os.path.join(cache_dir, "test.h5")
+        if not os.path.isfile(test_file):
+            fp = open(test_file, "x")
+            fp.close()
+        subject.purge_hdf5_cache()
+        assert not [f for f in os.listdir(cache_dir) if f.endswith(".h5")]
