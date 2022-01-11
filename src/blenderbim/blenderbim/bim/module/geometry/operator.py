@@ -379,40 +379,65 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
         return len(context.selected_ids) > 0
 
     def execute(self, context):
+        # In this override, we don't check self.hierarchy. This effectively
+        # makes Delete and Delete Hierarchy identical. This is on purpose, since
+        # non-hierarchical deletion may imply a whole bunch of potentially
+        # unintended IFC spatial modifications. To make life less confusing for
+        # the user, Delete means Delete. End of story.
         # Deep magick from the dawn of time
         if IfcStore.get_file():
             return IfcStore.execute_ifc_operator(self, context)
         # https://blender.stackexchange.com/questions/203729/python-get-selected-objects-in-outliner
         objects_to_delete = set()
+        collections_to_delete = set()
         for item in context.selected_ids:
             if item.bl_rna.identifier == "Collection":
                 collection = bpy.data.collections.get(item.name)
-                if self.hierarchy:
-                    for obj in collection.objects:
-                        objects_to_delete.add(bpy.data.objects.get(item.name))
-                bpy.data.collections.remove(collection)
+                collection_data = self.get_collection_objects_and_children(collection)
+                print(collection_data)
+                objects_to_delete |= collection_data["objects"]
+                collections_to_delete |= collection_data["children"]
+                collections_to_delete.add(collection)
             elif item.bl_rna.identifier == "Object":
                 objects_to_delete.add(bpy.data.objects.get(item.name))
         for obj in objects_to_delete:
             bpy.data.objects.remove(obj)
+        for collection in collections_to_delete:
+            bpy.data.collections.remove(collection)
         return {"FINISHED"}
 
     def _execute(self, context):
         objects_to_delete = set()
+        collections_to_delete = set()
         for item in context.selected_ids:
             if item.bl_rna.identifier == "Collection":
                 collection = bpy.data.collections.get(item.name)
-                if self.hierarchy:
-                    for obj in collection.objects:
-                        objects_to_delete.add(bpy.data.objects.get(item.name))
-                bpy.data.collections.remove(collection)
+                collection_data = self.get_collection_objects_and_children(collection)
+                objects_to_delete |= collection_data["objects"]
+                collections_to_delete |= collection_data["children"]
+                collections_to_delete.add(collection)
             elif item.bl_rna.identifier == "Object":
                 objects_to_delete.add(bpy.data.objects.get(item.name))
         for obj in objects_to_delete:
             # This is the only difference
             self.delete_ifc_object(obj)
             bpy.data.objects.remove(obj)
+        for collection in collections_to_delete:
+            bpy.data.collections.remove(collection)
         return {"FINISHED"}
+
+    def get_collection_objects_and_children(self, collection):
+        objects = set()
+        children = set()
+        queue = [collection]
+        while queue:
+            collection = queue.pop()
+            for obj in collection.objects:
+                print('obj is', obj)
+                objects.add(obj)
+            queue.extend(collection.children)
+            children = children.union(collection.children)
+        return {"objects": objects, "children": children}
 
 
 class OverrideDuplicateMove(bpy.types.Operator):
