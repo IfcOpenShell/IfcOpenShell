@@ -27,6 +27,7 @@ class BIM_PT_qa(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_object_attributes_properties_and_relationships"
 
     def draw(self, context):
         self.layout.use_property_split = True
