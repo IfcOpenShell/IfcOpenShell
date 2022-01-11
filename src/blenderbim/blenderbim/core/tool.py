@@ -89,6 +89,7 @@ class Context:
 class Debug:
     def add_schema_identifier(cls, schema): pass
     def load_express(cls, filename): pass
+    def purge_hdf5_cache(cls): pass
 
 
 @interface

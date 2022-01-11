@@ -28,6 +28,7 @@ classes = (
     operator.PrintIfcFile,
     operator.PrintObjectPlacement,
     operator.ProfileImportIFC,
+    operator.PurgeHdf5Cache,
     operator.PurgeIfcLinks,
     operator.RewindInspector,
     operator.SelectExpressFile,

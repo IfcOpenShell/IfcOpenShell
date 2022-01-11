@@ -25,3 +25,9 @@ class TestParseExpress:
         debug.load_express("filename").should_be_called().will_return("schema")
         debug.add_schema_identifier("schema").should_be_called()
         subject.parse_express(debug, "filename")
+
+
+class TestPurgeHdf5Cache:
+    def test_run(self, debug):
+        debug.purge_hdf5_cache().should_be_called()
+        subject.purge_hdf5_cache(debug)
