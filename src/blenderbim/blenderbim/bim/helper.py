@@ -128,12 +128,6 @@ class IFCHeaderSpecs:
                             self.name = part
                         elif i == 3:
                             self.time_stamp = part
-                        elif i == 5:
-                            self.preprocessor_version = part
-                        elif i == 7:
-                            self.originating_system = part
-                        elif i == 9:
-                            self.authorization = part
                 elif line.startswith("FILE_SCHEMA"):                    
                     self.schema_name = line.split("'")[1]
                     break
