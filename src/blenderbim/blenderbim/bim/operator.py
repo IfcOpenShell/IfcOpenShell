@@ -22,9 +22,9 @@ import json
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
-from pathlib import Path
 from . import schema
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.ui import IFCFileSelector
 from mathutils import Vector, Matrix, Euler
 from math import radians
 
@@ -39,18 +39,13 @@ class OpenUri(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectIfcFile(bpy.types.Operator):
+class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.select_ifc_file"
     bl_label = "Select IFC File"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select a different IFC file"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-
-    def is_existing_ifc_file(self, filepath=None):
-        if filepath is None:
-            filepath = self.filepath
-        return os.path.exists(filepath) and "ifc" in os.path.splitext(filepath)[1].lower()
 
     def execute(self, context):
         if self.is_existing_ifc_file():
@@ -60,25 +55,6 @@ class SelectIfcFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
-
-    def draw(self, context):
-        # Access filepath & Directory https://blender.stackexchange.com/a/207665
-        params  = context.space_data.params
-        # Decode byte string https://stackoverflow.com/a/47737082/
-        directory = Path(params.directory.decode("utf-8"))
-        filepath = os.path.join(directory, params.filename)
-        if self.is_existing_ifc_file(filepath):
-            self.draw_ifc_specs(filepath)
-    
-    def draw_ifc_specs(self, filepath):
-        with open(filepath) as ifc_file:
-            max_lines_to_parse = 50
-            for _ in range(max_lines_to_parse):
-                line = next(ifc_file)
-                if line.startswith("FILE_SCHEMA(('") and line.endswith("'));\n"):
-                    schema = line.split("'")[1]
-                    self.layout.label(text=f"File Schema : {schema}")
-                    break
 
 
 class SelectDataDir(bpy.types.Operator):

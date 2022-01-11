@@ -30,6 +30,7 @@ import blenderbim.tool as tool
 import blenderbim.core.context
 import blenderbim.core.owner
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
 from ifcopenshell.api.context.data import Data as ContextData
@@ -126,7 +127,7 @@ class CreateProject(bpy.types.Operator):
         IfcStore.file = data["file"]
 
 
-class SelectLibraryFile(bpy.types.Operator):
+class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.select_library_file"
     bl_label = "Select Library File"
     bl_options = {"REGISTER", "UNDO"}
@@ -539,7 +540,7 @@ class DisableEditingHeader(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadProject(bpy.types.Operator):
+class LoadProject(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.load_project"
     bl_label = "Load Project"
     bl_options = {"REGISTER", "UNDO"}
@@ -549,7 +550,7 @@ class LoadProject(bpy.types.Operator):
     is_advanced: bpy.props.BoolProperty(name="Enable Advanced Mode", default=False)
 
     def execute(self, context):
-        if not os.path.exists(self.filepath) or "ifc" not in os.path.splitext(self.filepath)[1].lower():
+        if not self.is_existing_ifc_file():
             return {"FINISHED"}
         context.scene.BIMProperties.ifc_file = self.filepath
         context.scene.BIMProjectProperties.is_loading = True
@@ -560,6 +561,10 @@ class LoadProject(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+    def draw(self, context):
+        self.layout.prop(self, "is_advanced")
+        IFCFileSelector.draw(self, context)
 
 
 class UnloadProject(bpy.types.Operator):

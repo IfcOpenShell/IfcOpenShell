@@ -18,9 +18,34 @@
 
 import os
 import bpy
+from pathlib import Path
 from . import ifc
 from bpy.types import Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
+from blenderbim.bim.helper import IFCHeaderSpecs
+
+
+class IFCFileSelector:
+    def is_existing_ifc_file(self, filepath=None):
+        if filepath is None:
+            filepath = self.filepath
+        return os.path.exists(filepath) and "ifc" in os.path.splitext(filepath)[1].lower()
+
+    def draw(self, context):
+        # Access filepath & Directory https://blender.stackexchange.com/a/207665
+        params = context.space_data.params
+        # Decode byte string https://stackoverflow.com/a/47737082/
+        directory = Path(params.directory.decode("utf-8"))
+        filepath = os.path.join(directory, params.filename)
+        if self.is_existing_ifc_file(filepath):
+            box = self.layout.box()
+            box.label(text="IFC Header Specifications", icon="INFO")
+            ifc_specs = IFCHeaderSpecs(filepath)
+            for attr_name, attr_value in ifc_specs.__dict__.items():
+                if attr_value != "":
+                    split = box.split()
+                    split.label(text=attr_name.title().replace("_", " "))
+                    split.label(text=str(attr_value))
 
 
 class BIM_PT_section_plane(Panel):
@@ -163,7 +188,7 @@ class BIM_PT_collaboration_and_data_exchange(Panel):
 
     def draw(self, context):
         pass
-    
+
 
 class BIM_PT_geometry_and_spatial_structure(Panel):
     bl_label = "IFC Geometry and Spatial Structure"
@@ -174,7 +199,7 @@ class BIM_PT_geometry_and_spatial_structure(Panel):
 
     def draw(self, context):
         pass
-    
+
 
 class BIM_PT_4D5D(Panel):
     bl_label = "IFC 4D/5D"
@@ -196,7 +221,7 @@ class BIM_PT_structural(Panel):
 
     def draw(self, context):
         pass
-    
+
 
 class BIM_PT_misc(Panel):
     bl_label = "IFC Misc."
@@ -207,7 +232,7 @@ class BIM_PT_misc(Panel):
 
     def draw(self, context):
         pass
-    
+
 
 class BIM_PT_quality_control(Panel):
     bl_label = "IFC Quality Control"
@@ -230,7 +255,7 @@ class BIM_PT_geometry_and_spatial_structure_object(Panel):
 
     def draw(self, context):
         pass
-    
+
 
 class BIM_PT_object_attributes_properties_and_relationships(Panel):
     bl_label = "IFC Object Attributes, Properties and Relationships"
