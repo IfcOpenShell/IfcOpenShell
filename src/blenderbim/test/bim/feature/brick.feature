@@ -109,3 +109,14 @@ Scenario: Convert IFC to brick
     And I press "bim.assign_class"
     When I press "bim.convert_ifc_to_brick"
     Then nothing happens
+
+Scenario: New brick file
+    Given an empty Blender session
+    When I press "bim.new_brick_file"
+    Then nothing happens
+
+Scenario: Refresh brick viewer
+    Given an empty Blender session
+    And I press "bim.new_brick_file"
+    When I press "bim.refresh_brick_viewer"
+    Then nothing happens

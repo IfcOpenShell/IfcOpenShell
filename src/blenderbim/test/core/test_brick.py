@@ -119,12 +119,14 @@ class TestAddBrick:
     def test_adding_a_brick(self, ifc, brick):
         ifc.get_entity("obj").should_be_called().will_return("product")
         brick.add_brick("product", "namespace", "brick_class").should_be_called().will_return("brick_uri")
+        brick.run_refresh_brick_viewer().should_be_called()
         subject.add_brick(ifc, brick, obj="obj", namespace="namespace", brick_class="brick_class", library=None)
 
     def test_adding_a_brick_an_auto_assigning_it_to_the_ifc_element(self, ifc, brick):
         ifc.get_entity("obj").should_be_called().will_return("product")
         brick.add_brick("product", "namespace", "brick_class").should_be_called().will_return("brick_uri")
         brick.run_assign_brick_reference(obj="obj", library="library", brick_uri="brick_uri").should_be_called()
+        brick.run_refresh_brick_viewer().should_be_called()
         subject.add_brick(ifc, brick, obj="obj", namespace="namespace", brick_class="brick_class", library="library")
 
 
@@ -135,6 +137,7 @@ class TestAddBrickFeed:
         brick.get_brick("source_element").should_be_called().will_return("source_brick")
         brick.get_brick("destination_element").should_be_called().will_return("destination_brick")
         brick.add_feed("source_brick", "destination_brick").should_be_called()
+        brick.run_refresh_brick_viewer().should_be_called()
         subject.add_brick_feed(ifc, brick, source="source", destination="destination")
 
 
@@ -142,18 +145,29 @@ class TestConvertIfcToBrick:
     def test_run(self, brick):
         brick.get_convertable_brick_objects_and_elements().should_be_called().will_return([("obj", "element")])
         brick.get_brick_class("element").should_be_called().will_return("brick_class")
-        brick.run_add_brick(
-            obj="obj", namespace="namespace", brick_class="brick_class", library="library"
-        ).should_be_called()
+        brick.add_brick("element", "namespace", "brick_class").should_be_called().will_return("brick_uri")
+        brick.run_assign_brick_reference(obj="obj", library="library", brick_uri="brick_uri").should_be_called()
+        brick.run_refresh_brick_viewer().should_be_called()
         subject.convert_ifc_to_brick(brick, namespace="namespace", library="library")
 
     def test_not_converting_an_element_where_we_cannot_find_the_corresponding_brick_class(self, brick):
         brick.get_convertable_brick_objects_and_elements().should_be_called().will_return([("obj", "element")])
         brick.get_brick_class("element").should_be_called().will_return(None)
+        brick.run_refresh_brick_viewer().should_be_called()
         subject.convert_ifc_to_brick(brick, namespace="namespace", library="library")
 
 
 class TestNewBrickFile:
     def test_run(self, brick):
         brick.new_brick_file().should_be_called()
+        brick.import_brick_classes("Class").should_be_called()
+        brick.set_active_brick_class("Class").should_be_called()
         subject.new_brick_file(brick)
+
+
+class TestRefreshBrickViewer:
+    def test_run(self, brick):
+        brick.get_active_brick_class().should_be_called().will_return("class")
+        brick.run_view_brick_class(brick_class="class").should_be_called()
+        brick.pop_brick_breadcrumb().should_be_called()
+        subject.refresh_brick_viewer(brick)

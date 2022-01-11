@@ -169,6 +169,12 @@ class TestExportBrickAttributes(NewFile):
         }
 
 
+class TestGetActiveBrickClass(NewFile):
+    def test_run(self):
+        subject.set_active_brick_class("brick_class")
+        assert subject.get_active_brick_class() == "brick_class"
+
+
 class TestGetBrick(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -326,12 +332,17 @@ class TestPopBrickBreadcrumb(NewFile):
         assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[0].name == "foo"
 
 
-class TestRunAddBrick(NewFile):
+class TestRunAssignBrickReference(NewFile):
     def test_nothing(self):
         pass
 
 
-class TestRunAssignBrickReference(NewFile):
+class TestRunRefreshBrickViewer(NewFile):
+    def test_nothing(self):
+        pass
+
+
+class TestViewBrickClass(NewFile):
     def test_nothing(self):
         pass
 

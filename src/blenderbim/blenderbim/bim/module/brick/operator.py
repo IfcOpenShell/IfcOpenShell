@@ -163,3 +163,12 @@ class NewBrickFile(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.new_brick_file(tool.Brick)
+
+
+class RefreshBrickViewer(bpy.types.Operator, Operator):
+    bl_idname = "bim.refresh_brick_viewer"
+    bl_label = "Refresh Brick Viewer"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.refresh_brick_viewer(tool.Brick)

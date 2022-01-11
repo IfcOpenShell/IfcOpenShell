@@ -73,12 +73,14 @@ def add_brick(ifc, brick, obj=None, namespace=None, brick_class=None, library=No
     brick_uri = brick.add_brick(product, namespace, brick_class)
     if library:
         brick.run_assign_brick_reference(obj=obj, library=library, brick_uri=brick_uri)
+    brick.run_refresh_brick_viewer()
 
 
 def add_brick_feed(ifc, brick, source=None, destination=None):
     source_element = ifc.get_entity(source)
     destination_element = ifc.get_entity(destination)
     brick.add_feed(brick.get_brick(source_element), brick.get_brick(destination_element))
+    brick.run_refresh_brick_viewer()
 
 
 def convert_ifc_to_brick(brick, namespace=None, library=None):
@@ -86,8 +88,18 @@ def convert_ifc_to_brick(brick, namespace=None, library=None):
         brick_class = brick.get_brick_class(element)
         if not brick_class:
             continue
-        brick.run_add_brick(obj=obj, namespace=namespace, brick_class=brick_class, library=library)
+        brick_uri = brick.add_brick(element, namespace, brick_class)
+        if library:
+            brick.run_assign_brick_reference(obj=obj, library=library, brick_uri=brick_uri)
+    brick.run_refresh_brick_viewer()
 
 
 def new_brick_file(brick):
     brick.new_brick_file()
+    brick.import_brick_classes("Class")
+    brick.set_active_brick_class("Class")
+
+
+def refresh_brick_viewer(brick):
+    brick.run_view_brick_class(brick_class=brick.get_active_brick_class())
+    brick.pop_brick_breadcrumb()
