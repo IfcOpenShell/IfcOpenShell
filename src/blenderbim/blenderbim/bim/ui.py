@@ -129,3 +129,137 @@ def ifc_units(self, context):
         row.prop(props, "imperial_precision")
     else:
         row.prop(props, "metric_precision")
+
+
+# Scene Panel Groups -->
+class BIM_PT_project_and_template_setup(Panel):
+    bl_label = "IFC Project and Template Setup"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_utilities(Panel):
+    bl_label = "IFC Utilities"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_collaboration_and_data_exchange(Panel):
+    bl_label = "IFC Collaboration and Data Exchange"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
+    
+
+class BIM_PT_geometry_and_spatial_structure(Panel):
+    bl_label = "IFC Geometry and Spatial Structure"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
+    
+
+class BIM_PT_4D5D(Panel):
+    bl_label = "IFC 4D/5D"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_structural(Panel):
+    bl_label = "IFC Structural"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
+    
+
+class BIM_PT_misc(Panel):
+    bl_label = "IFC Misc."
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
+    
+
+class BIM_PT_quality_control(Panel):
+    bl_label = "IFC Quality Control"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
+
+
+# Object Panel Groups -->
+class BIM_PT_geometry_and_spatial_structure_object(Panel):
+    bl_label = "IFC Geometry and Spatial Structure"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
+    
+
+class BIM_PT_object_attributes_properties_and_relationships(Panel):
+    bl_label = "IFC Object Attributes, Properties and Relationships"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_utilities_object(Panel):
+    bl_label = "IFC Utilities"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_misc_object(Panel):
+    bl_label = "IFC Misc."
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
