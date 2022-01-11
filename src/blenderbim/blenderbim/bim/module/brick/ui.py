@@ -44,6 +44,7 @@ class BIM_PT_brickschema(Panel):
         if len(self.props.brick_breadcrumbs):
             row.operator("bim.rewind_brick_class", text="", icon="FRAME_PREV")
         row.label(text=self.props.active_brick_class)
+        row.operator("bim.refresh_brick_viewer", text="", icon="FILE_REFRESH")
         row.operator("bim.close_brick_project", text="", icon="CANCEL")
 
         row = self.layout.row(align=True)

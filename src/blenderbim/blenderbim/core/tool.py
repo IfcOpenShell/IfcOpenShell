@@ -51,6 +51,7 @@ class Brick:
     def clear_brick_browser(cls): pass
     def clear_project(cls): pass
     def export_brick_attributes(cls, brick_uri): pass
+    def get_active_brick_class(cls): pass
     def get_brick(cls, element): pass
     def get_brick_class(cls, element): pass
     def get_brick_path(cls): pass
@@ -65,8 +66,9 @@ class Brick:
     def load_brick_file(cls, filepath): pass
     def new_brick_file(cls): pass
     def pop_brick_breadcrumb(cls): pass
-    def run_add_brick(cls, obj=None, namespace=None, brick_class=None, library=None): pass
     def run_assign_brick_reference(cls, obj=None, library=None, brick_uri=None): pass
+    def run_refresh_brick_viewer(cls): pass
+    def run_view_brick_class(cls, brick_class=None): pass
     def select_browser_item(cls, item): pass
     def set_active_brick_class(cls, brick_class): pass
 

@@ -104,6 +104,10 @@ class Brick(blenderbim.core.tool.Brick):
             return {"Identification": brick_uri, "Name": brick_uri.split("#")[-1]}
 
     @classmethod
+    def get_active_brick_class(cls):
+        return bpy.context.scene.BIMBrickProperties.active_brick_class
+
+    @classmethod
     def get_brick(cls, element):
         for rel in element.HasAssociations:
             if rel.is_a("IfcRelAssociatesLibrary"):
@@ -122,7 +126,9 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def get_brick_path_name(cls):
-        return os.path.basename(BrickStore.path)
+        if BrickStore.path:
+            return os.path.basename(BrickStore.path)
+        return "Unnamed"
 
     @classmethod
     def get_brickifc_project(cls):
@@ -267,16 +273,18 @@ class Brick(blenderbim.core.tool.Brick):
         return name
 
     @classmethod
-    def run_add_brick(cls, obj=None, namespace=None, brick_class=None, library=None):
-        return blenderbim.core.brick.add_brick(
-            tool.Ifc, tool.Brick, obj=obj, namespace=namespace, brick_class=brick_class, library=library
-        )
-
-    @classmethod
     def run_assign_brick_reference(cls, obj=None, library=None, brick_uri=None):
         return blenderbim.core.brick.assign_brick_reference(
             tool.Ifc, tool.Brick, obj=obj, library=library, brick_uri=brick_uri
         )
+
+    @classmethod
+    def run_refresh_brick_viewer(cls):
+        return blenderbim.core.brick.refresh_brick_viewer(tool.Brick)
+
+    @classmethod
+    def run_view_brick_class(cls, brick_class=None):
+        return blenderbim.core.brick.view_brick_class(tool.Brick, brick_class=brick_class)
 
     @classmethod
     def select_browser_item(cls, item):
