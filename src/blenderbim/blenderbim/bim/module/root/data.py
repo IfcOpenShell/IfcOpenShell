@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell.util.element
 import blenderbim.tool as tool
 
 
@@ -33,6 +34,9 @@ class IfcClassData:
         cls.is_loaded = True
         cls.data = {
             "contexts": cls.contexts(),
+            "has_entity": cls.has_entity(),
+            "name": cls.name(),
+            "ifc_class": cls.ifc_class(),
         }
 
     @classmethod
@@ -53,3 +57,27 @@ class IfcClassData:
                 )
             )
         return results
+
+    @classmethod
+    def has_entity(cls):
+        try:
+            return tool.Ifc.get_entity(bpy.context.active_object)
+        except:
+            pass
+
+    @classmethod
+    def name(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if not element:
+            return
+        name = element.is_a()
+        predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+        if predefined_type:
+            name += f"[{predefined_type}]"
+        return name
+
+    @classmethod
+    def ifc_class(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            return element.is_a()
