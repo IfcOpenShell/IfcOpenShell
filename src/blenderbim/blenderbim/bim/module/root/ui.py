@@ -19,7 +19,6 @@
 import bpy
 import blenderbim.bim.module.root.prop as root_prop
 from bpy.types import Panel
-from ifcopenshell.api.root.data import Data
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.root.data import IfcClassData
 
@@ -43,14 +42,11 @@ class BIM_PT_class(Panel):
             IfcClassData.load()
         props = context.active_object.BIMObjectProperties
         if props.ifc_definition_id:
-            if props.ifc_definition_id not in Data.products:
-                try:
-                    Data.load(IfcStore.get_file(), props.ifc_definition_id)
-                except:
-                    row = self.layout.row(align=True)
-                    row.label(text="IFC Element Not Found")
-                    row.operator("bim.unlink_object", icon="UNLINKED", text="")
-                    return
+            if not IfcClassData.data["has_entity"]:
+                row = self.layout.row(align=True)
+                row.label(text="IFC Element Not Found")
+                row.operator("bim.unlink_object", icon="UNLINKED", text="")
+                return
             if props.is_reassigning_class:
                 row = self.layout.row(align=True)
                 row.operator("bim.reassign_class", icon="CHECKMARK")
@@ -61,18 +57,10 @@ class BIM_PT_class(Panel):
                     should_draw_product=False,
                 )
             else:
-                data = Data.products[props.ifc_definition_id]
-                name = data["type"]
-                if data["PredefinedType"] and data["PredefinedType"] == "USERDEFINED":
-                    if data["ObjectType"]:
-                        name += "[{}]".format(data["ObjectType"])
-                    elif data["ElementType"]:
-                        name += "[{}]".format(data["ElementType"])
-                elif data["PredefinedType"]:
-                    name += "[{}]".format(data["PredefinedType"])
                 row = self.layout.row(align=True)
-                row.label(text=name)
-                row.operator("bim.select_ifc_class", text="", icon="RESTRICT_SELECT_OFF").ifc_class = data["type"]
+                row.label(text=IfcClassData.data["name"])
+                op = row.operator("bim.select_ifc_class", text="", icon="RESTRICT_SELECT_OFF")
+                op.ifc_class = IfcClassData.data["ifc_class"]
                 row.operator("bim.copy_class", icon="DUPLICATE", text="")
                 row.operator("bim.unlink_object", icon="UNLINKED", text="")
                 if IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcRoot"):
