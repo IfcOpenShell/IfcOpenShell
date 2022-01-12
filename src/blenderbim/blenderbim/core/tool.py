@@ -43,8 +43,9 @@ class Blender: pass
 
 @interface
 class Brick:
-    def add_brick(cls, element, namespace, brick_class): pass
+    def add_brick(cls, namespace, brick_class): pass
     def add_brick_breadcrumb(cls): pass
+    def add_brick_from_element(cls, element, namespace, brick_class): pass
     def add_brickifc_project(cls, namespace): pass
     def add_brickifc_reference(cls, brick, element, project): pass
     def add_feed(cls, source, destination): pass

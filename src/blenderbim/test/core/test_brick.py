@@ -116,18 +116,23 @@ class TestAssignBrickReference:
 
 
 class TestAddBrick:
-    def test_adding_a_brick(self, ifc, brick):
+    def test_adding_a_brick_from_an_element(self, ifc, brick):
         ifc.get_entity("obj").should_be_called().will_return("product")
-        brick.add_brick("product", "namespace", "brick_class").should_be_called().will_return("brick_uri")
+        brick.add_brick_from_element("product", "namespace", "brick_class").should_be_called().will_return("brick_uri")
         brick.run_refresh_brick_viewer().should_be_called()
         subject.add_brick(ifc, brick, obj="obj", namespace="namespace", brick_class="brick_class", library=None)
 
     def test_adding_a_brick_an_auto_assigning_it_to_the_ifc_element(self, ifc, brick):
         ifc.get_entity("obj").should_be_called().will_return("product")
-        brick.add_brick("product", "namespace", "brick_class").should_be_called().will_return("brick_uri")
+        brick.add_brick_from_element("product", "namespace", "brick_class").should_be_called().will_return("brick_uri")
         brick.run_assign_brick_reference(obj="obj", library="library", brick_uri="brick_uri").should_be_called()
         brick.run_refresh_brick_viewer().should_be_called()
         subject.add_brick(ifc, brick, obj="obj", namespace="namespace", brick_class="brick_class", library="library")
+
+    def test_adding_a_plain_brick(self, ifc, brick):
+        brick.add_brick("namespace", "brick_class").should_be_called()
+        brick.run_refresh_brick_viewer().should_be_called()
+        subject.add_brick(ifc, brick, obj=None, namespace="namespace", brick_class="brick_class", library=None)
 
 
 class TestAddBrickFeed:
@@ -145,7 +150,7 @@ class TestConvertIfcToBrick:
     def test_run(self, brick):
         brick.get_convertable_brick_objects_and_elements().should_be_called().will_return([("obj", "element")])
         brick.get_brick_class("element").should_be_called().will_return("brick_class")
-        brick.add_brick("element", "namespace", "brick_class").should_be_called().will_return("brick_uri")
+        brick.add_brick_from_element("element", "namespace", "brick_class").should_be_called().will_return("brick_uri")
         brick.run_assign_brick_reference(obj="obj", library="library", brick_uri="brick_uri").should_be_called()
         brick.run_refresh_brick_viewer().should_be_called()
         subject.convert_ifc_to_brick(brick, namespace="namespace", library="library")

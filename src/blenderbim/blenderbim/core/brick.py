@@ -69,10 +69,13 @@ def assign_brick_reference(ifc, brick, obj=None, library=None, brick_uri=None):
 
 
 def add_brick(ifc, brick, obj=None, namespace=None, brick_class=None, library=None):
-    product = ifc.get_entity(obj)
-    brick_uri = brick.add_brick(product, namespace, brick_class)
-    if library:
-        brick.run_assign_brick_reference(obj=obj, library=library, brick_uri=brick_uri)
+    if obj:
+        product = ifc.get_entity(obj)
+        brick_uri = brick.add_brick_from_element(product, namespace, brick_class)
+        if library:
+            brick.run_assign_brick_reference(obj=obj, library=library, brick_uri=brick_uri)
+    else:
+        brick_uri = brick.add_brick(namespace, brick_class)
     brick.run_refresh_brick_viewer()
 
 
@@ -85,7 +88,7 @@ def add_brick_feed(ifc, brick, source=None, destination=None):
 
 def convert_ifc_to_brick(brick, namespace=None, library=None):
     for obj, element in brick.get_convertable_brick_objects_and_elements():
-        brick_uri = brick.add_brick(element, namespace, brick.get_brick_class(element))
+        brick_uri = brick.add_brick_from_element(element, namespace, brick.get_brick_class(element))
         if library:
             brick.run_assign_brick_reference(obj=obj, library=library, brick_uri=brick_uri)
     brick.run_refresh_brick_viewer()
