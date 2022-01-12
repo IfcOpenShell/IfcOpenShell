@@ -51,11 +51,12 @@ def set_derived_atribute(*args):
 # mapping is built once during initialization of the
 # module.
 _method_dict = {}
-for nm in ifcopenshell_wrapper.schema_names():
-    schema = ifcopenshell_wrapper.schema_by_name(nm)
+
+
+def register_schema_attributes(schema):
     for decl in schema.declarations():
         if hasattr(decl, "argument_types"):
-            fq_name = ".".join((nm, decl.name()))
+            fq_name = ".".join((schema.name(), decl.name()))
 
             # get type strings as reported by IfcOpenShell C++
             type_strs = decl.argument_types()
@@ -79,6 +80,11 @@ for nm in ifcopenshell_wrapper.schema_names():
             ]
 
             _method_dict[fq_name] = functions
+
+
+for nm in ifcopenshell_wrapper.schema_names():
+    schema = ifcopenshell_wrapper.schema_by_name(nm)
+    register_schema_attributes(schema)
 
 
 class entity_instance(object):
