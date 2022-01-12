@@ -150,12 +150,6 @@ class TestConvertIfcToBrick:
         brick.run_refresh_brick_viewer().should_be_called()
         subject.convert_ifc_to_brick(brick, namespace="namespace", library="library")
 
-    def test_not_converting_an_element_where_we_cannot_find_the_corresponding_brick_class(self, brick):
-        brick.get_convertable_brick_objects_and_elements().should_be_called().will_return([("obj", "element")])
-        brick.get_brick_class("element").should_be_called().will_return(None)
-        brick.run_refresh_brick_viewer().should_be_called()
-        subject.convert_ifc_to_brick(brick, namespace="namespace", library="library")
-
 
 class TestNewBrickFile:
     def test_run(self, brick):

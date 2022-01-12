@@ -85,10 +85,7 @@ def add_brick_feed(ifc, brick, source=None, destination=None):
 
 def convert_ifc_to_brick(brick, namespace=None, library=None):
     for obj, element in brick.get_convertable_brick_objects_and_elements():
-        brick_class = brick.get_brick_class(element)
-        if not brick_class:
-            continue
-        brick_uri = brick.add_brick(element, namespace, brick_class)
+        brick_uri = brick.add_brick(element, namespace, brick.get_brick_class(element))
         if library:
             brick.run_assign_brick_reference(obj=obj, library=library, brick_uri=brick_uri)
     brick.run_refresh_brick_viewer()
