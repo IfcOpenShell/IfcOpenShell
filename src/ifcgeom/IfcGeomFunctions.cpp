@@ -4699,7 +4699,7 @@ namespace {
 		}		
 
 		// First check for containment in outer wire
-		for (auto it = wires.begin()++; it != wires.end(); ++it) {
+		for (auto it = ++wires.begin(); it != wires.end(); ++it) {
 			// Considering a single vertex is sufficient because we have already
 			// guaranteed that the edges of different operands do not cross.
 			TopoDS_Iterator it_ed(*it);
