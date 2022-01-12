@@ -35,18 +35,26 @@ except:
 
 class Brick(blenderbim.core.tool.Brick):
     @classmethod
-    def add_brick(cls, element, namespace, brick_class):
+    def add_brick(cls, namespace, brick_class):
         ns = Namespace(namespace)
-        brick = ns[element.GlobalId]
+        brick = ns[ifcopenshell.guid.expand(ifcopenshell.guid.new())]
         BrickStore.graph.add((brick, RDF.type, URIRef(brick_class)))
-        if element.Name:
-            BrickStore.graph.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(element.Name)))
+        BrickStore.graph.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Unnamed")))
         return str(brick)
 
     @classmethod
     def add_brick_breadcrumb(cls):
         new = bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.add()
         new.name = bpy.context.scene.BIMBrickProperties.active_brick_class
+
+    @classmethod
+    def add_brick_from_element(cls, element, namespace, brick_class):
+        ns = Namespace(namespace)
+        brick = ns[element.GlobalId]
+        BrickStore.graph.add((brick, RDF.type, URIRef(brick_class)))
+        if element.Name:
+            BrickStore.graph.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(element.Name)))
+        return str(brick)
 
     @classmethod
     def add_brickifc_project(cls, namespace):
@@ -263,6 +271,8 @@ class Brick(blenderbim.core.tool.Brick):
             BrickStore.schema.load_file(schema_path)
         BrickStore.graph = brickschema.Graph() + BrickStore.schema
         BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
+        BrickStore.graph.bind("brick", Namespace("https://brickschema.org/schema/Brick#"))
+        BrickStore.graph.bind("rdfs", Namespace("http://www.w3.org/2000/01/rdf-schema#"))
 
     @classmethod
     def pop_brick_breadcrumb(cls):

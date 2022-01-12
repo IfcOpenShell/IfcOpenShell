@@ -122,7 +122,9 @@ class AddBrick(bpy.types.Operator, Operator):
         core.add_brick(
             tool.Ifc,
             tool.Brick,
-            obj=context.active_object,
+            obj=context.active_object
+            if context.selected_objects and tool.Ifc.get_entity(context.active_object)
+            else None,
             namespace=props.namespace,
             brick_class=props.brick_equipment_class,
             library=library,
