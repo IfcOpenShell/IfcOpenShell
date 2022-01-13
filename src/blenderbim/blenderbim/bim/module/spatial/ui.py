@@ -27,7 +27,7 @@ class BIM_PT_spatial(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    bl_parent_id = "BIM_PT_geometry_and_spatial_structure_object"
+    bl_parent_id = "BIM_PT_geometry_object"
 
     @classmethod
     def poll(cls, context):

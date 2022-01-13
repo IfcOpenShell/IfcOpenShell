@@ -23,6 +23,7 @@ from . import ifc
 from bpy.types import Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
 from blenderbim.bim.helper import IFCHeaderSpecs
+import blenderbim.tool as tool
 
 
 class IFCFileSelector:
@@ -157,12 +158,11 @@ def ifc_units(self, context):
 
 
 # Scene Panel Groups -->
-class BIM_PT_project_and_template_setup(Panel):
-    bl_label = "IFC Project and Template Setup"
+class BIM_PT_project_setup(Panel):
+    bl_label = "IFC Project Setup"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
         pass
@@ -175,12 +175,16 @@ class BIM_PT_utilities(Panel):
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+    
     def draw(self, context):
         pass
 
 
-class BIM_PT_collaboration_and_data_exchange(Panel):
-    bl_label = "IFC Collaboration and Data Exchange"
+class BIM_PT_collaboration(Panel):
+    bl_label = "IFC Collaboration"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -190,13 +194,17 @@ class BIM_PT_collaboration_and_data_exchange(Panel):
         pass
 
 
-class BIM_PT_geometry_and_spatial_structure(Panel):
-    bl_label = "IFC Geometry and Spatial Structure"
+class BIM_PT_geometry(Panel):
+    bl_label = "IFC Geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+    
     def draw(self, context):
         pass
 
@@ -208,6 +216,10 @@ class BIM_PT_4D5D(Panel):
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+    
     def draw(self, context):
         pass
 
@@ -219,6 +231,25 @@ class BIM_PT_structural(Panel):
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+    
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_services(Panel):
+    bl_label = "IFC Services"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+    
     def draw(self, context):
         pass
 
@@ -229,6 +260,10 @@ class BIM_PT_misc(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -246,24 +281,46 @@ class BIM_PT_quality_control(Panel):
 
 
 # Object Panel Groups -->
-class BIM_PT_geometry_and_spatial_structure_object(Panel):
-    bl_label = "IFC Geometry and Spatial Structure"
+class BIM_PT_object_metadata(Panel):
+    bl_label = "IFC Object Metadata"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+    
+    def draw(self, context):
+        pass
+    
+    
+class BIM_PT_geometry_object(Panel):
+    bl_label = "IFC Geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_options = {"DEFAULT_CLOSED"}
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+    
     def draw(self, context):
         pass
 
 
-class BIM_PT_object_attributes_properties_and_relationships(Panel):
-    bl_label = "IFC Object Attributes, Properties and Relationships"
+class BIM_PT_services_object(Panel):
+    bl_label = "IFC Services"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
+    bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+    
     def draw(self, context):
         pass
 
@@ -275,6 +332,10 @@ class BIM_PT_utilities_object(Panel):
     bl_context = "object"
     bl_options = {"DEFAULT_CLOSED"}
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+    
     def draw(self, context):
         pass
 
@@ -286,5 +347,9 @@ class BIM_PT_misc_object(Panel):
     bl_context = "object"
     bl_options = {"DEFAULT_CLOSED"}
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+    
     def draw(self, context):
         pass
