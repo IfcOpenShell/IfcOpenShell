@@ -29,7 +29,7 @@ class BIM_PT_classifications(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_and_template_setup"
+    bl_parent_id = "BIM_PT_project_setup"
 
     @classmethod
     def poll(cls, context):
@@ -87,7 +87,7 @@ class BIM_PT_classification_references(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    bl_parent_id = "BIM_PT_object_attributes_properties_and_relationships"
+    bl_parent_id = "BIM_PT_object_metadata"
 
     @classmethod
     def poll(cls, context):

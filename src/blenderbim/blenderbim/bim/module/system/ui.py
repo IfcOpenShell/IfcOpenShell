@@ -28,7 +28,7 @@ class BIM_PT_systems(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_utilities"
+    bl_parent_id = "BIM_PT_services"
 
     @classmethod
     def poll(cls, context):
@@ -75,7 +75,7 @@ class BIM_PT_object_systems(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    bl_parent_id = "BIM_PT_utilities_object"
+    bl_parent_id = "BIM_PT_services_object"
 
     @classmethod
     def poll(cls, context):
