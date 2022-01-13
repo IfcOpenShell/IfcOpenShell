@@ -30,7 +30,7 @@ class BIM_PT_gis(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_geometry_and_spatial_structure"
+    bl_parent_id = "BIM_PT_geometry"
 
     @classmethod
     def poll(cls, context):

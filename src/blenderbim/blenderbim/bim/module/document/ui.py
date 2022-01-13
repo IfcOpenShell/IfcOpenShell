@@ -29,7 +29,7 @@ class BIM_PT_documents(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_collaboration_and_data_exchange"
+    bl_parent_id = "BIM_PT_collaboration"
 
     @classmethod
     def poll(cls, context):

@@ -29,7 +29,7 @@ class BIM_PT_units(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_and_template_setup"
+    bl_parent_id = "BIM_PT_project_setup"
 
     @classmethod
     def poll(cls, context):
