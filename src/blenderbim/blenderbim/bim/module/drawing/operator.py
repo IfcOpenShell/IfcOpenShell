@@ -393,6 +393,8 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setFile(ifc)
         self.serialiser.setWithoutStoreys(True)
         self.serialiser.setPolygonal(True)
+        self.serialiser.setUseHlrPoly(True)
+        self.serialiser.setProfileThreshold(64)
         self.serialiser.setUseNamespace(True)
         self.serialiser.setAlwaysProject(True)
         self.serialiser.setAutoElevation(False)
