@@ -314,7 +314,7 @@ class BIM_PT_services_object(Panel):
     bl_label = "IFC Services"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "scene"
+    bl_context = "object"
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
