@@ -238,15 +238,13 @@ class TestGetBrickifcProject(NewFile):
         )
 
 
-class TestGetConvertableBrickObjectsAndElements(NewFile):
+class TestGetConvertableBrickElements(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         element = ifc.createIfcAirTerminalBox()
-        obj = bpy.data.objects.new("Object", None)
-        tool.Ifc.link(element, obj)
         ifc.createIfcWall()
-        assert subject.get_convertable_brick_objects_and_elements() == [(obj, element)]
+        assert subject.get_convertable_brick_elements() == {element}
 
 
 class TestGetItemClass(NewFile):
