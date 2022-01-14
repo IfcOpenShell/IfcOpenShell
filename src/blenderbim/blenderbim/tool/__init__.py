@@ -21,6 +21,7 @@ from blenderbim.tool.blender import Blender
 from blenderbim.tool.brick import Brick
 from blenderbim.tool.collector import Collector
 from blenderbim.tool.context import Context
+from blenderbim.tool.debug import Debug
 from blenderbim.tool.drawing import Drawing
 from blenderbim.tool.geometry import Geometry
 from blenderbim.tool.ifc import Ifc
@@ -32,6 +33,7 @@ from blenderbim.tool.pset import Pset
 from blenderbim.tool.qto import Qto
 from blenderbim.tool.root import Root
 from blenderbim.tool.spatial import Spatial
+from blenderbim.tool.structural import Structural
 from blenderbim.tool.style import Style
 from blenderbim.tool.surveyor import Surveyor
 from blenderbim.tool.type import Type

@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -23,7 +23,9 @@ import importlib
 import ifcopenshell
 import ifcopenshell.util.pset
 import blenderbim.bim.handler
+import blenderbim.bim.schema
 from blenderbim.bim.ifc import IfcStore
+from collections import defaultdict
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -80,12 +82,46 @@ def update_is_visible(self, context):
                 pass
 
 
-def getAttributeEnumValues(self, context):
+# If we don't cache strings, accents get mangled due to a Blender bug
+# https://blender.stackexchange.com/questions/216230/is-there-a-workaround-for-the-known-bug-in-dynamic-enumproperty
+# https://github.com/IfcOpenShell/IfcOpenShell/pull/1945
+# https://github.com/IfcOpenShell/IfcOpenShell/issues/1941
+def cache_string(s):
+    s = str(s)
+    if not hasattr(cache_string, "data"):  # Another way to define a function attribute
+        cache_string.data = defaultdict(str)
+    cache_string.data[s] = s
+    return cache_string.data[s]
+
+
+cache_string.data = {}
+
+
+def getAttributeEnumValues(prop, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
-    data = json.loads(self.enum_items)
+    items = []
+    data = json.loads(prop.enum_items)
+
     if isinstance(data, dict):
-        return [(str(k), v, "") for k, v in data.items()]
-    return [(e, e, "") for e in data]
+        for k, v in data.items():
+            items.append(
+                (
+                    cache_string(k),
+                    cache_string(v),
+                    "",
+                )
+            )
+    else:
+        for e in data:
+            items.append(
+                (
+                    cache_string(e),
+                    cache_string(e),
+                    "",
+                )
+            )
+
+    return items
 
 
 def update_schema_dir(self, context):
@@ -212,7 +248,6 @@ class BIMProperties(PropertyGroup):
         default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory", update=update_data_dir
     )
     ifc_file: StringProperty(name="IFC File", update=update_ifc_file)
-    export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
     section_plane_colour: FloatVectorProperty(

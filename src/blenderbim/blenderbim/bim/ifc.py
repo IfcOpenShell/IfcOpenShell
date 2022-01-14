@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -47,6 +47,7 @@ class IfcStore:
     last_transaction = ""
     history = []
     future = []
+    schema_identifiers = ["IFC4", "IFC2X3"]
 
     @staticmethod
     def purge():
@@ -63,6 +64,7 @@ class IfcStore:
         IfcStore.pset_template_file = None
         IfcStore.library_path = ""
         IfcStore.library_file = None
+        IfcStore.schema_identifiers = ["IFC4", "IFC2X3"]
 
     @staticmethod
     def get_file():
@@ -119,7 +121,9 @@ class IfcStore:
     @staticmethod
     def get_schema():
         if IfcStore.file is None:
-            return
+            IfcStore.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(
+                bpy.context.scene.BIMProjectProperties.export_schema
+            )
         elif IfcStore.schema is None:
             IfcStore.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(IfcStore.file.schema)
         return IfcStore.schema

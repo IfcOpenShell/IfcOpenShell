@@ -39,6 +39,10 @@ class Usecase:
                 inverse = ifcopenshell.util.element.copy(self.file, inverse)
                 inverse.RelatingMaterial = ifcopenshell.util.element.copy(self.file, inverse.RelatingMaterial)
                 inverse.RelatedObjects = [to_element]
+            elif inverse.is_a("IfcRelAssociatesMaterial") and from_element.is_a("IfcTypeProduct"):
+                inverse = ifcopenshell.util.element.copy(self.file, inverse)
+                inverse.RelatingMaterial = ifcopenshell.util.element.copy(self.file, inverse.RelatingMaterial)
+                inverse.RelatedObjects = [to_element]
             else:
                 for i, value in enumerate(inverse):
                     if value == from_element:

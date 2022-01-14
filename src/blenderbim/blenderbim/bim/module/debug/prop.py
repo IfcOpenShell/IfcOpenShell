@@ -39,3 +39,4 @@ class BIMDebugProperties(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     inverse_attributes: CollectionProperty(name="Inverse Attributes", type=Attribute)
     inverse_references: CollectionProperty(name="Inverse References", type=Attribute)
+    express_file: StringProperty(name="Express File")

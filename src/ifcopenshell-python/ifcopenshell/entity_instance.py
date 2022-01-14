@@ -42,7 +42,7 @@ def set_derived_atribute(*args):
 # inherited attributes) to set that particular
 # attribute by index.
 # For example. IFC2X3.IfcWall with have a list of
-# 9 methods. The first will point at 
+# 9 methods. The first will point at
 # ifcopenshell.ifcopenshell_wrapper.entity_instance.setArgumentAsString
 # because the first attribute GlobalId ultimately
 # is of type string.
@@ -51,31 +51,40 @@ def set_derived_atribute(*args):
 # mapping is built once during initialization of the
 # module.
 _method_dict = {}
-for nm in ifcopenshell_wrapper.schema_names():
-    schema = ifcopenshell_wrapper.schema_by_name(nm)
+
+
+def register_schema_attributes(schema):
     for decl in schema.declarations():
         if hasattr(decl, "argument_types"):
-            fq_name = ".".join((nm, decl.name()))
-            
+            fq_name = ".".join((schema.name(), decl.name()))
+
             # get type strings as reported by IfcOpenShell C++
             type_strs = decl.argument_types()
-            
+
             # convert case for setter function
             type_strs = [x.title().replace(" ", "") for x in type_strs]
-            
+
             # binary and enumeration are passed from python as string as well
             type_strs = [x.replace("Binary", "String") for x in type_strs]
             type_strs = [x.replace("Enumeration", "String") for x in type_strs]
-            
+
             # prefix to get method names
             fn_names = ["setArgumentAs" + x for x in type_strs]
-            
+
             # resolve to actual functions in wrapper
             functions = [
-                set_derived_atribute if mname == "setArgumentAsDerived" else getattr(ifcopenshell_wrapper.entity_instance, mname) \
-                for mname in fn_names]
-            
+                set_derived_atribute
+                if mname == "setArgumentAsDerived"
+                else getattr(ifcopenshell_wrapper.entity_instance, mname)
+                for mname in fn_names
+            ]
+
             _method_dict[fq_name] = functions
+
+
+for nm in ifcopenshell_wrapper.schema_names():
+    schema = ifcopenshell_wrapper.schema_by_name(nm)
+    register_schema_attributes(schema)
 
 
 class entity_instance(object):
@@ -177,13 +186,13 @@ class entity_instance(object):
 
         if self.method_list is None:
             super(entity_instance, self).__setattr__("method_list", _method_dict[self.is_a(True)])
-            
+
         method = self.method_list[idx]
-            
+
         if value is None:
             if method is not set_derived_atribute:
                 self.wrapped_data.setArgumentAsNull(idx)
-        else:            
+        else:
             self.method_list[idx](self.wrapped_data, idx, entity_instance.unwrap_value(value))
 
         return value

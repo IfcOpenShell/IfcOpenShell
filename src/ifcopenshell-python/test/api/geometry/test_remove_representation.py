@@ -36,11 +36,7 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
         self.file.createIfcWallType(RepresentationMaps=[representation_map])
         representation = self.file.createIfcShapeRepresentation(
             RepresentationType="MappedRepresentation",
-            Items=[
-                self.file.createIfcMappedItem(
-                    MappingTarget=representation_map
-                )
-            ],
+            Items=[self.file.createIfcMappedItem(MappingTarget=representation_map)],
         )
         assert len(self.file.by_type("IfcShapeRepresentation")) == 2
         ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)

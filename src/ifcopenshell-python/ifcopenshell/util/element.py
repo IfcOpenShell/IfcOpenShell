@@ -67,6 +67,20 @@ def get_properties(properties):
     return results
 
 
+def get_predefined_type(element):
+    element_type = get_type(element)
+    if element_type:
+        predefined_type = getattr(element_type, "PredefinedType", None)
+        if predefined_type == "USERDEFINED":
+            predefined_type = getattr(element_type, "ElementType", None)
+        if predefined_type and predefined_type != "NOTDEFINED":
+            return predefined_type
+    predefined_type = getattr(element, "PredefinedType", None)
+    if predefined_type == "USERDEFINED":
+        predefined_type = getattr(element, "ObjectType", None)
+    return predefined_type
+
+
 def get_type(element):
     if element.is_a("IfcTypeObject"):
         return element

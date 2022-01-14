@@ -10,8 +10,8 @@ class TestUpdateOwnerHistory(test.bootstrap.IFC4):
 
         user = self.file.createIfcPersonAndOrganization()
         application = self.file.createIfcApplication()
-        ifcopenshell.api.owner.settings.get_user = lambda x : user
-        ifcopenshell.api.owner.settings.get_application = lambda x : application
+        ifcopenshell.api.owner.settings.get_user = lambda x: user
+        ifcopenshell.api.owner.settings.get_application = lambda x: application
 
         element = self.file.createIfcWall()
         history = ifcopenshell.api.run("owner.update_owner_history", self.file, element=element)
@@ -31,8 +31,8 @@ class TestUpdateOwnerHistory(test.bootstrap.IFC4):
 
         user = self.file.createIfcPersonAndOrganization()
         application = self.file.createIfcApplication()
-        ifcopenshell.api.owner.settings.get_user = lambda x : user
-        ifcopenshell.api.owner.settings.get_application = lambda x : application
+        ifcopenshell.api.owner.settings.get_user = lambda x: user
+        ifcopenshell.api.owner.settings.get_application = lambda x: application
 
         element = self.file.createIfcWall()
         old_history = ifcopenshell.api.run("owner.create_owner_history", self.file)
@@ -55,8 +55,8 @@ class TestUpdateOwnerHistory(test.bootstrap.IFC4):
 
         user = self.file.createIfcPersonAndOrganization()
         application = self.file.createIfcApplication()
-        ifcopenshell.api.owner.settings.get_user = lambda x : user
-        ifcopenshell.api.owner.settings.get_application = lambda x : application
+        ifcopenshell.api.owner.settings.get_user = lambda x: user
+        ifcopenshell.api.owner.settings.get_application = lambda x: application
 
         element = self.file.createIfcWall()
         element2 = self.file.createIfcWall()

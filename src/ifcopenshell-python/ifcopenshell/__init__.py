@@ -52,7 +52,7 @@ except Exception as e:
 
 from . import guid
 from .file import file
-from .entity_instance import entity_instance
+from .entity_instance import entity_instance, register_schema_attributes
 
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
@@ -97,6 +97,7 @@ gcroot = []
 def register_schema(schema):
     gcroot.append(schema)
     ifcopenshell_wrapper.register_schema(schema.schema)
+    register_schema_attributes(schema.schema)
 
 
 from .main import *

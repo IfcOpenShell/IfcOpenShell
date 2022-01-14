@@ -26,13 +26,16 @@ import documentation
 
 from collections import defaultdict
 
+
 class Header(codegen.Base):
     def __init__(self, mapping):
         declarations = []
 
         case_lookup = lambda nm: [k for k in mapping.schema.keys if k.lower() == nm.lower()][0]
         case_normalize = lambda nm: nm if nm.startswith("IfcUtil::") else case_lookup(nm)
-        create_supertype_statement = lambda nms: ", ".join("public %s %s" % ("" if c.startswith("IfcUtil::") else "",c) for c in nms)
+        create_supertype_statement = lambda nms: ", ".join(
+            "public %s %s" % ("" if c.startswith("IfcUtil::") else "", c) for c in nms
+        )
 
         write = lambda str, **kwargs: declarations.append(
             str
@@ -80,18 +83,24 @@ class Header(codegen.Base):
                 else:
                     superclasses.append("IfcUtil::IfcBaseType")
                 superclasses.extend(get_select_super_types(name, bases=all_superclasses))
-                
-                is_emitted = lambda nm: nm == "IfcUtil::IfcBaseType" or nm in mapping.schema.selects or nm.lower() in emitted_simpletypes
+
+                is_emitted = (
+                    lambda nm: nm == "IfcUtil::IfcBaseType"
+                    or nm in mapping.schema.selects
+                    or nm.lower() in emitted_simpletypes
+                )
                 if not all(map(is_emitted, superclasses)):
                     continue
-                
+
                 superclasses = list(map(case_normalize, superclasses))
 
                 emitted_simpletypes.add(name.lower())
 
                 superclass_statement = create_supertype_statement(superclasses)
 
-                write(templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass_statement)
+                write(
+                    templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass_statement
+                )
 
         class_definitions = []
 
@@ -149,7 +158,7 @@ class Header(codegen.Base):
                     supertypes.extend(get_select_super_types(name, bases=all_supertypes))
                     supertypes = list(map(case_normalize, supertypes))
                     superclass = create_supertype_statement(supertypes)
-                    
+
                     argument_count = mapping.argument_count(type)
 
                     argument_start = argument_count - len(type.attributes)

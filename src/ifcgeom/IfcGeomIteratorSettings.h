@@ -113,12 +113,14 @@ namespace IfcGeom
 			STRICT_TOLERANCE = 1 << 22,
 			/// Write boolean operands to file in current directory for debugging purposes
 			DEBUG_BOOLEAN = 1 << 23,
+			/// Try to perform boolean subtractions in 2d. Defaults to true.
+			BOOLEAN_ATTEMPT_2D = 1 << 24,
 			/// Number of different setting flags.
-			NUM_SETTINGS = 24,
+			NUM_SETTINGS = 25,
         };
 
         IteratorSettings()
-            : settings_(WELD_VERTICES) // OR options that default to true here
+            : settings_(WELD_VERTICES | BOOLEAN_ATTEMPT_2D) // OR options that default to true here
             , deflection_tolerance_(1.e-3)
 			, angular_tolerance_(0.5)
         {

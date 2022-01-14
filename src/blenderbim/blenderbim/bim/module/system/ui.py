@@ -28,6 +28,7 @@ class BIM_PT_systems(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_services"
 
     @classmethod
     def poll(cls, context):
@@ -74,6 +75,7 @@ class BIM_PT_object_systems(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_parent_id = "BIM_PT_services_object"
 
     @classmethod
     def poll(cls, context):
@@ -105,6 +107,8 @@ class BIM_PT_object_systems(Panel):
         for system_id in systems_object:
             row = self.layout.row(align=True)
             row.label(text=Data.systems[system_id].get("Name", "Unnamed"))
+            op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
+            op.system = system_id
             op = row.operator("bim.unassign_system", text="", icon="X")
             op.system = system_id
 

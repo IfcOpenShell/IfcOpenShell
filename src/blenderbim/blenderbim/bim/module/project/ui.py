@@ -19,6 +19,7 @@
 import os
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.project.data import ProjectData
 
 
 class BIM_PT_project(Panel):
@@ -27,8 +28,12 @@ class BIM_PT_project(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_project_setup"
 
     def draw(self, context):
+        if not ProjectData.is_loaded:
+            ProjectData.load()
+
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
         props = context.scene.BIMProperties
@@ -148,8 +153,9 @@ class BIM_PT_project(Panel):
 
     def draw_create_project_ui(self, context):
         props = context.scene.BIMProperties
+        pprops = context.scene.BIMProjectProperties
         row = self.layout.row()
-        row.prop(props, "export_schema")
+        row.prop(pprops, "export_schema")
         row = self.layout.row()
         row.prop(context.scene.unit_settings, "system")
         row = self.layout.row()
@@ -170,6 +176,7 @@ class BIM_PT_project_library(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_project_setup"
 
     def draw(self, context):
         self.layout.use_property_decorate = False
@@ -211,6 +218,7 @@ class BIM_PT_links(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_project_setup"
 
     def draw(self, context):
         self.props = context.scene.BIMProjectProperties

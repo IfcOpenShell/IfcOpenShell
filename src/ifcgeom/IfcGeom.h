@@ -274,6 +274,7 @@ private:
 	double no_wire_intersection_tolerance;
 	double precision_factor;
 	double boolean_debug_setting;
+	double boolean_attempt_2d;
 
 	size_t operation_counter_ = 0;
 

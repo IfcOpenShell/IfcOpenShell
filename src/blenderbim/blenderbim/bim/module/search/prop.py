@@ -46,6 +46,7 @@ def update_is_class_selected(self, context):
                 new = self.unselected_objects.add()
                 new.obj = obj
 
+
 def update_is_level_selected(self, context):
     if self.is_selected:
         for obj in self.unselected_objects:
@@ -58,6 +59,7 @@ def update_is_level_selected(self, context):
                 obj.select_set(False)
                 new = self.unselected_objects.add()
                 new.obj = obj
+
 
 class BIMFilterClasses(PropertyGroup):
     name: StringProperty(name="Name")

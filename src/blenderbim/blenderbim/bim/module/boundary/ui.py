@@ -31,6 +31,7 @@ class BIM_PT_SceneBoundaries(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -49,6 +50,7 @@ class BIM_PT_Boundary(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_parent_id = "BIM_PT_geometry_object"
 
     @classmethod
     def poll(cls, context):
@@ -117,6 +119,7 @@ class BIM_PT_SpaceBoundaries(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_parent_id = "BIM_PT_geometry_object"
 
     @classmethod
     def poll(cls, context):
@@ -145,6 +148,10 @@ class BIM_PT_SpaceBoundaries(Panel):
             boundary_data = Data.boundaries[boundary_id]
             building_element = self.ifc_file.by_id(boundary_data["RelatedBuildingElement"])
             row = self.layout.row()
-            row.label(text=f"{boundary_id} > {building_element.is_a()}/{building_element.Name}", icon="GHOST_ENABLED")
+            if building_element:
+                bld_el_description = f"{building_element.is_a()}/{building_element.Name}"
+            else:
+                bld_el_description = None
+            row.label(text=f"{boundary_id} > {bld_el_description}", icon="GHOST_ENABLED")
             op = row.operator("bim.load_boundary", text="", icon="RESTRICT_SELECT_OFF")
             op.boundary_id = boundary_id

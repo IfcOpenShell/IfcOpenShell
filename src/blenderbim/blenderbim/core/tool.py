@@ -43,26 +43,33 @@ class Blender: pass
 
 @interface
 class Brick:
-    def add_brick(cls, element, namespace, brick_class): pass
+    def add_brick(cls, namespace, brick_class): pass
     def add_brick_breadcrumb(cls): pass
+    def add_brick_from_element(cls, element, namespace, brick_class): pass
     def add_brickifc_project(cls, namespace): pass
     def add_brickifc_reference(cls, brick, element, project): pass
     def add_feed(cls, source, destination): pass
     def clear_brick_browser(cls): pass
     def clear_project(cls): pass
     def export_brick_attributes(cls, brick_uri): pass
+    def get_active_brick_class(cls): pass
     def get_brick(cls, element): pass
+    def get_brick_class(cls, element): pass
     def get_brick_path(cls): pass
     def get_brick_path_name(cls): pass
     def get_brickifc_project(cls): pass
+    def get_convertable_brick_elements(cls): pass
     def get_item_class(cls, item): pass
     def get_library_brick_reference(cls, library, brick_uri): pass
     def get_namespace(cls, uri): pass
     def import_brick_classes(cls, brick_class): pass
     def import_brick_items(cls, brick_class): pass
     def load_brick_file(cls, filepath): pass
+    def new_brick_file(cls): pass
     def pop_brick_breadcrumb(cls): pass
-    def run_assign_brick_reference(cls, obj=None, library=None, brick_uri=None): pass
+    def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None): pass
+    def run_refresh_brick_viewer(cls): pass
+    def run_view_brick_class(cls, brick_class=None): pass
     def select_browser_item(cls, item): pass
     def set_active_brick_class(cls, brick_class): pass
 
@@ -80,6 +87,13 @@ class Context:
     def get_context(cls): pass
     def import_attributes(cls): pass
     def set_context(cls, context): pass
+
+
+@interface
+class Debug:
+    def add_schema_identifier(cls, schema): pass
+    def load_express(cls, filename): pass
+    def purge_hdf5_cache(cls): pass
 
 
 @interface
@@ -253,6 +267,23 @@ class Spatial:
     def select_object(cls, obj): pass
     def set_active_object(cls, obj): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
+
+
+@interface
+class Structural:
+    def disable_editing_structural_analysis_model(cls): pass
+    def disable_structural_analysis_model_editing_ui(cls): pass
+    def enable_editing_structural_analysis_model(cls, model): pass
+    def enable_structural_analysis_model_editing_ui(cls): pass
+    def enabled_structural_analysis_model_editing_ui(cls): pass
+    def ensure_representation_contexts(cls): pass
+    def get_active_structural_analysis_model(cls): pass
+    def get_ifc_structural_analysis_model_attributes(cls, model): pass
+    def get_ifc_structural_analysis_models(cls): pass
+    def get_product_or_active_object(cls): pass
+    def get_structural_analysis_model_attributes(cls): pass
+    def load_structural_analysis_model_attributes(cls, data): pass
+    def load_structural_analysis_models(cls): pass
 
 
 @interface

@@ -12,8 +12,8 @@ class TestRemoveLibrary(test.bootstrap.IFC4):
         library = self.file.createIfcLibraryInformation()
         reference1 = self.file.createIfcLibraryReference(ReferencedLibrary=library)
         reference2 = self.file.createIfcLibraryReference(ReferencedLibrary=library)
-        self.file.createIfcRelAssociatesLibrary(GlobalId='foo', RelatingLibrary=library)
-        self.file.createIfcRelAssociatesLibrary(GlobalId='bar', RelatingLibrary=reference1)
+        self.file.createIfcRelAssociatesLibrary(GlobalId="foo", RelatingLibrary=library)
+        self.file.createIfcRelAssociatesLibrary(GlobalId="bar", RelatingLibrary=reference1)
         ifcopenshell.api.run("library.remove_library", self.file, library=library)
         assert len(self.file.by_type("IfcLibraryReference")) == 0
         assert len(self.file.by_type("IfcRelAssociatesLibrary")) == 0

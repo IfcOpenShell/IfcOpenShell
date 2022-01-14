@@ -26,7 +26,7 @@ class Usecase:
                 "owner.create_owner_history", self.file, **self.settings
             )
             return self.settings["element"].OwnerHistory
-        if len(self.file.get_inverse(self.settings["element"].OwnerHistory)) > 1:
+        if self.file.get_total_inverses(self.settings["element"].OwnerHistory) > 1:
             new = ifcopenshell.util.element.copy(self.file, self.settings["element"].OwnerHistory)
             self.settings["element"].OwnerHistory = new
         self.settings["element"].OwnerHistory.ChangeAction = "MODIFIED"

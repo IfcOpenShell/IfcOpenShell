@@ -1,7 +1,5 @@
 class Data:
     is_loaded = False
-    products = {}
-    structural_analysis_models = {}
     connections = {}
     boundary_conditions = {}
     connects_structural_members = {}
@@ -17,8 +15,6 @@ class Data:
     @classmethod
     def purge(cls):
         cls.is_loaded = False
-        cls.products = {}
-        cls.structural_analysis_models = {}
         cls.connections = {}
         cls.boundary_conditions = {}
         cls.connects_structural_members = {}
@@ -44,7 +40,6 @@ class Data:
                 return cls.load_structural_member(product_id)
             # if product.is_a("IfcStructuralAction"):
             #     return cls.load_structural_action(product_id)
-        cls.load_structural_analysis_models()
         cls.load_structural_load_cases()
         cls.load_structural_load_case_combinations()
         cls.load_structural_load_groups()
@@ -52,34 +47,6 @@ class Data:
         cls.load_structural_loads()
         cls.load_boundary_conditions()
         cls.is_loaded = True
-
-    @classmethod
-    def load_structural_analysis_models(cls):
-        cls.products = {}
-        cls.structural_analysis_models = {}
-
-        for model in cls._file.by_type("IfcStructuralAnalysisModel"):
-            if model.IsGroupedBy:
-                for rel in model.IsGroupedBy:
-                    for product in rel.RelatedObjects:
-                        cls.products.setdefault(product.id(), []).append(model.id())
-            data = model.get_info()
-            del data["OwnerHistory"]
-
-            loaded_by = []
-            for load_group in model.LoadedBy or []:
-                loaded_by.append(load_group.id())
-            data["LoadedBy"] = loaded_by
-
-            has_results = []
-            for result_group in model.HasResults or []:
-                has_results.append(result_group.id())
-            data["HasResults"] = has_results
-
-            data["OrientationOf2DPlane"] = model.OrientationOf2DPlane.id() if model.OrientationOf2DPlane else None
-            data["SharedPlacement"] = model.SharedPlacement.id() if model.SharedPlacement else None
-
-            cls.structural_analysis_models[model.id()] = data
 
     @classmethod
     def load_structural_load_cases(cls):

@@ -35,14 +35,16 @@ class BIM_PT_brickschema(Panel):
         self.props = context.scene.BIMBrickProperties
 
         if not BrickschemaData.data["is_loaded"]:
-            row = self.layout.row()
-            row.operator("bim.load_brick_project")
+            row = self.layout.row(align=True)
+            row.operator("bim.new_brick_file", text="Create Project")
+            row.operator("bim.load_brick_project", text="Load Project")
             return
 
         row = self.layout.row(align=True)
         if len(self.props.brick_breadcrumbs):
             row.operator("bim.rewind_brick_class", text="", icon="FRAME_PREV")
         row.label(text=self.props.active_brick_class)
+        row.operator("bim.refresh_brick_viewer", text="", icon="FILE_REFRESH")
         row.operator("bim.close_brick_project", text="", icon="CANCEL")
 
         row = self.layout.row(align=True)
@@ -98,8 +100,9 @@ class BIM_PT_ifc_brickschema_references(Panel):
         row.prop(self.props, "libraries")
         row.operator("bim.convert_brick_project", text="", icon="ADD")
 
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         row.operator("bim.assign_brick_reference", icon="ADD")
+        row.operator("bim.convert_ifc_to_brick", icon="IMPORT")
 
         if not BrickschemaReferencesData.data["references"]:
             row = self.layout.row()
@@ -120,6 +123,6 @@ class BIM_UL_bricks(UIList):
             if item.total_items:
                 op = row.operator("bim.view_brick_class", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
                 op.brick_class = item.name
-            row.label(text=item.name)
+            row.label(text=item.label if item.label else item.name)
             if item.total_items:
                 row.label(text=str(item.total_items))
