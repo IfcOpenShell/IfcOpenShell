@@ -20,6 +20,7 @@ import os
 import bpy
 import ifcopenshell
 import ifcopenshell.util.brick
+import ifcopenshell.util.system
 import blenderbim.core.tool
 import blenderbim.tool as tool
 
@@ -158,13 +159,8 @@ class Brick(blenderbim.core.tool.Brick):
             return results[0][0].toPython()
 
     @classmethod
-    def get_convertable_brick_objects_and_elements(cls):
-        results = []
-        for element in ifcopenshell.util.brick.get_brick_elements(tool.Ifc.get()):
-            obj = tool.Ifc.get_object(element)
-            if obj:
-                results.append((obj, element))
-        return results
+    def get_convertable_brick_elements(cls):
+        return ifcopenshell.util.brick.get_brick_elements(tool.Ifc.get())
 
     @classmethod
     def get_item_class(cls, item):
@@ -283,9 +279,13 @@ class Brick(blenderbim.core.tool.Brick):
         return name
 
     @classmethod
-    def run_assign_brick_reference(cls, obj=None, library=None, brick_uri=None):
+    def run_add_brick_feed(source=None, destination=None):
+        return blenderbim.core.brick.add_brick_feed(tool.Ifc, tool.Brick, source=source, destination=destination)
+
+    @classmethod
+    def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None):
         return blenderbim.core.brick.assign_brick_reference(
-            tool.Ifc, tool.Brick, obj=obj, library=library, brick_uri=brick_uri
+            tool.Ifc, tool.Brick, element=element, library=library, brick_uri=brick_uri
         )
 
     @classmethod

@@ -103,7 +103,7 @@ class AssignBrickReference(bpy.types.Operator, Operator):
         core.assign_brick_reference(
             tool.Ifc,
             tool.Brick,
-            obj=context.active_object,
+            element=tool.Ifc.get_entity(context.active_object),
             library=tool.Ifc.get().by_id(int(props.libraries)),
             brick_uri=props.bricks[props.active_brick_index].uri,
         )
@@ -122,9 +122,7 @@ class AddBrick(bpy.types.Operator, Operator):
         core.add_brick(
             tool.Ifc,
             tool.Brick,
-            obj=context.active_object
-            if context.selected_objects and tool.Ifc.get_entity(context.active_object)
-            else None,
+            element=tool.Ifc.get_entity(context.active_object) if context.selected_objects else None,
             namespace=props.namespace,
             brick_class=props.brick_equipment_class,
             library=library,
@@ -137,11 +135,13 @@ class AddBrickFeed(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        source = tool.Ifc.get_entity([o for o in context.selected_objects if o != context.active_object][0])
+        destination = tool.Ifc.get_entity(context.active_object)
         core.add_brick_feed(
             tool.Ifc,
             tool.Brick,
-            source=[o for o in context.selected_objects if o != context.active_object][0],
-            destination=context.active_object,
+            source=source,
+            destination=destination,
         )
 
 
