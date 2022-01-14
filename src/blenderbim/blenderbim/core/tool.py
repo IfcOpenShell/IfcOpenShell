@@ -99,10 +99,14 @@ class Debug:
 @interface
 class Drawing:
     def disable_editing_text(cls, obj): pass
+    def disable_editing_text_product(cls, obj): pass
     def enable_editing_text(cls, obj): pass
+    def enable_editing_text_product(cls, obj): pass
     def export_text_literal_attributes(cls, obj): pass
     def get_text_literal(cls, obj): pass
+    def get_text_product(cls, element): pass
     def import_text_attributes(cls, obj): pass
+    def import_text_product(cls, obj): pass
     def update_text_value(cls, obj): pass
 
 
