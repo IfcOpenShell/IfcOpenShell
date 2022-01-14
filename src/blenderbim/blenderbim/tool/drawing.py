@@ -28,8 +28,16 @@ class Drawing(blenderbim.core.tool.Drawing):
         obj.BIMTextProperties.is_editing = False
 
     @classmethod
+    def disable_editing_text_product(cls, obj):
+        obj.BIMTextProperties.is_editing_product = False
+
+    @classmethod
     def enable_editing_text(cls, obj):
         obj.BIMTextProperties.is_editing = True
+
+    @classmethod
+    def enable_editing_text_product(cls, obj):
+        obj.BIMTextProperties.is_editing_product = True
 
     @classmethod
     def export_text_literal_attributes(cls, obj):
@@ -48,11 +56,26 @@ class Drawing(blenderbim.core.tool.Drawing):
             return items[0]
 
     @classmethod
+    def get_text_product(cls, element):
+        for rel in element.HasAssignments:
+            if rel.is_a("IfcRelAssignsToProduct"):
+                return rel.RelatingProduct
+
+    @classmethod
     def import_text_attributes(cls, obj):
         props = obj.BIMTextProperties
         props.attributes.clear()
         text = cls.get_text_literal(obj)
         blenderbim.bim.helper.import_attributes2(text, props.attributes)
+
+    @classmethod
+    def import_text_product(cls, obj):
+        element = tool.Ifc.get_entity(obj)
+        product = cls.get_text_product(element)
+        if product:
+            obj.BIMTextProperties.relating_product = tool.Ifc.get_object(product)
+        else:
+            obj.BIMTextProperties.relating_product = None
 
     @classmethod
     def update_text_value(cls, obj):

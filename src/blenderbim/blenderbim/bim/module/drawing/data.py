@@ -31,7 +31,7 @@ class TextData:
 
     @classmethod
     def load(cls):
-        cls.data = {"attributes": cls.attributes()}
+        cls.data = {"attributes": cls.attributes(), "relating_product": cls.relating_product()}
         cls.is_loaded = True
 
     @classmethod
@@ -45,3 +45,12 @@ class TextData:
             {"name": "Literal", "value": text_literal.Literal},
             {"name": "BoxAlignment", "value": text_literal.BoxAlignment},
         ]
+
+    @classmethod
+    def relating_product(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in ["TEXT", "TEXT_LEADER"]:
+            return
+        for rel in element.HasAssignments:
+            if rel.is_a("IfcRelAssignsToProduct"):
+                return rel.RelatingProduct.Name or "Unnamed"

@@ -34,3 +34,25 @@ def edit_text(ifc, drawing, obj=None):
     )
     drawing.update_text_value(obj)
     drawing.disable_editing_text(obj)
+
+
+def enable_editing_text_product(drawing, obj=None):
+    drawing.enable_editing_text_product(obj)
+    drawing.import_text_product(obj)
+
+
+def disable_editing_text_product(drawing, obj=None):
+    drawing.disable_editing_text_product(obj)
+
+
+def edit_text_product(ifc, drawing, obj=None, product=None):
+    element = ifc.get_entity(obj)
+    existing_product = drawing.get_text_product(element)
+    if existing_product == product:
+        return
+    if existing_product:
+        ifc.run("drawing.unassign_product", relating_product=existing_product, related_object=element)
+    if product:
+        ifc.run("drawing.assign_product", relating_product=product, related_object=element)
+    drawing.update_text_value(obj)
+    drawing.disable_editing_text_product(obj)
