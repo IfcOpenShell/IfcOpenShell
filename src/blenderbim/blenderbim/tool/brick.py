@@ -20,7 +20,6 @@ import os
 import bpy
 import ifcopenshell
 import ifcopenshell.util.brick
-import ifcopenshell.util.system
 import blenderbim.core.tool
 import blenderbim.tool as tool
 
