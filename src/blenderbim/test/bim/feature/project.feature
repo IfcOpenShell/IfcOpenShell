@@ -332,6 +332,18 @@ Scenario: Export IFC - with basic contents and saving as another file
     When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifc', should_save_as=True)"
     Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/export.ifc"
 
+Scenario: Export IFC - with basic contents and saving as IfcJSON where import is not supported
+    Given an empty Blender session
+    And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
+    When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifcjson', should_save_as=True)"
+    Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/basic.ifc"
+
+Scenario: Export IFC - with basic contents and saving as IfcZip where import is not supported
+    Given an empty Blender session
+    And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
+    When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifczip', should_save_as=True)"
+    Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/basic.ifc"
+
 Scenario: Export IFC - with basic contents and saving as a relative path
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"

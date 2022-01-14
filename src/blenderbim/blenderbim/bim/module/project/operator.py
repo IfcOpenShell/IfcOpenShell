@@ -802,7 +802,7 @@ class ExportIFC(bpy.types.Operator):
             new.name = output_file
         if self.use_relative_path and bpy.data.is_saved:
             output_file = os.path.relpath(output_file, bpy.path.abspath("//"))
-        if scene.BIMProperties.ifc_file != output_file:
+        if scene.BIMProperties.ifc_file != output_file and extension not in ["ifczip", "ifcjson"]:
             scene.BIMProperties.ifc_file = output_file
         if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
