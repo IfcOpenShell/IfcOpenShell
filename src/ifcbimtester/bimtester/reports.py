@@ -53,7 +53,7 @@ class ReportGenerator:
             data["pass_rate"] = 0
 
         # get language and switch locale
-        the_lang = self.get_feature_lang(feature["keyword"])
+        the_lang = self.get_feature_lang(feature.get("keyword", None))
         from bimtester.lang import switch_locale
         switch_locale(os.path.join(self.base_path, "locale"), the_lang)
         data["_lang"] = the_lang
@@ -137,7 +137,6 @@ class ReportGenerator:
 
     def get_feature_lang(self, feature_key):
         # I do not know any better ATM
-        print(feature_key)
         if feature_key == "Feature":
             return "en"
         elif feature_key == "Funktionalität":
@@ -148,6 +147,4 @@ class ReportGenerator:
             return "it"
         elif feature_key == "Functionaliteit":
             return "nl"
-        else:
-            # standard English
-            return "en"
+        return "en"
