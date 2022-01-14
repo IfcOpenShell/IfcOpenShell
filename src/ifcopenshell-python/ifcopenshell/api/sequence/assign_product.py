@@ -16,7 +16,7 @@ class Usecase:
         if self.settings["related_object"].HasAssignments:
             for assignment in self.settings["related_object"].HasAssignments:
                 if (
-                    assignment.is_a("IfclRelAssignsToProduct")
+                    assignment.is_a("IfcRelAssignsToProduct")
                     and assignment.RelatingProduct == self.settings["relating_product"]
                 ):
                     return
