@@ -692,7 +692,7 @@ cmake_args = [
     "-DGLTF_SUPPORT="                  "ON",
     "-DJSON_INCLUDE_DIR="              f"{DEPS_DIR}/install/json",
     "-DBoost_NO_BOOST_CMAKE="          "On",
-    "-DADD_COMMIT_SHA="                ("On" if ADD_COMMIT_SHA else "Off")
+    "-DADD_COMMIT_SHA="              +("On" if ADD_COMMIT_SHA else "Off")
 ]
 
 if "cgal" in targets:
