@@ -23,6 +23,7 @@ jobs:
       run: echo ok go
 
   build:
+    needs: activate
     name: ${{ matrix.config.name }}-${{ matrix.pyver }}
     runs-on: ubuntu-latest
     strategy:
