@@ -70,6 +70,7 @@ logger.addHandler(ch)
 
 PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
+ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
 PYTHON_VERSIONS = ["3.6.14", "3.7.12", "3.8.12", "3.9.7", "3.10.0"]
 JSON_VERSION = "v3.6.1"
@@ -691,6 +692,7 @@ cmake_args = [
     "-DGLTF_SUPPORT="                  "ON",
     "-DJSON_INCLUDE_DIR="              f"{DEPS_DIR}/install/json",
     "-DBoost_NO_BOOST_CMAKE="          "On",
+    "-DADD_COMMIT_SHA="                ("On" if ADD_COMMIT_SHA else "Off")
 ]
 
 if "cgal" in targets:
