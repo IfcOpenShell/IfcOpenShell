@@ -87,6 +87,7 @@ classes = [
     operator.AddIfcFile,
     operator.RemoveIfcFile,
     operator.ConfigureVisibility,
+    operator.BIM_OT_open_webbrowser,
     prop.StrProperty,
     prop.ObjProperty,
     prop.AttributeDocumentation,

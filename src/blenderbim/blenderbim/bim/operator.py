@@ -363,6 +363,16 @@ class RemoveIfcFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class BIM_OT_open_webbrowser(bpy.types.Operator):    
+    bl_idname = "bim.open_webbrowser"
+    bl_label = ""
+
+    url: bpy.props.StringProperty()
+ 
+    def execute(self, context):
+        import webbrowser
+        webbrowser.open(self.url)
+        return {'FINISHED'}
 class SelectExternalMaterialDir(bpy.types.Operator):
     bl_idname = "bim.select_external_material_dir"
     bl_label = "Select Material File"
