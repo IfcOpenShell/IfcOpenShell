@@ -37,12 +37,12 @@ class TestImplementsTool(NewFile):
 class TestAddBrick(NewFile):
     def test_run(self):
         BrickStore.graph = brickschema.Graph()
-        result = subject.add_brick(
-            "http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment"
-        )
+        result = subject.add_brick("http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment")
         assert "http://example.org/digitaltwin#" in result
         assert list(
-            BrickStore.graph.triples((URIRef(result), RDF.type, URIRef("https://brickschema.org/schema/Brick#Equipment")))
+            BrickStore.graph.triples(
+                (URIRef(result), RDF.type, URIRef("https://brickschema.org/schema/Brick#Equipment"))
+            )
         )
         assert list(
             BrickStore.graph.triples(
