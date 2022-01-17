@@ -109,18 +109,26 @@ namespace IfcGeom {
 						}						
 						return dss.Value() <= extend;
 					}
-				} else if (completely_within) {
-					BRepAlgoAPI_Cut cut(B, A);
-					if (cut.IsDone()) {
-						if (IfcGeom::Kernel::count(cut.Shape(), TopAbs_SHELL) == 0) {
-							return true;
-						}
-					}
 				} else {
-					BRepAlgoAPI_Common common(A, B);
-					if (common.IsDone()) {
-						if (IfcGeom::Kernel::count(common.Shape(), TopAbs_SHELL) > 0) {
-							return true;
+					if (IfcGeom::Kernel::count(A, TopAbs_SHELL) == 0 ||
+						IfcGeom::Kernel::count(B, TopAbs_SHELL) == 0)
+					{
+						return false;
+					}
+
+					if (completely_within) {
+						BRepAlgoAPI_Cut cut(B, A);
+						if (cut.IsDone()) {
+							if (IfcGeom::Kernel::count(cut.Shape(), TopAbs_SHELL) == 0) {
+								return true;
+							}
+						}
+					} else {
+						BRepAlgoAPI_Common common(A, B);
+						if (common.IsDone()) {
+							if (IfcGeom::Kernel::count(common.Shape(), TopAbs_SHELL) > 0) {
+								return true;
+							}
 						}
 					}
 				}
@@ -209,21 +217,14 @@ namespace IfcGeom {
 					return ts;
 				}
 
-				std::vector<T> ts_filtered;
-
 				const TopoDS_Shape& A = shapes_.find(t)->second;
-				if (IfcGeom::Kernel::count(A, TopAbs_SHELL) == 0) {
-					return ts_filtered;
-				}
 
+				std::vector<T> ts_filtered;
 				ts_filtered.reserve(ts.size());
 
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
-					if (IfcGeom::Kernel::count(B, TopAbs_SHELL) == 0) {
-						continue;
-					}
 
 					if (test(A, B, completely_within, extend)) {
 						ts_filtered.push_back(*it);
@@ -241,16 +242,7 @@ namespace IfcGeom {
 				BRepBndLib::AddClose(s, bb);
 				bb.SetGap(bb.GetGap() + extend);
 
-				std::vector<T> ts;
-
-				if (extend < 0.) {
-					// Shell are only required when we do the boolean based intersection check
-					if (IfcGeom::Kernel::count(s, TopAbs_SHELL) == 0) {
-						return ts;
-					}
-				}
-
-				ts = select_box(bb, completely_within);
+				std::vector<T> ts = select_box(bb, completely_within);
 
 				if (ts.empty()) {
 					return ts;
@@ -262,10 +254,6 @@ namespace IfcGeom {
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
-
-					if (IfcGeom::Kernel::count(B, TopAbs_SHELL) == 0) {
-						continue;
-					}
 
 					if (test(s, B, completely_within, extend)) {
 						ts_filtered.push_back(*it);
