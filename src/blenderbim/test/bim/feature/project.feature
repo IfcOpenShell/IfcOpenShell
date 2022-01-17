@@ -62,6 +62,11 @@ Scenario: Load project
     And the object "IfcWall/Wall" is in the collection "IfcBuildingStorey/Level 1"
     And "scene.BIMProjectProperties.is_loading" is "False"
 
+Scenario: Load project - IfcZip
+    Given an empty Blender session
+    And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifczip')"
+    Then the object "IfcProject/My Project" is an "IfcProject"
+
 Scenario: Load project - advanced mode
     Given an empty Blender session
     When I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc', is_advanced=True)"
@@ -338,11 +343,14 @@ Scenario: Export IFC - with basic contents and saving as IfcJSON where import is
     When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifcjson', should_save_as=True)"
     Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/basic.ifc"
 
-Scenario: Export IFC - with basic contents and saving as IfcZip where import is not supported
+Scenario: Export IFC - with basic contents and round-tripping an IfcZip
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
     When I press "export_ifc.bim(filepath='{cwd}/test/files/export.ifczip', should_save_as=True)"
     Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/basic.ifc"
+    When an empty Blender session is started
+    And I press "bim.load_project(filepath='{cwd}/test/files/export.ifczip')"
+    Then the object "IfcProject/My Project" is an "IfcProject"
 
 Scenario: Export IFC - with basic contents and saving as a relative path
     Given an empty Blender session
