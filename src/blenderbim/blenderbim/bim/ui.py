@@ -22,7 +22,7 @@ from pathlib import Path
 from . import ifc
 from bpy.types import Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
-from blenderbim.bim.helper import IFCHeaderSpecs
+from blenderbim.bim.helper import IfcHeaderExtractor
 import blenderbim.tool as tool
 
 
@@ -41,15 +41,15 @@ class IFCFileSelector:
         if self.is_existing_ifc_file(filepath):
             box = self.layout.box()
             box.label(text="IFC Header Specifications", icon="INFO")
-            ifc_specs = IFCHeaderSpecs(filepath)
-            for attr_name, attr_value in ifc_specs.__dict__.items():
-                if attr_value != "":
+            header_data = IfcHeaderExtractor(filepath).extract()
+            for key, value in header_data.items():
+                if value != "":
                     split = box.split()
-                    split.label(text=attr_name.title().replace("_", " "))
-                    split.label(text=str(attr_value))
+                    split.label(text=key.title().replace("_", " "))
+                    split.label(text=str(value))
                     if (
-                        attr_name.lower() == "schema_name"
-                        and str(attr_value).lower() == "ifc2x3"
+                        key.lower() == "schema_name"
+                        and str(value).lower() == "ifc2x3"
                         and filepath[-4:].lower() == ".ifc"
                     ):
                         row = box.row()
