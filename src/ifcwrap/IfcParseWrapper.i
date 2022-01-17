@@ -737,6 +737,10 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 				bool v = arg;
 				return pythonize(v);
 			break; }
+			case IfcUtil::Argument_LOGICAL: {
+				boost::logic::tribool v = arg;
+				return pythonize(v);
+			break; }
 			case IfcUtil::Argument_DOUBLE: {
 				double v = arg;
 				return pythonize(v);
