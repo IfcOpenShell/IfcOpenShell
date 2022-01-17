@@ -67,7 +67,7 @@ class MSP2Ifc:
         tree = ET.parse(self.xml)
         project = tree.getroot()
         self.ns = {"pr": project.tag[1:].partition("}")[0]}
-        self.project["Name"] = project.find("pr:Name", self.ns).text
+        self.project["Name"] = project.findtext("pr:Name", namespaces=self.ns) or "Unnamed"
         self.outline_level = 0
         self.outline_parents = {}
         self.parse_task_xml(project)
