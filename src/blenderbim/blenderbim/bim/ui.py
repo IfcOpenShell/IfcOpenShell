@@ -113,6 +113,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
+    info_mode: BoolProperty(
+        default=True, name="Info Mode", description="Check to display additional helpful tooltips and information"
+    )
 
     def draw(self, context):
         layout = self.layout
@@ -148,6 +151,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "should_play_chaching_sound")
         row = layout.row()
         row.operator("bim.configure_visibility")
+        layout.row().prop(self, "info_mode")
 
 
 def ifc_units(self, context):
