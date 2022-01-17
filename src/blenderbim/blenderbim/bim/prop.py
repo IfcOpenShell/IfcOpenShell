@@ -172,6 +172,29 @@ def updateAttributeValue(self, context):
             self.is_null = False
 
 
+class AttributeDocumentation(PropertyGroup):
+    ifc_class: StringProperty(name="IFC class", default="IFCElement")
+    ifc_id: IntProperty(name="ID")
+    doc_url: StringProperty(name="URL")
+    use_case: CollectionProperty(name="Use Case", type=StrProperty)
+
+    def draw(self, layout):
+        row = layout.row()
+        row.label(text="Element ID")
+        row.label(text=str(self.ifc_id))
+        row = layout.row()
+        row.label(text="IFC Class")
+        row.label(text=self.ifc_class)
+        row = layout.row()
+        row.label(text="Doc")
+        if self.doc_url:
+            row.operator("bim.open_webbrowser", text="Open In Browser", icon="URL").url = self.doc_url
+        box = layout.box()
+        box.label(text="Use Case")
+        for line in self.use_case:
+            box.label(text=line.name)
+
+
 class Attribute(PropertyGroup):
     name: StringProperty(name="Name")
     data_type: StringProperty(name="Data Type")
@@ -183,6 +206,7 @@ class Attribute(PropertyGroup):
     is_optional: BoolProperty(name="Is Optional")
     enum_items: StringProperty(name="Value")
     enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeValue)
+    doc: PointerProperty(type=AttributeDocumentation)
 
     def get_value(self):
         if self.is_null:

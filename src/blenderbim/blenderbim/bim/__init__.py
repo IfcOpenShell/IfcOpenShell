@@ -89,6 +89,7 @@ classes = [
     operator.ConfigureVisibility,
     prop.StrProperty,
     prop.ObjProperty,
+    prop.AttributeDocumentation,
     prop.Attribute,
     prop.ModuleVisibility,
     prop.BIMProperties,
