@@ -161,15 +161,12 @@ class BIM_PT_work_schedules(Panel):
             task = self.tprops.tasks[self.props.active_task_index]
             ifc_definition_id = task.ifc_definition_id
         if ifc_definition_id:
-            if self.props.active_task_id == ifc_definition_id:
+            if self.props.active_task_id:
                 if self.props.editing_task_type == "TASKTIME":
                     row.operator("bim.edit_task_time", text="", icon="CHECKMARK")
                 elif self.props.editing_task_type == "ATTRIBUTES":
                     row.operator("bim.edit_task", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_task", text="", icon="CANCEL")
-            elif self.props.active_task_id:
-                row.operator("bim.add_task", text="", icon="ADD").task = ifc_definition_id
-                row.operator("bim.remove_task", text="", icon="X").task = ifc_definition_id
             else:
                 row.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING").task = ifc_definition_id
                 row.operator("bim.enable_editing_task_time", text="", icon="TIME").task = ifc_definition_id
