@@ -60,7 +60,9 @@ class TestEditTextProduct:
     def test_run(self, ifc, drawing):
         ifc.get_entity("obj").should_be_called().will_return("element")
         drawing.get_text_product("element").should_be_called().will_return("existing_product")
-        ifc.run("drawing.unassign_product", relating_product="existing_product", related_object="element").should_be_called()
+        ifc.run(
+            "drawing.unassign_product", relating_product="existing_product", related_object="element"
+        ).should_be_called()
         ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
         drawing.update_text_value("obj").should_be_called()
         drawing.disable_editing_text_product("obj").should_be_called()

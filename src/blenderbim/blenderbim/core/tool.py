@@ -197,6 +197,11 @@ class Misc:
 
 
 @interface
+class Patch:
+    def run_migrate_patch(cls, infile, outfile, schema): pass
+
+
+@interface
 class Owner:
     def add_address_attribute(cls, name): pass
     def add_person_attribute(cls, name): pass

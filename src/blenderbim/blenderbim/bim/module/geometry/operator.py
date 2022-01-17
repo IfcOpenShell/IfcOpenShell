@@ -433,7 +433,6 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
         while queue:
             collection = queue.pop()
             for obj in collection.objects:
-                print('obj is', obj)
                 objects.add(obj)
             queue.extend(collection.children)
             children = children.union(collection.children)

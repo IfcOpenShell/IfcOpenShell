@@ -122,7 +122,9 @@ class TestAddBrick:
         brick.add_brick_from_element("element", "namespace", "brick_class").should_be_called().will_return("brick_uri")
         brick.run_assign_brick_reference(element="element", library="library", brick_uri="brick_uri").should_be_called()
         brick.run_refresh_brick_viewer().should_be_called()
-        subject.add_brick(ifc, brick, element="element", namespace="namespace", brick_class="brick_class", library="library")
+        subject.add_brick(
+            ifc, brick, element="element", namespace="namespace", brick_class="brick_class", library="library"
+        )
 
     def test_adding_a_plain_brick(self, ifc, brick):
         brick.add_brick("namespace", "brick_class").should_be_called()

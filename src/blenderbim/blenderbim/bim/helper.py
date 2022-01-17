@@ -128,6 +128,6 @@ class IFCHeaderSpecs:
                             self.name = part
                         elif i == 3:
                             self.time_stamp = part
-                elif line.startswith("FILE_SCHEMA"):                    
+                elif line.startswith("FILE_SCHEMA"):
                     self.schema_name = line.split("'")[1]
                     break

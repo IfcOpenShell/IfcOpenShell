@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -16,23 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
-from . import ui, prop, operator
+import blenderbim.core.tool
+import blenderbim.tool as tool
 
-classes = (
-    operator.ExecuteIfcPatch,
-    operator.RunMigratePatch,
-    operator.SelectIfcPatchInput,
-    operator.SelectIfcPatchOutput,
-    operator.UpdateIfcPatchArguments,
-    prop.BIMPatchProperties,
-    ui.BIM_PT_patch,
-)
+try:
+    import ifcpatch
+except:
+    print("IfcPatch not available")
 
 
-def register():
-    bpy.types.Scene.BIMPatchProperties = bpy.props.PointerProperty(type=prop.BIMPatchProperties)
-
-
-def unregister():
-    del bpy.types.Scene.BIMPatchProperties
+class Patch(blenderbim.core.tool.Patch):
+    @classmethod
+    def run_migrate_patch(cls, infile, outfile, schema):
+        log = os.path.join(bpy.context.scene.BIMProperties.data_dir, "process.log")
+        ifcpatch.execute({"input": infile, "output": outfile, "recipe": "Migrate", "arguments": [schema], "log": log})

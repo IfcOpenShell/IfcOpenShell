@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -16,23 +16,25 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
-from . import ui, prop, operator
-
-classes = (
-    operator.ExecuteIfcPatch,
-    operator.RunMigratePatch,
-    operator.SelectIfcPatchInput,
-    operator.SelectIfcPatchOutput,
-    operator.UpdateIfcPatchArguments,
-    prop.BIMPatchProperties,
-    ui.BIM_PT_patch,
-)
+import ifcopenshell
+import blenderbim.core.tool
+import blenderbim.tool as tool
+from test.bim.bootstrap import NewFile
+from blenderbim.tool.patch import Patch as subject
 
 
-def register():
-    bpy.types.Scene.BIMPatchProperties = bpy.props.PointerProperty(type=prop.BIMPatchProperties)
+class TestImplementsTool(NewFile):
+    def test_run(self):
+        assert isinstance(subject(), blenderbim.core.tool.Patch)
 
 
-def unregister():
-    del bpy.types.Scene.BIMPatchProperties
+class TestRunMigratePatch(NewFile):
+    def test_run(self):
+        cwd = os.path.dirname(os.path.realpath(__file__))
+        infile = os.path.join(cwd, "..", "files", "ifc2x3.ifc")
+        outfile = os.path.join(cwd, "..", "files", "ifc2x3-migrated.ifc")
+        subject.run_migrate_patch(infile, outfile, "IFC4")
+        ifc = ifcopenshell.open(outfile)
+        assert ifc.schema == "IFC4"
