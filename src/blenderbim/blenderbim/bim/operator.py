@@ -373,6 +373,25 @@ class BIM_OT_open_webbrowser(bpy.types.Operator):
         import webbrowser
         webbrowser.open(self.url)
         return {'FINISHED'}
+
+
+class BIM_OT_show_attribute_documentation(bpy.types.Operator):    
+    bl_idname = "bim.show_attribute_documentation"
+    bl_label = ""
+
+    path: bpy.props.StringProperty()
+ 
+    def execute(self, context):
+        return {'FINISHED'}
+ 
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+    
+    def draw(self, context):
+        doc = eval(self.path)
+        doc.draw(self.layout)
+
+
 class SelectExternalMaterialDir(bpy.types.Operator):
     bl_idname = "bim.select_external_material_dir"
     bl_label = "Select Material File"
