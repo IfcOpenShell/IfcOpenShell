@@ -27,9 +27,13 @@ from blenderbim.bim.ifc import IfcStore
 
 
 def draw_attributes(props, layout, copy_operator=None):
-    for attribute in props:
+    prefs = bpy.context.preferences.addons["blenderbim"].preferences
+    for i, attribute in enumerate(props):
         row = layout.row(align=True)
         draw_attribute(attribute, row, copy_operator)
+        if prefs.info_mode:
+            info = row.operator("bim.show_attribute_documentation", icon="INFO", text="")
+            info.path = f"context.scene.{props.path_from_id()}[{i}].doc"
 
 
 def draw_attribute(attribute, layout, copy_operator=None):
@@ -87,6 +91,25 @@ def import_attribute(attribute, props, data, callback=None):
         new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
         if data[attribute.name()]:
             new.enum_value = data[attribute.name()]
+    new.doc.ifc_id = data["id"]
+    new.doc.ifc_class = data["type"]
+    new.doc.doc_url = get_ifc_class_doc_url(new.doc.ifc_class)
+    for line in get_ifc_class_usecase(new.doc.ifc_class):
+        new_usecase_line = new.doc.use_case.add()
+        new_usecase_line.name = line
+
+
+def get_ifc_class_doc_url(class_name):
+    # TODO : Implement fetching doc url
+    return "https://github.com/IfcOpenShell/IfcOpenShell"
+
+
+def get_ifc_class_usecase(class_name):
+    # TODO : Implement fetching class usecase
+    yield "This is a usecase"
+    yield "You are supposed to use this class in this situation"
+    yield "Or that situation"
+    yield "Otherwise you'll be in trouble !!"
 
 
 def export_attributes(props, callback=None):
