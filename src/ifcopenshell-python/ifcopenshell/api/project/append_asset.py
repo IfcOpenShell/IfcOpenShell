@@ -14,6 +14,8 @@ class Usecase:
         self.whitelisted_inverse_attributes = {}
         if self.settings["element"].is_a("IfcTypeProduct"):
             return self.append_type_product()
+        elif self.settings["element"].is_a("IfcProduct"):
+            return self.append_product()
         elif self.settings["element"].is_a("IfcMaterial"):
             return self.append_material()
         elif self.settings["element"].is_a("IfcCostSchedule"):
@@ -21,10 +23,9 @@ class Usecase:
         elif self.settings["element"].is_a("IfcProfileDef"):
             return self.append_profile_def()
 
-    def is_already_appended(self):
+    def get_existing_element(self):
         try:
-            self.file.by_guid(self.settings["element"].GlobalId)
-            return True
+            return self.file.by_guid(self.settings["element"].GlobalId)
         except:
             return False
 
@@ -34,8 +35,9 @@ class Usecase:
         return self.file.add(self.settings["element"])
 
     def append_cost_schedule(self):
-        if self.is_already_appended():
-            return
+        element = self.get_existing_element()
+        if element:
+            return element
         self.whitelisted_inverse_attributes = {"IfcCostSchedule": ["Controls"], "IfcCostItem": ["IsNestedBy"]}
         return self.add_element(self.settings["element"])
 
@@ -46,8 +48,9 @@ class Usecase:
         return self.add_element(self.settings["element"])
 
     def append_type_product(self):
-        if self.is_already_appended():
-            return
+        element = self.get_existing_element()
+        if element:
+            return element
         self.whitelisted_inverse_attributes = {
             "IfcObjectDefinition": ["HasAssociations"],
             "IfcMaterialDefinition": ["HasExternalReferences", "HasProperties"],
@@ -66,6 +69,46 @@ class Usecase:
             ifcopenshell.util.element.remove_deep(self.file, added_context)
         return element
 
+    def append_product(self):
+        element = self.get_existing_element()
+        if element:
+            return element
+        self.whitelisted_inverse_attributes = {
+            "IfcObjectDefinition": ["HasAssociations"],
+            "IfcObject": ["IsDefinedBy.IfcRelDefinesByProperties"],
+            "IfcElement": ["HasOpenings"],
+            "IfcMaterialDefinition": ["HasExternalReferences", "HasProperties"],
+            "IfcRepresentationItem": ["StyledByItem"],
+        }
+        element = self.add_element(self.settings["element"])
+        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        added_contexts = [e for e in self.file.traverse(element) if e.is_a("IfcGeometricRepresentationContext")]
+        for added_context in added_contexts:
+            equivalent_existing_context = self.get_equivalent_existing_context(added_context)
+            if not equivalent_existing_context:
+                equivalent_existing_context = self.create_equivalent_context(added_context)
+            for inverse in self.file.get_inverse(added_context):
+                ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
+        for added_context in added_contexts:
+            ifcopenshell.util.element.remove_deep(self.file, added_context)
+
+        element_type = ifcopenshell.util.element.get_type(self.settings["element"])
+        if element_type:
+            ifcopenshell.api.owner.settings.factory_reset()
+            new_type = ifcopenshell.api.run(
+                "project.append_asset", self.file, library=self.settings["library"], element=element_type
+            )
+            ifcopenshell.api.run(
+                "type.assign_type",
+                self.file,
+                should_run_listeners=False,
+                related_object=element,
+                relating_type=new_type,
+            )
+            ifcopenshell.api.owner.settings.restore()
+
+        return element
+
     def add_element(self, element):
         if element.id() == 0 or element.id() in self.added_elements:
             return
@@ -77,12 +120,18 @@ class Usecase:
         return new
 
     def add_inverse(self, element):
-        inverse_attributes = []
-        [inverse_attributes.extend(v) for k, v in self.whitelisted_inverse_attributes.items() if element.is_a(k)]
-        inverse_attributes = set(inverse_attributes)
-        for attribute in inverse_attributes:
-            for inverse in getattr(element, attribute, []):
-                self.add_element(inverse)
+        for source_class, attributes in self.whitelisted_inverse_attributes.items():
+            if not element.is_a(source_class):
+                continue
+            for attribute in attributes:
+                attribute_class = None
+                if "." in attribute:
+                    attribute, attribute_class = attribute.split(".")
+                for inverse in getattr(element, attribute, []):
+                    if attribute_class and inverse.is_a(attribute_class):
+                        self.add_element(inverse)
+                    elif not attribute_class:
+                        self.add_element(inverse)
 
     def get_equivalent_existing_context(self, added_context):
         for context in self.existing_contexts:
