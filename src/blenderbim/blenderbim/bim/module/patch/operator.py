@@ -128,6 +128,9 @@ class RunMigratePatch(bpy.types.Operator):
 
     def execute(self, context):
         core.run_migrate_patch(tool.Patch, infile=self.infile, outfile=self.outfile, schema=self.schema)
-        bpy.ops.file.refresh()
+        try:
+            bpy.ops.file.refresh()
+        except:
+            pass  # Probably running in headless mode
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}

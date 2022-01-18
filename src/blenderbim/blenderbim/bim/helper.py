@@ -120,7 +120,6 @@ class IfcHeaderExtractor:
             line = next(ifc_file)
             if isinstance(line, bytes):
                 line = line.decode("utf-8")
-            print(line)
             if line.startswith("FILE_DESCRIPTION"):
                 for i, part in enumerate(line.split("'")):
                     if i == 1:
