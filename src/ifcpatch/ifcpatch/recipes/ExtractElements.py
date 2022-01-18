@@ -18,6 +18,7 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.selector
 
 
@@ -49,18 +50,17 @@ class Patcher:
         self.file = self.new
 
     def add_element(self, element):
-        new_element = self.new.add(element)
+        new_element = ifcopenshell.api.run("project.append_asset", self.new, library=self.file, element=element)
+        if not new_element:
+            return
         for rel in element.ContainedInStructure:
             spatial_element = rel.RelatingStructure
             new_spatial_element = self.new.add(spatial_element)
             self.contained_ins.setdefault(spatial_element.GlobalId, set()).add(new_element)
             self.add_spatial_tree(spatial_element, new_spatial_element)
         for rel in element.Decomposes:
-            self.new.add(rel.RelatingObject)
+            ifcopenshell.api.run("project.append_asset", self.new, library=self.file, element=rel.RelatingObject)
             self.aggregates.setdefault(rel.RelatingObject.GlobalId, set()).add(new_element)
-        for opening in element.HasOpenings:
-            self.new.add(opening)
-            self.new.add(opening.RelatedOpeningElement)
 
     def add_spatial_tree(self, spatial_element, new_spatial_element):
         for rel in spatial_element.Decomposes:

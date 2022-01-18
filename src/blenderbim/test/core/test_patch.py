@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.core.owner as subject
+import blenderbim.core.patch as subject
 from test.core.bootstrap import patch
 
 
 class TestRunMigratePatch:
     def test_run(self, patch):
         patch.run_migrate_patch("infile", "outfile", "schema").should_be_called()
-        assert subject.run_migrate_patch(patch, infile="infile", outfile="outfile", schema="schema")
+        subject.run_migrate_patch(patch, infile="infile", outfile="outfile", schema="schema")
