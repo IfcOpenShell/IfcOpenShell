@@ -1,21 +1,21 @@
-###############################################################################
-#                                                                             #
-# This file is part of IfcOpenShell.                                          #
-#                                                                             #
-# IfcOpenShell is free software: you can redistribute it and/or modify        #
-# it under the terms of the Lesser GNU General Public License as published by #
-# the Free Software Foundation, either version 3.0 of the License, or         #
-# (at your option) any later version.                                         #
-#                                                                             #
-# IfcOpenShell is distributed in the hope that it will be useful,             #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                #
-# Lesser GNU General Public License for more details.                         #
-#                                                                             #
-# You should have received a copy of the Lesser GNU General Public License    #
-# along with this program. If not, see <http://www.gnu.org/licenses/>.        #
-#                                                                             #
-###############################################################################
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 
 header = """
 #ifndef %(schema_name_upper)s_H
@@ -244,12 +244,8 @@ optional_attr_stmt = "return !data_->getArgument(%(index)d)->isNull();"
 get_attr_stmt = "%(null_check)s %(non_optional_type)s v = *data_->getArgument(%(index)d); return v;"
 get_attr_stmt_enum = "%(null_check)s return %(non_optional_type)s::FromString(*data_->getArgument(%(index)d));"
 get_attr_stmt_entity = "%(null_check)s return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(%(index)d)))->as<%(non_optional_type_no_pointer)s>();"
-get_attr_stmt_array = (
-    "%(null_check)s aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
-)
-get_attr_stmt_nested_array = (
-    "%(null_check)s aggregate_of_aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
-)
+get_attr_stmt_array = "%(null_check)s aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
+get_attr_stmt_nested_array = "%(null_check)s aggregate_of_aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
 
 get_inverse = "return data_->getInverse(%(schema_name_upper)s_%(type)s_type, %(index)d)->as<%(type)s>();"
 
