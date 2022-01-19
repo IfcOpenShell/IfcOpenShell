@@ -1,3 +1,21 @@
+# BIMTester - OpenBIM Auditing Tool
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BIMTester.
+#
+# BIMTester is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BIMTester is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
+
 from behave import step
 from behave import use_step_matcher
 
@@ -8,12 +26,7 @@ from bimtester.lang import _
 
 @step('All "{ifc_class}" elements have an "{aproperty}" property in the "{pset}" pset')
 def step_impl(context, ifc_class, aproperty, pset):
-    eleclass_has_property_in_pset(
-        context,
-        ifc_class,
-        aproperty,
-        pset
-    )
+    eleclass_has_property_in_pset(context, ifc_class, aproperty, pset)
 
 
 # ------------------------------------------------------------------------
@@ -25,16 +38,13 @@ use_step_matcher("re")
 @step(r"All (?P<ifc_class>.*) elements have an? (?P<property_path>.*\..*) property")
 def step_impl(context, ifc_class, property_path):
     import re
+
     pset, aproperty = property_path.split(".")
-    eleclass_has_property_in_pset(
-        context,
-        ifc_class,
-        aproperty,
-        pset
-    )
+    eleclass_has_property_in_pset(context, ifc_class, aproperty, pset)
 
 
-@step(r'All (?P<ifc_class>.*) elements have an? (?P<property_path>.*\..*) property value matching the pattern "(?P<pattern>.*)"'
+@step(
+    r'All (?P<ifc_class>.*) elements have an? (?P<property_path>.*\..*) property value matching the pattern "(?P<pattern>.*)"'
 )
 def step_impl(context, ifc_class, property_path, pattern):
     import re
@@ -46,13 +56,13 @@ def step_impl(context, ifc_class, property_path, pattern):
 
         psets = get_psets(element)
 
-        if  not pset_name in psets:
+        if not pset_name in psets:
             assert False
-        
+
         pset = psets[pset_name]
         if not property_name in pset:
             assert False
-        
+
         prop = pset[property_name]
         # get_psets returns just strings
 
@@ -60,9 +70,7 @@ def step_impl(context, ifc_class, property_path, pattern):
             assert False
 
 
-def eleclass_has_property_in_pset(
-    context, ifc_class, aproperty, pset
-):
+def eleclass_has_property_in_pset(context, ifc_class, aproperty, pset):
     context.falseelems = []
     context.falseguids = []
     context.falseprops = {}
@@ -84,9 +92,13 @@ def eleclass_has_property_in_pset(
         context.falsecount,
         context.falseelems,
         # TODO: Translate these messages into other languages
-        message_all_falseelems=_("All {elemcount} {ifc_class} elements are missing the property {parameter} in the pset."),
-        message_some_falseelems=_("The following {falsecount} of {elemcount} {ifc_class} elements are missing the property {parameter} in the pset: {falseelems}"),
+        message_all_falseelems=_(
+            "All {elemcount} {ifc_class} elements are missing the property {parameter} in the pset."
+        ),
+        message_some_falseelems=_(
+            "The following {falsecount} of {elemcount} {ifc_class} elements are missing the property {parameter} in the pset: {falseelems}"
+        ),
         message_no_elems=_("There are no {ifc_class} elements in the IFC file."),
-        parameter=aproperty
+        parameter=aproperty,
     )
     # the pset name is missing in the failing message, but it is in the step test name

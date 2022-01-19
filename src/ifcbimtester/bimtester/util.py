@@ -1,3 +1,21 @@
+# BIMTester - OpenBIM Auditing Tool
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BIMTester.
+#
+# BIMTester is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BIMTester is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.validate
@@ -95,7 +113,7 @@ def assert_elements(
     message_all_falseelems,
     message_some_falseelems,
     message_no_elems="",
-    parameter=None
+    parameter=None,
 ):
     out_falseelems = "\n"
     for e in falseelems:
@@ -112,42 +130,27 @@ def assert_elements(
     #         )
     #     )
     if falsecount == 0:
-        return # test ok for elemcount == 0 and elemcount > 0
+        return  # test ok for elemcount == 0 and elemcount > 0
     elif falsecount == elemcount:
         if parameter is None:
-            assert False, (
-                message_all_falseelems.format(
-                    elemcount=elemcount,
-                    ifc_class=ifc_class
-                )
-            )
+            assert False, message_all_falseelems.format(elemcount=elemcount, ifc_class=ifc_class)
         else:
-            assert False, (
-                message_all_falseelems.format(
-                    elemcount=elemcount,
-                    ifc_class=ifc_class,
-                    parameter=parameter
-                )
-            )
+            assert False, message_all_falseelems.format(elemcount=elemcount, ifc_class=ifc_class, parameter=parameter)
     elif falsecount > 0 and falsecount < elemcount:
         if parameter is None:
-            assert False, (
-                message_some_falseelems.format(
-                    falsecount=falsecount,
-                    elemcount=elemcount,
-                    ifc_class=ifc_class,
-                    falseelems=out_falseelems,
-                )
+            assert False, message_some_falseelems.format(
+                falsecount=falsecount,
+                elemcount=elemcount,
+                ifc_class=ifc_class,
+                falseelems=out_falseelems,
             )
         else:
-            assert False, (
-                message_some_falseelems.format(
-                    falsecount=falsecount,
-                    elemcount=elemcount,
-                    ifc_class=ifc_class,
-                    falseelems=out_falseelems,
-                    parameter=parameter
-                )
+            assert False, message_some_falseelems.format(
+                falsecount=falsecount,
+                elemcount=elemcount,
+                ifc_class=ifc_class,
+                falseelems=out_falseelems,
+                parameter=parameter,
             )
     else:
         assert False, _("Error in falsecount calculation, something went wrong.")

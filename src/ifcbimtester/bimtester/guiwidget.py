@@ -1,3 +1,21 @@
+# BIMTester - OpenBIM Auditing Tool
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BIMTester.
+#
+# BIMTester is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BIMTester is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import json
 import sys
@@ -47,9 +65,7 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
 
     def _setup_ui(self):
         package_path = os.path.dirname(os.path.realpath(__file__))
-        iconpath = os.path.join(
-            package_path, "resources", "icons", "bimtester.ico"
-        )
+        iconpath = os.path.join(package_path, "resources", "icons", "bimtester.ico")
 
         """
         # as svg
@@ -87,14 +103,8 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         _ifcfile_browse_btn.clicked.connect(self.select_ifcfile)
 
         # buttons
-        self.run_button = QtWidgets.QPushButton(
-            QtGui.QIcon.fromTheme("document-new"),
-            "Run"
-        )
-        self.close_button = QtWidgets.QPushButton(
-            QtGui.QIcon.fromTheme("window-close"),
-            "Close"
-        )
+        self.run_button = QtWidgets.QPushButton(QtGui.QIcon.fromTheme("document-new"), "Run")
+        self.close_button = QtWidgets.QPushButton(QtGui.QIcon.fromTheme("window-close"), "Close")
         self.run_button.clicked.connect(self.run_bimtester)
         self.close_button.clicked.connect(self.close_widget)
         _buttons = QtWidgets.QHBoxLayout()
@@ -121,9 +131,7 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def select_ifcfile(self):
-        ifcfile = QtWidgets.QFileDialog.getOpenFileName(
-            self, dir=self.get_ifcfile()
-        )[0]
+        ifcfile = QtWidgets.QFileDialog.getOpenFileName(self, dir=self.get_ifcfile())[0]
         self.set_ifcfile(ifcfile)
 
     def set_ifcfile(self, a_file):
@@ -135,9 +143,7 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         return " ".join(self.ifcfile_text.text().split())
 
     def select_featurefile(self):
-        featurefile = QtWidgets.QFileDialog.getOpenFileName(
-            self, dir=self.get_ifcfile()
-        )[0]
+        featurefile = QtWidgets.QFileDialog.getOpenFileName(self, dir=self.get_ifcfile())[0]
         self.set_featurefile(featurefile)
 
     def set_featurefile(self, a_file):
@@ -176,24 +182,15 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         if has_feature_file is True and has_ifc_file is True:
             print("Args passed from BIMtester GUI:")
             print(json.dumps(self.args, indent=4))
-            report_json = bimtester.run.TestRunner(
-                self.args["ifc"],
-                self.args["schema_file"]
-            ).run(self.args)
+            report_json = bimtester.run.TestRunner(self.args["ifc"], self.args["schema_file"]).run(self.args)
         else:
             print("Missing files, BIMTester can not run.")
             report_json = ""
 
         # create html report
         if os.path.isfile(report_json):
-            report_html = os.path.join(
-                os.path.dirname(os.path.realpath(report_json)),
-                "report.html"
-            )
-            bimtester.reports.ReportGenerator().generate(
-                report_json,
-                report_html
-            )
+            report_html = os.path.join(os.path.dirname(os.path.realpath(report_json)), "report.html")
+            bimtester.reports.ReportGenerator().generate(report_json, report_html)
             print("HTML report generated: {}".format(report_html))
         elif report_json == "":
             report_html = ""

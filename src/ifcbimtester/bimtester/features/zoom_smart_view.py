@@ -1,3 +1,21 @@
+# BIMTester - OpenBIM Auditing Tool
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BIMTester.
+#
+# BIMTester is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BIMTester is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
+
 import fileinput
 import uuid
 
@@ -38,20 +56,12 @@ def add_smartview(sm_file, smartview_name, guids):
 
     # build the smartview string
     smview_string = "            <SMARTVIEW>\n"
-    smview_string += (
-        "                <TITLE>GUID filter, {}</TITLE>\n"
-        .format(smartview_name)
-    )
+    smview_string += "                <TITLE>GUID filter, {}</TITLE>\n".format(smartview_name)
     smview_string += "{}\n".format(each_smartview_string_before1)
     smview_string += str(uuid.uuid4())  # create and add a smart view guid
     smview_string += "{}\n".format(each_smartview_string_before2)
     for guid in guids:
-        smview_string += (
-            "{}{}{}\n".format(
-                rule_string_before,
-                guid,
-                rule_string_after)
-        )
+        smview_string += "{}{}{}\n".format(rule_string_before, guid, rule_string_after)
     smview_string += "{}\n".format(each_smartview_string_after)
 
     # insert smartview string into file

@@ -1,3 +1,21 @@
+# BIMTester - OpenBIM Auditing Tool
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BIMTester.
+#
+# BIMTester is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BIMTester is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import sys
 import json
@@ -19,6 +37,7 @@ from behave.__main__ import main as behave_main
 # TODO: refactor when this isn't super experimental
 from logging import StreamHandler
 
+
 class IDSHandler(StreamHandler):
     def __init__(self):
         StreamHandler.__init__(self)
@@ -27,13 +46,8 @@ class IDSHandler(StreamHandler):
             "status": "passed",
             "location": "filename.xml",
             "elements": [
-                {
-                    "keyword": "Scenario",
-                    "name": "Checking IDS specifications",
-                    "status": "passed",
-                    "steps": []
-                }
-            ]
+                {"keyword": "Scenario", "name": "Checking IDS specifications", "status": "passed", "steps": []}
+            ],
         }
 
     def emit(self, record):
@@ -43,17 +57,19 @@ class IDSHandler(StreamHandler):
         if is_fail:
             self.results["status"] = "failed"
             self.results["elements"][0]["status"] = "failed"
-        self.results["elements"][0]["steps"].append({
-            "keyword": "*",
-            "match": {},
-            "name": msg,
-            "result": {
-                "duration": 0.0,
-                "error_message": "Assertion Failed",
-                "status": "failed" if is_fail else "passed"
-            },
-            "step_type": "given"
-        })
+        self.results["elements"][0]["steps"].append(
+            {
+                "keyword": "*",
+                "match": {},
+                "name": msg,
+                "result": {
+                    "duration": 0.0,
+                    "error_message": "Assertion Failed",
+                    "status": "failed" if is_fail else "passed",
+                },
+                "step_type": "given",
+            }
+        )
 
 
 class TestRunner:
