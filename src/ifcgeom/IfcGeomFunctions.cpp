@@ -4832,6 +4832,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTo
 		if (do_subtraction_eliminate_touching) {
 			PERF("boolean subtraction: eliminate touching");
 
+			b_tmp.Clear();
 			auto N = eliminate_touching_operands(fuzziness, a, b, b_tmp);
 			if (N) {
 				Logger::Notice("Eliminated " + std::to_string(N) + " touching operands");
