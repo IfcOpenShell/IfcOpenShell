@@ -316,6 +316,18 @@ class Surveyor:
 
 
 @interface
+class System:
+    def disable_editing_system(cls): pass
+    def disable_system_editing_ui(cls): pass
+    def enable_system_editing_ui(cls): pass
+    def export_system_attributes(cls): pass
+    def import_system_attributes(cls, system): pass
+    def import_systems(cls): pass
+    def select_system_products(cls, system): pass
+    def set_active_system(cls, system): pass
+
+
+@interface
 class Type:
     def change_object_data(cls, obj, data, is_global=False): pass
     def disable_editing(cls, obj): pass

@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -16,23 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
+import test.bootstrap
 import ifcopenshell.api
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {"ifc_class": "IfcSystem"}
-        for key, value in settings.items():
-            self.settings[key] = value
-
-    def execute(self):
-        return self.file.create_entity(
-            self.settings["ifc_class"],
-            **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                "Name": "Unnamed",
-            }
-        )
+class TestAddSystem(test.bootstrap.IFC4):
+    def test_adding_a_system(self):
+        system = ifcopenshell.api.run("system.add_system", self.file, ifc_class="IfcSystem")
+        system2 = ifcopenshell.api.run("system.add_system", self.file, ifc_class="IfcDistributionSystem")
+        assert system.is_a("IfcSystem")
+        assert system2.is_a("IfcDistributionSystem")

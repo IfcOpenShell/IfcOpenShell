@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -16,23 +16,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api
+
+def get_system_elements(system):
+    results = []
+    for rel in system.IsGroupedBy:
+        results.extend(rel.RelatedObjects)
+    return results
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {"ifc_class": "IfcSystem"}
-        for key, value in settings.items():
-            self.settings[key] = value
-
-    def execute(self):
-        return self.file.create_entity(
-            self.settings["ifc_class"],
-            **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                "Name": "Unnamed",
-            }
-        )
+def get_element_systems(element):
+    results = []
+    for rel in element.HasAssignments:
+        if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a() in [
+            "IfcSystem",
+            "IfcDistributionSystem",
+            "IfcBuildingSystem",
+        ]:
+            results.append(rel.RelatingGroup)
+    return results

@@ -20,17 +20,16 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.LoadSystems,
-    operator.DisableSystemEditingUI,
     operator.AddSystem,
-    operator.EditSystem,
-    operator.RemoveSystem,
-    operator.ToggleAssigningSystem,
     operator.AssignSystem,
-    operator.UnassignSystem,
-    operator.EnableEditingSystem,
     operator.DisableEditingSystem,
+    operator.DisableSystemEditingUI,
+    operator.EditSystem,
+    operator.EnableEditingSystem,
+    operator.LoadSystems,
+    operator.RemoveSystem,
     operator.SelectSystemProducts,
+    operator.UnassignSystem,
     prop.System,
     prop.BIMSystemProperties,
     ui.BIM_PT_systems,

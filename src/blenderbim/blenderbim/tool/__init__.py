@@ -37,5 +37,6 @@ from blenderbim.tool.spatial import Spatial
 from blenderbim.tool.structural import Structural
 from blenderbim.tool.style import Style
 from blenderbim.tool.surveyor import Surveyor
+from blenderbim.tool.system import System
 from blenderbim.tool.type import Type
 from blenderbim.tool.unit import Unit
