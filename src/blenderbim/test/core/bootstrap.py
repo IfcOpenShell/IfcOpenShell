@@ -169,6 +169,13 @@ def surveyor():
 
 
 @pytest.fixture
+def system():
+    prophet = Prophecy(blenderbim.core.tool.System)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def type():
     prophet = Prophecy(blenderbim.core.tool.Type)
     yield prophet

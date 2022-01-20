@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+from blenderbim.bim.module.system.data import SystemData
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -31,8 +32,15 @@ from bpy.props import (
 )
 
 
+def get_system_class(self, context):
+    if not SystemData.is_loaded:
+        SystemData.load()
+    return SystemData.data["system_class"]
+
+
 class System(PropertyGroup):
     name: StringProperty(name="Name")
+    ifc_class: StringProperty(name="IFC Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
@@ -43,3 +51,4 @@ class BIMSystemProperties(PropertyGroup):
     systems: CollectionProperty(name="Systems", type=System)
     active_system_index: IntProperty(name="Active System Index")
     active_system_id: IntProperty(name="Active System Id")
+    system_class: EnumProperty(items=get_system_class, name="Class")
