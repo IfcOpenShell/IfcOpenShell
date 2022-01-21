@@ -38,11 +38,6 @@ class Usecase:
             and "ScheduleFinish" in self.settings["attributes"].keys()
         ):
             del self.settings["attributes"]["ScheduleFinish"]
-        if (
-            self.settings["attributes"].get("ActualDuration", None)
-            and "ActualFinish" in self.settings["attributes"].keys()
-        ):
-            del self.settings["attributes"]["ActualFinish"]
 
         duration_type = self.settings["attributes"].get("DurationType", self.settings["task_time"].DurationType)
         if "ScheduleFinish" in self.settings["attributes"]:
