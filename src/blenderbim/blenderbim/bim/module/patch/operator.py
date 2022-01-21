@@ -19,6 +19,9 @@
 import os
 import bpy
 import json
+import blenderbim.tool as tool
+import blenderbim.core.patch as core
+import blenderbim.bim.handler
 
 try:
     import ifcpatch
@@ -113,4 +116,21 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
                 }[arg_info.get("type", "str")]
                 new_attr.name = arg_name
                 new_attr.set_value(arg_info.get("default", new_attr.get_value_default()))
+        return {"FINISHED"}
+
+
+class RunMigratePatch(bpy.types.Operator):
+    bl_idname = "bim.run_migrate_patch"
+    bl_label = "Execute IFCPatch"
+    infile: bpy.props.StringProperty()
+    outfile: bpy.props.StringProperty()
+    schema: bpy.props.StringProperty()
+
+    def execute(self, context):
+        core.run_migrate_patch(tool.Patch, infile=self.infile, outfile=self.outfile, schema=self.schema)
+        try:
+            bpy.ops.file.refresh()
+        except:
+            pass  # Probably running in headless mode
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}

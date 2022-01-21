@@ -37,11 +37,26 @@ class TestDisableEditingText(NewFile):
         assert obj.BIMTextProperties.is_editing == False
 
 
+class TestDisableEditingTextProduct(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        obj.BIMTextProperties.is_editing_product = True
+        subject.disable_editing_text_product(obj)
+        assert obj.BIMTextProperties.is_editing_product == False
+
+
 class TestEnableEditingText(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
         subject.enable_editing_text(obj)
         assert obj.BIMTextProperties.is_editing == True
+
+
+class TestEnableEditingTextProduct(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        subject.enable_editing_text_product(obj)
+        assert obj.BIMTextProperties.is_editing_product == True
 
 
 class TestExportTextLiteralAttributes(NewFile):
@@ -69,6 +84,16 @@ class TestGetTextLiteral(NewFile):
         assert subject.get_text_literal(obj) == item
 
 
+class TestGetTextProduct(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifc.createIfcWall()
+        label = ifc.createIfcAnnotation()
+        ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
+        assert subject.get_text_product(label) == wall
+
+
 class TestImportTextAttributes(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -86,6 +111,30 @@ class TestImportTextAttributes(NewFile):
         assert props.attributes.get("Literal").string_value == "Literal"
         assert props.attributes.get("Path").enum_value == "RIGHT"
         assert props.attributes.get("BoxAlignment").string_value == "BoxAlignment"
+
+
+class TestImportTextProduct(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifc.createIfcWall()
+        label = ifc.createIfcAnnotation()
+        ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
+        wall_obj = bpy.data.objects.new("Object", None)
+        label_obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(wall, wall_obj)
+        tool.Ifc.link(label, label_obj)
+        subject.import_text_product(label_obj)
+        assert label_obj.BIMTextProperties.relating_product == wall_obj
+
+    def test_doing_nothing_if_no_product_to_import(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        label = ifc.createIfcAnnotation()
+        label_obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(label, label_obj)
+        subject.import_text_product(label_obj)
+        assert label_obj.BIMTextProperties.relating_product is None
 
 
 class TestUpdateTextValue(NewFile):

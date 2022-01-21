@@ -22,7 +22,7 @@ from pathlib import Path
 from . import ifc
 from bpy.types import Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
-from blenderbim.bim.helper import IFCHeaderSpecs
+from blenderbim.bim.helper import IfcHeaderExtractor
 import blenderbim.tool as tool
 
 
@@ -41,12 +41,22 @@ class IFCFileSelector:
         if self.is_existing_ifc_file(filepath):
             box = self.layout.box()
             box.label(text="IFC Header Specifications", icon="INFO")
-            ifc_specs = IFCHeaderSpecs(filepath)
-            for attr_name, attr_value in ifc_specs.__dict__.items():
-                if attr_value != "":
+            header_data = IfcHeaderExtractor(filepath).extract()
+            for key, value in header_data.items():
+                if value != "":
                     split = box.split()
-                    split.label(text=attr_name.title().replace("_", " "))
-                    split.label(text=str(attr_value))
+                    split.label(text=key.title().replace("_", " "))
+                    split.label(text=str(value))
+                    if (
+                        key.lower() == "schema_name"
+                        and str(value).lower() == "ifc2x3"
+                        and filepath[-4:].lower() == ".ifc"
+                    ):
+                        row = box.row()
+                        op = row.operator("bim.run_migrate_patch")
+                        op.infile = filepath
+                        op.outfile = filepath[0:-4] + "-IFC4.ifc"
+                        op.schema = "IFC4"
 
 
 class BIM_PT_section_plane(Panel):
@@ -178,7 +188,7 @@ class BIM_PT_utilities(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get()
-    
+
     def draw(self, context):
         pass
 
@@ -204,7 +214,7 @@ class BIM_PT_geometry(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get()
-    
+
     def draw(self, context):
         pass
 
@@ -219,7 +229,7 @@ class BIM_PT_4D5D(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get()
-    
+
     def draw(self, context):
         pass
 
@@ -234,7 +244,7 @@ class BIM_PT_structural(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get()
-    
+
     def draw(self, context):
         pass
 
@@ -249,7 +259,7 @@ class BIM_PT_services(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get()
-    
+
     def draw(self, context):
         pass
 
@@ -290,11 +300,11 @@ class BIM_PT_object_metadata(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get()
-    
+
     def draw(self, context):
         pass
-    
-    
+
+
 class BIM_PT_geometry_object(Panel):
     bl_label = "IFC Geometry"
     bl_space_type = "PROPERTIES"
@@ -305,7 +315,7 @@ class BIM_PT_geometry_object(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get()
-    
+
     def draw(self, context):
         pass
 
@@ -320,7 +330,7 @@ class BIM_PT_services_object(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get()
-    
+
     def draw(self, context):
         pass
 
@@ -335,7 +345,7 @@ class BIM_PT_utilities_object(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get()
-    
+
     def draw(self, context):
         pass
 
@@ -350,6 +360,6 @@ class BIM_PT_misc_object(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get()
-    
+
     def draw(self, context):
         pass

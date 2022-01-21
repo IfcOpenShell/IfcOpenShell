@@ -204,6 +204,7 @@ class AddSectionPlane(bpy.types.Operator):
         section_compare.name = "Last Section Compare"
         value = group.nodes.new(type="ShaderNodeValue")
         value.name = "Mock Section"
+        value.outputs[0].default_value = 2
         group.links.new(cut_obj.outputs["Object"], section_compare.inputs[0])
         group.links.new(value.outputs[0], section_compare.inputs[1])
         group.links.new(section_compare.outputs[0], section_mix.inputs[0])
