@@ -255,7 +255,6 @@ class BIM_PT_text(Panel):
         if not TextData.is_loaded:
             TextData.load()
 
-        self.layout.use_property_split = True
         props = context.active_object.BIMTextProperties
 
         if props.is_editing:
@@ -272,22 +271,20 @@ class BIM_PT_text(Panel):
                 row.label(text=attribute["name"])
                 row.label(text=attribute["value"])
 
+        if props.is_editing_product:
+            row = self.layout.row(align=True)
+            row.prop(props, "relating_product", text="")
+            row.operator("bim.edit_text_product", icon="CHECKMARK", text="")
+            row.operator("bim.disable_editing_text_product", icon="CANCEL", text="")
+        else:
+            row = self.layout.row(align=True)
+            row.label(text=TextData.data["relating_product"] or "No Relating Product", icon="OBJECT_DATA")
+            row.operator("bim.enable_editing_text_product", icon="GREASEPENCIL", text="")
+
         row = self.layout.row()
         row.prop(props, "font_size")
         row = self.layout.row()
         row.prop(props, "symbol")
-        row = self.layout.row()
-        row.prop(props, "related_element")
-
-        row = self.layout.row()
-        row.operator("bim.add_variable")
-
-        for index, variable in enumerate(props.variables):
-            row = self.layout.row(align=True)
-            row.prop(variable, "name")
-            row.operator("bim.remove_variable", icon="X", text="").index = index
-            row = self.layout.row()
-            row.prop(variable, "prop_key")
 
 
 class BIM_PT_annotation_utilities(Panel):

@@ -142,13 +142,13 @@ IfcSchema::IfcObjectDefinition* get_decomposing_entity_impl(IfcSchema::IfcProduc
 	if (!parent) {                                                                                               \
 		aggregate_of_instance::ptr parents = product->data().getInverse((&IfcSchema::IfcRelAggregates::Class()), -1);    \
 		parents->push(product->data().getInverse((&IfcSchema::IfcRelNests::Class()), -1));                       \
-		for (aggregate_of_instance::it it = parents->begin(); it != parents->end(); ++it) {                              \
-			IfcSchema::IfcRelDecomposes* decompose = (IfcSchema::IfcRelDecomposes*)*it;                          \
+		for (aggregate_of_instance::it it = parents->begin(); it != parents->end(); ++it) {                      \
+			IfcSchema::IfcRelDecomposes* decompose = (*it)->as<IfcSchema::IfcRelDecomposes>();                   \
 			IfcUtil::IfcBaseEntity* ifc_objectdef;                                                               \
                  																								 \
 			ifc_objectdef = get_RelatingObject(decompose);                                                       \
                                                                                                                  \
-			if (product == ifc_objectdef) continue;                                                              \
+			if (!ifc_objectdef || product == ifc_objectdef) continue;                                            \
 			parent = ifc_objectdef->as<IfcSchema::IfcObjectDefinition>();                                        \
 		}                                                                                                        \
 	}                                                                                                            \
@@ -170,6 +170,10 @@ namespace {
 		if (aggr != nullptr) {
 			return aggr->RelatingObject();
 		}
+		Ifc4::IfcRelNests* nest = decompose->as<Ifc4::IfcRelNests>();
+		if (nest != nullptr) {
+			return nest->RelatingObject();
+		}
 		return nullptr;
 	}
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4);
@@ -180,6 +184,10 @@ namespace {
 		Ifc4x1::IfcRelAggregates* aggr = decompose->as<Ifc4x1::IfcRelAggregates>();
 		if (aggr != nullptr) {
 			return aggr->RelatingObject();
+		}
+		Ifc4x1::IfcRelNests* nest = decompose->as<Ifc4x1::IfcRelNests>();
+		if (nest != nullptr) {
+			return nest->RelatingObject();
 		}
 		return nullptr;
 	}
@@ -192,6 +200,10 @@ namespace {
 		if (aggr != nullptr) {
 			return aggr->RelatingObject();
 		}
+		Ifc4x2::IfcRelNests* nest = decompose->as<Ifc4x2::IfcRelNests>();
+		if (nest != nullptr) {
+			return nest->RelatingObject();
+		}
 		return nullptr;
 	}
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x2);
@@ -203,6 +215,10 @@ namespace {
 		if (aggr != nullptr) {
 			return aggr->RelatingObject();
 		}
+		Ifc4x3_rc1::IfcRelNests* nest = decompose->as<Ifc4x3_rc1::IfcRelNests>();
+		if (nest != nullptr) {
+			return nest->RelatingObject();
+		}
 		return nullptr;
 	}
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x3_rc1);
@@ -213,6 +229,10 @@ namespace {
 		Ifc4x3_rc2::IfcRelAggregates* aggr = decompose->as<Ifc4x3_rc2::IfcRelAggregates>();
 		if (aggr != nullptr) {
 			return aggr->RelatingObject();
+		}
+		Ifc4x3_rc2::IfcRelNests* nest = decompose->as<Ifc4x3_rc2::IfcRelNests>();
+		if (nest != nullptr) {
+			return nest->RelatingObject();
 		}
 		return nullptr;
 	}

@@ -170,6 +170,8 @@ class ImportIfcCsv(bpy.types.Operator):
         else:
             ifc_csv.delimiter = props.csv_delimiter
         ifc_csv.Import(ifc_file)
+        if not props.should_load_from_memory:
+            ifc_file.write(props.csv_ifc_file)
         purge_module_data()
         return {"FINISHED"}
 

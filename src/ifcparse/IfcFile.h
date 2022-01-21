@@ -78,6 +78,7 @@ public:
 	typedef std::tuple<int, int, int> inverse_attr_record;
 	enum INVERSE_ATTR { INSTANCE_ID, INSTANCE_TYPE, ATTRIBUTE_INDEX };
 	typedef std::map<inverse_attr_record, std::vector<int> > entities_by_ref_t;
+	typedef std::map<int, std::vector<int> > entities_by_ref_excl_t;
 	typedef std::map<unsigned int, aggregate_of_instance::ptr> ref_map_t;
 	typedef entity_by_id_t::const_iterator const_iterator;
 
@@ -132,8 +133,8 @@ private:
 	entity_by_id_t byid;
 	entities_by_type_t bytype;
 	entities_by_type_t bytype_excl;
-	entities_by_ref_t byref, byref_excl;
-	ref_map_t by_ref_cached_;
+	entities_by_ref_t byref;
+	entities_by_ref_excl_t byref_excl;
 	entity_by_guid_t byguid;
 	entity_entity_map_t entity_file_map;
 
@@ -249,6 +250,7 @@ public:
 	aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level=-1);
 
 	aggregate_of_instance::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
+	int getTotalInverses(int instance_id);
 
 	template <class T>
 	typename T::list::ptr getInverse(int instance_id, int attribute_index) {
@@ -261,10 +263,6 @@ public:
 		}
 		return return_value;
 	}
-
-	/// Marks entity as modified so that potential cache for it is invalidated.
-	/// @todo Currently the whole cache is invalidated. Implement more fine-grained invalidation.
-	void mark_entity_as_modified(int id);
 
 	unsigned int FreshId() { return ++MaxId; }
 

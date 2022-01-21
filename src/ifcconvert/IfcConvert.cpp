@@ -217,7 +217,8 @@ int main(int argc, char** argv) {
 	generic_options.add_options()
 		("help,h", "display usage information")
 		("version", "display version information")
-		("verbose,v", po::value(&vcounter)->zero_tokens(), "more verbose log messages")
+		("verbose,v", po::value(&vcounter)->zero_tokens(), "more verbose log messages. Use twice (-vv) for debugging level.")
+		("debug,d", "write boolean operands to file in current directory for debugging purposes")
 		("quiet,q", "less status and progress output")
 #ifdef WITH_HDF5
 		("cache", "cache geometry creation. Use --cache-file to specify cache file path.")
@@ -304,6 +305,8 @@ int main(int argc, char** argv) {
 		("disable-boolean-results",
 			"Specifies whether to disable the boolean operation within representations "
 			"such as clippings by means of IfcBooleanResult and subtypes")
+		("no-2d-boolean",
+			"Do not attempt to process boolean subtractions in 2D.")
 		("enable-layerset-slicing",
 			"Specifies whether to enable the slicing of products according "
 			"to their associated IfcMaterialLayerSet.")
@@ -660,12 +663,24 @@ int main(int argc, char** argv) {
 		Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
 	}
 
-	Logger::Verbosity(vcounter.count
-		? (vcounter.count > 1
-		? Logger::LOG_DEBUG 
-		: Logger::LOG_NOTICE)
-		: Logger::LOG_ERROR
-	);
+	switch (vcounter.count) {
+	case 0:
+		Logger::Verbosity(Logger::LOG_ERROR);
+		break;
+	case 1:
+		Logger::Verbosity(Logger::LOG_NOTICE);
+		break;
+	case 2:
+		Logger::Verbosity(Logger::LOG_DEBUG);
+		break;
+	case 3:
+		Logger::Verbosity(Logger::LOG_PERF);
+		break;
+	case 4:
+		Logger::Verbosity(Logger::LOG_PERF);
+		Logger::PrintPerformanceStatsOnElement(true);
+		break;
+	}
 
     path_t output_temp_filename = output_filename + IfcUtil::path::from_utf8(TEMP_FILE_EXTENSION);
 	
@@ -793,16 +808,18 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
 	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
 	settings.set(IfcGeom::IteratorSettings::LAYERSET_FIRST,               layerset_first);
+	settings.set(IfcGeom::IteratorSettings::DEBUG_BOOLEAN,                vmap.count("debug"));
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
 	settings.set(IfcGeom::IteratorSettings::EDGE_ARROWS, edge_arrows);
-	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy || output_extension == SVG);
+	settings.set(IfcGeom::IteratorSettings::ELEMENT_HIERARCHY, use_element_hierarchy || output_extension == SVG);
 	settings.set(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT, site_local_placement);
 	settings.set(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
 	settings.set(IfcGeom::IteratorSettings::VALIDATE_QUANTITIES, validate);
 	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_CHECK, no_wire_intersection_check);
 	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE, no_wire_intersection_tolerance);
 	settings.set(IfcGeom::IteratorSettings::STRICT_TOLERANCE, strict_tolerance);
+	settings.set(IfcGeom::IteratorSettings::BOOLEAN_ATTEMPT_2D, !vmap.count("no-2d-boolean"));	
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
@@ -986,6 +1003,8 @@ int main(int argc, char** argv) {
 	}
 #endif
 
+	Logger::Message(Logger::LOG_PERF, "file geometry conversion");
+
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
@@ -1151,6 +1170,8 @@ int main(int argc, char** argv) {
     // Make sure the dtor is explicitly run here (e.g. output files are closed before renaming them).
     serializer.reset();
 
+	Logger::Message(Logger::LOG_PERF, "done file geometry conversion");
+
     // Renaming might fail (e.g. maybe the existing file was open in a viewer application)
     // Do not remove the temp file as user can salvage the conversion result from it.
     bool successful = IfcUtil::path::rename_file(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename));
@@ -1162,6 +1183,10 @@ int main(int argc, char** argv) {
 	if (validate && Logger::MaxSeverity() >= Logger::LOG_ERROR) {
 		Logger::Error("Errors encountered during processing.");
 		successful = false;
+	}
+
+	if (Logger::Verbosity() == Logger::LOG_PERF) {
+		Logger::PrintPerformanceStats();
 	}
 
 	write_log(!quiet);

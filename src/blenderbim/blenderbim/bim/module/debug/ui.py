@@ -27,6 +27,7 @@ class BIM_PT_debug(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_quality_control"
 
     def draw(self, context):
         layout = self.layout
@@ -38,8 +39,16 @@ class BIM_PT_debug(Panel):
         row.operator("bim.validate_ifc_file", icon="CHECKMARK", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
+        row = self.layout.row(align=True)
+        row.prop(props, "express_file", text="")
+        row.operator("bim.parse_express", icon="IMPORT", text="")
+        row.operator("bim.select_express_file", icon="FILE_FOLDER", text="")
+
         row = layout.row()
         row.operator("bim.print_ifc_file")
+
+        row = layout.row()
+        row.operator("bim.purge_hdf5_cache")
 
         row = layout.row()
         row.operator("bim.purge_ifc_links")
@@ -56,8 +65,13 @@ class BIM_PT_debug(Panel):
         row.prop(props, "step_id", text="")
 
         row = layout.split(factor=0.7, align=True)
-        row.operator("bim.select_high_polygon_meshes")
+        row.operator("bim.select_high_polygon_meshes").threshold = context.scene.BIMDebugProperties.number_of_polygons
         row.prop(props, "number_of_polygons", text="")
+        row = layout.split(factor=0.7, align=True)
+        row.operator(
+            "bim.select_highest_polygon_meshes"
+        ).percentile = context.scene.BIMDebugProperties.percentile_of_polygons
+        row.prop(props, "percentile_of_polygons", text="")
 
         layout.label(text="Inspector:")
 

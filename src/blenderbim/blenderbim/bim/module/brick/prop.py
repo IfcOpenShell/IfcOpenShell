@@ -42,8 +42,21 @@ def get_libraries(self, context):
     return BrickschemaReferencesData.data["libraries"]
 
 
+def get_namespaces(self, context):
+    if not BrickschemaData.is_loaded:
+        BrickschemaData.load()
+    return BrickschemaData.data["namespaces"]
+
+
+def get_brick_equipment_classes(self, context):
+    if not BrickschemaData.is_loaded:
+        BrickschemaData.load()
+    return BrickschemaData.data["brick_equipment_classes"]
+
+
 class Brick(PropertyGroup):
     name: StringProperty(name="Name")
+    label: StringProperty(name="Label")
     uri: StringProperty(name="URI")
     total_items: IntProperty(name="Total Items")
 
@@ -54,3 +67,5 @@ class BIMBrickProperties(PropertyGroup):
     bricks: CollectionProperty(name="Bricks", type=Brick)
     active_brick_index: IntProperty(name="Active Brick Index", update=update_active_brick_index)
     libraries: EnumProperty(name="Libraries", items=get_libraries)
+    namespace: EnumProperty(name="Namespace", items=get_namespaces)
+    brick_equipment_class: EnumProperty(name="Brick Equipment Class", items=get_brick_equipment_classes)

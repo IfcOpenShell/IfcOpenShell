@@ -1,21 +1,21 @@
-###############################################################################
-#                                                                             #
-# This file is part of IfcOpenShell.                                          #
-#                                                                             #
-# IfcOpenShell is free software: you can redistribute it and/or modify        #
-# it under the terms of the Lesser GNU General Public License as published by #
-# the Free Software Foundation, either version 3.0 of the License, or         #
-# (at your option) any later version.                                         #
-#                                                                             #
-# IfcOpenShell is distributed in the hope that it will be useful,             #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                #
-# Lesser GNU General Public License for more details.                         #
-#                                                                             #
-# You should have received a copy of the Lesser GNU General Public License    #
-# along with this program. If not, see <http://www.gnu.org/licenses/>.        #
-#                                                                             #
-###############################################################################
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 
 from __future__ import print_function
 
@@ -142,10 +142,13 @@ class Mapping:
                 raise ValueError("Unable to map type %r for attribute %r" % (type, attr))
 
         ty = _make_argument_type(attr.type if hasattr(attr, "type") else attr)
-        if ty == "TRIBOOL": ty = "LOGICAL"
-        
+        if ty == "TRIBOOL":
+            ty = "LOGICAL"
+
         if ty not in self.supported_argument_types:
-            import pdb; pdb.set_trace()
+            import pdb
+
+            pdb.set_trace()
             print("Attribute %r mapped as 'unknown'" % (attr), file=sys.stderr)
             ty = "UNKNOWN"
         return "IfcUtil::Argument_%s" % ty
@@ -175,7 +178,7 @@ class Mapping:
             ty = self.get_parameter_type(attr_type.type if is_nested_list else attr_type)
             # We do not use pointers in aggregate_of<T>. aggregate_of has member vector<T*>
             ty = ty.replace("*", "")
-            
+
             if self.schema.is_select(attr_type.type):
                 type_str = templates.untyped_list
             elif self.schema.is_simpletype(ty) or str(ty) in self.express_to_cpp_typemapping.values():

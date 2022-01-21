@@ -88,6 +88,9 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	aggregate_of_instance::ptr get_inverse(IfcUtil::IfcBaseClass* e) {
 		return $self->getInverse(e->data().id(), 0, -1);
 	}
+	int get_total_inverses(IfcUtil::IfcBaseClass* e) {
+		return $self->getTotalInverses(e->data().id());
+	}
 
 	void write(const std::string& fn) {
 		std::ofstream f(IfcUtil::path::from_utf8(fn).c_str());
@@ -222,8 +225,12 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return self->declaration().is(s);
 	}
 
-	std::string is_a() const {
-		return self->declaration().name();
+	std::string is_a(bool with_schema=false) const {
+		auto t = self->declaration().name();
+		if (with_schema) {
+			t = self->declaration().schema()->name() + "." + t;
+		}
+		return t;
 	}
 
 	std::pair<IfcUtil::ArgumentType,Argument*> get_argument(unsigned i) {
@@ -603,6 +610,16 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		def __repr__(self):
 			return "<type %s: %r>" % (self.name(), self.declared_type())
 	%}
+	std::vector<std::string> argument_types() {
+		std::vector<std::string> r;
+		auto at = IfcUtil::Argument_UNKNOWN;
+		auto pt = $self->declared_type();
+		if (pt) {
+			at = IfcUtil::from_parameter_type(pt);
+		}
+		r.push_back(IfcUtil::ArgumentTypeToString(at));
+		return r;
+	}
 }
 
 %extend IfcParse::select_type {
@@ -617,6 +634,11 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		def __repr__(self):
 			return "<enumeration %s: (%s)>" % (self.name(), ", ".join(self.enumeration_items()))
 	%}
+	std::vector<std::string> argument_types() {
+		std::vector<std::string> r;
+		r.push_back(IfcUtil::ArgumentTypeToString(IfcUtil::Argument_STRING));
+		return r;
+	}
 }
 
 %extend IfcParse::attribute {
@@ -658,11 +680,12 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 			auto pt = attr->type_of_attribute();
 			if ($self->derived()[i++]) {
 				at = IfcUtil::Argument_DERIVED;
-			}
-			if (pt == 0) {
+			} else if (!pt) {
 				at = IfcUtil::Argument_UNKNOWN;
+			} else {
+				at = IfcUtil::from_parameter_type(pt);
 			}
-			r.push_back(IfcUtil::ArgumentTypeToString(IfcUtil::from_parameter_type(pt)));
+			r.push_back(IfcUtil::ArgumentTypeToString(at));
 		}
 		return r;
 	}
@@ -687,6 +710,14 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		ifcopenshell_log_stream.str("");
 		return log;
 	}
+	void turn_on_detailed_logging() {
+		Logger::SetOutput(&std::cout, &std::cout);
+		Logger::Verbosity(Logger::LOG_DEBUG);
+	}
+	void turn_off_detailed_logging() {
+		Logger::SetOutput(0, &ifcopenshell_log_stream);
+		Logger::Verbosity(Logger::LOG_WARNING);
+	}
 %}
 
 %{
@@ -704,6 +735,10 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 			break; }
 			case IfcUtil::Argument_BOOL: {
 				bool v = arg;
+				return pythonize(v);
+			break; }
+			case IfcUtil::Argument_LOGICAL: {
+				boost::logic::tribool v = arg;
 				return pythonize(v);
 			break; }
 			case IfcUtil::Argument_DOUBLE: {
@@ -795,18 +830,24 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 				auto value_cpp = v->data().getArgument(std::distance(attrs.begin(), it));
 				auto value_py = convert_cpp_attribute_to_python(attr_type, *value_cpp);
 				PyDict_SetItem(d, name_py, value_py);
+				Py_DECREF(name_py);
+				Py_DECREF(value_py);
 			}
 
 			const std::string& id_cpp = "id";
 			auto id_py = pythonize(id_cpp);
 			auto id_v_py = pythonize(v->data().id());
 			PyDict_SetItem(d, id_py, id_v_py);
+			Py_DECREF(id_py);
+			Py_DECREF(id_v_py);
 		} else {
 			const std::string& name_cpp = "wrappedValue";
 			auto name_py = pythonize(name_cpp);
 			auto value_cpp = v->data().getArgument(0);
 			auto value_py = convert_cpp_attribute_to_python(value_cpp->type(), *value_cpp);
 			PyDict_SetItem(d, name_py, value_py);
+			Py_DECREF(name_py);
+			Py_DECREF(value_py);
 		}
 
 		// @todo type and id can be static?
@@ -815,6 +856,8 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		const std::string& type_v_cpp = v->declaration().name();
 		auto type_v_py = pythonize(type_v_cpp);
 		PyDict_SetItem(d, type_py, type_v_py);
+		Py_DECREF(type_py);
+		Py_DECREF(type_v_py);
 
 		return d;
 	}

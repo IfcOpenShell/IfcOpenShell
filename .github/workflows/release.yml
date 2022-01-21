@@ -24,7 +24,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get install git cmake gcc g++ libboost1.67-all-dev python3-all-dev swig libpcre3-dev libxml2-dev
-          sudo apt-get install liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev \
+          sudo apt-get install libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
           libhdf5-dev
           
       - name: Build
@@ -39,7 +39,7 @@ jobs:
            -DCMAKE_PREFIX_PATH=/usr \
            -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
            -DBUILD_PACKAGE=On \
-           -DOCC_INCLUDE_DIR=/usr/include/oce \
+           -DOCC_INCLUDE_DIR=/usr/include/opencascade \
            -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
            -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
            -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \

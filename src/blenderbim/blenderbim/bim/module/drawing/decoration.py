@@ -340,9 +340,9 @@ class BaseDecorator:
 
         blf.rotation(font_id, ang)
         blf.color(font_id, *color)
-        #blf.enable(font_id, blf.SHADOW)
-        #blf.shadow(font_id, 5, 0, 0, 0, 1)
-        #blf.shadow_offset(font_id, 1, -1)
+        # blf.enable(font_id, blf.SHADOW)
+        # blf.shadow(font_id, 5, 0, 0, 0, 1)
+        # blf.shadow_offset(font_id, 1, -1)
         blf.draw(font_id, text)
         blf.disable(font_id, blf.ROTATION)
 
@@ -361,7 +361,7 @@ class BaseDecorator:
         else:
             return
 
-        return bpy.utils.units.to_string(unit_system, "LENGTH", value, precision, split_unit=True)
+        return bpy.utils.units.to_string(unit_system, "LENGTH", value, precision=precision, split_unit=True)
 
 
 class DimensionDecorator(BaseDecorator):

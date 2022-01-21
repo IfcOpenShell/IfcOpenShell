@@ -21,12 +21,24 @@ import json
 import ifcopenshell
 import ifcopenshell.api
 import blenderbim.bim.helper
+import blenderbim.bim.handler
+import blenderbim.core.structural as core
+import blenderbim.tool as tool
+import blenderbim.core.context
 from math import degrees
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.structural.prop import purge
 from ifcopenshell.api.structural.data import Data
 from ifcopenshell.api.context.data import Data as ContextData
+from blenderbim.bim.module.structural.data import StructuralData
+
+
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
 
 
 class AddStructuralMemberConnection(bpy.types.Operator):
@@ -231,197 +243,98 @@ class DisableEditingStructuralBoundaryCondition(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadStructuralAnalysisModels(bpy.types.Operator):
+class LoadStructuralAnalysisModels(bpy.types.Operator, Operator):
     bl_idname = "bim.load_structural_analysis_models"
     bl_label = "Load Structural Analysis Models"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        props = context.scene.BIMStructuralProperties
-        props.structural_analysis_models.clear()
-        for ifc_definition_id, structural_analysis_model in Data.structural_analysis_models.items():
-            new = props.structural_analysis_models.add()
-            new.ifc_definition_id = ifc_definition_id
-            new.name = structural_analysis_model["Name"] or "Unnamed"
-        props.is_editing = True
-        bpy.ops.bim.disable_editing_structural_analysis_model()
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.load_structural_analysis_models(tool.Structural)
 
 
-class DisableStructuralAnalysisModelEditingUI(bpy.types.Operator):
+class DisableStructuralAnalysisModelEditingUI(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_structural_analysis_model_editing_ui"
     bl_label = "Disable Structural Analysis Model Editing UI"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        context.scene.BIMStructuralProperties.is_editing = False
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.disable_structural_analysis_model_editing_ui(tool.Structural)
 
 
-class AddStructuralAnalysisModel(bpy.types.Operator):
+class AddStructuralAnalysisModel(bpy.types.Operator, Operator):
     bl_idname = "bim.add_structural_analysis_model"
     bl_label = "Add Structural Analysis Model"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        result = ifcopenshell.api.run("structural.add_structural_analysis_model", IfcStore.get_file())
-
-        has_context = False
-        ContextData.load(IfcStore.get_file())
-        for context in ContextData.contexts.values():
-            if context["ContextType"] == "Model":
-                for subcontext in context["HasSubContexts"].values():
-                    if subcontext["ContextIdentifier"] == "Reference" and subcontext["TargetView"] == "GRAPH_VIEW":
-                        has_context = True
-        if not has_context:
-            bpy.ops.bim.add_subcontext(context="Model", subcontext="Reference", target_view="GRAPH_VIEW")
-
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_structural_analysis_models()
-        bpy.ops.bim.enable_editing_structural_analysis_model(structural_analysis_model=result.id())
-        return {"FINISHED"}
+        model = core.add_structural_analysis_model(tool.Ifc, tool.Structural)
+        core.load_structural_analysis_model_attributes(tool.Structural, model=model.id())
+        core.enable_editing_structural_analysis_model(tool.Structural, model=model.id())
 
 
-class EditStructuralAnalysisModel(bpy.types.Operator):
+class EditStructuralAnalysisModel(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_structural_analysis_model"
     bl_label = "Edit Structural Analysis Model"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMStructuralProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.structural_analysis_model_attributes)
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "structural.edit_structural_analysis_model",
-            self.file,
-            **{
-                "structural_analysis_model": self.file.by_id(props.active_structural_analysis_model_id),
-                "attributes": attributes,
-            },
-        )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_structural_analysis_models()
-        return {"FINISHED"}
+        core.edit_structural_analysis_model(tool.Ifc, tool.Structural)
 
 
-class RemoveStructuralAnalysisModel(bpy.types.Operator):
+class RemoveStructuralAnalysisModel(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_structural_analysis_model"
     bl_label = "Remove Structural Analysis Model"
     bl_options = {"REGISTER", "UNDO"}
     structural_analysis_model: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMStructuralProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "structural.remove_structural_analysis_model",
-            self.file,
-            **{"structural_analysis_model": self.file.by_id(self.structural_analysis_model)},
-        )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_structural_analysis_models()
-        return {"FINISHED"}
+        core.remove_structural_analysis_model(tool.Ifc, tool.Structural, model=self.structural_analysis_model)
 
 
-class EnableEditingStructuralAnalysisModel(bpy.types.Operator):
+class EnableEditingStructuralAnalysisModel(bpy.types.Operator, Operator):
     bl_idname = "bim.enable_editing_structural_analysis_model"
     bl_label = "Enable Editing Structural Analysis Model"
     bl_options = {"REGISTER", "UNDO"}
     structural_analysis_model: bpy.props.IntProperty()
 
-    def execute(self, context):
-        props = context.scene.BIMStructuralProperties
-        props.structural_analysis_model_attributes.clear()
-
-        data = Data.structural_analysis_models[self.structural_analysis_model]
-
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcStructuralAnalysisModel").all_attributes():
-            data_type = str(attribute.type_of_attribute)
-            if "<entity" in data_type:
-                continue
-            new = props.structural_analysis_model_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            if attribute.name() == "PredefinedType":
-                new.enum_items = json.dumps(attribute.type_of_attribute().declared_type().enumeration_items())
-                new.data_type = "enum"
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
-            else:
-                new.string_value = "" if new.is_null else data[attribute.name()]
-                new.data_type = "string"
-        props.active_structural_analysis_model_id = self.structural_analysis_model
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.load_structural_analysis_model_attributes(tool.Structural, model=self.structural_analysis_model)
+        core.enable_editing_structural_analysis_model(tool.Structural, model=self.structural_analysis_model)
 
 
-class DisableEditingStructuralAnalysisModel(bpy.types.Operator):
+class DisableEditingStructuralAnalysisModel(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_editing_structural_analysis_model"
     bl_label = "Disable Editing Structural Analysis Model"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        context.scene.BIMStructuralProperties.active_structural_analysis_model_id = 0
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.disable_editing_structural_analysis_model(tool.Structural)
 
 
-class AssignStructuralAnalysisModel(bpy.types.Operator):
+class AssignStructuralAnalysisModel(bpy.types.Operator, Operator):
     bl_idname = "bim.assign_structural_analysis_model"
     bl_label = "Assign Structural Analysis Model"
     bl_options = {"REGISTER", "UNDO"}
     product: bpy.props.StringProperty()
     structural_analysis_model: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        product = bpy.data.objects.get(self.product) if self.product else context.active_object
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "structural.assign_structural_analysis_model",
-            self.file,
-            **{
-                "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
-                "structural_analysis_model": self.file.by_id(self.structural_analysis_model),
-            },
+        core.assign_structural_analysis_model(
+            tool.Ifc, tool.Structural, product=self.product, structural_analysis_model=self.structural_analysis_model
         )
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
 
 
-class UnassignStructuralAnalysisModel(bpy.types.Operator):
+class UnassignStructuralAnalysisModel(bpy.types.Operator, Operator):
     bl_idname = "bim.unassign_structural_analysis_model"
     bl_label = "Unassign Structural Analysis Model"
     bl_options = {"REGISTER", "UNDO"}
     product: bpy.props.StringProperty()
     structural_analysis_model: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        product = bpy.data.objects.get(self.product) if self.product else context.active_object
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "structural.unassign_structural_analysis_model",
-            self.file,
-            **{
-                "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
-                "structural_analysis_model": self.file.by_id(self.structural_analysis_model),
-            },
+        core.unassign_structural_analysis_model(
+            tool.Ifc, tool.Structural, product=self.product, structural_analysis_model=self.structural_analysis_model
         )
-        Data.load(IfcStore.get_file())
-        return {"FINISHED"}
 
 
 class EnableEditingStructuralItemAxis(bpy.types.Operator):

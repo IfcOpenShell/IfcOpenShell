@@ -103,7 +103,74 @@ class AssignBrickReference(bpy.types.Operator, Operator):
         core.assign_brick_reference(
             tool.Ifc,
             tool.Brick,
-            obj=context.active_object,
+            element=tool.Ifc.get_entity(context.active_object),
             library=tool.Ifc.get().by_id(int(props.libraries)),
             brick_uri=props.bricks[props.active_brick_index].uri,
         )
+
+
+class AddBrick(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_brick"
+    bl_label = "Add Brick"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMBrickProperties
+        library = None
+        if props.libraries:
+            library = tool.Ifc.get().by_id(int(props.libraries))
+        core.add_brick(
+            tool.Ifc,
+            tool.Brick,
+            element=tool.Ifc.get_entity(context.active_object) if context.selected_objects else None,
+            namespace=props.namespace,
+            brick_class=props.brick_equipment_class,
+            library=library,
+        )
+
+
+class AddBrickFeed(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_brick_feed"
+    bl_label = "Add Brick Feed"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        source = tool.Ifc.get_entity([o for o in context.selected_objects if o != context.active_object][0])
+        destination = tool.Ifc.get_entity(context.active_object)
+        core.add_brick_feed(
+            tool.Ifc,
+            tool.Brick,
+            source=source,
+            destination=destination,
+        )
+
+
+class ConvertIfcToBrick(bpy.types.Operator, Operator):
+    bl_idname = "bim.convert_ifc_to_brick"
+    bl_label = "Convert IFC To Brick"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMBrickProperties
+        library = None
+        if props.libraries:
+            library = tool.Ifc.get().by_id(int(props.libraries))
+        core.convert_ifc_to_brick(tool.Brick, namespace=props.namespace, library=library)
+
+
+class NewBrickFile(bpy.types.Operator, Operator):
+    bl_idname = "bim.new_brick_file"
+    bl_label = "New Brick File"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.new_brick_file(tool.Brick)
+
+
+class RefreshBrickViewer(bpy.types.Operator, Operator):
+    bl_idname = "bim.refresh_brick_viewer"
+    bl_label = "Refresh Brick Viewer"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.refresh_brick_viewer(tool.Brick)

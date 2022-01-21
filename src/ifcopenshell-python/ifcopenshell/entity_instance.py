@@ -1,21 +1,21 @@
-###############################################################################
-#                                                                             #
-# This file is part of IfcOpenShell.                                          #
-#                                                                             #
-# IfcOpenShell is free software: you can redistribute it and/or modify        #
-# it under the terms of the Lesser GNU General Public License as published by #
-# the Free Software Foundation, either version 3.0 of the License, or         #
-# (at your option) any later version.                                         #
-#                                                                             #
-# IfcOpenShell is distributed in the hope that it will be useful,             #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                #
-# Lesser GNU General Public License for more details.                         #
-#                                                                             #
-# You should have received a copy of the Lesser GNU General Public License    #
-# along with this program. If not, see <http://www.gnu.org/licenses/>.        #
-#                                                                             #
-###############################################################################
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 
 from __future__ import absolute_import
 from __future__ import division
@@ -31,6 +31,60 @@ try:
     import logging
 except ImportError as e:
     logging = type("logger", (object,), {"exception": staticmethod(lambda s: print(s))})
+
+
+def set_derived_atribute(*args):
+    raise TypeError("Unable to set derived attribute")
+
+
+# For every schema and its entities populate a list
+# of functions for every entity attribute (including
+# inherited attributes) to set that particular
+# attribute by index.
+# For example. IFC2X3.IfcWall with have a list of
+# 9 methods. The first will point at
+# ifcopenshell.ifcopenshell_wrapper.entity_instance.setArgumentAsString
+# because the first attribute GlobalId ultimately
+# is of type string.
+# Previously, resolving the appropriate function was
+# done for each invocation of __setitem__. Now this
+# mapping is built once during initialization of the
+# module.
+_method_dict = {}
+
+
+def register_schema_attributes(schema):
+    for decl in schema.declarations():
+        if hasattr(decl, "argument_types"):
+            fq_name = ".".join((schema.name(), decl.name()))
+
+            # get type strings as reported by IfcOpenShell C++
+            type_strs = decl.argument_types()
+
+            # convert case for setter function
+            type_strs = [x.title().replace(" ", "") for x in type_strs]
+
+            # binary and enumeration are passed from python as string as well
+            type_strs = [x.replace("Binary", "String") for x in type_strs]
+            type_strs = [x.replace("Enumeration", "String") for x in type_strs]
+
+            # prefix to get method names
+            fn_names = ["setArgumentAs" + x for x in type_strs]
+
+            # resolve to actual functions in wrapper
+            functions = [
+                set_derived_atribute
+                if mname == "setArgumentAsDerived"
+                else getattr(ifcopenshell_wrapper.entity_instance, mname)
+                for mname in fn_names
+            ]
+
+            _method_dict[fq_name] = functions
+
+
+for nm in ifcopenshell_wrapper.schema_names():
+    schema = ifcopenshell_wrapper.schema_by_name(nm)
+    register_schema_attributes(schema)
 
 
 class entity_instance(object):
@@ -52,6 +106,7 @@ class entity_instance(object):
         if isinstance(e, tuple):
             e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
         super(entity_instance, self).__setattr__("wrapped_data", e)
+        super(entity_instance, self).__setattr__("method_list", None)
         self.wrapped_data.file = file
 
     def __getattr__(self, name):
@@ -65,7 +120,7 @@ class entity_instance(object):
             return entity_instance.wrap_value(self.wrapped_data.get_inverse(name), self.wrapped_data.file)
         else:
             raise AttributeError(
-                "entity instance of type '%s' has no attribute '%s'" % (self.wrapped_data.is_a(), name)
+                "entity instance of type '%s' has no attribute '%s'" % (self.wrapped_data.is_a(True), name)
             )
 
     @staticmethod
@@ -129,38 +184,16 @@ class entity_instance(object):
         if self.wrapped_data.file and self.wrapped_data.file.transaction:
             self.wrapped_data.file.transaction.store_edit(self, idx, value)
 
-        attr_type = real_attr_type = self.attribute_type(idx).title().replace(" ", "")
-        real_attr_type = real_attr_type.replace("Derived", "None")
-        attr_type = attr_type.replace("Binary", "String")
-        attr_type = attr_type.replace("Enumeration", "String")
+        if self.method_list is None:
+            super(entity_instance, self).__setattr__("method_list", _method_dict[self.is_a(True)])
+
+        method = self.method_list[idx]
 
         if value is None:
-            if attr_type != "Derived":
+            if method is not set_derived_atribute:
                 self.wrapped_data.setArgumentAsNull(idx)
         else:
-            valid = attr_type != "Derived"
-            if valid:
-                try:
-                    if isinstance(value, unicode):
-                        value = value.encode("utf-8")
-                except BaseException:
-                    pass
-
-                try:
-                    if attr_type != "Derived":
-                        getattr(self.wrapped_data, "setArgumentAs%s" % attr_type)(
-                            idx, entity_instance.unwrap_value(value)
-                        )
-                except BaseException as e:
-                    import traceback
-                    traceback.print_exc()
-                    valid = False
-
-            if not valid:
-                raise ValueError(
-                    "Expected %s for attribute %s.%s, got %r"
-                    % (real_attr_type, self.is_a(), self.attribute_name(idx), value)
-                )
+            self.method_list[idx](self.wrapped_data, idx, entity_instance.unwrap_value(value))
 
         return value
 

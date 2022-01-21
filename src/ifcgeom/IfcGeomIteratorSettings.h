@@ -62,7 +62,8 @@ namespace IfcGeom
             /// Disables the triangulation of the topological representations. Useful if
             /// the client application understands Open Cascade's native format.
             DISABLE_TRIANGULATION = 1 << 6,
-            /// Applies default materials to entity instances without a surface style.
+            /// Applies default materials to entity instances without a surface style or
+			/// product-level material association.
             APPLY_DEFAULT_MATERIALS = 1 << 7,
             /// Specifies whether to include subtypes of IfcCurve.
             INCLUDE_CURVES = 1 << 8,
@@ -75,34 +76,51 @@ namespace IfcGeom
             /// Generates UVs by using simple box projection. Requires normals.
             /// Applicable for OBJ and DAE output.
             GENERATE_UVS = 1 << 11,
-            /// Specifies whether to slice representations according to associated IfcLayerSets.
+            /// Specifies whether to slice representations according to associated
+			/// IfcMaterialLayerSets.
             APPLY_LAYERSETS = 1 << 12,
-			/// Search for a parent of type IfcBuildingStorey for each representation
-			SEARCH_FLOOR = 1 << 13,
-			///
+			/// Emit the relative placements from IFC instead of a flat listing of
+			/// absolute placements.
+			ELEMENT_HIERARCHY = 1 << 13,
+			/// Emit placements relative to the IfcSite. Useful if the IfcSite itself
+			/// introduces a placement with a large geospatial offset that inhibits
+			/// rendering.
 			SITE_LOCAL_PLACEMENT = 1 << 14,
-			///
+			/// Emit placements relative to the IfcBuilding. Useful if the IfcBuilding 
+			/// itself introduces a placement with a large geospatial offset that
+			/// inhibits rendering.
 			BUILDING_LOCAL_PLACEMENT = 1 << 15,
-			///
+			/// After geometry interpretation, lookup an IfcOpenShell-specific quantity set
+			/// and compare values for validation.
 			VALIDATE_QUANTITIES = 1 << 16,
 			/// Assigns the first layer material to the entire product
 			LAYERSET_FIRST = 1 << 17,
-			/// Adds arrow heads to edge segments to signify edge direction
+			/// Adds arrow heads to edge segments to signify edge direction. Useful as a
+			/// debugging mechanism for face orientation or advanced brep IfcOrientedEdge.
 			EDGE_ARROWS = 1 << 18,
 			/// Disables the evaluation of IfcBooleanResult and simply returns FirstOperand
 			DISABLE_BOOLEAN_RESULT = 1 << 19,
-			// Disables wire intersection checks
+			/// Disables wire intersection checks. These checks are done on faces to prevent
+			/// self-intersections of face bounds. Self-intersections reduce the reliability
+			/// of boolean operations and may lead to crashes.
 			NO_WIRE_INTERSECTION_CHECK = 1 << 20,
-			// Set wire intersection tolerance to 0
+			/// Set wire intersection tolerance to 0. By default the above check is done
+			/// using a tolerance criterium. So that when a vertex is a certain epsilon
+			/// distance away from an edge this is flagged as an intersection.
 			NO_WIRE_INTERSECTION_TOLERANCE = 1 << 21,
-			// Sets kernel precision factor to 1
+			/// Strictly use the tolerance from the IFC model. Typically this value is
+			/// increased 10-fold to have more reliable boolean subtraction results.
 			STRICT_TOLERANCE = 1 << 22,
+			/// Write boolean operands to file in current directory for debugging purposes
+			DEBUG_BOOLEAN = 1 << 23,
+			/// Try to perform boolean subtractions in 2d. Defaults to true.
+			BOOLEAN_ATTEMPT_2D = 1 << 24,
 			/// Number of different setting flags.
-			NUM_SETTINGS = 23,
+			NUM_SETTINGS = 25,
         };
 
         IteratorSettings()
-            : settings_(WELD_VERTICES) // OR options that default to true here
+            : settings_(WELD_VERTICES | BOOLEAN_ATTEMPT_2D) // OR options that default to true here
             , deflection_tolerance_(1.e-3)
 			, angular_tolerance_(0.5)
         {

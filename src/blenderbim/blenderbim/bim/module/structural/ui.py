@@ -22,6 +22,7 @@ from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
 from ifcopenshell.api.structural.data import Data
+from blenderbim.bim.module.structural.data import StructuralData
 
 
 def draw_boundary_condition_ui(layout, boundary_condition_id, connection_id, props):
@@ -91,6 +92,7 @@ class BIM_PT_structural_boundary_conditions(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
     # bl_parent_id = "BIM_PT_structural_connection"
+    bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod
     def poll(cls, context):
@@ -123,6 +125,7 @@ class BIM_PT_connected_structural_members(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
     # bl_parent_id = "BIM_PT_structural_connection"
+    bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod
     def poll(cls, context):
@@ -154,7 +157,7 @@ class BIM_PT_connected_structural_members(Panel):
             row = self.layout.row(align=True)
             row.label(text=f"To Member #{IfcStore.get_file().by_id(rel['RelatingStructuralMember']).Name}")
             if self.props.active_connects_structural_member and self.props.active_connects_structural_member == rel_id:
-                row.operator("bim.disable_editing_structural_connection_condition", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_structural_connection_condition", text="", icon="CANCEL")
                 row.enabled = self.props.active_boundary_condition != rel["AppliedCondition"]
                 self.draw_editable_ui(context, self.layout, rel)
             elif self.props.active_connects_structural_member:
@@ -179,6 +182,7 @@ class BIM_PT_structural_member(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod
     def poll(cls, context):
@@ -219,6 +223,7 @@ class BIM_PT_structural_connection(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_parent_id = "BIM_PT_misc_object"
 
     @classmethod
     def poll(cls, context):
@@ -277,6 +282,7 @@ class BIM_PT_structural_analysis_models(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_structural"
 
     @classmethod
     def poll(cls, context):
@@ -284,17 +290,18 @@ class BIM_PT_structural_analysis_models(Panel):
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not StructuralData.is_loaded:
+            StructuralData.load()
         self.props = context.scene.BIMStructuralProperties
 
         row = self.layout.row(align=True)
         row.label(
-            text="{} Structural Analysis Models Found".format(len(Data.structural_analysis_models)), icon="MOD_SIMPLIFY"
+            text="{} Structural Analysis Models Found".format(StructuralData.number_of_structural_analysis_models),
+            icon="MOD_SIMPLIFY",
         )
         if self.props.is_editing:
             row.operator("bim.add_structural_analysis_model", text="", icon="ADD")
-            row.operator("bim.disable_structural_analysis_model_editing_ui", text="", icon="CHECKMARK")
+            row.operator("bim.disable_structural_analysis_model_editing_ui", text="", icon="CANCEL")
         else:
             row.operator("bim.load_structural_analysis_models", text="", icon="GREASEPENCIL")
 
@@ -324,8 +331,8 @@ class BIM_UL_structural_analysis_models(UIList):
             if context.active_object:
                 oprops = context.active_object.BIMObjectProperties
                 if (
-                    oprops.ifc_definition_id in Data.products
-                    and item.ifc_definition_id in Data.products[oprops.ifc_definition_id]
+                    oprops.ifc_definition_id in StructuralData.products
+                    and item.ifc_definition_id in StructuralData.products[oprops.ifc_definition_id]
                 ):
                     op = row.operator(
                         "bim.unassign_structural_analysis_model", text="", icon="KEYFRAME_HLT", emboss=False
@@ -355,6 +362,7 @@ class BIM_PT_structural_load_cases(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_structural"
 
     @classmethod
     def poll(cls, context):
@@ -451,6 +459,7 @@ class BIM_PT_structural_loads(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_structural"
 
     @classmethod
     def poll(cls, context):
@@ -519,6 +528,7 @@ class BIM_PT_boundary_conditions(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_structural"
 
     @classmethod
     def poll(cls, context):

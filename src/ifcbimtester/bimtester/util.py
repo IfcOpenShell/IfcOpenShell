@@ -1,3 +1,21 @@
+# BIMTester - OpenBIM Auditing Tool
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BIMTester.
+#
+# BIMTester is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BIMTester is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.validate
@@ -86,7 +104,7 @@ def assert_pset(element, pset_name, prop_name=None, value=None):
     )
 
 
-# TODO: what is this?
+# TODO: what is this? ... a generic assert method
 def assert_elements(
     ifc_class,
     elemcount,
@@ -94,13 +112,25 @@ def assert_elements(
     falseelems,
     message_all_falseelems,
     message_some_falseelems,
-    message_no_elems,
+    message_no_elems="",
     parameter=None,
 ):
-    if elemcount > 0 and falsecount == 0:
-        return  # Test OK
-    elif elemcount == 0:
-        assert False, message_no_elems.format(ifc_class=ifc_class)
+    out_falseelems = "\n"
+    for e in falseelems:
+        out_falseelems += e + "\n"
+    # old, elemcount == 0 creates a failed test, but should not
+    # no elements of a ifc_class should not be a fail
+    # if a ifc_class has to be exist, it should be in a own test
+    # if elemcount > 0 and falsecount == 0:
+    #     return # Test OK
+    # elif elemcount == 0:
+    #     assert False, (
+    #         message_no_elems.format(
+    #             ifc_class=ifc_class
+    #         )
+    #     )
+    if falsecount == 0:
+        return  # test ok for elemcount == 0 and elemcount > 0
     elif falsecount == elemcount:
         if parameter is None:
             assert False, message_all_falseelems.format(elemcount=elemcount, ifc_class=ifc_class)
@@ -112,15 +142,15 @@ def assert_elements(
                 falsecount=falsecount,
                 elemcount=elemcount,
                 ifc_class=ifc_class,
-                falseelems=falseelems,
+                falseelems=out_falseelems,
             )
         else:
             assert False, message_some_falseelems.format(
                 falsecount=falsecount,
                 elemcount=elemcount,
                 ifc_class=ifc_class,
-                falseelems=falseelems,
+                falseelems=out_falseelems,
                 parameter=parameter,
             )
     else:
-        assert False, _("Error in falsecount, something went wrong.")
+        assert False, _("Error in falsecount calculation, something went wrong.")

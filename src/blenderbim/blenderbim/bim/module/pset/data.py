@@ -34,6 +34,7 @@ def refresh():
     ResourcePsetsData.is_loaded = False
     ProfilePsetsData.is_loaded = False
     WorkSchedulePsetsData.is_loaded = False
+    AddEditCustomPropertiesData.is_loaded = False
 
 
 class Data:
@@ -156,3 +157,18 @@ class WorkSchedulePsetsData(Data):
         ifc_definition_id = bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id
         cls.data = {"psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)}
         cls.is_loaded = True
+
+
+class AddEditCustomPropertiesData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"primary_measure_type": cls.primary_measure_type()}
+        cls.is_loaded = True
+
+    @classmethod
+    def primary_measure_type(cls):
+        schema = tool.Ifc.schema()
+        return [(t, t, "") for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])]

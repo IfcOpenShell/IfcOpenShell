@@ -20,10 +20,15 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AddBrick,
+    operator.AddBrickFeed,
     operator.AssignBrickReference,
     operator.CloseBrickProject,
     operator.ConvertBrickProject,
+    operator.ConvertIfcToBrick,
     operator.LoadBrickProject,
+    operator.NewBrickFile,
+    operator.RefreshBrickViewer,
     operator.RewindBrickClass,
     operator.ViewBrickClass,
     operator.ViewBrickItem,

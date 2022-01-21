@@ -43,18 +43,33 @@ class Blender: pass
 
 @interface
 class Brick:
+    def add_brick(cls, namespace, brick_class): pass
     def add_brick_breadcrumb(cls): pass
+    def add_brick_from_element(cls, element, namespace, brick_class): pass
+    def add_brickifc_project(cls, namespace): pass
+    def add_brickifc_reference(cls, brick, element, project): pass
+    def add_feed(cls, source, destination): pass
     def clear_brick_browser(cls): pass
     def clear_project(cls): pass
     def export_brick_attributes(cls, brick_uri): pass
+    def get_active_brick_class(cls): pass
+    def get_brick(cls, element): pass
+    def get_brick_class(cls, element): pass
     def get_brick_path(cls): pass
     def get_brick_path_name(cls): pass
+    def get_brickifc_project(cls): pass
+    def get_convertable_brick_elements(cls): pass
     def get_item_class(cls, item): pass
     def get_library_brick_reference(cls, library, brick_uri): pass
+    def get_namespace(cls, uri): pass
     def import_brick_classes(cls, brick_class): pass
     def import_brick_items(cls, brick_class): pass
     def load_brick_file(cls, filepath): pass
+    def new_brick_file(cls): pass
     def pop_brick_breadcrumb(cls): pass
+    def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None): pass
+    def run_refresh_brick_viewer(cls): pass
+    def run_view_brick_class(cls, brick_class=None): pass
     def select_browser_item(cls, item): pass
     def set_active_brick_class(cls, brick_class): pass
 
@@ -75,12 +90,23 @@ class Context:
 
 
 @interface
+class Debug:
+    def add_schema_identifier(cls, schema): pass
+    def load_express(cls, filename): pass
+    def purge_hdf5_cache(cls): pass
+
+
+@interface
 class Drawing:
     def disable_editing_text(cls, obj): pass
+    def disable_editing_text_product(cls, obj): pass
     def enable_editing_text(cls, obj): pass
+    def enable_editing_text_product(cls, obj): pass
     def export_text_literal_attributes(cls, obj): pass
     def get_text_literal(cls, obj): pass
+    def get_text_product(cls, element): pass
     def import_text_attributes(cls, obj): pass
+    def import_text_product(cls, obj): pass
     def update_text_value(cls, obj): pass
 
 
@@ -131,6 +157,7 @@ class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
     def get_object(cls, entity): pass
+    def get_schema(cls): pass
     def link(cls, element, obj): pass
     def run(cls, command, **kwargs): pass
     def unlink(cls, element=None, obj=None): pass
@@ -167,6 +194,11 @@ class Misc:
     def scale_object_to_height(cls, obj, height): pass
     def set_object_origin_to_bottom(cls, obj): pass
     def split_objects_with_cutter(cls, objs, cutter): pass
+
+
+@interface
+class Patch:
+    def run_migrate_patch(cls, infile, outfile, schema): pass
 
 
 @interface
@@ -247,6 +279,23 @@ class Spatial:
 
 
 @interface
+class Structural:
+    def disable_editing_structural_analysis_model(cls): pass
+    def disable_structural_analysis_model_editing_ui(cls): pass
+    def enable_editing_structural_analysis_model(cls, model): pass
+    def enable_structural_analysis_model_editing_ui(cls): pass
+    def enabled_structural_analysis_model_editing_ui(cls): pass
+    def ensure_representation_contexts(cls): pass
+    def get_active_structural_analysis_model(cls): pass
+    def get_ifc_structural_analysis_model_attributes(cls, model): pass
+    def get_ifc_structural_analysis_models(cls): pass
+    def get_product_or_active_object(cls): pass
+    def get_structural_analysis_model_attributes(cls): pass
+    def load_structural_analysis_model_attributes(cls, data): pass
+    def load_structural_analysis_models(cls): pass
+
+
+@interface
 class Style:
     def disable_editing(cls, obj): pass
     def enable_editing(cls, obj): pass
@@ -264,6 +313,18 @@ class Style:
 @interface
 class Surveyor:
     def get_absolute_matrix(cls, obj): pass
+
+
+@interface
+class System:
+    def disable_editing_system(cls): pass
+    def disable_system_editing_ui(cls): pass
+    def enable_system_editing_ui(cls): pass
+    def export_system_attributes(cls): pass
+    def import_system_attributes(cls, system): pass
+    def import_systems(cls): pass
+    def select_system_products(cls, system): pass
+    def set_active_system(cls, system): pass
 
 
 @interface

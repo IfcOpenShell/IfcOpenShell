@@ -1,21 +1,21 @@
-###############################################################################
-#                                                                             #
-# This file is part of IfcOpenShell.                                          #
-#                                                                             #
-# IfcOpenShell is free software: you can redistribute it and/or modify        #
-# it under the terms of the Lesser GNU General Public License as published by #
-# the Free Software Foundation, either version 3.0 of the License, or         #
-# (at your option) any later version.                                         #
-#                                                                             #
-# IfcOpenShell is distributed in the hope that it will be useful,             #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                #
-# Lesser GNU General Public License for more details.                         #
-#                                                                             #
-# You should have received a copy of the Lesser GNU General Public License    #
-# along with this program. If not, see <http://www.gnu.org/licenses/>.        #
-#                                                                             #
-###############################################################################
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 
 import operator
 import itertools
@@ -26,13 +26,16 @@ import documentation
 
 from collections import defaultdict
 
+
 class Header(codegen.Base):
     def __init__(self, mapping):
         declarations = []
 
         case_lookup = lambda nm: [k for k in mapping.schema.keys if k.lower() == nm.lower()][0]
         case_normalize = lambda nm: nm if nm.startswith("IfcUtil::") else case_lookup(nm)
-        create_supertype_statement = lambda nms: ", ".join("public %s %s" % ("" if c.startswith("IfcUtil::") else "",c) for c in nms)
+        create_supertype_statement = lambda nms: ", ".join(
+            "public %s %s" % ("" if c.startswith("IfcUtil::") else "", c) for c in nms
+        )
 
         write = lambda str, **kwargs: declarations.append(
             str
@@ -80,18 +83,24 @@ class Header(codegen.Base):
                 else:
                     superclasses.append("IfcUtil::IfcBaseType")
                 superclasses.extend(get_select_super_types(name, bases=all_superclasses))
-                
-                is_emitted = lambda nm: nm == "IfcUtil::IfcBaseType" or nm in mapping.schema.selects or nm.lower() in emitted_simpletypes
+
+                is_emitted = (
+                    lambda nm: nm == "IfcUtil::IfcBaseType"
+                    or nm in mapping.schema.selects
+                    or nm.lower() in emitted_simpletypes
+                )
                 if not all(map(is_emitted, superclasses)):
                     continue
-                
+
                 superclasses = list(map(case_normalize, superclasses))
 
                 emitted_simpletypes.add(name.lower())
 
                 superclass_statement = create_supertype_statement(superclasses)
 
-                write(templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass_statement)
+                write(
+                    templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass_statement
+                )
 
         class_definitions = []
 
@@ -149,7 +158,7 @@ class Header(codegen.Base):
                     supertypes.extend(get_select_super_types(name, bases=all_supertypes))
                     supertypes = list(map(case_normalize, supertypes))
                     superclass = create_supertype_statement(supertypes)
-                    
+
                     argument_count = mapping.argument_count(type)
 
                     argument_start = argument_count - len(type.attributes)

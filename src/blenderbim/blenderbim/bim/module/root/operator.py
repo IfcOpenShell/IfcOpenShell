@@ -31,6 +31,7 @@ import blenderbim.core.root as core
 import blenderbim.tool as tool
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.root.prop import get_contexts
 
 
 class Operator:
@@ -59,6 +60,7 @@ class EnableReassignClass(bpy.types.Operator):
             "IfcPositioningElement",
             "IfcContext",
             "IfcAnnotation",
+            "IfcRelSpaceBoundary",
         ]
         for ifc_product in ifc_products:
             if ifcopenshell.util.schema.is_a(IfcStore.get_schema().declaration_by_name(ifc_class), ifc_product):
@@ -105,7 +107,7 @@ class ReassignClass(bpy.types.Operator):
                     "predefined_type": predefined_type,
                 },
             )
-            obj.name = "{}/{}".format(product.is_a(), "/".join(obj.name.split("/")[1:]))
+            obj.name = "{}/{}".format(product.is_a(), getattr(product, "Name", "None"))
             IfcStore.link_element(product, obj)
             obj.BIMObjectProperties.is_reassigning_class = False
         return {"FINISHED"}
@@ -155,7 +157,9 @@ class AssignClass(bpy.types.Operator):
         IfcStore.link_element(product, obj)
 
         if self.should_add_representation:
-            ifc_context = self.context_id or int(context.scene.BIMProperties.contexts or "0") or None
+            ifc_context = self.context_id
+            if not ifc_context and get_contexts(self, context):
+                ifc_context = int(context.scene.BIMRootProperties.contexts or "0") or None
             if ifc_context:
                 ifc_context = tool.Ifc.get().by_id(ifc_context)
             blenderbim.core.geometry.add_representation(

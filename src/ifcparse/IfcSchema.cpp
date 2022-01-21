@@ -72,7 +72,7 @@ IfcUtil::IfcBaseClass* IfcParse::schema_definition::instantiate(IfcEntityInstanc
 }
 
 void IfcParse::register_schema(schema_definition* s) {
-	schemas.insert({ s->name(), s });
+	schemas.insert({ boost::to_upper_copy(s->name()), s });
 }
 
 
@@ -133,4 +133,19 @@ const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& n
 		throw IfcParse::IfcException("No schema named " + name);
 	}
 	return it->second;
+}
+
+std::vector<std::string> IfcParse::schema_names() {
+	// Load schema modules
+	try {
+		IfcParse::schema_by_name("IFC2X3");
+	} catch (IfcParse::IfcException&) {}
+
+	// Populate vector with map keys
+	std::vector<std::string> return_value;
+	for (auto& pair : schemas) {
+		return_value.push_back(pair.first);
+	}
+
+	return return_value;
 }

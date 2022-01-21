@@ -24,6 +24,7 @@ import ifcopenshell
 import blenderbim.bim.handler
 from . import schema
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.ui import IFCFileSelector
 from mathutils import Vector, Matrix, Euler
 from math import radians
 
@@ -38,7 +39,7 @@ class OpenUri(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectIfcFile(bpy.types.Operator):
+class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.select_ifc_file"
     bl_label = "Select IFC File"
     bl_options = {"REGISTER", "UNDO"}
@@ -47,7 +48,7 @@ class SelectIfcFile(bpy.types.Operator):
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
     def execute(self, context):
-        if os.path.exists(self.filepath) and "ifc" in os.path.splitext(self.filepath)[1]:
+        if self.is_existing_ifc_file():
             context.scene.BIMProperties.ifc_file = self.filepath
         return {"FINISHED"}
 
@@ -203,6 +204,7 @@ class AddSectionPlane(bpy.types.Operator):
         section_compare.name = "Last Section Compare"
         value = group.nodes.new(type="ShaderNodeValue")
         value.name = "Mock Section"
+        value.outputs[0].default_value = 2
         group.links.new(cut_obj.outputs["Object"], section_compare.inputs[0])
         group.links.new(value.outputs[0], section_compare.inputs[1])
         group.links.new(section_compare.outputs[0], section_mix.inputs[0])

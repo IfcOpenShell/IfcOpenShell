@@ -20,7 +20,8 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.ActivateIfcTypeFilter,
+    operator.ActivateIfcClassFilter,
+    operator.ActivateIfcBuildingStoreyFilter,
     operator.ColourByAttribute,
     operator.ColourByClass,
     operator.ColourByPset,
@@ -31,9 +32,11 @@ classes = (
     operator.SelectIfcClass,
     operator.SelectPset,
     prop.BIMFilterClasses,
+    prop.BIMFilterBuildingStoreys,
     prop.BIMSearchProperties,
     ui.BIM_PT_search,
-    ui.BIM_UL_ifctype_filter,
+    ui.BIM_UL_ifc_class_filter,
+    ui.BIM_UL_ifc_building_storey_filter,
 )
 
 

@@ -1,7 +1,9 @@
 IfcOpenShell 
 ============
 IfcOpenShell is an open source ([LGPL]) software library for working with the Industry Foundation Classes ([IFC]) 
-file format. Currently supported IFC releases are [IFC2x3 TC1] and [IFC4 Add2 TC1].
+file format. Extensive geometric support is implemented for the IFC releases [IFC2x3 TC1] and [IFC4 Add2 TC1].
+Support for parsing is provided for IFC4x1, IFC4x2, and the IFC4x3 release candidates. Extending with support for
+arbitrary IFC schemas is possible at compile-time when using C++ and at run-time when using Python.
 
 For more information, see
 * [http://ifcopenshell.org](http://ifcopenshell.org)  
@@ -13,7 +15,7 @@ Prerequisites
 -------------
 * Git
 * CMake (2.6 or newer)
-* Windows: [Visual Studio] 2008 or newer with C++ toolset (or [Visual C++ Build Tools]) or [MSYS2] + MinGW
+* Windows: [Visual Studio] 2008 to 2019 (2022 not yet supported by dependency CMake) with C++ toolset (or [Visual C++ Build Tools]) or [MSYS2] + MinGW
 * *nix: GCC 4.7 or newer, or Clang (any version)
 
 Dependencies
@@ -33,7 +35,9 @@ Dependencies
 Building IfcOpenShell
 ---------------------
 
-**Note:** The path where the source code is cloned to can contain spaces but non-ASCII characters are very likely to cause problems with the build.
+Note 1: The path where the source code is cloned to can contain spaces but non-ASCII characters are very likely to cause problems with the build.
+
+Note 2: If you had not used `git clone --recursive https://github.com/IfcOpenShell/IfcOpenshell.git`, update the submodules by running `git submodule init & git submodule update`.
 
 ### Compiling on Windows
 The preferred way to fetch and build this project's dependencies is to use the build scripts
@@ -81,17 +85,26 @@ The following instructions are for Ubuntu, modify as required for other operatin
 can be experimented with and studied for pointers for other operating systems, but note that this script is not currently
 meant to be used for a typical IfcOpenShell workspace setup.
 
-Note: where `make -j` is written, add a number roughly equal to the amount of CPU cores + 1.
+Note 1: It is recommeded to use OCCT for IfcOpenShell. You could use OCE as well, but sometimes it may lag behind OCCT and 
+therefore not compile with the latest IfcOpenShell.
+
+Note 2: where `make -j` is written, add a number roughly equal to the amount of CPU cores + 1.
 
 **1)** Install most of the prerequisites and dependencies:
 
-    $ sudo apt-get install git cmake gcc g++ libboost-all-dev
+    $ sudo apt-get install git cmake gcc g++ libboost-all-dev libcgal-dev
 
-**2a)** Either use an OCE package from your operating system's software repository
+**2a)** Either use an OCCT package from your operating system's software repository
+
+    $ sudo apt-get install libocct-data-exchange-dev libocct-draw-dev libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev
+
+**2b)** or, if OCCT is not available or the latest code is wanted, obtain and compile OCCT from https://dev.opencascade.org/release
+
+**2c)** or, if you'd like to try using OCE, use the package from your operating system's software repository
 
     $ sudo apt-get install liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev
 
-**2b)** or (if not available, or the latest code is wanted) compile OCE yourself (note that the build takes a long time):
+**2d)** or if OCE is not available, or the latest code is wanted, compile OCE yourself (note that the build takes a long time)
 
     $ sudo apt-get install libftgl-dev libtbb2 libtbb-dev libgl1-mesa-dev libfreetype6-dev
     $ git clone https://github.com/tpaviot/oce.git
@@ -100,8 +113,6 @@ Note: where `make -j` is written, add a number roughly equal to the amount of CP
     $ cmake ..
     $ make -j
     $ sudo make install
-
-**2c)** or obtain and compile OCCT from https://dev.opencascade.org/release
 
 **3)** For building IfcConvert with COLLADA (.dae) support (on by default), OpenCOLLADA is needed:
 
@@ -128,7 +139,13 @@ dependencies' paths. `OCC_INCLUDE_DIR` might be needed to set also. `OPENCOLLADA
     $ cmake ../cmake -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/ \
           -DOPENCOLLADA_INCLUDE_DIR="/usr/local/include/opencollada" \
           -DOPENCOLLADA_LIBRARY_DIR="/usr/local/lib/opencollada"  \
-          -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/
+          -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/ \
+          -DCGAL_INCLUDE_DIR=/usr/include \
+          -DGMP_INCLUDE_DIR=/usr/include \
+          -DMPFR_INCLUDE_DIR=/usr/include \
+          -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
+          -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
+          -DHDF5_SUPPORT=Off
     $ make -j
 
 If all worked out correctly you can now use IfcOpenShell. See the examples below.

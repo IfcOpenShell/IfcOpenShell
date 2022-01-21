@@ -85,3 +85,20 @@ Scenario: Assign type - assign to a type with a material profile set
     When the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
+
+Scenario: Select type objects
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
+    And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
+    When the object "IfcWallType/Empty" is selected
+    And I press "bim.select_type_objects"
+    Then the object "IfcWall/Cube" is selected

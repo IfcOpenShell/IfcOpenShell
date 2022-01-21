@@ -393,6 +393,8 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser.setFile(ifc)
         self.serialiser.setWithoutStoreys(True)
         self.serialiser.setPolygonal(True)
+        self.serialiser.setUseHlrPoly(True)
+        self.serialiser.setProfileThreshold(64)
         self.serialiser.setUseNamespace(True)
         self.serialiser.setAlwaysProject(True)
         self.serialiser.setAutoElevation(False)
@@ -892,27 +894,6 @@ class ResizeText(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddVariable(bpy.types.Operator):
-    bl_idname = "bim.add_variable"
-    bl_label = "Add Variable"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        context.active_object.data.BIMTextProperties.variables.add()
-        return {"FINISHED"}
-
-
-class RemoveVariable(bpy.types.Operator):
-    bl_idname = "bim.remove_variable"
-    bl_label = "Remove Variable"
-    bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        context.active_object.data.BIMTextProperties.variables.remove(self.index)
-        return {"FINISHED"}
-
-
 class RemoveDrawing(bpy.types.Operator):
     bl_idname = "bim.remove_drawing"
     bl_label = "Remove Drawing"
@@ -1409,3 +1390,33 @@ class DisableEditingText(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.disable_editing_text(tool.Drawing, obj=context.active_object)
+
+
+class EditTextProduct(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_text_product"
+    bl_label = "Edit Text Product"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        product = None
+        if context.active_object.BIMTextProperties.relating_product:
+            product = tool.Ifc.get_entity(context.active_object.BIMTextProperties.relating_product)
+        core.edit_text_product(tool.Ifc, tool.Drawing, obj=context.active_object, product=product)
+
+
+class EnableEditingTextProduct(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_text_product"
+    bl_label = "Enable Editing Text Product"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.enable_editing_text_product(tool.Drawing, obj=context.active_object)
+
+
+class DisableEditingTextProduct(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_text_product"
+    bl_label = "Disable Editing Text Product"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disable_editing_text_product(tool.Drawing, obj=context.active_object)

@@ -30,12 +30,13 @@ import blenderbim.core.style
 import blenderbim.core.root
 import blenderbim.tool as tool
 import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim import import_ifc
+from mathutils import Vector
 from ifcopenshell.api.geometry.data import Data
 from ifcopenshell.api.context.data import Data as ContextData
 from ifcopenshell.api.void.data import Data as VoidData
-from mathutils import Vector
+from blenderbim.bim import import_ifc
+from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.root.prop import get_contexts
 
 
 class Operator:
@@ -67,7 +68,9 @@ class AddRepresentation(bpy.types.Operator, Operator):
     profile_set_usage: bpy.props.IntProperty()
 
     def _execute(self, context):
-        ifc_context = self.context_id or int(context.scene.BIMProperties.contexts or "0") or None
+        ifc_context = self.context_id
+        if not ifc_context and get_contexts(self, context):
+            ifc_context = int(context.scene.BIMRootProperties.contexts or "0") or None
         if ifc_context:
             ifc_context = tool.Ifc.get().by_id(ifc_context)
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
@@ -376,40 +379,64 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
         return len(context.selected_ids) > 0
 
     def execute(self, context):
+        # In this override, we don't check self.hierarchy. This effectively
+        # makes Delete and Delete Hierarchy identical. This is on purpose, since
+        # non-hierarchical deletion may imply a whole bunch of potentially
+        # unintended IFC spatial modifications. To make life less confusing for
+        # the user, Delete means Delete. End of story.
         # Deep magick from the dawn of time
         if IfcStore.get_file():
             return IfcStore.execute_ifc_operator(self, context)
         # https://blender.stackexchange.com/questions/203729/python-get-selected-objects-in-outliner
         objects_to_delete = set()
+        collections_to_delete = set()
         for item in context.selected_ids:
             if item.bl_rna.identifier == "Collection":
                 collection = bpy.data.collections.get(item.name)
-                if self.hierarchy:
-                    for obj in collection.objects:
-                        objects_to_delete.add(bpy.data.objects.get(item.name))
-                bpy.data.collections.remove(collection)
+                collection_data = self.get_collection_objects_and_children(collection)
+                print(collection_data)
+                objects_to_delete |= collection_data["objects"]
+                collections_to_delete |= collection_data["children"]
+                collections_to_delete.add(collection)
             elif item.bl_rna.identifier == "Object":
                 objects_to_delete.add(bpy.data.objects.get(item.name))
         for obj in objects_to_delete:
             bpy.data.objects.remove(obj)
+        for collection in collections_to_delete:
+            bpy.data.collections.remove(collection)
         return {"FINISHED"}
 
     def _execute(self, context):
         objects_to_delete = set()
+        collections_to_delete = set()
         for item in context.selected_ids:
             if item.bl_rna.identifier == "Collection":
                 collection = bpy.data.collections.get(item.name)
-                if self.hierarchy:
-                    for obj in collection.objects:
-                        objects_to_delete.add(bpy.data.objects.get(item.name))
-                bpy.data.collections.remove(collection)
+                collection_data = self.get_collection_objects_and_children(collection)
+                objects_to_delete |= collection_data["objects"]
+                collections_to_delete |= collection_data["children"]
+                collections_to_delete.add(collection)
             elif item.bl_rna.identifier == "Object":
                 objects_to_delete.add(bpy.data.objects.get(item.name))
         for obj in objects_to_delete:
             # This is the only difference
             self.delete_ifc_object(obj)
             bpy.data.objects.remove(obj)
+        for collection in collections_to_delete:
+            bpy.data.collections.remove(collection)
         return {"FINISHED"}
+
+    def get_collection_objects_and_children(self, collection):
+        objects = set()
+        children = set()
+        queue = [collection]
+        while queue:
+            collection = queue.pop()
+            for obj in collection.objects:
+                objects.add(obj)
+            queue.extend(collection.children)
+            children = children.union(collection.children)
+        return {"objects": objects, "children": children}
 
 
 class OverrideDuplicateMove(bpy.types.Operator):

@@ -70,6 +70,7 @@ logger.addHandler(ch)
 
 PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
+ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
 PYTHON_VERSIONS = ["3.6.14", "3.7.12", "3.8.12", "3.9.7", "3.10.0"]
 JSON_VERSION = "v3.6.1"
@@ -664,13 +665,12 @@ if "cgal" in targets:
 cecho("Building IfcOpenShell:", GREEN)
 
 IFCOS_DIR = os.path.join(DEPS_DIR, "build", "ifcopenshell")
-if os.path.exists(IFCOS_DIR):
-    shutil.rmtree(IFCOS_DIR)
-os.makedirs(IFCOS_DIR)
-
+if os.environ.get("NO_CLEAN", "").lower() not in {"1", "on", "true"}:
+    if os.path.exists(IFCOS_DIR):
+        shutil.rmtree(IFCOS_DIR)
+os.makedirs(IFCOS_DIR, exist_ok=True)
 executables_dir = os.path.join(IFCOS_DIR, "executables")
-if not os.path.exists(executables_dir):
-    os.makedirs(executables_dir)
+os.makedirs(executables_dir, exist_ok=True)
 
 logger.info("\rConfiguring executables...")
 
@@ -692,6 +692,7 @@ cmake_args = [
     "-DGLTF_SUPPORT="                  "ON",
     "-DJSON_INCLUDE_DIR="              f"{DEPS_DIR}/install/json",
     "-DBoost_NO_BOOST_CMAKE="          "On",
+    "-DADD_COMMIT_SHA="              +("On" if ADD_COMMIT_SHA else "Off")
 ]
 
 if "cgal" in targets:
@@ -782,6 +783,7 @@ if "IfcOpenShell-Python" in targets:
                 "-DPYTHON_INCLUDE_DIR="      +python_include,
                 "-DSWIG_EXECUTABLE="         f"{DEPS_DIR}/install/swig/bin/swig",
                 "-DCMAKE_INSTALL_PREFIX="    f"{DEPS_DIR}/install/ifcopenshell/tmp",
+                "-DUSERSPACE_PYTHON_PREFIX=" +["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}]
             ], cmake_dir=CMAKE_DIR, cwd=python_dir)
 
         logger.info(f"\rBuilding python {python_version} wrapper...   ")
@@ -799,7 +801,12 @@ if "IfcOpenShell-Python" in targets:
 
     if USE_CURRENT_PYTHON_VERSION:
         python_info = sysconfig.get_paths()
-        compile_python_wrapper(platform.python_version(), python_info["purelib"], python_info["include"], sys.executable)
+        python_lib = os.path.join(
+            sysconfig.get_config_var('LIBDIR'), 
+            sysconfig.get_config_var('multiarchsubdir').replace("/", ""), 
+            sysconfig.get_config_var("INSTSONAME")
+        )
+        compile_python_wrapper(platform.python_version(), python_lib, python_info["include"], sys.executable)
     else:
         for python_version in PYTHON_VERSIONS:
             python_library = run([bash, "-c", f"ls    {DEPS_DIR}/install/python-{python_version}/lib/libpython*.*"])

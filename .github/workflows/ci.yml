@@ -41,7 +41,7 @@ jobs:
           python3-all-dev python3-pip \
           swig libpcre3-dev libxml2-dev \
           libtbb-dev nlohmann-json3-dev \
-          liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev \
+          libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
           libhdf5-dev libcgal-dev
           
       - name: ccache
@@ -53,11 +53,10 @@ jobs:
           cmake \
                -DCMAKE_C_COMPILER_LAUNCHER=ccache \
                -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-               -DCMAKE_INSTALL_PREFIX=$PWD/install/ \
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_PREFIX_PATH=/usr \
                -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
-               -DOCC_INCLUDE_DIR=/usr/include/oce \
+               -DOCC_INCLUDE_DIR=/usr/include/opencascade \
                -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
                -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
                -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \

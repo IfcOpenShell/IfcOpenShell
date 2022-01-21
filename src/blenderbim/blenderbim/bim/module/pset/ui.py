@@ -119,6 +119,7 @@ class BIM_PT_object_psets(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_parent_id = "BIM_PT_object_metadata"
 
     @classmethod
     def poll(cls, context):
@@ -157,6 +158,7 @@ class BIM_PT_object_qtos(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_parent_id = "BIM_PT_object_metadata"
 
     @classmethod
     def poll(cls, context):
@@ -190,6 +192,7 @@ class BIM_PT_material_psets(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "material"
+    bl_parent_id = "BIM_PT_object_metadata"
 
     @classmethod
     def poll(cls, context):
@@ -375,3 +378,116 @@ class BIM_PT_work_schedule_psets(Panel):
 
         for pset in WorkSchedulePsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "WorkSchedule")
+
+
+class BIM_PT_bulk_property_editor(Panel):
+    bl_label = "IFC Bulk Property Editor"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_utilities_object"
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_rename_parameters(Panel):
+    bl_label = "Bulk Rename Properties"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_bulk_property_editor"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_order = 0
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.RenameProperties
+
+        row = layout.row()
+        op = row.operator("bim.add_property_to_edit", icon="ADD")
+        op.option = "RenameProperties"
+
+        if props:
+            for index, prop in enumerate(props):
+                row = layout.row(align=True)
+                row.prop(prop, "pset_name", text="")
+                row.prop(prop, "existing_property_name", text="")
+                row.prop(prop, "new_property_name", text="")
+                op = row.operator("bim.remove_property_to_edit", icon="X", text="")
+                op.index = index
+                op.option = "RenameProperties"
+
+        if props:
+            row = layout.row(align=True)
+            row.operator("bim.rename_parameters", icon="CHECKMARK")
+            clear = row.operator("bim.clear_list", icon="CANCEL", text="")
+            clear.option = "RenameProperties"
+
+
+class BIM_PT_add_edit_custom_properties(Panel):
+    bl_label = "Bulk Add / Edit Custom Properties"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_bulk_property_editor"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_order = 1
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.AddEditProperties
+
+        row = layout.row()
+        op = row.operator("bim.add_property_to_edit", icon="ADD")
+        op.option = "AddEditProperties"
+
+        if props:
+            for index, prop in enumerate(props):
+                row = layout.row(align=True)
+                row.prop(prop, "pset_name", text="")
+                row.prop(prop, "property_name", text="")
+                row.prop(prop, prop.get_value_name(), text="")
+                row.prop(prop, "primary_measure_type", text="")
+                op = row.operator("bim.remove_property_to_edit", icon="X", text="")
+                op.index = index
+                op.option = "AddEditProperties"
+
+        if props:
+            row = layout.row(align=True)
+            op = row.operator("bim.add_edit_custom_property", icon="CHECKMARK", text="Apply Changes")
+            clear = row.operator("bim.clear_list", icon="CANCEL", text="")
+            clear.option = "AddEditProperties"
+
+
+class BIM_PT_delete_psets(Panel):
+    bl_label = "Bulk Remove Psets"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_bulk_property_editor"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_order = 2
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.DeletePsets
+
+        row = layout.row()
+        op = row.operator("bim.add_property_to_edit", icon="ADD")
+        op.option = "DeletePsets"
+
+        if props:
+            for index, prop in enumerate(props):
+                row = layout.row(align=True)
+                row.prop(prop, "pset_name", text="")
+                op = row.operator("bim.remove_property_to_edit", icon="X", text="")
+                op.index = index
+                op.option = "DeletePsets"
+
+        if props:
+            row = layout.row(align=True)
+            op = row.operator("bim.bulk_remove_psets", icon="CHECKMARK", text="Apply Changes")
+            clear = row.operator("bim.clear_list", icon="CANCEL", text="")
+            clear.option = "DeletePsets"

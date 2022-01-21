@@ -20,7 +20,7 @@ Scenario: Add representation
     And the object "IfcWall/Cube" is selected
     Then the object "IfcWall/Cube" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     When the variable "context" is "{ifc}.by_type('IfcGeometricRepresentationSubContext')[-1].id()"
-    And I set "scene.BIMProperties.contexts" to "{context}"
+    And I set "scene.BIMRootProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     Then the object "IfcWall/Cube" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
 
@@ -37,7 +37,7 @@ Scenario: Add representation - add a new representation to a typed instance
     And the object "IfcWall/Instance.001" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     When the object "IfcWall/Instance" is selected
     And the variable "context" is "{ifc}.by_type('IfcGeometricRepresentationSubContext')[-1].id()"
-    And I set "scene.BIMProperties.contexts" to "{context}"
+    And I set "scene.BIMRootProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     Then the object "IfcWall/Instance" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
     And the object "IfcWall/Instance.001" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
@@ -80,7 +80,7 @@ Scenario: Switch representation - current edited representation is updated prior
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the variable "context" is "{ifc}.by_type('IfcGeometricRepresentationSubContext')[-1].id()"
-    And I set "scene.BIMProperties.contexts" to "{context}"
+    And I set "scene.BIMRootProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     When the object "IfcWall/Cube" is scaled to "2"
     And the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"

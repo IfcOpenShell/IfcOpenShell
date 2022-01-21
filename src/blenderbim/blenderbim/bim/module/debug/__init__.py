@@ -20,17 +20,21 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.PrintIfcFile,
-    operator.PurgeIfcLinks,
-    operator.PrintObjectPlacement,
-    operator.ValidateIfcFile,
-    operator.ProfileImportIFC,
     operator.CreateAllShapes,
     operator.CreateShapeFromStepId,
-    operator.SelectHighPolygonMeshes,
-    operator.InspectFromStepId,
     operator.InspectFromObject,
+    operator.InspectFromStepId,
+    operator.ParseExpress,
+    operator.PrintIfcFile,
+    operator.PrintObjectPlacement,
+    operator.ProfileImportIFC,
+    operator.PurgeHdf5Cache,
+    operator.PurgeIfcLinks,
     operator.RewindInspector,
+    operator.SelectExpressFile,
+    operator.SelectHighPolygonMeshes,
+    operator.SelectHighestPolygonMeshes,
+    operator.ValidateIfcFile,
     prop.BIMDebugProperties,
     ui.BIM_PT_debug,
 )

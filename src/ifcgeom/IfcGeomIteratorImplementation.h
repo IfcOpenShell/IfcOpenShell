@@ -288,6 +288,10 @@ namespace IfcGeom {
 		size_t processed_ = 0;
 
 		void process_finished_rep(geometry_conversion_task* rep) {
+			if (rep->elements.empty()) {
+				return;
+			}
+
 			std::lock_guard<std::mutex> lk(element_ready_mutex_);
 
 			all_processed_elements_.insert(all_processed_elements_.end(), rep->elements.begin(), rep->elements.end());
@@ -952,7 +956,7 @@ namespace IfcGeom {
 			}
 
 			// If we want to organize the element considering their hierarchy
-			if (settings.get(IteratorSettings::SEARCH_FLOOR))
+			if (settings.get(IteratorSettings::ELEMENT_HIERARCHY))
 			{
 				// We are going to build a vector with the element parents.
 				// First, create the parent vector
@@ -1163,13 +1167,25 @@ namespace IfcGeom {
 				: -1.0
 			);
 
+			kernel.setValue(IfcGeom::Kernel::GV_DEBUG_BOOLEAN,
+				settings.get(IteratorSettings::DEBUG_BOOLEAN)
+				? +1.0
+				: -1.0
+			);
+
+			kernel.setValue(IfcGeom::Kernel::GV_BOOLEAN_ATTEMPT_2D,
+				settings.get(IteratorSettings::BOOLEAN_ATTEMPT_2D)
+				? +1.0
+				: -1.0
+			);
+
 			if (settings.get(IteratorSettings::BUILDING_LOCAL_PLACEMENT)) {
 				if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
 					Logger::Message(Logger::LOG_WARNING, "building-local-placement takes precedence over site-local-placement");
 				}
-				kernel.set_conversion_placement_rel_to(&IfcSchema::IfcBuilding::Class());
+				kernel.set_conversion_placement_rel_to_type(&IfcSchema::IfcBuilding::Class());
 			} else if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
-				kernel.set_conversion_placement_rel_to(&IfcSchema::IfcSite::Class());
+				kernel.set_conversion_placement_rel_to_type(&IfcSchema::IfcSite::Class());
 			}
 			kernel.set_offset(settings.offset);
 			kernel.set_rotation(settings.rotation);

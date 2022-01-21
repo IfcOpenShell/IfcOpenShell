@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import pytest
 import test.bootstrap
 import ifcopenshell.api
@@ -116,6 +134,42 @@ class TestGetPropertiesIFC4(test.bootstrap.IFC4):
                 "properties": {"a": "b"},
             }
         }
+
+
+class TestGetPredefinedTypeIFC4(test.bootstrap.IFC4):
+    def test_getting_an_element_predefined_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element.PredefinedType = "PARTITIONING"
+        assert subject.get_predefined_type(element) == "PARTITIONING"
+
+    def test_getting_an_element_userdefined_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element.PredefinedType = "USERDEFINED"
+        element.ObjectType = "FOOBAR"
+        assert subject.get_predefined_type(element) == "FOOBAR"
+
+    def test_getting_an_inherited_predefined_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        element_type.PredefinedType = "PARTITIONING"
+        assert subject.get_predefined_type(element) == "PARTITIONING"
+
+    def test_getting_an_inherited_userdefined_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        element_type.PredefinedType = "USERDEFINED"
+        element_type.ElementType = "FOOBAR"
+        assert subject.get_predefined_type(element) == "FOOBAR"
+
+    def test_getting_an_overriden_predefined_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        element_type.PredefinedType = "NOTDEFINED"
+        element.PredefinedType = "PARTITIONING"
+        assert subject.get_predefined_type(element) == "PARTITIONING"
 
 
 class TestGetTypeIFC4(test.bootstrap.IFC4):
@@ -357,6 +411,33 @@ class TestRemoveDeepIFC4(test.bootstrap.IFC4):
             self.file.by_guid("id1")
         assert self.file.by_id(1)
         assert self.file.by_guid("id2")
+
+
+class TestRemoveDeep2IFC4(test.bootstrap.IFC4):
+    def test_removing_an_element_along_with_all_direct_attributes_recursively(self):
+        owner = self.file.createIfcOwnerHistory()
+        element = self.file.createIfcWall(GlobalId="id", OwnerHistory=owner)
+        subject.remove_deep2(self.file, element)
+        with pytest.raises(RuntimeError):
+            self.file.by_id(1)
+            self.file.by_id(2)
+
+    def test_removing_an_element_recursively_except_if_an_element_is_referenced_elsewhere(self):
+        owner = self.file.createIfcOwnerHistory()
+        element = self.file.createIfcWall(GlobalId="id1", OwnerHistory=owner)
+        element2 = self.file.createIfcWall(GlobalId="id2", OwnerHistory=owner)
+        subject.remove_deep2(self.file, element)
+        with pytest.raises(RuntimeError):
+            self.file.by_guid("id1")
+        assert self.file.by_id(1)
+        assert self.file.by_guid("id2")
+
+    def test_removing_an_element_still_referenced_somewhere(self):
+        owner = self.file.createIfcOwnerHistory()
+        element = self.file.createIfcWall(GlobalId="id1", OwnerHistory=owner)
+        subject.remove_deep2(self.file, owner)
+        assert self.file.by_id(1)
+        assert self.file.by_guid("id1")
 
 
 class TestCopyIFC4(test.bootstrap.IFC4):

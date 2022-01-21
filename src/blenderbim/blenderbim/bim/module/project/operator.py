@@ -30,6 +30,7 @@ import blenderbim.tool as tool
 import blenderbim.core.context
 import blenderbim.core.owner
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
 from ifcopenshell.api.context.data import Data as ContextData
@@ -57,7 +58,7 @@ class CreateProject(bpy.types.Operator):
             return {"FINISHED"}
 
         IfcStore.file = ifcopenshell.api.run(
-            "project.create_file", **{"version": context.scene.BIMProperties.export_schema}
+            "project.create_file", **{"version": context.scene.BIMProjectProperties.export_schema}
         )
         self.file = IfcStore.get_file()
 
@@ -91,8 +92,8 @@ class CreateProject(bpy.types.Operator):
             tool.Ifc, context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan
         )
 
-        ContextData.load(tool.Ifc.get())
-        context.scene.BIMProperties.contexts = str(body_context.id())
+        blenderbim.bim.handler.refresh_ui_data()
+        context.scene.BIMRootProperties.contexts = str(body_context.id())
 
         bpy.ops.bim.assign_class(obj=site.name, ifc_class="IfcSite")
         bpy.ops.bim.assign_class(obj=building.name, ifc_class="IfcBuilding")
@@ -126,7 +127,7 @@ class CreateProject(bpy.types.Operator):
         IfcStore.file = data["file"]
 
 
-class SelectLibraryFile(bpy.types.Operator):
+class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.select_library_file"
     bl_label = "Select Library File"
     bl_options = {"REGISTER", "UNDO"}
@@ -539,7 +540,7 @@ class DisableEditingHeader(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadProject(bpy.types.Operator):
+class LoadProject(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.load_project"
     bl_label = "Load Project"
     bl_options = {"REGISTER", "UNDO"}
@@ -549,7 +550,7 @@ class LoadProject(bpy.types.Operator):
     is_advanced: bpy.props.BoolProperty(name="Enable Advanced Mode", default=False)
 
     def execute(self, context):
-        if not os.path.exists(self.filepath) or "ifc" not in os.path.splitext(self.filepath)[1].lower():
+        if not self.is_existing_ifc_file():
             return {"FINISHED"}
         context.scene.BIMProperties.ifc_file = self.filepath
         context.scene.BIMProjectProperties.is_loading = True
@@ -560,6 +561,10 @@ class LoadProject(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+    def draw(self, context):
+        self.layout.prop(self, "is_advanced")
+        IFCFileSelector.draw(self, context)
 
 
 class UnloadProject(bpy.types.Operator):
@@ -620,7 +625,9 @@ class LoadProjectElements(bpy.types.Operator):
             while container:
                 containers.add(container)
                 container = ifcopenshell.util.element.get_aggregate(container)
-                if container.is_a("IfcContext"):
+                if self.file.schema == "IFC2X3" and container.is_a("IfcProject"):
+                    container = None
+                elif self.file.schema != "IFC2X3" and container.is_a("IfcContext"):
                     container = None
         elements = set()
         for container in containers:
@@ -795,7 +802,7 @@ class ExportIFC(bpy.types.Operator):
             new.name = output_file
         if self.use_relative_path and bpy.data.is_saved:
             output_file = os.path.relpath(output_file, bpy.path.abspath("//"))
-        if scene.BIMProperties.ifc_file != output_file:
+        if scene.BIMProperties.ifc_file != output_file and extension not in ["ifczip", "ifcjson"]:
             scene.BIMProperties.ifc_file = output_file
         if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)

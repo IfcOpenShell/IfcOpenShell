@@ -18,7 +18,7 @@
 
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.system.data import Data
+from blenderbim.bim.module.system.data import SystemData, ObjectSystemData
 
 
 class BIM_PT_systems(Panel):
@@ -28,21 +28,25 @@ class BIM_PT_systems(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_services"
 
     @classmethod
     def poll(cls, context):
         return IfcStore.get_file()
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not SystemData.is_loaded:
+            SystemData.load()
         self.props = context.scene.BIMSystemProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Systems Found".format(len(Data.systems)), icon="OUTLINER")
+        row.label(text="{} Systems Found".format(SystemData.data["total_systems"]), icon="OUTLINER")
         if self.props.is_editing:
-            row.operator("bim.add_system", text="", icon="ADD")
             row.operator("bim.disable_system_editing_ui", text="", icon="CANCEL")
+
+            row = self.layout.row(align=True)
+            row.prop(self.props, "system_class", text="")
+            row.operator("bim.add_system", text="", icon="ADD")
         else:
             row.operator("bim.load_systems", text="", icon="GREASEPENCIL")
 
@@ -74,6 +78,7 @@ class BIM_PT_object_systems(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_parent_id = "BIM_PT_services_object"
 
     @classmethod
     def poll(cls, context):
@@ -82,13 +87,13 @@ class BIM_PT_object_systems(Panel):
         return IfcStore.get_file() and context.active_object.BIMObjectProperties.ifc_definition_id
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not ObjectSystemData.is_loaded:
+            ObjectSystemData.load()
         self.props = context.scene.BIMSystemProperties
-        row = self.layout.row(align=True)
-        if self.props.is_adding:
-            row.label(text="Adding Systems", icon="OUTLINER")
-            row.operator("bim.toggle_assigning_system", text="", icon="CANCEL")
+        if self.props.is_editing:
+            row = self.layout.row()
+            row.alignment = "RIGHT"
+            row.operator("bim.disable_system_editing_ui", text="", icon="CANCEL")
             self.layout.template_list(
                 "BIM_UL_object_systems",
                 "",
@@ -98,15 +103,23 @@ class BIM_PT_object_systems(Panel):
                 "active_system_index",
             )
         else:
-            row.label(text=f"{len(Data.systems)} Systems in IFC Project", icon="OUTLINER")
-            row.operator("bim.toggle_assigning_system", text="", icon="ADD")
-
-        systems_object = Data.products.get(context.active_object.BIMObjectProperties.ifc_definition_id, [])
-        for system_id in systems_object:
             row = self.layout.row(align=True)
-            row.label(text=Data.systems[system_id].get("Name", "Unnamed"))
+            row.label(text=f"{ObjectSystemData.data['total_systems']} Systems in IFC Project", icon="OUTLINER")
+            row.operator("bim.load_systems", text="", icon="GREASEPENCIL")
+
+        system_icons = {
+            "IfcSystem": "EXTERNAL_DRIVE",
+            "IfcDistributionSystem": "NETWORK_DRIVE",
+            "IfcDistributionCircuit": "DRIVER",
+            "IfcBuildingSystem": "MOD_BUILD",
+        }
+        for system in ObjectSystemData.data["systems"]:
+            row = self.layout.row(align=True)
+            row.label(text=system["name"], icon=system_icons[system["ifc_class"]])
+            op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
+            op.system = system["id"]
             op = row.operator("bim.unassign_system", text="", icon="X")
-            op.system = system_id
+            op.system = system["id"]
 
         if not systems_object:
             self.layout.label(text="No System associated with Active Object")
@@ -114,9 +127,15 @@ class BIM_PT_object_systems(Panel):
 
 class BIM_UL_systems(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        system_icons = {
+            "IfcSystem": "EXTERNAL_DRIVE",
+            "IfcDistributionSystem": "NETWORK_DRIVE",
+            "IfcDistributionCircuit": "DRIVER",
+            "IfcBuildingSystem": "MOD_BUILD",
+        }
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
+            row.label(text=item.name, icon=system_icons[item.ifc_class])
             system_id = item.ifc_definition_id
             if context.scene.BIMSystemProperties.active_system_id == system_id:
                 op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
@@ -139,8 +158,13 @@ class BIM_UL_systems(UIList):
 
 class BIM_UL_object_systems(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        system_icons = {
+            "IfcSystem": "EXTERNAL_DRIVE",
+            "IfcDistributionSystem": "NETWORK_DRIVE",
+            "IfcDistributionCircuit": "DRIVER",
+            "IfcBuildingSystem": "MOD_BUILD",
+        }
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
-            op = row.operator("bim.assign_system", text="", icon="ADD")
-            op.system = item.ifc_definition_id
+            row.label(text=item.name, icon=system_icons[item.ifc_class])
+            row.operator("bim.assign_system", text="", icon="ADD").system = item.ifc_definition_id

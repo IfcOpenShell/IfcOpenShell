@@ -52,20 +52,22 @@ herr_t print_stack(hid_t /*estack*/, void*) {
 	return 0;
 }
 
-HdfSerializer::HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings)
+HdfSerializer::HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings, bool read_only)
 	: GeometrySerializer(settings)
 	, hdf_filename(hdf_filename)
 	, settings_(settings)
 {
 	H5E_auto2_t fn = &print_stack;
 	H5::Exception::setAutoPrint(fn, nullptr);
-
+	
 	try {
-		file = H5::H5File(hdf_filename, H5F_ACC_RDWR | H5F_ACC_CREAT);
-	} catch (H5::Exception&) {
-		file = H5::H5File(hdf_filename, H5F_ACC_TRUNC);
+		file = H5::H5File(hdf_filename, read_only
+			? H5F_ACC_RDONLY
+			: (H5F_ACC_RDWR | H5F_ACC_CREAT));
+	} catch (H5::Exception& e) {
+		throw IfcParse::IfcException(e.getDetailMsg());
 	}
-
+	
 	str_type = H5::StrType(H5::PredType::C_S1, H5T_VARIABLE);
 
 #ifdef USE_BINARY
@@ -323,7 +325,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			IfcGeom::IteratorSettings::WELD_VERTICES | IfcGeom::IteratorSettings::NO_NORMALS |
 			IfcGeom::IteratorSettings::GENERATE_UVS | IfcGeom::IteratorSettings::EDGE_ARROWS |
 			// Is applied in the serializer
-			IfcGeom::IteratorSettings::SEARCH_FLOOR;
+			IfcGeom::IteratorSettings::ELEMENT_HIERARCHY;
 		
 		auto stored_settings = read_scalar_attribute<uint64_t>(brepDataset, "settings");
 		auto requested_settings = settings_.get_raw();

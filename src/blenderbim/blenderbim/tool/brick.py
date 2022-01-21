@@ -18,11 +18,16 @@
 
 import os
 import bpy
+import ifcopenshell
+import ifcopenshell.util.brick
 import blenderbim.core.tool
 import blenderbim.tool as tool
 
 try:
     import brickschema
+    import urllib.parse
+    from rdflib import Literal, URIRef, Namespace
+    from rdflib.namespace import RDF
 except:
     # See #1860
     print("Warning: brickschema not available.")
@@ -30,13 +35,64 @@ except:
 
 class Brick(blenderbim.core.tool.Brick):
     @classmethod
-    def set_user(cls, user):
-        bpy.context.scene.BIMOwnerProperties.active_user_id = user.id()
+    def add_brick(cls, namespace, brick_class):
+        ns = Namespace(namespace)
+        brick = ns[ifcopenshell.guid.expand(ifcopenshell.guid.new())]
+        BrickStore.graph.add((brick, RDF.type, URIRef(brick_class)))
+        BrickStore.graph.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Unnamed")))
+        return str(brick)
 
     @classmethod
     def add_brick_breadcrumb(cls):
         new = bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.add()
         new.name = bpy.context.scene.BIMBrickProperties.active_brick_class
+
+    @classmethod
+    def add_brick_from_element(cls, element, namespace, brick_class):
+        ns = Namespace(namespace)
+        brick = ns[element.GlobalId]
+        BrickStore.graph.add((brick, RDF.type, URIRef(brick_class)))
+        if element.Name:
+            BrickStore.graph.add((brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(element.Name)))
+        return str(brick)
+
+    @classmethod
+    def add_brickifc_project(cls, namespace):
+        project = tool.Ifc.get().by_type("IfcProject")[0]
+        ns = Namespace(namespace)
+        ns_brickifc = Namespace("https://brickschema.org/extension/ifc#")
+        BrickStore.graph.bind("brickifc", ns_brickifc)
+        brick_project = ns[project.GlobalId]
+        BrickStore.graph.add((brick_project, RDF.type, ns_brickifc["Project"]))
+        if project.Name:
+            BrickStore.graph.add(
+                (brick_project, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(project.Name))
+            )
+        BrickStore.graph.add((brick_project, ns_brickifc["projectID"], Literal(project.GlobalId)))
+        BrickStore.graph.add(
+            (brick_project, ns_brickifc["fileLocation"], Literal(bpy.context.scene.BIMProperties.ifc_file))
+        )
+        return str(brick_project)
+
+    @classmethod
+    def add_brickifc_reference(cls, brick, element, project):
+        ns_brickifc = Namespace("https://brickschema.org/extension/ifc#")
+        BrickStore.graph.bind("brickifc", ns_brickifc)
+        BrickStore.graph.add(
+            (
+                URIRef(brick),
+                ns_brickifc["hasIFCReference"],
+                [
+                    (ns_brickifc["hasProjectReference"], URIRef(project)),
+                    (ns_brickifc["globalID"], Literal(element.GlobalId)),
+                ],
+            )
+        )
+
+    @classmethod
+    def add_feed(cls, source, destination):
+        ns_brick = Namespace("https://brickschema.org/schema/Brick#")
+        BrickStore.graph.add((URIRef(source), ns_brick["feeds"], URIRef(destination)))
 
     @classmethod
     def clear_brick_browser(cls):
@@ -50,7 +106,27 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def export_brick_attributes(cls, brick_uri):
-        return {"Identification": brick_uri, "Name": brick_uri.split("#")[-1]}
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return {"ItemReference": brick_uri, "Name": brick_uri.split("#")[-1]}
+        else:
+            return {"Identification": brick_uri, "Name": brick_uri.split("#")[-1]}
+
+    @classmethod
+    def get_active_brick_class(cls):
+        return bpy.context.scene.BIMBrickProperties.active_brick_class
+
+    @classmethod
+    def get_brick(cls, element):
+        for rel in element.HasAssociations:
+            if rel.is_a("IfcRelAssociatesLibrary"):
+                if tool.Ifc.get_schema() == "IFC2X3" and "#" in rel.RelatingLibrary.ItemReference:
+                    return rel.RelatingLibrary.ItemReference
+                if tool.Ifc.get_schema() != "IFC2X3" and "#" in rel.RelatingLibrary.Identification:
+                    return rel.RelatingLibrary.Identification
+
+    @classmethod
+    def get_brick_class(cls, element):
+        return ifcopenshell.util.brick.get_brick_type(element)
 
     @classmethod
     def get_brick_path(cls):
@@ -58,7 +134,32 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def get_brick_path_name(cls):
-        return os.path.basename(BrickStore.path)
+        if BrickStore.path:
+            return os.path.basename(BrickStore.path)
+        return "Unnamed"
+
+    @classmethod
+    def get_brickifc_project(cls):
+        project = tool.Ifc.get().by_type("IfcProject")[0]
+        query = BrickStore.graph.query(
+            """
+            PREFIX brickifc: <https://brickschema.org/extension/ifc#>
+            SELECT ?proj WHERE {
+                ?proj a brickifc:Project .
+                ?proj brickifc:projectID "{project_globalid}"
+            }
+            LIMIT 1
+        """.replace(
+                "{project_globalid}", project.GlobalId
+            )
+        )
+        results = list(query)
+        if results:
+            return results[0][0].toPython()
+
+    @classmethod
+    def get_convertable_brick_elements(cls):
+        return ifcopenshell.util.brick.get_brick_elements(tool.Ifc.get())
 
     @classmethod
     def get_item_class(cls, item):
@@ -79,13 +180,17 @@ class Brick(blenderbim.core.tool.Brick):
     @classmethod
     def get_library_brick_reference(cls, library, brick_uri):
         if tool.Ifc.get_schema() == "IFC2X3":
-            for reference in library.LibraryReference:
+            for reference in library.LibraryReference or []:
                 if reference.ItemReference == brick_uri:
                     return reference
         else:
-            for reference in library.HasLibraryReferences:
+            for reference in library.HasLibraryReferences or []:
                 if reference.Identification == brick_uri:
                     return reference
+
+    @classmethod
+    def get_namespace(cls, uri):
+        return uri.split("#")[0] + "#"
 
     @classmethod
     def import_brick_classes(cls, brick_class):
@@ -94,9 +199,12 @@ class Brick(blenderbim.core.tool.Brick):
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            SELECT ?group (count(?item) as ?total_items) WHERE {
+            SELECT ?group (count(?item) as ?total_items) ?label WHERE {
                 ?group rdfs:subClassOf brick:{brick_class} .
-                ?item rdf:type/rdfs:subClassOf* ?group
+                ?item rdf:type/rdfs:subClassOf* ?group .
+                OPTIONAL {
+                    ?group rdfs:label ?label
+                }
             }
             GROUP BY ?group
             ORDER BY asc(?group)
@@ -106,6 +214,9 @@ class Brick(blenderbim.core.tool.Brick):
         )
         for row in query:
             new = bpy.context.scene.BIMBrickProperties.bricks.add()
+            label = row.get("label")
+            if label:
+                new.label = label.toPython()
             new.name = row.get("group").toPython().split("#")[-1]
             new.uri = row.get("group").toPython()
             new.total_items = row.get("total_items").toPython()
@@ -117,8 +228,11 @@ class Brick(blenderbim.core.tool.Brick):
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            SELECT ?item WHERE {
-                ?item rdf:type brick:{brick_class}
+            SELECT ?item ?label WHERE {
+                ?item rdf:type brick:{brick_class} .
+                OPTIONAL {
+                    ?item rdfs:label ?label
+                }
             }
             ORDER BY asc(?item)
         """.replace(
@@ -127,6 +241,9 @@ class Brick(blenderbim.core.tool.Brick):
         )
         for row in query:
             new = bpy.context.scene.BIMBrickProperties.bricks.add()
+            label = row.get("label")
+            if label:
+                new.label = label.toPython()
             new.name = row.get("item").toPython().split("#")[-1]
             new.uri = row.get("item").toPython()
 
@@ -141,12 +258,42 @@ class Brick(blenderbim.core.tool.Brick):
         BrickStore.path = filepath
 
     @classmethod
+    def new_brick_file(cls):
+        if not BrickStore.schema:
+            BrickStore.schema = brickschema.Graph()
+            cwd = os.path.dirname(os.path.realpath(__file__))
+            schema_path = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
+            BrickStore.schema.load_file(schema_path)
+        BrickStore.graph = brickschema.Graph() + BrickStore.schema
+        BrickStore.graph.bind("digitaltwin", Namespace("https://example.org/digitaltwin#"))
+        BrickStore.graph.bind("brick", Namespace("https://brickschema.org/schema/Brick#"))
+        BrickStore.graph.bind("rdfs", Namespace("http://www.w3.org/2000/01/rdf-schema#"))
+
+    @classmethod
     def pop_brick_breadcrumb(cls):
         crumb = bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[-1]
         name = crumb.name
         last_index = len(bpy.context.scene.BIMBrickProperties.brick_breadcrumbs) - 1
         bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.remove(last_index)
         return name
+
+    @classmethod
+    def run_add_brick_feed(source=None, destination=None):
+        return blenderbim.core.brick.add_brick_feed(tool.Ifc, tool.Brick, source=source, destination=destination)
+
+    @classmethod
+    def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None):
+        return blenderbim.core.brick.assign_brick_reference(
+            tool.Ifc, tool.Brick, element=element, library=library, brick_uri=brick_uri
+        )
+
+    @classmethod
+    def run_refresh_brick_viewer(cls):
+        return blenderbim.core.brick.refresh_brick_viewer(tool.Brick)
+
+    @classmethod
+    def run_view_brick_class(cls, brick_class=None):
+        return blenderbim.core.brick.view_brick_class(tool.Brick, brick_class=brick_class)
 
     @classmethod
     def select_browser_item(cls, item):

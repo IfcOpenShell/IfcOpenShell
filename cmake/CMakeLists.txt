@@ -60,6 +60,7 @@ if (${BUILD_CONVERT})
 OPTION(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
 endif()
 OPTION(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
+OPTION(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
 
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
 # OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
@@ -789,21 +790,20 @@ INSTALL(TARGETS IfcGeomServer
 
 endif()
 
+if (ADD_COMMIT_SHA)
 find_package (Git)
 if (GIT_FOUND)
 	message("git found: ${GIT_EXECUTABLE} with version ${GIT_VERSION_STRING}")
 	execute_process(
-		COMMAND ${GIT_EXECUTABLE} show -s --pretty=%D HEAD
+		COMMAND ${GIT_EXECUTABLE} branch --contains HEAD
 		OUTPUT_VARIABLE git_branches
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 	)
-	string(REPLACE ", " ";" git_branch_list "${git_branches}")
-	string(REPLACE " -> " ";" git_branch_list "${git_branch_list}")
+	string(REPLACE "\n" ";" git_branch_list "${git_branches}")
 	foreach(git_branch_candidate IN ITEMS ${git_branch_list})
-		if (NOT git_branch_candidate MATCHES "/")
-			if (NOT git_branch_candidate MATCHES "^HEAD$")
-				set(git_branch ${git_branch_candidate})
-			endif()
+		string(STRIP "${git_branch_candidate}" git_branch_candidate_2)
+		if (NOT git_branch_candidate_2 MATCHES "^HEAD$")
+			set(git_branch ${git_branch_candidate_2})
 		endif()
 	endforeach()
 	execute_process(
@@ -811,10 +811,11 @@ if (GIT_FOUND)
 		OUTPUT_VARIABLE git_sha
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 	)
-	message(STATUS "IfcOpenShell branch ${git_branch}")
-	message(STATUS "IfcOpenShell commit ${git_sha}")
+	message(STATUS "IfcOpenShell branch: \"${git_branch}\"")
+	message(STATUS "IfcOpenShell commit: \"${git_sha}\"")
 	add_definitions(-DIFCOPENSHELL_BRANCH=${git_branch})
 	add_definitions(-DIFCOPENSHELL_COMMIT=${git_sha})
+endif()
 endif()
 
 # Documentation

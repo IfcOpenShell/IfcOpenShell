@@ -20,6 +20,12 @@ import bpy
 import blenderbim.tool as tool
 from blenderbim.tool.brick import BrickStore
 
+try:
+    from rdflib import URIRef, BNode
+except:
+    # See #1860
+    print("Warning: brickschema not available.")
+
 
 def refresh():
     BrickschemaData.is_loaded = False
@@ -32,8 +38,13 @@ class BrickschemaData:
 
     @classmethod
     def load(cls):
-        cls.data = {"is_loaded": cls.get_is_loaded(), "attributes": cls.attributes()}
         cls.is_loaded = True
+        cls.data = {
+            "is_loaded": cls.get_is_loaded(),
+            "attributes": cls.attributes(),
+            "namespaces": cls.namespaces(),
+            "brick_equipment_classes": cls.brick_equipment_classes(),
+        }
 
     @classmethod
     def get_is_loaded(cls):
@@ -67,15 +78,57 @@ class BrickschemaData:
                 "{uri}", uri
             )
         )
+
         for row in query:
+            name = row.get("name").toPython().split("#")[-1]
+            value = row.get("value")
             results.append(
                 {
-                    "name": row.get("name").toPython().split("#")[-1],
-                    "value": row.get("value").toPython().split("#")[-1],
-                    "is_uri": "#" in row.get("value").toPython(),
-                    "value_uri": row.get("value").toPython(),
+                    "name": name,
+                    "value": value.toPython().split("#")[-1],
+                    "is_uri": isinstance(value, URIRef),
+                    "value_uri": value.toPython(),
+                    "is_globalid": name == "globalID",
                 }
             )
+            if isinstance(row.get("value"), BNode):
+                for s, p, o in BrickStore.graph.triples((value, None, None)):
+                    results.append(
+                        {
+                            "name": name + ":" + p.toPython().split("#")[-1],
+                            "value": o.toPython().split("#")[-1],
+                            "is_uri": isinstance(o, URIRef),
+                            "value_uri": o.toPython(),
+                            "is_globalid": p.toPython().split("#")[-1] == "globalID",
+                        }
+                    )
+        return results
+
+    @classmethod
+    def namespaces(cls):
+        if BrickStore.graph is None:
+            return []
+        results = []
+        for alias, uri in BrickStore.graph.namespaces():
+            results.append((uri, f"{alias}: {uri}", ""))
+        return results
+
+    @classmethod
+    def brick_equipment_classes(cls):
+        if BrickStore.graph is None:
+            return []
+        results = []
+        query = BrickStore.graph.query(
+            """
+            PREFIX brick: <https://brickschema.org/schema/Brick#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            SELECT ?class WHERE {
+                ?class rdfs:subClassOf* brick:Equipment .
+            }
+        """
+        )
+        for uri in sorted([x[0].toPython() for x in query]):
+            results.append((uri, uri.split("#")[-1], ""))
         return results
 
 
@@ -96,7 +149,10 @@ class BrickschemaReferencesData:
     def libraries(cls):
         results = []
         for library in tool.Ifc.get().by_type("IfcLibraryInformation"):
-            results.append((str(library.id()), library.Name or "Unnamed", ""))
+            if tool.Ifc.get_schema() == "IFC2X3":
+                results.append((str(library.id()), library.Name or "Unnamed", ""))
+            elif ".ttl" in library.Location:
+                results.append((str(library.id()), library.Name or "Unnamed", ""))
         return results
 
     @classmethod
