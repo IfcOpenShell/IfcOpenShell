@@ -203,6 +203,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %HDF5_CMAKE_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
+git apply ~dp0patches\hdf5vs2022.patch
 ctest -S HDF5config.cmake,BUILD_GENERATOR=VS%VS_VER%%ARCH_BITS_64% -C %BUILD_CFG% -V -O hdf5.log
 call :ExtractArchive %HDF5_INSTALL_ZIP_NAME%.zip "%INSTALL_DIR%" "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%"
 popd
