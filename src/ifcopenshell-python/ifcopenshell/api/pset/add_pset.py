@@ -27,7 +27,7 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        if self.settings["product"].is_a("IfcObject"):
+        if self.settings["product"].is_a("IfcObject") or self.settings["product"].is_a("IfcContext"):
             for rel in self.settings["product"].IsDefinedBy or []:
                 if (
                     rel.is_a("IfcRelDefinesByProperties")
