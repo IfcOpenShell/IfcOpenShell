@@ -50,7 +50,7 @@ class Usecase:
             )
 
         for name, value in self.settings["attributes"].items():
-            if value:
+            if value is not None:
                 if "Start" in name or "Finish" in name or name == "StatusTime":
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDateTime")
                 elif name == "ScheduleDuration" or name == "ActualDuration" or name == "RemainingTime":
