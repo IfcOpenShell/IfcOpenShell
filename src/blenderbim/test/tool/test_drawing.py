@@ -138,8 +138,38 @@ class TestImportTextProduct(NewFile):
 
 
 class TestUpdateTextValue(NewFile):
-    def test_run(self):
+    def test_updating_arbitrary_strings(self):
         TestGetTextLiteral().test_run()
         obj = bpy.data.objects.get("Object")
         subject.update_text_value(obj)
         assert obj.BIMTextProperties.value == "Literal"
+
+    def test_using_attribute_variables(self):
+        TestGetTextLiteral().test_run()
+
+        obj = bpy.data.objects.get("Object")
+        ifc = tool.Ifc.get()
+        wall = ifc.createIfcWall(Name="Baz")
+        label = ifc.by_type("IfcAnnotation")[0]
+        ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
+
+        ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Name}} Bar"
+
+        subject.update_text_value(obj)
+        assert obj.BIMTextProperties.value == "Foo Baz Bar"
+
+    def test_using_property_variables(self):
+        TestGetTextLiteral().test_run()
+
+        obj = bpy.data.objects.get("Object")
+        ifc = tool.Ifc.get()
+        wall = ifc.createIfcWall()
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, name="Custom_Pset", product=wall)
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Key": "Baz"})
+        label = ifc.by_type("IfcAnnotation")[0]
+        ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
+
+        ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Custom_Pset.Key}} Bar"
+
+        subject.update_text_value(obj)
+        assert obj.BIMTextProperties.value == "Foo Baz Bar"
