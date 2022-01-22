@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 import bpy
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -80,5 +81,13 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def update_text_value(cls, obj):
         element = cls.get_text_literal(obj)
-        if element:
-            obj.BIMTextProperties.value = element.Literal
+        if not element:
+            return
+        value = element.Literal
+        product = cls.get_text_product(tool.Ifc.get_entity(obj))
+        if product:
+            selector = ifcopenshell.util.selector.Selector()
+            variables = {}
+            for variable in re.findall("{{.*?}}", value):
+                value = value.replace(variable, selector.get_element_value(product, variable[2:-2]) or "")
+        obj.BIMTextProperties.value = value
