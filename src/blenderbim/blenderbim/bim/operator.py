@@ -376,8 +376,8 @@ class BIM_OT_open_webbrowser(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BIM_OT_show_attribute_documentation(bpy.types.Operator):
-    bl_idname = "bim.show_attribute_documentation"
+class BIM_OT_show_ifc_documentation(bpy.types.Operator):
+    bl_idname = "bim.show_ifc_documentation"
     bl_label = ""
 
     path: bpy.props.StringProperty()

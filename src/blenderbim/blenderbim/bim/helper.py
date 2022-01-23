@@ -49,7 +49,7 @@ def draw_attribute(attribute, layout, copy_operator=None, info_mode=False):
         op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = attribute.name
     if info_mode:
-        info_op = layout.operator("bim.show_attribute_documentation", icon="INFO", text="")
+        info_op = layout.operator("bim.show_ifc_documentation", icon="INFO", text="")
         info_op.path = f"{attribute.path_from_id()}"
 
 
@@ -109,7 +109,6 @@ def get_ifc_class_usecase(class_name):
     yield "This is a usecase"
     yield "You are supposed to use this class in this situation"
     yield "Or that situation"
-    yield "Otherwise you'll be in trouble !!"
 
 
 def export_attributes(props, callback=None):
