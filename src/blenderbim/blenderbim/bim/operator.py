@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from blenderbim.bim.helper import get_ifc_class_doc_url, get_ifc_class_usecase, get_ifc_description
 import bpy
 import json
 import webbrowser
@@ -379,18 +380,68 @@ class BIM_OT_open_webbrowser(bpy.types.Operator):
 class BIM_OT_show_ifc_documentation(bpy.types.Operator):
     bl_idname = "bim.show_ifc_documentation"
     bl_label = ""
+    draw_panel_split = 0.15
 
     path: bpy.props.StringProperty()
+    class_name: bpy.props.StringProperty()
 
     def execute(self, context):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
+        return context.window_manager.invoke_props_dialog(self, width=600)
 
     def draw(self, context):
-        doc = context.scene.path_resolve(self.path)
-        doc.draw(self.layout)
+        # We never use layout.prop because all data is read-only
+        if self.path:
+            prop = context.scene.path_resolve(self.path)
+            doc = getattr(prop, "doc", None)
+            if doc is not None:
+                self.draw_from_attr(doc)
+        elif self.class_name:
+            self.draw_from_class(self.class_name)
+
+    def draw_from_class(self, class_name):
+        self.draw_doc(
+            class_name=class_name,
+            description=get_ifc_description(class_name),
+            use_case=get_ifc_class_usecase(class_name),
+            doc_url=get_ifc_class_doc_url(class_name),
+        )
+
+    def draw_doc(self, class_name: str = None, description: str = None, use_case=None, doc_url: str = None):
+        layout = self.layout
+        if class_name:
+            split = layout.split(factor=self.draw_panel_split)
+            split.label(text="IFC Class")
+            split.label(text=class_name)
+        if description:
+            split = layout.split(factor=self.draw_panel_split)
+            split.label(text="Description")
+            split.label(text=description)
+        if use_case:
+            split = layout.split(factor=self.draw_panel_split)
+            split.label(text="Use Case")
+            col = split.column(align=True)
+            box = col.box()
+            for line in use_case:
+                box.label(text=line)
+        if doc_url:
+            split = layout.split(factor=self.draw_panel_split)
+            split.label(text="Doc URL")
+            split.operator("bim.open_webbrowser", text="Open In Browser", icon="URL").url = doc_url
+
+    def draw_from_attr(self, doc):
+        layout = self.layout
+        split = layout.split(factor=self.draw_panel_split)
+        split.label(text="Element ID")
+        split.label(text=str(doc.ifc_id))
+        self.draw_doc(
+            class_name=str(doc.ifc_class),
+            description=str(doc.description),
+            use_case=[l.name for l in doc.use_case],
+            doc_url=str(doc.doc_url),
+        )
 
 
 class SelectExternalMaterialDir(bpy.types.Operator):
