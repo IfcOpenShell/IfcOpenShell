@@ -80,16 +80,29 @@ class BIM_PT_class(Panel):
 
     def draw_class_dropdowns(self, context, ifc_predefined_types, should_draw_product=True):
         props = context.scene.BIMRootProperties
+        prefs = context.preferences.addons["blenderbim"].preferences
         if should_draw_product:
             row = self.layout.row()
             row.prop(props, "ifc_product")
+            if prefs.info_mode:
+                info = row.operator("bim.show_ifc_documentation", icon="INFO", text="")
+                info.class_name = props.ifc_product
         row = self.layout.row()
         row.prop(props, "ifc_class")
+        if prefs.info_mode:
+            info = row.operator("bim.show_ifc_documentation", icon="INFO", text="")
+            info.class_name = props.ifc_class
         if ifc_predefined_types:
             row = self.layout.row()
             row.prop(props, "ifc_predefined_type")
+            if prefs.info_mode:
+                info = row.operator("bim.show_ifc_documentation", icon="INFO", text="")
+                info.class_name = props.ifc_predefined_type
         if ifc_predefined_types == "USERDEFINED":
             row = self.layout.row()
             row.prop(props, "ifc_userdefined_type")
+            if prefs.info_mode:
+                info = row.operator("bim.show_ifc_documentation", icon="INFO", text="")
+                info.class_name = props.ifc_userdefined_type
         row = self.layout.row()
         row.prop(context.scene.BIMRootProperties, "contexts")
