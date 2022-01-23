@@ -177,6 +177,7 @@ class AttributeDocumentation(PropertyGroup):
     ifc_id: IntProperty(name="ID")
     doc_url: StringProperty(name="URL")
     use_case: CollectionProperty(name="Use Case", type=StrProperty)
+    description: StringProperty(name="Description")
 
     def draw(self, layout):
         row = layout.row()

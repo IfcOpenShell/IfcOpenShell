@@ -94,9 +94,15 @@ def import_attribute(attribute, props, data, callback=None):
     new.doc.ifc_id = data["id"]
     new.doc.ifc_class = data["type"]
     new.doc.doc_url = get_ifc_class_doc_url(new.doc.ifc_class)
+    new.doc.description = get_ifc_description(attribute.name())
     for line in get_ifc_class_usecase(new.doc.ifc_class):
         new_usecase_line = new.doc.use_case.add()
         new_usecase_line.name = line
+
+
+def get_ifc_description(property_name):
+    # TODO : Implement fetching descriptipn from property name
+    return "This describes what this fields means"
 
 
 def get_ifc_class_doc_url(class_name):
