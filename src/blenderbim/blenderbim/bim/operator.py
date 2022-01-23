@@ -107,6 +107,8 @@ class OpenUpstream(bpy.types.Operator):
 
 
 class BIM_OT_add_section_plane(bpy.types.Operator):
+    """Add a temporary empty object as a section cutaway. Cull all geometry rendering below the empty's local Z axis"""
+
     bl_idname = "bim.add_section_plane"
     bl_label = "Add Temporary Section Cutaway"
     bl_options = {"REGISTER", "UNDO"}
@@ -294,7 +296,9 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
                 return node
 
 
-class RemoveSectionPlane(bpy.types.Operator):
+class BIM_OT_remove_section_plane(bpy.types.Operator):
+    """Remove selected section plane. No effect if executed on a regular object"""
+
     bl_idname = "bim.remove_section_plane"
     bl_label = "Remove Temporary Section Cutaway"
     bl_options = {"REGISTER", "UNDO"}
@@ -306,33 +310,34 @@ class RemoveSectionPlane(bpy.types.Operator):
     def execute(self, context):
         name = context.active_object.name
         section_override = bpy.data.node_groups.get("Section Override")
-        for node in section_override.nodes:
-            if node.type != "TEX_COORD" or node.object.name != name:
-                continue
-            section_compare = node.outputs["Object"].links[0].to_node
-            # If the tex coord links to section_compare.inputs[1], it is called 'Input_3'
-            if node.outputs["Object"].links[0].to_socket.identifier == "Input_3":
-                section_override.links.new(
-                    section_compare.inputs[0].links[0].from_socket, section_compare.outputs[0].links[0].to_socket
-                )
-            else:  # If it links to section_compare.inputs[0]
-                if section_compare.inputs[1].links[0].from_node.name == "Mock Section":
-                    # Then it is the very last section. Purge everything.
-                    self.purge_all_section_data(context)
-                    return {"FINISHED"}
-                section_override.links.new(
-                    section_compare.inputs[1].links[0].from_socket, section_compare.outputs[0].links[0].to_socket
-                )
+        tex_coords = next(
+            (
+                n
+                for n in section_override.nodes
+                if isinstance(n, bpy.types.ShaderNodeTexCoord) and n.object.name == name
+            ),
+            None,
+        )
+        if tex_coords is not None:
+            section_compare = tex_coords.outputs["Object"].links[0].to_node
+            if section_compare.inputs[0].links:
+                previous_section_compare = section_compare.inputs[0].links[0].from_node
+                next_section_compare = section_compare.outputs[0].links[0].to_node
+                section_override.links.new(previous_section_compare.outputs[0], next_section_compare.inputs[0])
+                self.offset_previous_nodes(section_compare, offset_x=200)
             section_override.nodes.remove(section_compare)
-            section_override.nodes.remove(node)
+            section_override.nodes.remove(tex_coords)
+            bpy.data.objects.remove(context.active_object)
 
-            old_last_compare = section_override.nodes.get("Last Section Compare")
-            old_last_compare.name = "Section Compare"
-            section_mix = section_override.nodes.get("Section Mix")
-            new_last_compare = section_mix.inputs[0].links[0].from_node
-            new_last_compare.name = "Last Section Compare"
-        bpy.ops.object.delete({"selected_objects": [context.active_object]})
         return {"FINISHED"}
+
+    def offset_previous_nodes(self, section_compare, offset_x=0, offset_y=0):
+        if section_compare.inputs[0].links:
+            previous_section_compare = section_compare.inputs[0].links[0].from_node
+            previous_section_compare.location += Vector((offset_x, offset_y))
+            if previous_section_compare.inputs[1].links:
+                previous_section_compare.inputs[1].links[0].from_node.location += Vector((offset_x, offset_y))
+            self.offset_previous_nodes(previous_section_compare)
 
     def purge_all_section_data(self, context):
         bpy.data.materials.remove(bpy.data.materials.get("Section Override"))
