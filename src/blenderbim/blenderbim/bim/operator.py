@@ -338,7 +338,7 @@ class BIM_OT_remove_section_plane(bpy.types.Operator):
             previous_section_compare.location += Vector((offset_x, offset_y))
             if previous_section_compare.inputs[1].links:
                 previous_section_compare.inputs[1].links[0].from_node.location += Vector((offset_x, offset_y))
-            self.offset_previous_nodes(previous_section_compare)
+            self.offset_previous_nodes(previous_section_compare, offset_x, offset_y)
 
     def purge_all_section_data(self, context):
         bpy.data.materials.remove(bpy.data.materials.get("Section Override"))
