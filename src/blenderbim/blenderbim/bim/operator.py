@@ -222,21 +222,25 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
     def append_obj_to_section_override_node(self, obj):
         group = bpy.data.node_groups.get("Section Override")
-        last_section_node = next(
-            n
-            for n in group.nodes
-            if isinstance(n, bpy.types.ShaderNodeGroup)
-            and n.node_tree.name == "Section Compare"
-            and not n.inputs[0].links
-        )
+        try:
+            last_section_node = next(
+                n
+                for n in group.nodes
+                if isinstance(n, bpy.types.ShaderNodeGroup)
+                and n.node_tree.name == "Section Compare"
+                and not n.inputs[0].links
+            )
+            offset = Vector((0, 0))
+        except StopIteration:
+            last_section_node = group.nodes.get("Section Mix")
+            offset = Vector((200, 0))
+        section_compare = group.nodes.new(type="ShaderNodeGroup")
+        section_compare.node_tree = bpy.data.node_groups.get("Section Compare")
+        section_compare.location = last_section_node.location - Vector((200, 0)) - offset
 
         cut_obj = group.nodes.new(type="ShaderNodeTexCoord")
         cut_obj.object = obj
-        cut_obj.location = last_section_node.location - Vector((400, 150))
-
-        section_compare = group.nodes.new(type="ShaderNodeGroup")
-        section_compare.node_tree = bpy.data.node_groups.get("Section Compare")
-        section_compare.location = last_section_node.location - Vector((200, 0))
+        cut_obj.location = last_section_node.location - Vector((400, 150)) - offset
 
         group.links.new(section_compare.outputs[0], last_section_node.inputs[0])
         group.links.new(cut_obj.outputs["Object"], section_compare.inputs[1])
