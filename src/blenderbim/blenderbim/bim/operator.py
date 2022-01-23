@@ -202,6 +202,7 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
         section_mix = group.nodes.new(type="ShaderNodeMixShader")
         section_mix.name = "Section Mix"
+        section_mix.inputs[0].default_value = 1  # Directly pass input shader when there is no cutaway
         section_mix.location = group_output.location - Vector((200, 0))
 
         cut_obj = nodes.new(type="ShaderNodeTexCoord")
