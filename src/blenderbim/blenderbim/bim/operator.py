@@ -363,32 +363,33 @@ class RemoveIfcFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BIM_OT_open_webbrowser(bpy.types.Operator):    
+class BIM_OT_open_webbrowser(bpy.types.Operator):
     bl_idname = "bim.open_webbrowser"
     bl_label = ""
 
     url: bpy.props.StringProperty()
- 
+
     def execute(self, context):
         import webbrowser
+
         webbrowser.open(self.url)
-        return {'FINISHED'}
+        return {"FINISHED"}
 
 
-class BIM_OT_show_attribute_documentation(bpy.types.Operator):    
+class BIM_OT_show_attribute_documentation(bpy.types.Operator):
     bl_idname = "bim.show_attribute_documentation"
     bl_label = ""
 
     path: bpy.props.StringProperty()
- 
+
     def execute(self, context):
-        return {'FINISHED'}
- 
+        return {"FINISHED"}
+
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
-    
+
     def draw(self, context):
-        doc = eval(self.path)
+        doc = context.scene.path_resolve(self.path)
         doc.draw(self.layout)
 
 

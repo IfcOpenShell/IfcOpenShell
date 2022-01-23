@@ -30,13 +30,10 @@ def draw_attributes(props, layout, copy_operator=None):
     prefs = bpy.context.preferences.addons["blenderbim"].preferences
     for i, attribute in enumerate(props):
         row = layout.row(align=True)
-        draw_attribute(attribute, row, copy_operator)
-        if prefs.info_mode:
-            info = row.operator("bim.show_attribute_documentation", icon="INFO", text="")
-            info.path = f"context.scene.{props.path_from_id()}[{i}].doc"
+        draw_attribute(attribute, row, copy_operator, prefs.info_mode)
 
 
-def draw_attribute(attribute, layout, copy_operator=None):
+def draw_attribute(attribute, layout, copy_operator=None, info_mode=False):
     value_name = attribute.get_value_name()
     if not value_name:
         layout.label(text=attribute.name)
@@ -51,6 +48,9 @@ def draw_attribute(attribute, layout, copy_operator=None):
     if copy_operator:
         op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = attribute.name
+    if info_mode:
+        info_op = layout.operator("bim.show_attribute_documentation", icon="INFO", text="")
+        info_op.path = f"{attribute.path_from_id()}"
 
 
 def import_attributes(ifc_class, props, data, callback=None):
