@@ -81,7 +81,7 @@ classes = [
     operator.SelectSchemaDir,
     operator.SelectIfcFile,
     operator.OpenUpstream,
-    operator.AddSectionPlane,
+    operator.BIM_OT_add_section_plane,
     operator.RemoveSectionPlane,
     operator.ReloadIfcFile,
     operator.AddIfcFile,

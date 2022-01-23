@@ -106,7 +106,7 @@ class OpenUpstream(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddSectionPlane(bpy.types.Operator):
+class BIM_OT_add_section_plane(bpy.types.Operator):
     bl_idname = "bim.add_section_plane"
     bl_label = "Add Temporary Section Cutaway"
     bl_options = {"REGISTER", "UNDO"}
@@ -151,80 +151,95 @@ class AddSectionPlane(bpy.types.Operator):
     def create_section_compare_node(self):
         group = bpy.data.node_groups.new("Section Compare", type="ShaderNodeTree")
         group_input = group.nodes.new(type="NodeGroupInput")
+        group_input.location = 0, 50
+
+        separate_xyz = group.nodes.new(type="ShaderNodeSeparateXYZ")
+        separate_xyz.location = 200, 0
+
+        greater = group.nodes.new(type="ShaderNodeMath")
+        greater.operation = "GREATER_THAN"
+        greater.inputs[1].default_value = 0
+        greater.location = 400, 0
+
+        multiply = group.nodes.new(type="ShaderNodeMath")
+        multiply.operation = "MULTIPLY"
+        multiply.inputs[0].default_value = 1
+        multiply.location = 600, 150
+
         group_output = group.nodes.new(type="NodeGroupOutput")
-        separate_xyz_a = group.nodes.new(type="ShaderNodeSeparateXYZ")
-        separate_xyz_b = group.nodes.new(type="ShaderNodeSeparateXYZ")
-        gt_a = group.nodes.new(type="ShaderNodeMath")
-        gt_a.operation = "GREATER_THAN"
-        gt_a.inputs[1].default_value = 0
-        gt_b = group.nodes.new(type="ShaderNodeMath")
-        gt_b.operation = "GREATER_THAN"
-        gt_b.inputs[1].default_value = 0
-        add = group.nodes.new(type="ShaderNodeMath")
-        compare = group.nodes.new(type="ShaderNodeMath")
-        compare.operation = "COMPARE"
-        compare.inputs[1].default_value = 2
-        group.links.new(group_input.outputs[""], separate_xyz_a.inputs[0])
-        group.links.new(group_input.outputs[""], separate_xyz_b.inputs[0])
-        group.links.new(separate_xyz_a.outputs[2], gt_a.inputs[0])
-        group.links.new(separate_xyz_b.outputs[2], gt_b.inputs[0])
-        group.links.new(gt_a.outputs[0], add.inputs[0])
-        group.links.new(gt_b.outputs[0], add.inputs[1])
-        group.links.new(add.outputs[0], compare.inputs[0])
-        group.links.new(compare.outputs[0], group_output.inputs[""])
+        group_output.location = 800, 0
+
+        group.links.new(group_input.outputs[""], multiply.inputs[0])
+        group.links.new(group_input.outputs[""], separate_xyz.inputs[0])
+        group.links.new(separate_xyz.outputs[2], greater.inputs[0])
+        group.links.new(greater.outputs[0], multiply.inputs[1])
+        group.links.new(multiply.outputs[0], group_output.inputs[""])
 
     def create_section_override_node(self, obj, context):
         group = bpy.data.node_groups.new("Section Override", type="ShaderNodeTree")
+        links = group.links
+        nodes = group.nodes
 
-        group_input = group.nodes.new(type="NodeGroupInput")
-        group_output = group.nodes.new(type="NodeGroupOutput")
+        group_input = nodes.new(type="NodeGroupInput")
+        group_output = nodes.new(type="NodeGroupOutput")
+        group_output.location = 600, 250
 
-        backfacing = group.nodes.new(type="ShaderNodeNewGeometry")
-        backfacing_mix = group.nodes.new(type="ShaderNodeMixShader")
-        emission = group.nodes.new(type="ShaderNodeEmission")
+        backfacing_mix = nodes.new(type="ShaderNodeMixShader")
+        backfacing_mix.location = group_output.location - Vector((400, 350))
+
+        backfacing = nodes.new(type="ShaderNodeNewGeometry")
+        backfacing.location = backfacing_mix.location + Vector((-200, 200))
+        group_input.location = backfacing_mix.location - Vector((200, 50))
+
+        emission = nodes.new(type="ShaderNodeEmission")
         emission.inputs[0].default_value = list(context.scene.BIMProperties.section_plane_colour) + [1]
+        emission.location = backfacing_mix.location - Vector((200, 150))
 
-        group.links.new(backfacing.outputs["Backfacing"], backfacing_mix.inputs[0])
-        group.links.new(group_input.outputs[""], backfacing_mix.inputs[1])
-        group.links.new(emission.outputs["Emission"], backfacing_mix.inputs[2])
+        transparent = nodes.new(type="ShaderNodeBsdfTransparent")
+        transparent.location = group_output.location - Vector((400, 100))
 
-        transparent = group.nodes.new(type="ShaderNodeBsdfTransparent")
         section_mix = group.nodes.new(type="ShaderNodeMixShader")
         section_mix.name = "Section Mix"
+        section_mix.location = group_output.location - Vector((200, 0))
 
-        group.links.new(transparent.outputs["BSDF"], section_mix.inputs[1])
-        group.links.new(backfacing_mix.outputs["Shader"], section_mix.inputs[2])
-
-        group.links.new(section_mix.outputs["Shader"], group_output.inputs[""])
-
-        cut_obj = group.nodes.new(type="ShaderNodeTexCoord")
+        cut_obj = nodes.new(type="ShaderNodeTexCoord")
         cut_obj.object = obj
-        section_compare = group.nodes.new(type="ShaderNodeGroup")
+        cut_obj.location = group_output.location - Vector((800, 150))
+
+        section_compare = nodes.new(type="ShaderNodeGroup")
         section_compare.node_tree = bpy.data.node_groups.get("Section Compare")
         section_compare.name = "Last Section Compare"
-        value = group.nodes.new(type="ShaderNodeValue")
-        value.name = "Mock Section"
-        value.outputs[0].default_value = 2
-        group.links.new(cut_obj.outputs["Object"], section_compare.inputs[0])
-        group.links.new(value.outputs[0], section_compare.inputs[1])
-        group.links.new(section_compare.outputs[0], section_mix.inputs[0])
+        section_compare.location = group_output.location - Vector((600, 0))
+
+        links.new(cut_obj.outputs["Object"], section_compare.inputs[1])
+        links.new(backfacing.outputs["Backfacing"], backfacing_mix.inputs[0])
+        links.new(group_input.outputs[""], backfacing_mix.inputs[1])
+        links.new(emission.outputs["Emission"], backfacing_mix.inputs[2])
+        links.new(section_compare.outputs[0], section_mix.inputs[0])
+        links.new(transparent.outputs["BSDF"], section_mix.inputs[1])
+        links.new(backfacing_mix.outputs["Shader"], section_mix.inputs[2])
+        links.new(section_mix.outputs["Shader"], group_output.inputs[""])
 
     def append_obj_to_section_override_node(self, obj):
         group = bpy.data.node_groups.get("Section Override")
+        last_section_node = next(
+            n
+            for n in group.nodes
+            if isinstance(n, bpy.types.ShaderNodeGroup)
+            and n.node_tree.name == "Section Compare"
+            and not n.inputs[0].links
+        )
+
         cut_obj = group.nodes.new(type="ShaderNodeTexCoord")
         cut_obj.object = obj
+        cut_obj.location = last_section_node.location - Vector((400, 150))
+
         section_compare = group.nodes.new(type="ShaderNodeGroup")
         section_compare.node_tree = bpy.data.node_groups.get("Section Compare")
+        section_compare.location = last_section_node.location - Vector((200, 0))
 
-        last_compare = group.nodes.get("Last Section Compare")
-        last_compare.name = "Section Compare"
-        mock_section = group.nodes.get("Mock Section")
-        section_mix = group.nodes.get("Section Mix")
-
-        group.links.new(last_compare.outputs[0], section_compare.inputs[0])
-        group.links.new(mock_section.outputs[0], section_compare.inputs[1])
-        group.links.new(cut_obj.outputs["Object"], last_compare.inputs[1])
-        group.links.new(section_compare.outputs[0], section_mix.inputs[0])
+        group.links.new(section_compare.outputs[0], last_section_node.inputs[0])
+        group.links.new(cut_obj.outputs["Object"], section_compare.inputs[1])
 
         section_compare.name = "Last Section Compare"
 
