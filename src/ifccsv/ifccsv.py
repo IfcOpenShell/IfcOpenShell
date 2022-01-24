@@ -129,7 +129,7 @@ class IfcCsv:
         self.results = []
         self.attributes = []
         self.output = ""
-        self.selector = None
+        self.selector = ifcopenshell.util.selector.Selector()
         self.delimiter = ","
 
     def export(self, ifc_file, elements):
