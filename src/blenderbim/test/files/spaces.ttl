@@ -1,4 +1,4 @@
-@prefix digitaltwin: <http://example.org/digitaltwin#> .
+@prefix digitaltwin: <https://example.org/digitaltwin#> .
 @prefix brick: <https://brickschema.org/schema/Brick#> .
 @prefix unit: <http://qudt.org/vocab/unit/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .

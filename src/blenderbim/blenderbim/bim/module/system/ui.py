@@ -121,7 +121,7 @@ class BIM_PT_object_systems(Panel):
             op = row.operator("bim.unassign_system", text="", icon="X")
             op.system = system["id"]
 
-        if not systems_object:
+        if not ObjectSystemData.data["systems"]:
             self.layout.label(text="No System associated with Active Object")
 
 

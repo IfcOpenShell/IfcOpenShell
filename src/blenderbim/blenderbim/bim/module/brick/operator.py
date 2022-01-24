@@ -174,3 +174,18 @@ class RefreshBrickViewer(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.refresh_brick_viewer(tool.Brick)
+
+
+class RemoveBrick(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_brick"
+    bl_label = "Remove Brick"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMBrickProperties
+        core.remove_brick(
+            tool.Ifc,
+            tool.Brick,
+            library=tool.Ifc.get().by_id(int(props.libraries)) if props.libraries else None,
+            brick_uri=props.bricks[props.active_brick_index].uri,
+        )

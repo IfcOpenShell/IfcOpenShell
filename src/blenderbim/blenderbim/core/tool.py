@@ -67,6 +67,7 @@ class Brick:
     def load_brick_file(cls, filepath): pass
     def new_brick_file(cls): pass
     def pop_brick_breadcrumb(cls): pass
+    def remove_brick(cls, brick_uri): pass
     def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None): pass
     def run_refresh_brick_viewer(cls): pass
     def run_view_brick_class(cls, brick_class=None): pass

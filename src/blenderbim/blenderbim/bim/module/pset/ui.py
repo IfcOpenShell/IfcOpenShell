@@ -192,7 +192,6 @@ class BIM_PT_material_psets(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "material"
-    bl_parent_id = "BIM_PT_object_metadata"
 
     @classmethod
     def poll(cls, context):

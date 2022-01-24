@@ -100,3 +100,12 @@ def new_brick_file(brick):
 def refresh_brick_viewer(brick):
     brick.run_view_brick_class(brick_class=brick.get_active_brick_class())
     brick.pop_brick_breadcrumb()
+
+
+def remove_brick(ifc, brick, library=None, brick_uri=None):
+    if library:
+        reference = brick.get_library_brick_reference(library, brick_uri)
+        if reference:
+            ifc.run("library.remove_reference", reference=reference)
+    brick.remove_brick(brick_uri)
+    brick.run_refresh_brick_viewer()

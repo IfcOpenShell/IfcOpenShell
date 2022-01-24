@@ -121,7 +121,7 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
 
 class RunMigratePatch(bpy.types.Operator):
     bl_idname = "bim.run_migrate_patch"
-    bl_label = "Execute IFCPatch"
+    bl_label = "Run Migrate Patch"
     infile: bpy.props.StringProperty()
     outfile: bpy.props.StringProperty()
     schema: bpy.props.StringProperty()
