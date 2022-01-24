@@ -156,13 +156,12 @@ class ids:
             },
         )
 
-        with open(filepath, "wb") as f:
-            f.write('<?xml version="1.0" encoding="UTF-8"?>\n'.encode("utf-8"))
-            f.write("<!-- IDS (INFORMATION DELIVERY SPECIFICATION) CREATED USING IFCOPENSHELL -->\n".encode("utf-8"))
-            f.write(ids_str.encode("utf-8"))
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+            f.write("<!-- IDS (INFORMATION DELIVERY SPECIFICATION) CREATED USING IFCOPENSHELL -->\n")
+            f.write(ids_str)
             f.close()
 
-        # ids_schema.validate(filepath)
         return ids_schema.is_valid(filepath)
 
     @staticmethod
