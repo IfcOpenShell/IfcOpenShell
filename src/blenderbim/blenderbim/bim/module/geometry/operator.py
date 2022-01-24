@@ -145,6 +145,8 @@ class UpdateRepresentation(bpy.types.Operator):
         self.file = IfcStore.get_file()
 
         for obj in objs:
+            if not hasattr(obj.data, "BIMMeshProperties"):
+                continue
             self.update_obj_mesh_representation(context, obj)
             IfcStore.edited_objs.discard(obj)
         return {"FINISHED"}
