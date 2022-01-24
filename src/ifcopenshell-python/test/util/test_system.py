@@ -45,3 +45,19 @@ class TestGetElementSystems(test.bootstrap.IFC4):
             "system.assign_system", self.file, product=element, system=self.file.createIfcStructuralAnalysisModel()
         )
         assert not subject.get_element_systems(element)
+
+
+class TestGetPorts(test.bootstrap.IFC4):
+    def test_run(self):
+        port = self.file.createIfcDistributionPort()
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
+        ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
+        assert subject.get_ports(element) == [port]
+
+
+class TestGetPortsIFC2X3(test.bootstrap.IFC2X3):
+    def test_run(self):
+        port = self.file.createIfcDistributionPort()
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
+        ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
+        assert subject.get_ports(element) == [port]
