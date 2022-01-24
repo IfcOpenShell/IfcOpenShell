@@ -34,3 +34,12 @@ def get_element_systems(element):
         ]:
             results.append(rel.RelatingGroup)
     return results
+
+
+def get_ports(element):
+    results = []
+    for rel in getattr(element, "IsNestedBy", []) or []:
+        results.extend([o for o in rel.RelatedObjects if o.is_a("IfcDistributionPort")])
+    for rel in element.HasPorts or []:
+        results.append(rel.RelatingPort)
+    return results
