@@ -1,0 +1,66 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2022 Cyril Waechter <cyril@biminsight.ch>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
+import bpy
+import mathutils
+import blenderbim.core.tool
+import blenderbim.tool as tool
+from blenderbim.bim.module.geometry.helper import Helper
+
+
+class Boundary(blenderbim.core.tool.Boundary):
+    @classmethod
+    def get_assign_connection_geometry_settings(cls, obj):
+        ifc = tool.Ifc.get()
+        helper = Helper(ifc)
+        mesh = obj.data
+        curves = helper.auto_detect_curve_bounded_plane(mesh)
+        outer_boundary = cls.polyline_from_indexes(mesh, curves["outer_curve"])
+        inner_boundaries = tuple(cls.polyline_from_indexes(mesh, boundary) for boundary in curves["inner_curves"])
+
+        # Create placement matrix
+        location = outer_boundary[0]
+        i = (outer_boundary[1] - outer_boundary[0]).normalized()
+        k = mesh.polygons[0].normal
+        j = k.cross(i)
+        matrix = mathutils.Matrix()
+        matrix[0].xyz = i
+        matrix[1].xyz = j
+        matrix[2].xyz = k
+        matrix.transpose()
+        matrix.translation = location
+
+        return {
+            "rel_space_boundary": tool.Ifc.get_entity(obj),
+            "outer_boundary": cls.polyline_to_2d(outer_boundary, matrix),
+            "inner_boundaries": tuple(cls.polyline_to_2d(boundary, matrix) for boundary in inner_boundaries),
+            "location": location,
+            "axis": k,
+            "ref_direction": i,
+        }
+
+    @classmethod
+    def polyline_from_indexes(cls, mesh, indexes):
+        return tuple(mesh.vertices[i].co for i in indexes)
+
+
+    @classmethod
+    def polyline_to_2d(cls, polyline, placement_matrix):
+        matrix_inv = placement_matrix.inverted()
+        return tuple((matrix_inv @ v).to_2d() for v in polyline)
+

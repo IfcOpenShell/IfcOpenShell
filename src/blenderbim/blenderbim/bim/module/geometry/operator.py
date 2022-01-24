@@ -155,6 +155,11 @@ class UpdateRepresentation(bpy.types.Operator):
         if product.is_a("IfcGridAxis"):
             ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": product})
             return
+        if product.is_a("IfcRelSpaceBoundary"):
+            # TODO refactor
+            settings = tool.Boundary.get_assign_connection_geometry_settings(obj)
+            ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
+            return
 
         core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 

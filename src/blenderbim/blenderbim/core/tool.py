@@ -42,6 +42,10 @@ class Blender: pass
 
 
 @interface
+class Boundary: pass
+
+
+@interface
 class Brick:
     def add_brick(cls, namespace, brick_class): pass
     def add_brick_breadcrumb(cls): pass

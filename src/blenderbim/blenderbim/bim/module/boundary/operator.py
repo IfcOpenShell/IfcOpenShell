@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Cyril Waechter <cyril@biminsight.ch>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -16,16 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 import bpy
-import mathutils
-import ifcopenshell.util.attribute
+import logging
 import ifcopenshell.api
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.boundary.data import Data
 import blenderbim.bim.import_ifc as import_ifc
-from blenderbim.bim.module.geometry.helper import Helper
 
 
 def get_boundaries_collection(blender_space):
@@ -70,6 +67,7 @@ class Loader:
             surface.InnerBoundaries = ()
         shape = ifcopenshell.geom.create_shape(self.settings, surface)
         mesh = self.ifc_importer.create_mesh(None, shape)
+        self.ifc_importer.link_mesh(shape, mesh)
         obj = bpy.data.objects.new(f"{boundary.is_a()}/{boundary.Name}", mesh)
         obj.matrix_world = blender_space.matrix_world
         boundaries_collection = get_boundaries_collection(blender_space)
@@ -267,20 +265,11 @@ class EditBoundaryAttributes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def polyline_from_indexes(mesh, indexes):
-    return tuple(mesh.vertices[i].co for i in indexes)
-
-
-def polyline_to_2d(polyline, placement_matrix):
-    matrix_inv = placement_matrix.inverted()
-    return tuple((matrix_inv @ v).to_2d() for v in polyline)
-
-
 class UpdateBoundaryGeometry(bpy.types.Operator):
     bl_idname = "bim.update_boundary_geometry"
     bl_label = "Update boundary geometry"
     bl_description = """
-    Update boundary connection geometry from mesh. 
+    Update boundary connection geometry from mesh.
     Mesh must lie on a single plane. It should look like a face or a face with holes.
     """
     bl_options = {"REGISTER", "UNDO"}
@@ -289,32 +278,6 @@ class UpdateBoundaryGeometry(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        ifc_file = tool.Ifc.get()
-        helper = Helper(ifc_file)
-        mesh = context.active_object.data
-        curves = helper.auto_detect_curve_bounded_plane(mesh)
-        outer_boundary = polyline_from_indexes(mesh, curves["outer_curve"])
-        inner_boundaries = tuple(polyline_from_indexes(mesh, boundary) for boundary in curves["inner_curves"])
-
-        # Create placement matrix
-        location = outer_boundary[0]
-        i = (outer_boundary[1] - outer_boundary[0]).normalized()
-        k = mesh.polygons[0].normal
-        j = k.cross(i)
-        matrix = mathutils.Matrix()
-        matrix[0].xyz = i
-        matrix[1].xyz = j
-        matrix[2].xyz = k
-        matrix.transpose()
-        matrix.translation = location
-
-        settings = {
-            "rel_space_boundary": tool.Ifc.get_entity(context.active_object),
-            "outer_boundary": polyline_to_2d(outer_boundary, matrix),
-            "inner_boundaries": tuple(polyline_to_2d(boundary, matrix) for boundary in inner_boundaries),
-            "location": location,
-            "axis": k,
-            "ref_direction": i,
-        }
-        ifcopenshell.api.run("boundary.assign_connection_geometry", ifc_file, **settings)
+        settings = tool.Boundary.get_assign_connection_geometry_settings(context.active_object)
+        ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
         return {"FINISHED"}
