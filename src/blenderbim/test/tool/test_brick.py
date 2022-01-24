@@ -345,6 +345,18 @@ class TestPopBrickBreadcrumb(NewFile):
         assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[0].name == "foo"
 
 
+class TestRemoveBrick(NewFile):
+    def test_run(self):
+        BrickStore.graph = brickschema.Graph()
+        result = subject.add_brick("http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment")
+        subject.remove_brick(result)
+        assert not list(
+            BrickStore.graph.triples(
+                (URIRef(result), None, None)
+            )
+        )
+
+
 class TestRunAssignBrickReference(NewFile):
     def test_nothing(self):
         pass

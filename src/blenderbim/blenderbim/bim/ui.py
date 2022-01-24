@@ -53,7 +53,7 @@ class IFCFileSelector:
                         and filepath[-4:].lower() == ".ifc"
                     ):
                         row = box.row()
-                        op = row.operator("bim.run_migrate_patch")
+                        op = row.operator("bim.run_migrate_patch", text="Upgrade to IFC4")
                         op.infile = filepath
                         op.outfile = filepath[0:-4] + "-IFC4.ifc"
                         op.schema = "IFC4"
