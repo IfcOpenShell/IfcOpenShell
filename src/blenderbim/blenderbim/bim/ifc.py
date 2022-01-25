@@ -187,6 +187,23 @@ class IfcStore:
             IfcStore.commit_link_element(data)
 
     @staticmethod
+    def delete_element(element):
+        IfcStore.deleted_ids.add(element.id())
+        if IfcStore.history:
+            data = {"id": element.id()}
+            IfcStore.history[-1]["operations"].append(
+                {"rollback": IfcStore.rollback_delete_element, "commit": IfcStore.commit_delete_element, "data": data}
+            )
+
+    @staticmethod
+    def rollback_delete_element(data):
+        IfcStore.deleted_ids.remove(data["id"])
+
+    @staticmethod
+    def commit_delete_element(data):
+        IfcStore.deleted_ids.add(data["id"])
+
+    @staticmethod
     def link_element(element, obj):
         IfcStore.id_map[element.id()] = obj
         if hasattr(element, "GlobalId"):
