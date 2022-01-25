@@ -330,7 +330,7 @@ class OverrideDeleteTrait:
     def delete_ifc_object(self, obj):
         if obj.BIMObjectProperties.ifc_definition_id:
             element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
-            IfcStore.deleted_ids.add(element.id())
+            IfcStore.delete_element(element)
             if getattr(element, "FillsVoids", None):
                 self.remove_filling(element)
             if element.is_a("IfcOpeningElement"):
