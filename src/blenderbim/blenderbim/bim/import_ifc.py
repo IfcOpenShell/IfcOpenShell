@@ -109,7 +109,7 @@ class MaterialCreator:
 
     def parse_representation(self, representation):
         has_parsed = False
-        representation_items = self.resolve_mapped_representation_items(representation)
+        representation_items = self.resolve_all_representation_items(representation)
         for item in representation_items:
             if self.parse_representation_item(item):
                 has_parsed = True
@@ -143,13 +143,12 @@ class MaterialCreator:
             ]
             self.mesh.polygons.foreach_set("material_index", material_index)
 
-    def resolve_mapped_representation_items(self, representation):
+    def resolve_all_representation_items(self, representation):
         items = []
         for item in representation.Items:
             if item.is_a("IfcMappedItem"):
                 items.extend(item.MappingSource.MappedRepresentation.Items)
-            else:
-                items.append(item)
+            items.append(item)
         return items
 
 
