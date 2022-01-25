@@ -145,7 +145,10 @@ class UpdateRepresentation(bpy.types.Operator):
         self.file = IfcStore.get_file()
 
         for obj in objs:
-            if not hasattr(obj.data, "BIMMeshProperties"):
+            # TODO: write unit tests to see how this bulk operation handles
+            # contradictory ifc_representation_class values and when
+            # ifc_representation_class is IfcTextLiteral
+            if not obj.data:
                 continue
             self.update_obj_mesh_representation(context, obj)
             IfcStore.edited_objs.discard(obj)
