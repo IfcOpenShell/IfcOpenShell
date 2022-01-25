@@ -328,6 +328,14 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 };
 
 %{
+	template <typename T>
+	std::string to_locale_invariant_string(const T& t) {
+		std::ostringstream oss;
+		oss.imbue(std::locale::classic());
+		oss << t;
+		return oss.str();
+	}
+
 	template <typename Schema>
 	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> helper_fn_create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
 		IfcParse::IfcFile* file = instance->data().file;
@@ -444,7 +452,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					IfcGeom::IfcRepresentationShapeItems shapes = kernel.convert(instance);
 
 					IfcGeom::ElementSettings element_settings(settings, kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT), instance->declaration().name());
-					IfcGeom::Representation::BRep brep(element_settings, boost::lexical_cast<std::string>(instance->data().id()), shapes);
+					IfcGeom::Representation::BRep brep(element_settings, to_locale_invariant_string(instance->data().id()), shapes);
 					try {
 						if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
 							return new IfcGeom::Representation::Serialization(brep);
