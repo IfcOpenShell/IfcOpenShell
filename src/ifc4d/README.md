@@ -6,16 +6,17 @@ Ifc4D contains a series of utilities for converting to and from various 4D softw
  - Oracle Primavera 6 (P6) XML to IFC
  - Oracle Primavera 6 (P6) XER to IFC
  - Asta Powerproject to IFC
+ - IFC to Oracle Primavera 6 (P6) XML
 
 Planned (would you like to contribute? Please reach out!):
 
  - IFC to Microsoft Project
- - IFC to Oracle Primavera 6 (P6)
+ - IFC to Oracle Primavera 6 (P6) XER
+ - IFC to Oracle Primavera 6 (P6) XLS
  - IFC to Asta Powerproject
  - LibreProject to IFC
  - IFC to LibreProject
  - IFC to Gantt
-
 
 ## Useful links
 
