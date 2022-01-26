@@ -100,6 +100,54 @@ def import_attribute(attribute, props, data, callback=None):
         new_usecase_line.name = line
 
 
+# TODO: Store in a json file :
+info_index = {
+    "HeaderSchema": {
+        "description": "The IFC specification includes terms, and data specification items that originate from use within disciplines, trades, and professions of the construction and facility management industry sector.\nTerms and concepts uses the plain English words, the data items within the data specification follow a naming convention",
+        "use_case": {
+            "IFC2X3": "IFC 2x3\n Official standard from 2008 to 2013",
+            "IFC4": "IFC 4\n Official standard since 2013",
+        },
+        "doc_url": "https://github.com/IfcOpenShell/IfcOpenShell",
+    },
+    "HeaderUnitSystem": {
+        "description": "Global unit System in use in the file",
+        "doc_url": "https://github.com/IfcOpenShell/IfcOpenShell",
+    },
+    "HeaderUnitLength": {
+        "description": "Global Length unit in use in the file",
+        "doc_url": "https://github.com/IfcOpenShell/IfcOpenShell",
+    },
+    "HeaderUnitArea": {
+        "description": "Global Area unit in use in the file",
+        "doc_url": "https://github.com/IfcOpenShell/IfcOpenShell",
+    },
+    "HeaderUnitVolume": {
+        "description": "Global Volume unit in use in the file",
+        "doc_url": "https://github.com/IfcOpenShell/IfcOpenShell",
+    },
+}
+
+
+class InfoIndexValue:
+    def __init__(self, index_key, instance_value=None) -> None:
+        print(index_key)
+        index_value = info_index.get(index_key)
+        if index_value is None:
+            self.description = self.use_case = self.doc_url = None
+            return
+        self.description = index_value.get("description")
+        self.use_case = index_value.get("use_case")
+        if self.use_case is not None:
+            if instance_value is not None:
+                self.use_case = self.use_case.get(instance_value)
+            if self.use_case is not None and "\n" in self.use_case:
+                self.use_case = self.use_case.split("\n")
+            else:
+                self.use_case = [self.use_case]
+        self.doc_url = index_value.get("doc_url")
+
+
 def get_ifc_description(property_name):
     # TODO : Implement fetching descriptipn from property name
     return "This describes what this fields means"
