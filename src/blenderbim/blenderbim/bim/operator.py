@@ -17,7 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from blenderbim.bim.helper import get_ifc_class_doc_url, get_ifc_class_usecase, get_ifc_description
+from blenderbim.bim.helper import InfoIndexValue, get_ifc_class_doc_url, get_ifc_class_usecase, get_ifc_description
+from textwrap import TextWrapper
 import bpy
 import json
 import webbrowser
@@ -384,12 +385,14 @@ class BIM_OT_show_ifc_documentation(bpy.types.Operator):
 
     path: bpy.props.StringProperty()
     class_name: bpy.props.StringProperty()
+    index_key: bpy.props.StringProperty()
+    instance_value: bpy.props.StringProperty()
 
     def execute(self, context):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=600)
+        return context.window_manager.invoke_props_dialog(self, width=500)
 
     def draw(self, context):
         # We never use layout.prop because all data is read-only
@@ -400,6 +403,14 @@ class BIM_OT_show_ifc_documentation(bpy.types.Operator):
                 self.draw_from_attr(doc)
         elif self.class_name:
             self.draw_from_class(self.class_name)
+        elif self.index_key:
+            self.draw_from_index(self.index_key, self.instance_value)
+
+    def draw_from_index(self, index_key, instance_value=None):
+        values = InfoIndexValue(index_key, instance_value)
+        self.draw_doc(
+            class_name=index_key, description=values.description, use_case=values.use_case, doc_url=values.doc_url
+        )
 
     def draw_from_class(self, class_name):
         self.draw_doc(
@@ -411,6 +422,7 @@ class BIM_OT_show_ifc_documentation(bpy.types.Operator):
 
     def draw_doc(self, class_name: str = None, description: str = None, use_case=None, doc_url: str = None):
         layout = self.layout
+        wrapper = TextWrapper(width=80)  # 50 = maximum length
         if class_name:
             split = layout.split(factor=self.draw_panel_split)
             split.label(text="IFC Class")
@@ -418,17 +430,23 @@ class BIM_OT_show_ifc_documentation(bpy.types.Operator):
         if description:
             split = layout.split(factor=self.draw_panel_split)
             split.label(text="Description")
-            split.label(text=description)
+            box = split.box()
+            for description_line in description.split("\n"):
+                description_wrapped = wrapper.wrap(text=description_line)
+                for line in description_wrapped:
+                    box.label(text=line)
         if use_case:
             split = layout.split(factor=self.draw_panel_split)
             split.label(text="Use Case")
-            col = split.column(align=True)
-            box = col.box()
-            for line in use_case:
-                box.label(text=line)
+            box = split.box()
+            for paragraph in use_case:
+                for use_case_line in paragraph.split("\n"):
+                    use_case_line_wrapped = wrapper.wrap(text=use_case_line)
+                    for line in use_case_line_wrapped:
+                        box.label(text=line)
         if doc_url:
             split = layout.split(factor=self.draw_panel_split)
-            split.label(text="Doc URL")
+            split.label(text="Docs")
             split.operator("bim.open_webbrowser", text="Open In Browser", icon="URL").url = doc_url
 
     def draw_from_attr(self, doc):
