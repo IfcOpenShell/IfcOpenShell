@@ -1,3 +1,5 @@
+.. _blenderbim/installation:
+
 Installation
 ============
 
@@ -148,12 +150,13 @@ choose between a ``PYVERSION`` of ``py39`` and ``py37``.
     $ ls dist/
 
 However, creating a build, uninstalling the old add-on, and installing a new
-build is a slow process. A more rapid approach is to follow the **Daily build
-installation** method, as this provides all dependencies for you out of the box.
-Then, we can replace certain Python files that tend to be updated frequently
-with those from the Git repository. We're going to use symlinks (Windows users
-can use ``mklink``), so we can code in our Git repository, and see the changes
-in our Blender installation.
+build is a slow process. You can do this, but we do not recommend it. A more
+rapid approach is to follow the **Daily build installation** method, as this
+provides all dependencies for you out of the box.  Then, we can replace certain
+Python files that tend to be updated frequently with those from the Git
+repository. We're going to use symlinks (Windows users can use ``mklink``), so
+we can code in our Git repository, and see the changes in our Blender
+installation.
 
 In addition, we're also going to replace the Python code of the IfcOpenShell
 dependency with our Git repository, since most of the BlenderBIM Add-on
