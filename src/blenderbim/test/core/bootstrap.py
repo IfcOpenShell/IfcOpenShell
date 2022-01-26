@@ -71,6 +71,13 @@ def debug():
 
 
 @pytest.fixture
+def demo():
+    prophet = Prophecy(blenderbim.core.tool.Demo)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def drawing():
     prophet = Prophecy(blenderbim.core.tool.Drawing)
     yield prophet

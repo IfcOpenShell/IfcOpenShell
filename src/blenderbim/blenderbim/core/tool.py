@@ -30,6 +30,38 @@ def interface(cls):
     return type(cls.__name__, (Interface, cls), attrs)
 
 
+# ############################################################################ #
+
+# Hey there! Welcome to the BlenderBIM Add-on code. Please feel free to reach
+# out if you have any questions or need further guidance. Happy hacking!
+
+# ############################################################################ #
+
+# This portion of the code is singled out as it is part of the Demo module, used
+# to teach people how the code is structured in the BlenderBIM Add-on.
+
+# This is an example "interface" (as in, a software interface, not a user
+# interface) for the Demo module. Think of it as a list of all of the functions
+# your module can perform. In this file, you will come across every single
+# capability of the entire add-on. By breaking it down into little functions, we
+# can test each one separately, and at a glance know if there are opportunities
+# for code reuse or refactoring. At this point, we're only interested in a list
+# of functions, not the details of how they're implemented. This is because the
+# purpose of the core is to just give a high level overview of the application's
+# capabilities.
+
+@interface
+class Demo:
+    def clear_name_field(cls): pass
+    def get_project(cls): pass
+    def hide_user_hints(cls): pass
+    def set_message(cls, message): pass
+    def show_user_hints(cls): pass
+
+# The rest of the code in this file is not part of the Demo tutorial.
+
+# ############################################################################ #
+
 @interface
 class Aggregate:
     def can_aggregate(cls, relating_object, related_object): pass

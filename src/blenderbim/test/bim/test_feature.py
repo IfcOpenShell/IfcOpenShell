@@ -209,6 +209,19 @@ def i_set_prop_to_value(prop, value):
         exec(f"bpy.context.{prop} = {value}")
 
 
+@given(parsers.parse('I set "{prop}" to ""'))
+@when(parsers.parse('I set "{prop}" to ""'))
+def i_set_prop_to_value(prop):
+    try:
+        eval(f"bpy.context.{prop}")
+    except:
+        assert False, "Property does not exist"
+    try:
+        exec(f'bpy.context.{prop} = r""')
+    except:
+        pass
+
+
 @when(parsers.parse('I am on frame "{number}"'))
 def i_am_on_frame_number(number):
     bpy.context.scene.frame_set(int(number))
