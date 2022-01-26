@@ -367,3 +367,10 @@ class BIM_PT_misc_object(Panel):
 
     def draw(self, context):
         pass
+
+
+def draw_info_button_for_index(info_mode, layout, index_key, instance_value=None):
+    if info_mode:
+        info_op = layout.operator("bim.show_ifc_documentation", icon="INFO")
+        info_op.index_key = index_key
+        info_op.instance_value = instance_value
