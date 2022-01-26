@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from blenderbim.bim.ui import draw_info_button_for_index
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.project.data import ProjectData
@@ -154,17 +155,24 @@ class BIM_PT_project(Panel):
     def draw_create_project_ui(self, context):
         props = context.scene.BIMProperties
         pprops = context.scene.BIMProjectProperties
-        row = self.layout.row()
+        info_mode = context.preferences.addons["blenderbim"].preferences.info_mode
+        layout = self.layout
+        row = layout.row()
         row.prop(pprops, "export_schema")
-        row = self.layout.row()
+        draw_info_button_for_index(info_mode, row, "HeaderSchema", pprops.export_schema)
+        row = layout.row()
         row.prop(context.scene.unit_settings, "system")
-        row = self.layout.row()
+        draw_info_button_for_index(info_mode, row, "HeaderUnitSystem", context.scene.unit_settings.system)
+        row = layout.row()
         row.prop(context.scene.unit_settings, "length_unit")
-        row = self.layout.row()
+        draw_info_button_for_index(info_mode, row, "HeaderUnitLength", context.scene.unit_settings.length_unit)
+        row = layout.row()
         row.prop(props, "area_unit", text="Area Unit")
-        row = self.layout.row()
+        draw_info_button_for_index(info_mode, row, "HeaderUnitArea", props.area_unit)
+        row = layout.row()
         row.prop(props, "volume_unit", text="Volume Unit")
-        row = self.layout.row(align=True)
+        draw_info_button_for_index(info_mode, row, "HeaderUnitVolume", props.volume_unit)
+        row = layout.row(align=True)
         row.operator("bim.create_project")
         row.operator("bim.load_project")
 
