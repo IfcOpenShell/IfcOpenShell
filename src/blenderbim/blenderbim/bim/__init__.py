@@ -68,6 +68,8 @@ modules = {
     "covetool": None,
     "augin": None,
     "debug": None,
+    # Uncomment this line to enable loading of the demo module. Happy hacking!
+    # "demo": None,
 }
 
 
