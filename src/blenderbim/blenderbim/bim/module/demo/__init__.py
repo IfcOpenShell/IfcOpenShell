@@ -46,6 +46,9 @@ classes = (
 # properties, this is where you tell Blender where they are going to be stored.
 # You might see more advanced registrations happening in other modules.
 def register():
+    # Properties are usually stored on bpy.types.Scene when they are something
+    # that affects everything in the project, or bpy.types.Object when they
+    # affect a single BIM element.
     bpy.types.Scene.BIMDemoProperties = bpy.props.PointerProperty(type=prop.BIMDemoProperties)
 
 

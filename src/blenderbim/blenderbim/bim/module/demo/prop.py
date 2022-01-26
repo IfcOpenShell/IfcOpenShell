@@ -16,9 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+# ############################################################################ #
+
+# Hey there! Welcome to the BlenderBIM Add-on code. Please feel free to reach
+# out if you have any questions or need further guidance. Happy hacking!
+
+# ############################################################################ #
+
+# Every module has a prop.py file to define Blender properties. Any time you
+# want an interface widget like an input field, dropdown, checkbox, or number
+# slider, you need a Blender property to store that widget's data. If you want
+# to store data that will affect the Blender interface, you also need a
+# property. Properties are stored in the .blend file, so when your user closes
+# their Blender session, and reopens it, things are how they left it.
+
 import bpy
-from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
+# Properties have many different data types. We won't use all of them in this
+# demo module, but this is a list for your reference.
 from bpy.props import (
     PointerProperty,
     StringProperty,
@@ -31,7 +46,15 @@ from bpy.props import (
 )
 
 
+# All properties must belong in a property group. Usually, you'd have a group
+# named after your module.
 class BIMDemoProperties(PropertyGroup):
+    # This first property is a string. This means that in the interface, it will
+    # represent a text input field. We can give it a name and a default value.
+    # The name will be the label shown next to the input field in the interface.
     name: StringProperty(name="Name", default="New Project Name")
+    # Not all properties need to be shown using their equivalent input widget.
+    # In this case, we can store a message string, but we will never show it as
+    # an input text field in the ui.py.
     message: StringProperty(name="Message")
     show_hints: BoolProperty(name="Show Hints", default=False)
