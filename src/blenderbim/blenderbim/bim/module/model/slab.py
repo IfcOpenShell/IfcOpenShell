@@ -278,19 +278,18 @@ class DumbSlabGenerator:
         edges = []
         faces = [[0, 3, 2, 1]]
 
+        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
+        # Standard cases are deprecated, so let's cull them
+        ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
+
         mesh = bpy.data.meshes.new(name="Dumb Slab")
         mesh.from_pydata(verts, edges, faces)
-        obj = bpy.data.objects.new("Slab", mesh)
+        obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
         modifier = obj.modifiers.new("Slab Depth", "SOLIDIFY")
         modifier.use_even_offset = True
         modifier.offset = 1
         modifier.thickness = self.depth
 
-        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
-        # Standard cases are deprecated, so let's cull them
-        ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
-
-        obj.name = ifc_class[3:]
         obj.location = self.location
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2] - self.depth
