@@ -108,7 +108,7 @@ class AddTypeInstance(bpy.types.Operator):
         ]
         mesh = bpy.data.meshes.new(name="Instance")
         mesh.from_pydata(verts, edges, faces)
-        obj = bpy.data.objects.new("Instance", mesh)
+        obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
         obj.location = context.scene.cursor.location
         collection = context.view_layer.active_layer_collection.collection
         collection.objects.link(obj)

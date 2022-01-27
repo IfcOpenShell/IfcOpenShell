@@ -30,6 +30,7 @@ from blenderbim.tool.ifc import Ifc
 from blenderbim.tool.library import Library
 from blenderbim.tool.material import Material
 from blenderbim.tool.misc import Misc
+from blenderbim.tool.model import Model
 from blenderbim.tool.owner import Owner
 from blenderbim.tool.patch import Patch
 from blenderbim.tool.pset import Pset

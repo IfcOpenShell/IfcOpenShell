@@ -17,7 +17,6 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.owner as core
 import blenderbim.bim.handler

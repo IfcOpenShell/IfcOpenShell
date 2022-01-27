@@ -234,6 +234,11 @@ class Misc:
 
 
 @interface
+class Model:
+    pass
+
+
+@interface
 class Patch:
     def run_migrate_patch(cls, infile, outfile, schema): pass
 
