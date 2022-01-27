@@ -19,6 +19,7 @@
 from bpy.types import Panel
 from blenderbim.bim.module.aggregate.data import AggregateData
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.root.data import IfcClassData
 
 
 class BIM_PT_aggregate(Panel):
@@ -44,13 +45,14 @@ class BIM_PT_aggregate(Panel):
         return True
 
     def draw(self, context):
+        layout = self.layout
         if not AggregateData.is_loaded:
             AggregateData.load()
 
         props = context.active_object.BIMObjectAggregateProperties
 
         if props.is_editing:
-            row = self.layout.row(align=True)
+            row = layout.row(align=True)
             row.prop(props, "relating_object", text="")
             if props.relating_object:
                 op = row.operator("bim.assign_object", icon="CHECKMARK", text="")
@@ -58,7 +60,7 @@ class BIM_PT_aggregate(Panel):
                 op.related_object = context.active_object.BIMObjectProperties.ifc_definition_id
             row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
         else:
-            row = self.layout.row(align=True)
+            row = layout.row(align=True)
             if AggregateData.data["has_aggregate"]:
                 row.label(text=AggregateData.data["label"])
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
@@ -70,3 +72,9 @@ class BIM_PT_aggregate(Panel):
                 row.label(text="No Aggregate Found")
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
+
+        if not IfcClassData.is_loaded:
+            IfcClassData.load()
+        ifc_class = IfcClassData.data["ifc_class"]
+        if ifc_class == "IfcBuilding":
+            layout.operator("bim.building_storey_add")
