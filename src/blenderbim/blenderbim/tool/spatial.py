@@ -117,3 +117,21 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix):
         target_obj.matrix_world = relative_to_obj.matrix_world @ matrix
+
+    @classmethod
+    def get_name(cls, ifc_class, name):
+        if not bpy.data.objects.get(f"{ifc_class}/{name}"):
+            return name
+        i = 2
+        while bpy.data.objects.get(f"{ifc_class}/{name} {i}"):
+            i += 1
+        return f"{name} {i}"
+
+    @classmethod
+    def add_building_storey(cls, building):
+        building_storey = bpy.data.objects.new(cls.get_name("IfcBuildingStorey", "My Storey"), None)
+        bpy.ops.bim.assign_class(obj=building_storey.name, ifc_class="IfcBuildingStorey")
+        blenderbim.core.aggregate.assign_object(
+            tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=building, related_obj=building_storey
+        )
+        cls.set_active_object(building)

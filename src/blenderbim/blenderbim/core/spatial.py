@@ -83,3 +83,6 @@ def select_similar_container(ifc, spatial, obj=None):
         obj = ifc.get_object(subelement)
         if obj:
             spatial.select_object(obj)
+
+def add_storey_to_building(spatial, obj):
+    spatial.add_building_storey(building=obj)
