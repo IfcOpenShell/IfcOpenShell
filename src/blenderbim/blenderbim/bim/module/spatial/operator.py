@@ -130,4 +130,4 @@ class BIM_OT_building_storey_add(bpy.types.Operator, Operator):
     building_name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.add_storey_to_building(tool.Ifc, tool.Spatial, obj=context.active_object)
+        core.add_storey_to_building(tool.Spatial, obj=context.active_object)
