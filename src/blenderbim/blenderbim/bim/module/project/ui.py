@@ -28,7 +28,7 @@ class BIM_PT_project(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_project_setup"
+    bl_parent_id = "BIM_PT_project_info"
 
     def draw(self, context):
         if not ProjectData.is_loaded:
@@ -142,14 +142,6 @@ class BIM_PT_project(Panel):
         op = row.operator("export_ifc.bim", icon="FILE_TICK", text="")
         op.should_save_as = True
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
-
-        row = self.layout.row(align=True)
-        row.prop(props, "schema_dir")
-        row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
-
-        row = self.layout.row(align=True)
-        row.prop(props, "data_dir")
-        row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
 
     def draw_create_project_ui(self, context):
         props = context.scene.BIMProperties

@@ -152,6 +152,14 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.prop(context.scene.BIMModelProperties, "occurrence_name_function")
 
+        row = self.layout.row(align=True)
+        row.prop(context.scene.BIMProperties, "schema_dir")
+        row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
+
+        row = self.layout.row(align=True)
+        row.prop(context.scene.BIMProperties, "data_dir")
+        row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
+
         row = layout.row()
         row.operator("bim.configure_visibility")
 
@@ -173,9 +181,9 @@ def ifc_units(self, context):
         row.prop(props, "metric_precision")
 
 
-# Scene Panel Groups -->
-class BIM_PT_project_setup(Panel):
-    bl_label = "IFC Project Setup"
+# Scene panel groups
+class BIM_PT_project_info(Panel):
+    bl_label = "IFC Project Info"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -184,16 +192,12 @@ class BIM_PT_project_setup(Panel):
         pass
 
 
-class BIM_PT_utilities(Panel):
-    bl_label = "IFC Utilities"
+class BIM_PT_project_setup(Panel):
+    bl_label = "IFC Project Setup"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -270,21 +274,6 @@ class BIM_PT_services(Panel):
         pass
 
 
-class BIM_PT_misc(Panel):
-    bl_label = "IFC Misc."
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Ifc.get()
-
-    def draw(self, context):
-        pass
-
-
 class BIM_PT_quality_control(Panel):
     bl_label = "IFC Quality Control"
     bl_space_type = "PROPERTIES"
@@ -296,7 +285,18 @@ class BIM_PT_quality_control(Panel):
         pass
 
 
-# Object Panel Groups -->
+class BIM_PT_integrations(Panel):
+    bl_label = "BIM Integrations"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        pass
+
+
+# Object panel groups
 class BIM_PT_object_metadata(Panel):
     bl_label = "IFC Object Metadata"
     bl_space_type = "PROPERTIES"
