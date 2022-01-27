@@ -28,7 +28,7 @@ class BIM_PT_search(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_utilities"
+    bl_parent_id = "BIM_PT_collaboration"
 
     @classmethod
     def poll(cls, context):

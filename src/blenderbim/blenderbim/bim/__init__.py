@@ -105,17 +105,17 @@ classes = [
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
-    # scene panel groups -->
+    # Scene panel groups
+    ui.BIM_PT_project_info,
     ui.BIM_PT_project_setup,
-    ui.BIM_PT_utilities,
     ui.BIM_PT_collaboration,
     ui.BIM_PT_geometry,
-    ui.BIM_PT_4D5D,
-    ui.BIM_PT_structural,
     ui.BIM_PT_services,
-    ui.BIM_PT_misc,
+    ui.BIM_PT_structural,
+    ui.BIM_PT_4D5D,
     ui.BIM_PT_quality_control,
-    # object panel groups -->
+    ui.BIM_PT_integrations,
+    # Object panel groups
     ui.BIM_PT_object_metadata,
     ui.BIM_PT_geometry_object,
     ui.BIM_PT_services_object,
