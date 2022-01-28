@@ -350,11 +350,7 @@ class TestRemoveBrick(NewFile):
         BrickStore.graph = brickschema.Graph()
         result = subject.add_brick("http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment")
         subject.remove_brick(result)
-        assert not list(
-            BrickStore.graph.triples(
-                (URIRef(result), None, None)
-            )
-        )
+        assert not list(BrickStore.graph.triples((URIRef(result), None, None)))
 
 
 class TestRunAssignBrickReference(NewFile):

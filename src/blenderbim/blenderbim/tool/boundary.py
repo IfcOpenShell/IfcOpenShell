@@ -58,9 +58,7 @@ class Boundary(blenderbim.core.tool.Boundary):
     def polyline_from_indexes(cls, mesh, indexes):
         return tuple(mesh.vertices[i].co for i in indexes)
 
-
     @classmethod
     def polyline_to_2d(cls, polyline, placement_matrix):
         matrix_inv = placement_matrix.inverted()
         return tuple((matrix_inv @ v).to_2d() for v in polyline)
-

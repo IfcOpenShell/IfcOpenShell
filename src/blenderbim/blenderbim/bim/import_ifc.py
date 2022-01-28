@@ -21,6 +21,7 @@ import bpy
 import time
 import bmesh
 import shutil
+import logging
 import threading
 import mathutils
 import numpy as np
@@ -1610,7 +1611,8 @@ class IfcImporter:
         if "-" in geometry.id:
             mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
         else:
-            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id)
+            # TODO: See #2002
+            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.replace(",", ""))
 
     def set_matrix_world(self, obj, matrix_world):
         obj.matrix_world = matrix_world
@@ -1637,11 +1639,13 @@ class IfcImportSettings:
         self.collection_mode = "DECOMPOSITION"
 
     @staticmethod
-    def factory(context, input_file, logger):
-        scene_diff = context.scene.DiffProperties
-        props = context.scene.BIMProjectProperties
+    def factory(context=None, input_file=None, logger=None):
+        scene_diff = bpy.context.scene.DiffProperties
+        props = bpy.context.scene.BIMProjectProperties
         settings = IfcImportSettings()
         settings.input_file = input_file
+        if logger is None:
+            logger = logging.getLogger("ImportIFC")
         settings.logger = logger
         settings.diff_file = scene_diff.diff_json_file
         settings.collection_mode = props.collection_mode

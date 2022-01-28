@@ -20,9 +20,17 @@ import bpy
 import ifcopenshell.util.system
 import blenderbim.core.tool
 import blenderbim.tool as tool
+from blenderbim.bim import import_ifc
 
 
 class System(blenderbim.core.tool.System):
+    @classmethod
+    def delete_element_objects(cls, elements):
+        for element in elements:
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                bpy.data.objects.remove(obj)
+
     @classmethod
     def disable_editing_system(cls):
         bpy.context.scene.BIMSystemProperties.active_system_id = 0
@@ -38,6 +46,10 @@ class System(blenderbim.core.tool.System):
     @classmethod
     def export_system_attributes(cls):
         return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMSystemProperties.system_attributes)
+
+    @classmethod
+    def get_ports(cls, element):
+        return ifcopenshell.util.system.get_ports(element)
 
     @classmethod
     def import_system_attributes(cls, system):
@@ -56,11 +68,30 @@ class System(blenderbim.core.tool.System):
             new.ifc_class = system.is_a()
 
     @classmethod
-    def select_system_products(cls, system):
-        for element in ifcopenshell.util.system.get_system_elements(system):
+    def load_ports(cls, ports):
+        if not ports:
+            return
+        ifc_import_settings = import_ifc.IfcImportSettings.factory()
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = tool.Ifc.get()
+        ifc_importer.calculate_unit_scale()
+        ports = set(ports)
+        ports -= ifc_importer.create_products(ports)
+        if ports:
+            for port in ports:
+                ifc_importer.create_product(port)
+        ifc_importer.place_objects_in_collections()
+
+    @classmethod
+    def select_elements(cls, elements):
+        for element in elements:
             obj = tool.Ifc.get_object(element)
             if obj:
                 obj.select_set(True)
+
+    @classmethod
+    def select_system_products(cls, system):
+        cls.select_elements(ifcopenshell.util.system.get_system_elements(system))
 
     @classmethod
     def set_active_system(cls, system):

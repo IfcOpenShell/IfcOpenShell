@@ -48,5 +48,5 @@ class TestGenerateOccurrenceName(NewFile):
         ifc = ifcopenshell.file()
         element_type = ifc.createIfcWallType()
         bpy.context.scene.BIMModelProperties.occurrence_name_style = "CUSTOM"
-        bpy.context.scene.BIMModelProperties.occurrence_name_function = "\"Foobar\""
+        bpy.context.scene.BIMModelProperties.occurrence_name_function = '"Foobar"'
         assert subject.generate_occurrence_name(element_type, "IfcWall") == "Foobar"

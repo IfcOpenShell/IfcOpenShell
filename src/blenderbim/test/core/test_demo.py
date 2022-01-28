@@ -33,6 +33,7 @@
 # We always call the module we're testing the "test subject". This makes our
 # tests simple to read: just look for where the "subject" is called!
 import blenderbim.core.demo as subject
+
 # These are like mocks, stubs, or spy objects. They don't do anything, but they
 # let us check our test expectations.
 from test.core.bootstrap import ifc, demo

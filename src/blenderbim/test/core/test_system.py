@@ -88,3 +88,18 @@ class TestSelectSystemProducts:
     def test_run(self, system):
         system.select_system_products("system").should_be_called()
         subject.select_system_products(system, system="system")
+
+
+class TestShowPorts:
+    def test_run(self, system):
+        system.get_ports("element").should_be_called().will_return(["port"])
+        system.load_ports(["port"]).should_be_called()
+        system.select_elements(["port"]).should_be_called()
+        subject.show_ports(system, element="element")
+
+
+class TestHidePorts:
+    def test_run(self, system):
+        system.get_ports("element").should_be_called().will_return(["port"])
+        system.delete_element_objects(["port"]).should_be_called()
+        subject.hide_ports(system, element="element")

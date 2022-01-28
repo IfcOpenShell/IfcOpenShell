@@ -64,3 +64,13 @@ def unassign_system(ifc, system=None, product=None):
 
 def select_system_products(system_tool, system=None):
     system_tool.select_system_products(system)
+
+
+def show_ports(system, element=None):
+    ports = system.get_ports(element)
+    system.load_ports(ports)
+    system.select_elements(ports)
+
+
+def hide_ports(system, element=None):
+    system.delete_element_objects(system.get_ports(element))
