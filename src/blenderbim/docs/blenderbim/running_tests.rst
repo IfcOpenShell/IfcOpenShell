@@ -1,3 +1,5 @@
+.. _blenderbim/running_tests:
+
 Running tests
 =============
 
