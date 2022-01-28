@@ -17,6 +17,7 @@
 # along with Ifc4D.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
+import uuid
 import datetime
 import ifcopenshell
 import ifcopenshell.util.date
@@ -33,9 +34,21 @@ class Ifc2P6:
         self.element_map = {}
         self.hours_per_day = 8
         self.project_tasks = []
+        # P6XML does not understand patterns in holiday dates. Instead, it
+        # expects a list of every day that is a holiday between a date range.
+        # This allows you to specify the date range where the export should
+        # calculate holidays for.
+        self.holiday_start_date = None
+        self.holiday_finish_date = None
 
     def execute(self):
         self.root = ET.Element("APIBusinessObjects")
+        self.root.attrib["xmlns"] = "http://xmlns.oracle.com/Primavera/P6Professional/V18.8/API/BusinessObjects"
+        self.root.attrib["xmlns:xsi"] = "http://www.w3.org/2001/XMLSchema-instance"
+        self.root.attrib[
+            "xsi:schemaLocation"
+        ] = "http://xmlns.oracle.com/Primavera/P6Professional/V18.8/API/BusinessObjects http://xmlns.oracle.com/Primavera/P6Professional/V18.8/API/p6apibo.xsd"
+
         self.schedule = self.file.by_type("IfcWorkSchedule")[0]
 
         self.create_obs()
@@ -43,13 +56,14 @@ class Ifc2P6:
         self.create_projects()
 
         tree = ET.ElementTree(self.root)
-        tree.write(self.xml)
+        tree.write(self.xml, encoding="utf-8", xml_declaration=True)
 
     def create_obs(self):
         element = self.file.by_type("IfcProject")[0]
         obs = ET.SubElement(self.root, "OBS")
         self.link_element(element, obs)
-        ET.SubElement(obs, "Name").text = element.Name or "Unnamed"
+        ET.SubElement(obs, "Id").text = element.Name or "X"
+        ET.SubElement(obs, "Name").text = element.LongName or "Unnamed"
 
     def create_calendars(self):
         for calendar in self.file.by_type("IfcWorkCalendar"):
@@ -60,29 +74,76 @@ class Ifc2P6:
         ET.SubElement(el, "Name").text = calendar.Name or "Unnamed"
         self.link_element(calendar, el)
 
-        # Hardcode for now
+        working_week = self.auto_detect_working_week(calendar)
+
+        if not working_week:
+            working_week = self.get_default_working_week()
+
         work_week = ET.SubElement(el, "StandardWorkWeek")
 
-        work_hours = ET.SubElement(work_week, "StandardWorkHours")
-        day = ET.SubElement(work_hours, "DayOfWeek").text = "Sunday"
-
-        for name in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]:
+        for day, time_periods in working_week.items():
             work_hours = ET.SubElement(work_week, "StandardWorkHours")
-            day = ET.SubElement(work_hours, "DayOfWeek").text = name
-            work_time = ET.SubElement(work_hours, "WorkTime")
-            ET.SubElement(work_time, "Start").text = "08:00:00"
-            ET.SubElement(work_time, "Finish").text = "17:00:00"
+            day = ET.SubElement(work_hours, "DayOfWeek").text = day
+            for time_period in time_periods:
+                work_time = ET.SubElement(work_hours, "WorkTime")
+                ET.SubElement(work_time, "Start").text = time_period["Start"]
+                ET.SubElement(work_time, "Finish").text = time_period["Finish"]
 
         holidays = ET.SubElement(el, "HolidayOrExceptions")
+        for holiday in self.auto_detect_holidays(calendar):
+            el = ET.SubElement(holidays, "HolidayOrException")
+            ET.SubElement(el, "Date").text = ifcopenshell.util.date.datetime2ifc(holiday, "IfcDateTime")
+            ET.SubElement(el, "WorkTime")
 
-        holiday = ET.SubElement(holidays, "HolidayOrException")
-        date = ET.SubElement(holidays, "Date").text = "2022-01-01T00:00:00"
+    def auto_detect_working_week(self, calendar):
+        # P6 XML only understands a working week. In other words, it understands
+        # the equivalent of an IFC weekly recurring time period. If you do not
+        # have a weekly recurring time period, we just give a default working
+        # week.
+        results = {}
+        weekday_component_map = {
+            1: "Monday",
+            2: "Tuesday",
+            3: "Wednesday",
+            4: "Thursday",
+            5: "Friday",
+            6: "Saturday",
+            7: "Sunday",
+        }
+        for working_time in calendar.WorkingTimes:
+            if not working_time.RecurrencePattern or working_time.RecurrencePattern.RecurrenceType != "WEEKLY":
+                continue
 
-        holiday = ET.SubElement(holidays, "HolidayOrException")
-        date = ET.SubElement(holidays, "Date").text = "2022-01-02T00:00:00"
+            if not working_time.RecurrencePattern.TimePeriods:
+                time_periods = [{"Start": "09:00:00", "Finish": "17:00:00"}]
+            else:
+                time_periods = [
+                    {"Start": p.StartTime, "Finish": p.EndTime} for p in working_time.RecurrencePattern.TimePeriods
+                ]
 
-        holiday = ET.SubElement(holidays, "HolidayOrException")
-        date = ET.SubElement(holidays, "Date").text = "2022-01-03T00:00:00"
+            for component in working_time.RecurrencePattern.WeekdayComponent:
+                results.setdefault(weekday_component_map[component], []).extend(time_periods)
+
+        return results
+
+    def get_default_working_week(self):
+        results = {}
+        # As a fallback, we work 5 days a week, 8 hours per day.
+        for name in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]:
+            results[name] = [{"Start": "09:00:00", "Finish": "17:00:00"}]
+        return results
+
+    def auto_detect_holidays(self, calendar):
+        results = []
+        start = self.holiday_start_date
+        finish = self.holiday_finish_date
+        if finish < start:
+            return results
+        while start < finish:
+            start += datetime.timedelta(days=1)
+            if not ifcopenshell.util.sequence.is_working_day(start, calendar):
+                results.append(start)
+        return results
 
     def create_projects(self):
         for work_schedule in self.file.by_type("IfcWorkSchedule"):
@@ -92,8 +153,11 @@ class Ifc2P6:
         project = ET.SubElement(self.root, "Project")
         self.link_element(work_schedule, project)
 
-        ET.SubElement(project, "ActivityDefaultCalendarObjectId").text = self.id_map[self.file.by_type("IfcWorkCalendar")[0]]
+        ET.SubElement(project, "ActivityDefaultCalendarObjectId").text = self.id_map[
+            self.file.by_type("IfcWorkCalendar")[0]
+        ]
         ET.SubElement(project, "Name").text = work_schedule.Name or "Unnamed"
+        ET.SubElement(project, "Id").text = work_schedule.Identification or "X"
         ET.SubElement(project, "OBSObjectId").text = self.id_map[self.file.by_type("IfcProject")[0]]
 
         self.project_tasks = []
@@ -111,12 +175,15 @@ class Ifc2P6:
             self.link_element(task, wbs)
             ET.SubElement(wbs, "Code").text = task.Identification or "X"
             ET.SubElement(wbs, "Name").text = task.Name or "Unnamed"
+            parent_object_id = ET.SubElement(wbs, "ParentObjectId")
             if parent:
-                ET.SubElement(wbs, "ParentObjectId").text = self.id_map[parent]
+                parent_object_id.text = self.id_map[parent]
             ET.SubElement(wbs, "ProjectObjectId").text = self.id_map[work_schedule]
             self.create_wbs(subtasks, work_schedule, parent=task)
 
     def create_activity(self, task, work_schedule, parent=None):
+        if not parent:
+            return
         activity = ET.SubElement(self.element_map[work_schedule], "Activity")
         self.link_element(task, activity)
         ET.SubElement(activity, "Id").text = task.Identification or "X"
@@ -127,6 +194,7 @@ class Ifc2P6:
             if task.TaskTime.ScheduleDuration:
                 duration = ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleDuration)
                 ET.SubElement(activity, "PlannedDuration").text = str(duration.days * self.hours_per_day)
+                ET.SubElement(activity, "RemainingDuration").text = str(duration.days * self.hours_per_day)
             if task.TaskTime.ScheduleStart:
                 ET.SubElement(activity, "PlannedStartDate").text = task.TaskTime.ScheduleStart
                 ET.SubElement(activity, "StartDate").text = task.TaskTime.ScheduleStart
@@ -134,6 +202,25 @@ class Ifc2P6:
                 ET.SubElement(activity, "PlannedFinishDate").text = task.TaskTime.ScheduleFinish
                 ET.SubElement(activity, "FinishDate").text = task.TaskTime.ScheduleFinish
         ET.SubElement(activity, "ProjectObjectId").text = self.id_map[work_schedule]
+        ET.SubElement(activity, "ActualDuration").text = "0"
+        ET.SubElement(activity, "ActualFinishDate")
+        ET.SubElement(activity, "ActualStartDate")
+        calendar = ifcopenshell.util.sequence.derive_calendar(task)
+        ET.SubElement(activity, "CalendarObjectId").text = self.id_map[calendar]
+        ET.SubElement(activity, "DurationPercentComplete").text = "0"
+        ET.SubElement(activity, "Type").text = "Task Dependent"
+        ET.SubElement(activity, "Status").text = "Not Started"
+
+        data_map = {
+            "RemainingEarlyStartDate": task.TaskTime.EarlyStart,
+            "RemainingEarlyFinishDate": task.TaskTime.EarlyFinish,
+            "RemainingLateStartDate": task.TaskTime.LateStart,
+            "RemainingLateFinishDate": task.TaskTime.LateFinish,
+        }
+        for key, value in data_map.items():
+            el = ET.SubElement(activity, "RemainingEarlyStartDate")
+            if value:
+                el.text = value
 
     def create_relationships(self, tasks, work_schedule):
         for task in tasks:
@@ -171,6 +258,8 @@ class Ifc2P6:
     def link_element(self, element, el):
         self.id += 1
         ET.SubElement(el, "ObjectId").text = str(self.id)
+        guid = str(uuid.UUID(ifcopenshell.guid.expand(element.GlobalId))).upper()
+        ET.SubElement(el, "GUID").text = "{" + guid + "}"
         self.id_map[element] = str(self.id)
         self.element_map[element] = el
         return self.id
