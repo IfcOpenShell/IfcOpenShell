@@ -21,6 +21,8 @@ BCF. The same concepts will apply. We can call this Native OpenBIM authoring,
 which is a paradigm shift from traditional BIM which relies on translated IFC
 data.
 
+.. image:: native-openbim.png
+
 Every user operation reads or writes this data structure in memory, and the IFC
 data becomes the source of truth for all data. There is no such thing as an
 import or export. The data is always represented in IFC. When a BIM model is
@@ -38,13 +40,25 @@ Just show me the code!
 ----------------------
 
 Sometimes, the best way to learn how to hack on a project is to just start
-hacking away. The BlenderBIM Add-on code is separated into modules. Each module
-focuses on a particular topic of BIM. Most modules are self-contained, but
-sometimes they connect to one another, just like how BIM works.
+hacking away. BIM authoring is a really big topic. As a result, the BlenderBIM
+Add-on code is separated into modules. Each module focuses on a particular topic
+of BIM. Most modules are self-contained, but sometimes they connect to one
+another, just like how BIM works.
 
-The BlenderBIM Add-on comes with a secret demo module which is basically a hello
-world coding tutorial which teaches you about all the moving parts. It's far
-more interesting to read this code rather than 15 pages of abstract software
+.. image:: module-architecture.png
+
+Modules are not arbitrary divisions. They tend to reflect how portions of BIM
+data are segregated in the IFC international standard. This allows us to
+minimise the overlap between modules, so that developers can work on a single
+portion of the code with relative certainty that their actions will not affects
+other developers.
+
+- `BlenderBIM Add-on modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/blenderbim/blenderbim/bim/module>`__
+- `IFC modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell/api>`__
+
+The BlenderBIM Add-on comes with a secret **demo module** which is basically a
+hello world coding tutorial which teaches you about all the moving parts. It's
+far more interesting to read this code rather than 15 pages of abstract software
 architecture flow charts and diagrams. The code and its comments will guide you
 through the process.
 
@@ -56,10 +70,12 @@ To see the demo module in action, you'll need to enable it. In
 module. When you restart Blender, you will see a new demo panel in your scene
 properties interface tab. Have fun!
 
-Here are all the files associated with the demo module. Feel free to read them
-in any order. Each file is heavily commented with explanations about what each
-line of code does. Change some of the code, reload Blender, and see what
-happens!
+.. image:: demo-module.png
+
+Now you're ready to learn how to code! Here are all the files associated with
+the demo module. Feel free to read them in any order. Each file is heavily
+commented with explanations about what each line of code does. Change some of
+the code, reload Blender, and see what happens!
 
 ::
 
@@ -79,7 +95,8 @@ and how to test and structure it so that you can build incredibly complex
 features in a maintainable way.
 
 Tests for quality checking also exist. The system is designed so that you can
-do "Test Driven Development". You can find the tests here:
+do "Test Driven Development". For reference on how to run these tests, see
+:ref:`blenderbim/running_tests` for details. You can find the tests here:
 
 ::
 
@@ -140,6 +157,8 @@ The BlenderBIM Add-on code may be understood in three separate layers: **Deliver
 three layers from one another. Because they are separate, they can be tested and
 built separately.
 
+.. image:: architecture.png
+
 The **Delivery** mechanism is how the application is delivered to
 the user and handles user interactions. It covers the interface and triggering
 events as inputs into the application, and rendering responses.
@@ -180,141 +199,13 @@ even with their own CLI. This **Data** layer isn't a single folder of code we
 can point to, it's an ecosystem of libraries and utilities that we want to share
 with the entire industry.
 
-Delivery architecture
----------------------
-
-TODO: Continue writing.
-
-Past this point needs to be reviewed. Continue reading but don't trust anything
-blindly.
-
-The IFC based system takes care of reading and writing IFC data using
-the IfcOpenShell library. This system is agnostic of Blender and the BlenderBIM
-Add-on. Data is read from the IFC dataset using ``Data`` classes. Data is
-written into the IFC dataset using ``Usecase`` classes.
-
-The Blender based system takes care of turning Blender into a BIM authoring
-client. Like all Blender add-ons, ``Operators`` define user operations, such as
-those triggered when pressing a button. ``UI`` defines the interface, such as
-the layout of buttons, input fields, and panels. Finally, ``Props`` define
-properties that Blender keeps track of, typically for interface input fields or
-user settings.
-
-The Blender system depends on the IFC system. The IFC system does not depend on
-the Blender system.
-
-.. image:: architecture.png
-
-..
-    digraph G {rankdir=LR;
-      node [fontname = "Handlee", shape=rect];
-
-      subgraph cluster_0 {
-        node [style=filled,color=pink];
-
-        IfcOpenShell -> Data;
-        Usecase -> IfcOpenShell;
-
-        label = "*IFC based*";
-        fontsize = 20;
-        color=grey
-      }
-
-      subgraph cluster_1 {
-        node [style=filled,color=lightblue];
-
-        Operators -> Usecase
-        Data->UI
-        Data->Operators
-
-        Operators -> Props
-        Props -> Operators
-        Props -> UI
-
-        label = "*Blender based*";
-        fontsize = 20;
-        color=grey
-      }
-    }
-
-Of course, there are many details that we are glossing over, but it provides a
-good representation of data flow in the BlenderBIM Add-on.
-
-The code for these two systems may be found here:
-
-- `ifcopenshell <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python>`__
-- `blenderbim <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/blenderbim>`__
-
-Module architecture
--------------------
-
-Because BIM authoring is a vast field, the architecture is further grouped into
-modules. Modules include things like project related capabilities, structural
-related capabilities, costing related capabilities, and so on.
-
-Each module consists an IFC based system, which does all the IFC manipulations,
-and a Blender based counterpart, which exposes all of these operations to the
-user via the Blender interface.
-
-.. image:: module-architecture.png
-
-..
-    digraph G {
-        node [fontname = "Handlee", shape=rect];
-        subgraph cluster_1 {
-            rank=same;
-            {
-                blender1 [label="Blender", style=filled, color=lightblue];
-                ifc1 [label="IFC", style=filled, color=pink];
-                ifc1 -> blender1
-                blender1 -> ifc1
-            }
-
-            label = "*Project Module*";
-            fontsize = 20;
-            color=grey
-        }
-        subgraph cluster_2 {
-            rank=same;
-            {
-                blender2 [label="Blender", style=filled, color=lightblue];
-                ifc2 [label="IFC", style=filled, color=pink];
-                ifc2 -> blender2
-                blender2 -> ifc2
-            }
-
-            label = "*Structural Module*";
-            fontsize = 20;
-            color=grey
-        }
-        subgraph cluster_3 {
-            rank=same;
-            {
-                blender3 [label="Blender", style=filled, color=lightblue];
-                ifc3 [label="IFC", style=filled, color=pink];
-                ifc3 -> blender3
-                blender3 -> ifc3
-            }
-
-            label = "*XYZ Module*";
-            fontsize = 20;
-            color=grey
-        }
-    }
-
-Modules are not arbitrary divisions, but instead reflect subgraphs of IFC
-relationships that minimise overlap with other subgraphs. Therefore modules are
-mostly self contained, and allow developers to work on a single portion of the
-code with relative certainty that their actions will not affects other
-developers. Sometimes, overlap is inevitable.
-
-There are over 40 modules, so we won't list them here.
-
-- `IFC modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell/api>`__
-- `Blender modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/blenderbim/blenderbim/bim/module>`__
-
 IfcOpenShell Architecture
 -------------------------
+
+A large part of the BlenderBIM Add-on is understanding how IFC data is modified.
+This code is not technically part of the the BlenderBIM Add-on codebase, but it
+is vital to understand. You will need to be familiar with the IfcOpenShell
+Python module.
 
 Manipulating IFC data is not simple. IFC may be serialised into multiple
 formats, multiple schema versions must be supported, and geometry may be defined
@@ -329,29 +220,6 @@ bindings, so all IFC data is already deserialised into Python objects. The inner
 workings of the C++ base is out of scope.
 
 .. image:: ifcopenshell-architecture.png
-
-..
-    digraph G {rankdir=LR;
-        node [fontname = "Handlee", shape=rect, style=filled,color=pink];
-        IfcOpenShell [label="IfcOpenShell C++", color=grey]
-        ifcopenshell [label="IfcOpenShell-python"]
-        OpenCascade [color=grey]
-        CGAL [color=grey]
-
-        OpenCascade -> IfcOpenShell
-        CGAL -> IfcOpenShell
-        IfcOpenShell -> ifcopenshell
-        ifcopenshell -> Core
-        ifcopenshell -> Utils
-        ifcopenshell -> API
-        API -> Module01
-        API -> Module02
-        API -> Module03
-        Module03[label="..."]
-        Module01 -> Data
-        Module01 -> Usecase
-    }
-
 
 IfcOpenShell offers a core set of low-level functionality to read and write this
 data. An example of the core functionality would be:
@@ -416,9 +284,3 @@ The code for IfcOpenShell's various systems can be found here:
 - `ifcopenshell (core) <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell>`__
 - `ifcopenshell.util <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell/util>`__
 - `ifcopenshell.api <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell/api>`__
-
-
-BlenderBIM Add-on architecture
-------------------------------
-
-TODO
