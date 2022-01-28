@@ -19,7 +19,6 @@
 from bpy.types import Panel
 from blenderbim.bim.module.aggregate.data import AggregateData
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.root.data import IfcClassData
 
 
 class BIM_PT_aggregate(Panel):
@@ -73,8 +72,6 @@ class BIM_PT_aggregate(Panel):
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
 
-        if not IfcClassData.is_loaded:
-            IfcClassData.load()
-        ifc_class = IfcClassData.data["ifc_class"]
+        ifc_class = AggregateData.data["ifc_class"]
         if ifc_class == "IfcBuilding":
             layout.operator("bim.building_storey_add")

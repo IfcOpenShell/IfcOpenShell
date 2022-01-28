@@ -35,6 +35,7 @@ class AggregateData:
             "has_aggregate": cls.has_aggregate(),
             "label": cls.get_label(),
             "relating_object_id": cls.get_relating_object_id(),
+            "ifc_class": cls.ifc_class(),
         }
         cls.is_loaded = True
 
@@ -53,3 +54,9 @@ class AggregateData:
         aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(bpy.context.active_object))
         if aggregate:
             return aggregate.id()
+
+    @classmethod
+    def ifc_class(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            return element.is_a()
