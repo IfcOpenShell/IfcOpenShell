@@ -263,10 +263,7 @@ is complex and requires a deep knowledge of IFC to perform correctly and ensure
 that the IFC graph state is well maintained. Typically, any authoring operation
 that does not use the API is likely to contain mistakes.
 
-Each module contains a Data class to extract various IFC data related to the IFC
-concept that the module relates to. The ``Data`` classes parse the complex IFC
-graph and convert it into a cache of primitive Python data. The ``Usecase``
-clases perform a defined user operation. Here's an example of it in action:
+Here's an example of it in action:
 
 .. code-block:: python
 
