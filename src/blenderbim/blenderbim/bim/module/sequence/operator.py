@@ -1202,6 +1202,8 @@ class ExportP6(bpy.types.Operator, ImportHelper):
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
+    holiday_start_date: bpy.props.StringProperty(default="2022-01-01", name="Holiday Start Date")
+    holiday_finish_date: bpy.props.StringProperty(default="2023-01-01", name="Holiday Finish Date")
 
     @classmethod
     def poll(cls, context):
@@ -1216,6 +1218,8 @@ class ExportP6(bpy.types.Operator, ImportHelper):
         ifc2p6 = Ifc2P6()
         ifc2p6.xml = self.filepath
         ifc2p6.file = self.file
+        ifc2p6.holiday_start_date = parser.parse(self.holiday_start_date).date()
+        ifc2p6.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
         ifc2p6.execute()
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
