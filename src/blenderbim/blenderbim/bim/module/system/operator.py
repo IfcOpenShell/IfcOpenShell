@@ -132,3 +132,21 @@ class SelectSystemProducts(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.select_system_products(tool.System, system=tool.Ifc.get().by_id(self.system))
+
+
+class ShowPorts(bpy.types.Operator, Operator):
+    bl_idname = "bim.show_ports"
+    bl_label = "Show Ports"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.show_ports(tool.System, element=tool.Ifc.get_entity(context.active_object))
+
+
+class HidePorts(bpy.types.Operator, Operator):
+    bl_idname = "bim.hide_ports"
+    bl_label = "Hide Ports"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.hide_ports(tool.System, element=tool.Ifc.get_entity(context.active_object))

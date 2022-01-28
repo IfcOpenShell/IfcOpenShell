@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blenderbim.tool as tool
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.system.data import SystemData, ObjectSystemData
+from blenderbim.bim.module.system.data import SystemData, ObjectSystemData, PortData
 
 
 class BIM_PT_systems(Panel):
@@ -123,6 +124,35 @@ class BIM_PT_object_systems(Panel):
 
         if not ObjectSystemData.data["systems"]:
             self.layout.label(text="No System associated with Active Object")
+
+
+class BIM_PT_ports(Panel):
+    bl_label = "IFC Ports"
+    bl_idname = "BIM_PT_ports"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_services_object"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        element = tool.Ifc.get_entity(context.active_object)
+        if not element or not element.is_a("IfcDistributionElement"):
+            return False
+        return True
+
+    def draw(self, context):
+        if not PortData.is_loaded:
+            PortData.load()
+        self.props = context.scene.BIMSystemProperties
+
+        row = self.layout.row(align=True)
+        row.label(text=f"{PortData.data['total_ports']} Ports Found", icon="PLUGIN")
+        row.operator("bim.show_ports", icon="HIDE_OFF", text="")
+        row.operator("bim.hide_ports", icon="HIDE_ON", text="")
 
 
 class BIM_UL_systems(UIList):

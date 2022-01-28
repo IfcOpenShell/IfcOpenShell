@@ -80,3 +80,20 @@ class ObjectSystemData:
     @classmethod
     def total_systems(cls):
         return len(tool.Ifc.get().by_type("IfcSystem"))
+
+
+class PortData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "total_ports": cls.total_ports(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def total_ports(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        return len(ifcopenshell.util.system.get_ports(element))

@@ -359,12 +359,16 @@ class Surveyor:
 
 @interface
 class System:
+    def delete_element_objects(cls, elements): pass
     def disable_editing_system(cls): pass
     def disable_system_editing_ui(cls): pass
     def enable_system_editing_ui(cls): pass
     def export_system_attributes(cls): pass
+    def get_ports(cls, element): pass
     def import_system_attributes(cls, system): pass
     def import_systems(cls): pass
+    def load_ports(cls, port): pass
+    def select_elements(cls, elements): pass
     def select_system_products(cls, system): pass
     def set_active_system(cls, system): pass
 

@@ -53,5 +53,8 @@ def update_ifc_class(self, context):
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="IFC Class", update=update_ifc_class)
     relating_type: bpy.props.EnumProperty(items=get_relating_type, name="Relating Type")
-    occurrence_name_style: bpy.props.EnumProperty(items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")], name="Occurrence Name Style")
+    occurrence_name_style: bpy.props.EnumProperty(
+        items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")],
+        name="Occurrence Name Style",
+    )
     occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
