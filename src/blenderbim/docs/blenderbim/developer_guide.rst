@@ -284,3 +284,14 @@ The code for IfcOpenShell's various systems can be found here:
 - `ifcopenshell (core) <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell>`__
 - `ifcopenshell.util <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell/util>`__
 - `ifcopenshell.api <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell/api>`__
+
+Asking for help
+---------------
+
+It's no fun to code alone! It's encouraged to reach out if there are any issues,
+if you'd like to code together with another developer, need a code review, or
+need further testing. Here are some places to reach out:
+
+- `Github issues <https://github.com/IfcOpenShell/IfcOpenShell/issues>`__
+- `OSArch live chat <https://osarch.org/chat>`__
+- `OSArch community forum <https://community.osarch.org>`__
