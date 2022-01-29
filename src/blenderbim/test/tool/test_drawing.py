@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import ifcopenshell
 import blenderbim.core.tool
@@ -27,6 +28,21 @@ from blenderbim.tool.drawing import Drawing as subject
 class TestImplementsTool(NewFile):
     def test_run(self):
         assert isinstance(subject(), blenderbim.core.tool.Drawing)
+
+
+class TestCreateSvgSheet(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR")
+        subject.create_svg_sheet(document, "A1")
+        assert os.path.isfile(os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", "X - FOOBAR.svg"))
+
+
+class TestDisableEditingSheets(NewFile):
+    def test_run(self):
+        bpy.context.scene.DocProperties.is_editing_sheets = True
+        subject.disable_editing_sheets()
+        assert bpy.context.scene.DocProperties.is_editing_sheets == False
 
 
 class TestDisableEditingText(NewFile):
@@ -45,6 +61,13 @@ class TestDisableEditingTextProduct(NewFile):
         assert obj.BIMTextProperties.is_editing_product == False
 
 
+class TestEnableEditingSheets(NewFile):
+    def test_run(self):
+        bpy.context.scene.DocProperties.is_editing_sheets = False
+        subject.enable_editing_sheets()
+        assert bpy.context.scene.DocProperties.is_editing_sheets == True
+
+
 class TestEnableEditingText(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
@@ -59,6 +82,26 @@ class TestEnableEditingTextProduct(NewFile):
         assert obj.BIMTextProperties.is_editing_product == True
 
 
+class TestEnsureUniqueIdentification(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR"
+        ifc.createIfcDocumentInformation(Identification="FOOBAR", Scope="DOCUMENTATION")
+        assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR-X"
+        ifc.createIfcDocumentInformation(Identification="FOOBAR-X", Scope="DOCUMENTATION")
+        assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR-X-X"
+
+    def test_unique_document_id_ifc2x3(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR"
+        ifc.createIfcDocumentInformation(DocumentId="FOOBAR", Scope="DOCUMENTATION")
+        assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR-X"
+        ifc.createIfcDocumentInformation(DocumentId="FOOBAR-X", Scope="DOCUMENTATION")
+        assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR-X-X"
+
+
 class TestExportTextLiteralAttributes(NewFile):
     def test_run(self):
         TestImportTextAttributes().test_run()
@@ -67,6 +110,27 @@ class TestExportTextLiteralAttributes(NewFile):
             "Path": "RIGHT",
             "BoxAlignment": "BoxAlignment",
         }
+
+
+class TestGetSheetFilename(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="DOCUMENTATION")
+        subject.get_sheet_filename(document) == "X - FOOBAR"
+
+    def test_run_ifc2x3(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="DOCUMENTATION")
+        subject.get_sheet_filename(document) == "X - FOOBAR"
+
+
+class TestGenerateSheetIdentification(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        subject.generate_sheet_identification() == "A01"
+        document = ifc.createIfcDocumentInformation()
+        subject.generate_sheet_identification() == "A02"
 
 
 class TestGetTextLiteral(NewFile):
@@ -92,6 +156,30 @@ class TestGetTextProduct(NewFile):
         label = ifc.createIfcAnnotation()
         ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
         assert subject.get_text_product(label) == wall
+
+
+class TestImportSheets(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifc.createIfcDocumentInformation(Identification="Y", Name="FOOBAZ")
+        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="DOCUMENTATION")
+        subject.import_sheets()
+        props = bpy.context.scene.DocProperties
+        assert props.sheets[0].ifc_definition_id == document.id()
+        assert props.sheets[0].identification == "X"
+        assert props.sheets[0].name == "FOOBAR"
+
+    def test_run_ifc2x3(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        ifc.createIfcDocumentInformation(DocumentId="Y", Name="FOOBAZ")
+        document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="DOCUMENTATION")
+        subject.import_sheets()
+        props = bpy.context.scene.DocProperties
+        assert props.sheets[0].ifc_definition_id == document.id()
+        assert props.sheets[0].identification == "X"
+        assert props.sheets[0].name == "FOOBAR"
 
 
 class TestImportTextAttributes(NewFile):
@@ -135,6 +223,11 @@ class TestImportTextProduct(NewFile):
         tool.Ifc.link(label, label_obj)
         subject.import_text_product(label_obj)
         assert label_obj.BIMTextProperties.relating_product is None
+
+
+class TestOpenSvg(NewFile):
+    def test_nothing(self):
+        pass
 
 
 class TestUpdateTextValue(NewFile):

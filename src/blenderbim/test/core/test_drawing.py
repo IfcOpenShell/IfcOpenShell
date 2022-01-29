@@ -67,3 +67,53 @@ class TestEditTextProduct:
         drawing.update_text_value("obj").should_be_called()
         drawing.disable_editing_text_product("obj").should_be_called()
         subject.edit_text_product(ifc, drawing, obj="obj", product="product")
+
+
+class TestLoadSheets:
+    def test_run(self, drawing):
+        drawing.import_sheets().should_be_called()
+        drawing.enable_editing_sheets().should_be_called()
+        subject.load_sheets(drawing)
+
+
+class TestDisableEditingSheets:
+    def test_run(self, drawing):
+        drawing.disable_editing_sheets().should_be_called()
+        subject.disable_editing_sheets(drawing)
+
+
+class TestAddSheet:
+    def test_run(self, ifc, drawing):
+        ifc.run("document.add_information").should_be_called().will_return("sheet")
+        drawing.generate_sheet_identification().should_be_called().will_return("identification")
+        drawing.ensure_unique_identification("identification").should_be_called().will_return("u_identification")
+        ifc.get_schema().should_be_called().will_return("IFC4")
+        ifc.run(
+            "document.edit_information",
+            information="sheet",
+            attributes={"Identification": "u_identification", "Name": "UNTITLED", "Scope": "DOCUMENTATION"},
+        ).should_be_called()
+        drawing.create_svg_sheet("sheet", "titleblock").should_be_called()
+        drawing.import_sheets().should_be_called()
+        subject.add_sheet(ifc, drawing, titleblock="titleblock")
+
+    def test_using_a_document_id_in_ifc2x3(self, ifc, drawing):
+        ifc.run("document.add_information").should_be_called().will_return("sheet")
+        drawing.generate_sheet_identification().should_be_called().will_return("identification")
+        drawing.ensure_unique_identification("identification").should_be_called().will_return("u_identification")
+        ifc.get_schema().should_be_called().will_return("IFC2X3")
+        ifc.run(
+            "document.edit_information",
+            information="sheet",
+            attributes={"DocumentId": "u_identification", "Name": "UNTITLED", "Scope": "DOCUMENTATION"},
+        ).should_be_called()
+        drawing.create_svg_sheet("sheet", "titleblock").should_be_called()
+        drawing.import_sheets().should_be_called()
+        subject.add_sheet(ifc, drawing, titleblock="titleblock")
+
+
+class TestOpenSheet:
+    def test_run(self, drawing):
+        drawing.get_sheet_filename("sheet").should_be_called().will_return("filename")
+        drawing.open_svg("filename").should_be_called()
+        subject.open_sheet(drawing, sheet="sheet")

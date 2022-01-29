@@ -31,7 +31,7 @@ class SheetBuilder:
         self.scale = "NTS"
 
     def create(self, name, titleblock_name):
-        sheet_path = os.path.join(self.data_dir, f"{name}.svg")
+        sheet_path = os.path.join(self.data_dir, "sheets", f"{name}.svg")
         root = ET.Element("svg")
         root.attrib["xmlns"] = "http://www.w3.org/2000/svg"
         root.attrib["xmlns:xlink"] = "http://www.w3.org/1999/xlink"

@@ -152,11 +152,9 @@ def getTitleblocks(self, context):
     global titleblocks_enum
     if len(titleblocks_enum) < 1:
         titleblocks_enum.clear()
-        for filename in Path(os.path.join(context.scene.BIMProperties.data_dir, "templates", "titleblocks")).glob(
-            "*.svg"
-        ):
-            f = str(filename.stem)
-            titleblocks_enum.append((f, f, ""))
+        files = Path(os.path.join(context.scene.BIMProperties.data_dir, "templates", "titleblocks")).glob("*.svg")
+        files = sorted([str(f.stem) for f in files])
+        titleblocks_enum.extend([(f, f, "") for f in files])
     return titleblocks_enum
 
 
@@ -218,6 +216,8 @@ class Sheet(PropertyGroup):
     def get_name(self):
         return self.get("name")
 
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    identification: StringProperty(name="Identification")
     name: StringProperty(name="Name", get=get_name, set=set_name)
     drawings: CollectionProperty(name="Drawings", type=Drawing)
     active_drawing_index: IntProperty(name="Active Drawing Index")
@@ -282,6 +282,7 @@ class DocProperties(PropertyGroup):
     schedules: CollectionProperty(name="Schedules", type=Schedule)
     active_schedule_index: IntProperty(name="Active Schedule Index")
     titleblock: EnumProperty(items=getTitleblocks, name="Titleblock", update=refreshTitleblocks)
+    is_editing_sheets: BoolProperty(name="Is Editing Sheets", default=False)
     sheets: CollectionProperty(name="Sheets", type=Sheet)
     active_sheet_index: IntProperty(name="Active Sheet Index")
     ifc_files: CollectionProperty(name="IFCs", type=StrProperty)

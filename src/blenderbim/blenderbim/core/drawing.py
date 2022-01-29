@@ -56,3 +56,29 @@ def edit_text_product(ifc, drawing, obj=None, product=None):
         ifc.run("drawing.assign_product", relating_product=product, related_object=element)
     drawing.update_text_value(obj)
     drawing.disable_editing_text_product(obj)
+
+
+def load_sheets(drawing):
+    drawing.import_sheets()
+    drawing.enable_editing_sheets()
+
+
+def disable_editing_sheets(drawing):
+    drawing.disable_editing_sheets()
+
+
+def add_sheet(ifc, drawing, titleblock=None):
+    sheet = ifc.run("document.add_information")
+    identification = drawing.generate_sheet_identification()
+    identification = drawing.ensure_unique_identification(identification)
+    attributes = {"Identification": identification, "Name": "UNTITLED", "Scope": "DOCUMENTATION"}
+    if ifc.get_schema() == "IFC2X3":
+        attributes["DocumentId"] = attributes["Identification"]
+        del attributes["Identification"]
+    ifc.run("document.edit_information", information=sheet, attributes=attributes)
+    drawing.create_svg_sheet(sheet, titleblock)
+    drawing.import_sheets()
+
+
+def open_sheet(drawing, sheet=None):
+    drawing.open_svg(drawing.get_sheet_filename(sheet))

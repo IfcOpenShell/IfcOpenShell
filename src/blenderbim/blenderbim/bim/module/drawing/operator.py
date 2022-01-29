@@ -625,33 +625,24 @@ class AddAnnotation(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddSheet(bpy.types.Operator):
+class AddSheet(bpy.types.Operator, Operator):
     bl_idname = "bim.add_sheet"
     bl_label = "Add Sheet"
     bl_options = {"REGISTER", "UNDO"}
-    # TODO: check undo redo
 
-    def execute(self, context):
-        scene = context.scene
-        new = scene.DocProperties.sheets.add()
-        new.name = "{} - SHEET".format(len(scene.DocProperties.sheets))
-        sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = scene.BIMProperties.data_dir
-        sheet_builder.create(new.name, scene.DocProperties.titleblock)
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.add_sheet(tool.Ifc, tool.Drawing, titleblock=context.scene.DocProperties.titleblock)
 
 
-class OpenSheet(bpy.types.Operator):
+class OpenSheet(bpy.types.Operator, Operator):
     bl_idname = "bim.open_sheet"
     bl_label = "Open Sheet"
+    bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        props = context.scene.DocProperties
-        open_with_user_command(
-            context.preferences.addons["blenderbim"].preferences.svg_command,
-            os.path.join(context.scene.BIMProperties.data_dir, "sheets", props.active_sheet.name + ".svg"),
-        )
-        return {"FINISHED"}
+    def _execute(self, context):
+        self.props = context.scene.DocProperties
+        sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
+        core.open_sheet(tool.Drawing, sheet=sheet)
 
 
 class AddDrawingToSheet(bpy.types.Operator):
@@ -1420,3 +1411,21 @@ class DisableEditingTextProduct(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.disable_editing_text_product(tool.Drawing, obj=context.active_object)
+
+
+class LoadSheets(bpy.types.Operator, Operator):
+    bl_idname = "bim.load_sheets"
+    bl_label = "Load Sheets"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.load_sheets(tool.Drawing)
+
+
+class DisableEditingSheets(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_sheets"
+    bl_label = "Disable Editing Text Product"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disable_editing_sheets(tool.Drawing)
