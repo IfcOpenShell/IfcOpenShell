@@ -19,6 +19,7 @@
 import bpy
 import math
 import mathutils.geometry
+import blenderbim.tool as tool
 from mathutils import Vector
 
 # Code taken and updated from https://blenderartists.org/t/detecting-intersection-of-bounding-boxes/457520/2
@@ -263,7 +264,8 @@ def get_active_drawing(scene):
         return None, None
     try:
         drawing = props.active_drawing
-        return drawing.camera.users_collection[0], drawing.camera
+        camera = tool.Ifc.get_object(tool.Ifc.get().by_id(drawing.ifc_definition_id))
+        return camera.users_collection[0], camera
     except (KeyError, IndexError):
         raise RuntimeError("missing drawing collection")
 

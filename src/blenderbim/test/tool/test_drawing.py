@@ -38,6 +38,13 @@ class TestCreateSvgSheet(NewFile):
         assert os.path.isfile(os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", "X - FOOBAR.svg"))
 
 
+class TestDisableEditingDrawings(NewFile):
+    def test_run(self):
+        bpy.context.scene.DocProperties.is_editing_drawings = True
+        subject.disable_editing_drawings()
+        assert bpy.context.scene.DocProperties.is_editing_drawings == False
+
+
 class TestDisableEditingSheets(NewFile):
     def test_run(self):
         bpy.context.scene.DocProperties.is_editing_sheets = True
@@ -61,6 +68,13 @@ class TestDisableEditingTextProduct(NewFile):
         assert obj.BIMTextProperties.is_editing_product == False
 
 
+class TestEnableEditingDrawings(NewFile):
+    def test_run(self):
+        bpy.context.scene.DocProperties.is_editing_drawings = False
+        subject.enable_editing_drawings()
+        assert bpy.context.scene.DocProperties.is_editing_drawings == True
+
+
 class TestEnableEditingSheets(NewFile):
     def test_run(self):
         bpy.context.scene.DocProperties.is_editing_sheets = False
@@ -80,6 +94,17 @@ class TestEnableEditingTextProduct(NewFile):
         obj = bpy.data.objects.new("Object", None)
         subject.enable_editing_text_product(obj)
         assert obj.BIMTextProperties.is_editing_product == True
+
+
+class TestEnsureUniqueDrawingName(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        assert subject.ensure_unique_drawing_name("FOOBAR") == "FOOBAR"
+        ifc.createIfcAnnotation(Name="FOOBAR", ObjectType="DRAWING")
+        assert subject.ensure_unique_drawing_name("FOOBAR") == "FOOBAR-X"
+        ifc.createIfcAnnotation(Name="FOOBAR-X", ObjectType="DRAWING")
+        assert subject.ensure_unique_drawing_name("FOOBAR") == "FOOBAR-X-X"
 
 
 class TestEnsureUniqueIdentification(NewFile):
@@ -156,6 +181,17 @@ class TestGetTextProduct(NewFile):
         label = ifc.createIfcAnnotation()
         ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
         assert subject.get_text_product(label) == wall
+
+
+class TestImportDrawings(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(Name="FOOBAR", ObjectType="DRAWING")
+        subject.import_drawings()
+        props = bpy.context.scene.DocProperties
+        assert props.drawings[0].ifc_definition_id == drawing.id()
+        assert props.drawings[0].name == "FOOBAR"
 
 
 class TestImportSheets(NewFile):

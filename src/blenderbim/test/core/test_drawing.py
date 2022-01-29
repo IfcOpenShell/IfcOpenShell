@@ -124,3 +124,16 @@ class TestRemoveSheet:
         ifc.run("document.remove_document", document="sheet").should_be_called()
         drawing.import_sheets().should_be_called()
         subject.remove_sheet(ifc, drawing, sheet="sheet")
+
+
+class TestLoadDrawings:
+    def test_run(self, drawing):
+        drawing.import_drawings().should_be_called()
+        drawing.enable_editing_drawings().should_be_called()
+        subject.load_drawings(drawing)
+
+
+class TestDisableEditingDrawings:
+    def test_run(self, drawing):
+        drawing.disable_editing_drawings().should_be_called()
+        subject.disable_editing_drawings(drawing)

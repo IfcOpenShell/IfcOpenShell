@@ -79,14 +79,13 @@ class AddDrawing(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        new = context.scene.DocProperties.drawings.add()
-        new.name = "DRAWING {}".format(len(context.scene.DocProperties.drawings))
+        drawing_name = tool.Drawing.ensure_unique_drawing_name("UNTITLED")
         if not bpy.data.collections.get("Views"):
             context.scene.collection.children.link(bpy.data.collections.new("Views"))
         views_collection = bpy.data.collections.get("Views")
-        view_collection = bpy.data.collections.new("IfcGroup/" + new.name)
+        view_collection = bpy.data.collections.new("IfcGroup/" + drawing_name)
         views_collection.children.link(view_collection)
-        camera = bpy.data.objects.new(new.name, bpy.data.cameras.new(new.name))
+        camera = bpy.data.objects.new(drawing_name, bpy.data.cameras.new(drawing_name))
         camera.location = (0, 0, 1.5)  # The view shall be 1.5m above the origin
         camera.data.type = "ORTHO"
         camera.data.ortho_scale = 50  # The default of 6m is too small
@@ -99,13 +98,12 @@ class AddDrawing(bpy.types.Operator):
         view_collection.objects.link(camera)
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].region_3d.view_perspective = "CAMERA"
-        new.camera = camera
         bpy.ops.bim.assign_class(obj=camera.name, ifc_class="IfcAnnotation", predefined_type="DRAWING")
         bpy.ops.bim.activate_drawing_style()
 
         bpy.ops.bim.add_group()
         group = self.file.by_id(sorted(GroupData.groups.keys())[-1])
-        ifcopenshell.api.run("group.edit_group", self.file, **{"group": group, "attributes": {"Name": new.name}})
+        ifcopenshell.api.run("group.edit_group", self.file, **{"group": group, "attributes": {"Name": drawing_name}})
         bpy.ops.bim.assign_group(product=camera.name, group=group.id())
         pset = ifcopenshell.api.run(
             "pset.add_pset",
@@ -125,6 +123,7 @@ class AddDrawing(bpy.types.Operator):
             },
         )
         PsetData.load(IfcStore.get_file(), camera.BIMObjectProperties.ifc_definition_id)
+        tool.Drawing.import_drawings()
         return {"FINISHED"}
 
 
@@ -729,40 +728,14 @@ class OpenView(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class OpenViewCamera(bpy.types.Operator):
-    """Select this drawing's camera object and expand its drawing properties"""
-
-    bl_idname = "bim.open_view_camera"
-    bl_label = "Open View Camera"
-    bl_options = {"REGISTER", "UNDO"}
-    view_name: bpy.props.StringProperty()
-
-    @classmethod
-    def poll(cls, context):
-        return context.mode == "OBJECT"
-
-    def execute(self, context):
-        doc_props = context.scene.DocProperties
-        doc_props.active_drawing_index = doc_props.drawings.find(self.view_name)
-        drawing = doc_props.active_drawing
-        bpy.ops.object.select_all(action="DESELECT")
-        drawing.camera.select_set(True)
-        context.view_layer.objects.active = drawing.camera
-        for area in context.screen.areas:
-            if area.ui_type == "PROPERTIES":
-                for space in area.spaces:
-                    space.context = "DATA"
-        return {"FINISHED"}
-
-
 class ActivateView(bpy.types.Operator):
     bl_idname = "bim.activate_view"
     bl_label = "Activate View"
     bl_options = {"REGISTER", "UNDO"}
-    drawing_index: bpy.props.IntProperty()
+    drawing: bpy.props.IntProperty()
 
     def execute(self, context):
-        camera = context.scene.DocProperties.drawings[self.drawing_index].camera
+        camera = tool.Ifc.get_object(tool.Ifc.get().by_id(self.drawing))
         if not camera:
             return {"FINISHED"}
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
@@ -1161,23 +1134,6 @@ class RemoveDrawingStyleAttribute(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class RefreshDrawingList(bpy.types.Operator):
-    bl_idname = "bim.refresh_drawing_list"
-    bl_label = "Refresh Drawing List"
-
-    def execute(self, context):
-        doc_props = context.scene.DocProperties
-        doc_props.drawings.clear()
-        for obj in context.scene.objects:
-            if not isinstance(obj.data, bpy.types.Camera):
-                continue
-            if "IfcAnnotation/" in obj.name:
-                new = doc_props.drawings.add()
-                new.name = "/".join(obj.name.split("/")[1:])
-                new.camera = obj
-        return {"FINISHED"}
-
-
 class CleanWireframes(bpy.types.Operator):
     bl_idname = "bim.clean_wireframes"
     bl_label = "Clean Wireframes"
@@ -1429,3 +1385,21 @@ class DisableEditingSheets(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.disable_editing_sheets(tool.Drawing)
+
+
+class LoadDrawings(bpy.types.Operator, Operator):
+    bl_idname = "bim.load_drawings"
+    bl_label = "Load Drawings"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.load_drawings(tool.Drawing)
+
+
+class DisableEditingDrawings(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_drawings"
+    bl_label = "Disable Editing Text Product"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disable_editing_drawings(tool.Drawing)

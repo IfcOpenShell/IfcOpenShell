@@ -87,3 +87,12 @@ def open_sheet(drawing, sheet=None):
 def remove_sheet(ifc, drawing, sheet=None):
     ifc.run("document.remove_document", document=sheet)
     drawing.import_sheets()
+
+
+def load_drawings(drawing):
+    drawing.import_drawings()
+    drawing.enable_editing_drawings()
+
+
+def disable_editing_drawings(drawing):
+    drawing.disable_editing_drawings()

@@ -144,10 +144,6 @@ def updateDrawingName(self, context):
         self.name = unique_name
 
 
-def refreshActiveDrawingIndex(self, context):
-    bpy.ops.bim.activate_view(drawing_index=context.scene.DocProperties.active_drawing_index)
-
-
 def getTitleblocks(self, context):
     global titleblocks_enum
     if len(titleblocks_enum) < 1:
@@ -196,6 +192,7 @@ class Variable(PropertyGroup):
 
 
 class Drawing(PropertyGroup):
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
     name: StringProperty(name="Name", update=updateDrawingName)
     camera: PointerProperty(name="Camera", type=bpy.types.Object)
 
@@ -276,8 +273,20 @@ class DocProperties(PropertyGroup):
     should_use_linework_cache: BoolProperty(name="Use Linework Cache", default=False)
     should_use_annotation_cache: BoolProperty(name="Use Annotation Cache", default=False)
     should_extract: BoolProperty(name="Should Extract", default=True)
+    is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
+    target_view: EnumProperty(
+        items=[
+            ("PLAN_VIEW", "Plan", ""),
+            ("ELEVATION_VIEW", "Elevation", ""),
+            ("SECTION_VIEW", "Section", ""),
+            ("REFLECTED_PLAN_VIEW", "RCP", ""),
+            ("MODEL_VIEW", "Model", ""),
+        ],
+        name="Target View",
+        default="PLAN_VIEW",
+    )
     drawings: CollectionProperty(name="Drawings", type=Drawing)
-    active_drawing_index: IntProperty(name="Active Drawing Index", update=refreshActiveDrawingIndex)
+    active_drawing_index: IntProperty(name="Active Drawing Index")
     current_drawing_index: IntProperty(name="Current Drawing Index")
     schedules: CollectionProperty(name="Schedules", type=Schedule)
     active_schedule_index: IntProperty(name="Active Schedule Index")
