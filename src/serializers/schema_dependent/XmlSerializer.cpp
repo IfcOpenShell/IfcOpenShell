@@ -224,7 +224,11 @@ typename V::list::ptr get_related(T* t, F f, G g) {
 	typename V::list::ptr acc(new typename V::list);
 	for (typename U::list::it it = li->begin(); it != li->end(); ++it) {
 		U* u = *it;
-		acc->push((*u.*g)()->template as<V>());
+		try {
+			acc->push((*u.*g)()->template as<V>());
+		} catch (IfcParse::IfcException& e) {
+			Logger::Error(e);
+		}
 	}
 	return acc;
 }
