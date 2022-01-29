@@ -65,10 +65,6 @@ class BIM_PT_class(Panel):
                 row.operator("bim.unlink_object", icon="UNLINKED", text="")
                 if IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcRoot"):
                     row.operator("bim.enable_reassign_class", icon="GREASEPENCIL", text="")
-                if context.selected_objects:
-                    row.operator("bim.unassign_class", icon="X", text="")
-                else:
-                    row.operator("bim.unassign_class", icon="X", text="").obj = context.active_object.name
         else:
             ifc_predefined_types = root_prop.getIfcPredefinedTypes(context.scene.BIMRootProperties, context)
             self.draw_class_dropdowns(context, ifc_predefined_types)

@@ -20,13 +20,12 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.EnableReassignClass,
-    operator.DisableReassignClass,
-    operator.ReassignClass,
     operator.AssignClass,
-    operator.UnassignClass,
-    operator.UnlinkObject,
     operator.CopyClass,
+    operator.DisableReassignClass,
+    operator.EnableReassignClass,
+    operator.ReassignClass,
+    operator.UnlinkObject,
     prop.BIMRootProperties,
     ui.BIM_PT_class,
 )
