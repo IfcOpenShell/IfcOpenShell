@@ -20,7 +20,7 @@ import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.module.drawing.data import TextData, SheetsData
+from blenderbim.bim.module.drawing.data import TextData, SheetsData, DrawingsData
 
 
 class BIM_PT_camera(Panel):
@@ -156,29 +156,42 @@ class BIM_PT_drawings(Panel):
     bl_category = "BIM Documentation"
 
     def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        props = context.scene.DocProperties
+        if not DrawingsData.is_loaded:
+            DrawingsData.load()
 
-        row = layout.row(align=True)
-        row.operator("bim.add_drawing")
-        row.operator("bim.refresh_drawing_list", icon="FILE_REFRESH", text="")
+        self.props = context.scene.DocProperties
 
-        if props.drawings:
-            if props.active_drawing_index < len(props.drawings):
+        if not self.props.is_editing_drawings:
+            row = self.layout.row(align=True)
+            row.label(text=f"{DrawingsData.data['total_drawings']} Drawings Found", icon="IMAGE_DATA")
+            row.operator("bim.load_drawings", text="", icon="IMPORT")
+            return
+
+        row = self.layout.row(align=True)
+        row.prop(self.props, "target_view", text="")
+        row.operator("bim.add_drawing", text="", icon="ADD")
+        row.operator("bim.disable_editing_drawings", text="", icon="CANCEL")
+
+        if self.props.drawings:
+            if self.props.active_drawing_index < len(self.props.drawings):
+                row = self.layout.row(align=True)
+                row.alignment = "RIGHT"
                 op = row.operator("bim.open_view", icon="URL", text="")
-                op.view = props.active_drawing.name
-                row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
-            layout.template_list("BIM_UL_drawinglist", "", props, "drawings", props, "active_drawing_index")
+                op.view = self.props.active_drawing.name
+                op = row.operator("bim.activate_view", icon="OUTLINER_OB_CAMERA", text="")
+                op.drawing = self.props.active_drawing.ifc_definition_id
+                row.operator("bim.remove_drawing", icon="X", text="").index = self.props.active_drawing_index
+            self.layout.template_list("BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index")
 
-        row = layout.row()
-        row.operator("bim.add_ifc_file")
+        # Commented out until federated drawing generation is rebuilt
+        # row = self.layout.row()
+        # row.operator("bim.add_ifc_file")
 
-        for index, ifc_file in enumerate(props.ifc_files):
-            row = layout.row(align=True)
-            row.prop(ifc_file, "name", text="IFC #{}".format(index + 1))
-            row.operator("bim.select_doc_ifc_file", icon="FILE_FOLDER", text="").index = index
-            row.operator("bim.remove_ifc_file", icon="X", text="").index = index
+        # for index, ifc_file in enumerate(self.props.ifc_files):
+        #     row = self.layout.row(align=True)
+        #     row.prop(ifc_file, "name", text="IFC #{}".format(index + 1))
+        #     row.operator("bim.select_doc_ifc_file", icon="FILE_FOLDER", text="").index = index
+        #     row.operator("bim.remove_ifc_file", icon="X", text="").index = index
 
 
 class BIM_PT_schedules(Panel):
@@ -187,7 +200,6 @@ class BIM_PT_schedules(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "BIM Documentation"
-    bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
         layout = self.layout
@@ -365,8 +377,6 @@ class BIM_UL_drawinglist(bpy.types.UIList):
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", text="", emboss=False)
-            op = row.operator("bim.open_view_camera", icon="OUTLINER_OB_CAMERA", text="")
-            op.view_name = item.name
         else:
             layout.label(text="", translate=False)
 

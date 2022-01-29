@@ -24,6 +24,7 @@ import blenderbim.tool as tool
 def refresh():
     TextData.is_loaded = False
     SheetsData.is_loaded = False
+    DrawingsData.is_loaded = False
 
 
 class TextData:
@@ -69,3 +70,17 @@ class SheetsData:
     @classmethod
     def total_sheets(cls):
         return len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"])
+
+
+class DrawingsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"total_drawings": cls.total_drawings()}
+        cls.is_loaded = True
+
+    @classmethod
+    def total_drawings(cls):
+        return len([e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"])

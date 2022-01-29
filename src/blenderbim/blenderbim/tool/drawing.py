@@ -34,6 +34,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         sheet_builder.create(cls.get_sheet_filename(document), titleblock)
 
     @classmethod
+    def disable_editing_drawings(cls):
+        bpy.context.scene.DocProperties.is_editing_drawings = False
+
+    @classmethod
     def disable_editing_sheets(cls):
         bpy.context.scene.DocProperties.is_editing_sheets = False
 
@@ -46,6 +50,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         obj.BIMTextProperties.is_editing_product = False
 
     @classmethod
+    def enable_editing_drawings(cls):
+        bpy.context.scene.DocProperties.is_editing_drawings = True
+
+    @classmethod
     def enable_editing_sheets(cls):
         bpy.context.scene.DocProperties.is_editing_sheets = True
 
@@ -56,6 +64,13 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def enable_editing_text_product(cls, obj):
         obj.BIMTextProperties.is_editing_product = True
+
+    @classmethod
+    def ensure_unique_drawing_name(cls, name):
+        names = [e.Name for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
+        while name in names:
+            name += "-X"
+        return name
 
     @classmethod
     def ensure_unique_identification(cls, identification):
@@ -104,6 +119,15 @@ class Drawing(blenderbim.core.tool.Drawing):
         for rel in element.HasAssignments:
             if rel.is_a("IfcRelAssignsToProduct"):
                 return rel.RelatingProduct
+
+    @classmethod
+    def import_drawings(cls):
+        bpy.context.scene.DocProperties.drawings.clear()
+        drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
+        for drawing in drawings:
+            new = bpy.context.scene.DocProperties.drawings.add()
+            new.ifc_definition_id = drawing.id()
+            new.name = drawing.Name or "Unnamed"
 
     @classmethod
     def import_sheets(cls):
