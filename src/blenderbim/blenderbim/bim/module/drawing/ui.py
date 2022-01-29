@@ -375,7 +375,9 @@ class BIM_UL_sheets(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.identification or "X")
-            row.label(text=item.name or "Unnamed")
+            split1 = row.split(factor=0.2)
+            split1.label(text=item.identification or "X")
+            split2 = split1.split(factor=0.8)
+            split2.label(text=item.name or "Unnamed")
         else:
             layout.label(text="", translate=False)

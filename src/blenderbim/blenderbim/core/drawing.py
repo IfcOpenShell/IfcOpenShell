@@ -82,3 +82,8 @@ def add_sheet(ifc, drawing, titleblock=None):
 
 def open_sheet(drawing, sheet=None):
     drawing.open_svg(drawing.get_sheet_filename(sheet))
+
+
+def remove_sheet(ifc, drawing, sheet=None):
+    ifc.run("document.remove_document", document=sheet)
+    drawing.import_sheets()
