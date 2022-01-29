@@ -257,49 +257,6 @@ class AssignClass(bpy.types.Operator):
                 break
 
 
-class UnassignClass(bpy.types.Operator):
-    bl_idname = "bim.unassign_class"
-    bl_label = "Unassign IFC Class"
-    bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        if self.obj:
-            objects = [bpy.data.objects.get(self.obj)]
-        else:
-            objects = context.selected_objects
-        for obj in objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            self.remove_voids(product, obj)
-            IfcStore.unlink_element(product, obj)
-            if product.is_a("IfcGridAxis"):
-                ifcopenshell.api.run("grid.remove_grid_axis", self.file, **{"axis": product})
-            elif product.is_a("IfcGrid"):
-                grid_collection = bpy.data.collections.get(obj.name)
-                for axis_collection in grid_collection.children:
-                    for axis_obj in axis_collection.objects:
-                        bpy.ops.bim.unassign_class(obj=axis_obj.name)
-            else:
-                ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
-            if "/" in obj.name and obj.name[0:3] == "Ifc":
-                obj.name = "/".join(obj.name.split("/")[1:])
-            if obj.data and obj.data.name == "Void":
-                bpy.data.objects.remove(obj)
-        return {"FINISHED"}
-
-    def remove_voids(self, product, obj):
-        if product.id() not in VoidData.products:
-            VoidData.load(self.file, product.id())
-        for opening_id in VoidData.products[product.id()]:
-            bpy.ops.bim.remove_opening(opening_id=opening_id, obj=obj.name)
-
-
 class UnlinkObject(bpy.types.Operator):
     bl_idname = "bim.unlink_object"
     bl_label = "Unlink Object"
