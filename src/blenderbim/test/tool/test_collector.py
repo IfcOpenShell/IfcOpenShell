@@ -227,6 +227,26 @@ class TestAssign(NewFile):
         assert bpy.data.collections.get("Views").children.get("IfcGroup/Unnamed")
         assert bpy.data.collections.get("IfcProject/My Project").children.get("Views")
 
+    def test_in_decomposition_mode_structural_members_are_placed_in_a_members_collection(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcStructuralCurveMember/Name", None)
+        element = tool.Ifc.get().createIfcStructuralCurveMember()
+        tool.Ifc.link(element, element_obj)
+        subject.assign(element_obj)
+        assert element_obj.users_collection[0].name == "Members"
+        assert bpy.data.collections.get("StructuralItems").children.get("Members")
+        assert bpy.data.collections.get("IfcProject/My Project").children.get("StructuralItems")
+
+    def test_in_decomposition_mode_structural_connections_are_placed_in_a_connections_collection(self):
+        bpy.ops.bim.create_project()
+        element_obj = bpy.data.objects.new("IfcStructuralCurveConnection/Name", None)
+        element = tool.Ifc.get().createIfcStructuralCurveConnection()
+        tool.Ifc.link(element, element_obj)
+        subject.assign(element_obj)
+        assert element_obj.users_collection[0].name == "Connections"
+        assert bpy.data.collections.get("StructuralItems").children.get("Connections")
+        assert bpy.data.collections.get("IfcProject/My Project").children.get("StructuralItems")
+
 
 class TestSync(NewFile):
     def test_in_decomposition_mode_elements_can_be_in_spatial_containers(self):
