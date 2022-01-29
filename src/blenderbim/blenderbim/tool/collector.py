@@ -128,26 +128,22 @@ class Collector(blenderbim.core.tool.Collector):
                     name = "IfcGroup/" + rel.RelatingGroup.Name
                     return bpy.data.collections.get(name, bpy.data.collections.new(name))
 
+        if element.is_a("IfcStructuralMember"):
+            return bpy.data.collections.get("Members", bpy.data.collections.new("Members"))
+
+        if element.is_a("IfcStructuralConnection"):
+            return bpy.data.collections.get("Connections", bpy.data.collections.new("Connections"))
+
         if getattr(element, "IsDecomposedBy", None):
             return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
 
     @classmethod
     def _get_collection(cls, element, obj):
         if element.is_a("IfcTypeObject"):
-            collection = bpy.data.collections.get("Types")
-            if not collection:
-                collection = bpy.data.collections.new("Types")
-                project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                project_obj.users_collection[0].children.link(collection)
-            return collection
+            return cls._create_project_child_collection("Types")
 
         if element.is_a("IfcOpeningElement"):
-            collection = bpy.data.collections.get("IfcOpeningElements")
-            if not collection:
-                collection = bpy.data.collections.new("IfcOpeningElements")
-                project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                project_obj.users_collection[0].children.link(collection)
-            return collection
+            return cls._create_project_child_collection("IfcOpeningElements")
 
         if element.is_a("IfcGridAxis"):
             if element.PartOfU:
@@ -164,12 +160,10 @@ class Collector(blenderbim.core.tool.Collector):
                 return bpy.data.collections.get(grid_obj.name)
 
         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-            collection = bpy.data.collections.get("Views")
-            if not collection:
-                collection = bpy.data.collections.new("Views")
-                project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                project_obj.users_collection[0].children.link(collection)
-            return collection
+            return cls._create_project_child_collection("Views")
+
+        if element.is_a("IfcStructuralItem"):
+            return cls._create_project_child_collection("StructuralItems")
 
         aggregate = ifcopenshell.util.element.get_aggregate(element)
         if aggregate:
@@ -194,3 +188,12 @@ class Collector(blenderbim.core.tool.Collector):
             collection = bpy.data.collections.get(project_obj.name)
             if collection:
                 return collection
+
+    @classmethod
+    def _create_project_child_collection(cls, name):
+        collection = bpy.data.collections.get(name)
+        if not collection:
+            collection = bpy.data.collections.new(name)
+            project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+            project_obj.users_collection[0].children.link(collection)
+        return collection
