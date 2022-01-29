@@ -135,15 +135,23 @@ class Debug:
 
 @interface
 class Drawing:
+    def create_svg_sheet(cls, document, titleblock): pass
+    def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
     def disable_editing_text_product(cls, obj): pass
+    def enable_editing_sheets(cls): pass
     def enable_editing_text(cls, obj): pass
     def enable_editing_text_product(cls, obj): pass
+    def ensure_unique_identification(cls, identification): pass
     def export_text_literal_attributes(cls, obj): pass
+    def generate_sheet_identification(cls): pass
+    def get_sheet_filename(cls, document): pass
     def get_text_literal(cls, obj): pass
     def get_text_product(cls, element): pass
+    def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
     def import_text_product(cls, obj): pass
+    def open_svg(cls, filepath): pass
     def update_text_value(cls, obj): pass
 
 

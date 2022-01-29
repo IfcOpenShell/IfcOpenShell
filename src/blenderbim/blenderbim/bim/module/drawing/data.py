@@ -23,6 +23,7 @@ import blenderbim.tool as tool
 
 def refresh():
     TextData.is_loaded = False
+    SheetsData.is_loaded = False
 
 
 class TextData:
@@ -54,3 +55,17 @@ class TextData:
         for rel in element.HasAssignments:
             if rel.is_a("IfcRelAssignsToProduct"):
                 return rel.RelatingProduct.Name or "Unnamed"
+
+
+class SheetsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"total_sheets": cls.total_sheets()}
+        cls.is_loaded = True
+
+    @classmethod
+    def total_sheets(cls):
+        return len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"])

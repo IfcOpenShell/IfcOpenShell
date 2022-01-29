@@ -16,14 +16,27 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import re
 import bpy
+import webbrowser
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell.util.representation
+import blenderbim.bim.module.drawing.sheeter as sheeter
 
 
 class Drawing(blenderbim.core.tool.Drawing):
+    @classmethod
+    def create_svg_sheet(cls, document, titleblock):
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
+        sheet_builder.create(cls.get_sheet_filename(document), titleblock)
+
+    @classmethod
+    def disable_editing_sheets(cls):
+        bpy.context.scene.DocProperties.is_editing_sheets = False
+
     @classmethod
     def disable_editing_text(cls, obj):
         obj.BIMTextProperties.is_editing = False
@@ -31,6 +44,10 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def disable_editing_text_product(cls, obj):
         obj.BIMTextProperties.is_editing_product = False
+
+    @classmethod
+    def enable_editing_sheets(cls):
+        bpy.context.scene.DocProperties.is_editing_sheets = True
 
     @classmethod
     def enable_editing_text(cls, obj):
@@ -41,8 +58,34 @@ class Drawing(blenderbim.core.tool.Drawing):
         obj.BIMTextProperties.is_editing_product = True
 
     @classmethod
+    def ensure_unique_identification(cls, identification):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            ids = [d.DocumentId for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"]
+        else:
+            ids = [
+                d.Identification for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"
+            ]
+        while identification in ids:
+            identification += "-X"
+        return identification
+
+    @classmethod
     def export_text_literal_attributes(cls, obj):
         return blenderbim.bim.helper.export_attributes(obj.BIMTextProperties.attributes)
+
+    @classmethod
+    def get_sheet_filename(cls, document):
+        if hasattr(document, "Identification"):
+            name = document.Identification or "X"
+        else:
+            name = document.DocumentId or "X"
+        name += " - " + document.Name or "Unnamed"
+        return name
+
+    @classmethod
+    def generate_sheet_identification(cls):
+        number = len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"])
+        return "A" + str(number).zfill(2)
 
     @classmethod
     def get_text_literal(cls, obj):
@@ -63,6 +106,19 @@ class Drawing(blenderbim.core.tool.Drawing):
                 return rel.RelatingProduct
 
     @classmethod
+    def import_sheets(cls):
+        bpy.context.scene.DocProperties.sheets.clear()
+        sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"]
+        for sheet in sheets:
+            new = bpy.context.scene.DocProperties.sheets.add()
+            new.ifc_definition_id = sheet.id()
+            if tool.Ifc.get_schema() == "IFC2X3":
+                new.identification = sheet.DocumentId
+            else:
+                new.identification = sheet.Identification
+            new.name = sheet.Name
+
+    @classmethod
     def import_text_attributes(cls, obj):
         props = obj.BIMTextProperties
         props.attributes.clear()
@@ -77,6 +133,22 @@ class Drawing(blenderbim.core.tool.Drawing):
             obj.BIMTextProperties.relating_product = tool.Ifc.get_object(product)
         else:
             obj.BIMTextProperties.relating_product = None
+
+    @classmethod
+    def open_with_user_command(cls, user_command, path):
+        if user_command:
+            commands = eval(user_command)
+            for command in commands:
+                subprocess.run(command)
+        else:
+            webbrowser.open("file://" + path)
+
+    @classmethod
+    def open_svg(cls, filename):
+        cls.open_with_user_command(
+            bpy.context.preferences.addons["blenderbim"].preferences.svg_command,
+            os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", filename + ".svg"),
+        )
 
     @classmethod
     def update_text_value(cls, obj):
