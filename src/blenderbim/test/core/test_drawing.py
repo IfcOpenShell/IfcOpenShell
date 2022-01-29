@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.core.drawing as subject
-from test.core.bootstrap import ifc, drawing
+from test.core.bootstrap import ifc, drawing, collector
 
 
 class TestEnableEditingText:
@@ -137,3 +137,23 @@ class TestDisableEditingDrawings:
     def test_run(self, drawing):
         drawing.disable_editing_drawings().should_be_called()
         subject.disable_editing_drawings(drawing)
+
+
+class TestAddDrawing:
+    def test_run(self, ifc, collector, drawing):
+        drawing.ensure_unique_drawing_name("UNTITLED").should_be_called().will_return("name")
+        drawing.generate_drawing_matrix("target_view", "location_hint").should_be_called().will_return("matrix")
+        drawing.create_camera("name", "matrix").should_be_called().will_return("obj")
+        drawing.run_assign_class_operator(
+            obj="obj", ifc_class="IfcAnnotation", predefined_type="DRAWING"
+        ).should_be_called().will_return("element")
+        ifc.run("group.add_group").should_be_called().will_return("group")
+        ifc.run("group.edit_group", group="group", attributes={"Name": "name"}).should_be_called()
+        ifc.run("group.assign_group", group="group", product="element").should_be_called()
+        collector.assign("obj").should_be_called()
+        ifc.run("pset.add_pset", product="element", name="EPset_Drawing").should_be_called().will_return("pset")
+        ifc.run(
+            "pset.edit_pset", pset="pset", properties={"TargetView": "target_view", "Scale": "1/100"}
+        ).should_be_called()
+        drawing.import_drawings().should_be_called()
+        subject.add_drawing(ifc, collector, drawing, target_view="target_view", location_hint="location_hint")

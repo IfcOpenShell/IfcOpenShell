@@ -180,8 +180,11 @@ class BIM_PT_drawings(Panel):
                 op.view = self.props.active_drawing.name
                 op = row.operator("bim.activate_view", icon="OUTLINER_OB_CAMERA", text="")
                 op.drawing = self.props.active_drawing.ifc_definition_id
+                row.operator("bim.create_drawing", text="", icon="OUTPUT")
                 row.operator("bim.remove_drawing", icon="X", text="").index = self.props.active_drawing_index
-            self.layout.template_list("BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index")
+            self.layout.template_list(
+                "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
+            )
 
         # Commented out until federated drawing generation is rebuilt
         # row = self.layout.row()
