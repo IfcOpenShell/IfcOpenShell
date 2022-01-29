@@ -1048,16 +1048,16 @@ class EditVectorStyle(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class RemoveSheet(bpy.types.Operator):
+class RemoveSheet(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_sheet"
     bl_label = "Remove Sheet"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
-    def execute(self, context):
-        props = context.scene.DocProperties
-        props.sheets.remove(self.index)
-        return {"FINISHED"}
+    def _execute(self, context):
+        self.props = context.scene.DocProperties
+        sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
+        core.remove_sheet(tool.Ifc, tool.Drawing, sheet=sheet)
 
 
 class AddSchedule(bpy.types.Operator):

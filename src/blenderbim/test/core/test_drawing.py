@@ -117,3 +117,10 @@ class TestOpenSheet:
         drawing.get_sheet_filename("sheet").should_be_called().will_return("filename")
         drawing.open_svg("filename").should_be_called()
         subject.open_sheet(drawing, sheet="sheet")
+
+
+class TestRemoveSheet:
+    def test_run(self, ifc, drawing):
+        ifc.run("document.remove_document", document="sheet").should_be_called()
+        drawing.import_sheets().should_be_called()
+        subject.remove_sheet(ifc, drawing, sheet="sheet")
