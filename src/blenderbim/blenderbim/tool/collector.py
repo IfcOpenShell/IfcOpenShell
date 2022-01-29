@@ -122,6 +122,12 @@ class Collector(blenderbim.core.tool.Collector):
                     return axes_col[0]
                 return bpy.data.collections.new(axes)
 
+        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            for rel in element.HasAssignments or []:
+                if rel.is_a("IfcRelAssignsToGroup"):
+                    name = "IfcGroup/" + rel.RelatingGroup.Name
+                    return bpy.data.collections.get(name, bpy.data.collections.new(name))
+
         if getattr(element, "IsDecomposedBy", None):
             return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
 
@@ -156,6 +162,14 @@ class Collector(blenderbim.core.tool.Collector):
             grid_obj = tool.Ifc.get_object(grid)
             if grid_obj:
                 return bpy.data.collections.get(grid_obj.name)
+
+        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            collection = bpy.data.collections.get("Views")
+            if not collection:
+                collection = bpy.data.collections.new("Views")
+                project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+                project_obj.users_collection[0].children.link(collection)
+            return collection
 
         aggregate = ifcopenshell.util.element.get_aggregate(element)
         if aggregate:
