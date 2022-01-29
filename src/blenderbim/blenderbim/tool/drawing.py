@@ -19,6 +19,7 @@
 import os
 import re
 import bpy
+import mathutils
 import webbrowser
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -27,6 +28,21 @@ import blenderbim.bim.module.drawing.sheeter as sheeter
 
 
 class Drawing(blenderbim.core.tool.Drawing):
+    @classmethod
+    def create_camera(cls, name, matrix):
+        camera = bpy.data.objects.new(name, bpy.data.cameras.new(name))
+        camera.location = (0, 0, 1.5)  # The view shall be 1.5m above the origin
+        camera.data.type = "ORTHO"
+        camera.data.ortho_scale = 50  # The default of 6m is too small
+        camera.data.clip_end = 10  # A slightly more reasonable default
+        if bpy.context.scene.unit_settings.system == "IMPERIAL":
+            camera.data.BIMCameraProperties.diagram_scale = '1/8"=1\'-0"|1/96'
+        else:
+            camera.data.BIMCameraProperties.diagram_scale = "1:100|1/100"
+        camera.matrix_world = matrix
+        bpy.context.scene.collection.objects.link(camera)
+        return camera
+
     @classmethod
     def create_svg_sheet(cls, document, titleblock):
         sheet_builder = sheeter.SheetBuilder()
@@ -96,6 +112,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             name = document.DocumentId or "X"
         name += " - " + document.Name or "Unnamed"
         return name
+
+    @classmethod
+    def generate_drawing_matrix(cls, target_view, location_hint):
+        return mathutils.Matrix()
 
     @classmethod
     def generate_sheet_identification(cls):
@@ -173,6 +193,11 @@ class Drawing(blenderbim.core.tool.Drawing):
             bpy.context.preferences.addons["blenderbim"].preferences.svg_command,
             os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", filename + ".svg"),
         )
+
+    @classmethod
+    def run_assign_class_operator(cls, obj=None, ifc_class=None, predefined_type=None):
+        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=ifc_class, predefined_type=predefined_type)
+        return tool.Ifc.get_entity(obj)
 
     @classmethod
     def update_text_value(cls, obj):

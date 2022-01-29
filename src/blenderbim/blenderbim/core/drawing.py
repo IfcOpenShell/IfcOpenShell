@@ -96,3 +96,18 @@ def load_drawings(drawing):
 
 def disable_editing_drawings(drawing):
     drawing.disable_editing_drawings()
+
+
+def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
+    drawing_name = drawing.ensure_unique_drawing_name("UNTITLED")
+    drawing_matrix = drawing.generate_drawing_matrix(target_view, location_hint)
+    camera = drawing.create_camera(drawing_name, drawing_matrix)
+    # Not yet refactored
+    element = drawing.run_assign_class_operator(obj=camera, ifc_class="IfcAnnotation", predefined_type="DRAWING")
+    group = ifc.run("group.add_group")
+    ifc.run("group.edit_group", group=group, attributes={"Name": drawing_name})
+    ifc.run("group.assign_group", group=group, product=element)
+    collector.assign(camera)
+    pset = ifc.run("pset.add_pset", product=element, name="EPset_Drawing")
+    ifc.run("pset.edit_pset", pset=pset, properties={"TargetView": target_view, "Scale": "1/100"})
+    drawing.import_drawings()

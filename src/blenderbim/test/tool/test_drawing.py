@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import mathutils
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -28,6 +29,17 @@ from blenderbim.tool.drawing import Drawing as subject
 class TestImplementsTool(NewFile):
     def test_run(self):
         assert isinstance(subject(), blenderbim.core.tool.Drawing)
+
+
+class TestCreateCamera(NewFile):
+    def test_run(self):
+        obj = subject.create_camera("Name", mathutils.Matrix())
+        assert obj.name == "Name"
+        assert obj.matrix_world == mathutils.Matrix()
+        assert obj.data.type == "ORTHO"
+        assert obj.data.ortho_scale == 50
+        assert obj.data.clip_end == 10
+        assert obj.users_collection[0] == bpy.context.scene.collection
 
 
 class TestCreateSvgSheet(NewFile):
@@ -149,6 +161,11 @@ class TestGetSheetFilename(NewFile):
         subject.get_sheet_filename(document) == "X - FOOBAR"
 
 
+class TestGenerateDrawingMatrix(NewFile):
+    def test_returning_the_origin_as_a_fallback(self):
+        assert subject.generate_drawing_matrix("PLAN_VIEW", None) == mathutils.Matrix()
+
+
 class TestGenerateSheetIdentification(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -262,6 +279,11 @@ class TestImportTextProduct(NewFile):
 
 
 class TestOpenSvg(NewFile):
+    def test_nothing(self):
+        pass
+
+
+class TestRunAssignClassOperator(NewFile):
     def test_nothing(self):
         pass
 

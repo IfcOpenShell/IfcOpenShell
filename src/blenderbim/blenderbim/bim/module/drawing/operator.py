@@ -65,66 +65,14 @@ class Operator:
         return {"FINISHED"}
 
 
-class AddDrawing(bpy.types.Operator):
+class AddDrawing(bpy.types.Operator, Operator):
     bl_idname = "bim.add_drawing"
     bl_label = "Add Drawing"
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        return IfcStore.get_file()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        drawing_name = tool.Drawing.ensure_unique_drawing_name("UNTITLED")
-        if not bpy.data.collections.get("Views"):
-            context.scene.collection.children.link(bpy.data.collections.new("Views"))
-        views_collection = bpy.data.collections.get("Views")
-        view_collection = bpy.data.collections.new("IfcGroup/" + drawing_name)
-        views_collection.children.link(view_collection)
-        camera = bpy.data.objects.new(drawing_name, bpy.data.cameras.new(drawing_name))
-        camera.location = (0, 0, 1.5)  # The view shall be 1.5m above the origin
-        camera.data.type = "ORTHO"
-        camera.data.ortho_scale = 50  # The default of 6m is too small
-        camera.data.clip_end = 10  # A slightly more reasonable default
-        if context.scene.unit_settings.system == "IMPERIAL":
-            camera.data.BIMCameraProperties.diagram_scale = '1/8"=1\'-0"|1/96'
-        else:
-            camera.data.BIMCameraProperties.diagram_scale = "1:100|1/100"
-        context.scene.camera = camera
-        view_collection.objects.link(camera)
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
-        bpy.ops.bim.assign_class(obj=camera.name, ifc_class="IfcAnnotation", predefined_type="DRAWING")
-        bpy.ops.bim.activate_drawing_style()
-
-        bpy.ops.bim.add_group()
-        group = self.file.by_id(sorted(GroupData.groups.keys())[-1])
-        ifcopenshell.api.run("group.edit_group", self.file, **{"group": group, "attributes": {"Name": drawing_name}})
-        bpy.ops.bim.assign_group(product=camera.name, group=group.id())
-        pset = ifcopenshell.api.run(
-            "pset.add_pset",
-            self.file,
-            **{
-                "product": self.file.by_id(camera.BIMObjectProperties.ifc_definition_id),
-                "name": "EPset_Drawing",
-            },
-        )
-        ifcopenshell.api.run(
-            "pset.edit_pset",
-            self.file,
-            **{
-                "pset": pset,
-                "properties": {"TargetView": "PLAN_VIEW", "Scale": "1/100"},
-                "pset_template": blenderbim.bim.schema.ifc.psetqto.get_by_name("EPset_Drawing"),
-            },
-        )
-        PsetData.load(IfcStore.get_file(), camera.BIMObjectProperties.ifc_definition_id)
-        tool.Drawing.import_drawings()
-        return {"FINISHED"}
+        self.props = context.scene.DocProperties
+        core.add_drawing(tool.Ifc, tool.Collector, tool.Drawing, target_view=self.props.target_view, location_hint=None)
 
 
 class CreateDrawing(bpy.types.Operator):
@@ -143,6 +91,7 @@ class CreateDrawing(bpy.types.Operator):
         camera = context.scene.camera
         return (
             IfcStore.get_file()
+            and camera
             and camera.type == "CAMERA"
             and camera.data.type == "ORTHO"
             and camera.BIMObjectProperties.ifc_definition_id
