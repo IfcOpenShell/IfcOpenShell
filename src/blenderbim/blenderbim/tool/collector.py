@@ -32,6 +32,9 @@ class Collector(blenderbim.core.tool.Collector):
         if element.is_a("IfcProject") or element.is_a("IfcGridAxis"):
             return
 
+        if not obj.users_collection:
+            return
+
         object_collection = None
         collection_collection = None
 

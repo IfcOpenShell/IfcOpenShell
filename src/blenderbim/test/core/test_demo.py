@@ -23,6 +23,11 @@
 
 # ############################################################################ #
 
+# Note: these tests are commented out as they are for learning purposes only. If
+# you want to run these tests, uncomment it :)
+
+"""
+
 # Testing the core might seem strange if you haven't written this type of
 # abstract test before. You essentially want to test that things are called in
 # the right sequence. This seems almost like writing the code twice, like in
@@ -82,3 +87,5 @@ class TestDemonstrateRenameProject:
     def test_showing_a_hint_if_no_name_provided(self, ifc, demo):
         demo.show_user_hints().should_be_called()
         subject.demonstrate_rename_project(ifc, demo, name=None)
+
+"""

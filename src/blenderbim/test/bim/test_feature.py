@@ -184,7 +184,7 @@ def the_object_name_is_placed_in_the_collection_collection(name, collection):
 def additionally_the_object_name_is_selected(name):
     obj = bpy.context.scene.objects.get(name)
     if not obj:
-        assert False, 'The object "{name}" could not be selected'
+        assert False, f'The object "{name}" could not be selected'
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
 

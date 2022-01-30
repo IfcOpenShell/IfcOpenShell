@@ -23,6 +23,11 @@
 
 # ############################################################################ #
 
+# Note: these tests are commented out as they are for learning purposes only. If
+# you want to run these tests, uncomment it :)
+
+"""
+
 # Because our tools have well defined, isolated functions, it means we can test
 # them very easily in isolation. Tests are fun, fast, and easy to setup!
 
@@ -85,3 +90,5 @@ class TestShowUserHints(NewFile):
         bpy.context.scene.BIMDemoProperties.show_hints = False
         subject.show_user_hints()
         assert bpy.context.scene.BIMDemoProperties.show_hints == True
+
+"""
