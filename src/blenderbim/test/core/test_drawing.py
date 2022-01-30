@@ -144,8 +144,14 @@ class TestAddDrawing:
         drawing.ensure_unique_drawing_name("UNTITLED").should_be_called().will_return("name")
         drawing.generate_drawing_matrix("target_view", "location_hint").should_be_called().will_return("matrix")
         drawing.create_camera("name", "matrix").should_be_called().will_return("obj")
-        drawing.run_assign_class_operator(
-            obj="obj", ifc_class="IfcAnnotation", predefined_type="DRAWING"
+        drawing.get_body_context().should_be_called().will_return("context")
+        drawing.run_root_assign_class(
+            obj="obj",
+            ifc_class="IfcAnnotation",
+            predefined_type="DRAWING",
+            should_add_representation=True,
+            context="context",
+            ifc_representation_class=None,
         ).should_be_called().will_return("element")
         ifc.run("group.add_group").should_be_called().will_return("group")
         ifc.run("group.edit_group", group="group", attributes={"Name": "name"}).should_be_called()

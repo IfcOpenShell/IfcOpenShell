@@ -105,6 +105,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         return blenderbim.bim.helper.export_attributes(obj.BIMTextProperties.attributes)
 
     @classmethod
+    def get_body_context(cls):
+        return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
+    @classmethod
     def get_sheet_filename(cls, document):
         if hasattr(document, "Identification"):
             name = document.Identification or "X"
@@ -195,9 +199,18 @@ class Drawing(blenderbim.core.tool.Drawing):
         )
 
     @classmethod
-    def run_assign_class_operator(cls, obj=None, ifc_class=None, predefined_type=None):
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=ifc_class, predefined_type=predefined_type)
-        return tool.Ifc.get_entity(obj)
+    def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None):
+        return blenderbim.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class=ifc_class,
+            predefined_type=predefined_type,
+            should_add_representation=should_add_representation,
+            context=context,
+            ifc_representation_class=ifc_representation_class,
+        )
 
     @classmethod
     def update_text_value(cls, obj):
