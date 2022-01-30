@@ -32,26 +32,30 @@ class AggregateData:
     @classmethod
     def load(cls):
         cls.data = {
-            "has_aggregate": cls.has_aggregate(),
-            "label": cls.get_label(),
+            "has_relating_object": cls.has_relating_object(),
+            "relating_object_label": cls.get_relating_object_label(),
             "relating_object_id": cls.get_relating_object_id(),
             "ifc_class": cls.ifc_class(),
         }
         cls.is_loaded = True
 
     @classmethod
-    def has_aggregate(cls):
-        return ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(bpy.context.active_object))
+    def get_relating_object(cls):
+        return ifcopenshell.util.element.get_relating_object(tool.Ifc.get_entity(bpy.context.active_object))
 
     @classmethod
-    def get_label(cls):
-        aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(bpy.context.active_object))
+    def has_relating_object(cls) -> bool:
+        return cls.get_relating_object() is not None
+
+    @classmethod
+    def get_relating_object_label(cls) -> str:
+        aggregate = cls.get_relating_object()
         if aggregate:
             return f"{aggregate.is_a()}/{aggregate.Name or ''}"
 
     @classmethod
-    def get_relating_object_id(cls):
-        aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(bpy.context.active_object))
+    def get_relating_object_id(cls) -> int:
+        aggregate = cls.get_relating_object()
         if aggregate:
             return aggregate.id()
 

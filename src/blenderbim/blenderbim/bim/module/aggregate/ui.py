@@ -59,16 +59,18 @@ class BIM_PT_aggregate(Panel):
                 op.related_object = context.active_object.BIMObjectProperties.ifc_definition_id
             row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
         else:
-            row = layout.row(align=True)
-            if AggregateData.data["has_aggregate"]:
-                row.label(text=AggregateData.data["label"])
+            box = layout.box()
+            box.label(text="Relating Object")
+            row = box.row(align=True)
+            if AggregateData.data["has_relating_object"]:
+                row.label(text=AggregateData.data["relating_object_label"])
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
                 op = row.operator("bim.unassign_object", icon="X", text="")
                 op.relating_object = AggregateData.data["relating_object_id"]
                 op.related_object = context.active_object.BIMObjectProperties.ifc_definition_id
             else:
-                row.label(text="No Aggregate Found")
+                row.label(text="No Relating Object Found")
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
 
