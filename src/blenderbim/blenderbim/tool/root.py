@@ -79,3 +79,10 @@ class Root(blenderbim.core.tool.Root):
             ifc_representation_class=ifc_representation_class,
             profile_set_usage=profile_set_usage,
         )
+
+    @classmethod
+    def set_object_name(cls, obj, element):
+        name = obj.name
+        if "/" in name and name.split("/")[0][0:3] == "Ifc":
+            name = "/".join(name.split("/")[1:])
+        obj.name = "{}/{}".format(element.is_a(), name)
