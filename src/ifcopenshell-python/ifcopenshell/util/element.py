@@ -183,6 +183,11 @@ def get_relating_object(element):
         return element.Decomposes[0].RelatingObject
 
 
+def get_related_objects(element):
+    if hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
+        return element.IsDecomposedBy[0].RelatedObjects
+
+
 def replace_attribute(element, old, new):
     for i, attribute in enumerate(element):
         if has_element_reference(attribute, old):
