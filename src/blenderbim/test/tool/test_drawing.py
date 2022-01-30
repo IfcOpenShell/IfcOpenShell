@@ -149,6 +149,16 @@ class TestExportTextLiteralAttributes(NewFile):
         }
 
 
+class TestGetBodyContext(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        context = ifc.createIfcGeometricRepresentationSubContext(
+            ContextType="Model", ContextIdentifier="Body", TargetView="MODEL_VIEW"
+        )
+        tool.Ifc.set(ifc)
+        assert subject.get_body_context() == context
+
+
 class TestGetSheetFilename(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
