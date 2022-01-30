@@ -33,7 +33,9 @@ class Operator:
         return {"FINISHED"}
 
 
-class AssignObject(bpy.types.Operator, Operator):
+class BIM_OT_assign_object(bpy.types.Operator, Operator):
+    """Create aggregation relationship between two ifc elements"""
+
     bl_idname = "bim.assign_object"
     bl_label = "Assign Object"
     bl_options = {"REGISTER", "UNDO"}
@@ -50,7 +52,9 @@ class AssignObject(bpy.types.Operator, Operator):
         )
 
 
-class UnassignObject(bpy.types.Operator, Operator):
+class BIM_OT_unassign_object(bpy.types.Operator, Operator):
+    """Remove aggregation relationship between two ifc elements"""
+
     bl_idname = "bim.unassign_object"
     bl_label = "Unassign Object"
     bl_options = {"REGISTER", "UNDO"}
@@ -66,7 +70,9 @@ class UnassignObject(bpy.types.Operator, Operator):
         )
 
 
-class EnableEditingAggregate(bpy.types.Operator, Operator):
+class BIM_OT_enable_editing_aggregate(bpy.types.Operator, Operator):
+    """Enable editing aggregation relationship"""
+
     bl_idname = "bim.enable_editing_aggregate"
     bl_label = "Enable Editing Aggregate"
     bl_options = {"REGISTER", "UNDO"}
@@ -75,7 +81,9 @@ class EnableEditingAggregate(bpy.types.Operator, Operator):
         core.enable_editing_aggregate(tool.Aggregate, obj=context.active_object)
 
 
-class DisableEditingAggregate(bpy.types.Operator, Operator):
+class BIM_OT_disable_editing_aggregate(bpy.types.Operator, Operator):
+    """Disable editing aggregation relationship"""
+
     bl_idname = "bim.disable_editing_aggregate"
     bl_label = "Disable Editing Aggregate"
     bl_options = {"REGISTER", "UNDO"}
@@ -84,7 +92,9 @@ class DisableEditingAggregate(bpy.types.Operator, Operator):
         core.disable_editing_aggregate(tool.Aggregate, obj=context.active_object)
 
 
-class AddAggregate(bpy.types.Operator):
+class BIM_OT_add_aggregate(bpy.types.Operator):
+    """Add aggregate to IFC element"""
+
     bl_idname = "bim.add_aggregate"
     bl_label = "Add Aggregate"
     bl_options = {"REGISTER", "UNDO"}
