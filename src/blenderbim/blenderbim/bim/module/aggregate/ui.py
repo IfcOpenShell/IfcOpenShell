@@ -77,3 +77,17 @@ class BIM_PT_aggregate(Panel):
         ifc_class = AggregateData.data["ifc_class"]
         if ifc_class == "IfcBuilding":
             layout.operator("bim.building_storey_add")
+
+        if AggregateData.data["has_related_objects"]:
+            box = layout.box()
+            row = box.row()
+            row.label(text="Related Objects")
+            for label, _id in zip(
+                AggregateData.data["related_objects_labels"],
+                AggregateData.data["related_objects_ids"],
+            ):
+                row = box.row()
+                row.label(text=label)
+                op = row.operator("bim.unassign_object", icon="X", text="")
+                op.relating_object = context.active_object.BIMObjectProperties.ifc_definition_id
+                op.related_object = _id
