@@ -365,7 +365,7 @@ class TestGetAggregateIFC4(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcCovering")
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
-        assert subject.get_aggregate(subelement) == element
+        assert subject.get_relating_object(subelement) == element
 
 
 class TestReplaceAttributeIFC4(test.bootstrap.IFC4):

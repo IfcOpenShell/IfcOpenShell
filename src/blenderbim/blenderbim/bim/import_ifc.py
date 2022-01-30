@@ -314,7 +314,7 @@ class IfcImporter:
         for spatial_element in leaf_spatial_elements:
             while True:
                 results.add(spatial_element)
-                spatial_element = ifcopenshell.util.element.get_aggregate(spatial_element)
+                spatial_element = ifcopenshell.util.element.get_relating_object(spatial_element)
                 if not spatial_element or spatial_element.is_a("IfcContext"):
                     break
         return results
@@ -1190,7 +1190,7 @@ class IfcImporter:
             self.collections[element.GlobalId] = collection
 
         for global_id, aggregate in aggregates.items():
-            parent = ifcopenshell.util.element.get_aggregate(aggregate["element"])
+            parent = ifcopenshell.util.element.get_relating_object(aggregate["element"])
             if parent:
                 self.collections[parent.GlobalId].children.link(aggregate["collection"])
                 continue
@@ -1278,7 +1278,7 @@ class IfcImporter:
             collection.name = obj.name
             return collection.objects.link(obj)
         elif getattr(element, "Decomposes", None):
-            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            aggregate = ifcopenshell.util.element.get_relating_object(element)
             return self.collections[aggregate.GlobalId].objects.link(obj)
         else:
             return self.place_object_in_spatial_decomposition_collection(element, obj)

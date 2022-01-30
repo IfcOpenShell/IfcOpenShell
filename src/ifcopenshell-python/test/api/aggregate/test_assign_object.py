@@ -29,7 +29,7 @@ class TestAssignObject(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSite")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         rel = ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
-        assert ifcopenshell.util.element.get_aggregate(subelement) == element
+        assert ifcopenshell.util.element.get_relating_object(subelement) == element
         assert rel.is_a("IfcRelAggregates")
 
     def test_doing_nothing_if_the_aggregate_is_already_assigned(self):

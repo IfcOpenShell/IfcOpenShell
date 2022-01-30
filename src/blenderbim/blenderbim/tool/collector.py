@@ -157,7 +157,7 @@ class Collector(blenderbim.core.tool.Collector):
             if grid_obj:
                 return bpy.data.collections.get(grid_obj.name)
 
-        aggregate = ifcopenshell.util.element.get_aggregate(element)
+        aggregate = ifcopenshell.util.element.get_relating_object(element)
         if aggregate:
             aggregate_obj = tool.Ifc.get_object(aggregate)
             if aggregate_obj:

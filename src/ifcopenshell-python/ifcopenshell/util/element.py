@@ -157,7 +157,7 @@ def get_container(element, should_get_direct=False):
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
             return element.ContainedInStructure[0].RelatingStructure
     else:
-        aggregate = get_aggregate(element)
+        aggregate = get_relating_object(element)
         if aggregate:
             return get_container(aggregate, should_get_direct)
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
@@ -178,7 +178,7 @@ def get_decomposition(element):
     return results
 
 
-def get_aggregate(element):
+def get_relating_object(element):
     if hasattr(element, "Decomposes") and element.Decomposes:
         return element.Decomposes[0].RelatingObject
 

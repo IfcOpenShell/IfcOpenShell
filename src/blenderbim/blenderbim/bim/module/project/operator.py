@@ -65,7 +65,9 @@ class CreateProject(bpy.types.Operator):
         if self.file.schema == "IFC2X3":
             person = blenderbim.core.owner.add_person(tool.Ifc)
             organisation = blenderbim.core.owner.add_organisation(tool.Ifc)
-            user = blenderbim.core.owner.add_person_and_organisation(tool.Ifc, person=person, organisation=organisation)
+            user = blenderbim.core.owner.add_person_and_organisation(
+                tool.Ifc, person=person, organisation=organisation
+            )
             blenderbim.core.owner.set_user(tool.Owner, user=user)
 
         project = bpy.data.objects.new(self.get_name("IfcProject", "My Project"), None)
@@ -624,7 +626,7 @@ class LoadProjectElements(bpy.types.Operator):
             container = self.file.by_id(filter_category.ifc_definition_id)
             while container:
                 containers.add(container)
-                container = ifcopenshell.util.element.get_aggregate(container)
+                container = ifcopenshell.util.element.get_relating_object(container)
                 if self.file.schema == "IFC2X3" and container.is_a("IfcProject"):
                     container = None
                 elif self.file.schema != "IFC2X3" and container.is_a("IfcContext"):
