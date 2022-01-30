@@ -80,6 +80,14 @@ class Geometry(blenderbim.core.tool.Geometry):
         return bool(isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons))
 
     @classmethod
+    def does_representation_id_exist(cls, representation_id):
+        try:
+            tool.Ifc.get().by_id(representation_id)
+            return True
+        except:
+            return False
+
+    @classmethod
     def duplicate_object_data(cls, obj):
         return obj.data.copy()
 
@@ -148,6 +156,10 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def get_representation_data(cls, representation):
         return bpy.data.meshes.get(cls.get_representation_name(representation))
+
+    @classmethod
+    def get_representation_id(cls, representation):
+        return representation.id()
 
     @classmethod
     def get_representation_name(cls, representation):

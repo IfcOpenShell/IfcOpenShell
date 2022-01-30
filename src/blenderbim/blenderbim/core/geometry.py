@@ -86,7 +86,10 @@ def switch_representation(
     should_sync_changes_first=False,
 ):
     if should_sync_changes_first and geometry.is_edited(obj) and not geometry.is_box_representation(representation):
+        representation_id = geometry.get_representation_id(representation)
         geometry.run_geometry_update_representation(obj=obj)
+        if not geometry.does_representation_id_exist(representation_id):
+            return
 
     representation = geometry.resolve_mapped_representation(representation)
     existing_data = geometry.get_representation_data(representation)
