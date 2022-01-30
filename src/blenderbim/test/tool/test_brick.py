@@ -37,8 +37,8 @@ class TestImplementsTool(NewFile):
 class TestAddBrick(NewFile):
     def test_run(self):
         BrickStore.graph = brickschema.Graph()
-        result = subject.add_brick("http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment")
-        assert "http://example.org/digitaltwin#" in result
+        result = subject.add_brick("https://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment")
+        assert "https://example.org/digitaltwin#" in result
         assert list(
             BrickStore.graph.triples(
                 (URIRef(result), RDF.type, URIRef("https://brickschema.org/schema/Brick#Equipment"))
@@ -250,7 +250,7 @@ class TestGetConvertableBrickElements(NewFile):
 class TestGetItemClass(NewFile):
     def test_run(self):
         TestLoadBrickFile().test_run()
-        assert subject.get_item_class("http://example.org/digitaltwin#floor") == "Floor"
+        assert subject.get_item_class("https://example.org/digitaltwin#floor") == "Floor"
 
 
 class TestGetLibraryBrickReference(NewFile):
@@ -300,7 +300,7 @@ class TestImportBrickItems(NewFile):
         brick = bpy.context.scene.BIMBrickProperties.bricks[0]
         assert brick.name == "bldg"
         assert brick.label == "My Building"
-        assert brick.uri == "http://example.org/digitaltwin#bldg"
+        assert brick.uri == "https://example.org/digitaltwin#bldg"
         assert brick.total_items == 0
 
 

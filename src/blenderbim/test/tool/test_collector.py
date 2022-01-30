@@ -249,6 +249,14 @@ class TestAssign(NewFile):
 
 
 class TestSync(NewFile):
+    def test_doing_nothing_if_the_object_has_no_collection(self):
+        bpy.ops.bim.create_project()
+        wall_obj = bpy.data.objects.new("Object", None)
+        wall_element = tool.Ifc.get().createIfcWall()
+        tool.Ifc.link(wall_element, wall_obj)
+        subject.sync(wall_obj)
+        assert not wall_obj.users_collection
+
     def test_in_decomposition_mode_elements_can_be_in_spatial_containers(self):
         bpy.ops.bim.create_project()
         wall_obj = bpy.data.objects.new("Object", None)
