@@ -150,6 +150,7 @@ class Drawing:
     def export_text_literal_attributes(cls, obj): pass
     def generate_drawing_matrix(cls, target_view, location_hint): pass
     def generate_sheet_identification(cls): pass
+    def get_body_context(cls): pass
     def get_sheet_filename(cls, document): pass
     def get_text_literal(cls, obj): pass
     def get_text_product(cls, element): pass
@@ -158,7 +159,7 @@ class Drawing:
     def import_text_attributes(cls, obj): pass
     def import_text_product(cls, obj): pass
     def open_svg(cls, filepath): pass
-    def run_assign_class_operator(cls, obj=None, ifc_class=None, predefined_type=None): pass
+    def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def update_text_value(cls, obj): pass
 
 
@@ -171,6 +172,7 @@ class Geometry:
     def create_dynamic_voids(cls, obj): pass
     def delete_data(cls, data): pass
     def does_object_have_mesh_with_faces(cls, obj): pass
+    def does_representation_id_exist(cls, representation_id): pass
     def duplicate_object_data(cls, obj): pass
     def get_cartesian_point_coordinate_offset(cls, obj): pass
     def get_element_type(cls, element): pass
@@ -180,6 +182,7 @@ class Geometry:
     def get_object_materials_without_styles(cls, obj): pass
     def get_profile_set_usage(cls, element): pass
     def get_representation_data(cls, representation): pass
+    def get_representation_id(cls, representation): pass
     def get_representation_name(cls, representation): pass
     def get_styles(cls, obj): pass
     def get_total_representation_items(cls, obj): pass
@@ -305,11 +308,14 @@ class Root:
     def add_dynamic_opening_voids(cls, element, obj): pass
     def does_type_have_representations(cls, element): pass
     def get_element_type(cls, element): pass
+    def get_object_name(cls, obj): pass
     def get_object_representation(cls, obj): pass
     def get_representation_context(cls, representation): pass
     def is_opening_element(cls, element): pass
     def link_object_data(cls, source_obj, destination_obj): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
+    def set_element_specific_display_settings(cls, obj, element): pass
+    def set_object_name(cls, obj, element): pass
 
 
 @interface
