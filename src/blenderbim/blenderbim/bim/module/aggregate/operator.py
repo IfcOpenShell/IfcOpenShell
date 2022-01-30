@@ -99,12 +99,7 @@ class AddAggregate(bpy.types.Operator):
         if not element:
             return {"FINISHED"}
 
-        aggregate_collection = bpy.data.collections.new("IfcElementAssembly/Assembly")
-        context.scene.collection.children.link(aggregate_collection)
-        aggregate = bpy.data.objects.new("Assembly", None)
-        aggregate_collection.objects.link(aggregate)
-        bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class="IfcElementAssembly")
-
+        aggregate = self.create_aggregate(context)
         tool.Collector.sync(obj)
         current_aggregate = ifcopenshell.util.element.get_aggregate(element)
         current_container = ifcopenshell.util.element.get_container(element)
@@ -126,3 +121,11 @@ class AddAggregate(bpy.types.Operator):
             )
         core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
         return {"FINISHED"}
+
+    def create_aggregate(self, context):
+        aggregate_collection = bpy.data.collections.new("IfcElementAssembly/Assembly")
+        context.scene.collection.children.link(aggregate_collection)
+        aggregate = bpy.data.objects.new("Assembly", None)
+        aggregate_collection.objects.link(aggregate)
+        bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class="IfcElementAssembly")
+        return aggregate
