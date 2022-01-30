@@ -49,6 +49,12 @@ class Root(blenderbim.core.tool.Root):
         return ifcopenshell.util.element.get_type(element)
 
     @classmethod
+    def get_object_name(cls, obj):
+        if "." in obj.name and obj.name.split(".")[-1].isnumeric():
+            return ".".join(obj.name.split(".")[:-1])
+        return obj.name
+
+    @classmethod
     def get_object_representation(cls, obj):
         if obj.data and obj.data.BIMMeshProperties.ifc_definition_id:
             return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
@@ -79,6 +85,11 @@ class Root(blenderbim.core.tool.Root):
             ifc_representation_class=ifc_representation_class,
             profile_set_usage=profile_set_usage,
         )
+
+    @classmethod
+    def set_element_specific_display_settings(cls, obj, element):
+        if element.is_a("IfcOpeningElement"):
+            obj.display_type = "WIRE"
 
     @classmethod
     def set_object_name(cls, obj, element):
