@@ -39,3 +39,34 @@ def copy_class(ifc, collector, geometry, root, obj=None):
     collector.assign(obj)
     if root.is_opening_element(element):
         root.add_dynamic_opening_voids(element, obj)
+
+
+def assign_class(
+    ifc,
+    collector,
+    root,
+    obj=None,
+    ifc_class=None,
+    predefined_type=None,
+    should_add_representation=True,
+    context=None,
+    ifc_representation_class=None,
+):
+    if ifc.get_entity(obj):
+        return
+
+    name = root.get_object_name(obj)
+    element = ifc.run("root.create_entity", ifc_class=ifc_class, predefined_type=predefined_type, name=name)
+    root.set_object_name(obj, element)
+    ifc.link(element, obj)
+
+    if should_add_representation:
+        root.run_geometry_add_representation(
+            obj=obj, context=context, ifc_representation_class=ifc_representation_class, profile_set_usage=None
+        )
+
+    root.set_element_specific_display_settings(obj, element)
+
+    collector.sync(obj)
+    collector.assign(obj)
+    return element
