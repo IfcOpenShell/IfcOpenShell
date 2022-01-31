@@ -194,6 +194,49 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 )
 
+:mpir
+set DEPENDENCY_NAME=mpir
+set DEPENDENCY_DIR=%DEPS_DIR%\mpir
+call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+git reset --hard
+git clean -fdx
+REM There probably need to be quotes here around the filename
+powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_cxx\"}" | git apply --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero --ignore-whitespace 
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd msvc
+cd vs%VS_VER:~2,2%
+call .\msbuild.bat gc LIB %VS_PLATFORM% Release
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
+copy ..\..\lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpir"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:mpfr
+set DEPENDENCY_NAME=mpfr
+set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
+call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+git reset --hard
+powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+rem call :BuildSolution "%DEPENDENCY_DIR%\build.vs19\lib_mpfr.sln" %DEBUG_OR_RELEASE%
+call :BuildSolution "%DEPENDENCY_DIR%\build.vs19\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+REM This command fails because not all msvc projects are patched with the right sdk version
+IF NOT EXIST lib\%VS_PLATFORM%\Release\mpfr.lib GOTO :Error
+IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
+copy lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpfr"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
 :HDF5
 set DEPENDENCY_NAME=hdf5
 set DEPENDENCY_DIR=%DEPS_DIR%
@@ -402,49 +445,6 @@ IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
     popd
 )
 IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swigwin" /E /IS /MOVE /njh /njs
-
-:mpir
-set DEPENDENCY_NAME=mpir
-set DEPENDENCY_DIR=%DEPS_DIR%\mpir
-call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
-git reset --hard
-git clean -fdx
-REM There probably need to be quotes here around the filename
-powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_cxx\"}" | git apply --unidiff-zero --ignore-whitespace
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero --ignore-whitespace 
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd msvc
-cd vs%VS_VER:~2,2%
-call .\msbuild.bat gc LIB %VS_PLATFORM% Release
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
-copy ..\..\lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpir"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
-:mpfr
-set DEPENDENCY_NAME=mpfr
-set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
-call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
-git reset --hard
-powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero --ignore-whitespace
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-rem call :BuildSolution "%DEPENDENCY_DIR%\build.vs19\lib_mpfr.sln" %DEBUG_OR_RELEASE%
-call :BuildSolution "%DEPENDENCY_DIR%\build.vs19\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-REM This command fails because not all msvc projects are patched with the right sdk version
-IF NOT EXIST lib\%VS_PLATFORM%\Release\mpfr.lib GOTO :Error
-IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
-copy lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpfr"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :cgal
 set DEPENDENCY_NAME=cgal
