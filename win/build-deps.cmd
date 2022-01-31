@@ -71,7 +71,7 @@ call build-type-cfg.cmd %2
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 set BUILD_TYPE=%3
-IF "%BUILD_TYPE%"=="" set BUILD_TYPE=Rebuild
+IF "%BUILD_TYPE%"=="" set BUILD_TYPE=Build
 
 IF NOT "!BUILD_TYPE!"=="Build" IF NOT "!BUILD_TYPE!"=="Rebuild" IF NOT "!BUILD_TYPE!"=="Clean" (
     call utils\cecho.cmd 0 12 "Invalid build type passed: !BUILD_TYPE!. Cannot proceed, aborting!"
@@ -90,7 +90,6 @@ IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
 IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
 
 :: For subroutines
-REM set MSBUILD_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS% /t:%BUILD_TYPE%
 REM /clp:ErrorsOnly;WarningsOnly
 :: Note BUILD_TYPE not passed, Clean e.g. wouldn't delete the installed files.
 set MSBUILD_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS%
@@ -228,7 +227,6 @@ powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%U
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-rem call :BuildSolution "%DEPENDENCY_DIR%\build.vs19\lib_mpfr.sln" %DEBUG_OR_RELEASE%
 call :BuildSolution "%DEPENDENCY_DIR%\build.vs19\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM This command fails because not all msvc projects are patched with the right sdk version
