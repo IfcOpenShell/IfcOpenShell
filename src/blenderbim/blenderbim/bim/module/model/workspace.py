@@ -52,7 +52,7 @@ class BimTool(WorkSpaceTool):
     )
 
     def draw_settings(context, layout, tool):
-        if not AuthoringData.is_loaded:
+        if not AuthoringData.is_loaded and IfcStore.get_file():
             AuthoringData.load()
 
         row = layout.row(align=True)
