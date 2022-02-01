@@ -139,3 +139,22 @@ class BIM_OT_add_aggregate(bpy.types.Operator):
         aggregate_collection.objects.link(aggregate)
         bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class="IfcElementAssembly")
         return aggregate
+
+
+class BIM_OT_select_parts(bpy.types.Operator):
+    """Select Parts"""
+
+    bl_idname = "bim.select_parts"
+    bl_label = "Select Parts"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        obj = bpy.data.objects.get(self.obj) or context.active_object
+        parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj))
+        parts_objs = set(tool.Ifc.get_object(part) for part in parts)
+        selectable_parts_objs = set(context.selectable_objects).intersection(parts_objs)
+        for selectable_part_obj in selectable_parts_objs:
+            selectable_part_obj.select_set(True)
+        return {"FINISHED"}

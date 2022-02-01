@@ -25,6 +25,7 @@ classes = (
     operator.BIM_OT_enable_editing_aggregate,
     operator.BIM_OT_disable_editing_aggregate,
     operator.BIM_OT_add_aggregate,
+    operator.BIM_OT_select_parts,
     prop.BIMObjectAggregateProperties,
     ui.BIM_PT_aggregate,
 )
