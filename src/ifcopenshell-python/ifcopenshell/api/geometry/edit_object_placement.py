@@ -80,6 +80,9 @@ class Usecase:
         elif getattr(self.settings["product"], "Decomposes", None):
             relating_object = self.settings["product"].Decomposes[0].RelatingObject
             return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
+        elif getattr(self.settings["product"], "Nests", None):
+            relating_object = self.settings["product"].Nests[0].RelatingObject
+            return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
         elif getattr(self.settings["product"], "VoidsElements", None):
             relating_object = self.settings["product"].VoidsElements[0].RelatingBuildingElement
             return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
