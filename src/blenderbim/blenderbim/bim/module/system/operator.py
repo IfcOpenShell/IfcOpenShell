@@ -150,3 +150,12 @@ class HidePorts(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.hide_ports(tool.System, element=tool.Ifc.get_entity(context.active_object))
+
+
+class AddPort(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_port"
+    bl_label = "Add Ports"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.add_port(tool.Ifc, tool.System, element=tool.Ifc.get_entity(context.active_object))

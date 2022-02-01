@@ -199,7 +199,15 @@ class Drawing(blenderbim.core.tool.Drawing):
         )
 
     @classmethod
-    def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None):
+    def run_root_assign_class(
+        cls,
+        obj=None,
+        ifc_class=None,
+        predefined_type=None,
+        should_add_representation=True,
+        context=None,
+        ifc_representation_class=None,
+    ):
         return blenderbim.core.root.assign_class(
             tool.Ifc,
             tool.Collector,

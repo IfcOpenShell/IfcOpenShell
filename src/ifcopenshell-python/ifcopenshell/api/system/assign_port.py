@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.placement
 
 
 class Usecase:
@@ -40,8 +41,14 @@ class Usecase:
             if self.settings["port"] in rel.RelatedObjects:
                 return
 
-        if not rels:
-            return self.file.create_entity(
+        if rels:
+            rel = rels[0]
+            related_objects = set(rel.RelatedObjects) or set()
+            related_objects.add(self.settings["port"])
+            rel.RelatedObjects = list(related_objects)
+            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+        else:
+            rel = self.file.create_entity(
                 "IfcRelNests",
                 GlobalId=ifcopenshell.guid.new(),
                 OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
@@ -49,21 +56,31 @@ class Usecase:
                 RelatingObject=self.settings["element"],
             )
 
-        rel = rels[0]
-        related_objects = set(rel.RelatedObjects) or set()
-        related_objects.add(self.settings["port"])
-        rel.RelatedObjects = list(related_objects)
-        ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+        self.update_port_placement()
+
         return rel
 
     def execute_ifc2x3(self):
         for rel in self.settings["element"].HasPorts or []:
             if rel.RelatingPort == self.settings["port"]:
                 return
-        return self.file.create_entity(
+        rel = self.file.create_entity(
             "IfcRelConnectsPortToElement",
             GlobalId=ifcopenshell.guid.new(),
             OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
             RelatingPort=self.settings["port"],
             RelatedElement=self.settings["element"],
         )
+        self.update_port_placement()
+        return rel
+
+    def update_port_placement(self):
+        placement = getattr(self.settings["port"], "ObjectPlacement", None)
+        if placement and placement.is_a("IfcLocalPlacement"):
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement",
+                self.file,
+                product=self.settings["port"],
+                matrix=ifcopenshell.util.placement.get_local_placement(self.settings["port"].ObjectPlacement),
+                is_si=False,
+            )

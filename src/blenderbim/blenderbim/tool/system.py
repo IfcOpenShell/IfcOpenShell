@@ -25,6 +25,15 @@ from blenderbim.bim import import_ifc
 
 class System(blenderbim.core.tool.System):
     @classmethod
+    def create_empty_at_cursor_with_element_orientation(cls, element):
+        element_obj = tool.Ifc.get_object(element)
+        obj = bpy.data.objects.new("Port", None)
+        obj.matrix_world = element_obj.matrix_world
+        obj.matrix_world.translation = bpy.context.scene.cursor.matrix.translation
+        bpy.context.scene.collection.objects.link(obj)
+        return obj
+
+    @classmethod
     def delete_element_objects(cls, elements):
         for element in elements:
             obj = tool.Ifc.get_object(element)
@@ -77,10 +86,33 @@ class System(blenderbim.core.tool.System):
         ifc_importer.calculate_unit_scale()
         ports = set(ports)
         ports -= ifc_importer.create_products(ports)
-        if ports:
-            for port in ports:
-                ifc_importer.create_product(port)
+        for port in ports or []:
+            if tool.Ifc.get_object(port):
+                continue
+            ifc_importer.create_product(port)
         ifc_importer.place_objects_in_collections()
+
+    @classmethod
+    def run_root_assign_class(
+        cls,
+        obj=None,
+        ifc_class=None,
+        predefined_type=None,
+        should_add_representation=True,
+        context=None,
+        ifc_representation_class=None,
+    ):
+        return blenderbim.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class=ifc_class,
+            predefined_type=predefined_type,
+            should_add_representation=should_add_representation,
+            context=context,
+            ifc_representation_class=ifc_representation_class,
+        )
 
     @classmethod
     def select_elements(cls, elements):

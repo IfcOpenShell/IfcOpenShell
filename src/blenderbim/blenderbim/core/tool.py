@@ -380,6 +380,7 @@ class Surveyor:
 
 @interface
 class System:
+    def create_empty_at_cursor_with_element_orientation(cls, element): pass
     def delete_element_objects(cls, elements): pass
     def disable_editing_system(cls): pass
     def disable_system_editing_ui(cls): pass
@@ -389,6 +390,7 @@ class System:
     def import_system_attributes(cls, system): pass
     def import_systems(cls): pass
     def load_ports(cls, port): pass
+    def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_elements(cls, elements): pass
     def select_system_products(cls, system): pass
     def set_active_system(cls, system): pass
