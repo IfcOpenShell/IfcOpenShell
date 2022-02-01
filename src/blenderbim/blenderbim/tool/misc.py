@@ -41,7 +41,7 @@ class Misc(blenderbim.core.tool.Misc):
 
     @classmethod
     def get_storey_height_in_si(cls, storey, total_storeys):
-        building = ifcopenshell.util.element.get_relating_object(storey)
+        building = ifcopenshell.util.element.get_aggregate(storey)
         related_objects = []
         for rel in building.IsDecomposedBy:
             if rel.is_a("IfcRelAggregates"):

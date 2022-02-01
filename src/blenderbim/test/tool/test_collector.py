@@ -235,4 +235,4 @@ class TestSync(NewFile):
         bpy.data.collections.get("IfcBuilding/My Building").children.link(col)
         col.objects.link(obj)
         subject.sync(obj)
-        assert ifcopenshell.util.element.get_relating_object(element).is_a("IfcBuilding")
+        assert ifcopenshell.util.element.get_aggregate(element).is_a("IfcBuilding")

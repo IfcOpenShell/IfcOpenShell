@@ -28,7 +28,7 @@ class TestUnassignObject(test.bootstrap.IFC4):
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
         ifcopenshell.api.run("aggregate.unassign_object", self.file, product=subelement)
-        assert ifcopenshell.util.element.get_relating_object(subelement) is None
+        assert ifcopenshell.util.element.get_aggregate(subelement) is None
 
     def test_the_rel_is_kept_if_there_are_more_decomposed_elements(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSite")

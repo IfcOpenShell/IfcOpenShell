@@ -111,7 +111,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator):
 
         aggregate = self.create_aggregate(context)
         tool.Collector.sync(obj)
-        current_aggregate = ifcopenshell.util.element.get_relating_object(element)
+        current_aggregate = ifcopenshell.util.element.get_aggregate(element)
         current_container = ifcopenshell.util.element.get_container(element)
         if current_aggregate:
             core.assign_object(

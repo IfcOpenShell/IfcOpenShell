@@ -38,7 +38,7 @@ class Usecase:
         if contains_elements and contained_in_structure and contained_in_structure[0] == contains_elements[0]:
             return
 
-        aggregate = ifcopenshell.util.element.get_relating_object(self.settings["product"])
+        aggregate = ifcopenshell.util.element.get_aggregate(self.settings["product"])
         if aggregate:
             ifcopenshell.api.run(
                 "aggregate.unassign_object", self.file, relating_object=aggregate, product=self.settings["product"]
