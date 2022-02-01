@@ -36,8 +36,7 @@ class AggregateData:
             "relating_object_label": cls.get_relating_object_label(),
             "relating_object_id": cls.get_relating_object_id(),
             "has_related_objects": cls.has_related_objects(),
-            "related_objects_labels": cls.get_related_objects_labels(),
-            "related_objects_ids": cls.get_related_objects_ids(),
+            "related_objects_amount": cls.get_related_objects_amount(),
             "ifc_class": cls.ifc_class(),
         }
         cls.is_loaded = True
@@ -67,18 +66,13 @@ class AggregateData:
         return ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(bpy.context.active_object))
 
     @classmethod
+    def get_related_objects_amount(cls):
+        parts = cls.get_related_objects()
+        return len(parts) if parts else 0
+
+    @classmethod
     def has_related_objects(cls) -> bool:
         return bool(cls.get_related_objects())
-
-    @classmethod
-    def get_related_objects_labels(cls):
-        related_objects = cls.get_related_objects() or []
-        return [f"{related_object.is_a()}/{related_object.Name or ''}" for related_object in related_objects]
-
-    @classmethod
-    def get_related_objects_ids(cls):
-        related_objects = cls.get_related_objects() or []
-        return [related_object.id() for related_object in related_objects]
 
     @classmethod
     def ifc_class(cls) -> str:
