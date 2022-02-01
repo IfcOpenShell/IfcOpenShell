@@ -28,7 +28,6 @@ classes = (
     operator.RemoveContainer,
     operator.SelectContainer,
     operator.SelectSimilarContainer,
-    operator.BIM_OT_building_storey_add,
     prop.SpatialElement,
     prop.BIMSpatialProperties,
     prop.BIMObjectSpatialProperties,

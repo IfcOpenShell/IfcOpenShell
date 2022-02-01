@@ -176,3 +176,26 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
         if aggregate_obj in context.selectable_objects:
             aggregate_obj.select_set(True)
         return {"FINISHED"}
+
+
+class BIM_OT_add_part_to_object(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_part_to_object"
+    bl_label = "Add Part to Object"
+    bl_options = {"REGISTER", "UNDO"}
+    part_class: bpy.props.StringProperty(name="Class", options={"HIDDEN"})
+    part_name: bpy.props.StringProperty(name="Name")
+
+    def invoke(self, context, event):
+        self.part_name = "My " + self.part_class.lstrip("Ifc")
+        return context.window_manager.invoke_props_dialog(self)
+
+    def _execute(self, context):
+        core.add_part_to_object(
+            tool.Ifc,
+            tool.Aggregate,
+            tool.Collector,
+            tool.Blender,
+            obj=context.active_object,
+            part_class=self.part_class,
+            part_name=self.part_name,
+        )

@@ -27,6 +27,7 @@ classes = (
     operator.BIM_OT_add_aggregate,
     operator.BIM_OT_select_parts,
     operator.BIM_OT_select_aggregate,
+    operator.BIM_OT_add_part_to_object,
     prop.BIMObjectAggregateProperties,
     ui.BIM_PT_aggregate,
 )
