@@ -44,7 +44,7 @@ class AggregateData:
 
     @classmethod
     def get_relating_object(cls):
-        return ifcopenshell.util.element.get_relating_object(tool.Ifc.get_entity(bpy.context.active_object))
+        return ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(bpy.context.active_object))
 
     @classmethod
     def has_relating_object(cls) -> bool:
@@ -64,7 +64,7 @@ class AggregateData:
 
     @classmethod
     def get_related_objects(cls):
-        return ifcopenshell.util.element.get_related_objects(tool.Ifc.get_entity(bpy.context.active_object))
+        return ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(bpy.context.active_object))
 
     @classmethod
     def has_related_objects(cls) -> bool:

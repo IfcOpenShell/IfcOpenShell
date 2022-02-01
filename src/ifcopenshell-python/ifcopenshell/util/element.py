@@ -183,7 +183,7 @@ def get_aggregate(element):
         return element.Decomposes[0].RelatingObject
 
 
-def get_related_objects(element):
+def get_parts(element):
     if hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
         return element.IsDecomposedBy[0].RelatedObjects
 
