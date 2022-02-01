@@ -103,3 +103,13 @@ class TestHidePorts:
         system.get_ports("element").should_be_called().will_return(["port"])
         system.delete_element_objects(["port"]).should_be_called()
         subject.hide_ports(system, element="element")
+
+
+class TestAddPort:
+    def test_run(self, ifc, system):
+        system.get_ports("element").should_be_called().will_return(["port"])
+        system.load_ports(["port"]).should_be_called()
+        system.create_empty_at_cursor_with_element_orientation("element").should_be_called().will_return("obj")
+        system.run_root_assign_class(obj="obj", ifc_class="IfcDistributionPort").should_be_called().will_return("port")
+        ifc.run("system.assign_port", element="element", port="port").should_be_called()
+        subject.add_port(ifc, system, element="element")

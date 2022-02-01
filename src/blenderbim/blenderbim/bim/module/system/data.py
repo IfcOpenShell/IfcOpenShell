@@ -25,6 +25,7 @@ import blenderbim.tool as tool
 def refresh():
     SystemData.is_loaded = False
     ObjectSystemData.is_loaded = False
+    PortData.is_loaded = False
 
 
 class SystemData:

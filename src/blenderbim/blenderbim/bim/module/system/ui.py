@@ -153,6 +153,7 @@ class BIM_PT_ports(Panel):
         row.label(text=f"{PortData.data['total_ports']} Ports Found", icon="PLUGIN")
         row.operator("bim.show_ports", icon="HIDE_OFF", text="")
         row.operator("bim.hide_ports", icon="HIDE_ON", text="")
+        row.operator("bim.add_port", icon="ADD", text="")
 
 
 class BIM_UL_systems(UIList):

@@ -29,6 +29,18 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.System)
 
 
+class TestCreateEmptyAtCursorWithElementOrientation(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        element = ifc.createIfcWall()
+        tool.Ifc.link(element, obj)
+        bpy.context.scene.cursor.matrix.translation[0] = 5
+        obj = subject.create_empty_at_cursor_with_element_orientation(element)
+        assert obj.matrix_world.translation[0] == 5
+
+
 class TestDeleteElementObjects(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -162,6 +174,11 @@ class TestLoadPorts(NewFile):
         assert obj
         assert obj.users_collection
         assert list(obj.location) == [0, 0, 0]
+
+
+class TestRunAssignClassOperator(NewFile):
+    def test_nothing(self):
+        pass
 
 
 class TestSelectElements(NewFile):

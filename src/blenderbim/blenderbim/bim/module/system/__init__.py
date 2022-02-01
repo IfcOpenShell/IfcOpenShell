@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AddPort,
     operator.AddSystem,
     operator.AssignSystem,
     operator.DisableEditingSystem,
