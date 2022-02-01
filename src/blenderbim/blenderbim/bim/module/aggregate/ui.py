@@ -70,7 +70,7 @@ class BIM_PT_aggregate(Panel):
                 op.relating_object = AggregateData.data["relating_object_id"]
                 op.related_object = context.active_object.BIMObjectProperties.ifc_definition_id
             else:
-                row.label(text="No Aggregate")
+                row.label(text="No Aggregate", icon="TRIA_UP")
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
 
@@ -82,5 +82,14 @@ class BIM_PT_aggregate(Panel):
             op.obj = context.active_object.name
 
         ifc_class = AggregateData.data["ifc_class"]
+        part_class = ""
         if ifc_class == "IfcBuilding":
-            layout.operator("bim.building_storey_add")
+            part_class = "IfcBuildingStorey"
+        elif ifc_class == "IfcSite":
+            part_class = "IfcBuilding"
+        elif ifc_class == "IfcProject":
+            part_class = "IfcSite"
+        if part_class != "":
+            op = layout.operator("bim.add_part_to_object", text="Add " + part_class.lstrip("Ifc"))
+            op.part_class = part_class
+            op.obj = context.active_object.name
