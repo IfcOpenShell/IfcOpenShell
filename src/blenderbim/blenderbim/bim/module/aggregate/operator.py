@@ -158,3 +158,21 @@ class BIM_OT_select_parts(bpy.types.Operator):
         for selectable_part_obj in selectable_parts_objs:
             selectable_part_obj.select_set(True)
         return {"FINISHED"}
+
+
+class BIM_OT_select_aggregate(bpy.types.Operator):
+    """Select Aggregate"""
+
+    bl_idname = "bim.select_aggregate"
+    bl_label = "Select Aggregate"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        obj = bpy.data.objects.get(self.obj) or context.active_object
+        aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(obj))
+        aggregate_obj = tool.Ifc.get_object(aggregate)
+        if aggregate_obj in context.selectable_objects:
+            aggregate_obj.select_set(True)
+        return {"FINISHED"}
