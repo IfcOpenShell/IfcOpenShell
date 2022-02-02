@@ -118,3 +118,25 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
                 attributes={attribute: {"Red": 1, "Green": 1, "Blue": 1}},
             )
             assert list(getattr(style, attribute)) == [None, 1, 1, 1]
+
+    def test_editing_a_specular_highlight_as_an_exponent(self):
+        style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
+        ifcopenshell.api.run(
+            "style.edit_surface_style",
+            self.file,
+            style=style,
+            attributes={"SpecularHighlight": {"IfcSpecularExponent": 2}},
+        )
+        assert style.SpecularHighlight.is_a("IfcSpecularExponent")
+        assert style.SpecularHighlight.wrappedValue == 2
+
+    def test_editing_a_specular_highlight_as_a_roughness(self):
+        style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
+        ifcopenshell.api.run(
+            "style.edit_surface_style",
+            self.file,
+            style=style,
+            attributes={"SpecularHighlight": {"IfcSpecularRoughness": 0.5}},
+        )
+        assert style.SpecularHighlight.is_a("IfcSpecularRoughness")
+        assert style.SpecularHighlight.wrappedValue == 0.5
