@@ -61,3 +61,12 @@ class TestGetPortsIFC2X3(test.bootstrap.IFC2X3):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
         ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
         assert subject.get_ports(element) == [port]
+
+
+class TestGetConnectedPort(test.bootstrap.IFC4):
+    def test_run(self):
+        port1 = ifcopenshell.api.run("system.add_port", self.file)
+        port2 = ifcopenshell.api.run("system.add_port", self.file)
+        ifcopenshell.api.run("system.connect_port", self.file, port1=port1, port2=port2)
+        assert subject.get_connected_port(port1) == port2
+        assert subject.get_connected_port(port2) == port1

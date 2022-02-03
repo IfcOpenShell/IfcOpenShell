@@ -57,6 +57,10 @@ class System(blenderbim.core.tool.System):
         return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMSystemProperties.system_attributes)
 
     @classmethod
+    def get_connected_port(cls, port):
+        return ifcopenshell.util.system.get_connected_port(port)
+
+    @classmethod
     def get_ports(cls, element):
         return ifcopenshell.util.system.get_ports(element)
 

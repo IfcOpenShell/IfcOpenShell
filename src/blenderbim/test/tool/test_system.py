@@ -36,9 +36,8 @@ class TestCreateEmptyAtCursorWithElementOrientation(NewFile):
         obj = bpy.data.objects.new("Object", None)
         element = ifc.createIfcWall()
         tool.Ifc.link(element, obj)
-        bpy.context.scene.cursor.matrix.translation[0] = 5
         obj = subject.create_empty_at_cursor_with_element_orientation(element)
-        assert obj.matrix_world.translation[0] == 5
+        assert obj.matrix_world == bpy.context.scene.cursor.matrix
 
 
 class TestDeleteElementObjects(NewFile):
@@ -81,6 +80,16 @@ class TestExportSystemAttributes(NewFile):
             "Description": "Description",
             "ObjectType": "ObjectType",
         }
+
+
+class TestGetConnectedPort(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        port1 = ifcopenshell.api.run("system.add_port", ifc)
+        port2 = ifcopenshell.api.run("system.add_port", ifc)
+        ifcopenshell.api.run("system.connect_port", ifc, port1=port1, port2=port2)
+        assert subject.get_connected_port(port1) == port2
+        assert subject.get_connected_port(port2) == port1
 
 
 class TestGetPorts(NewFile):

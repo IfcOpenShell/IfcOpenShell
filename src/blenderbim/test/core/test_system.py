@@ -113,3 +113,14 @@ class TestAddPort:
         system.run_root_assign_class(obj="obj", ifc_class="IfcDistributionPort").should_be_called().will_return("port")
         ifc.run("system.assign_port", element="element", port="port").should_be_called()
         subject.add_port(ifc, system, element="element")
+
+
+class TestSetFlowDirection:
+    def test_run(self, ifc, system):
+        system.get_connected_port("port").should_be_called().will_return("port2")
+        ifc.run("system.connect_port", port1="port", port2="port2", direction="direction").should_be_called()
+        subject.set_flow_direction(ifc, system, port="port", direction="direction")
+
+    def test_do_not_set_a_direction_if_port_is_not_connected(self, ifc, system):
+        system.get_connected_port("port").should_be_called().will_return(None)
+        subject.set_flow_direction(ifc, system, port="port", direction="direction")
