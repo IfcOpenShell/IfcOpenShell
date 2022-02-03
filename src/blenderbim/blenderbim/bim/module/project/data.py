@@ -32,7 +32,11 @@ class ProjectData:
 
     @classmethod
     def load(cls):
-        cls.data = {"export_schema": cls.get_export_schema(), "template_file": cls.template_file()}
+        cls.data = {
+            "export_schema": cls.get_export_schema(),
+            "template_file": cls.template_file(),
+            "last_saved": cls.last_saved(),
+        }
         cls.is_loaded = True
 
     @classmethod
@@ -45,3 +49,15 @@ class ProjectData:
         results = [("0", "Blank Project", "")]
         results.extend([(f, f.replace(".ifc", ""), "") for f in files if ".ifc" in f])
         return results
+
+    @classmethod
+    def last_saved(cls):
+        ifc = tool.Ifc.get()
+        if not ifc:
+            return ""
+        try:
+            save_datetime = ifc.wrapped_data.header.file_name.time_stamp
+            save_date, save_time = save_datetime.split("T")
+            return f"{save_date} {':'.join(save_time.split(':')[0:2])}"
+        except:
+            return ""

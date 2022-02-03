@@ -94,8 +94,7 @@ class BIM_PT_project(Panel):
         props = context.scene.BIMProperties
         pprops = context.scene.BIMProjectProperties
         row = self.layout.row(align=True)
-        row.label(text="IFC Filename", icon="FILE")
-        row.label(text=os.path.basename(props.ifc_file) or "No File Found")
+        row.label(text=os.path.basename(props.ifc_file) or "No File Found", icon="FILE")
 
         if IfcStore.get_file():
             row.prop(pprops, "is_authoring", icon="MODIFIER", text="")
@@ -136,12 +135,21 @@ class BIM_PT_project(Panel):
             row = self.layout.row(align=True)
             row.label(text="File Not Loaded", icon="ERROR")
 
+        if props.ifc_file:
+            row = self.layout.row(align=True)
+            row.label(text="Saved", icon="EXPORT")
+            row.label(text=ProjectData.data["last_saved"])
+
+            row = self.layout.row(align=True)
+            row.prop(props, "ifc_file", text="")
+            row.operator("bim.reload_ifc_file", icon="FILE_REFRESH", text="")
+            row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
+
         row = self.layout.row(align=True)
-        row.prop(props, "ifc_file", text="")
-        row.operator("bim.reload_ifc_file", icon="FILE_REFRESH", text="")
-        op = row.operator("export_ifc.bim", icon="FILE_TICK", text="")
+        op = row.operator("export_ifc.bim", icon="EXPORT", text="Save Project")
+        op.should_save_as = False
+        op = row.operator("export_ifc.bim", icon="FILE_TICK", text="Save As")
         op.should_save_as = True
-        row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
     def draw_create_project_ui(self, context):
         props = context.scene.BIMProperties
