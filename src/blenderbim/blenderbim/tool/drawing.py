@@ -119,13 +119,36 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def generate_drawing_matrix(cls, target_view, location_hint):
+        x = 0 if location_hint == 0 else bpy.context.scene.cursor.matrix[0][3]
+        y = 0 if location_hint == 0 else bpy.context.scene.cursor.matrix[1][3]
+        z = 0 if location_hint == 0 else bpy.context.scene.cursor.matrix[2][3]
         if target_view == "PLAN_VIEW":
             if location_hint:
-                m = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.copy()
-                m[0][3] = bpy.context.scene.cursor.matrix[0][3]
-                m[1][3] = bpy.context.scene.cursor.matrix[1][3]
-                m[2][3] += 1.6
-                return m
+                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world[2][3]
+                return mathutils.Matrix(((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z + 1.6), (0, 0, 0, 1)))
+        elif target_view == "REFLECTED_PLAN_VIEW":
+            if location_hint:
+                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world[2][3]
+                return mathutils.Matrix(((-1, 0, 0, x), (0, 1, 0, y), (0, 0, -1, z + 1.6), (0, 0, 0, 1)))
+            return mathutils.Matrix(((-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
+        elif target_view == "ELEVATION_VIEW":
+            if location_hint == "NORTH":
+                return mathutils.Matrix(((-1, 0, 0, x), (0, 0, 1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+            elif location_hint == "SOUTH":
+                return mathutils.Matrix(((1, 0, 0, x), (0, 0, -1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+            elif location_hint == "EAST":
+                return mathutils.Matrix(((0, 0, 1, x), (1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+            elif location_hint == "WEST":
+                return mathutils.Matrix(((0, 0, -1, x), (-1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+        elif target_view == "SECTION_VIEW":
+            if location_hint == "NORTH":
+                return mathutils.Matrix(((1, 0, 0, x), (0, 0, -1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+            elif location_hint == "SOUTH":
+                return mathutils.Matrix(((-1, 0, 0, x), (0, 0, 1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+            elif location_hint == "EAST":
+                return mathutils.Matrix(((0, 0, -1, x), (-1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+            elif location_hint == "WEST":
+                return mathutils.Matrix(((0, 0, 1, x), (1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
         return mathutils.Matrix()
 
     @classmethod
