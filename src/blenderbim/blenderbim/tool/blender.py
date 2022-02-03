@@ -23,4 +23,24 @@ from blenderbim.bim.ifc import IfcStore
 
 
 class Blender:
-    pass
+    @classmethod
+    def set_active_object(cls, obj):
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+
+    @classmethod
+    def get_name(cls, ifc_class, name):
+        if not bpy.data.objects.get(f"{ifc_class}/{name}"):
+            return name
+        i = 2
+        while bpy.data.objects.get(f"{ifc_class}/{name} {i}"):
+            i += 1
+        return f"{name} {i}"
+
+    @classmethod
+    def create_ifc_object(cls, ifc_class: str, name: str = None, data=None) -> bpy.types.Object:
+        name = name or "My " + ifc_class
+        name = cls.get_name(ifc_class, name)
+        obj = bpy.data.objects.new(name, data)
+        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=ifc_class)
+        return obj

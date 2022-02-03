@@ -20,11 +20,14 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.AssignObject,
-    operator.UnassignObject,
-    operator.EnableEditingAggregate,
-    operator.DisableEditingAggregate,
-    operator.AddAggregate,
+    operator.BIM_OT_assign_object,
+    operator.BIM_OT_unassign_object,
+    operator.BIM_OT_enable_editing_aggregate,
+    operator.BIM_OT_disable_editing_aggregate,
+    operator.BIM_OT_add_aggregate,
+    operator.BIM_OT_select_parts,
+    operator.BIM_OT_select_aggregate,
+    operator.BIM_OT_add_part_to_object,
     prop.BIMObjectAggregateProperties,
     ui.BIM_PT_aggregate,
 )

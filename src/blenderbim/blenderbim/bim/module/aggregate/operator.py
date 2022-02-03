@@ -33,7 +33,9 @@ class Operator:
         return {"FINISHED"}
 
 
-class AssignObject(bpy.types.Operator, Operator):
+class BIM_OT_assign_object(bpy.types.Operator, Operator):
+    """Create aggregation relationship between two ifc elements"""
+
     bl_idname = "bim.assign_object"
     bl_label = "Assign Object"
     bl_options = {"REGISTER", "UNDO"}
@@ -50,7 +52,9 @@ class AssignObject(bpy.types.Operator, Operator):
         )
 
 
-class UnassignObject(bpy.types.Operator, Operator):
+class BIM_OT_unassign_object(bpy.types.Operator, Operator):
+    """Remove aggregation relationship between two ifc elements"""
+
     bl_idname = "bim.unassign_object"
     bl_label = "Unassign Object"
     bl_options = {"REGISTER", "UNDO"}
@@ -66,7 +70,9 @@ class UnassignObject(bpy.types.Operator, Operator):
         )
 
 
-class EnableEditingAggregate(bpy.types.Operator, Operator):
+class BIM_OT_enable_editing_aggregate(bpy.types.Operator, Operator):
+    """Enable editing aggregation relationship"""
+
     bl_idname = "bim.enable_editing_aggregate"
     bl_label = "Enable Editing Aggregate"
     bl_options = {"REGISTER", "UNDO"}
@@ -75,7 +81,9 @@ class EnableEditingAggregate(bpy.types.Operator, Operator):
         core.enable_editing_aggregate(tool.Aggregate, obj=context.active_object)
 
 
-class DisableEditingAggregate(bpy.types.Operator, Operator):
+class BIM_OT_disable_editing_aggregate(bpy.types.Operator, Operator):
+    """Disable editing aggregation relationship"""
+
     bl_idname = "bim.disable_editing_aggregate"
     bl_label = "Disable Editing Aggregate"
     bl_options = {"REGISTER", "UNDO"}
@@ -84,7 +92,9 @@ class DisableEditingAggregate(bpy.types.Operator, Operator):
         core.disable_editing_aggregate(tool.Aggregate, obj=context.active_object)
 
 
-class AddAggregate(bpy.types.Operator):
+class BIM_OT_add_aggregate(bpy.types.Operator):
+    """Add aggregate to IFC element"""
+
     bl_idname = "bim.add_aggregate"
     bl_label = "Add Aggregate"
     bl_options = {"REGISTER", "UNDO"}
@@ -99,12 +109,7 @@ class AddAggregate(bpy.types.Operator):
         if not element:
             return {"FINISHED"}
 
-        aggregate_collection = bpy.data.collections.new("IfcElementAssembly/Assembly")
-        context.scene.collection.children.link(aggregate_collection)
-        aggregate = bpy.data.objects.new("Assembly", None)
-        aggregate_collection.objects.link(aggregate)
-        bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class="IfcElementAssembly")
-
+        aggregate = self.create_aggregate(context)
         tool.Collector.sync(obj)
         current_aggregate = ifcopenshell.util.element.get_aggregate(element)
         current_container = ifcopenshell.util.element.get_container(element)
@@ -126,3 +131,73 @@ class AddAggregate(bpy.types.Operator):
             )
         core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
         return {"FINISHED"}
+
+    def create_aggregate(self, context):
+        aggregate_collection = bpy.data.collections.new("IfcElementAssembly/Assembly")
+        context.scene.collection.children.link(aggregate_collection)
+        aggregate = bpy.data.objects.new("Assembly", None)
+        aggregate_collection.objects.link(aggregate)
+        bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class="IfcElementAssembly")
+        return aggregate
+
+
+class BIM_OT_select_parts(bpy.types.Operator):
+    """Select Parts"""
+
+    bl_idname = "bim.select_parts"
+    bl_label = "Select Parts"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        obj = bpy.data.objects.get(self.obj) or context.active_object
+        parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj))
+        parts_objs = set(tool.Ifc.get_object(part) for part in parts)
+        selectable_parts_objs = set(context.selectable_objects).intersection(parts_objs)
+        for selectable_part_obj in selectable_parts_objs:
+            selectable_part_obj.select_set(True)
+        return {"FINISHED"}
+
+
+class BIM_OT_select_aggregate(bpy.types.Operator):
+    """Select Aggregate"""
+
+    bl_idname = "bim.select_aggregate"
+    bl_label = "Select Aggregate"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        obj = bpy.data.objects.get(self.obj) or context.active_object
+        aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(obj))
+        aggregate_obj = tool.Ifc.get_object(aggregate)
+        if aggregate_obj in context.selectable_objects:
+            aggregate_obj.select_set(True)
+        return {"FINISHED"}
+
+
+class BIM_OT_add_part_to_object(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_part_to_object"
+    bl_label = "Add Part to Object"
+    bl_options = {"REGISTER", "UNDO"}
+    part_class: bpy.props.StringProperty(name="Class", options={"HIDDEN"})
+    part_name: bpy.props.StringProperty(name="Name")
+    obj: bpy.props.StringProperty(options={"HIDDEN"})
+
+    def invoke(self, context, event):
+        self.part_name = "My " + self.part_class.lstrip("Ifc")
+        return context.window_manager.invoke_props_dialog(self)
+
+    def _execute(self, context):
+        obj = bpy.data.objects.get(self.obj) or context.active_object
+        core.add_part_to_object(
+            tool.Ifc,
+            tool.Aggregate,
+            tool.Collector,
+            tool.Blender,
+            obj=obj,
+            part_class=self.part_class,
+            part_name=self.part_name,
+        )
