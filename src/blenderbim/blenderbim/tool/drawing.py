@@ -50,6 +50,18 @@ class Drawing(blenderbim.core.tool.Drawing):
         sheet_builder.create(cls.get_sheet_filename(document), titleblock)
 
     @classmethod
+    def delete_collection(cls, collection):
+        bpy.data.collections.remove(collection, do_unlink=True)
+
+    @classmethod
+    def delete_drawing_elements(cls, elements):
+        for element in elements:
+            tool.Ifc.delete(element)
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                bpy.data.objects.remove(obj)
+
+    @classmethod
     def disable_editing_drawings(cls):
         bpy.context.scene.DocProperties.is_editing_drawings = False
 
@@ -107,6 +119,22 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def get_body_context(cls):
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
+    @classmethod
+    def get_drawing_collection(cls, drawing):
+        obj = tool.Ifc.get_object(drawing)
+        return obj.users_collection[0]
+
+    @classmethod
+    def get_drawing_group(cls, drawing):
+        for rel in drawing.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToGroup"):
+                return rel.RelatingGroup
+
+    @classmethod
+    def get_group_elements(cls, group):
+        for rel in group.IsGroupedBy or []:
+            return rel.RelatedObjects
 
     @classmethod
     def get_sheet_filename(cls, document):

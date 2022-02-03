@@ -137,6 +137,8 @@ class Debug:
 class Drawing:
     def create_camera(cls, name, matrix): pass
     def create_svg_sheet(cls, document, titleblock): pass
+    def delete_collection(cls, collection): pass
+    def delete_drawing_elements(cls, elements): pass
     def disable_editing_drawings(cls): pass
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
@@ -151,6 +153,9 @@ class Drawing:
     def generate_drawing_matrix(cls, target_view, location_hint): pass
     def generate_sheet_identification(cls): pass
     def get_body_context(cls): pass
+    def get_drawing_collection(cls, drawing): pass
+    def get_drawing_group(cls, drawing): pass
+    def get_group_elements(cls, group): pass
     def get_sheet_filename(cls, document): pass
     def get_text_literal(cls, obj): pass
     def get_text_product(cls, element): pass
