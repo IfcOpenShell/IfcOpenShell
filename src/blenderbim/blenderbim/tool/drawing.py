@@ -119,6 +119,13 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def generate_drawing_matrix(cls, target_view, location_hint):
+        if target_view == "PLAN_VIEW":
+            if location_hint:
+                m = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.copy()
+                m[0][3] = bpy.context.scene.cursor.matrix[0][3]
+                m[1][3] = bpy.context.scene.cursor.matrix[1][3]
+                m[2][3] += 1.6
+                return m
         return mathutils.Matrix()
 
     @classmethod

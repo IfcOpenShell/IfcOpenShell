@@ -175,6 +175,20 @@ class TestGenerateDrawingMatrix(NewFile):
     def test_returning_the_origin_as_a_fallback(self):
         assert subject.generate_drawing_matrix("PLAN_VIEW", None) == mathutils.Matrix()
 
+    def test_using_the_matrix_from_the_cursor_and_a_preexisting_object(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        element = ifc.createIfcBuildingStorey()
+        tool.Ifc.link(element, obj)
+        bpy.context.scene.collection.objects.link(obj)
+        obj.matrix_world[2][3] = 3
+        bpy.context.scene.cursor.location = (1.0, 2.0, 0.0)
+        m = subject.generate_drawing_matrix("PLAN_VIEW", element.id())
+        assert round(m[0][3], 3) == 1
+        assert round(m[1][3], 3) == 2
+        assert round(m[2][3], 3) == 4.6
+
 
 class TestGenerateSheetIdentification(NewFile):
     def test_run(self):

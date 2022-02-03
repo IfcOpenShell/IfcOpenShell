@@ -169,6 +169,7 @@ class BIM_PT_drawings(Panel):
 
         row = self.layout.row(align=True)
         row.prop(self.props, "target_view", text="")
+        row.prop(self.props, "location_hint", text="")
         row.operator("bim.add_drawing", text="", icon="ADD")
         row.operator("bim.disable_editing_drawings", text="", icon="CANCEL")
 

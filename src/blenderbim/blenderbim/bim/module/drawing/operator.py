@@ -72,7 +72,13 @@ class AddDrawing(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         self.props = context.scene.DocProperties
-        core.add_drawing(tool.Ifc, tool.Collector, tool.Drawing, target_view=self.props.target_view, location_hint=None)
+        core.add_drawing(
+            tool.Ifc,
+            tool.Collector,
+            tool.Drawing,
+            target_view=self.props.target_view,
+            location_hint=int(self.props.location_hint),
+        )
 
 
 class CreateDrawing(bpy.types.Operator):

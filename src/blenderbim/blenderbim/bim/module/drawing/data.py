@@ -78,9 +78,16 @@ class DrawingsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_drawings": cls.total_drawings()}
+        cls.data = {"total_drawings": cls.total_drawings(), "location_hint": cls.location_hint()}
         cls.is_loaded = True
 
     @classmethod
     def total_drawings(cls):
         return len([e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"])
+
+    @classmethod
+    def location_hint(cls):
+        if bpy.context.scene.DocProperties.target_view == "PLAN_VIEW":
+            results = [("0", "Origin", "")]
+            results.extend([(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcBuildingStorey")])
+            return results
