@@ -87,9 +87,10 @@ class DrawingsData:
 
     @classmethod
     def location_hint(cls):
-        if bpy.context.scene.DocProperties.target_view == "PLAN_VIEW":
+        if bpy.context.scene.DocProperties.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
             results = [("0", "Origin", "")]
             results.extend(
                 [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcBuildingStorey")]
             )
             return results
+        return [(h.upper(), h, "") for h in ["North", "South", "East", "West"]]

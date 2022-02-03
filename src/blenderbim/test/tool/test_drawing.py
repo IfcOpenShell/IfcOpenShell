@@ -175,7 +175,7 @@ class TestGenerateDrawingMatrix(NewFile):
     def test_returning_the_origin_as_a_fallback(self):
         assert subject.generate_drawing_matrix("PLAN_VIEW", None) == mathutils.Matrix()
 
-    def test_using_the_matrix_from_the_cursor_and_a_preexisting_object(self):
+    def test_creating_a_plan_view_at_the_cursor_at_a_storey(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", None)
@@ -188,6 +188,72 @@ class TestGenerateDrawingMatrix(NewFile):
         assert round(m[0][3], 3) == 1
         assert round(m[1][3], 3) == 2
         assert round(m[2][3], 3) == 4.6
+
+    def test_creating_an_rcp_at_the_origin(self):
+        assert subject.generate_drawing_matrix("REFLECTED_PLAN_VIEW", None) == mathutils.Matrix(
+            ((-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1))
+        )
+
+    def test_creating_an_rcp_at_the_cursor_at_a_storey(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        element = ifc.createIfcBuildingStorey()
+        tool.Ifc.link(element, obj)
+        bpy.context.scene.collection.objects.link(obj)
+        obj.matrix_world[2][3] = 3
+        bpy.context.scene.cursor.location = (1.0, 2.0, 0.0)
+        assert subject.generate_drawing_matrix("REFLECTED_PLAN_VIEW", element.id()) == mathutils.Matrix(
+            ((-1, 0, 0, 1), (0, 1, 0, 2), (0, 0, -1, 3 + 1.6), (0, 0, 0, 1))
+        )
+
+    def test_creating_a_north_elevation_at_the_cursor(self):
+        bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
+        assert subject.generate_drawing_matrix("ELEVATION_VIEW", "NORTH") == mathutils.Matrix(
+            ((-1, 0, 0, 1), (0, 0, 1, 2), (0, 1, 0, 3), (0, 0, 0, 1))
+        )
+
+    def test_creating_a_south_elevation_at_the_cursor(self):
+        bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
+        assert subject.generate_drawing_matrix("ELEVATION_VIEW", "SOUTH") == mathutils.Matrix(
+            ((1, 0, 0, 1), (0, 0, -1, 2), (0, 1, 0, 3), (0, 0, 0, 1))
+        )
+
+    def test_creating_an_east_elevation_at_the_cursor(self):
+        bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
+        assert subject.generate_drawing_matrix("ELEVATION_VIEW", "EAST") == mathutils.Matrix(
+            ((0, 0, 1, 1), (1, 0, 0, 2), (0, 1, 0, 3), (0, 0, 0, 1))
+        )
+
+    def test_creating_a_west_elevation_at_the_cursor(self):
+        bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
+        assert subject.generate_drawing_matrix("ELEVATION_VIEW", "WEST") == mathutils.Matrix(
+            ((0, 0, -1, 1), (-1, 0, 0, 2), (0, 1, 0, 3), (0, 0, 0, 1))
+        )
+
+    def test_creating_a_north_section_at_the_cursor(self):
+        bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
+        assert subject.generate_drawing_matrix("SECTION_VIEW", "NORTH") == mathutils.Matrix(
+            ((1, 0, 0, 1), (0, 0, -1, 2), (0, 1, 0, 3), (0, 0, 0, 1))
+        )
+
+    def test_creating_a_south_section_at_the_cursor(self):
+        bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
+        assert subject.generate_drawing_matrix("SECTION_VIEW", "SOUTH") == mathutils.Matrix(
+            ((-1, 0, 0, 1), (0, 0, 1, 2), (0, 1, 0, 3), (0, 0, 0, 1))
+        )
+
+    def test_creating_an_east_section_at_the_cursor(self):
+        bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
+        assert subject.generate_drawing_matrix("SECTION_VIEW", "EAST") == mathutils.Matrix(
+            ((0, 0, -1, 1), (-1, 0, 0, 2), (0, 1, 0, 3), (0, 0, 0, 1))
+        )
+
+    def test_creating_a_west_section_at_the_cursor(self):
+        bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
+        assert subject.generate_drawing_matrix("SECTION_VIEW", "WEST") == mathutils.Matrix(
+            ((0, 0, 1, 1), (1, 0, 0, 2), (0, 1, 0, 3), (0, 0, 0, 1))
+        )
 
 
 class TestGenerateSheetIdentification(NewFile):

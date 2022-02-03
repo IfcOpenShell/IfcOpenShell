@@ -57,6 +57,10 @@ def purge():
     vector_styles_enum = []
 
 
+def update_target_view(self, context):
+    DrawingsData.data["location_hint"] = DrawingsData.location_hint()
+
+
 def get_location_hint(self, context):
     if not DrawingsData.is_loaded:
         DrawingsData.load()
@@ -291,6 +295,7 @@ class DocProperties(PropertyGroup):
         ],
         name="Target View",
         default="PLAN_VIEW",
+        update=update_target_view,
     )
     location_hint: EnumProperty(items=get_location_hint, name="Location Hint")
     drawings: CollectionProperty(name="Drawings", type=Drawing)

@@ -72,12 +72,15 @@ class AddDrawing(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         self.props = context.scene.DocProperties
+        hint = self.props.location_hint
+        if self.props.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
+            hint = int(hint)
         core.add_drawing(
             tool.Ifc,
             tool.Collector,
             tool.Drawing,
             target_view=self.props.target_view,
-            location_hint=int(self.props.location_hint),
+            location_hint=hint,
         )
 
 
