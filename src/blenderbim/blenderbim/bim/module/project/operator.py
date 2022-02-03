@@ -27,6 +27,7 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import blenderbim.bim.handler
 import blenderbim.tool as tool
+import blenderbim.core.project as core
 import blenderbim.core.context
 import blenderbim.core.owner
 from blenderbim.bim.ifc import IfcStore
@@ -45,80 +46,16 @@ class CreateProject(bpy.types.Operator):
     def execute(self, context):
         IfcStore.begin_transaction(self)
         IfcStore.add_transaction_operation(self, rollback=self.rollback, commit=lambda data: True)
-        result = self._execute(context)
-        self.transaction_data = {"file": self.file}
+        self._execute(context)
+        self.transaction_data = {"file": tool.Ifc.get()}
         IfcStore.add_transaction_operation(self, rollback=lambda data: True, commit=self.commit)
         IfcStore.end_transaction(self)
-        return result
-
-    def _execute(self, context):
-        active_object = context.view_layer.objects.active
-        self.file = IfcStore.get_file()
-        if self.file:
-            return {"FINISHED"}
-
-        IfcStore.file = ifcopenshell.api.run(
-            "project.create_file", **{"version": context.scene.BIMProjectProperties.export_schema}
-        )
-        self.file = IfcStore.get_file()
-
-        if self.file.schema == "IFC2X3":
-            person = blenderbim.core.owner.add_person(tool.Ifc)
-            organisation = blenderbim.core.owner.add_organisation(tool.Ifc)
-            user = blenderbim.core.owner.add_person_and_organisation(tool.Ifc, person=person, organisation=organisation)
-            blenderbim.core.owner.set_user(tool.Owner, user=user)
-
-        project = bpy.data.objects.new(self.get_name("IfcProject", "My Project"), None)
-        site = bpy.data.objects.new(self.get_name("IfcSite", "My Site"), None)
-        building = bpy.data.objects.new(self.get_name("IfcBuilding", "My Building"), None)
-        building_storey = bpy.data.objects.new(self.get_name("IfcBuildingStorey", "My Storey"), None)
-
-        bpy.ops.bim.assign_class(obj=project.name, ifc_class="IfcProject")
-        blenderbim.core.unit.assign_scene_units(tool.Ifc, tool.Unit)
-
-        model = blenderbim.core.context.add_context(
-            tool.Ifc, context_type="Model", context_identifier="", target_view="", parent=0
-        )
-        body_context = blenderbim.core.context.add_context(
-            tool.Ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
-        )
-        blenderbim.core.context.add_context(
-            tool.Ifc, context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent=model
-        )
-        plan = blenderbim.core.context.add_context(
-            tool.Ifc, context_type="Plan", context_identifier="", target_view="", parent=0
-        )
-        blenderbim.core.context.add_context(
-            tool.Ifc, context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan
-        )
-
-        blenderbim.bim.handler.refresh_ui_data()
-        context.scene.BIMRootProperties.contexts = str(body_context.id())
-
-        bpy.ops.bim.assign_class(obj=site.name, ifc_class="IfcSite")
-        bpy.ops.bim.assign_class(obj=building.name, ifc_class="IfcBuilding")
-        bpy.ops.bim.assign_class(obj=building_storey.name, ifc_class="IfcBuildingStorey")
-
-        blenderbim.core.aggregate.assign_object(
-            tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=project, related_obj=site
-        )
-        blenderbim.core.aggregate.assign_object(
-            tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=site, related_obj=building
-        )
-        blenderbim.core.aggregate.assign_object(
-            tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=building, related_obj=building_storey
-        )
-
-        context.view_layer.objects.active = active_object
         return {"FINISHED"}
 
-    def get_name(self, ifc_class, name):
-        if not bpy.data.objects.get(f"{ifc_class}/{name}"):
-            return name
-        i = 2
-        while bpy.data.objects.get(f"{ifc_class}/{name} {i}"):
-            i += 1
-        return f"{name} {i}"
+    def _execute(self, context):
+        props = context.scene.BIMProjectProperties
+        template = None if props.template_file == "0" else props.template_file
+        core.create_project(tool.Ifc, tool.Project, schema=props.export_schema, template=template)
 
     def rollback(self, data):
         IfcStore.file = None
@@ -373,7 +310,11 @@ class AppendLibraryElement(bpy.types.Operator):
             self.import_type_from_ifc(element, context)
         elif element.is_a("IfcMaterial"):
             self.import_material_from_ifc(element, context)
-        context.scene.BIMProjectProperties.library_elements[self.prop_index].is_appended = True
+        try:
+            context.scene.BIMProjectProperties.library_elements[self.prop_index].is_appended = True
+        except:
+            # TODO Remove this terrible code when I refactor this into the core
+            pass
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
 

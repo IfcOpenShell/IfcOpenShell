@@ -215,6 +215,7 @@ class Ifc:
     def get_schema(cls): pass
     def link(cls, element, obj): pass
     def run(cls, command, **kwargs): pass
+    def set(cls, ifc): pass
     def unlink(cls, element=None, obj=None): pass
 
 
@@ -290,6 +291,21 @@ class Owner:
     def set_person(cls, person): pass
     def set_role(cls, role): pass
     def set_user(cls, user): pass
+
+
+@interface
+class Project:
+    def append_all_types_from_template(cls, template): pass
+    def create_empty(cls, name): pass
+    def run_aggregate_assign_object(cls, relating_obj=None, related_obj=None): pass
+    def run_context_add_context(cls, context_type=None, context_identifier=None, target_view=None, parent=None): pass
+    def run_owner_add_organisation(cls): pass
+    def run_owner_add_person(cls): pass
+    def run_owner_add_person_and_organisation(cls, person=None, organisation=None): pass
+    def run_owner_set_user(cls, user=None): pass
+    def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
+    def run_unit_assign_scene_units(cls): pass
+    def set_context(cls, context): pass
 
 
 @interface
