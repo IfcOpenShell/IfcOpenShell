@@ -127,6 +127,13 @@ def patch():
 
 
 @pytest.fixture
+def project():
+    prophet = Prophecy(blenderbim.core.tool.Project)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def pset():
     prophet = Prophecy(blenderbim.core.tool.Pset)
     yield prophet

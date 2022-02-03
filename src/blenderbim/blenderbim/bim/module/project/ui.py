@@ -156,6 +156,9 @@ class BIM_PT_project(Panel):
         row.prop(props, "area_unit", text="Area Unit")
         row = self.layout.row()
         row.prop(props, "volume_unit", text="Volume Unit")
+        row = self.layout.row()
+        row.prop(pprops, "template_file", text="Template")
+
         row = self.layout.row(align=True)
         row.operator("bim.create_project")
         row.operator("bim.load_project")

@@ -33,6 +33,7 @@ from blenderbim.tool.misc import Misc
 from blenderbim.tool.model import Model
 from blenderbim.tool.owner import Owner
 from blenderbim.tool.patch import Patch
+from blenderbim.tool.project import Project
 from blenderbim.tool.pset import Pset
 from blenderbim.tool.qto import Qto
 from blenderbim.tool.root import Root
