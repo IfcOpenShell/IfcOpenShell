@@ -816,21 +816,16 @@ class ResizeText(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class RemoveDrawing(bpy.types.Operator):
+class RemoveDrawing(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_drawing"
     bl_label = "Remove Drawing"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.DocProperties
-        camera = props.drawings[self.index].camera
-        collection = camera.users_collection[0]
-        for obj in collection.objects:
-            bpy.data.objects.remove(obj)
-        bpy.data.collections.remove(collection, do_unlink=True)
-        props.drawings.remove(self.index)
-        return {"FINISHED"}
+        drawing = tool.Ifc.get().by_id(props.drawings[self.index].ifc_definition_id)
+        core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
 
 
 class AddDrawingStyle(bpy.types.Operator):

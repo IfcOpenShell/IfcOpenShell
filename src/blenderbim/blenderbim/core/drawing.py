@@ -117,3 +117,14 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
     pset = ifc.run("pset.add_pset", product=element, name="EPset_Drawing")
     ifc.run("pset.edit_pset", pset=pset, properties={"TargetView": target_view, "Scale": "1/100"})
     drawing.import_drawings()
+
+
+def remove_drawing(ifc, drawing_tool, drawing=None):
+    collection = drawing_tool.get_drawing_collection(drawing)
+    group = drawing_tool.get_drawing_group(drawing)
+    if group:
+        drawing_tool.delete_drawing_elements(drawing_tool.get_group_elements(group))
+        ifc.run("group.remove_group", group=group)
+    drawing_tool.delete_collection(collection)
+    ifc.run("root.remove_product", product=drawing)
+    drawing_tool.import_drawings()

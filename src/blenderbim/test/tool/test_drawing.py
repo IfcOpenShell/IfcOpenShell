@@ -24,6 +24,7 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.drawing import Drawing as subject
+from blenderbim.bim.ifc import IfcStore
 
 
 class TestImplementsTool(NewFile):
@@ -48,6 +49,30 @@ class TestCreateSvgSheet(NewFile):
         document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR")
         subject.create_svg_sheet(document, "A1")
         assert os.path.isfile(os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", "X - FOOBAR.svg"))
+
+
+class TestDeleteCollection(NewFile):
+    def test_run(self):
+        collection = bpy.data.collections.new("Foobar")
+        subject.delete_collection(collection)
+        assert not bpy.data.collections.get("Foobar")
+
+
+class TestDeleteDrawingElements(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        collection = bpy.data.collections.new("Collection")
+        bpy.context.scene.collection.children.link(collection)
+        collection.objects.link(obj)
+        element = ifc.createIfcAnnotation()
+        tool.Ifc.link(element, obj)
+
+        element_id = element.id()
+        subject.delete_drawing_elements([element])
+        assert element_id in IfcStore.deleted_ids
+        assert not bpy.data.objects.get("Object")
 
 
 class TestDisableEditingDrawings(NewFile):
@@ -157,6 +182,39 @@ class TestGetBodyContext(NewFile):
         )
         tool.Ifc.set(ifc)
         assert subject.get_body_context() == context
+
+
+class TestGetDrawingCollection(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        collection = bpy.data.collections.new("Collection")
+        bpy.context.scene.collection.children.link(collection)
+        collection.objects.link(obj)
+        element = ifc.createIfcAnnotation()
+        tool.Ifc.link(element, obj)
+        assert subject.get_drawing_collection(element) == collection
+
+
+class TestGetDrawingGroup(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcAnnotation()
+        group = ifcopenshell.api.run("group.add_group", ifc)
+        ifcopenshell.api.run("group.assign_group", ifc, product=element, group=group)
+        assert subject.get_drawing_group(element) == group
+
+
+class TestGetGroupElements(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcAnnotation()
+        group = ifcopenshell.api.run("group.add_group", ifc)
+        ifcopenshell.api.run("group.assign_group", ifc, product=element, group=group)
+        assert subject.get_group_elements(group) == (element,)
 
 
 class TestGetSheetFilename(NewFile):
