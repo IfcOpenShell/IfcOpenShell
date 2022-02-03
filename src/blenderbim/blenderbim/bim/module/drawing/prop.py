@@ -24,6 +24,7 @@ import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.decoration as decoration
 import enum
+from blenderbim.bim.module.drawing.data import DrawingsData
 from pathlib import Path
 from blenderbim.bim.prop import Attribute, StrProperty
 from bpy.types import PropertyGroup
@@ -54,6 +55,12 @@ def purge():
     titleblocks_enum = []
     sheets_enum = []
     vector_styles_enum = []
+
+
+def get_location_hint(self, context):
+    if not DrawingsData.is_loaded:
+        DrawingsData.load()
+    return DrawingsData.data["location_hint"]
 
 
 def update_diagram_scale(self, context):
@@ -285,6 +292,7 @@ class DocProperties(PropertyGroup):
         name="Target View",
         default="PLAN_VIEW",
     )
+    location_hint: EnumProperty(items=get_location_hint, name="Location Hint")
     drawings: CollectionProperty(name="Drawings", type=Drawing)
     active_drawing_index: IntProperty(name="Active Drawing Index")
     current_drawing_index: IntProperty(name="Current Drawing Index")
