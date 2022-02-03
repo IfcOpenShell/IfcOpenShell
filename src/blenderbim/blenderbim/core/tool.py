@@ -390,6 +390,7 @@ class System:
     def disable_system_editing_ui(cls): pass
     def enable_system_editing_ui(cls): pass
     def export_system_attributes(cls): pass
+    def get_connected_port(cls, port): pass
     def get_ports(cls, element): pass
     def import_system_attributes(cls, system): pass
     def import_systems(cls): pass

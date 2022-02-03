@@ -43,3 +43,28 @@ def get_ports(element):
     for rel in element.HasPorts or []:
         results.append(rel.RelatingPort)
     return results
+
+
+def get_connected_port(port):
+    for rel in port.ConnectedTo:
+        return rel.RelatedPort
+    for rel in port.ConnectedFrom:
+        return rel.RelatingPort
+
+
+def get_connected_to(element):
+    # Note: this code is for IFC2X3. IFC4 has a different approach.
+    results = []
+    for rel in element.HasPorts:
+        for rel2 in rel.RelatingPort.ConnectedTo:
+            results.extend([r.RelatedElement for r in rel2.RelatedPort.ContainedIn if r.RelatedElement != element])
+    return results
+
+
+def get_connected_from(element):
+    # Note: this code is for IFC2X3. IFC4 has a different approach.
+    results = []
+    for rel in element.HasPorts:
+        for rel2 in rel.RelatingPort.ConnectedFrom:
+            results.extend([r.RelatedElement for r in rel2.RelatingPort.ContainedIn if r.RelatedElement != element])
+    return results
