@@ -152,6 +152,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.prop(context.scene.BIMModelProperties, "occurrence_name_function")
 
+        row = self.layout.row()
+        row.prop(context.scene.DocProperties, "decorations_colour")
+
         row = self.layout.row(align=True)
         row.prop(context.scene.BIMProperties, "schema_dir")
         row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")

@@ -135,6 +135,7 @@ class Debug:
 
 @interface
 class Drawing:
+    def create_annotation_object(cls, object_type): pass
     def create_camera(cls, name, matrix): pass
     def create_svg_sheet(cls, document, titleblock): pass
     def delete_collection(cls, collection): pass
@@ -143,6 +144,7 @@ class Drawing:
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
     def disable_editing_text_product(cls, obj): pass
+    def enable_editing(cls, obj): pass
     def enable_editing_drawings(cls): pass
     def enable_editing_sheets(cls): pass
     def enable_editing_text(cls, obj): pass
@@ -152,10 +154,14 @@ class Drawing:
     def export_text_literal_attributes(cls, obj): pass
     def generate_drawing_matrix(cls, target_view, location_hint): pass
     def generate_sheet_identification(cls): pass
+    def get_annotation_context(cls, target_view): pass
     def get_body_context(cls): pass
     def get_drawing_collection(cls, drawing): pass
     def get_drawing_group(cls, drawing): pass
+    def get_drawing_target_view(cls, drawing): pass
     def get_group_elements(cls, group): pass
+    def get_ifc_representation_class(cls, object_type): pass
+    def get_name(cls, element): pass
     def get_sheet_filename(cls, document): pass
     def get_text_literal(cls, obj): pass
     def get_text_product(cls, element): pass
@@ -165,6 +171,8 @@ class Drawing:
     def import_text_product(cls, obj): pass
     def open_svg(cls, filepath): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
+    def set_drawing_collection_name(cls, group, collection): pass
+    def show_decorations(cls): pass
     def update_text_value(cls, obj): pass
 
 

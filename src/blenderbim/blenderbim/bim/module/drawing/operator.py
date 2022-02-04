@@ -399,7 +399,8 @@ class CreateDrawing(bpy.types.Operator):
         # https://stackoverflow.com/questions/36018627/sorting-child-elements-with-lxml-based-on-attribute-value
         group = root.find("{http://www.w3.org/2000/svg}g")
         # group[:] = sorted(group, key=lambda e : "projection" in e.get("class"))
-        group[:] = reversed(group)
+        if group:
+            group[:] = reversed(group)
 
     def canonicalise_class_name(self, name):
         return re.sub("[^0-9a-zA-Z]+", "", name)
@@ -520,7 +521,7 @@ class CreateDrawing(bpy.types.Operator):
         return "mat-" + str(element.id())
 
 
-class AddAnnotation(bpy.types.Operator):
+class AddAnnotation(bpy.types.Operator, Operator):
     bl_idname = "bim.add_annotation"
     bl_label = "Add Annotation"
     bl_options = {"REGISTER", "UNDO"}
@@ -531,56 +532,11 @@ class AddAnnotation(bpy.types.Operator):
     def poll(cls, context):
         return IfcStore.get_file() and context.scene.camera
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        context.scene.DocProperties.should_draw_decorations = True
-        subcontext = ifcopenshell.util.representation.get_context(
-            IfcStore.get_file(), "Plan", "Annotation", context.scene.camera.data.BIMCameraProperties.target_view
-        )
-        if not subcontext:
-            return {"FINISHED"}
-        # TODO: reimplement bulk smart tagging
-        # if self.data_type == "text":
-        #    if context.selected_objects:
-        #        for selected_object in context.selected_objects:
-        #            obj = annotation.Annotator.add_text(context, related_element=selected_object)
-        #    else:
-        #        obj = annotation.Annotator.add_text(context)
-        # else:
-        obj = annotation.Annotator.get_annotation_obj(self.object_type, self.data_type, context)
-        if self.object_type == "BREAKLINE":
-            obj = annotation.Annotator.add_plane_to_annotation(obj, context)
-        elif self.object_type != "TEXT":
-            obj = annotation.Annotator.add_line_to_annotation(obj, context)
-
-        if not obj.BIMObjectProperties.ifc_definition_id:
-            ifc_representation_class = ""
-            if self.object_type == "TEXT":
-                ifc_representation_class = "IfcTextLiteral"
-            elif self.object_type == "TEXT_LEADER":
-                ifc_representation_class = "IfcGeometricCurveSet/IfcTextLiteral"
-            bpy.ops.bim.assign_class(
-                obj=obj.name,
-                ifc_class="IfcAnnotation",
-                context_id=subcontext.id(),
-                ifc_representation_class=ifc_representation_class,
-            )
-            element = tool.Ifc.get_entity(obj)
-            element.ObjectType = self.object_type
-            camera = tool.Ifc.get_entity(context.scene.camera)
-            group = [r for r in camera.HasAssignments if r.is_a("IfcRelAssignsToGroup")][0].RelatingGroup
-            bpy.ops.bim.assign_group(product=obj.name, group=group.id())
-        else:
-            bpy.ops.bim.update_representation(obj=obj.name)
-
-        bpy.ops.object.select_all(action="DESELECT")
-        context.view_layer.objects.active = obj
-        obj.select_set(True)
-        if obj.data:
-            bpy.ops.object.mode_set(mode="EDIT")
-        return {"FINISHED"}
+        drawing = tool.Ifc.get_entity(context.scene.camera)
+        if not drawing:
+            return
+        core.add_annotation(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing, object_type=self.object_type)
 
 
 class AddSheet(bpy.types.Operator, Operator):
