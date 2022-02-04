@@ -24,6 +24,7 @@ def refresh():
     PeopleData.is_loaded = False
     OrganisationsData.is_loaded = False
     OwnerData.is_loaded = False
+    ActorData.is_loaded = False
 
 
 class RolesAddressesData:
@@ -202,3 +203,30 @@ class OwnerData:
                 }
             )
         return results
+
+
+class ActorData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "actor": cls.actor(),
+            "actors": cls.actors(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def actor(cls):
+        ifc_class = bpy.context.scene.BIMOwnerProperties.actor_type
+        return [(str(p.id()), p[0] or "Unnamed", "") for p in tool.Ifc.get().by_type(ifc_class)]
+
+    @classmethod
+    def actors(cls):
+        actors = []
+        props = bpy.context.scene.BIMOwnerProperties
+        for actor in tool.Ifc.get().by_type(props.actor_class, include_subtypes=False):
+            is_editing = props.active_actor_id == actor.id()
+            actors.append({"id": actor.id(), "name": actor.Name or "Unnamed", "is_editing": is_editing})
+        return actors

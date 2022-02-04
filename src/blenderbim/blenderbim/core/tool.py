@@ -271,26 +271,31 @@ class Patch:
 class Owner:
     def add_address_attribute(cls, name): pass
     def add_person_attribute(cls, name): pass
+    def clear_actor(cls): pass
     def clear_address(cls): pass
     def clear_organisation(cls): pass
     def clear_person(cls): pass
     def clear_role(cls): pass
     def clear_user(cls): pass
+    def export_actor_attributes(cls): pass
     def export_address_attributes(cls): pass
     def export_organisation_attributes(cls): pass
     def export_person_attributes(cls): pass
     def export_role_attributes(cls): pass
+    def get_actor(cls): pass
     def get_address(cls): pass
     def get_organisation(cls): pass
     def get_person(cls): pass
     def get_role(cls): pass
     def get_user(cls): pass
+    def import_actor_attributes(cls, actor): pass
     def import_address_attributes(cls): pass
     def import_organisation_attributes(cls): pass
     def import_person_attributes(cls): pass
     def import_role_attributes(cls): pass
     def remove_address_attribute(cls, name, id): pass
     def remove_person_attribute(cls, name, id): pass
+    def set_actor(cls, actor): pass
     def set_address(cls, address): pass
     def set_organisation(cls, organisation): pass
     def set_person(cls, person): pass
