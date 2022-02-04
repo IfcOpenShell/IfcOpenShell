@@ -129,7 +129,7 @@ namespace IfcWrite {
 		}
 
 		template <typename T>
-		typename boost::disable_if<boost::is_base_of<IfcUtil::IfcBaseClass, typename boost::remove_pointer<T>::type>, void>::type
+		typename boost::disable_if<boost::is_base_of<IfcUtil::IfcBaseInterface, typename boost::remove_pointer<T>::type>, void>::type
 		set(const T& t) {
 			container = t;
 		}
@@ -141,7 +141,7 @@ namespace IfcWrite {
 		void set(const aggregate_of_aggregate_of_instance::ptr& v);
 
 		// Overload to detect null values
-		void set(IfcUtil::IfcBaseClass*const & v);
+		void set(IfcUtil::IfcBaseInterface*const & v);
 		
 		operator int() const;
 		operator bool() const;

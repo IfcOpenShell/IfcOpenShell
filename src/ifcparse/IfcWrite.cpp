@@ -289,9 +289,9 @@ void IfcWriteArgument::set(const aggregate_of_aggregate_of_instance::ptr& v) {
 }
 
 // Overload to detect null values
-void IfcWriteArgument::set(IfcUtil::IfcBaseClass*const& v) {
+void IfcWriteArgument::set(IfcUtil::IfcBaseInterface*const& v) {
 	if (v) {
-		container = v;
+		container = v->as<IfcUtil::IfcBaseClass>();
 	} else {
 		container = boost::blank();
 	}
