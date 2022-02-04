@@ -217,6 +217,12 @@ class TestGetGroupElements(NewFile):
         assert subject.get_group_elements(group) == (element,)
 
 
+class TestGetName(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        assert subject.get_name(ifc.createIfcWall(Name="Foobar")) == "Foobar"
+
+
 class TestGetSheetFilename(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -431,9 +437,18 @@ class TestOpenSvg(NewFile):
         pass
 
 
-class TestRunAssignClassOperator(NewFile):
+class TestRunRootAssignClassOperator(NewFile):
     def test_nothing(self):
         pass
+
+
+class TestSetDrawingCollectionName(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        group = ifc.createIfcGroup(Name="Foobaz")
+        collection = bpy.data.collections.new("Foobar")
+        subject.set_drawing_collection_name(group, collection)
+        assert collection.name == "IfcGroup/Foobaz"
 
 
 class TestUpdateTextValue(NewFile):
