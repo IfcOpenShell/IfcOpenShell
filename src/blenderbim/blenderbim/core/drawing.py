@@ -128,3 +128,12 @@ def remove_drawing(ifc, drawing_tool, drawing=None):
     drawing_tool.delete_collection(collection)
     ifc.run("root.remove_product", product=drawing)
     drawing_tool.import_drawings()
+
+
+def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
+    if drawing_tool.get_name(drawing) != name:
+        ifc.run("attribute.edit_attributes", product=drawing, attributes={"Name": name})
+    group = drawing_tool.get_drawing_group(drawing)
+    if drawing_tool.get_name(group) != name:
+        ifc.run("attribute.edit_attributes", product=group, attributes={"Name": name})
+    drawing_tool.set_drawing_collection_name(group, drawing_tool.get_drawing_collection(drawing))

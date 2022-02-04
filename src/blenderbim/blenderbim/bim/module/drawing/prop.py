@@ -19,11 +19,12 @@
 import os
 import bpy
 import json
+import enum
 import ifcopenshell
 import blenderbim.tool as tool
+import blenderbim.core.drawing as core
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.decoration as decoration
-import enum
 from blenderbim.bim.module.drawing.data import DrawingsData
 from pathlib import Path
 from blenderbim.bim.prop import Attribute, StrProperty
@@ -143,16 +144,9 @@ def get_diagram_scales(self, context):
     return diagram_scales_enum
 
 
-def updateDrawingName(self, context):
-    if not self.camera:
-        return
-    if self.camera.name == self.name:
-        return
-    self.camera.name = "IfcAnnotation/{}".format(self.name)
-    unique_name = "/".join(self.camera.name.split("/")[1:])
-    self.camera.users_collection[0].name = "IfcGroup/{}".format(unique_name)
-    if self.name != unique_name:
-        self.name = unique_name
+def update_drawing_name(self, context):
+    drawing = tool.Ifc.get().by_id(self.ifc_definition_id)
+    core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
 
 
 def getTitleblocks(self, context):
@@ -204,8 +198,7 @@ class Variable(PropertyGroup):
 
 class Drawing(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
-    name: StringProperty(name="Name", update=updateDrawingName)
-    camera: PointerProperty(name="Camera", type=bpy.types.Object)
+    name: StringProperty(name="Name", update=update_drawing_name)
 
 
 class Schedule(PropertyGroup):

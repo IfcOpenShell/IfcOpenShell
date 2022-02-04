@@ -137,6 +137,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             return rel.RelatedObjects
 
     @classmethod
+    def get_name(cls, element):
+        return element.Name
+
+    @classmethod
     def get_sheet_filename(cls, document):
         if hasattr(document, "Identification"):
             name = document.Identification or "X"
@@ -277,6 +281,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             context=context,
             ifc_representation_class=ifc_representation_class,
         )
+
+    @classmethod
+    def set_drawing_collection_name(cls, group, collection):
+        collection.name = f"IfcGroup/{group.Name}"
 
     @classmethod
     def update_text_value(cls, obj):

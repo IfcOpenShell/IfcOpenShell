@@ -154,7 +154,9 @@ class TestAddDrawing:
             ifc_representation_class=None,
         ).should_be_called().will_return("element")
         ifc.run("group.add_group").should_be_called().will_return("group")
-        ifc.run("group.edit_group", group="group", attributes={"Name": "name"}).should_be_called()
+        ifc.run(
+            "group.edit_group", group="group", attributes={"Name": "name", "ObjectType": "DRAWING"}
+        ).should_be_called()
         ifc.run("group.assign_group", group="group", product="element").should_be_called()
         collector.assign("obj").should_be_called()
         ifc.run("pset.add_pset", product="element", name="EPset_Drawing").should_be_called().will_return("pset")
@@ -163,3 +165,36 @@ class TestAddDrawing:
         ).should_be_called()
         drawing.import_drawings().should_be_called()
         subject.add_drawing(ifc, collector, drawing, target_view="target_view", location_hint="location_hint")
+
+
+class TestRemoveDrawing:
+    def test_run(self, ifc, drawing):
+        drawing.get_drawing_collection("drawing").should_be_called().will_return("collection")
+        drawing.get_drawing_group("drawing").should_be_called().will_return("group")
+        drawing.get_group_elements("group").should_be_called().will_return("elements")
+        drawing.delete_drawing_elements("elements").should_be_called()
+        ifc.run("group.remove_group", group="group").should_be_called()
+        drawing.delete_collection("collection").should_be_called()
+        ifc.run("root.remove_product", product="drawing").should_be_called()
+        drawing.import_drawings().should_be_called()
+        subject.remove_drawing(ifc, drawing, drawing="drawing")
+
+
+class TestUpdateDrawingName:
+    def test_do_not_update_if_name_unchanged(self, ifc, drawing):
+        drawing.get_name("drawing").should_be_called().will_return("name")
+        drawing.get_drawing_group("drawing").should_be_called().will_return("group")
+        drawing.get_name("group").should_be_called().will_return("name")
+        drawing.get_drawing_collection("drawing").should_be_called().will_return("collection")
+        drawing.set_drawing_collection_name("group", "collection").should_be_called()
+        subject.update_drawing_name(ifc, drawing, drawing="drawing", name="name")
+
+    def test_run(self, ifc, drawing):
+        drawing.get_name("drawing").should_be_called().will_return("oldname")
+        ifc.run("attribute.edit_attributes", product="drawing", attributes={"Name": "name"}).should_be_called()
+        drawing.get_drawing_group("drawing").should_be_called().will_return("group")
+        drawing.get_name("group").should_be_called().will_return("oldname")
+        ifc.run("attribute.edit_attributes", product="group", attributes={"Name": "name"}).should_be_called()
+        drawing.get_drawing_collection("drawing").should_be_called().will_return("collection")
+        drawing.set_drawing_collection_name("group", "collection").should_be_called()
+        subject.update_drawing_name(ifc, drawing, drawing="drawing", name="name")
