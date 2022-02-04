@@ -112,13 +112,17 @@ def add_object(self, context):
 
 class BIM_OT_add_object(Operator):
     bl_idname = "mesh.add_grid"
-    bl_label = "Grid"
+    bl_label = "IFC Grid"
     bl_options = {"REGISTER", "UNDO"}
 
     u_spacing: FloatProperty(name="U Spacing", default=10)
     total_u: IntProperty(name="Number of U Grids", default=3)
     v_spacing: FloatProperty(name="V Spacing", default=10)
     total_v: IntProperty(name="Number of V Grids", default=3)
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
