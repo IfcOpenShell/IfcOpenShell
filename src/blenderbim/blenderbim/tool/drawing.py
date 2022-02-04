@@ -25,9 +25,31 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell.util.representation
 import blenderbim.bim.module.drawing.sheeter as sheeter
+import blenderbim.bim.module.drawing.annotation as annotation
 
 
 class Drawing(blenderbim.core.tool.Drawing):
+    @classmethod
+    def create_annotation_object(cls, object_type):
+        data_type = {
+            "DIMENSION": "curve",
+            "EQUAL_DIMENSION": "curve",
+            "TEXT": "empty",
+            "TEXT_LEADER": "curve",
+            "STAIR_ARROW": "curve",
+            "HIDDEN_LINE": "mesh",
+            "PLAN_LEVEL": "curve",
+            "SECTION_LEVEL": "curve",
+            "BREAKLINE": "mesh",
+            "MISC": "mesh",
+        }[object_type]
+        obj = annotation.Annotator.get_annotation_obj(object_type, data_type)
+        if object_type == "BREAKLINE":
+            obj = annotation.Annotator.add_plane_to_annotation(obj)
+        elif object_type != "TEXT":
+            obj = annotation.Annotator.add_line_to_annotation(obj)
+        return obj
+
     @classmethod
     def create_camera(cls, name, matrix):
         camera = bpy.data.objects.new(name, bpy.data.cameras.new(name))
@@ -78,6 +100,14 @@ class Drawing(blenderbim.core.tool.Drawing):
         obj.BIMTextProperties.is_editing_product = False
 
     @classmethod
+    def enable_editing(cls, obj):
+        bpy.ops.object.select_all(action="DESELECT")
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        if obj.data:
+            bpy.ops.object.mode_set(mode="EDIT")
+
+    @classmethod
     def enable_editing_drawings(cls):
         bpy.context.scene.DocProperties.is_editing_drawings = True
 
@@ -117,6 +147,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         return blenderbim.bim.helper.export_attributes(obj.BIMTextProperties.attributes)
 
     @classmethod
+    def get_annotation_context(cls, target_view):
+        return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Annotation", target_view)
+
+    @classmethod
     def get_body_context(cls):
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
@@ -132,9 +166,21 @@ class Drawing(blenderbim.core.tool.Drawing):
                 return rel.RelatingGroup
 
     @classmethod
+    def get_drawing_target_view(cls, drawing):
+        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"]["TargetView"]
+
+    @classmethod
     def get_group_elements(cls, group):
         for rel in group.IsGroupedBy or []:
             return rel.RelatedObjects
+
+    @classmethod
+    def get_ifc_representation_class(cls, object_type):
+        if object_type == "TEXT":
+            return "IfcTextLiteral"
+        elif object_type == "TEXT_LEADER":
+            return "IfcGeometricCurveSet/IfcTextLiteral"
+        return ""
 
     @classmethod
     def get_name(cls, element):
@@ -285,6 +331,10 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def set_drawing_collection_name(cls, group, collection):
         collection.name = f"IfcGroup/{group.Name}"
+
+    @classmethod
+    def show_decorations(cls):
+        bpy.context.scene.DocProperties.should_draw_decorations = True
 
     @classmethod
     def update_text_value(cls, obj):

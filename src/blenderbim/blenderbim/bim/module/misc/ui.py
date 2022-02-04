@@ -47,3 +47,5 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
         row.operator("bim.get_connected_system_elements")
         row = layout.row()
         row.operator("bim.draw_system_arrows")
+        row = layout.row()
+        row.operator("bim.clean_wireframes")

@@ -32,6 +32,11 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.Drawing)
 
 
+class TestCreateAnnotationObject(NewFile):
+    def test_nothing(self):
+        pass
+
+
 class TestCreateCamera(NewFile):
     def test_run(self):
         obj = subject.create_camera("Name", mathutils.Matrix())
@@ -105,6 +110,14 @@ class TestDisableEditingTextProduct(NewFile):
         assert obj.BIMTextProperties.is_editing_product == False
 
 
+class TestEnableEditing(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        bpy.context.scene.collection.objects.link(obj)
+        subject.enable_editing(obj)
+        assert obj in bpy.context.selected_objects
+
+
 class TestEnableEditingDrawings(NewFile):
     def test_run(self):
         bpy.context.scene.DocProperties.is_editing_drawings = False
@@ -174,6 +187,16 @@ class TestExportTextLiteralAttributes(NewFile):
         }
 
 
+class TestGetAnnotationContext(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        context = ifc.createIfcGeometricRepresentationSubContext(
+            ContextType="Plan", ContextIdentifier="Annotation", TargetView="PLAN_VIEW"
+        )
+        tool.Ifc.set(ifc)
+        assert subject.get_annotation_context("PLAN_VIEW") == context
+
+
 class TestGetBodyContext(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -207,6 +230,16 @@ class TestGetDrawingGroup(NewFile):
         assert subject.get_drawing_group(element) == group
 
 
+class TestGetDrawingTargetView(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcAnnotation()
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="EPset_Drawing")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"TargetView": "PLAN_VIEW"})
+        assert subject.get_drawing_target_view(element) == "PLAN_VIEW"
+
+
 class TestGetGroupElements(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -215,6 +248,13 @@ class TestGetGroupElements(NewFile):
         group = ifcopenshell.api.run("group.add_group", ifc)
         ifcopenshell.api.run("group.assign_group", ifc, product=element, group=group)
         assert subject.get_group_elements(group) == (element,)
+
+
+class TestGetIfcRepresentationClass(NewFile):
+    def test_run(self):
+        assert subject.get_ifc_representation_class("TEXT") == "IfcTextLiteral"
+        assert subject.get_ifc_representation_class("TEXT_LEADER") == "IfcGeometricCurveSet/IfcTextLiteral"
+        assert subject.get_ifc_representation_class("FOOBAR") == ""
 
 
 class TestGetName(NewFile):
@@ -449,6 +489,13 @@ class TestSetDrawingCollectionName(NewFile):
         collection = bpy.data.collections.new("Foobar")
         subject.set_drawing_collection_name(group, collection)
         assert collection.name == "IfcGroup/Foobaz"
+
+
+class TestShowDecorations(NewFile):
+    def test_run(self):
+        bpy.context.scene.DocProperties.should_draw_decorations = False
+        subject.show_decorations()
+        assert bpy.context.scene.DocProperties.should_draw_decorations is True
 
 
 class TestUpdateTextValue(NewFile):

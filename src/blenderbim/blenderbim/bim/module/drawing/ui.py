@@ -312,7 +312,6 @@ class BIM_PT_text(Panel):
 class BIM_PT_annotation_utilities(Panel):
     bl_idname = "BIM_PT_annotation_utilities"
     bl_label = "Annotation"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "BIM Documentation"
@@ -321,13 +320,6 @@ class BIM_PT_annotation_utilities(Panel):
         layout = self.layout
 
         self.props = context.scene.DocProperties
-
-        row = layout.row(align=True)
-        row.operator("bim.clean_wireframes")
-        row = layout.row(align=True)
-        row.operator("bim.add_grid")
-        row = layout.row(align=True)
-        row.operator("bim.add_sections_annotations")
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Dim", icon="ARROW_LEFTRIGHT")
@@ -369,8 +361,8 @@ class BIM_PT_annotation_utilities(Panel):
         op.object_type = "MISC"
         op.data_type = "mesh"
 
-        layout.prop(self.props, "should_draw_decorations")
-        layout.prop(self.props, "decorations_colour")
+        row = layout.row(align=True)
+        row.prop(self.props, "should_draw_decorations", text="Viewport Annotations")
 
 
 class BIM_UL_drawinglist(bpy.types.UIList):

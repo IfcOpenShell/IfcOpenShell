@@ -125,9 +125,9 @@ class Collector(blenderbim.core.tool.Collector):
                     return axes_col[0]
                 return bpy.data.collections.new(axes)
 
-        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+        if element.is_a("IfcAnnotation"):
             for rel in element.HasAssignments or []:
-                if rel.is_a("IfcRelAssignsToGroup"):
+                if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
                     name = "IfcGroup/" + rel.RelatingGroup.Name
                     return bpy.data.collections.get(name, bpy.data.collections.new(name))
 
@@ -162,8 +162,10 @@ class Collector(blenderbim.core.tool.Collector):
             if grid_obj:
                 return bpy.data.collections.get(grid_obj.name)
 
-        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-            return cls._create_project_child_collection("Views")
+        if element.is_a("IfcAnnotation"):
+            for rel in element.HasAssignments or []:
+                if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
+                    return cls._create_project_child_collection("Views")
 
         if element.is_a("IfcStructuralItem"):
             return cls._create_project_child_collection("StructuralItems")

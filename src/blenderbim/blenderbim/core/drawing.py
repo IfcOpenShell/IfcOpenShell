@@ -111,7 +111,7 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
         ifc_representation_class=None,
     )
     group = ifc.run("group.add_group")
-    ifc.run("group.edit_group", group=group, attributes={"Name": drawing_name})
+    ifc.run("group.edit_group", group=group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=group, product=element)
     collector.assign(camera)
     pset = ifc.run("pset.add_pset", product=element, name="EPset_Drawing")
@@ -137,3 +137,24 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
     if drawing_tool.get_name(group) != name:
         ifc.run("attribute.edit_attributes", product=group, attributes={"Name": name})
     drawing_tool.set_drawing_collection_name(group, drawing_tool.get_drawing_collection(drawing))
+
+
+def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None):
+    context = drawing_tool.get_annotation_context(drawing_tool.get_drawing_target_view(drawing))
+    if not context:
+        return
+    drawing_tool.show_decorations()
+    obj = drawing_tool.create_annotation_object(object_type)
+    element = ifc.get_entity(obj)
+    if not element:
+        element = drawing_tool.run_root_assign_class(
+            obj=obj,
+            ifc_class="IfcAnnotation",
+            predefined_type=object_type,
+            should_add_representation=True,
+            context=context,
+            ifc_representation_class=drawing_tool.get_ifc_representation_class(object_type),
+        )
+        ifc.run("group.assign_group", group=drawing_tool.get_drawing_group(drawing), product=element)
+    collector.assign(obj)
+    drawing_tool.enable_editing(obj)
