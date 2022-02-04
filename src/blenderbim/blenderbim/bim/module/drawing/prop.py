@@ -330,17 +330,6 @@ class DocProperties(PropertyGroup):
 class BIMCameraProperties(PropertyGroup):
     representation: StringProperty(name="Representation")
     view_name: StringProperty(name="View Name")
-    target_view: EnumProperty(
-        items=[
-            ("PLAN_VIEW", "PLAN_VIEW", ""),
-            ("ELEVATION_VIEW", "ELEVATION_VIEW", ""),
-            ("SECTION_VIEW", "SECTION_VIEW", ""),
-            ("REFLECTED_PLAN_VIEW", "REFLECTED_PLAN_VIEW", ""),
-            ("MODEL_VIEW", "MODEL_VIEW", ""),
-        ],
-        name="Target View",
-        default="PLAN_VIEW",
-    )
     diagram_scale: EnumProperty(items=get_diagram_scales, name="Drawing Scale", update=update_diagram_scale)
     custom_diagram_scale: StringProperty(name="Custom Scale", update=update_diagram_scale)
     raster_x: IntProperty(name="Raster X", default=1000)

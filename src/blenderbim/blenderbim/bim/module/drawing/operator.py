@@ -285,9 +285,10 @@ class CreateDrawing(bpy.types.Operator):
             # A drawing prioritises a target view context first, followed by a body context as a fallback
             body_contexts = []
             target_view_contexts = []
+            target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
             for rep_context in ifc.by_type("IfcGeometricRepresentationContext"):
                 if rep_context.is_a("IfcGeometricRepresentationSubContext"):
-                    if rep_context.TargetView == context.scene.camera.data.BIMCameraProperties.target_view:
+                    if rep_context.TargetView == target_view:
                         target_view_contexts.append(rep_context.id())
                         continue
                 if rep_context.ContextIdentifier in ["Body", "Facetation"]:
