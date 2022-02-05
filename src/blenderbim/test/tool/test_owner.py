@@ -29,13 +29,234 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.Owner)
 
 
-class TestSetUser(NewFile):
+class TestAddAddressAttribute(NewFile):
+    def test_run(self):
+        subject().add_address_attribute("AddressLines")
+        subject().add_address_attribute("TelephoneNumbers")
+        subject().add_address_attribute("FacsimileNumbers")
+        subject().add_address_attribute("ElectronicMailAddresses")
+        subject().add_address_attribute("MessagingIDs")
+        props = bpy.context.scene.BIMOwnerProperties
+        assert len(props.address_lines) == 1
+        assert len(props.telephone_numbers) == 1
+        assert len(props.facsimile_numbers) == 1
+        assert len(props.electronic_mail_addresses) == 1
+        assert len(props.messaging_ids) == 1
+
+
+class TestAddPersonAttribute(NewFile):
+    def test_run(self):
+        subject().add_person_attribute("MiddleNames")
+        subject().add_person_attribute("PrefixTitles")
+        subject().add_person_attribute("SuffixTitles")
+        props = bpy.context.scene.BIMOwnerProperties
+        assert len(props.middle_names) == 1
+        assert len(props.prefix_titles) == 1
+        assert len(props.suffix_titles) == 1
+
+
+class TestClearActor(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
-        user = ifc.createIfcPersonAndOrganization()
-        subject.set_user(user)
-        assert bpy.context.scene.BIMOwnerProperties.active_user_id == user.id()
+        actor = ifc.createIfcActor()
+        subject().set_actor(actor)
+        subject().clear_actor()
+        assert bpy.context.scene.BIMOwnerProperties.active_actor_id == 0
+
+
+class TestClearAddress(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        address = ifc.createIfcPostalAddress()
+        subject().set_address(address)
+        subject().clear_address()
+        assert bpy.context.scene.BIMOwnerProperties.active_address_id == 0
+
+
+class TestClearOrganisation(NewFile):
+    def test_run(self):
+        props = bpy.context.scene.BIMOwnerProperties
+        props.active_organisation_id = 1
+        subject().clear_organisation()
+        assert props.active_organisation_id == 0
+
+
+class TestClearPerson(NewFile):
+    def test_run(self):
+        props = bpy.context.scene.BIMOwnerProperties
+        props.active_person_id = 1
+        subject().clear_person()
+        assert props.active_person_id == 0
+
+
+class TestClearRole(NewFile):
+    def test_run(self):
+        role = ifcopenshell.file().createIfcActorRole()
+        subject().set_role(role)
+        subject().clear_role()
+        assert bpy.context.scene.BIMOwnerProperties.active_role_id == 0
+
+
+class TestClearUser(NewFile):
+    def test_run(self):
+        TestSetUser().test_run()
+        subject.clear_user()
+        assert bpy.context.scene.BIMOwnerProperties.active_user_id == 0
+
+
+class TestExportActorAttributes(NewFile):
+    def test_exporting_an_actor(self):
+        TestImportActorAttributes().test_importing_an_actor()
+        assert subject().export_actor_attributes() == {
+            "GlobalId": "GlobalId",
+            "Name": "Name",
+            "Description": "Description",
+            "ObjectType": "ObjectType",
+        }
+
+    def test_exporting_an_occupant(self):
+        TestImportActorAttributes().test_importing_an_occupant()
+        assert subject().export_actor_attributes() == {
+            "GlobalId": "GlobalId",
+            "Name": "Name",
+            "Description": "Description",
+            "ObjectType": "ObjectType",
+            "PredefinedType": "TENANT",
+        }
+
+
+class TestExportAddressAttributes(NewFile):
+    def test_exporting_a_postal_address(self):
+        TestImportAddressAttributes().test_importing_a_postal_address()
+        assert subject().export_address_attributes() == {
+            "Purpose": "USERDEFINED",
+            "Description": "Description",
+            "UserDefinedPurpose": "UserDefinedPurpose",
+            "InternalLocation": "InternalLocation",
+            "AddressLines": ["Address", "Lines"],
+            "PostalBox": "PostalBox",
+            "Town": "Town",
+            "Region": "Region",
+            "PostalCode": "PostalCode",
+            "Country": "Country",
+        }
+
+    def test_exporting_a_telecom_address(self):
+        TestImportAddressAttributes().test_importing_a_telecom_address()
+        assert subject().export_address_attributes() == {
+            "Purpose": "USERDEFINED",
+            "Description": "Description",
+            "UserDefinedPurpose": "UserDefinedPurpose",
+            "TelephoneNumbers": ["Telephone", "Numbers"],
+            "FacsimileNumbers": ["Facsimile", "Numbers"],
+            "PagerNumber": "PagerNumber",
+            "ElectronicMailAddresses": ["Electronic", "Mail", "Addresses"],
+            "WWWHomePageURL": "WWWHomePageURL",
+            "MessagingIDs": ["Messaging", "IDs"],
+        }
+
+
+class TestExportOrganisationAttributes(NewFile):
+    def test_run(self):
+        TestImportOrganisationAttributes().test_run()
+        assert subject().export_organisation_attributes() == {
+            "Identification": "Identification",
+            "Name": "Name",
+            "Description": "Description",
+        }
+
+
+class TestExportPersonAttributes(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        person = ifc.createIfcPerson()
+        person.Identification = "identification"
+        person.GivenName = "given_name"
+        person.FamilyName = "family_name"
+        person.MiddleNames = ("middle", "names")
+        person.PrefixTitles = ("prefix", "titles")
+        person.SuffixTitles = ("suffix", "titles")
+        subject().set_person(person)
+        subject().import_person_attributes()
+        assert subject().export_person_attributes() == {
+            "Identification": "identification",
+            "GivenName": "given_name",
+            "FamilyName": "family_name",
+            "MiddleNames": ["middle", "names"],
+            "PrefixTitles": ["prefix", "titles"],
+            "SuffixTitles": ["suffix", "titles"],
+        }
+
+    def test_getting_empty_list_attributes_as_none(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        result = subject().export_person_attributes()
+        assert result["MiddleNames"] is None
+        assert result["PrefixTitles"] is None
+        assert result["SuffixTitles"] is None
+
+
+class TestExportRoleAttributes(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        role = ifc.createIfcActorRole()
+        role.Role = "USERDEFINED"
+        role.UserDefinedRole = "UserDefinedRole"
+        role.Description = "Description"
+        subject().set_role(role)
+        subject().import_role_attributes()
+        assert subject().export_role_attributes() == {
+            "Role": "USERDEFINED",
+            "UserDefinedRole": "UserDefinedRole",
+            "Description": "Description",
+        }
+
+
+class TestGetActor(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        actor = ifc.createIfcActor()
+        subject().set_actor(actor)
+        assert subject().get_actor() == actor
+
+
+class TestGetAddress(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        address = ifc.createIfcPostalAddress()
+        subject().set_address(address)
+        assert subject().get_address() == address
+
+
+class TestGetOrganisation(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        organisation = ifc.createIfcOrganization()
+        subject().set_organisation(organisation)
+        assert subject().get_organisation() == organisation
+
+
+class TestGetPerson(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        person = ifc.createIfcPerson()
+        subject().set_person(person)
+        assert subject().get_person() == person
+
+
+class TestGetRole(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        role = ifc.createIfcActorRole()
+        subject().set_role(role)
+        assert subject().get_role() == role
 
 
 class TestGetUser(NewFile):
@@ -56,19 +277,40 @@ class TestGetUser(NewFile):
         assert subject.get_user() == user2
 
 
-class TestClearUser(NewFile):
-    def test_run(self):
-        TestSetUser().test_run()
-        subject.clear_user()
-        assert bpy.context.scene.BIMOwnerProperties.active_user_id == 0
-
-
-class TestSetAddress(NewFile):
-    def test_run(self):
+class TestImportActorAttributes(NewFile):
+    def test_importing_an_actor(self):
         ifc = ifcopenshell.file()
-        address = ifc.createIfcPostalAddress()
-        subject().set_address(address)
-        assert bpy.context.scene.BIMOwnerProperties.active_address_id == address.id()
+        tool.Ifc().set(ifc)
+        actor = ifc.createIfcActor()
+        actor.GlobalId = "GlobalId"
+        actor.Name = "Name"
+        actor.Description = "Description"
+        actor.ObjectType = "ObjectType"
+        subject.set_actor(actor)
+        subject.import_actor_attributes(actor)
+        props = bpy.context.scene.BIMOwnerProperties
+        assert props.actor_attributes.get("GlobalId").string_value == "GlobalId"
+        assert props.actor_attributes.get("Name").string_value == "Name"
+        assert props.actor_attributes.get("Description").string_value == "Description"
+        assert props.actor_attributes.get("ObjectType").string_value == "ObjectType"
+
+    def test_importing_an_occupant(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        actor = ifc.createIfcOccupant()
+        actor.GlobalId = "GlobalId"
+        actor.Name = "Name"
+        actor.Description = "Description"
+        actor.ObjectType = "ObjectType"
+        actor.PredefinedType = "TENANT"
+        subject.set_actor(actor)
+        subject.import_actor_attributes(actor)
+        props = bpy.context.scene.BIMOwnerProperties
+        assert props.actor_attributes.get("GlobalId").string_value == "GlobalId"
+        assert props.actor_attributes.get("Name").string_value == "Name"
+        assert props.actor_attributes.get("Description").string_value == "Description"
+        assert props.actor_attributes.get("ObjectType").string_value == "ObjectType"
+        assert props.actor_attributes.get("PredefinedType").enum_value == "TENANT"
 
 
 class TestImportAddressAttributes(NewFile):
@@ -152,92 +394,6 @@ class TestImportAddressAttributes(NewFile):
         assert len(props.messaging_ids) == 0
 
 
-class TestClearAddress(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        address = ifc.createIfcPostalAddress()
-        subject().set_address(address)
-        subject().clear_address()
-        assert bpy.context.scene.BIMOwnerProperties.active_address_id == 0
-
-
-class TestGetAddress(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        address = ifc.createIfcPostalAddress()
-        subject().set_address(address)
-        assert subject().get_address() == address
-
-
-class TestExportAttributes(NewFile):
-    def test_exporting_a_postal_address(self):
-        TestImportAddressAttributes().test_importing_a_postal_address()
-        assert subject().export_address_attributes() == {
-            "Purpose": "USERDEFINED",
-            "Description": "Description",
-            "UserDefinedPurpose": "UserDefinedPurpose",
-            "InternalLocation": "InternalLocation",
-            "AddressLines": ["Address", "Lines"],
-            "PostalBox": "PostalBox",
-            "Town": "Town",
-            "Region": "Region",
-            "PostalCode": "PostalCode",
-            "Country": "Country",
-        }
-
-    def test_exporting_a_telecom_address(self):
-        TestImportAddressAttributes().test_importing_a_telecom_address()
-        assert subject().export_address_attributes() == {
-            "Purpose": "USERDEFINED",
-            "Description": "Description",
-            "UserDefinedPurpose": "UserDefinedPurpose",
-            "TelephoneNumbers": ["Telephone", "Numbers"],
-            "FacsimileNumbers": ["Facsimile", "Numbers"],
-            "PagerNumber": "PagerNumber",
-            "ElectronicMailAddresses": ["Electronic", "Mail", "Addresses"],
-            "WWWHomePageURL": "WWWHomePageURL",
-            "MessagingIDs": ["Messaging", "IDs"],
-        }
-
-
-class TestAddAddressAttribute(NewFile):
-    def test_run(self):
-        subject().add_address_attribute("AddressLines")
-        subject().add_address_attribute("TelephoneNumbers")
-        subject().add_address_attribute("FacsimileNumbers")
-        subject().add_address_attribute("ElectronicMailAddresses")
-        subject().add_address_attribute("MessagingIDs")
-        props = bpy.context.scene.BIMOwnerProperties
-        assert len(props.address_lines) == 1
-        assert len(props.telephone_numbers) == 1
-        assert len(props.facsimile_numbers) == 1
-        assert len(props.electronic_mail_addresses) == 1
-        assert len(props.messaging_ids) == 1
-
-
-class TestRemoveAddressAttribute(NewFile):
-    TestAddAddressAttribute().test_run()
-    subject().remove_address_attribute("AddressLines", 0)
-    subject().remove_address_attribute("TelephoneNumbers", 0)
-    subject().remove_address_attribute("FacsimileNumbers", 0)
-    subject().remove_address_attribute("ElectronicMailAddresses", 0)
-    subject().remove_address_attribute("MessagingIDs", 0)
-    props = bpy.context.scene.BIMOwnerProperties
-    assert len(props.address_lines) == 0
-    assert len(props.telephone_numbers) == 0
-    assert len(props.facsimile_numbers) == 0
-    assert len(props.electronic_mail_addresses) == 0
-    assert len(props.messaging_ids) == 0
-
-
-class TestSetOrganisation(NewFile):
-    def test_run(self):
-        organisation = ifcopenshell.file().createIfcOrganization()
-        subject().set_organisation(organisation)
-        assert bpy.context.scene.BIMOwnerProperties.active_organisation_id == organisation.id()
-
-
 class TestImportOrganisationAttributes(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -267,40 +423,6 @@ class TestImportOrganisationAttributes(NewFile):
         props = bpy.context.scene.BIMOwnerProperties
         assert props.organisation_attributes.get("Identification").string_value == "Identification2"
         assert props.organisation_attributes.get("Description").string_value == ""
-
-
-class TestClearOrganisation(NewFile):
-    def test_run(self):
-        props = bpy.context.scene.BIMOwnerProperties
-        props.active_organisation_id = 1
-        subject().clear_organisation()
-        assert props.active_organisation_id == 0
-
-
-class TestExportOrganisationAttributes(NewFile):
-    def test_run(self):
-        TestImportOrganisationAttributes().test_run()
-        assert subject().export_organisation_attributes() == {
-            "Identification": "Identification",
-            "Name": "Name",
-            "Description": "Description",
-        }
-
-
-class TestGetOrganisation(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        organisation = ifc.createIfcOrganization()
-        subject().set_organisation(organisation)
-        assert subject().get_organisation() == organisation
-
-
-class TestSetPerson(NewFile):
-    def test_run(self):
-        person = ifcopenshell.file().createIfcPerson()
-        subject().set_person(person)
-        assert bpy.context.scene.BIMOwnerProperties.active_person_id == person.id()
 
 
 class TestImportPersonAttributes(NewFile):
@@ -346,86 +468,6 @@ class TestImportPersonAttributes(NewFile):
         assert props.person_attributes.get("GivenName").string_value == ""
 
 
-class TestClearPerson(NewFile):
-    def test_run(self):
-        props = bpy.context.scene.BIMOwnerProperties
-        props.active_person_id = 1
-        subject().clear_person()
-        assert props.active_person_id == 0
-
-
-class TestExportPersonAttributes(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        person = ifc.createIfcPerson()
-        person.Identification = "identification"
-        person.GivenName = "given_name"
-        person.FamilyName = "family_name"
-        person.MiddleNames = ("middle", "names")
-        person.PrefixTitles = ("prefix", "titles")
-        person.SuffixTitles = ("suffix", "titles")
-        subject().set_person(person)
-        subject().import_person_attributes()
-        assert subject().export_person_attributes() == {
-            "Identification": "identification",
-            "GivenName": "given_name",
-            "FamilyName": "family_name",
-            "MiddleNames": ["middle", "names"],
-            "PrefixTitles": ["prefix", "titles"],
-            "SuffixTitles": ["suffix", "titles"],
-        }
-
-    def test_getting_empty_list_attributes_as_none(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        result = subject().export_person_attributes()
-        assert result["MiddleNames"] is None
-        assert result["PrefixTitles"] is None
-        assert result["SuffixTitles"] is None
-
-
-class TestGetPerson(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        person = ifc.createIfcPerson()
-        subject().set_person(person)
-        assert subject().get_person() == person
-
-
-class TestAddPersonAttribute(NewFile):
-    def test_run(self):
-        subject().add_person_attribute("MiddleNames")
-        subject().add_person_attribute("PrefixTitles")
-        subject().add_person_attribute("SuffixTitles")
-        props = bpy.context.scene.BIMOwnerProperties
-        assert len(props.middle_names) == 1
-        assert len(props.prefix_titles) == 1
-        assert len(props.suffix_titles) == 1
-
-
-class TestRemovePersonAttribute(NewFile):
-    def test_run(self):
-        subject().add_person_attribute("MiddleNames")
-        subject().remove_person_attribute("MiddleNames", 0)
-        subject().add_person_attribute("PrefixTitles")
-        subject().remove_person_attribute("PrefixTitles", 0)
-        subject().add_person_attribute("SuffixTitles")
-        subject().remove_person_attribute("SuffixTitles", 0)
-        props = bpy.context.scene.BIMOwnerProperties
-        assert len(props.middle_names) == 0
-        assert len(props.prefix_titles) == 0
-        assert len(props.suffix_titles) == 0
-
-
-class TestSetRole(NewFile):
-    def test_run(self):
-        role = ifcopenshell.file().createIfcActorRole()
-        subject().set_role(role)
-        assert bpy.context.scene.BIMOwnerProperties.active_role_id == role.id()
-
-
 class TestImportRoleAttributes(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -454,35 +496,76 @@ class TestImportRoleAttributes(NewFile):
         assert props.role_attributes.get("Role").enum_value == "ARCHITECT"
 
 
-class TestClearRole(NewFile):
+class TestRemoveAddressAttribute(NewFile):
+    TestAddAddressAttribute().test_run()
+    subject().remove_address_attribute("AddressLines", 0)
+    subject().remove_address_attribute("TelephoneNumbers", 0)
+    subject().remove_address_attribute("FacsimileNumbers", 0)
+    subject().remove_address_attribute("ElectronicMailAddresses", 0)
+    subject().remove_address_attribute("MessagingIDs", 0)
+    props = bpy.context.scene.BIMOwnerProperties
+    assert len(props.address_lines) == 0
+    assert len(props.telephone_numbers) == 0
+    assert len(props.facsimile_numbers) == 0
+    assert len(props.electronic_mail_addresses) == 0
+    assert len(props.messaging_ids) == 0
+
+
+class TestRemovePersonAttribute(NewFile):
+    def test_run(self):
+        subject().add_person_attribute("MiddleNames")
+        subject().remove_person_attribute("MiddleNames", 0)
+        subject().add_person_attribute("PrefixTitles")
+        subject().remove_person_attribute("PrefixTitles", 0)
+        subject().add_person_attribute("SuffixTitles")
+        subject().remove_person_attribute("SuffixTitles", 0)
+        props = bpy.context.scene.BIMOwnerProperties
+        assert len(props.middle_names) == 0
+        assert len(props.prefix_titles) == 0
+        assert len(props.suffix_titles) == 0
+
+
+class TestSetActor(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        actor = ifc.createIfcActor()
+        subject().set_actor(actor)
+        assert bpy.context.scene.BIMOwnerProperties.active_actor_id == actor.id()
+
+
+class TestSetAddress(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        address = ifc.createIfcPostalAddress()
+        subject().set_address(address)
+        assert bpy.context.scene.BIMOwnerProperties.active_address_id == address.id()
+
+
+class TestSetOrganisation(NewFile):
+    def test_run(self):
+        organisation = ifcopenshell.file().createIfcOrganization()
+        subject().set_organisation(organisation)
+        assert bpy.context.scene.BIMOwnerProperties.active_organisation_id == organisation.id()
+
+
+class TestSetPerson(NewFile):
+    def test_run(self):
+        person = ifcopenshell.file().createIfcPerson()
+        subject().set_person(person)
+        assert bpy.context.scene.BIMOwnerProperties.active_person_id == person.id()
+
+
+class TestSetRole(NewFile):
     def test_run(self):
         role = ifcopenshell.file().createIfcActorRole()
         subject().set_role(role)
-        subject().clear_role()
-        assert bpy.context.scene.BIMOwnerProperties.active_role_id == 0
+        assert bpy.context.scene.BIMOwnerProperties.active_role_id == role.id()
 
 
-class TestGetRole(NewFile):
+class TestSetUser(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        role = ifc.createIfcActorRole()
-        subject().set_role(role)
-        assert subject().get_role() == role
-
-
-class TestExportRoleAttributes(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        role = ifc.createIfcActorRole()
-        role.Role = "USERDEFINED"
-        role.UserDefinedRole = "UserDefinedRole"
-        role.Description = "Description"
-        subject().set_role(role)
-        subject().import_role_attributes()
-        assert subject().export_role_attributes() == {
-            "Role": "USERDEFINED",
-            "UserDefinedRole": "UserDefinedRole",
-            "Description": "Description",
-        }
+        tool.Ifc.set(ifc)
+        user = ifc.createIfcPersonAndOrganization()
+        subject.set_user(user)
+        assert bpy.context.scene.BIMOwnerProperties.active_user_id == user.id()

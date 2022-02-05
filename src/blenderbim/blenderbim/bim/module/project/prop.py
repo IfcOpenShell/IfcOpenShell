@@ -38,6 +38,12 @@ def get_export_schema(self, context):
     return ProjectData.data["export_schema"]
 
 
+def get_template_file(self, context):
+    if not ProjectData.is_loaded:
+        ProjectData.load()
+    return ProjectData.data["template_file"]
+
+
 def update_filter_mode(self, context):
     self.filter_categories.clear()
     if self.filter_mode == "NONE":
@@ -132,6 +138,7 @@ class BIMProjectProperties(PropertyGroup):
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
     export_schema: EnumProperty(items=get_export_schema, name="IFC Schema")
+    template_file: EnumProperty(items=get_template_file, name="Template File")
 
     def get_library_element_index(self, lib_element):
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))

@@ -64,3 +64,35 @@ def unassign_system(ifc, system=None, product=None):
 
 def select_system_products(system_tool, system=None):
     system_tool.select_system_products(system)
+
+
+def show_ports(system, element=None):
+    ports = system.get_ports(element)
+    system.load_ports(ports)
+    system.select_elements(ports)
+
+
+def hide_ports(system, element=None):
+    system.delete_element_objects(system.get_ports(element))
+
+
+def add_port(ifc, system, element=None):
+    system.load_ports(system.get_ports(element))
+    obj = system.create_empty_at_cursor_with_element_orientation(element)
+    port = system.run_root_assign_class(obj=obj, ifc_class="IfcDistributionPort")
+    ifc.run("system.assign_port", element=element, port=port)
+
+
+def connect_port(ifc, port1=None, port2=None):
+    ifc.run("system.connect_port", port1=port1, port2=port2)
+
+
+def disconnect_port(ifc, port=None):
+    ifc.run("system.disconnect_port", port=port)
+
+
+def set_flow_direction(ifc, system, port=None, direction=None):
+    port2 = system.get_connected_port(port)
+    if not port2:
+        return
+    ifc.run("system.connect_port", port1=port, port2=port2, direction=direction)

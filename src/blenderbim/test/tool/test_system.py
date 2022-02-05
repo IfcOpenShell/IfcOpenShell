@@ -29,6 +29,28 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.System)
 
 
+class TestCreateEmptyAtCursorWithElementOrientation(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        element = ifc.createIfcWall()
+        tool.Ifc.link(element, obj)
+        obj = subject.create_empty_at_cursor_with_element_orientation(element)
+        assert obj.matrix_world == bpy.context.scene.cursor.matrix
+
+
+class TestDeleteElementObjects(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        element = ifc.createIfcWall()
+        tool.Ifc.link(element, obj)
+        subject.delete_element_objects([element])
+        assert not bpy.data.objects.get("Object")
+
+
 class TestDisableEditingSystem(NewFile):
     def test_run(self):
         bpy.context.scene.BIMSystemProperties.active_system_id = 10
@@ -58,6 +80,26 @@ class TestExportSystemAttributes(NewFile):
             "Description": "Description",
             "ObjectType": "ObjectType",
         }
+
+
+class TestGetConnectedPort(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        port1 = ifcopenshell.api.run("system.add_port", ifc)
+        port2 = ifcopenshell.api.run("system.add_port", ifc)
+        ifcopenshell.api.run("system.connect_port", ifc, port1=port1, port2=port2)
+        assert subject.get_connected_port(port1) == port2
+        assert subject.get_connected_port(port2) == port1
+
+
+class TestGetPorts(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        element = ifc.createIfcDuctSegment()
+        port = ifc.createIfcDistributionPort()
+        ifcopenshell.api.run("system.assign_port", ifc, element=element, port=port)
+        subject.get_ports(element) == [port]
 
 
 class TestImportSystemAttributes(NewFile):
@@ -127,6 +169,37 @@ class TestImportSystems(NewFile):
         assert props.systems[0].ifc_definition_id == system.id()
         assert props.systems[0].name == "Unnamed"
         assert props.systems[0].ifc_class == "IfcDistributionSystem"
+
+
+class TestLoadPorts(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.api.run("project.create_file")
+        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        ifcopenshell.api.run("unit.assign_unit", ifc)
+        tool.Ifc().set(ifc)
+        port = ifc.createIfcDistributionPort()
+        subject.load_ports([port])
+        obj = tool.Ifc.get_object(port)
+        assert obj
+        assert obj.users_collection
+        assert list(obj.location) == [0, 0, 0]
+
+
+class TestRunAssignClassOperator(NewFile):
+    def test_nothing(self):
+        pass
+
+
+class TestSelectElements(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcPump")
+        obj = bpy.data.objects.new("Object", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(element, obj)
+        subject.select_elements([element])
+        assert obj in bpy.context.selected_objects
 
 
 class TestSelectSystemProducts(NewFile):

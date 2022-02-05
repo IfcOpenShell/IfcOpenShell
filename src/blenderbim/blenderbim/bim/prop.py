@@ -150,6 +150,17 @@ def getMaterialPsetNames(self, context):
     return materialpsetnames_enum
 
 
+def update_section_color(self, context):
+    section_node_group = bpy.data.node_groups.get("Section Override")
+    if section_node_group is None:
+        return
+    try:
+        emission_node = next(n for n in section_node_group.nodes if isinstance(n, bpy.types.ShaderNodeEmission))
+        emission_node.inputs[0].default_value = list(self.section_plane_colour) + [1]
+    except StopIteration:
+        pass
+
+
 class StrProperty(PropertyGroup):
     pass
 
@@ -251,7 +262,12 @@ class BIMProperties(PropertyGroup):
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
     section_plane_colour: FloatVectorProperty(
-        name="Temporary Section Cutaway Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0
+        name="Temporary Section Cutaway Colour",
+        subtype="COLOR",
+        default=(1, 0, 0),
+        min=0.0,
+        max=1.0,
+        update=update_section_color,
     )
     area_unit: EnumProperty(
         default="SQUARE_METRE",

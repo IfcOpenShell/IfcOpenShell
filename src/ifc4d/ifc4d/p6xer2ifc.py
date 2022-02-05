@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -24,35 +24,33 @@ from datetime import datetime, timedelta, date
 from .common import ScheduleIfcGenerator
 
 
-class P6XER2Ifc():
-    status_map = {
-        "TK_NotStart": "Not Start",
-        "TK_Complete": "Completed",
-        "TK_Active": "Progress"
-    }
-    
+class P6XER2Ifc:
+    status_map = {"TK_NotStart": "Not Start", "TK_Complete": "Completed", "TK_Active": "Progress"}
+
     TASK_TYPE_MAP = {
         "TT_Task": "Task",
         "TT_Rsrc": "Resource Dependent Task",
         "TT_LOE": "Level of Effort",
         "TT_Mile": "Start Milestone",
         "TT_FinMile": "Finish Milestone",
-        "TT_WBS": "WBS Summary"
+        "TT_WBS": "WBS Summary",
     }
-    
+
     RELATIONSHIP_TYPE_MAPPING = {
         "PR_SS": "START_START",
         "PR_FS": "FINISH_START",
         "PR_SF": "START_FINISH",
-        "PR_FF": "FINISH_FINISH" 
+        "PR_FF": "FINISH_FINISH",
     }
-    
-    RESOURCE_TYPES_MAPPING = {
-        'RT_Labor': "LABOR",
-        'RT_Mat': "MATERIAL",
-        'RT_Equip': "EQUIPMENT"
+
+    resource_type_map = {
+        "RT_Labor": "LABOR",
+        "RT_Mat": "MATERIAL",
+        # https://www.primaverascheduling.com/category/primavera-resources/
+        "RT_Nonlabor": "EQUIPMENT",
+        "RT_Equip": "EQUIPMENT",
     }
-    
+
     def __init__(self):
         self.xer = None
         self.file = None
@@ -66,34 +64,32 @@ class P6XER2Ifc():
         self.relationships = {}
         self.resources = {}
         self.output = None
-        
+
         self.day_map2 = {
-            '1': "Monday",
-            '2': "Tuesday",
-            '3': "Wednesday",
-            '4': "Thursday",
-            '5': "Friday",
-            '6': "Saturday",
-            '7': "Sunday",
+            "1": "Monday",
+            "2": "Tuesday",
+            "3": "Wednesday",
+            "4": "Thursday",
+            "5": "Friday",
+            "6": "Saturday",
+            "7": "Sunday",
         }
-        
-    
+
     def execute(self):
         self.parse_xer()
         settings = {
-            "work_plan":self.work_plan, 
+            "work_plan": self.work_plan,
             "project": self.project,
             "calendars": self.calendars,
             "wbs": self.wbs,
             "root_activities": self.root_activites,
             "activities": self.activities,
             "relationships": self.relationships,
-            "resources": self.resources
+            "resources": self.resources,
         }
         ifcCreator = ScheduleIfcGenerator(self.file, self.output, settings)
         ifcCreator.create_ifc()
-       
-    
+
     def parse_xer(self):
         self.model = Reader(self.xer)
         # for project in self.model.projects:
@@ -104,10 +100,9 @@ class P6XER2Ifc():
         self.parse_activity_xer()
         self.parse_relationship_xer()
         self.parse_resource_xer()
-        #work_schedule = self.create_work_schedule()
-        #self.create_tasks(work_schedule)
-        
-            
+        # work_schedule = self.create_work_schedule()
+        # self.create_tasks(work_schedule)
+
     def parse_wbs_xer(self):
         for wbs in self.model.wbss:
             self.wbs[wbs.wbs_id] = {
@@ -118,8 +113,8 @@ class P6XER2Ifc():
                 "rel": None,
                 "activities": [],
             }
-        #print(self.wbs)
-    
+        # print(self.wbs)
+
     def parse_calendar_xer(self):
         standard_work_week = []
         exceptions = {}
@@ -127,11 +122,11 @@ class P6XER2Ifc():
             standard_work_week = cal.working_hours
             except_lst = cal.exceptions
             for exception in except_lst:
-                 month = exceptions.setdefault(exception.year, {}).setdefault(exception.month, {})
-                 month.setdefault("FullDay", [])
-                 month.setdefault("WorkTime", [])
-                 exceptions[exception.year][exception.month]["FullDay"].append(exception.day)
-                 
+                month = exceptions.setdefault(exception.year, {}).setdefault(exception.month, {})
+                month.setdefault("FullDay", [])
+                month.setdefault("WorkTime", [])
+                exceptions[exception.year][exception.month]["FullDay"].append(exception.day)
+
             self.calendars[cal.clndr_id] = {
                 "Name": cal.clndr_name,
                 "Type": cal.clndr_type,
@@ -139,7 +134,7 @@ class P6XER2Ifc():
                 "StandardWorkWeek": standard_work_week,
                 "HolidayOrExceptions": exceptions,
             }
-    
+
     def parse_activity_xer(self):
         for activity in self.model.activities:
             activity_type = activity.task_type
@@ -158,9 +153,9 @@ class P6XER2Ifc():
                 "PlannedDuration": activity.target_drtn_hr_cnt,
                 "Status": self.status_map[activity.status_code],
                 "CalendarObjectId": activity.clndr_id,
-                "ifc": None
+                "ifc": None,
             }
-            
+
     def parse_relationship_xer(self):
         for rel in self.model.relations:
             predecessor = rel.pred_task_id
@@ -173,7 +168,6 @@ class P6XER2Ifc():
                 "Type": self.RELATIONSHIP_TYPE_MAPPING[rel.pred_type],
                 "Lag": rel.lag_hr_cnt,
             }
-    
 
     def parse_resource_xer(self):
         for rsrc in self.model.resources:
@@ -181,16 +175,13 @@ class P6XER2Ifc():
                 "Name": rsrc.rsrc_name,
                 "Code": rsrc.rsrc_short_name,
                 "ParentObjectId": rsrc.parent_rsrc_id,
-                "Type": self.RESOURCE_TYPES_MAPPING[rsrc.rsrc_type],
+                "Type": self.resource_type_map[rsrc.rsrc_type],
                 "ifc": None,
                 "rel": None,
             }
-    
 
-    
 
 # TODO: add support for resources
 # TODO: consider showing progress bar for better user experience
 # TODO: support multiple projects in a single file
 # TODO: prompt user to select activities and/or wbs nodes to import instead of the full project
-

@@ -88,3 +88,39 @@ class TestSelectSystemProducts:
     def test_run(self, system):
         system.select_system_products("system").should_be_called()
         subject.select_system_products(system, system="system")
+
+
+class TestShowPorts:
+    def test_run(self, system):
+        system.get_ports("element").should_be_called().will_return(["port"])
+        system.load_ports(["port"]).should_be_called()
+        system.select_elements(["port"]).should_be_called()
+        subject.show_ports(system, element="element")
+
+
+class TestHidePorts:
+    def test_run(self, system):
+        system.get_ports("element").should_be_called().will_return(["port"])
+        system.delete_element_objects(["port"]).should_be_called()
+        subject.hide_ports(system, element="element")
+
+
+class TestAddPort:
+    def test_run(self, ifc, system):
+        system.get_ports("element").should_be_called().will_return(["port"])
+        system.load_ports(["port"]).should_be_called()
+        system.create_empty_at_cursor_with_element_orientation("element").should_be_called().will_return("obj")
+        system.run_root_assign_class(obj="obj", ifc_class="IfcDistributionPort").should_be_called().will_return("port")
+        ifc.run("system.assign_port", element="element", port="port").should_be_called()
+        subject.add_port(ifc, system, element="element")
+
+
+class TestSetFlowDirection:
+    def test_run(self, ifc, system):
+        system.get_connected_port("port").should_be_called().will_return("port2")
+        ifc.run("system.connect_port", port1="port", port2="port2", direction="direction").should_be_called()
+        subject.set_flow_direction(ifc, system, port="port", direction="direction")
+
+    def test_do_not_set_a_direction_if_port_is_not_connected(self, ifc, system):
+        system.get_connected_port("port").should_be_called().will_return(None)
+        subject.set_flow_direction(ifc, system, port="port", direction="direction")

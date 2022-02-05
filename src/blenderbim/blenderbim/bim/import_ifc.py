@@ -21,6 +21,7 @@ import bpy
 import time
 import bmesh
 import shutil
+import logging
 import threading
 import mathutils
 import numpy as np
@@ -109,7 +110,7 @@ class MaterialCreator:
 
     def parse_representation(self, representation):
         has_parsed = False
-        representation_items = self.resolve_mapped_representation_items(representation)
+        representation_items = self.resolve_all_representation_items(representation)
         for item in representation_items:
             if self.parse_representation_item(item):
                 has_parsed = True
@@ -143,13 +144,12 @@ class MaterialCreator:
             ]
             self.mesh.polygons.foreach_set("material_index", material_index)
 
-    def resolve_mapped_representation_items(self, representation):
+    def resolve_all_representation_items(self, representation):
         items = []
         for item in representation.Items:
             if item.is_a("IfcMappedItem"):
                 items.extend(item.MappingSource.MappedRepresentation.Items)
-            else:
-                items.append(item)
+            items.append(item)
         return items
 
 
@@ -1611,7 +1611,8 @@ class IfcImporter:
         if "-" in geometry.id:
             mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
         else:
-            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id)
+            # TODO: See #2002
+            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.replace(",", ""))
 
     def set_matrix_world(self, obj, matrix_world):
         obj.matrix_world = matrix_world
@@ -1638,11 +1639,13 @@ class IfcImportSettings:
         self.collection_mode = "DECOMPOSITION"
 
     @staticmethod
-    def factory(context, input_file, logger):
-        scene_diff = context.scene.DiffProperties
-        props = context.scene.BIMProjectProperties
+    def factory(context=None, input_file=None, logger=None):
+        scene_diff = bpy.context.scene.DiffProperties
+        props = bpy.context.scene.BIMProjectProperties
         settings = IfcImportSettings()
         settings.input_file = input_file
+        if logger is None:
+            logger = logging.getLogger("ImportIFC")
         settings.logger = logger
         settings.diff_file = scene_diff.diff_json_file
         settings.collection_mode = props.collection_mode

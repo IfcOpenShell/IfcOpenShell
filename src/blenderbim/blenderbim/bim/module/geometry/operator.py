@@ -145,6 +145,11 @@ class UpdateRepresentation(bpy.types.Operator):
         self.file = IfcStore.get_file()
 
         for obj in objs:
+            # TODO: write unit tests to see how this bulk operation handles
+            # contradictory ifc_representation_class values and when
+            # ifc_representation_class is IfcTextLiteral
+            if not obj.data:
+                continue
             self.update_obj_mesh_representation(context, obj)
             IfcStore.edited_objs.discard(obj)
         return {"FINISHED"}
@@ -154,6 +159,11 @@ class UpdateRepresentation(bpy.types.Operator):
 
         if product.is_a("IfcGridAxis"):
             ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": product})
+            return
+        if product.is_a("IfcRelSpaceBoundary"):
+            # TODO refactor
+            settings = tool.Boundary.get_assign_connection_geometry_settings(obj)
+            ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
             return
 
         core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
@@ -320,7 +330,7 @@ class OverrideDeleteTrait:
     def delete_ifc_object(self, obj):
         if obj.BIMObjectProperties.ifc_definition_id:
             element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
-            IfcStore.deleted_ids.add(element.id())
+            IfcStore.delete_element(element)
             if getattr(element, "FillsVoids", None):
                 self.remove_filling(element)
             if element.is_a("IfcOpeningElement"):

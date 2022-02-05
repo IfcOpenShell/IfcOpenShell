@@ -474,6 +474,8 @@ class Usecase:
     def create_mesh_representation(self):
         if self.file.schema == "IFC2X3" or self.settings["should_force_faceted_brep"]:
             return self.create_faceted_brep()
+        if self.settings["should_force_triangulation"]:
+            return self.create_triangulated_face_set()
         return self.create_polygonal_face_set()
 
     def create_faceted_brep(self):
@@ -498,6 +500,25 @@ class Usecase:
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
             "Brep",
+            items,
+        )
+
+    def create_triangulated_face_set(self):
+        ifc_raw_items = [None] * self.settings["total_items"]
+        for i, value in enumerate(ifc_raw_items):
+            ifc_raw_items[i] = []
+        for polygon in self.settings["geometry"].polygons:
+            ifc_raw_items[polygon.material_index % self.settings["total_items"]].append(
+                [v + 1 for v in polygon.vertices]
+            )
+        coordinates = self.file.createIfcCartesianPointList3D(
+            [self.convert_si_to_unit(v.co) for v in self.settings["geometry"].vertices]
+        )
+        items = [self.file.createIfcTriangulatedFaceSet(coordinates, None, None, i) for i in ifc_raw_items if i]
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Tessellation",
             items,
         )
 

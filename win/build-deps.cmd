@@ -90,10 +90,9 @@ IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
 IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
 
 :: For subroutines
-set MSBUILD_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS% /t:%BUILD_TYPE%
 REM /clp:ErrorsOnly;WarningsOnly
 :: Note BUILD_TYPE not passed, Clean e.g. wouldn't delete the installed files.
-set INSTALL_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS%
+set MSBUILD_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS%
 
 echo.
 
@@ -151,7 +150,7 @@ echo.
 
 call :PrintUsage
 
-call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to proceed `(VS 2015 x64 RelWithDebInfo`)."
+call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to proceed."
 echo.
 
 call cecho.cmd black cyan "If you are not ready with the above: type `'n`' in the prompt below. Build proceeds on all other inputs!"
@@ -194,7 +193,52 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 )
 
+:mpir
+set DEPENDENCY_NAME=mpir
+set DEPENDENCY_DIR=%DEPS_DIR%\mpir
+call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+git reset --hard
+git clean -fdx
+REM There probably need to be quotes here around the filename
+powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_cxx\"}" | git apply --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero --ignore-whitespace 
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd msvc
+cd vs%VS_VER:~2,2%
+call .\msbuild.bat gc LIB %VS_PLATFORM% Release
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
+copy ..\..\lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpir"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:mpfr
+set DEPENDENCY_NAME=mpfr
+set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
+call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+git reset --hard
+powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :BuildSolution "%DEPENDENCY_DIR%\build.vs19\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+REM This command fails because not all msvc projects are patched with the right sdk version
+IF NOT EXIST lib\%VS_PLATFORM%\Release\mpfr.lib GOTO :Error
+IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
+copy lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpfr"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
 :HDF5
+set DEPENDENCY_NAME=hdf5
+set DEPENDENCY_DIR=%DEPS_DIR%
+cd "%DEPENDENCY_DIR%"
 set HDF5_CMAKE_ZIP=CMake-hdf5-%HDF5_VERSION%.zip
 set HDF5_INSTALL_ZIP_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
 if "%ARCH_BITS%"=="64" set ARCH_BITS_64=64
@@ -203,7 +247,8 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %HDF5_CMAKE_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
-git apply ~dp0patches\hdf5vs2022.patch
+git apply %~dp0patches\hdf5vs2022.patch --ignore-whitespace
+rem It is not checked whether this patch is applied successfully!
 ctest -S HDF5config.cmake,BUILD_GENERATOR=VS%VS_VER%%ARCH_BITS_64% -C %BUILD_CFG% -V -O hdf5.log
 call :ExtractArchive %HDF5_INSTALL_ZIP_NAME%.zip "%INSTALL_DIR%" "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%"
 popd
@@ -266,7 +311,7 @@ cd "%DEPENDENCY_DIR%"
 :: Debug build of OpenCOLLADAValidator fails (https://github.com/KhronosGroup/OpenCOLLADA/issues/377) so
 :: so disable it from the build altogether as we have no use for it
 findstr #add_subdirectory(COLLADAValidator) CMakeLists.txt>NUL
-IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOLLADA_CMakeLists.txt.patch"
+IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOLLADA_CMakeLists.txt.patch" --ignore-whitespace
 :: NOTE OpenCOLLADA has been observed to have problems with switching between debug and release builds so
 :: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
 REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
@@ -399,46 +444,6 @@ IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
 )
 IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swigwin" /E /IS /MOVE /njh /njs
 
-:mpir
-set DEPENDENCY_NAME=mpir
-set DEPENDENCY_DIR=%DEPS_DIR%\mpir
-call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
-git reset --hard
-REM There probably need to be quotes here around the filename
-powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_cxx\"}" | git apply --unidiff-zero
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd msvc
-cd vs%VS_VER:~2,2%
-call .\msbuild.bat gc LIB %VS_PLATFORM% Release
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
-copy ..\..\lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpir"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
-:mpfr
-set DEPENDENCY_NAME=mpfr
-set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
-call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
-git reset --hard
-powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\build.vc15\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
-REM This command fails because not all msvc projects are patched with the right sdk version
-IF NOT EXIST lib\%VS_PLATFORM%\Release\mpfr.lib GOTO :Error
-IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
-copy lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpfr"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
 :cgal
 set DEPENDENCY_NAME=cgal
 set DEPENDENCY_DIR=%DEPS_DIR%\cgal
@@ -446,7 +451,7 @@ call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 git reset --hard
-git apply "%~dp0patches\cgal_no_zlib.patch"
+git apply --ignore-whitespace "%~dp0patches\cgal_no_zlib.patch"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
                -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%"    ^
                -DGMP_INCLUDE_DIR="%INSTALL_DIR%\mpir"         ^
@@ -519,7 +524,7 @@ exit /b %RET%
 :: Params: %1 filename, %2 destinationDir, %3 dirAfterExtraction
 :ExtractArchive
 if not exist "%~3". (
-    call cecho.cmd 0 13 "Extracting %DEPENDENCY_NAME% into %~2."
+    call cecho.cmd 0 13 "Extracting %DEPENDENCY_NAME% into %~2 from %1"
     7za x %1 -y -o%2 > nul
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %~3. Skipping."
@@ -596,13 +601,23 @@ exit /b %RET%
 :: BuildSolution - Builds/Rebuilds/Cleans a solution using MSBuild
 :: Params: %1 solutioName, %2 configuration
 :BuildSolution
-call cecho.cmd 0 13 "Building %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
+IF [%~3]==[] (
+    set TARGET=%BUILD_TYPE%
+) ELSE (
+    IF /I %BUILD_TYPE%==Build (
+        set TARGET="%3"
+    ) ELSE (
+        set TARGET="%3:%BUILD_TYPE%"
+    )
+)
+
+call cecho.cmd 0 13 "Building %TARGET% of %DEPENDENCY_NAME%. Please be patient, this will take a while."
 
 :: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
 IF %COMPILE_WITH_WPO%==FALSE (
-	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%
+	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM% /t:"%TARGET%"
 ) ELSE (
-	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE
+	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE /t:"%TARGET%"
 )
 exit /b %ERRORLEVEL%
 
@@ -616,9 +631,9 @@ call cecho.cmd 0 13 "Installing %2 %DEPENDENCY_NAME%. Please be patient, this wi
 
 :: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
 IF %COMPILE_WITH_WPO%==FALSE (
-	%INSTALL_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%
+	%MSBUILD_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%
 ) ELSE (
-	%INSTALL_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE
+	%MSBUILD_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE
 )
 set RET=%ERRORLEVEL%
 popd

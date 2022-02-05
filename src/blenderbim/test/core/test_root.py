@@ -86,3 +86,68 @@ class TestCopyClass:
         root.is_opening_element("element").should_be_called().will_return(True)
         root.add_dynamic_opening_voids("element", "obj").should_be_called()
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
+
+
+class TestAssignClass:
+    def test_do_nothing_if_already_assigned(self, ifc, collector, root):
+        ifc.get_entity("obj").should_be_called().will_return("entity")
+        subject.assign_class(
+            ifc,
+            collector,
+            root,
+            obj="obj",
+            ifc_class="ifc_class",
+            predefined_type="predefined_type",
+            should_add_representation=True,
+            context="context",
+            ifc_representation_class="ifc_representation_class",
+        )
+
+    def test_assign_a_class_with_geometry_and_autodetected_spatial_container(self, ifc, collector, root):
+        ifc.get_entity("obj").should_be_called().will_return(None)
+        root.get_object_name("obj").should_be_called().will_return("name")
+        ifc.run(
+            "root.create_entity", ifc_class="ifc_class", predefined_type="predefined_type", name="name"
+        ).should_be_called().will_return("element")
+        root.set_object_name("obj", "element").should_be_called()
+        ifc.link("element", "obj").should_be_called()
+        root.run_geometry_add_representation(
+            obj="obj", context="context", ifc_representation_class="ifc_representation_class", profile_set_usage=None
+        ).should_be_called()
+        root.set_element_specific_display_settings("obj", "element").should_be_called()
+        collector.sync("obj").should_be_called()
+        collector.assign("obj").should_be_called()
+        subject.assign_class(
+            ifc,
+            collector,
+            root,
+            obj="obj",
+            ifc_class="ifc_class",
+            predefined_type="predefined_type",
+            should_add_representation=True,
+            context="context",
+            ifc_representation_class="ifc_representation_class",
+        )
+
+    def test_not_adding_a_representation_if_requested(self, ifc, collector, root):
+        ifc.get_entity("obj").should_be_called().will_return(None)
+        root.get_object_name("obj").should_be_called().will_return("name")
+        ifc.run(
+            "root.create_entity", ifc_class="ifc_class", predefined_type="predefined_type", name="name"
+        ).should_be_called().will_return("element")
+        root.set_object_name("obj", "element").should_be_called()
+        ifc.link("element", "obj").should_be_called()
+        root.set_element_specific_display_settings("obj", "element").should_be_called()
+        collector.sync("obj").should_be_called()
+        collector.assign("obj").should_be_called()
+        subject.assign_class(
+            ifc,
+            collector,
+            root,
+            obj="obj",
+            ifc_class="ifc_class",
+            predefined_type="predefined_type",
+            should_add_representation=False,
+            context="context",
+            ifc_representation_class="ifc_representation_class",
+        )

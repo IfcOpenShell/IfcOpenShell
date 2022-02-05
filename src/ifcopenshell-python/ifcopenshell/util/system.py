@@ -34,3 +34,37 @@ def get_element_systems(element):
         ]:
             results.append(rel.RelatingGroup)
     return results
+
+
+def get_ports(element):
+    results = []
+    for rel in getattr(element, "IsNestedBy", []) or []:
+        results.extend([o for o in rel.RelatedObjects if o.is_a("IfcDistributionPort")])
+    for rel in element.HasPorts or []:
+        results.append(rel.RelatingPort)
+    return results
+
+
+def get_connected_port(port):
+    for rel in port.ConnectedTo:
+        return rel.RelatedPort
+    for rel in port.ConnectedFrom:
+        return rel.RelatingPort
+
+
+def get_connected_to(element):
+    # Note: this code is for IFC2X3. IFC4 has a different approach.
+    results = []
+    for rel in element.HasPorts:
+        for rel2 in rel.RelatingPort.ConnectedTo:
+            results.extend([r.RelatedElement for r in rel2.RelatedPort.ContainedIn if r.RelatedElement != element])
+    return results
+
+
+def get_connected_from(element):
+    # Note: this code is for IFC2X3. IFC4 has a different approach.
+    results = []
+    for rel in element.HasPorts:
+        for rel2 in rel.RelatingPort.ConnectedFrom:
+            results.extend([r.RelatedElement for r in rel2.RelatingPort.ContainedIn if r.RelatedElement != element])
+    return results

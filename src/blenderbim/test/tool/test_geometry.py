@@ -121,6 +121,15 @@ class TestDoesObjectHaveMeshWithFaces(NewFile):
         assert subject.does_object_have_mesh_with_faces(obj) is True
 
 
+class TestDoesRepresentationIdExist(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        representation = ifc.createIfcShapeRepresentation()
+        assert subject.does_representation_id_exist(representation.id()) is True
+        assert subject.does_representation_id_exist(12345) is False
+
+
 class TestDuplicateObjectData(NewFile):
     def test_run(self):
         data = bpy.data.meshes.new("Mesh")
@@ -158,6 +167,13 @@ class TestGetRepresentationData(NewFile):
         representation.ContextOfItems = context
         data = bpy.data.meshes.new("1/2")
         assert subject.get_representation_data(representation) == data
+
+
+class TestGetRepresentationId(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        representation = ifc.createIfcShapeRepresentation()
+        assert subject.get_representation_id(representation) == representation.id()
 
 
 class TestGetRepresentationName(NewFile):
