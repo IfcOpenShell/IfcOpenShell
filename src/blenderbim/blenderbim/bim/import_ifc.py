@@ -452,7 +452,9 @@ class IfcImporter:
     def apply_blender_offset_to_matrix_world(self, obj, matrix):
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
-            if self.is_point_far_away((matrix[0, 3], matrix[1, 3], matrix[2, 3])):
+            if obj.data and obj.data.get("has_cartesian_point_offset", None):
+                obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
+            elif self.is_point_far_away((matrix[0, 3], matrix[1, 3], matrix[2, 3])):
                 obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
                 matrix = ifcopenshell.util.geolocation.global2local(
                     matrix,
@@ -462,8 +464,6 @@ class IfcImporter:
                     float(props.blender_x_axis_abscissa),
                     float(props.blender_x_axis_ordinate),
                 )
-            else:
-                obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
 
         if self.ifc_import_settings.should_offset_model:
             matrix[0, 3] += self.ifc_import_settings.model_offset_coordinates[0]
@@ -1510,20 +1510,22 @@ class IfcImporter:
                 and geometry.verts
                 and self.is_point_far_away((geometry.verts[0], geometry.verts[1], geometry.verts[2]))
             ):
-                ordinate_index = 0
                 verts = [None] * len(geometry.verts)
-                offset_point = (
-                    float(props.blender_eastings) * self.unit_scale,
-                    float(props.blender_northings) * self.unit_scale,
-                    float(props.blender_orthogonal_height) * self.unit_scale,
-                )
-                for i, vert in enumerate(geometry.verts):
-                    if ordinate_index > 2:
-                        ordinate_index = 0
-                    verts[i] = vert - offset_point[ordinate_index]
-                    ordinate_index += 1
+                for i in range(0, len(geometry.verts), 3):
+                    verts[i], verts[i+1], verts[i+2] = ifcopenshell.util.geolocation.enh2xyz(
+                        geometry.verts[i],
+                        geometry.verts[i+1],
+                        geometry.verts[i+2],
+                        float(props.blender_eastings) * self.unit_scale,
+                        float(props.blender_northings) * self.unit_scale,
+                        float(props.blender_orthogonal_height) * self.unit_scale,
+                        float(props.blender_x_axis_abscissa),
+                        float(props.blender_x_axis_ordinate),
+                    )
+                mesh["has_cartesian_point_offset"] = True
             else:
                 verts = geometry.verts
+                mesh["has_cartesian_point_offset"] = False
 
             if geometry.faces:
                 num_vertices = len(verts) // 3
