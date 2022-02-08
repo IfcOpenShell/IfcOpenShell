@@ -488,6 +488,21 @@ class TestShouldGenerateUVs(NewFile):
         material.node_tree.links.new(node.inputs["Vector"], coords.outputs["UV"])
         assert subject.should_generate_uvs(obj) is True
 
+    def test_accepts_a_uv_map_node(self):
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        material = bpy.data.materials.new("Material")
+        obj.data.materials.append(material)
+        material.use_nodes = True
+
+        bsdf = material.node_tree.nodes["Principled BSDF"]
+        node = material.node_tree.nodes.new(type="ShaderNodeTexImage")
+        material.node_tree.links.new(bsdf.inputs["Base Color"], node.outputs["Color"])
+
+        coords = material.node_tree.nodes.new(type="ShaderNodeUVMap")
+        coords.uv_map = "UVMap"
+        material.node_tree.links.new(node.inputs["Vector"], coords.outputs["UV"])
+        assert subject.should_generate_uvs(obj) is True
+
 
 class TestShouldUsePresentationStyleAssignment(NewFile):
     def test_run(self):
