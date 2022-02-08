@@ -305,6 +305,8 @@ class Geometry(blenderbim.core.tool.Geometry):
                 for node in slot.material.node_tree.nodes:
                     if node.type == "TEX_COORD" and node.outputs['UV'].links:
                         return True
+                    elif node.type == "UVMAP" and node.outputs['UV'].links and node.uv_map:
+                        return True
         return False
 
     @classmethod
