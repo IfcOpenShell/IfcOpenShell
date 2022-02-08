@@ -188,8 +188,9 @@ class UpdateRepresentation(bpy.types.Operator):
             "geometry": obj.data,
             "coordinate_offset": coordinate_offset,
             "total_items": max(1, len(obj.material_slots)),
-            "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
-            "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
+            "should_force_faceted_brep": tool.Geometry.should_force_faceted_brep(),
+            "should_force_triangulation": tool.Geometry.should_force_triangulation(),
+            "should_generate_uvs": tool.Geometry.should_generate_uvs(obj),
             "ifc_representation_class": self.ifc_representation_class,
         }
 

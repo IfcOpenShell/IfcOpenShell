@@ -50,6 +50,7 @@ def add_representation(
         total_items=geometry.get_total_representation_items(obj),
         should_force_faceted_brep=geometry.should_force_faceted_brep(),
         should_force_triangulation=geometry.should_force_triangulation(),
+        should_generate_uvs=geometry.should_generate_uvs(obj),
         ifc_representation_class=ifc_representation_class,
         profile_set_usage=profile_set_usage,
     )

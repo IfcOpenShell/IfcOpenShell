@@ -45,6 +45,7 @@ class TestAddRepresentation:
         geometry.get_total_representation_items("obj").should_be_called().will_return(1)
         geometry.should_force_faceted_brep().should_be_called().will_return(False)
         geometry.should_force_triangulation().should_be_called().will_return(True)
+        geometry.should_generate_uvs("obj").should_be_called().will_return(True)
         ifc.run(
             "geometry.add_representation",
             context="context",
@@ -54,6 +55,7 @@ class TestAddRepresentation:
             total_items=1,
             should_force_faceted_brep=False,
             should_force_triangulation=True,
+            should_generate_uvs=True,
             ifc_representation_class="ifc_representation_class",
             profile_set_usage="profile_set_usage",
         ).should_be_called().will_return("representation")
@@ -109,6 +111,7 @@ class TestAddRepresentation:
         geometry.get_total_representation_items("obj").should_be_called().will_return(1)
         geometry.should_force_faceted_brep().should_be_called().will_return(False)
         geometry.should_force_triangulation().should_be_called().will_return(True)
+        geometry.should_generate_uvs("obj").should_be_called().will_return(True)
         ifc.run(
             "geometry.add_representation",
             context="context",
@@ -118,6 +121,7 @@ class TestAddRepresentation:
             total_items=1,
             should_force_faceted_brep=False,
             should_force_triangulation=True,
+            should_generate_uvs=True,
             ifc_representation_class="ifc_representation_class",
             profile_set_usage="profile_set_usage",
         ).should_be_called().will_return("representation")
