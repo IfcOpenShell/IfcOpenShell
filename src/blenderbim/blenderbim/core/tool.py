@@ -217,6 +217,7 @@ class Geometry:
     def run_style_add_style(cls, obj=None): pass
     def should_force_faceted_brep(cls): pass
     def should_force_triangulation(cls): pass
+    def should_generate_uvs(cls, obj): pass
     def should_use_presentation_style_assignment(cls): pass
 
 

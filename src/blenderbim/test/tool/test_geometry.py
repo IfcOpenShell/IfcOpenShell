@@ -462,6 +462,33 @@ class TestShouldForceTriangulation(NewFile):
         assert subject.should_force_triangulation() is result
 
 
+class TestShouldGenerateUVs(NewFile):
+    def test_needs_mesh_data(self):
+        obj = bpy.data.objects.new("Object", None)
+        assert subject.should_generate_uvs(obj) is False
+
+    def test_needs_nodes(self):
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        material = bpy.data.materials.new("Material")
+        obj.data.materials.append(material)
+        material.use_nodes = False
+        assert subject.should_generate_uvs(obj) is False
+
+    def test_needs_texture_coordinates_with_a_uv_output(self):
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        material = bpy.data.materials.new("Material")
+        obj.data.materials.append(material)
+        material.use_nodes = True
+
+        bsdf = material.node_tree.nodes["Principled BSDF"]
+        node = material.node_tree.nodes.new(type="ShaderNodeTexImage")
+        material.node_tree.links.new(bsdf.inputs["Base Color"], node.outputs["Color"])
+
+        coords = material.node_tree.nodes.new(type="ShaderNodeTexCoord")
+        material.node_tree.links.new(node.inputs["Vector"], coords.outputs["UV"])
+        assert subject.should_generate_uvs(obj) is True
+
+
 class TestShouldUsePresentationStyleAssignment(NewFile):
     def test_run(self):
         result = bpy.context.scene.BIMGeometryProperties.should_use_presentation_style_assignment
