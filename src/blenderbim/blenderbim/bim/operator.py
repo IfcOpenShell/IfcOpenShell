@@ -457,6 +457,17 @@ class ConfigureVisibility(bpy.types.Operator):
     bl_label = "Configure module UI visibility in BlenderBIM"
     bl_options = {"REGISTER", "UNDO"}
 
+    def has_registered_children(self, parent):
+        all_panels = bpy.types.Panel.__subclasses__()
+        has_children = False
+        
+        for panel in all_panels:
+            if getattr(panel, "bl_parent_id", False) == parent and panel.is_registered:
+                has_children = True
+                break
+            
+        return has_children
+    
     def invoke(self, context, event):
         from blenderbim.bim import modules
 
@@ -484,4 +495,12 @@ class ConfigureVisibility(bpy.types.Operator):
             col.prop(module, "is_visible", text="")
 
     def execute(self, context):
+        panel_groups = context.scene.BIMProperties.panel_group_visibility
+    
+        for panel_group in panel_groups.__annotations__.keys():
+            if self.has_registered_children(panel_group):
+                panel_groups[panel_group] = True
+            else:
+                panel_groups[panel_group] = False
+
         return {"FINISHED"}

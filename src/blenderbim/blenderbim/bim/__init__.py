@@ -94,6 +94,7 @@ classes = [
     prop.ObjProperty,
     prop.Attribute,
     prop.ModuleVisibility,
+    prop.PanelGroupVisibility,
     prop.BIMProperties,
     prop.IfcParameter,
     prop.PsetQto,
