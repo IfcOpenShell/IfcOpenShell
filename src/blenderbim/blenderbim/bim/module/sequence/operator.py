@@ -1196,6 +1196,35 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
+class ExportP6(bpy.types.Operator, ImportHelper):
+    bl_idname = "export_p6.bim"
+    bl_label = "Export P6"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".xml"
+    filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
+    holiday_start_date: bpy.props.StringProperty(default="2022-01-01", name="Holiday Start Date")
+    holiday_finish_date: bpy.props.StringProperty(default="2023-01-01", name="Holiday Finish Date")
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
+
+    def execute(self, context):
+        from ifc4d.ifc2p6 import Ifc2P6
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        ifc2p6 = Ifc2P6()
+        ifc2p6.xml = self.filepath
+        ifc2p6.file = self.file
+        ifc2p6.holiday_start_date = parser.parse(self.holiday_start_date).date()
+        ifc2p6.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
+        ifc2p6.execute()
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
+
 class EnableEditingWorkCalendarTimes(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_calendar_times"
     bl_label = "Enable Editing Work Calendar Times"

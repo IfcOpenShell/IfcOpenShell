@@ -80,6 +80,14 @@ class Geometry(blenderbim.core.tool.Geometry):
         return bool(isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons))
 
     @classmethod
+    def does_representation_id_exist(cls, representation_id):
+        try:
+            tool.Ifc.get().by_id(representation_id)
+            return True
+        except:
+            return False
+
+    @classmethod
     def duplicate_object_data(cls, obj):
         return obj.data.copy()
 
@@ -148,6 +156,10 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def get_representation_data(cls, representation):
         return bpy.data.meshes.get(cls.get_representation_name(representation))
+
+    @classmethod
+    def get_representation_id(cls, representation):
+        return representation.id()
 
     @classmethod
     def get_representation_name(cls, representation):
@@ -285,6 +297,17 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def should_force_triangulation(cls):
         return bpy.context.scene.BIMGeometryProperties.should_force_triangulation
+
+    @classmethod
+    def should_generate_uvs(cls, obj):
+        for slot in obj.material_slots:
+            if slot.material and slot.material.use_nodes:
+                for node in slot.material.node_tree.nodes:
+                    if node.type == "TEX_COORD" and node.outputs['UV'].links:
+                        return True
+                    elif node.type == "UVMAP" and node.outputs['UV'].links and node.uv_map:
+                        return True
+        return False
 
     @classmethod
     def should_use_presentation_style_assignment(cls):

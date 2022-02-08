@@ -36,12 +36,38 @@ class TestImplementsTool(NewFile):
 
 class TestAddBrick(NewFile):
     def test_run(self):
+        BrickStore.graph = brickschema.Graph()
+        result = subject.add_brick("https://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment")
+        assert "https://example.org/digitaltwin#" in result
+        assert list(
+            BrickStore.graph.triples(
+                (URIRef(result), RDF.type, URIRef("https://brickschema.org/schema/Brick#Equipment"))
+            )
+        )
+        assert list(
+            BrickStore.graph.triples(
+                (URIRef(result), URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Unnamed"))
+            )
+        )
+
+
+class TestAddBrickBreadcrumb(NewFile):
+    def test_run(self):
+        subject.set_active_brick_class("brick_class")
+        subject.add_brick_breadcrumb()
+        assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[0].name == "brick_class"
+        subject.add_brick_breadcrumb()
+        assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[1].name == "brick_class"
+
+
+class TestAddBrickFromElement(NewFile):
+    def test_run(self):
         ifc = ifcopenshell.file()
         element = ifc.createIfcChiller()
         element.Name = "Chiller"
         element.GlobalId = ifcopenshell.guid.new()
         BrickStore.graph = brickschema.Graph()
-        result = subject.add_brick(
+        result = subject.add_brick_from_element(
             element, "http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment"
         )
         uri = f"http://example.org/digitaltwin#{element.GlobalId}"
@@ -54,15 +80,6 @@ class TestAddBrick(NewFile):
                 (URIRef(uri), URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("Chiller"))
             )
         )
-
-
-class TestAddBrickBreadcrumb(NewFile):
-    def test_run(self):
-        subject.set_active_brick_class("brick_class")
-        subject.add_brick_breadcrumb()
-        assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[0].name == "brick_class"
-        subject.add_brick_breadcrumb()
-        assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[1].name == "brick_class"
 
 
 class TestAddBrickifcProject(NewFile):
@@ -169,6 +186,12 @@ class TestExportBrickAttributes(NewFile):
         }
 
 
+class TestGetActiveBrickClass(NewFile):
+    def test_run(self):
+        subject.set_active_brick_class("brick_class")
+        assert subject.get_active_brick_class() == "brick_class"
+
+
 class TestGetBrick(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -184,6 +207,13 @@ class TestGetBrick(NewFile):
         library = ifc.createIfcLibraryReference(ItemReference="http://example.org/digitaltwin#globalid")
         ifc.createIfcRelAssociatesLibrary(RelatedObjects=[element], RelatingLibrary=library)
         assert subject.get_brick(element) == "http://example.org/digitaltwin#globalid"
+
+
+class TestGetBrickClass(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcAirTerminalBox()
+        assert subject.get_brick_class(element) == "https://brickschema.org/schema/Brick#TerminalUnit"
 
 
 class TestGetBrickPath(NewFile):
@@ -208,10 +238,19 @@ class TestGetBrickifcProject(NewFile):
         )
 
 
+class TestGetConvertableBrickElements(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcAirTerminalBox()
+        ifc.createIfcWall()
+        assert subject.get_convertable_brick_elements() == {element}
+
+
 class TestGetItemClass(NewFile):
     def test_run(self):
         TestLoadBrickFile().test_run()
-        assert subject.get_item_class("http://example.org/digitaltwin#floor") == "Floor"
+        assert subject.get_item_class("https://example.org/digitaltwin#floor") == "Floor"
 
 
 class TestGetLibraryBrickReference(NewFile):
@@ -245,10 +284,12 @@ class TestImportBrickClasses(NewFile):
         assert brick.name == "Building"
         assert brick.uri == "https://brickschema.org/schema/Brick#Building"
         assert brick.total_items == 1
+        assert not brick.label
         brick = bpy.context.scene.BIMBrickProperties.bricks[1]
         assert brick.name == "Location"
         assert brick.uri == "https://brickschema.org/schema/Brick#Location"
         assert brick.total_items == 1
+        assert not brick.label
 
 
 class TestImportBrickItems(NewFile):
@@ -258,7 +299,8 @@ class TestImportBrickItems(NewFile):
         assert len(bpy.context.scene.BIMBrickProperties.bricks) == 1
         brick = bpy.context.scene.BIMBrickProperties.bricks[0]
         assert brick.name == "bldg"
-        assert brick.uri == "http://example.org/digitaltwin#bldg"
+        assert brick.label == "My Building"
+        assert brick.uri == "https://example.org/digitaltwin#bldg"
         assert brick.total_items == 0
 
 
@@ -277,6 +319,23 @@ class TestLoadBrickFile(NewFile):
         assert BrickStore.graph
 
 
+class TestNewBrickFile(NewFile):
+    def test_run(self):
+        # We stub the schema to make tests run faster
+        BrickStore.schema = brickschema.Graph()
+        cwd = os.path.dirname(os.path.realpath(__file__))
+        schema_path = os.path.join(cwd, "..", "files", "BrickStub.ttl")
+        BrickStore.schema.load_file(schema_path)
+
+        # This is the actual test
+        subject.new_brick_file()
+        assert BrickStore.graph
+        namespaces = [(ns[0], ns[1].toPython()) for ns in BrickStore.graph.namespaces()]
+        assert ("digitaltwin", "https://example.org/digitaltwin#") in namespaces
+        assert ("brick", "https://brickschema.org/schema/Brick#") in namespaces
+        assert ("rdfs", "http://www.w3.org/2000/01/rdf-schema#") in namespaces
+
+
 class TestPopBrickBreadcrumb(NewFile):
     def test_run(self):
         bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.add().name = "foo"
@@ -286,7 +345,25 @@ class TestPopBrickBreadcrumb(NewFile):
         assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[0].name == "foo"
 
 
+class TestRemoveBrick(NewFile):
+    def test_run(self):
+        BrickStore.graph = brickschema.Graph()
+        result = subject.add_brick("http://example.org/digitaltwin#", "https://brickschema.org/schema/Brick#Equipment")
+        subject.remove_brick(result)
+        assert not list(BrickStore.graph.triples((URIRef(result), None, None)))
+
+
 class TestRunAssignBrickReference(NewFile):
+    def test_nothing(self):
+        pass
+
+
+class TestRunRefreshBrickViewer(NewFile):
+    def test_nothing(self):
+        pass
+
+
+class TestViewBrickClass(NewFile):
     def test_nothing(self):
         pass
 

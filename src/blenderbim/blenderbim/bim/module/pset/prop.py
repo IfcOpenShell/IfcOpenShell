@@ -18,9 +18,10 @@
 
 import bpy
 import blenderbim.bim.schema
-from blenderbim.bim.prop import Attribute, PRIMARY_MEASURE_TYPE
+from blenderbim.bim.prop import Attribute
 import ifcopenshell
 from ifcopenshell.api.pset.data import Data
+from blenderbim.bim.module.pset.data import AddEditCustomPropertiesData
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -132,6 +133,12 @@ def getQtoNames(self, context):
     return []
 
 
+def get_primary_measure_type(self, context):
+    if not AddEditCustomPropertiesData.is_loaded:
+        AddEditCustomPropertiesData.load()
+    return AddEditCustomPropertiesData.data["primary_measure_type"]
+
+
 class PsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
@@ -189,14 +196,7 @@ class AddEditProperties(PropertyGroup):
     bool_value: BoolProperty(name="Value")
     int_value: IntProperty(name="Value")
     float_value: FloatProperty(name="Value")
-    primary_measure_type: EnumProperty(
-        items=[
-            (x, x, "")
-            for x in PRIMARY_MEASURE_TYPE
-        ],
-        default="IfcLabel",
-        name="Primary Measure Type"
-    )
+    primary_measure_type: EnumProperty(items=get_primary_measure_type, name="Primary Measure Type")
 
     def get_value_name(self):
         ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)

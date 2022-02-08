@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -42,117 +42,6 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 
 materialpsetnames_enum = []
 
-PRIMARY_MEASURE_TYPE = [
-                "IfcInteger",
-                "IfcReal",
-                "IfcBoolean",
-                "IfcIdentifier",
-                "IfcText",
-                "IfcLabel",
-                "IfcLogical",
-                "IfcDateTime",
-                "IfcDate",
-                "IfcTime",
-                "IfcDuration",
-                "IfcTimeStamp",
-                "IfcPositiveInteger",
-                "IfcBinary",
-                "IfcVolumeMeasure",
-                "IfcTimeMeasure",
-                "IfcThermodynamicTemperatureMeasure",
-                "IfcSolidAngleMeasure",
-                "IfcPositiveRatioMeasure",
-                "IfcRatioMeasure",
-                "IfcPositivePlaneAngleMeasure",
-                "IfcPlaneAngleMeasure",
-                "IfcParameterValue",
-                "IfcNumericMeasure",
-                "IfcMassMeasure",
-                "IfcPositiveLengthMeasure",
-                "IfcLengthMeasure",
-                "IfcElectricCurrentMeasure",
-                "IfcDescriptiveMeasure",
-                "IfcCountMeasure",
-                "IfcContextDependentMeasure",
-                "IfcAreaMeasure",
-                "IfcAmountOfSubstanceMeasure",
-                "IfcLuminousIntensityMeasure",
-                "IfcNormalisedRatioMeasure",
-                "IfcComplexNumber",
-                "IfcNonNegativeLengthMeasure",
-                "IfcAbsorbedDoseMeasure",
-                "IfcAccelerationMeasure",
-                "IfcAngularVelocityMeasure",
-                "IfcAreaDensityMeasure",
-                "IfcCompoundPlaneAngleMeasure",
-                "IfcCurvatureMeasure",
-                "IfcDoseEquivalentMeasure",
-                "IfcDynamicViscosityMeasure",
-                "IfcElectricCapacitanceMeasure",
-                "IfcElectricChargeMeasure",
-                "IfcElectricConductanceMeasure",
-                "IfcElectricResistanceMeasure",
-                "IfcElectricVoltageMeasure",
-                "IfcEnergyMeasure",
-                "IfcForceMeasure",
-                "IfcFrequencyMeasure",
-                "IfcHeatFluxDensityMeasure",
-                "IfcHeatingValueMeasure",
-                "IfcIlluminanceMeasure",
-                "IfcInductanceMeasure",
-                "IfcIntegerCountRateMeasure",
-                "IfcIonConcentrationMeasure",
-                "IfcIsothermalMoistureCapacityMeasure",
-                "IfcKinematicViscosityMeasure",
-                "IfcLinearForceMeasure",
-                "IfcLinearMomentMeasure",
-                "IfcLinearStiffnessMeasure",
-                "IfcLinearVelocityMeasure",
-                "IfcLuminousFluxMeasure",
-                "IfcLuminousIntensityDistributionMeasure",
-                "IfcMagneticFluxDensityMeasure",
-                "IfcMagneticFluxMeasure",
-                "IfcMassDensityMeasure",
-                "IfcMassFlowRateMeasure",
-                "IfcMassPerLengthMeasure",
-                "IfcModulusOfElasticityMeasure",
-                "IfcModulusOfLinearSubgradeReactionMeasure",
-                "IfcModulusOfRotationalSubgradeReactionMeasure",
-                "IfcModulusOfSubgradeReactionMeasure",
-                "IfcMoistureDiffusivityMeasure",
-                "IfcMolecularWeightMeasure",
-                "IfcMomentOfInertiaMeasure",
-                "IfcMonetaryMeasure",
-                "IfcPHMeasure",
-                "IfcPlanarForceMeasure",
-                "IfcPowerMeasure",
-                "IfcPressureMeasure",
-                "IfcRadioActivityMeasure",
-                "IfcRotationalFrequencyMeasure",
-                "IfcRotationalMassMeasure",
-                "IfcRotationalStiffnessMeasure",
-                "IfcSectionModulusMeasure",
-                "IfcSectionalAreaIntegralMeasure",
-                "IfcShearModulusMeasure",
-                "IfcSoundPowerLevelMeasure",
-                "IfcSoundPowerMeasure",
-                "IfcSoundPressureLevelMeasure",
-                "IfcSoundPressureMeasure",
-                "IfcSpecificHeatCapacityMeasure",
-                "IfcTemperatureGradientMeasure",
-                "IfcTemperatureRateOfChangeMeasure",
-                "IfcThermalAdmittanceMeasure",
-                "IfcThermalConductivityMeasure",
-                "IfcThermalExpansionCoefficientMeasure",
-                "IfcThermalResistanceMeasure",
-                "IfcThermalTransmittanceMeasure",
-                "IfcTorqueMeasure",
-                "IfcVaporPermeabilityMeasure",
-                "IfcVolumetricFlowRateMeasure",
-                "IfcWarpingConstantMeasure",
-                "IfcWarpingMomentMeasure",
-            ]
-
 
 def update_preset(self, context):
     from blenderbim.bim.data.ui.presets import presets
@@ -193,35 +82,45 @@ def update_is_visible(self, context):
                 pass
 
 
-def InternStr(s):
-    if not hasattr(InternStr, "StringCache"):  # Another way to define a function attribute
-        InternStr.StringCache = defaultdict(str)
-    InternStr.StringCache[s] = s
-    return InternStr.StringCache[s]
+# If we don't cache strings, accents get mangled due to a Blender bug
+# https://blender.stackexchange.com/questions/216230/is-there-a-workaround-for-the-known-bug-in-dynamic-enumproperty
+# https://github.com/IfcOpenShell/IfcOpenShell/pull/1945
+# https://github.com/IfcOpenShell/IfcOpenShell/issues/1941
+def cache_string(s):
+    s = str(s)
+    if not hasattr(cache_string, "data"):  # Another way to define a function attribute
+        cache_string.data = defaultdict(str)
+    cache_string.data[s] = s
+    return cache_string.data[s]
 
-InternStr.StringCache = {}
+
+cache_string.data = {}
 
 
 def getAttributeEnumValues(prop, context):
     # Support weird buildingSMART dictionary mappings which behave like enums
     items = []
     data = json.loads(prop.enum_items)
-    
+
     if isinstance(data, dict):
         for k, v in data.items():
-            items.append((
-            InternStr(k),
-            InternStr(v),
-            "",
-        ))
+            items.append(
+                (
+                    cache_string(k),
+                    cache_string(v),
+                    "",
+                )
+            )
     else:
         for e in data:
-            items.append((
-            InternStr(e),
-            InternStr(e),
-            "",
-        ))
-            
+            items.append(
+                (
+                    cache_string(e),
+                    cache_string(e),
+                    "",
+                )
+            )
+
     return items
 
 
@@ -249,6 +148,17 @@ def getMaterialPsetNames(self, context):
     pset_names = psetqto.get_applicable_names("IfcMaterial", pset_only=True)
     materialpsetnames_enum.extend([(p, p, "") for p in pset_names])
     return materialpsetnames_enum
+
+
+def update_section_color(self, context):
+    section_node_group = bpy.data.node_groups.get("Section Override")
+    if section_node_group is None:
+        return
+    try:
+        emission_node = next(n for n in section_node_group.nodes if isinstance(n, bpy.types.ShaderNodeEmission))
+        emission_node.inputs[0].default_value = list(self.section_plane_colour) + [1]
+    except StopIteration:
+        pass
 
 
 class StrProperty(PropertyGroup):
@@ -284,17 +194,11 @@ class Attribute(PropertyGroup):
     is_optional: BoolProperty(name="Is Optional")
     enum_items: StringProperty(name="Value")
     enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeValue)
-    enum_data_type: StringProperty(name="Enum Data Type")
-    
+
     def get_value(self):
         if self.is_null:
             return None
-        if self.data_type == "enum":
-            type_map = blenderbim.bim.schema.ifc.type_map
-            type_fn = {'integer':int, 'string':str, 'float':float, 'bool': bool}[type_map[self.enum_data_type]]
-            return type_fn(self.enum_value)
-        else:    
-            return getattr(self, str(self.get_value_name()), None)
+        return getattr(self, str(self.get_value_name()), None)
 
     def get_value_default(self):
         if self.data_type == "string":
@@ -355,11 +259,15 @@ class BIMProperties(PropertyGroup):
         default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory", update=update_data_dir
     )
     ifc_file: StringProperty(name="IFC File", update=update_ifc_file)
-    export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
     section_plane_colour: FloatVectorProperty(
-        name="Temporary Section Cutaway Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0
+        name="Temporary Section Cutaway Colour",
+        subtype="COLOR",
+        default=(1, 0, 0),
+        min=0.0,
+        max=1.0,
+        update=update_section_color,
     )
     area_unit: EnumProperty(
         default="SQUARE_METRE",

@@ -45,6 +45,7 @@ class TestAddRepresentation:
         geometry.get_total_representation_items("obj").should_be_called().will_return(1)
         geometry.should_force_faceted_brep().should_be_called().will_return(False)
         geometry.should_force_triangulation().should_be_called().will_return(True)
+        geometry.should_generate_uvs("obj").should_be_called().will_return(True)
         ifc.run(
             "geometry.add_representation",
             context="context",
@@ -54,6 +55,7 @@ class TestAddRepresentation:
             total_items=1,
             should_force_faceted_brep=False,
             should_force_triangulation=True,
+            should_generate_uvs=True,
             ifc_representation_class="ifc_representation_class",
             profile_set_usage="profile_set_usage",
         ).should_be_called().will_return("representation")
@@ -109,6 +111,7 @@ class TestAddRepresentation:
         geometry.get_total_representation_items("obj").should_be_called().will_return(1)
         geometry.should_force_faceted_brep().should_be_called().will_return(False)
         geometry.should_force_triangulation().should_be_called().will_return(True)
+        geometry.should_generate_uvs("obj").should_be_called().will_return(True)
         ifc.run(
             "geometry.add_representation",
             context="context",
@@ -118,6 +121,7 @@ class TestAddRepresentation:
             total_items=1,
             should_force_faceted_brep=False,
             should_force_triangulation=True,
+            should_generate_uvs=True,
             ifc_representation_class="ifc_representation_class",
             profile_set_usage="profile_set_usage",
         ).should_be_called().will_return("representation")
@@ -272,11 +276,29 @@ class TestSwitchRepresentation:
     def test_updating_a_representation_if_the_blender_object_has_been_edited_prior_to_switching(self, geometry):
         geometry.is_edited("obj").should_be_called().will_return(True)
         geometry.is_box_representation("mapped_rep").should_be_called().will_return(False)
+        geometry.get_representation_id("mapped_rep").should_be_called().will_return("representation_id")
         geometry.run_geometry_update_representation(obj="obj").should_be_called()
+        geometry.does_representation_id_exist("representation_id").should_be_called().will_return(True)
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return("data")
         geometry.change_object_data("obj", "data", is_global=False).should_be_called()
         geometry.clear_modifiers("obj").should_be_called()
+        subject.switch_representation(
+            geometry,
+            obj="obj",
+            representation="mapped_rep",
+            should_reload=False,
+            enable_dynamic_voids=False,
+            is_global=False,
+            should_sync_changes_first=True,
+        )
+
+    def test_not_switching_if_an_updated_representation_is_the_same_one_we_were_going_to_switch_to(self, geometry):
+        geometry.is_edited("obj").should_be_called().will_return(True)
+        geometry.is_box_representation("mapped_rep").should_be_called().will_return(False)
+        geometry.get_representation_id("mapped_rep").should_be_called().will_return("representation_id")
+        geometry.run_geometry_update_representation(obj="obj").should_be_called()
+        geometry.does_representation_id_exist("representation_id").should_be_called().will_return(False)
         subject.switch_representation(
             geometry,
             obj="obj",

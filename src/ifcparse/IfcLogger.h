@@ -22,6 +22,7 @@
 
 #include "../ifcparse/IfcBaseClass.h"
 
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
@@ -30,12 +31,13 @@
 #include <exception>
 
 #include <boost/optional.hpp>
+#include <boost/scope_exit.hpp>
 
 #include "ifc_parse_api.h"
 
 class IFC_PARSE_API Logger {
 public:
-	typedef enum { LOG_DEBUG, LOG_NOTICE, LOG_WARNING, LOG_ERROR } Severity;
+	typedef enum { LOG_PERF, LOG_DEBUG, LOG_NOTICE, LOG_WARNING, LOG_ERROR } Severity;
 	typedef enum { FMT_PLAIN, FMT_JSON } Format;
 private:
 
@@ -53,6 +55,13 @@ private:
 	static Format format;
 	static boost::optional<IfcUtil::IfcBaseClass*> current_product;
 	static Severity max_severity;
+
+	static boost::optional<long long> first_timepoint;
+	static std::map<std::string, double> performance_statistics;
+	static std::map<std::string, double> performance_signal_start;
+
+	static bool print_perf_stats_on_element;
+
 public:
 	static void SetProduct(boost::optional<IfcUtil::IfcBaseClass*> product);
 
@@ -87,6 +96,17 @@ public:
 
 	static void ProgressBar(int progress);
 	static std::string GetLog();
+	static void PrintPerformanceStats();
+	static void PrintPerformanceStatsOnElement(bool b) { print_perf_stats_on_element = b; }
 };
+
+#define PERF(x) \
+\
+Logger::Message(Logger::LOG_PERF, x);\
+\
+BOOST_SCOPE_EXIT(void) { \
+Logger::Message(Logger::LOG_PERF, "done " + std::string(x));\
+} BOOST_SCOPE_EXIT_END
+
 
 #endif

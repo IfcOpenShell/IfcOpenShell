@@ -274,6 +274,7 @@ private:
 	double no_wire_intersection_tolerance;
 	double precision_factor;
 	double boolean_debug_setting;
+	double boolean_attempt_2d;
 
 	size_t operation_counter_ = 0;
 
@@ -306,9 +307,13 @@ public:
 		, modelling_precision(0.00001)
 		, dimensionality(1.)
 		, layerset_first(-1.)
+
 		, no_wire_intersection_check(-1)
 		, no_wire_intersection_tolerance(-1)
 		, precision_factor(10.)
+		, boolean_debug_setting(false)
+		, boolean_attempt_2d(true)
+
 		, placement_rel_to_type_(nullptr)
 		, placement_rel_to_instance_(nullptr)
 		, faceset_helper_(nullptr)
@@ -323,13 +328,17 @@ public:
 		, ifc_planeangle_unit(other.ifc_planeangle_unit)
 		, modelling_precision(other.modelling_precision)
 		, dimensionality(other.dimensionality)
-		// @nb faceset_helper_ always initialized to 0
 		, layerset_first(other.layerset_first)
+		, no_wire_intersection_check(other.no_wire_intersection_check)
+		, no_wire_intersection_tolerance(other.no_wire_intersection_tolerance)
+		, precision_factor(other.precision_factor)
+		, boolean_debug_setting(other.boolean_debug_setting)
+		, boolean_attempt_2d(other.boolean_attempt_2d)
 		, placement_rel_to_type_(other.placement_rel_to_type_)
 		, placement_rel_to_instance_(other.placement_rel_to_instance_)
+		// @nb faceset_helper_ always initialized to 0
 		, faceset_helper_(nullptr)
 		, disable_boolean_result(other.disable_boolean_result)
-
 		, offset(other.offset)
 		, rotation(other.rotation)
 		, offset_and_rotation(other.offset_and_rotation)
@@ -342,12 +351,16 @@ public:
 		ifc_length_unit = other.ifc_length_unit;
 		ifc_planeangle_unit = other.ifc_planeangle_unit;
 		modelling_precision = other.modelling_precision;
-		dimensionality = other.dimensionality;
+		dimensionality = other.dimensionality;		
+		layerset_first = other.layerset_first;
+		no_wire_intersection_check = other.no_wire_intersection_check;
+		no_wire_intersection_tolerance = other.no_wire_intersection_tolerance;
+		precision_factor = other.precision_factor;
+		boolean_debug_setting = other.boolean_debug_setting;
+		boolean_attempt_2d = other.boolean_attempt_2d;
 		placement_rel_to_type_ = other.placement_rel_to_type_;
 		placement_rel_to_instance_ = other.placement_rel_to_instance_;
-		layerset_first = other.layerset_first;
 		disable_boolean_result = other.disable_boolean_result;
-
 		offset = other.offset;
 		rotation = other.rotation;
 		offset_and_rotation = other.offset_and_rotation;

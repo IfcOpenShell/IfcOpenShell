@@ -121,6 +121,15 @@ class TestDoesObjectHaveMeshWithFaces(NewFile):
         assert subject.does_object_have_mesh_with_faces(obj) is True
 
 
+class TestDoesRepresentationIdExist(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        representation = ifc.createIfcShapeRepresentation()
+        assert subject.does_representation_id_exist(representation.id()) is True
+        assert subject.does_representation_id_exist(12345) is False
+
+
 class TestDuplicateObjectData(NewFile):
     def test_run(self):
         data = bpy.data.meshes.new("Mesh")
@@ -158,6 +167,13 @@ class TestGetRepresentationData(NewFile):
         representation.ContextOfItems = context
         data = bpy.data.meshes.new("1/2")
         assert subject.get_representation_data(representation) == data
+
+
+class TestGetRepresentationId(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        representation = ifc.createIfcShapeRepresentation()
+        assert subject.get_representation_id(representation) == representation.id()
 
 
 class TestGetRepresentationName(NewFile):
@@ -444,6 +460,48 @@ class TestShouldForceTriangulation(NewFile):
     def test_run(self):
         result = bpy.context.scene.BIMGeometryProperties.should_force_triangulation
         assert subject.should_force_triangulation() is result
+
+
+class TestShouldGenerateUVs(NewFile):
+    def test_needs_mesh_data(self):
+        obj = bpy.data.objects.new("Object", None)
+        assert subject.should_generate_uvs(obj) is False
+
+    def test_needs_nodes(self):
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        material = bpy.data.materials.new("Material")
+        obj.data.materials.append(material)
+        material.use_nodes = False
+        assert subject.should_generate_uvs(obj) is False
+
+    def test_needs_texture_coordinates_with_a_uv_output(self):
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        material = bpy.data.materials.new("Material")
+        obj.data.materials.append(material)
+        material.use_nodes = True
+
+        bsdf = material.node_tree.nodes["Principled BSDF"]
+        node = material.node_tree.nodes.new(type="ShaderNodeTexImage")
+        material.node_tree.links.new(bsdf.inputs["Base Color"], node.outputs["Color"])
+
+        coords = material.node_tree.nodes.new(type="ShaderNodeTexCoord")
+        material.node_tree.links.new(node.inputs["Vector"], coords.outputs["UV"])
+        assert subject.should_generate_uvs(obj) is True
+
+    def test_accepts_a_uv_map_node(self):
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        material = bpy.data.materials.new("Material")
+        obj.data.materials.append(material)
+        material.use_nodes = True
+
+        bsdf = material.node_tree.nodes["Principled BSDF"]
+        node = material.node_tree.nodes.new(type="ShaderNodeTexImage")
+        material.node_tree.links.new(bsdf.inputs["Base Color"], node.outputs["Color"])
+
+        coords = material.node_tree.nodes.new(type="ShaderNodeUVMap")
+        coords.uv_map = "UVMap"
+        material.node_tree.links.new(node.inputs["Vector"], coords.outputs["UV"])
+        assert subject.should_generate_uvs(obj) is True
 
 
 class TestShouldUsePresentationStyleAssignment(NewFile):

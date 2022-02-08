@@ -582,7 +582,6 @@ class SvgWriter:
                 )
             )
 
-
     def draw_dimension_annotations(self, dimension_obj, text_override=None):
         matrix_world = dimension_obj.matrix_world
         for spline in dimension_obj.data.splines:

@@ -27,23 +27,13 @@ class BIM_PT_ifcclash(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_quality_control"
 
     def draw(self, context):
         layout = self.layout
 
         scene = context.scene
         props = scene.BIMClashProperties
-
-        layout.label(text="Blender Clash:")
-
-        row = layout.row(align=True)
-        row.operator("bim.set_blender_clash_set_a")
-        row.operator("bim.set_blender_clash_set_b")
-
-        row = layout.row(align=True)
-        row.operator("bim.execute_blender_clash")
-
-        layout.label(text="IFC Clash:")
 
         row = layout.row(align=True)
         row.operator("bim.add_clash_set")

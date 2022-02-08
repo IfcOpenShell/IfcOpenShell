@@ -64,6 +64,20 @@ def context():
 
 
 @pytest.fixture
+def debug():
+    prophet = Prophecy(blenderbim.core.tool.Debug)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def demo():
+    prophet = Prophecy(blenderbim.core.tool.Demo)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def drawing():
     prophet = Prophecy(blenderbim.core.tool.Drawing)
     yield prophet
@@ -101,6 +115,20 @@ def misc():
 @pytest.fixture
 def owner():
     prophet = Prophecy(blenderbim.core.tool.Owner)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def patch():
+    prophet = Prophecy(blenderbim.core.tool.Patch)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def project():
+    prophet = Prophecy(blenderbim.core.tool.Project)
     yield prophet
     prophet.verify()
 
@@ -150,6 +178,13 @@ def style():
 @pytest.fixture
 def surveyor():
     prophet = Prophecy(blenderbim.core.tool.Surveyor)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def system():
+    prophet = Prophecy(blenderbim.core.tool.System)
     yield prophet
     prophet.verify()
 

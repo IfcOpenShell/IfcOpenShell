@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import pytest
 import test.bootstrap
 import ifcopenshell.api
@@ -116,6 +134,42 @@ class TestGetPropertiesIFC4(test.bootstrap.IFC4):
                 "properties": {"a": "b"},
             }
         }
+
+
+class TestGetPredefinedTypeIFC4(test.bootstrap.IFC4):
+    def test_getting_an_element_predefined_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element.PredefinedType = "PARTITIONING"
+        assert subject.get_predefined_type(element) == "PARTITIONING"
+
+    def test_getting_an_element_userdefined_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element.PredefinedType = "USERDEFINED"
+        element.ObjectType = "FOOBAR"
+        assert subject.get_predefined_type(element) == "FOOBAR"
+
+    def test_getting_an_inherited_predefined_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        element_type.PredefinedType = "PARTITIONING"
+        assert subject.get_predefined_type(element) == "PARTITIONING"
+
+    def test_getting_an_inherited_userdefined_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        element_type.PredefinedType = "USERDEFINED"
+        element_type.ElementType = "FOOBAR"
+        assert subject.get_predefined_type(element) == "FOOBAR"
+
+    def test_getting_an_overriden_predefined_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        element_type.PredefinedType = "NOTDEFINED"
+        element.PredefinedType = "PARTITIONING"
+        assert subject.get_predefined_type(element) == "PARTITIONING"
 
 
 class TestGetTypeIFC4(test.bootstrap.IFC4):

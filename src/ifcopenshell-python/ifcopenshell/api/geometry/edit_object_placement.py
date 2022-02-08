@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import numpy as np
 import ifcopenshell.api
 import ifcopenshell.util.unit
@@ -62,6 +80,12 @@ class Usecase:
         elif getattr(self.settings["product"], "Decomposes", None):
             relating_object = self.settings["product"].Decomposes[0].RelatingObject
             return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
+        elif getattr(self.settings["product"], "Nests", None):
+            relating_object = self.settings["product"].Nests[0].RelatingObject
+            return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
+        elif getattr(self.settings["product"], "ContainedIn", None):
+            related_element = self.settings["product"].ContainedIn[0].RelatedElement
+            return related_element.ObjectPlacement if hasattr(related_element, "ObjectPlacement") else None
         elif getattr(self.settings["product"], "VoidsElements", None):
             relating_object = self.settings["product"].VoidsElements[0].RelatingBuildingElement
             return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None

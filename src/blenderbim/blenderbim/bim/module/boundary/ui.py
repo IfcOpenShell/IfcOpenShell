@@ -31,6 +31,7 @@ class BIM_PT_SceneBoundaries(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bl_parent_id = "BIM_PT_geometry"
 
     @classmethod
     def poll(cls, context):
@@ -49,6 +50,7 @@ class BIM_PT_Boundary(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_parent_id = "BIM_PT_geometry_object"
 
     @classmethod
     def poll(cls, context):
@@ -117,6 +119,7 @@ class BIM_PT_SpaceBoundaries(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_parent_id = "BIM_PT_geometry_object"
 
     @classmethod
     def poll(cls, context):

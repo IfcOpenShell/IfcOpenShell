@@ -17,208 +17,181 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.util.attribute
 import ifcopenshell.api
-import blenderbim.bim.helper
+import blenderbim.tool as tool
+import blenderbim.core.system as core
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.system.data import Data
 
 
-class LoadSystems(bpy.types.Operator):
+class Operator:
+    def execute(self, context):
+        IfcStore.execute_ifc_operator(self, context)
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
+
+
+class LoadSystems(bpy.types.Operator, Operator):
     bl_idname = "bim.load_systems"
     bl_label = "Load Systems"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        props = context.scene.BIMSystemProperties
-        props.systems.clear()
-        for ifc_definition_id, system in Data.systems.items():
-            new = props.systems.add()
-            new.ifc_definition_id = ifc_definition_id
-            new.name = system["Name"]
-        props.is_editing = True
-        bpy.ops.bim.disable_editing_system()
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.load_systems(tool.System)
 
 
-class DisableSystemEditingUI(bpy.types.Operator):
+class DisableSystemEditingUI(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_system_editing_ui"
     bl_label = "Disable System Editing UI"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        context.scene.BIMSystemProperties.is_editing = False
-        context.scene.BIMSystemProperties.active_system_id = 0
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.disable_system_editing_ui(tool.System)
 
 
-class AddSystem(bpy.types.Operator):
+class AddSystem(bpy.types.Operator, Operator):
     bl_idname = "bim.add_system"
     bl_label = "Add System"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        result = ifcopenshell.api.run("system.add_system", IfcStore.get_file())
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_systems()
-        bpy.ops.bim.enable_editing_system(system=result.id())
-        return {"FINISHED"}
+        core.add_system(tool.Ifc, tool.System, ifc_class=context.scene.BIMSystemProperties.system_class)
 
 
-class EditSystem(bpy.types.Operator):
+class EditSystem(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_system"
     bl_label = "Edit System"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMSystemProperties
-        attributes = {}
-        for attribute in props.system_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                attributes[attribute.name] = attribute.string_value
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "system.edit_system",
-            self.file,
-            **{"system": self.file.by_id(props.active_system_id), "attributes": attributes}
+        core.edit_system(
+            tool.Ifc, tool.System, system=tool.Ifc.get().by_id(context.scene.BIMSystemProperties.active_system_id)
         )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_systems()
-        return {"FINISHED"}
 
 
-class RemoveSystem(bpy.types.Operator):
+class RemoveSystem(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_system"
     bl_label = "Remove System"
     bl_options = {"REGISTER", "UNDO"}
     system: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        props = context.scene.BIMSystemProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("system.remove_system", self.file, **{"system": self.file.by_id(self.system)})
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_systems()
-        return {"FINISHED"}
+        core.remove_system(tool.Ifc, tool.System, system=tool.Ifc.get().by_id(self.system))
 
 
-class EnableEditingSystem(bpy.types.Operator):
+class EnableEditingSystem(bpy.types.Operator, Operator):
     bl_idname = "bim.enable_editing_system"
     bl_label = "Enable Editing System"
     bl_options = {"REGISTER", "UNDO"}
     system: bpy.props.IntProperty()
 
-    def execute(self, context):
-        props = context.scene.BIMSystemProperties
-        props.system_attributes.clear()
-
-        blenderbim.bim.helper.import_attributes("IfcSystem", props.system_attributes, Data.systems[self.system])
-        props.active_system_id = self.system
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.enable_editing_system(tool.System, system=tool.Ifc.get().by_id(self.system))
 
 
-class DisableEditingSystem(bpy.types.Operator):
+class DisableEditingSystem(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_editing_system"
     bl_label = "Disable Editing System"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        context.scene.BIMSystemProperties.active_system_id = 0
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.disable_editing_system(tool.System)
 
 
-class ToggleAssigningSystem(bpy.types.Operator):
-    bl_idname = "bim.toggle_assigning_system"
-    bl_label = "Toggle Assigning System"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        context.scene.BIMSystemProperties.is_adding = not context.scene.BIMSystemProperties.is_adding
-        return {"FINISHED"}
-
-
-class AssignSystem(bpy.types.Operator):
+class AssignSystem(bpy.types.Operator, Operator):
     bl_idname = "bim.assign_system"
     bl_label = "Assign System"
     bl_options = {"REGISTER", "UNDO"}
-    product: bpy.props.StringProperty()
     system: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
-        for product in products:
-            if not product.BIMObjectProperties.ifc_definition_id:
-                continue
-            ifcopenshell.api.run(
-                "system.assign_system",
-                self.file,
-                **{
-                    "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
-                    "system": self.file.by_id(self.system),
-                }
-            )
-        Data.load(self.file)
-        return {"FINISHED"}
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                core.assign_system(tool.Ifc, system=tool.Ifc.get().by_id(self.system), product=element)
 
 
-class UnassignSystem(bpy.types.Operator):
+class UnassignSystem(bpy.types.Operator, Operator):
     bl_idname = "bim.unassign_system"
     bl_label = "Unassign System"
     bl_options = {"REGISTER", "UNDO"}
-    product: bpy.props.StringProperty()
     system: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
-        for product in products:
-            props = product.BIMObjectProperties
-            if not props.ifc_definition_id:
-                continue
-            if not (props.ifc_definition_id in Data.products and self.system in Data.products[props.ifc_definition_id]):
-                continue
-            ifcopenshell.api.run(
-                "system.unassign_system",
-                self.file,
-                **{
-                    "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
-                    "system": self.file.by_id(self.system),
-                }
-            )
-        Data.load(self.file)
-        return {"FINISHED"}
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                core.unassign_system(tool.Ifc, system=tool.Ifc.get().by_id(self.system), product=element)
 
 
-class SelectSystemProducts(bpy.types.Operator):
+class SelectSystemProducts(bpy.types.Operator, Operator):
     bl_idname = "bim.select_system_products"
     bl_label = "Select System Products"
     bl_options = {"REGISTER", "UNDO"}
     system: bpy.props.IntProperty()
 
-    def execute(self, context):
-        for obj in context.visible_objects:
-            obj.select_set(False)
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            product_systems = Data.products.get(obj.BIMObjectProperties.ifc_definition_id, [])
-            if self.system in product_systems:
-                obj.select_set(True)
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.select_system_products(tool.System, system=tool.Ifc.get().by_id(self.system))
+
+
+class ShowPorts(bpy.types.Operator, Operator):
+    bl_idname = "bim.show_ports"
+    bl_label = "Show Ports"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.show_ports(tool.System, element=tool.Ifc.get_entity(context.active_object))
+
+
+class HidePorts(bpy.types.Operator, Operator):
+    bl_idname = "bim.hide_ports"
+    bl_label = "Hide Ports"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.hide_ports(tool.System, element=tool.Ifc.get_entity(context.active_object))
+
+
+class AddPort(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_port"
+    bl_label = "Add Ports"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.add_port(tool.Ifc, tool.System, element=tool.Ifc.get_entity(context.active_object))
+
+
+class ConnectPort(bpy.types.Operator, Operator):
+    bl_idname = "bim.connect_port"
+    bl_label = "Connect Ports"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) == 2
+
+    def _execute(self, context):
+        obj1 = context.active_object
+        obj2 = context.selected_objects[0] if context.selected_objects[1] == obj1 else context.selected_objects[1]
+        core.connect_port(tool.Ifc, port1=tool.Ifc.get_entity(obj1), port2=tool.Ifc.get_entity(obj2))
+
+
+class DisconnectPort(bpy.types.Operator, Operator):
+    bl_idname = "bim.disconnect_port"
+    bl_label = "Disconnect Ports"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disconnect_port(tool.Ifc, port=tool.Ifc.get_entity(context.active_object))
+
+
+class SetFlowDirection(bpy.types.Operator, Operator):
+    bl_idname = "bim.set_flow_direction"
+    bl_label = "Set Flow Direction"
+    bl_options = {"REGISTER", "UNDO"}
+    direction: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.set_flow_direction(
+            tool.Ifc, tool.System, port=tool.Ifc.get_entity(context.active_object), direction=self.direction
+        )

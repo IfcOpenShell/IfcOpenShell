@@ -68,6 +68,9 @@ modules = {
     "covetool": None,
     "augin": None,
     "debug": None,
+    # Uncomment this line to enable loading of the demo module. Happy hacking!
+    # The name "demo" must correlate to a folder name in `bim/module/`.
+    # "demo": None,
 }
 
 
@@ -81,8 +84,8 @@ classes = [
     operator.SelectSchemaDir,
     operator.SelectIfcFile,
     operator.OpenUpstream,
-    operator.AddSectionPlane,
-    operator.RemoveSectionPlane,
+    operator.BIM_OT_add_section_plane,
+    operator.BIM_OT_remove_section_plane,
     operator.ReloadIfcFile,
     operator.AddIfcFile,
     operator.RemoveIfcFile,
@@ -102,6 +105,22 @@ classes = [
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,
+    # Scene panel groups
+    ui.BIM_PT_project_info,
+    ui.BIM_PT_project_setup,
+    ui.BIM_PT_collaboration,
+    ui.BIM_PT_geometry,
+    ui.BIM_PT_services,
+    ui.BIM_PT_structural,
+    ui.BIM_PT_4D5D,
+    ui.BIM_PT_quality_control,
+    ui.BIM_PT_integrations,
+    # Object panel groups
+    ui.BIM_PT_object_metadata,
+    ui.BIM_PT_geometry_object,
+    ui.BIM_PT_services_object,
+    ui.BIM_PT_utilities_object,
+    ui.BIM_PT_misc_object,
 ]
 
 for mod in modules.values():

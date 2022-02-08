@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import pytest
 import test.bootstrap
 import ifcopenshell.api
@@ -100,3 +118,25 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
                 attributes={attribute: {"Red": 1, "Green": 1, "Blue": 1}},
             )
             assert list(getattr(style, attribute)) == [None, 1, 1, 1]
+
+    def test_editing_a_specular_highlight_as_an_exponent(self):
+        style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
+        ifcopenshell.api.run(
+            "style.edit_surface_style",
+            self.file,
+            style=style,
+            attributes={"SpecularHighlight": {"IfcSpecularExponent": 2}},
+        )
+        assert style.SpecularHighlight.is_a("IfcSpecularExponent")
+        assert style.SpecularHighlight.wrappedValue == 2
+
+    def test_editing_a_specular_highlight_as_a_roughness(self):
+        style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
+        ifcopenshell.api.run(
+            "style.edit_surface_style",
+            self.file,
+            style=style,
+            attributes={"SpecularHighlight": {"IfcSpecularRoughness": 0.5}},
+        )
+        assert style.SpecularHighlight.is_a("IfcSpecularRoughness")
+        assert style.SpecularHighlight.wrappedValue == 0.5

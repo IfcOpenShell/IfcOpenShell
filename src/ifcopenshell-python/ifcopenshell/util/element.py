@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell
 
 
@@ -65,6 +83,20 @@ def get_properties(properties):
             del data["HasProperties"]
             results[prop.Name] = data
     return results
+
+
+def get_predefined_type(element):
+    element_type = get_type(element)
+    if element_type:
+        predefined_type = getattr(element_type, "PredefinedType", None)
+        if predefined_type == "USERDEFINED":
+            predefined_type = getattr(element_type, "ElementType", None)
+        if predefined_type and predefined_type != "NOTDEFINED":
+            return predefined_type
+    predefined_type = getattr(element, "PredefinedType", None)
+    if predefined_type == "USERDEFINED":
+        predefined_type = getattr(element, "ObjectType", None)
+    return predefined_type
 
 
 def get_type(element):
@@ -149,6 +181,11 @@ def get_decomposition(element):
 def get_aggregate(element):
     if hasattr(element, "Decomposes") and element.Decomposes:
         return element.Decomposes[0].RelatingObject
+
+
+def get_parts(element):
+    if hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
+        return element.IsDecomposedBy[0].RelatedObjects
 
 
 def replace_attribute(element, old, new):

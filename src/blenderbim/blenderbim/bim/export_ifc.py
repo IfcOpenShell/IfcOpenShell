@@ -51,13 +51,13 @@ class IfcExporter:
         if extension == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
                 filename, ext = os.path.splitext(os.path.basename(self.ifc_export_settings.output_file))
-                tmp_name = "{}.ifc".format(filename)
-                tmp_file = os.path.join(unzipped_path, tmp_name)
+                tmp_filename = f"{filename}.ifc"
+                tmp_file = os.path.join(unzipped_path, tmp_filename)
                 self.file.write(tmp_file)
                 with zipfile.ZipFile(
                     self.ifc_export_settings.output_file, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
                 ) as zf:
-                    zf.write(tmp_file)
+                    zf.write(tmp_file, arcname=tmp_filename)
         elif extension == "ifc":
             self.file.write(self.ifc_export_settings.output_file)
         elif extension == "ifcjson":

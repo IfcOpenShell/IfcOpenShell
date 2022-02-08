@@ -15,7 +15,7 @@ Prerequisites
 -------------
 * Git
 * CMake (2.6 or newer)
-* Windows: [Visual Studio] 2008 or newer with C++ toolset (or [Visual C++ Build Tools]) or [MSYS2] + MinGW
+* Windows: [Visual Studio] 2008 to 2019 (2022 not yet supported by dependency CMake) with C++ toolset (or [Visual C++ Build Tools]) or [MSYS2] + MinGW
 * *nix: GCC 4.7 or newer, or Clang (any version)
 
 Dependencies
@@ -38,6 +38,8 @@ Building IfcOpenShell
 Note 1: The path where the source code is cloned to can contain spaces but non-ASCII characters are very likely to cause problems with the build.
 
 Note 2: If you had not used `git clone --recursive https://github.com/IfcOpenShell/IfcOpenshell.git`, update the submodules by running `git submodule init & git submodule update`.
+
+Note 3: Be careful with special characters is the path when using the nix or win build scripts, because the OpenCASCADE build will fail on paths containing ++ and likely other situations.
 
 ### Compiling on Windows
 The preferred way to fetch and build this project's dependencies is to use the build scripts

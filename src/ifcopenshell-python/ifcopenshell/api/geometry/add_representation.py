@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import bmesh
 import ifcopenshell.util.unit
@@ -22,6 +40,7 @@ class Usecase:
             "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
             "should_force_faceted_brep": False,  # If we should force faceted breps for meshes
             "should_force_triangulation": False,  # If we should force triangulation for meshes
+            "should_generate_uvs": False,  # If UV coordinates should also be generated
             #  Possible IFC representation classes:
             #  IfcExtrudedAreaSolid/IfcRectangleProfileDef
             #  IfcExtrudedAreaSolid/IfcCircleProfileDef
@@ -32,7 +51,7 @@ class Usecase:
             #  IfcTextLiteral
             "ifc_representation_class": None,  # Whether to cast a mesh into a particular class
             "profile_set_usage": None,  # The material profile set if the extrusion requires it
-            "text_literal": None, # The text literal if the representation requires it
+            "text_literal": None,  # The text literal if the representation requires it
         }
         self.ifc_vertices = []
         for key, value in settings.items():
@@ -456,6 +475,8 @@ class Usecase:
     def create_mesh_representation(self):
         if self.file.schema == "IFC2X3" or self.settings["should_force_faceted_brep"]:
             return self.create_faceted_brep()
+        if self.settings["should_force_triangulation"]:
+            return self.create_triangulated_face_set()
         return self.create_polygonal_face_set()
 
     def create_faceted_brep(self):
@@ -480,6 +501,52 @@ class Usecase:
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
             "Brep",
+            items,
+        )
+
+    def create_triangulated_face_set(self):
+        ifc_raw_items = [None] * self.settings["total_items"]
+        if self.settings["should_generate_uvs"]:
+            ifc_raw_uv_items = [None] * self.settings["total_items"]
+        for i, value in enumerate(ifc_raw_items):
+            ifc_raw_items[i] = []
+            if self.settings["should_generate_uvs"]:
+                ifc_raw_uv_items[i] = []
+        for polygon in self.settings["geometry"].polygons:
+            ifc_raw_items[polygon.material_index % self.settings["total_items"]].append(
+                [v + 1 for v in polygon.vertices]
+            )
+            if self.settings["should_generate_uvs"]:
+                ifc_raw_uv_items[polygon.material_index % self.settings["total_items"]].append(
+                    [uv + 1 for uv in polygon.loop_indices]
+                )
+
+        coordinates = self.file.createIfcCartesianPointList3D(
+            [self.convert_si_to_unit(v.co) for v in self.settings["geometry"].vertices]
+        )
+
+        if self.settings["should_generate_uvs"]:
+            # Blender supports multiple UV layers. We don't. Too bad.
+            tex_coords = self.file.createIfcTextureVertexList(
+                [tuple(x.uv) for x in self.settings["geometry"].uv_layers[0].data]
+            )
+            items = []
+            for i, coord_index in enumerate(ifc_raw_items):
+                if not coord_index:
+                    continue
+                tex_coords_index = ifc_raw_uv_items[i]
+                face_set = self.file.createIfcTriangulatedFaceSet(coordinates, None, None, coord_index)
+                texture_map = self.file.createIfcIndexedTriangleTextureMap(
+                    MappedTo=face_set, TexCoords=tex_coords, TexCoordIndex=tex_coords_index
+                )
+                items.append(face_set)
+        else:
+            items = [self.file.createIfcTriangulatedFaceSet(coordinates, None, None, i) for i in ifc_raw_items if i]
+
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Tessellation",
             items,
         )
 

@@ -17,7 +17,6 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.owner as core
 import blenderbim.bim.handler
@@ -307,3 +306,52 @@ class ClearUser(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.clear_user(tool.Owner)
+
+
+class AddActor(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_actor"
+    bl_label = "Add Actor"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMOwnerProperties
+        if props.actor:
+            core.add_actor(tool.Ifc, ifc_class=props.actor_class, actor=tool.Ifc.get().by_id(int(props.actor)))
+
+
+class EnableEditingActor(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_actor"
+    bl_label = "Enable Editing Actor"
+    bl_options = {"REGISTER", "UNDO"}
+    actor: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.enable_editing_actor(tool.Owner, actor=tool.Ifc.get().by_id(self.actor))
+
+
+class DisableEditingActor(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_actor"
+    bl_label = "Disable Editing Actor"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disable_editing_actor(tool.Owner)
+
+
+class EditActor(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_actor"
+    bl_label = "Edit Actor"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.edit_actor(tool.Ifc, tool.Owner)
+
+
+class RemoveActor(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_actor"
+    bl_label = "Remove Actor"
+    bl_options = {"REGISTER", "UNDO"}
+    actor: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.remove_actor(tool.Ifc, actor=tool.Ifc.get().by_id(self.actor))

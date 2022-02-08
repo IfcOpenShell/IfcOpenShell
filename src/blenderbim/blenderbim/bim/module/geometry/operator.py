@@ -145,6 +145,11 @@ class UpdateRepresentation(bpy.types.Operator):
         self.file = IfcStore.get_file()
 
         for obj in objs:
+            # TODO: write unit tests to see how this bulk operation handles
+            # contradictory ifc_representation_class values and when
+            # ifc_representation_class is IfcTextLiteral
+            if not obj.data:
+                continue
             self.update_obj_mesh_representation(context, obj)
             IfcStore.edited_objs.discard(obj)
         return {"FINISHED"}
@@ -154,6 +159,11 @@ class UpdateRepresentation(bpy.types.Operator):
 
         if product.is_a("IfcGridAxis"):
             ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": product})
+            return
+        if product.is_a("IfcRelSpaceBoundary"):
+            # TODO refactor
+            settings = tool.Boundary.get_assign_connection_geometry_settings(obj)
+            ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
             return
 
         core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
@@ -178,8 +188,9 @@ class UpdateRepresentation(bpy.types.Operator):
             "geometry": obj.data,
             "coordinate_offset": coordinate_offset,
             "total_items": max(1, len(obj.material_slots)),
-            "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
-            "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
+            "should_force_faceted_brep": tool.Geometry.should_force_faceted_brep(),
+            "should_force_triangulation": tool.Geometry.should_force_triangulation(),
+            "should_generate_uvs": tool.Geometry.should_generate_uvs(obj),
             "ifc_representation_class": self.ifc_representation_class,
         }
 
@@ -320,7 +331,7 @@ class OverrideDeleteTrait:
     def delete_ifc_object(self, obj):
         if obj.BIMObjectProperties.ifc_definition_id:
             element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
-            IfcStore.deleted_ids.add(element.id())
+            IfcStore.delete_element(element)
             if getattr(element, "FillsVoids", None):
                 self.remove_filling(element)
             if element.is_a("IfcOpeningElement"):
@@ -379,40 +390,64 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
         return len(context.selected_ids) > 0
 
     def execute(self, context):
+        # In this override, we don't check self.hierarchy. This effectively
+        # makes Delete and Delete Hierarchy identical. This is on purpose, since
+        # non-hierarchical deletion may imply a whole bunch of potentially
+        # unintended IFC spatial modifications. To make life less confusing for
+        # the user, Delete means Delete. End of story.
         # Deep magick from the dawn of time
         if IfcStore.get_file():
             return IfcStore.execute_ifc_operator(self, context)
         # https://blender.stackexchange.com/questions/203729/python-get-selected-objects-in-outliner
         objects_to_delete = set()
+        collections_to_delete = set()
         for item in context.selected_ids:
             if item.bl_rna.identifier == "Collection":
                 collection = bpy.data.collections.get(item.name)
-                if self.hierarchy:
-                    for obj in collection.objects:
-                        objects_to_delete.add(bpy.data.objects.get(item.name))
-                bpy.data.collections.remove(collection)
+                collection_data = self.get_collection_objects_and_children(collection)
+                print(collection_data)
+                objects_to_delete |= collection_data["objects"]
+                collections_to_delete |= collection_data["children"]
+                collections_to_delete.add(collection)
             elif item.bl_rna.identifier == "Object":
                 objects_to_delete.add(bpy.data.objects.get(item.name))
         for obj in objects_to_delete:
             bpy.data.objects.remove(obj)
+        for collection in collections_to_delete:
+            bpy.data.collections.remove(collection)
         return {"FINISHED"}
 
     def _execute(self, context):
         objects_to_delete = set()
+        collections_to_delete = set()
         for item in context.selected_ids:
             if item.bl_rna.identifier == "Collection":
                 collection = bpy.data.collections.get(item.name)
-                if self.hierarchy:
-                    for obj in collection.objects:
-                        objects_to_delete.add(bpy.data.objects.get(item.name))
-                bpy.data.collections.remove(collection)
+                collection_data = self.get_collection_objects_and_children(collection)
+                objects_to_delete |= collection_data["objects"]
+                collections_to_delete |= collection_data["children"]
+                collections_to_delete.add(collection)
             elif item.bl_rna.identifier == "Object":
                 objects_to_delete.add(bpy.data.objects.get(item.name))
         for obj in objects_to_delete:
             # This is the only difference
             self.delete_ifc_object(obj)
             bpy.data.objects.remove(obj)
+        for collection in collections_to_delete:
+            bpy.data.collections.remove(collection)
         return {"FINISHED"}
+
+    def get_collection_objects_and_children(self, collection):
+        objects = set()
+        children = set()
+        queue = [collection]
+        while queue:
+            collection = queue.pop()
+            for obj in collection.objects:
+                objects.add(obj)
+            queue.extend(collection.children)
+            children = children.union(collection.children)
+        return {"objects": objects, "children": children}
 
 
 class OverrideDuplicateMove(bpy.types.Operator):

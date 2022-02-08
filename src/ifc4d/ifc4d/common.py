@@ -250,7 +250,7 @@ class ScheduleIfcGenerator:
                 "ScheduleFinish": activity["FinishDate"],
                 "DurationType": "WORKTIME" if activity["PlannedDuration"] else None,
                 "ScheduleDuration": timedelta(
-                    days=float(activity["PlannedDuration"]) / float(calendar["HoursPerDay"])
+                    days=float(activity["PlannedDuration"]) / float(calendar["HoursPerDay"] or 8)
                 )
                 or None
                 if activity["PlannedDuration"]
@@ -285,7 +285,7 @@ class ScheduleIfcGenerator:
                     "sequence.assign_lag_time",
                     self.file,
                     rel_sequence=rel_sequence,
-                    lag_value=timedelta(days=lag / float(calendar["HoursPerDay"])),
+                    lag_value=timedelta(days=lag / float(calendar["HoursPerDay"] or 8)),
                     duration_type="WORKTIME",
                 )
                 

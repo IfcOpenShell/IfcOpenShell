@@ -62,9 +62,6 @@ class IfcSchema:
                 setattr(self, product, json.load(f))
                 self.elements.update(getattr(self, product))
 
-        with open(os.path.join(self.schema_dir, "ifc_types_IFC4.json")) as f:
-            self.type_map = json.load(f)
-
     def load_classification(self, name, classification_index=None):
         if name not in self.classifications:
             if classification_index is not None:

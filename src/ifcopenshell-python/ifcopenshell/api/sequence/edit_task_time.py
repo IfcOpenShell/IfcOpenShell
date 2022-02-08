@@ -1,3 +1,21 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import datetime
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
@@ -20,11 +38,6 @@ class Usecase:
             and "ScheduleFinish" in self.settings["attributes"].keys()
         ):
             del self.settings["attributes"]["ScheduleFinish"]
-        if (
-            self.settings["attributes"].get("ActualDuration", None)
-            and "ActualFinish" in self.settings["attributes"].keys()
-        ):
-            del self.settings["attributes"]["ActualFinish"]
 
         duration_type = self.settings["attributes"].get("DurationType", self.settings["task_time"].DurationType)
         if "ScheduleFinish" in self.settings["attributes"]:
@@ -37,7 +50,7 @@ class Usecase:
             )
 
         for name, value in self.settings["attributes"].items():
-            if value:
+            if value is not None:
                 if "Start" in name or "Finish" in name or name == "StatusTime":
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDateTime")
                 elif name == "ScheduleDuration" or name == "ActualDuration" or name == "RemainingTime":

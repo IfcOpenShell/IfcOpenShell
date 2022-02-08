@@ -29,6 +29,7 @@ class BIM_PT_representations(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    bl_parent_id = "BIM_PT_geometry_object"
 
     @classmethod
     def poll(cls, context):
@@ -49,7 +50,7 @@ class BIM_PT_representations(Panel):
             layout.label(text="No representations found")
 
         row = layout.row(align=True)
-        row.prop(context.scene.BIMProperties, "contexts", text="")
+        row.prop(context.scene.BIMRootProperties, "contexts", text="")
         row.operator("bim.add_representation", icon="ADD", text="")
 
         for representation in RepresentationsData.data["representations"]:

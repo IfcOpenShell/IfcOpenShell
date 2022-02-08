@@ -38,7 +38,7 @@ def add_representation(
     edit_object_placement(ifc, geometry, surveyor, obj=obj)
     data = geometry.get_object_data(obj)
 
-    if not data:
+    if not data and ifc_representation_class != "IfcTextLiteral":
         return
 
     representation = ifc.run(
@@ -50,6 +50,7 @@ def add_representation(
         total_items=geometry.get_total_representation_items(obj),
         should_force_faceted_brep=geometry.should_force_faceted_brep(),
         should_force_triangulation=geometry.should_force_triangulation(),
+        should_generate_uvs=geometry.should_generate_uvs(obj),
         ifc_representation_class=ifc_representation_class,
         profile_set_usage=profile_set_usage,
     )
@@ -66,11 +67,12 @@ def add_representation(
 
     ifc.run("geometry.assign_representation", product=element, representation=representation)
 
-    data = geometry.duplicate_object_data(obj)
-    geometry.change_object_data(obj, data, is_global=True)
-    name = geometry.get_representation_name(representation)
-    geometry.rename_object(data, name)
-    geometry.link(representation, data)
+    if data:
+        data = geometry.duplicate_object_data(obj)
+        geometry.change_object_data(obj, data, is_global=True)
+        name = geometry.get_representation_name(representation)
+        geometry.rename_object(data, name)
+        geometry.link(representation, data)
 
     return representation
 
@@ -85,7 +87,10 @@ def switch_representation(
     should_sync_changes_first=False,
 ):
     if should_sync_changes_first and geometry.is_edited(obj) and not geometry.is_box_representation(representation):
+        representation_id = geometry.get_representation_id(representation)
         geometry.run_geometry_update_representation(obj=obj)
+        if not geometry.does_representation_id_exist(representation_id):
+            return
 
     representation = geometry.resolve_mapped_representation(representation)
     existing_data = geometry.get_representation_data(representation)

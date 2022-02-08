@@ -20,9 +20,10 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.ExecuteIfcPatch,
+    operator.RunMigratePatch,
     operator.SelectIfcPatchInput,
     operator.SelectIfcPatchOutput,
-    operator.ExecuteIfcPatch,
     operator.UpdateIfcPatchArguments,
     prop.BIMPatchProperties,
     ui.BIM_PT_patch,
