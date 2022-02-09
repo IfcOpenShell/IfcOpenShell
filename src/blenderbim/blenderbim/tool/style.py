@@ -94,6 +94,7 @@ class Style(blenderbim.core.tool.Style):
         elif "BSDF_PRINCIPLED" in bsdfs:
             attributes["ReflectanceMethod"] = "NOTDEFINED"
             bsdf = bsdfs["BSDF_PRINCIPLED"]
+            attributes["SpecularColour"] = round(bsdf.inputs["Metallic"].default_value, 3)
             attributes["SpecularHighlight"] = {"IfcSpecularRoughness": round(bsdf.inputs["Roughness"].default_value, 3)}
             diffuse_color = bsdf.inputs["Base Color"].default_value
             attributes["Transparency"] = 1 - bsdf.inputs["Alpha"].default_value
