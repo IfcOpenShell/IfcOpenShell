@@ -464,10 +464,14 @@ class TestShouldForceTriangulation(NewFile):
 
 class TestShouldGenerateUVs(NewFile):
     def test_needs_mesh_data(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", None)
         assert subject.should_generate_uvs(obj) is False
 
     def test_needs_nodes(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         material = bpy.data.materials.new("Material")
         obj.data.materials.append(material)
@@ -475,6 +479,8 @@ class TestShouldGenerateUVs(NewFile):
         assert subject.should_generate_uvs(obj) is False
 
     def test_needs_texture_coordinates_with_a_uv_output(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         material = bpy.data.materials.new("Material")
         obj.data.materials.append(material)
@@ -489,6 +495,8 @@ class TestShouldGenerateUVs(NewFile):
         assert subject.should_generate_uvs(obj) is True
 
     def test_accepts_a_uv_map_node(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         material = bpy.data.materials.new("Material")
         obj.data.materials.append(material)

@@ -62,12 +62,14 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
         assert self.file.by_type("IfcShapeRepresentation")[0].RepresentationType != "MappedRepresentation"
         assert len(self.file.by_type("IfcRepresentationMap")) == 1
 
-    def test_purging_styled_items(self):
+    def test_purging_styled_items_assignments_but_keeping_the_surface_style(self):
         item = self.file.createIfcExtrudedAreaSolid()
         representation = self.file.createIfcShapeRepresentation(Items=[item])
-        styled_item = self.file.createIfcStyledItem(Item=item)
+        surface_style = self.file.createIfcSurfaceStyle()
+        styled_item = self.file.createIfcStyledItem(Item=item, Styles=[surface_style])
         ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
         assert len(self.file.by_type("IfcStyledItem")) == 0
+        assert len(self.file.by_type("IfcSurfaceStyle")) == 1
 
     def test_not_purging_styled_items_if_used_elsewhere(self):
         item = self.file.createIfcExtrudedAreaSolid()
@@ -97,3 +99,28 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
         representation = self.file.createIfcShapeRepresentation(ContextOfItems=context)
         ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
         assert len(self.file.by_type("IfcGeometricRepresentationContext")) == 1
+
+    def test_purging_texture_coordinates(self):
+        item = self.file.createIfcTriangulatedFaceSet()
+        representation = self.file.createIfcShapeRepresentation(Items=[item])
+        image = self.file.createIfcImageTexture()
+        texture = self.file.createIfcIndexedTriangleTextureMap(
+            TexCoords=self.file.createIfcTextureVertexList(), MappedTo=item, Maps=[image]
+        )
+        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        assert len(self.file.by_type("IfcIndexedTriangleTextureMap")) == 0
+        assert len(self.file.by_type("IfcTextureVertexList")) == 0
+        assert len(self.file.by_type("IfcImageTexture")) == 0
+
+    def test_purging_texture_coordinates_but_not_images_used_in_other_styles(self):
+        item = self.file.createIfcTriangulatedFaceSet()
+        representation = self.file.createIfcShapeRepresentation(Items=[item])
+        image = self.file.createIfcImageTexture()
+        texture = self.file.createIfcIndexedTriangleTextureMap(
+            TexCoords=self.file.createIfcTextureVertexList(), MappedTo=item, Maps=[image]
+        )
+        texture2 = self.file.createIfcIndexedTriangleTextureMap(Maps=[image])
+        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        assert len(self.file.by_type("IfcIndexedTriangleTextureMap")) == 1
+        assert len(self.file.by_type("IfcTextureVertexList")) == 0
+        assert len(self.file.by_type("IfcImageTexture")) == 1

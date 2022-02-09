@@ -42,42 +42,6 @@ class TestCanSupportRenderingStyle(NewFile):
         assert subject.can_support_rendering_style(obj) is False
 
 
-class TestCanSupportTextureStyle(NewFile):
-    def test_without_nodes_we_do_not_support_textures(self):
-        obj = bpy.data.materials.new("Material")
-        obj.use_nodes = False
-        assert subject.can_support_texture_style(obj) is False
-
-    def test_we_need_at_least_one_image_connected_to_a_bsdf(self):
-        obj = bpy.data.materials.new("Material")
-        obj.use_nodes = True
-        bsdf = obj.node_tree.nodes["Principled BSDF"]
-        node = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        cwd = os.path.dirname(os.path.realpath(__file__))
-        image_path = os.path.join(cwd, "..", "files", "image.jpg")
-        node.image = bpy.data.images.load(image_path)
-        obj.node_tree.links.new(bsdf.inputs["Base Color"], node.outputs["Color"])
-        assert subject.can_support_texture_style(obj) is True
-
-    def test_a_texture_without_an_image_filepath_is_not_supported(self):
-        obj = bpy.data.materials.new("Material")
-        obj.use_nodes = True
-        bsdf = obj.node_tree.nodes["Principled BSDF"]
-        node = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Base Color"], node.outputs["Color"])
-        assert subject.can_support_texture_style(obj) is False
-
-    def test_the_texture_needs_to_connect_to_the_bsdf(self):
-        obj = bpy.data.materials.new("Material")
-        obj.use_nodes = True
-        bsdf = obj.node_tree.nodes["Principled BSDF"]
-        node = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        cwd = os.path.dirname(os.path.realpath(__file__))
-        image_path = os.path.join(cwd, "..", "files", "image.jpg")
-        node.image = bpy.data.images.load(image_path)
-        assert subject.can_support_texture_style(obj) is False
-
-
 class TestDisableEditing(NewFile):
     def test_run(self):
         obj = bpy.data.materials.new("Material")
@@ -338,6 +302,14 @@ class TestGetSurfaceShadingStyle(NewFile):
         obj.BIMMaterialProperties.ifc_style_id = style.id()
         assert subject.get_surface_shading_style(obj) == style_item
 
+    def test_do_not_get_rendering_styles(self):
+        tool.Ifc.set(ifcopenshell.file())
+        style_item = tool.Ifc.get().createIfcSurfaceStyleRendering()
+        style = tool.Ifc.get().createIfcSurfaceStyle(Styles=[style_item])
+        obj = bpy.data.materials.new("Material")
+        obj.BIMMaterialProperties.ifc_style_id = style.id()
+        assert subject.get_surface_shading_style(obj) is None
+
 
 class TestGetSurfaceTextureStyle(NewFile):
     def test_run(self):
@@ -349,105 +321,13 @@ class TestGetSurfaceTextureStyle(NewFile):
         assert subject.get_surface_texture_style(obj) == style_item
 
 
-class TestGetSurfaceTextures(NewFile):
-    def test_get_the_leaf_node_of_each_map_in_a_glossy_bsdf(self):
-        obj = bpy.data.materials.new("Material")
-        obj.use_nodes = True
-        bsdf = obj.node_tree.nodes["Principled BSDF"]
-
-        obj.node_tree.nodes.remove(bsdf)
-        bsdf = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlossy")
-        output = {n.type: n for n in obj.node_tree.nodes}.get("OUTPUT_MATERIAL", None)
-        obj.node_tree.links.new(output.inputs["Surface"], bsdf.outputs["BSDF"])
-
-        diffuse = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Color"], diffuse.outputs["Color"])
-        shininess = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Roughness"], shininess.outputs["Color"])
-        normal = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Normal"], normal.outputs["Color"])
-
-        assert subject.get_surface_textures(obj) == {"DIFFUSE": diffuse, "SHININESS": shininess, "NORMAL": normal}
-
-    def test_get_the_leaf_node_of_each_map_in_a_diffuse_bsdf(self):
-        obj = bpy.data.materials.new("Material")
-        obj.use_nodes = True
-        bsdf = obj.node_tree.nodes["Principled BSDF"]
-
-        obj.node_tree.nodes.remove(bsdf)
-        bsdf = obj.node_tree.nodes.new(type="ShaderNodeBsdfDiffuse")
-        output = {n.type: n for n in obj.node_tree.nodes}.get("OUTPUT_MATERIAL", None)
-        obj.node_tree.links.new(output.inputs["Surface"], bsdf.outputs["BSDF"])
-
-        diffuse = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Color"], diffuse.outputs["Color"])
-        shininess = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Roughness"], shininess.outputs["Color"])
-        normal = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Normal"], normal.outputs["Color"])
-
-        assert subject.get_surface_textures(obj) == {"DIFFUSE": diffuse, "SHININESS": shininess, "NORMAL": normal}
-
-    def test_get_the_leaf_node_of_each_map_in_a_glass_bsdf(self):
-        obj = bpy.data.materials.new("Material")
-        obj.use_nodes = True
-        bsdf = obj.node_tree.nodes["Principled BSDF"]
-
-        obj.node_tree.nodes.remove(bsdf)
-        bsdf = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlass")
-        output = {n.type: n for n in obj.node_tree.nodes}.get("OUTPUT_MATERIAL", None)
-        obj.node_tree.links.new(output.inputs["Surface"], bsdf.outputs["BSDF"])
-
-        diffuse = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Color"], diffuse.outputs["Color"])
-        shininess = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Roughness"], shininess.outputs["Color"])
-        normal = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Normal"], normal.outputs["Color"])
-
-        assert subject.get_surface_textures(obj) == {"DIFFUSE": diffuse, "SHININESS": shininess, "NORMAL": normal}
-
-    def test_get_the_leaf_node_of_each_map_in_a_emission_bsdf(self):
-        obj = bpy.data.materials.new("Material")
-        obj.use_nodes = True
-        bsdf = obj.node_tree.nodes["Principled BSDF"]
-
-        obj.node_tree.nodes.remove(bsdf)
-        bsdf = obj.node_tree.nodes.new(type="ShaderNodeEmission")
-        output = {n.type: n for n in obj.node_tree.nodes}.get("OUTPUT_MATERIAL", None)
-        obj.node_tree.links.new(output.inputs["Surface"], bsdf.outputs["Emission"])
-
-        diffuse = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Color"], diffuse.outputs["Color"])
-
-        assert subject.get_surface_textures(obj) == {"DIFFUSE": diffuse}
-
-    def test_get_the_leaf_node_of_each_map_in_a_principled_bsdf(self):
-        obj = bpy.data.materials.new("Material")
-        obj.use_nodes = True
-        bsdf = obj.node_tree.nodes["Principled BSDF"]
-
-        diffuse = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Base Color"], diffuse.outputs["Color"])
-        shininess = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Roughness"], shininess.outputs["Color"])
-        normal = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Normal"], normal.outputs["Color"])
-        specular = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Specular"], specular.outputs["Color"])
-        emission = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Emission Strength"], emission.outputs["Color"])
-        opacity = obj.node_tree.nodes.new(type="ShaderNodeTexImage")
-        obj.node_tree.links.new(bsdf.inputs["Alpha"], opacity.outputs["Color"])
-
-        assert subject.get_surface_textures(obj) == {
-            "DIFFUSE": diffuse,
-            "SHININESS": shininess,
-            "NORMAL": normal,
-            "SPECULAR": specular,
-            "SELFILLUMINATION": emission,
-            "OPACITY": opacity,
-        }
+class TestGetUVMaps(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        item = ifc.createIfcTriangulatedFaceSet()
+        uv_map = ifc.createIfcIndexedTriangleTextureMap(MappedTo=item)
+        representation = ifc.createIfcShapeRepresentation(Items=[item])
+        assert subject.get_uv_maps(representation) == [uv_map]
 
 
 class TestImportSurfaceAttributes(NewFile):

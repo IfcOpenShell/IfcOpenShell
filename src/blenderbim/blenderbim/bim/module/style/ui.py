@@ -42,6 +42,7 @@ class BIM_PT_style(Panel):
         row = self.layout.row(align=True)
         if props.ifc_style_id:
             row.operator("bim.update_style_colours", icon="GREASEPENCIL")
+            row.operator("bim.update_style_textures", icon="TEXTURE", text="")
             row.operator("bim.unlink_style", icon="UNLINKED", text="")
             row.operator("bim.remove_style", icon="X", text="")
         else:

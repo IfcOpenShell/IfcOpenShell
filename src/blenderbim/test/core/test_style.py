@@ -32,8 +32,6 @@ class TestAddStyle:
             "style.add_surface_style", style="style", ifc_class="IfcSurfaceStyleRendering", attributes="attributes"
         ).should_be_called()
 
-        style.can_support_texture_style("obj").should_be_called().will_return(False)
-
         ifc.get_entity("obj").should_be_called().will_return(None)
         assert subject.add_style(ifc, style, obj="obj") == "style"
 
@@ -47,8 +45,6 @@ class TestAddStyle:
         ifc.run(
             "style.add_surface_style", style="style", ifc_class="IfcSurfaceStyleShading", attributes="attributes"
         ).should_be_called()
-
-        style.can_support_texture_style("obj").should_be_called().will_return(False)
 
         ifc.get_entity("obj").should_be_called().will_return("material")
         style.get_context("obj").should_be_called().will_return("context")
@@ -66,93 +62,88 @@ class TestRemoveStyle:
 
 class TestUpdateStyleColours:
     def test_updating_rendering_style_if_available(self, ifc, style):
-        ifc.get_entity("obj").should_be_called().will_return("element")
+        style.get_style("obj").should_be_called().will_return("element")
         style.can_support_rendering_style("obj").should_be_called().will_return(True)
         style.get_surface_rendering_style("obj").should_be_called().will_return("style")
         style.get_surface_rendering_attributes("obj").should_be_called().will_return("attributes")
         ifc.run("style.edit_surface_style", style="style", attributes="attributes").should_be_called()
-        style.get_surface_texture_style("obj").should_be_called().will_return(None)
-        style.can_support_texture_style("obj").should_be_called().will_return(False)
         subject.update_style_colours(ifc, style, obj="obj")
 
     def test_adding_a_rendering_style_if_not_available(self, ifc, style):
-        ifc.get_entity("obj").should_be_called().will_return("element")
+        style.get_style("obj").should_be_called().will_return("element")
         style.can_support_rendering_style("obj").should_be_called().will_return(True)
         style.get_surface_rendering_style("obj").should_be_called().will_return(None)
         style.get_surface_rendering_attributes("obj").should_be_called().will_return("attributes")
         ifc.run(
             "style.add_surface_style", style="element", ifc_class="IfcSurfaceStyleRendering", attributes="attributes"
         ).should_be_called()
-        style.get_surface_texture_style("obj").should_be_called().will_return(None)
-        style.can_support_texture_style("obj").should_be_called().will_return(False)
         subject.update_style_colours(ifc, style, obj="obj")
 
     def test_updating_shading_style_as_a_fallback_if_available(self, ifc, style):
-        ifc.get_entity("obj").should_be_called().will_return("element")
+        style.get_style("obj").should_be_called().will_return("element")
         style.can_support_rendering_style("obj").should_be_called().will_return(False)
         style.get_surface_shading_style("obj").should_be_called().will_return("style")
         style.get_surface_shading_attributes("obj").should_be_called().will_return("attributes")
         ifc.run("style.edit_surface_style", style="style", attributes="attributes").should_be_called()
-        style.get_surface_texture_style("obj").should_be_called().will_return(None)
-        style.can_support_texture_style("obj").should_be_called().will_return(False)
         subject.update_style_colours(ifc, style, obj="obj")
 
     def test_adding_a_shading_style_as_a_fallback_if_not_available(self, ifc, style):
-        ifc.get_entity("obj").should_be_called().will_return("element")
+        style.get_style("obj").should_be_called().will_return("element")
         style.can_support_rendering_style("obj").should_be_called().will_return(False)
         style.get_surface_shading_style("obj").should_be_called().will_return(None)
         style.get_surface_shading_attributes("obj").should_be_called().will_return("attributes")
         ifc.run(
             "style.add_surface_style", style="element", ifc_class="IfcSurfaceStyleShading", attributes="attributes"
         ).should_be_called()
-        style.get_surface_texture_style("obj").should_be_called().will_return(None)
-        style.can_support_texture_style("obj").should_be_called().will_return(False)
         subject.update_style_colours(ifc, style, obj="obj")
 
-    def test_updating_texture_style_if_available(self, ifc, style):
-        ifc.get_entity("obj").should_be_called().will_return("element")
-        style.can_support_rendering_style("obj").should_be_called().will_return(False)
-        style.get_surface_shading_style("obj").should_be_called().will_return("style")
-        style.get_surface_shading_attributes("obj").should_be_called().will_return("attributes")
-        ifc.run("style.edit_surface_style", style="style", attributes="attributes").should_be_called()
 
+class TestUpdateStyleTextures:
+    def test_updating_an_existing_texture_style(self, ifc, style):
+        style.get_style("obj").should_be_called().will_return("element")
+        style.get_uv_maps("representation").should_be_called().will_return("uv_maps")
+        ifc.run("style.add_surface_textures", material="obj", uv_maps="uv_maps").should_be_called().will_return(
+            "textures"
+        )
         style.get_surface_texture_style("obj").should_be_called().will_return("style")
-        style.can_support_texture_style("obj").should_be_called().will_return(True)
-        style.get_surface_textures("obj").should_be_called().will_return("textures")
-        ifc.run("style.add_surface_textures", textures="textures").should_be_called().will_return("ifc_textures")
-        ifc.run("style.edit_surface_style", style="style", attributes={"Textures": "ifc_textures"}).should_be_called()
-        subject.update_style_colours(ifc, style, obj="obj")
-
-    def test_adding_texture_style_if_not_available(self, ifc, style):
-        ifc.get_entity("obj").should_be_called().will_return("element")
-        style.can_support_rendering_style("obj").should_be_called().will_return(False)
-        style.get_surface_shading_style("obj").should_be_called().will_return("style")
-        style.get_surface_shading_attributes("obj").should_be_called().will_return("attributes")
-        ifc.run("style.edit_surface_style", style="style", attributes="attributes").should_be_called()
-
-        style.get_surface_texture_style("obj").should_be_called().will_return(None)
-        style.can_support_texture_style("obj").should_be_called().will_return(True)
-        style.get_surface_textures("obj").should_be_called().will_return("textures")
-        ifc.run("style.add_surface_textures", textures="textures").should_be_called().will_return("ifc_textures")
+        ifc.run("style.remove_surface_style", style="style").should_be_called()
         ifc.run(
             "style.add_surface_style",
             style="element",
             ifc_class="IfcSurfaceStyleWithTextures",
-            attributes={"Textures": "ifc_textures"},
+            attributes={"Textures": "textures"},
         ).should_be_called()
-        subject.update_style_colours(ifc, style, obj="obj")
+        subject.update_style_textures(ifc, style, obj="obj", representation="representation")
 
-    def test_removing_a_texture_style_if_no_longer_available(self, ifc, style):
-        ifc.get_entity("obj").should_be_called().will_return("element")
-        style.can_support_rendering_style("obj").should_be_called().will_return(False)
-        style.get_surface_shading_style("obj").should_be_called().will_return("style")
-        style.get_surface_shading_attributes("obj").should_be_called().will_return("attributes")
-        ifc.run("style.edit_surface_style", style="style", attributes="attributes").should_be_called()
+    def test_adding_a_fresh_texture_style(self, ifc, style):
+        style.get_style("obj").should_be_called().will_return("element")
+        style.get_uv_maps("representation").should_be_called().will_return("uv_maps")
+        ifc.run("style.add_surface_textures", material="obj", uv_maps="uv_maps").should_be_called().will_return(
+            "textures"
+        )
+        style.get_surface_texture_style("obj").should_be_called().will_return(None)
+        ifc.run(
+            "style.add_surface_style",
+            style="element",
+            ifc_class="IfcSurfaceStyleWithTextures",
+            attributes={"Textures": "textures"},
+        ).should_be_called()
+        subject.update_style_textures(ifc, style, obj="obj", representation="representation")
 
+    def test_removing_an_texture_if_no_textures_can_be_added(self, ifc, style):
+        style.get_style("obj").should_be_called().will_return("element")
+        style.get_uv_maps("representation").should_be_called().will_return("uv_maps")
+        ifc.run("style.add_surface_textures", material="obj", uv_maps="uv_maps").should_be_called().will_return(None)
         style.get_surface_texture_style("obj").should_be_called().will_return("style")
-        style.can_support_texture_style("obj").should_be_called().will_return(False)
-        ifc.run("style.remove_style", style="style").should_be_called()
-        subject.update_style_colours(ifc, style, obj="obj")
+        ifc.run("style.remove_surface_style", style="style").should_be_called()
+        subject.update_style_textures(ifc, style, obj="obj", representation="representation")
+
+    def test_doing_nothing_if_no_existing_texture_and_we_cannot_add_a_new_texture(self, ifc, style):
+        style.get_style("obj").should_be_called().will_return("element")
+        style.get_uv_maps("representation").should_be_called().will_return("uv_maps")
+        ifc.run("style.add_surface_textures", material="obj", uv_maps="uv_maps").should_be_called().will_return(None)
+        style.get_surface_texture_style("obj").should_be_called().will_return(None)
+        subject.update_style_textures(ifc, style, obj="obj", representation="representation")
 
 
 class TestUnlinkStyle:

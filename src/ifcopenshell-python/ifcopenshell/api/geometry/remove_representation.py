@@ -29,9 +29,11 @@ class Usecase:
     def execute(self):
         styled_items = set()
         presentation_layer_assignments = set()
+        textures = set()
         for subelement in self.file.traverse(self.settings["representation"]):
-            if subelement.is_a("IfcRepresentationItem") and subelement.StyledByItem:
-                [styled_items.add(s) for s in subelement.StyledByItem]
+            if subelement.is_a("IfcRepresentationItem"):
+                [styled_items.add(s) for s in subelement.StyledByItem or []]
+                [textures.add(t) for t in getattr(subelement, "HasTextures", []) or []]
             elif subelement.is_a("IfcRepresentation"):
                 for inverse in self.file.get_inverse(subelement):
                     if inverse.is_a("IfcPresentationLayerAssignment"):
@@ -43,6 +45,9 @@ class Usecase:
             also_consider=list(styled_items | presentation_layer_assignments),
             do_not_delete=self.file.by_type("IfcGeometricRepresentationContext"),
         )
+
+        for texture in textures:
+            ifcopenshell.util.element.remove_deep2(self.file, texture)
 
         for element in styled_items:
             if not element.Item:

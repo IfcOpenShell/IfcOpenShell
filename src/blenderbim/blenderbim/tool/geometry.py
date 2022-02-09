@@ -300,6 +300,8 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def should_generate_uvs(cls, obj):
+        if tool.Ifc.get().schema == "IFC2X3":
+            return False
         for slot in obj.material_slots:
             if slot.material and slot.material.use_nodes:
                 for node in slot.material.node_tree.nodes:

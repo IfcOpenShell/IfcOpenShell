@@ -432,7 +432,7 @@ class TestRemoveDeep2IFC4(test.bootstrap.IFC4):
         assert self.file.by_id(1)
         assert self.file.by_guid("id2")
 
-    def test_removing_an_element_still_referenced_somewhere(self):
+    def test_not_removing_an_element_still_referenced_somewhere(self):
         owner = self.file.createIfcOwnerHistory()
         element = self.file.createIfcWall(GlobalId="id1", OwnerHistory=owner)
         subject.remove_deep2(self.file, owner)

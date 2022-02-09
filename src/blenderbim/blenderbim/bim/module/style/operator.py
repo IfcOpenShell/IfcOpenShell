@@ -20,6 +20,7 @@ import bpy
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.style as core
+import ifcopenshell.util.representation
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -37,6 +38,21 @@ class UpdateStyleColours(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.update_style_colours(tool.Ifc, tool.Style, obj=context.active_object.active_material)
+
+
+class UpdateStyleTextures(bpy.types.Operator, Operator):
+    bl_idname = "bim.update_style_textures"
+    bl_label = "Update Style Textures"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        representation = ifcopenshell.util.representation.get_representation(
+            tool.Ifc.get_entity(context.active_object), "Model", "Body", "MODEL_VIEW"
+        )
+        if representation:
+            core.update_style_textures(
+                tool.Ifc, tool.Style, obj=context.active_object.active_material, representation=representation
+            )
 
 
 class RemoveStyle(bpy.types.Operator, Operator):
