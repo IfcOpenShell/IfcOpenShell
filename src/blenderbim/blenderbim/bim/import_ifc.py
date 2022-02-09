@@ -1242,18 +1242,90 @@ class IfcImporter:
 
         blender_material.BIMMaterialProperties.ifc_style_id = style.id()
         self.material_creator.styles[style.id()] = blender_material
+
+        rendering_style = None
+        texture_style = None
+
         for surface_style in style.Styles:
-            if surface_style.is_a("IfcSurfaceStyleShading"):
-                alpha = 1.0
-                # Transparency was added in IFC4
-                if hasattr(surface_style, "Transparency") and surface_style.Transparency:
-                    alpha = 1 - surface_style.Transparency
-                blender_material.diffuse_color = (
-                    surface_style.SurfaceColour.Red,
-                    surface_style.SurfaceColour.Green,
-                    surface_style.SurfaceColour.Blue,
-                    alpha,
+            if surface_style.is_a() == "IfcSurfaceStyleShading":
+                self.create_surface_style_shading(blender_material, surface_style)
+            elif surface_style.is_a("IfcSurfaceStyleRendering"):
+                rendering_style = surface_style
+                self.create_surface_style_rendering(blender_material, surface_style)
+            elif surface_style.is_a("IfcSurfaceStyleWithTextures"):
+                texture_style = surface_style
+
+        if rendering_style and texture_style:
+            self.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
+
+    def create_surface_style_shading(self, blender_material, surface_style):
+        alpha = 1.0
+        # Transparency was added in IFC4
+        if hasattr(surface_style, "Transparency") and surface_style.Transparency:
+            alpha = 1 - surface_style.Transparency
+        blender_material.diffuse_color = (
+            surface_style.SurfaceColour.Red,
+            surface_style.SurfaceColour.Green,
+            surface_style.SurfaceColour.Blue,
+            alpha,
+        )
+
+    def create_surface_style_rendering(self, blender_material, surface_style):
+        self.create_surface_style_shading(blender_material, surface_style)
+        if surface_style.ReflectanceMethod in ["PHYSICAL", "NOTDEFINED"]:
+            blender_material.use_nodes = True
+            bsdf = blender_material.node_tree.nodes["Principled BSDF"]
+            if surface_style.DiffuseColour and surface_style.DiffuseColour.is_a("IfcColourRgb"):
+                bsdf.inputs["Base Color"].default_value = (
+                    surface_style.DiffuseColour.Red,
+                    surface_style.DiffuseColour.Green,
+                    surface_style.DiffuseColour.Blue,
+                    1,
                 )
+            if surface_style.SpecularColour and surface_style.SpecularColour.is_a("IfcNormalisedRatioMeasure"):
+                bsdf.inputs["Metallic"].default_value = surface_style.SpecularColour.wrappedValue
+            if surface_style.SpecularHighlight and surface_style.SpecularHighlight.is_a("IfcSpecularRoughness"):
+                bsdf.inputs["Roughness"].default_value = surface_style.SpecularHighlight.wrappedValue
+            if hasattr(surface_style, "Transparency") and surface_style.Transparency:
+                bsdf.inputs["Alpha"].default_value = 1 - surface_style.Transparency
+                blender_material.blend_method = "BLEND"
+        elif surface_style.ReflectanceMethod == "FLAT":
+            blender_material.use_nodes = True
+
+            output = {n.type: n for n in self.settings["material"].node_tree.nodes}.get("OUTPUT_MATERIAL", None)
+            bsdf = blender_material.node_tree.nodes["Principled BSDF"]
+
+            mix = blender_material.node_tree.nodes.new(type="ShaderNodeMixShader")
+            mix.location = bsdf.location
+            blender_material.node_tree.links.new(lightpath.outputs[0], output.inputs["Surface"])
+
+            blender_material.node_tree.nodes.remove(bsdf)
+
+            lightpath = blender_material.node_tree.nodes.new(type="ShaderNodeLightPath")
+            lightpath.location = mix.location - Vector((200, -200))
+            blender_material.node_tree.links.new(lightpath.outputs[0], mix.inputs[0])
+
+            bsdf = blender_material.node_tree.nodes.new(type="ShaderNodeBsdfTransparent")
+            bsdf.location = mix.location - Vector((200, 0))
+            blender_material.node_tree.links.new(bsdf.outputs[0], mix.inputs[1])
+
+            rgb = blender_material.node_tree.nodes.new(type="ShaderNodeRGB")
+            rgb.location = mix.location - Vector((200, 200))
+            blender_material.node_tree.links.new(rgb.outputs[0], mix.inputs[2])
+
+            if surface_style.DiffuseColour and surface_style.DiffuseColour.is_a("IfcColourRgb"):
+                rgb.outputs[0].default_value = (
+                    surface_style.DiffuseColour.Red,
+                    surface_style.DiffuseColour.Green,
+                    surface_style.DiffuseColour.Blue,
+                    1,
+                )
+
+    def create_surface_style_with_textures(blender_material, rendering_style, texture_style):
+        if rendering_style.ReflectanceMethod in ["PHYSICAL", "NOTDEFINED"]:
+            pass
+        elif rendering_style.ReflectanceMethod == "FLAT":
+            pass
 
     def get_name(self, element):
         return "{}/{}".format(element.is_a(), element.Name)
