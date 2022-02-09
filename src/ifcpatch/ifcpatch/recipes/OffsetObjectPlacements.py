@@ -1,4 +1,3 @@
-
 # IfcPatch - IFC patching utiliy
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -58,7 +57,13 @@ class Patcher:
                 continue
 
             rotation_matrix = self.z_rotation_matrix(math.radians(angle))
-            relative_placement.Location.Coordinates = self.multiply_by_matrix(offset_location, rotation_matrix)
+
+            if len(self.args) == 5:
+                # Move then rotate, if you want
+                relative_placement.Location.Coordinates = self.multiply_by_matrix(offset_location, rotation_matrix)
+            else:
+                # Rotate then move, like Solibri
+                pass
 
             if placement.RelativePlacement.Axis:
                 z_axis = placement.RelativePlacement.Axis.DirectionRatios
