@@ -27,15 +27,6 @@ def add_style(ifc, style, obj=None):
         attributes = style.get_surface_shading_attributes(obj)
         ifc.run("style.add_surface_style", style=element, ifc_class="IfcSurfaceStyleShading", attributes=attributes)
 
-    if style.can_support_texture_style(obj):
-        textures = ifc.run("style.add_surface_textures", textures=style.get_surface_textures(obj))
-        ifc.run(
-            "style.add_surface_style",
-            style=element,
-            ifc_class="IfcSurfaceStyleWithTextures",
-            attributes={"Textures": textures},
-        )
-
     material = ifc.get_entity(obj)
     if material:
         ifc.run("style.assign_material_style", material=material, style=element, context=style.get_context(obj))
@@ -49,7 +40,7 @@ def remove_style(ifc, style, obj=None):
 
 
 def update_style_colours(ifc, style, obj=None):
-    element = ifc.get_entity(obj)
+    element = style.get_style(obj)
 
     if style.can_support_rendering_style(obj):
         rendering_style = style.get_surface_rendering_style(obj)
