@@ -33,6 +33,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import blenderbim.tool as tool
+from itertools import chain, accumulate
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.drawing.prop import get_diagram_scales
 
@@ -346,12 +347,12 @@ class IfcImporter:
         # FacetedBreps (without voids) are meshes. See #841.
         # Commented out as seems currently too slow.
         # if self.is_native_faceted_brep(representations):
-        #     self.native_data[element.GlobalId] = {
-        #         "representations": representations,
-        #         "representation": self.get_body_representation(element.Representation.Representations),
-        #         "type": "IfcFacetedBrep",
-        #     }
-        #     return True
+        #    self.native_data[element.GlobalId] = {
+        #        "representations": representations,
+        #        "representation": self.get_body_representation(element.Representation.Representations),
+        #        "type": "IfcFacetedBrep",
+        #    }
+        #    return True
 
     def is_native_swept_disk_solid(self, representations):
         for representation in representations:
@@ -562,7 +563,6 @@ class IfcImporter:
     def create_native_elements(self):
         total = 0
         checkpoint = time.time()
-        bm = bmesh.new()
         for element in self.native_elements:
             total += 1
             if total % 250 == 0:
@@ -584,14 +584,6 @@ class IfcImporter:
                 mesh.name = mesh_name
                 self.meshes[mesh_name] = mesh
             self.create_product(element, mesh=mesh)
-            if native_data["type"] == "IfcFacetedBrep":
-                # The current implementation doesn't reuse vertices, so we weld it after assigning materials.
-                # This welding isn't true to the representation, but is easy and seems inexpensive.
-                bm.from_mesh(mesh)
-                bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.001)
-                bm.to_mesh(mesh)
-                bm.clear()
-        bm.free()
         print("Done creating geometry")
 
     def create_spatial_elements(self):
@@ -853,77 +845,137 @@ class IfcImporter:
 
     def create_native_faceted_brep(self, element, mesh_name):
         # TODO: georeferencing?
-        # Note: to make this algorithm simpler (it's already confusing) we don't reuse / weld verts
         # co [x y z x y z x y z ...]
         # vertex_index [i i i i i ...]
         # loop_start [0 3 6 9 ...] (for tris)
         # loop_total [3 3 3 3 ...] (for tris)
-        co = []
-        vertex_index = []
-        loop_start = []
-        loop_total = []
-        total_verts = 0
-        total_polygons = 0
-        materials = []
-        material_ids = []
-        item_index = 0
+        self.mesh_data = {
+            "co": [],
+            "vertex_index": [],
+            "loop_start": [],
+            "loop_total": [],
+            "total_verts": 0,
+            "total_polygons": 0,
+            "materials": [],
+            "material_ids": [],
+        }
 
-        for representation in self.native_data[element.GlobalId]["representations"]:
-            for item in representation["raw"].Items:
-                # TODO: if I reimplement native faceted breps, recheck this material implementation
-                materials.append(self.get_representation_item_material_name(item) or "NULLMAT")
-                mesh = item.get_info_2(recursive=True)  # See bug #841
-                total_item_polygons = 0
-                for face in mesh["Outer"]["CfsFaces"]:
-                    # Blender cannot handle faces with holes.
-                    if len(face["Bounds"]) > 1:
-                        inner_bounds = []
-                        for bound in face["Bounds"]:
-                            if bound["type"] == "IfcFaceOuterBound":
-                                outer_bound = [[p["Coordinates"] for p in bound["Bound"]["Polygon"]]]
-                            else:
-                                inner_bounds.append([p["Coordinates"] for p in bound["Bound"]["Polygon"]])
-                        points = outer_bound[0].copy()
-                        [points.extend(p) for p in inner_bounds]
-                        tessellated_polygons = mathutils.geometry.tessellate_polygon(outer_bound + inner_bounds)
-                        tessellated_faces = [({"Coordinates": points[pi]} for pi in t) for t in tessellated_polygons]
-                    else:
-                        tessellated_faces = [face["Bounds"][0]["Bound"]["Polygon"]]
+        for representation in element.Representation.Representations:
+            if representation.ContextOfItems.id() not in self.body_contexts:
+                continue
+            self.convert_representation(representation)
 
-                    for tessellated_face in tessellated_faces:
-                        loop_start.append(total_verts)
-                        loop_count = 0
-                        total_polygons += 1
-                        total_item_polygons += 1
-                        for point in tessellated_face:
-                            co.extend(
-                                representation["matrix"]
-                                @ mathutils.Vector((c * self.unit_scale for c in point["Coordinates"]))
-                            )
-                            total_verts += 1
-                            loop_count += 1
-                        loop_total.append(loop_count)
-                vertex_index = range(0, total_verts)
-                if materials[item_index] == "NULLMAT":
-                    # Magic number -1 represents no material, until this has a better approach
-                    material_ids += [-1] * total_item_polygons
-                else:
-                    material_ids += [item_index] * total_item_polygons
-                item_index += 1
-        mesh = bpy.data.meshes.new("Tester")
-
-        mesh.vertices.add(total_verts)
-        mesh.vertices.foreach_set("co", co)
-        mesh.loops.add(total_verts)
-        mesh.loops.foreach_set("vertex_index", vertex_index)
-        mesh.polygons.add(total_polygons)
-        mesh.polygons.foreach_set("loop_start", loop_start)
-        mesh.polygons.foreach_set("loop_total", loop_total)
+        mesh = bpy.data.meshes.new("Native")
+        mesh.vertices.add(self.mesh_data["total_verts"])
+        mesh.vertices.foreach_set("co", [c * self.unit_scale for c in self.mesh_data["co"]])
+        # mesh.vertices.foreach_set("co", self.mesh_data["co"])
+        mesh.loops.add(len(self.mesh_data["vertex_index"]))
+        mesh.loops.foreach_set("vertex_index", self.mesh_data["vertex_index"])
+        mesh.polygons.add(self.mesh_data["total_polygons"])
+        mesh.polygons.foreach_set("loop_start", self.mesh_data["loop_start"])
+        mesh.polygons.foreach_set("loop_total", self.mesh_data["loop_total"])
         mesh.update()
 
-        mesh["ios_materials"] = materials
-        mesh["ios_material_ids"] = material_ids
+        mesh["ios_materials"] = self.mesh_data["materials"]
+        mesh["ios_material_ids"] = self.mesh_data["material_ids"]
         return mesh
+
+    def convert_representation(self, representation):
+        for item in representation.Items:
+            self.convert_representation_item(item)
+
+    def convert_representation_item(self, item):
+        if item.is_a("IfcMappedItem"):
+            # mapping_target = matrix
+            self.convert_representation(item.MappingSource.MappedRepresentation)
+        elif item.is_a() == "IfcFacetedBrep":
+            self.convert_representation_item_faceted_brep(item)
+
+    def convert_representation_item_faceted_brep(self, item):
+        # On a few occasions, we flatten a list. This seems to be the most efficient way to do it.
+        # https://stackoverflow.com/questions/20112776/how-do-i-flatten-a-list-of-lists-nested-lists
+        mesh = item.get_info_2(recursive=True)
+
+        # For huge face sets it might be better to do a "flatmap" instead of sum()
+        # bounds = sum((f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1), ())
+        bounds = tuple(chain.from_iterable(f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1))
+        # Here are some untested alternatives, are they faster?
+        # bounds = tuple((f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1))[0]
+        # bounds = chain.from_iterable(f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1)
+
+        polygons = [[(p["id"], p["Coordinates"]) for p in b["Bound"]["Polygon"]] for b in bounds]
+
+        for face in mesh["Outer"]["CfsFaces"]:
+            # Blender cannot handle faces with holes.
+            if len(face["Bounds"]) > 1:
+                inner_bounds = []
+                inner_bound_point_ids = []
+                for bound in face["Bounds"]:
+                    if bound["type"] == "IfcFaceOuterBound":
+                        outer_bound = [[p["Coordinates"] for p in bound["Bound"]["Polygon"]]]
+                        outer_bound_point_ids = [[p["id"] for p in bound["Bound"]["Polygon"]]]
+                    else:
+                        inner_bounds.append([p["Coordinates"] for p in bound["Bound"]["Polygon"]])
+                        inner_bound_point_ids.append([p["id"] for p in bound["Bound"]["Polygon"]])
+                points = outer_bound[0].copy()
+                [points.extend(p) for p in inner_bounds]
+                point_ids = outer_bound_point_ids[0].copy()
+                [point_ids.extend(p) for p in inner_bound_point_ids]
+
+                tessellated_polygons = mathutils.geometry.tessellate_polygon(outer_bound + inner_bounds)
+                polygons.extend([[(point_ids[pi], points[pi]) for pi in t] for t in tessellated_polygons])
+
+        # Clever vertex welding algorithm by Thomas Krijnen. See #841.
+
+        # by id
+        di0 = {}
+        # by coords
+        di1 = {}
+
+        vertex_index_offset = self.mesh_data["total_verts"]
+
+        def lookup(id_coords):
+            idx = di0.get(id_coords[0])
+            if idx is None:
+                idx = di1.get(id_coords[1])
+                if idx is None:
+                    l = len(di0)
+                    di0[id_coords[0]] = l
+                    di1[id_coords[1]] = l
+                    return l + vertex_index_offset
+                else:
+                    return idx + vertex_index_offset
+            else:
+                return idx + vertex_index_offset
+
+        mapped_polygons = [list(map(lookup, p)) for p in polygons]
+
+        self.mesh_data["vertex_index"].extend(chain.from_iterable(mapped_polygons))
+
+        # Flattened vertex coords
+        self.mesh_data["co"].extend(chain.from_iterable(di1.keys()))
+        self.mesh_data["total_verts"] += len(di1.keys())
+        loop_total = [len(p) for p in mapped_polygons]
+        total_polygons = len(mapped_polygons)
+        self.mesh_data["total_polygons"] += total_polygons
+
+        self.mesh_data["materials"].append(self.get_representation_item_material_name(item) or "NULLMAT")
+        material_index = len(self.mesh_data["materials"]) - 1
+        if self.mesh_data["materials"][material_index] == "NULLMAT":
+            # Magic number -1 represents no material, until this has a better approach
+            self.mesh_data["material_ids"] += [-1] * total_polygons
+        else:
+            self.mesh_data["material_ids"] += [material_index] * total_polygons
+
+        if self.mesh_data["loop_start"]:
+            loop_start_offset = self.mesh_data["loop_start"][-1] + self.mesh_data["loop_total"][-1]
+        else:
+            loop_start_offset = 0
+
+        loop_start = [loop_start_offset] + [loop_start_offset + i for i in list(accumulate(loop_total[0:-1]))]
+        self.mesh_data["loop_total"].extend(loop_total)
+        self.mesh_data["loop_start"].extend(loop_start)
+        # list(di1.keys())
 
     def create_native_swept_disk_solid(self, element, mesh_name):
         # TODO: georeferencing?
