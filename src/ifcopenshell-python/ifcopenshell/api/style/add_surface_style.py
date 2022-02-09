@@ -39,7 +39,7 @@ class Usecase:
             select_class = "IfcSurfaceStyleShading"
         duplicate_items = [s for s in styles if s.is_a(select_class)]
         for duplicate_item in duplicate_items:
-            self.file.remove(duplicate_item)
+            ifcopenshell.api.run("style.remove_surface_style", self.file, style=duplicate_item)
 
         styles = list(self.settings["style"].Styles or [])
         styles.append(style_item)

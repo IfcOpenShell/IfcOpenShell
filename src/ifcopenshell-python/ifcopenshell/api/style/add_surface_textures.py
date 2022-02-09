@@ -24,69 +24,117 @@ class Usecase:
     def __init__(self, file, **settings):
         # TODO: This usecase currently depends on Blender's data model
         self.file = file
-        # Textures is assumed to be a dictionary of texture maps.
-        # The key is the texture map name, and the value is the last texture manipulation in the graph.
-        self.settings = {"textures": None}
+        self.settings = {"material": None, "uv_maps": []}
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
+        if self.file.schema == "IFC2X3":
+            # TODO: research how compatible IFC2X3 and IFC4 textures are
+            return []
+
+        # We optimistically assume the user has specified one of these valid combinations
+        # https://docs.blender.org/manual/en/dev/addons/import_export/scene_gltf2.html
+        # glTF, X3D, and IFC are compatible. As long as they have something that
+        # loosely resembles the node tree, we treat it as valid.
         self.textures = []
-        for texture, node in self.settings["textures"].items():
-            parameters = self.get_default_parameters(texture)
-            self.traverse_node(node, parameters)
-        return list(reversed(self.textures))
+        output = {n.type: n for n in self.settings["material"].node_tree.nodes}.get("OUTPUT_MATERIAL", None)
 
-    def get_default_parameters(self, texture):
-        return {"mode": "REPLACE", "source": "", "function": "", "rgb": "1 1 1", "alpha": "1", "texture": texture}
+        if not output:
+            return self.textures
 
-    def traverse_node(self, node, parameters):
-        if node.type == "MIX_RGB":
-            if node.blend_type == "MIX":
-                parameters["mode"] = "REPLACE"
-            elif node.blend_type == "ADD":
-                parameters["mode"] = "ADD"
-            elif node.blend_type == "MULTIPLY":
-                parameters["mode"] = "MODULATE"
+        bsdf = output.inputs["Surface"].links[0].from_node
 
-            if not node.inputs["Fac"].links:
-                if parameters["mode"] == "REPLACE":
-                    parameters["mode"] = "BLEND"
-                parameters["mode"] += "FACTORALPHA"
-                parameters["alpha"] = str(node.inputs["Fac"].default_value)
+        if bsdf.type == "ADD_SHADER":
+            for socket in bsdf.inputs:
+                if socket.links and socket.links[0].from_node.type == "BSDF_PRINCIPLED":
+                    bsdf = socket.links[0].from_node
+                    break
 
-            if node.inputs["Color1"].links and node.inputs["Color2"].links:
-                self.traverse_node(node.inputs["Color2"].links[0].from_node, parameters)
-                self.traverse_node(
-                    node.inputs["Color1"].links[0].from_node, self.get_default_parameters(parameters["texture"])
-                )
-            elif node.inputs["Color1"].links:
-                parameters["rgb"] = " ".join(map(str, list(node.inputs["Color2"].default_value)[0:3]))
-                parameters["source"] = "FACTOR"
-                self.traverse_node(node.inputs["Color1"].links[0].from_node, parameters)
-            elif node.inputs["Color2"].links:
-                parameters["rgb"] = " ".join(map(str, list(node.inputs["Color1"].default_value)[0:3]))
-                parameters["source"] = "FACTOR"
-                self.traverse_node(node.inputs["Color2"].links[0].from_node, parameters)
-        elif node.type == "VECT_MATH":
-            # TODO Handle 2X, 4X, and signed
-            pass
-        elif node.type == "INVERT":
-            parameters["function"] = "COMPLEMENT" if parameters["function"] == "" else ""
-        elif node.type == "TEX_IMAGE":
-            return self.create_surface_texture(node, parameters)
-        else:
-            # TODO keep traversing backwards
-            pass
+        if bsdf.type == "MIX_SHADER":
+            self.detect_unlit_emissive_map(bsdf)
+        elif bsdf.type == "BSDF_PRINCIPLED":
+            self.detect_normal_map(bsdf)
+            self.detect_emissive_map(bsdf)
+            self.detect_metallicroughness_map(bsdf)
+            self.detect_occlusion_map()
+            self.detect_diffuse_map(bsdf)
+        # We do not support Phong shading. What year is this, 1995?
+        return self.textures
 
-    def create_surface_texture(self, node, parameters):
-        self.textures.append(
-            self.file.create_entity(
-                "IfcImageTexture",
-                RepeatS=node.extension == "REPEAT",
-                RepeatT=node.extension == "REPEAT",
-                Mode=parameters["mode"],
-                Parameter=[parameters[p] for p in ["source", "function", "rgb", "alpha", "texture"]],
-                URLReference=node.image.filepath,
-            )
+    def detect_unlit_emissive_map(self, bsdf):
+        for socket in bsdf.inputs:
+            if socket.links and socket.links[0].from_node.type == "TEX_IMAGE":
+                return self.create_surface_texture(socket.links[0].from_node, "EMISSIVE")
+
+    def detect_normal_map(self, bsdf):
+        if bsdf.inputs["Normal"].links and bsdf.inputs["Normal"].links[0].from_node.type == "NORMAL_MAP":
+            normal = bsdf.inputs["Normal"].links[0].from_node
+            if normal.inputs["Color"].links and normal.inputs["Color"].links[0].from_node.type == "TEX_IMAGE":
+                return self.create_surface_texture(normal.inputs["Color"].links[0].from_node, "NORMAL")
+
+    def detect_emissive_map(self, bsdf):
+        if bsdf.outputs[0].links[0].to_node.type != "ADD_SHADER":
+            return
+        bsdf = bsdf.outputs[0].links[0].to_node
+        for socket in bsdf.inputs:
+            if socket.links and socket.links[0].from_node.type == "EMISSION":
+                bsdf = socket.links[0].from_node
+                if bsdf.inputs["Color"].links and bsdf.inputs["Color"].links[0].from_node.type == "TEX_IMAGE":
+                    return self.create_surface_texture(bsdf.inputs["Color"].links[0].from_node, "EMISSIVE")
+
+    def detect_metallicroughness_map(self, bsdf):
+        if bsdf.inputs["Metallic"].links and bsdf.inputs["Metallic"].links[0].from_node.type == "SEPRGB":
+            seprgb = bsdf.inputs["Metallic"].links[0].from_node
+            if seprgb.inputs["Image"].links and seprgb.inputs["Image"].links[0].from_node.type == "TEX_IMAGE":
+                return self.create_surface_texture(seprgb.inputs["Image"].links[0].from_node, "METALLICROUGHNESS")
+        if bsdf.inputs["Roughness"].links and bsdf.inputs["Roughness"].links[0].from_node.type == "SEPRGB":
+            seprgb = bsdf.inputs["Roughness"].links[0].from_node
+            if seprgb.inputs["Image"].links and seprgb.inputs["Image"].links[0].from_node.type == "TEX_IMAGE":
+                return self.create_surface_texture(seprgb.inputs["Image"].links[0].from_node, "METALLICROUGHNESS")
+
+    def detect_occlusion_map(self):
+        for node in self.settings["material"].node_tree.nodes:
+            if node.type != "GROUP" or node.name != "glTF Settings" or not node.inputs or not node.inputs[0].links:
+                continue
+            from_node = node.inputs[0].links[0].from_node
+            if from_node.type == "SEPRGB":
+                sep = from_node
+                if sep.inputs["Image"].links and sep.inputs["Image"].links[0].from_node.type == "TEX_IMAGE":
+                    return self.create_surface_texture(sep.inputs["Image"].links[0].from_node, "OCCLUSION")
+            elif from_node.type == "TEX_IMAGE":
+                return self.create_surface_texture(from_node, "OCCLUSION")
+
+    def detect_diffuse_map(self, bsdf):
+        links = bsdf.inputs["Base Color"].links
+        if links and links[0].from_node.type == "TEX_IMAGE":
+            return self.create_surface_texture(links[0].from_node, "DIFFUSE")
+
+    def create_surface_texture(self, node, mode):
+        texture = self.file.create_entity(
+            "IfcImageTexture",
+            RepeatS=node.extension == "REPEAT",
+            RepeatT=node.extension == "REPEAT",
+            Mode=mode,
+            URLReference=node.image.filepath,
         )
+        self.textures.append(texture)
+        self.process_texture_coordinates(node, texture)
+
+    def process_texture_coordinates(self, node, texture):
+        if node.inputs["Vector"].links and node.inputs["Vector"].links[0].from_node.type == "TEX_COORD":
+            if node.inputs["Vector"].links[0].from_socket.name == "UV":
+                self.apply_uv_map_to_texture(texture)
+            elif node.inputs["Vector"].links[0].from_socket.name == "Generated":
+                self.file.create_entity("IfcTextureCoordinateGenerator", Maps=[texture], Mode="COORD")
+            elif node.inputs["Vector"].links[0].from_socket.name == "Camera":
+                self.file.create_entity("IfcTextureCoordinateGenerator", Maps=[texture], Mode="COORD-EYE")
+        elif node.inputs["Vector"].links and node.inputs["Vector"].links[0].from_node.type == "UVMAP":
+            self.apply_uv_map_to_texture(texture)
+
+    def apply_uv_map_to_texture(self, texture):
+        print('texture', texture)
+        for uv_map in self.settings["uv_maps"]:
+            maps = set(uv_map.Maps or [])
+            maps.add(texture)
+            uv_map.Maps = list(maps)

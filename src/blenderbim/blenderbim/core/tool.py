@@ -396,7 +396,6 @@ class Structural:
 @interface
 class Style:
     def can_support_rendering_style(cls, obj): pass
-    def can_support_texture_style(cls, obj): pass
     def disable_editing(cls, obj): pass
     def enable_editing(cls, obj): pass
     def export_surface_attributes(cls, obj): pass
@@ -408,7 +407,7 @@ class Style:
     def get_surface_shading_attributes(cls, obj): pass
     def get_surface_shading_style(cls, obj): pass
     def get_surface_texture_style(cls, obj): pass
-    def get_surface_textures(cls, obj): pass
+    def get_uv_maps(cls, representation): pass
     def import_surface_attributes(cls, style, obj): pass
 
 
