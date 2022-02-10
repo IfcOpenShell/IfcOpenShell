@@ -137,7 +137,10 @@ simpletype_impl_cast_templated = (
 simpletype_impl_declaration = "return *%(schema_name_upper)s_%(class_name)s_type;"
 
 select = """%(documentation)s
-class IFC_PARSE_API %(name)s : public virtual IfcUtil::IfcBaseInterface {};
+class IFC_PARSE_API %(name)s : public virtual IfcUtil::IfcBaseInterface {
+public:
+    static const IfcParse::select_type& Class();
+};
 """
 
 enumeration = """class IFC_PARSE_API %(name)s : public IfcUtil::IfcBaseType {
@@ -165,6 +168,10 @@ public:
     %(name)s (%(constructor_arguments)s);
     typedef aggregate_of< %(name)s > list;
 };
+"""
+
+select_function = """
+const IfcParse::select_type& %(schema_name)s::%(name)s::Class() { return *%(schema_name_upper)s_%(name)s_type; }
 """
 
 enumeration_function = """
