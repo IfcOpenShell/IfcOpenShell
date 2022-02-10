@@ -36,6 +36,10 @@ class Ifc(blenderbim.core.tool.Ifc):
         return IfcStore.get_file()
 
     @classmethod
+    def get_path(cls):
+        return IfcStore.path
+
+    @classmethod
     def get_schema(cls):
         if IfcStore.get_file():
             return IfcStore.get_file().schema

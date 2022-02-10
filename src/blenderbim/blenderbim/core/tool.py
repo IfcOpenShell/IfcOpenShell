@@ -217,6 +217,7 @@ class Geometry:
     def run_style_add_style(cls, obj=None): pass
     def should_force_faceted_brep(cls): pass
     def should_force_triangulation(cls): pass
+    def should_generate_uvs(cls, obj): pass
     def should_use_presentation_style_assignment(cls): pass
 
 
@@ -323,6 +324,7 @@ class Project:
     def run_owner_set_user(cls, user=None): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def run_unit_assign_scene_units(cls): pass
+    def set_active_spatial_element(cls, obj): pass
     def set_context(cls, context): pass
 
 
@@ -395,7 +397,6 @@ class Structural:
 @interface
 class Style:
     def can_support_rendering_style(cls, obj): pass
-    def can_support_texture_style(cls, obj): pass
     def disable_editing(cls, obj): pass
     def enable_editing(cls, obj): pass
     def export_surface_attributes(cls, obj): pass
@@ -407,7 +408,7 @@ class Style:
     def get_surface_shading_attributes(cls, obj): pass
     def get_surface_shading_style(cls, obj): pass
     def get_surface_texture_style(cls, obj): pass
-    def get_surface_textures(cls, obj): pass
+    def get_uv_maps(cls, representation): pass
     def import_surface_attributes(cls, style, obj): pass
 
 

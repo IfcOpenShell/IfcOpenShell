@@ -27,15 +27,6 @@ def add_style(ifc, style, obj=None):
         attributes = style.get_surface_shading_attributes(obj)
         ifc.run("style.add_surface_style", style=element, ifc_class="IfcSurfaceStyleShading", attributes=attributes)
 
-    if style.can_support_texture_style(obj):
-        textures = ifc.run("style.add_surface_textures", textures=style.get_surface_textures(obj))
-        ifc.run(
-            "style.add_surface_style",
-            style=element,
-            ifc_class="IfcSurfaceStyleWithTextures",
-            attributes={"Textures": textures},
-        )
-
     material = ifc.get_entity(obj)
     if material:
         ifc.run("style.assign_material_style", material=material, style=element, context=style.get_context(obj))
@@ -49,7 +40,7 @@ def remove_style(ifc, style, obj=None):
 
 
 def update_style_colours(ifc, style, obj=None):
-    element = ifc.get_entity(obj)
+    element = style.get_style(obj)
 
     if style.can_support_rendering_style(obj):
         rendering_style = style.get_surface_rendering_style(obj)
@@ -68,20 +59,25 @@ def update_style_colours(ifc, style, obj=None):
         else:
             ifc.run("style.add_surface_style", style=element, ifc_class="IfcSurfaceStyleShading", attributes=attributes)
 
+
+def update_style_textures(ifc, style, obj=None, representation=None):
+    element = style.get_style(obj)
+
+    uv_maps = style.get_uv_maps(representation)
+    textures = ifc.run("style.add_surface_textures", material=obj, uv_maps=uv_maps)
     texture_style = style.get_surface_texture_style(obj)
-    if style.can_support_texture_style(obj):
-        textures = ifc.run("style.add_surface_textures", textures=style.get_surface_textures(obj))
+
+    if textures:
         if texture_style:
-            ifc.run("style.edit_surface_style", style=texture_style, attributes={"Textures": textures})
-        else:
-            ifc.run(
-                "style.add_surface_style",
-                style=element,
-                ifc_class="IfcSurfaceStyleWithTextures",
-                attributes={"Textures": textures},
-            )
+            ifc.run("style.remove_surface_style", style=texture_style)
+        ifc.run(
+            "style.add_surface_style",
+            style=element,
+            ifc_class="IfcSurfaceStyleWithTextures",
+            attributes={"Textures": textures},
+        )
     elif texture_style:
-        ifc.run("style.remove_style", style=texture_style)
+        ifc.run("style.remove_surface_style", style=texture_style)
 
 
 def unlink_style(ifc, style, obj=None):

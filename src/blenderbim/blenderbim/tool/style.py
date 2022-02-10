@@ -28,41 +28,6 @@ class Style(blenderbim.core.tool.Style):
         return obj.use_nodes and hasattr(obj.node_tree, "nodes")
 
     @classmethod
-    def can_support_texture_style(cls, obj):
-        if not obj.node_tree:
-            return False
-
-        output = {n.type: n for n in obj.node_tree.nodes}.get("OUTPUT_MATERIAL", None)
-        if not output:
-            return False
-
-        # For now, we assume only a single BSDF is allowed in our node tree.
-        try:
-            bsdf = output.inputs["Surface"].links[0].from_node
-        except:
-            return False
-
-        # For a quick check whether we have a compatible node tree, we check
-        # whether or not we have at least one image texture node that has a
-        # texture assigned and outputs to the bsdf.
-        textures = [n for n in obj.node_tree.nodes if n.type == "TEX_IMAGE" and n.image]
-
-        def does_texture_connect_to(node, target):
-            if node == target:
-                return True
-            try:
-                output = node.outputs[0].links[0].to_node
-                return does_texture_connect_to(output, target)
-            except:
-                return False
-
-        for texture in textures:
-            if does_texture_connect_to(texture, bsdf):
-                return True
-
-        return False
-
-    @classmethod
     def disable_editing(cls, obj):
         obj.BIMStyleProperties.is_editing = False
 
@@ -129,6 +94,7 @@ class Style(blenderbim.core.tool.Style):
         elif "BSDF_PRINCIPLED" in bsdfs:
             attributes["ReflectanceMethod"] = "NOTDEFINED"
             bsdf = bsdfs["BSDF_PRINCIPLED"]
+            attributes["SpecularColour"] = round(bsdf.inputs["Metallic"].default_value, 3)
             attributes["SpecularHighlight"] = {"IfcSpecularRoughness": round(bsdf.inputs["Roughness"].default_value, 3)}
             diffuse_color = bsdf.inputs["Base Color"].default_value
             attributes["Transparency"] = 1 - bsdf.inputs["Alpha"].default_value
@@ -174,7 +140,7 @@ class Style(blenderbim.core.tool.Style):
     def get_surface_shading_style(cls, obj):
         if obj.BIMMaterialProperties.ifc_style_id:
             style = tool.Ifc.get().by_id(obj.BIMMaterialProperties.ifc_style_id)
-            items = [s for s in style.Styles if s.is_a("IfcSurfaceStyleShading")]
+            items = [s for s in style.Styles if s.is_a() == "IfcSurfaceStyleShading"]
             if items:
                 return items[0]
 
@@ -187,47 +153,18 @@ class Style(blenderbim.core.tool.Style):
                 return items[0]
 
     @classmethod
-    def get_surface_textures(cls, obj):
-        output = {n.type: n for n in obj.node_tree.nodes}.get("OUTPUT_MATERIAL", None)
-        bsdf = output.inputs["Surface"].links[0].from_node
-        node_mappings = {
-            "BSDF_GLOSSY": {
-                "DIFFUSE": "Color",
-                "SHININESS": "Roughness",
-                "NORMAL": "Normal",
-            },
-            "BSDF_DIFFUSE": {
-                "DIFFUSE": "Color",
-                "SHININESS": "Roughness",
-                "NORMAL": "Normal",
-            },
-            "BSDF_GLASS": {
-                "DIFFUSE": "Color",
-                "SHININESS": "Roughness",
-                "NORMAL": "Normal",
-            },
-            "EMISSION": {
-                "DIFFUSE": "Color",
-            },
-            "BSDF_PRINCIPLED": {
-                "DIFFUSE": "Base Color",
-                "SHININESS": "Roughness",
-                "NORMAL": "Normal",
-                "SPECULAR": "Specular",
-                "SELFILLUMINATION": "Emission Strength",
-                "OPACITY": "Alpha",
-            },
-        }
+    def get_uv_maps(cls, representation):
+        items = []
+        for item in representation.Items:
+            if item.is_a("IfcMappedItem"):
+                items.extend(item.MappingSource.MappedRepresentation.Items)
+            items.append(item)
 
-        maps = {}
-        if bsdf.type not in node_mappings:
-            return maps
-
-        for map_type, input_name in node_mappings[bsdf.type].items():
-            if bsdf.inputs[input_name].links:
-                maps[map_type] = bsdf.inputs[input_name].links[0].from_node
-
-        return maps
+        results = []
+        for item in items:
+            for uv_map in item.HasTextures or []:
+                results.append(uv_map)
+        return results
 
     @classmethod
     def import_surface_attributes(cls, style, obj):

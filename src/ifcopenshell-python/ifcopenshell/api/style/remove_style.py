@@ -28,7 +28,9 @@ class Usecase:
 
     def execute(self):
         self.purge_styled_items(self.settings["style"])
-        ifcopenshell.util.element.remove_deep(self.file, self.settings["style"])
+        for style in self.settings["style"].Styles or []:
+            ifcopenshell.api.run("style.remove_surface_style", self.file, style=style)
+        self.file.remove(self.settings["style"])
 
     def purge_styled_items(self, style):
         for inverse in self.file.get_inverse(style):

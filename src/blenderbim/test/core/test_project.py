@@ -63,6 +63,7 @@ class TestCreateProject:
         project.run_aggregate_assign_object(relating_obj="building", related_obj="storey").should_be_called()
 
         project.set_context("body").should_be_called()
+        project.set_active_spatial_element("storey").should_be_called()
 
         subject.create_project(ifc, project, schema="IFC4", template=None)
 
@@ -103,6 +104,7 @@ class TestCreateProject:
         project.run_aggregate_assign_object(relating_obj="building", related_obj="storey").should_be_called()
 
         project.set_context("body").should_be_called()
+        project.set_active_spatial_element("storey").should_be_called()
 
         project.append_all_types_from_template("template").should_be_called()
 
@@ -152,5 +154,6 @@ class TestCreateProject:
         project.run_aggregate_assign_object(relating_obj="building", related_obj="storey").should_be_called()
 
         project.set_context("body").should_be_called()
+        project.set_active_spatial_element("storey").should_be_called()
 
         subject.create_project(ifc, project, schema="IFC2X3", template=None)

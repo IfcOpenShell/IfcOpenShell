@@ -299,5 +299,18 @@ class Geometry(blenderbim.core.tool.Geometry):
         return bpy.context.scene.BIMGeometryProperties.should_force_triangulation
 
     @classmethod
+    def should_generate_uvs(cls, obj):
+        if tool.Ifc.get().schema == "IFC2X3":
+            return False
+        for slot in obj.material_slots:
+            if slot.material and slot.material.use_nodes:
+                for node in slot.material.node_tree.nodes:
+                    if node.type == "TEX_COORD" and node.outputs["UV"].links:
+                        return True
+                    elif node.type == "UVMAP" and node.outputs["UV"].links and node.uv_map:
+                        return True
+        return False
+
+    @classmethod
     def should_use_presentation_style_assignment(cls):
         return bpy.context.scene.BIMGeometryProperties.should_use_presentation_style_assignment
