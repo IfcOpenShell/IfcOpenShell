@@ -34,6 +34,8 @@ class IfcEntityInstanceData;
 
 namespace IfcUtil {
 	class IfcBaseClass;
+	class IfcBaseEntity;
+	class IfcBaseType;
 }
 
 namespace IfcParse {
