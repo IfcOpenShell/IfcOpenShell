@@ -282,6 +282,12 @@ class IfcImporter:
             for c in self.file.by_type("IfcGeometricRepresentationSubContext")
             if c.ContextIdentifier in ["Body", "Facetation"]
         ]
+        # Ideally, all representations should be in a subcontext, but some BIM programs don't do this correctly
+        self.body_contexts.extend([
+            c.id()
+            for c in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)
+            if c.ContextType == "Model"
+        ])
         if self.body_contexts:
             self.settings.set_context_ids(self.body_contexts)
         # Annotation is to accommodate broken Revit files
@@ -357,7 +363,8 @@ class IfcImporter:
 
     def is_native_swept_disk_solid(self, representations):
         for representation in representations:
-            if len(representation["raw"].Items) == 1 and representation["raw"].Items[0].is_a("IfcSweptDiskSolid"):
+            items = representation["raw"].Items or [] # Be forgiving of invalid IFCs because Revit :(
+            if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
                 return True
         return False
 
