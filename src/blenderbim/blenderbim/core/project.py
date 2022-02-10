@@ -58,6 +58,7 @@ def create_project(ifc, project, schema=None, template=None):
     project.run_aggregate_assign_object(relating_obj=building, related_obj=storey)
 
     project.set_context(body)
+    project.set_active_spatial_element(storey)
 
     if template:
         project.append_all_types_from_template(template)
