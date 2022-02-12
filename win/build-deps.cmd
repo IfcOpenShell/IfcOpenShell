@@ -227,7 +227,12 @@ powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%U
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\build.vs19\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
+if "%VS_VER%"=="2017" (
+  set mpfr_sln=build.vc15
+) else (
+  set mpfr_sln=build.vs19
+)
+call :BuildSolution "%DEPENDENCY_DIR%\%mpfr_sln%\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM This command fails because not all msvc projects are patched with the right sdk version
 IF NOT EXIST lib\%VS_PLATFORM%\Release\mpfr.lib GOTO :Error
