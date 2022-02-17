@@ -35,9 +35,12 @@ for schema in ["IFC2X3", "IFC4"]:
     for element, element_types in entity_to_type_map[schema].items():
         for element_type in element_types:
             type_to_entity_map[schema].setdefault(element_type, []).append(element)
-    # TODO: this method just fails for IFC2X3 because 2X3 type mapping is just so broken.
-    # Uncomment the following line to see how bad it is.
-    # print(type_to_entity_map[schema])
+    if schema == "IFC2X3":
+        # There is no official mapping for IFC2X3 but this method gets us something that looks correct
+        for element_type, elements in type_to_entity_map[schema].items():
+            guessed_element = element_type[0:-len("Type")]
+            if guessed_element in elements:
+                type_to_entity_map[schema][element_type] = [e for e in elements if guessed_element in e]
 
 
 def get_applicable_types(ifc_class, schema="IFC4"):
