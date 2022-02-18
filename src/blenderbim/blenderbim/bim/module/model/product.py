@@ -25,7 +25,7 @@ import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.core.type
 import blenderbim.core.geometry
-from . import wall, slab, profile
+from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
@@ -80,6 +80,9 @@ class AddTypeInstance(bpy.types.Operator):
                 return {"FINISHED"}
         elif material and material.is_a("IfcMaterialLayerSet"):
             if self.generate_layered_element(ifc_class, relating_type):
+                return {"FINISHED"}
+        if relating_type.is_a("IfcFlowSegmentType"):
+            if mep.MepGenerator(relating_type).generate():
                 return {"FINISHED"}
 
         building_obj = None
