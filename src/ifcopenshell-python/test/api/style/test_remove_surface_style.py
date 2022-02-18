@@ -23,7 +23,7 @@ import ifcopenshell.api
 
 class TestRemoveSurfaceStyle(test.bootstrap.IFC4):
     def test_removing_a_shading_style(self):
-        style = self.file.createIfcSurfaceStyleShading(SurfaceColour=self.file.createIfcColourRgb())
+        style = self.file.createIfcSurfaceStyleShading(SurfaceColour=self.file.createIfcColourRgb(None, 1, 1, 1))
         ifcopenshell.api.run("style.remove_surface_style", self.file, style=style)
         assert len(list(self.file)) == 0
 
@@ -39,3 +39,19 @@ class TestRemoveSurfaceStyle(test.bootstrap.IFC4):
         style = self.file.createIfcSurfaceStyleWithTextures(Textures=[texture])
         ifcopenshell.api.run("style.remove_surface_style", self.file, style=style)
         assert len(list(self.file)) == 0
+
+    def test_removing_a_rendering_style(self):
+        style = self.file.createIfcSurfaceStyleRendering(
+            SurfaceColour=self.file.createIfcColourRgb(None, 1, 1, 1),
+            Transparency=0.0,
+            DiffuseColour=self.file.createIfcColourRgb(None, 1, 1, 1),
+            TransmissionColour=self.file.createIfcNormalisedRatioMeasure(0.5),
+            SpecularHighlight=self.file.createIfcSpecularRoughness(0.5),
+            ReflectanceMethod="NOTDEFINED",
+        )
+        # See issue #2046, IfcOpenShell exhibits different behaviour - we can
+        # remove entity_instances() without an ID if we create them afresh, but
+        # will segfault if we load them stale.
+        g = ifcopenshell.file.from_string(self.file.wrapped_data.to_string())
+        ifcopenshell.api.run("style.remove_surface_style", g, style=g.by_type("IfcSurfaceStyleRendering")[0])
+        assert len(list(g)) == 0
