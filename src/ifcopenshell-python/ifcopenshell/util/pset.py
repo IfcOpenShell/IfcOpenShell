@@ -63,7 +63,9 @@ class PsetQto:
                 if qto_only:
                     if not prop_set.Name.startswith("Qto_"):
                         continue
-                if any_class or self.is_applicable(entity, prop_set.ApplicableEntity or "IfcRoot", predefined_type):
+                if any_class or self.is_applicable(
+                    entity, prop_set.ApplicableEntity or "IfcRoot", predefined_type, prop_set.TemplateType
+                ):
                     result.append(prop_set)
         return result
 
@@ -72,7 +74,9 @@ class PsetQto:
         """Return names instead of objects for other use eg. enum"""
         return [prop_set.Name for prop_set in self.get_applicable(ifc_class, predefined_type, pset_only, qto_only)]
 
-    def is_applicable(self, entity: entity_instance, applicables: str, predefined_type="") -> bool:
+    def is_applicable(
+        self, entity: entity_instance, applicables: str, predefined_type="", template_type="NOTDEFINED"
+    ) -> bool:
         """applicables can have multiple possible patterns :
         IfcBoilerType                               (IfcClass)
         IfcBoilerType/STEAM                         (IfcClass/PREDEFINEDTYPE)
@@ -85,7 +89,10 @@ class PsetQto:
                 continue
             # Uncomment if usage found
             # applicable_perf_history = match.group(2) or match.group(4)
-            if predefined_type and predefined_type != match.group(3):
+            matched_type = match.group(3)
+            if matched_type and not predefined_type:
+                continue
+            elif matched_type and predefined_type != match.group(3):
                 continue
 
             applicable_class = match.group(1)
