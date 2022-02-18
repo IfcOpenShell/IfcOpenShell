@@ -20,6 +20,7 @@ import re
 import pathlib
 import ifcopenshell
 import ifcopenshell.util.schema
+import ifcopenshell.util.type
 from ifcopenshell.entity_instance import entity_instance
 from functools import lru_cache
 from typing import List, Generator, Optional
@@ -98,6 +99,16 @@ class PsetQto:
             applicable_class = match.group(1)
             if ifcopenshell.util.schema.is_a(entity, applicable_class):
                 return True
+            # There is an implementer agreement that if the template type is
+            # type based, the type need not be explicitly mentioned
+            # https://github.com/buildingSMART/IFC4.3.x-development/issues/22
+            # This will be fixed in IFC4.3
+            template_type = template_type or ""
+            if "TYPE" in template_type and ifcopenshell.util.schema.is_a(entity, "IfcTypeObject"):
+                types = ifcopenshell.util.type.get_applicable_types(applicable_class, "IFC4")
+                for ifc_type in types:
+                    if ifcopenshell.util.schema.is_a(entity, ifc_type):
+                        return True
         return False
 
     @lru_cache()

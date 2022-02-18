@@ -41,3 +41,10 @@ class TestPsetQto:
         names = self.pset_qto.get_applicable_names("IfcAudioVisualAppliance", predefined_type="AMPLIFIER")
         assert "Pset_AudioVisualApplianceTypeAmplifier" in names
         assert len(names) == 18
+
+    def test_getting_a_pset_of_a_type_where_the_type_class_is_not_explicitly_applicable(self):
+        names = self.pset_qto.get_applicable_names("IfcWall")
+        assert "Pset_WallCommon" in names
+        names = self.pset_qto.get_applicable_names("IfcWallType")
+        assert len(names) == 9
+        assert "Pset_WallCommon" in names
