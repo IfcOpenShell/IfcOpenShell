@@ -202,6 +202,15 @@ class MSP2Ifc:
             self.create_task(self.tasks[subtask_id], parent_task=task)
 
     def process_working_week(self, week, calendar):
+        day_map = {
+            "1": 7, # Sunday
+            "2": 1, # Monday
+            "3": 2, # Tuesday
+            "4": 3, # Wednesday
+            "5": 4, # Thursday
+            "6": 5, # Friday
+            "7": 6, # Saturday
+        }
         for day in week:
             if day["ifc"]:
                 continue
@@ -210,12 +219,12 @@ class MSP2Ifc:
                 "sequence.add_work_time", self.file, work_calendar=calendar, time_type="WorkingTimes"
             )
 
-            weekday_component = [int(day["DayType"])]
+            weekday_component = [day_map[day["DayType"]]]
             for day2 in week:
                 if day["DayType"] == day2["DayType"]:
                     continue
                 if day["WorkingTimes"] == day2["WorkingTimes"]:
-                    weekday_component.append(int(day2["DayType"]))
+                    weekday_component.append(day_map[day2["DayType"]])
                     # Don't process the next day, as we can group it
                     day2["ifc"] = day["ifc"]
 
