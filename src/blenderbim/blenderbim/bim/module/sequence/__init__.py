@@ -71,6 +71,7 @@ classes = (
     operator.EnableEditingWorkSchedule,
     operator.EnableEditingWorkTime,
     operator.ExpandTask,
+    operator.ExportMSP,
     operator.ExportP6,
     operator.GenerateGanttChart,
     operator.ImportMSP,
@@ -127,6 +128,7 @@ classes = (
 
 def menu_func_export(self, context):
     self.layout.operator(operator.ExportP6.bl_idname, text="P6 (.xml)")
+    self.layout.operator(operator.ExportMSP.bl_idname, text="Microsoft Project (.xml)")
 
 
 def menu_func_import(self, context):
