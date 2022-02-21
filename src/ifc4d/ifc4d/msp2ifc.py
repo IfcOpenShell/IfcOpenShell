@@ -247,11 +247,10 @@ class MSP2Ifc:
 
     def create_rel_sequences(self):
         self.sequence_type_map = {
-            "1": "START_START",
+            "0": "FINISH_FINISH",
+            "1": "FINISH_START",
             "2": "START_FINISH",
-            "3": "FINISH_START",
-            "4": "FINISH_FINISH",
-            "0": "NOTDEFINED",
+            "3": "START_START",
         }
         for task in self.tasks.values():
             if not task["PredecessorTasks"]:
