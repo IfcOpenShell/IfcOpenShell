@@ -45,6 +45,7 @@ class MSP2Ifc:
         project = tree.getroot()
         self.ns = {"pr": project.tag[1:].partition("}")[0]}
         self.project["Name"] = project.findtext("pr:Name", namespaces=self.ns) or "Unnamed"
+        self.project["CalendarUID"] = project.findtext("pr:CalendarUID", namespaces=self.ns) or None
         self.outline_level = 0
         self.outline_parents = {}
         self.parse_task_xml(project)
@@ -127,8 +128,8 @@ class MSP2Ifc:
         if not self.work_plan:
             self.work_plan = ifcopenshell.api.run("sequence.add_work_plan", self.file)
         work_schedule = self.create_work_schedule()
-        self.create_tasks(work_schedule)
         self.create_calendars()
+        self.create_tasks(work_schedule)
         self.create_rel_sequences()
 
     def create_boilerplate_ifc(self):
@@ -158,6 +159,23 @@ class MSP2Ifc:
             work_schedule=work_schedule if work_schedule else None,
             parent_task=parent_task["ifc"] if parent_task else None,
         )
+
+        calendar = None
+        if task["CalendarUID"] != "-1":
+            calendar = self.calendars[task["CalendarUID"]]["ifc"]
+        elif not parent_task and self.project["CalendarUID"]:
+            calendar = self.calendars[self.project["CalendarUID"]]["ifc"]
+
+        if calendar:
+            ifcopenshell.api.run(
+                "control.assign_control",
+                self.file,
+                **{
+                    "relating_control": calendar,
+                    "related_object": task["ifc"],
+                },
+            )
+
         ifcopenshell.api.run(
             "sequence.edit_task",
             self.file,
