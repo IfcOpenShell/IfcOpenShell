@@ -46,6 +46,7 @@ class MSP2Ifc:
         self.ns = {"pr": project.tag[1:].partition("}")[0]}
         self.project["Name"] = project.findtext("pr:Name", namespaces=self.ns) or "Unnamed"
         self.project["CalendarUID"] = project.findtext("pr:CalendarUID", namespaces=self.ns) or None
+        self.project["MinutesPerDay"] = project.findtext("pr:MinutesPerDay", namespaces=self.ns) or None
         self.outline_level = 0
         self.outline_parents = {}
         self.parse_task_xml(project)
@@ -66,6 +67,11 @@ class MSP2Ifc:
         return relationships
 
     def parse_task_xml(self, project):
+        if self.project["MinutesPerDay"]:
+            hours_per_day = int(self.project["MinutesPerDay"]) / 60
+        else:
+            hours_per_day = 8
+
         for task in project.find("pr:Tasks", self.ns):
             task_id = task.find("pr:UID", self.ns).text
             task_index_level = task.find("pr:OutlineLevel", self.ns).text
@@ -79,13 +85,20 @@ class MSP2Ifc:
             self.outline_level = outline_level
             self.outline_parents[outline_level] = task_id
 
+            # Microsoft Project stores durations in terms of hours.
+            duration = ifcopenshell.util.date.ifc2datetime(task.find("pr:Duration", self.ns).text)
+            hours = duration.days * 24
+            hours += duration.seconds / 60 / 60
+            # Let's convert it into days, where days is the appropriate hours per day
+            duration = timedelta(days=hours / float(hours_per_day))
+
             self.tasks[task_id] = {
                 "Name": task.find("pr:Name", self.ns).text,
                 "OutlineNumber": task.find("pr:OutlineNumber", self.ns).text,
                 "OutlineLevel": outline_level,
                 "Start": datetime.datetime.fromisoformat(task.find("pr:Start", self.ns).text),
                 "Finish": datetime.datetime.fromisoformat(task.find("pr:Finish", self.ns).text),
-                "Duration": ifcopenshell.util.date.ifc2datetime(task.find("pr:Duration", self.ns).text),
+                "Duration": duration,
                 "Priority": task.find("pr:Priority", self.ns).text,
                 "CalendarUID": task.find("pr:CalendarUID", self.ns).text,
                 "PredecessorTasks": relationships if relationships else None,
