@@ -44,13 +44,14 @@ class BIM_PT_aggregate(Panel):
         return True
 
     def draw(self, context):
+        layout = self.layout
         if not AggregateData.is_loaded:
             AggregateData.load()
 
         props = context.active_object.BIMObjectAggregateProperties
 
         if props.is_editing:
-            row = self.layout.row(align=True)
+            row = layout.row(align=True)
             row.prop(props, "relating_object", text="")
             if props.relating_object:
                 op = row.operator("bim.assign_object", icon="CHECKMARK", text="")
@@ -58,15 +59,37 @@ class BIM_PT_aggregate(Panel):
                 op.related_object = context.active_object.BIMObjectProperties.ifc_definition_id
             row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
         else:
-            row = self.layout.row(align=True)
-            if AggregateData.data["has_aggregate"]:
-                row.label(text=AggregateData.data["label"])
+            row = layout.row(align=True)
+            if AggregateData.data["has_relating_object"]:
+                row.label(text=AggregateData.data["relating_object_label"], icon="TRIA_UP")
+                op = row.operator("bim.select_aggregate", icon="RESTRICT_SELECT_OFF", text="")
+                op.obj = context.active_object.name
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
                 op = row.operator("bim.unassign_object", icon="X", text="")
                 op.relating_object = AggregateData.data["relating_object_id"]
                 op.related_object = context.active_object.BIMObjectProperties.ifc_definition_id
             else:
-                row.label(text="No Aggregate Found")
+                row.label(text="No Aggregate", icon="TRIA_UP")
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
+
+        row = layout.row(align=True)
+        parts = AggregateData.data["related_objects_amount"]
+        row.label(text=f"{parts or 'No'} Part{'s' if parts > 1 else ''}", icon="TRIA_DOWN")
+        if AggregateData.data["has_related_objects"]:
+            op = row.operator("bim.select_parts", icon="RESTRICT_SELECT_OFF", text="")
+            op.obj = context.active_object.name
+
+        ifc_class = AggregateData.data["ifc_class"]
+        part_class = ""
+        if ifc_class == "IfcBuilding":
+            part_class = "IfcBuildingStorey"
+        elif ifc_class == "IfcSite":
+            part_class = "IfcBuilding"
+        elif ifc_class == "IfcProject":
+            part_class = "IfcSite"
+        if part_class != "":
+            op = layout.operator("bim.add_part_to_object", text="Add " + part_class.lstrip("Ifc"))
+            op.part_class = part_class
+            op.obj = context.active_object.name

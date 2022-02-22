@@ -39,6 +39,19 @@ from ifcopenshell.api.sequence.data import Data
 from ifcopenshell.api.resource.data import Data as ResourceData
 
 
+def animate_text(scene, context):
+    data = bpy.data.curves.get("Timeline")
+    if not data or not bpy.data.objects.get("Timeline"):
+        self.remove_text_animation_handler()
+        scene.frame_current
+    props = data.BIMDateTextProperties
+    start = parser.parse(props.start, dayfirst=True, fuzzy=True)
+    finish = parser.parse(props.finish, dayfirst=True, fuzzy=True)
+    duration = finish - start
+    frame_date = (((scene.frame_current - props.start_frame) / props.total_frames) * duration) + start
+    data.body = frame_date.date().isoformat()
+
+
 class AddWorkPlan(bpy.types.Operator):
     bl_idname = "bim.add_work_plan"
     bl_label = "Add Work Plan"
@@ -1196,6 +1209,65 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
+class ExportMSP(bpy.types.Operator, ImportHelper):
+    bl_idname = "export_msp.bim"
+    bl_label = "Export MSP"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".xml"
+    filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
+    holiday_start_date: bpy.props.StringProperty(default="2022-01-01", name="Holiday Start Date")
+    holiday_finish_date: bpy.props.StringProperty(default="2023-01-01", name="Holiday Finish Date")
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
+
+    def execute(self, context):
+        from ifc4d.ifc2msp import Ifc2Msp
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        ifc2msp = Ifc2Msp()
+        ifc2msp.work_schedule = self.file.by_type("IfcWorkSchedule")[0]
+        ifc2msp.xml = self.filepath
+        ifc2msp.file = self.file
+        ifc2msp.holiday_start_date = parser.parse(self.holiday_start_date).date()
+        ifc2msp.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
+        ifc2msp.execute()
+        print("Export finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
+
+class ExportP6(bpy.types.Operator, ImportHelper):
+    bl_idname = "export_p6.bim"
+    bl_label = "Export P6"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".xml"
+    filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
+    holiday_start_date: bpy.props.StringProperty(default="2022-01-01", name="Holiday Start Date")
+    holiday_finish_date: bpy.props.StringProperty(default="2023-01-01", name="Holiday Finish Date")
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = IfcStore.get_file()
+        return ifc_file is not None
+
+    def execute(self, context):
+        from ifc4d.ifc2p6 import Ifc2P6
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        ifc2p6 = Ifc2P6()
+        ifc2p6.xml = self.filepath
+        ifc2p6.file = self.file
+        ifc2p6.holiday_start_date = parser.parse(self.holiday_start_date).date()
+        ifc2p6.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
+        ifc2p6.execute()
+        print("Export finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
+
 class EnableEditingWorkCalendarTimes(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_calendar_times"
     bl_label = "Enable Editing Work Calendar Times"
@@ -1841,22 +1913,10 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         obj.data.BIMDateTextProperties.total_frames = int(self.total_frames)
         obj.data.BIMDateTextProperties.start = self.props.visualisation_start
         obj.data.BIMDateTextProperties.finish = self.props.visualisation_finish
-        bpy.app.handlers.frame_change_post.append(self.animate_text)
+        bpy.app.handlers.frame_change_post.append(animate_text)
 
     def remove_text_animation_handler(self):
-        bpy.app.handlers.frame_change_post.remove(self.animate_text)
-
-    def animate_text(self, scene, context):
-        data = bpy.data.curves.get("Timeline")
-        if not data or not bpy.data.objects.get("Timeline"):
-            self.remove_text_animation_handler()
-            scene.frame_current
-        props = data.BIMDateTextProperties
-        start = parser.parse(props.start, dayfirst=True, fuzzy=True)
-        finish = parser.parse(props.finish, dayfirst=True, fuzzy=True)
-        duration = finish - start
-        frame_date = (((scene.frame_current - props.start_frame) / props.total_frames) * duration) + start
-        data.body = frame_date.date().isoformat()
+        bpy.app.handlers.frame_change_post.remove(animate_text)
 
     def animate_input(self, obj, product_frame):
         if product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:

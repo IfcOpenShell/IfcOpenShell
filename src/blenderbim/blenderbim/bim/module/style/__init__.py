@@ -26,6 +26,7 @@ classes = (
     operator.EditStyle,
     operator.RemoveStyle,
     operator.UpdateStyleColours,
+    operator.UpdateStyleTextures,
     operator.UnlinkStyle,
     prop.BIMStyleProperties,
     ui.BIM_PT_style,

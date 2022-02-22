@@ -6,17 +6,16 @@ from datetime import datetime, timedelta, date
 
 
 class ScheduleIfcGenerator:
-    
     def __init__(self, file, output, settings):
         self.file = file
-        self.work_plan = settings['work_plan']
-        self.project = settings['project']
-        self.calendars = settings['calendars']
-        self.wbs = settings['wbs']
-        self.root_activites = settings['root_activities']
-        self.activities = settings['activities']
-        self.relationships = settings['relationships']
-        self.resources = settings['resources']
+        self.work_plan = settings["work_plan"]
+        self.project = settings["project"]
+        self.calendars = settings["calendars"]
+        self.wbs = settings["wbs"]
+        self.root_activites = settings["root_activities"]
+        self.activities = settings["activities"]
+        self.relationships = settings["relationships"]
+        self.resources = settings["resources"]
         self.output = output
         self.day_map = {
             "Monday": 1,
@@ -27,7 +26,7 @@ class ScheduleIfcGenerator:
             "Saturday": 6,
             "Sunday": 7,
         }
-    
+
     def create_ifc(self):
         if not self.file:
             self.file = self.create_boilerplate_ifc()
@@ -48,9 +47,7 @@ class ScheduleIfcGenerator:
 
     def create_calendars(self):
         for calendar in self.calendars.values():
-            calendar["ifc"] = ifcopenshell.api.run(
-                "sequence.add_work_calendar", self.file, name=calendar["Name"]
-            )
+            calendar["ifc"] = ifcopenshell.api.run("sequence.add_work_calendar", self.file, name=calendar["Name"])
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
             self.process_exceptions(calendar.get("HolidayOrExceptions"), calendar["ifc"])
 
@@ -226,12 +223,12 @@ class ScheduleIfcGenerator:
                 "Identification": str(activity["Identification"]),
                 "Status": activity["Status"],
                 "IsMilestone": activity["StartDate"] == activity["FinishDate"],
-                "PredefinedType": "CONSTRUCTION"
+                "PredefinedType": "CONSTRUCTION",
             },
         )
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=activity["ifc"])
         calendar = self.calendars[activity["CalendarObjectId"]]
-        #print(calendar, self.calendars)
+        # print(calendar, self.calendars)
         # Seems intermittently crashy - can we investigate for larger files?
         ifcopenshell.api.run(
             "control.assign_control",
@@ -250,7 +247,7 @@ class ScheduleIfcGenerator:
                 "ScheduleFinish": activity["FinishDate"],
                 "DurationType": "WORKTIME" if activity["PlannedDuration"] else None,
                 "ScheduleDuration": timedelta(
-                    days=float(activity["PlannedDuration"]) / float(calendar["HoursPerDay"])
+                    days=float(activity["PlannedDuration"]) / float(calendar["HoursPerDay"] or 8)
                 )
                 or None
                 if activity["PlannedDuration"]
@@ -285,45 +282,38 @@ class ScheduleIfcGenerator:
                     "sequence.assign_lag_time",
                     self.file,
                     rel_sequence=rel_sequence,
-                    lag_value=timedelta(days=lag / float(calendar["HoursPerDay"])),
+                    lag_value=timedelta(days=lag / float(calendar["HoursPerDay"] or 8)),
                     duration_type="WORKTIME",
                 )
-                
-                
+
     def create_resources(self):
         # print("Resources", self.resources)
         if self.resources:
             for id, resource in self.resources.items():
-                
+
                 parent = self.resources.get(resource.get("ParentObjectId"))
                 if parent:
                     if not parent.get("ifc"):
                         parent["ifc"] = ifcopenshell.api.run(
                             "resource.add_resource",
                             self.file,
-                            **{"ifc_class": "IfcCrewResource",
-                            "name": parent['Name']}
+                            **{"ifc_class": "IfcCrewResource", "name": parent["Name"]},
                         )
                 if parent:
                     resource["ifc"] = ifcopenshell.api.run(
-                    "resource.add_resource",
-                    self.file,
-                    **{"parent_resource": parent["ifc"] if parent else None, 
-                    "ifc_class": "IfcCrewResource",
-                    "name": resource['Name']
-                    }
-                )
+                        "resource.add_resource",
+                        self.file,
+                        **{
+                            "parent_resource": parent["ifc"] if parent else None,
+                            "ifc_class": "IfcCrewResource",
+                            "name": resource["Name"],
+                        },
+                    )
                 else:
                     resource["ifc"] = ifcopenshell.api.run(
-                    "resource.add_resource",
-                    self.file,
-                    **{ "ifc_class": "IfcCrewResource",
-                    "name": resource['Name']
-                    }
-                )
+                        "resource.add_resource", self.file, **{"ifc_class": "IfcCrewResource", "name": resource["Name"]}
+                    )
             print(self.resources)
-
-            
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")

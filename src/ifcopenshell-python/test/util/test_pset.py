@@ -28,8 +28,23 @@ class TestPsetQto:
 
     def test_get_applicables(self):
         for i in range(1000):
-            assert len(self.pset_qto.get_applicable("IfcMaterial")) == 14
+            assert len(self.pset_qto.get_applicable("IfcMaterial")) == 9
 
     def test_get_applicables_names(self):
         for i in range(1000):
-            assert len(self.pset_qto.get_applicable_names("IfcMaterial")) == 14
+            assert len(self.pset_qto.get_applicable_names("IfcMaterial")) == 9
+
+    def test_getting_applicables_for_a_specific_predefined_type(self):
+        names = self.pset_qto.get_applicable_names("IfcAudioVisualAppliance")
+        assert len(names) == 17
+        assert "Pset_AudioVisualApplianceTypeAmplifier" not in names
+        names = self.pset_qto.get_applicable_names("IfcAudioVisualAppliance", predefined_type="AMPLIFIER")
+        assert "Pset_AudioVisualApplianceTypeAmplifier" in names
+        assert len(names) == 18
+
+    def test_getting_a_pset_of_a_type_where_the_type_class_is_not_explicitly_applicable(self):
+        names = self.pset_qto.get_applicable_names("IfcWall")
+        assert "Pset_WallCommon" in names
+        names = self.pset_qto.get_applicable_names("IfcWallType")
+        assert len(names) == 9
+        assert "Pset_WallCommon" in names

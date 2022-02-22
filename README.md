@@ -39,6 +39,8 @@ Note 1: The path where the source code is cloned to can contain spaces but non-A
 
 Note 2: If you had not used `git clone --recursive https://github.com/IfcOpenShell/IfcOpenshell.git`, update the submodules by running `git submodule init & git submodule update`.
 
+Note 3: Be careful with special characters is the path when using the nix or win build scripts, because the OpenCASCADE build will fail on paths containing ++ and likely other situations.
+
 ### Compiling on Windows
 The preferred way to fetch and build this project's dependencies is to use the build scripts
 in win/ folder. **See [win/readme.md] for more information**.

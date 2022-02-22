@@ -1003,6 +1003,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 
 	BRepBuilderAPI_MakeWire w;
 
+	// ignored, just for capturing the curve parameters on the null check
+	double u, v;
+
 	if(l->Segments()) {
 		aggregate_of_instance::ptr segments = *l->Segments();
 		for (aggregate_of_instance::it it = segments->begin(); it != segments->end(); ++it) {
@@ -1018,11 +1021,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 					const gp_Pnt& current = points[*jt - 1];
 					if (jt != indices.begin()) {
 						BRepBuilderAPI_MakeEdge me(previous, current);
-						if (me.IsDone()) {
+						if (me.IsDone() && !BRep_Tool::Curve(me.Edge(), u, v).IsNull()) {
 							w.Add(me.Edge());
 						} else {
 							Logger::Warning("Ignoring segment on", l);
-						}						
+						}
 					}
 					previous = current;
 				}
@@ -1043,7 +1046,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 				const gp_Pnt& c = points[indices[2] - 1];
 				Handle(Geom_Circle) circ = GC_MakeCircle(a, b, c).Value();
 				BRepBuilderAPI_MakeEdge me(circ, a, c);
-				if (me.IsDone()) {
+				if (me.IsDone() && !BRep_Tool::Curve(me.Edge(), u, v).IsNull()) {
 					w.Add(me.Edge());
 				} else {
 					Logger::Warning("Ignoring segment on", l);
@@ -1056,7 +1059,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
         std::vector<gp_Pnt>::const_iterator previous = points.begin();
         for (std::vector<gp_Pnt>::const_iterator current = previous+1; current < points.end(); ++current){
 			BRepBuilderAPI_MakeEdge me(*previous, *current);
-			double u, v;
 			if (me.IsDone() && !BRep_Tool::Curve(me.Edge(), u, v).IsNull()) {
 				w.Add(me.Edge());
 				previous = current;

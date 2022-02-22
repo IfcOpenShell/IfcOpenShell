@@ -112,7 +112,7 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def set_active_object(cls, obj):
         bpy.context.view_layer.objects.active = obj
-        obj.select_set(True)
+        cls.select_object(obj)
 
     @classmethod
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix):

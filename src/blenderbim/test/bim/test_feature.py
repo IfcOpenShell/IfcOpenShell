@@ -184,7 +184,7 @@ def the_object_name_is_placed_in_the_collection_collection(name, collection):
 def additionally_the_object_name_is_selected(name):
     obj = bpy.context.scene.objects.get(name)
     if not obj:
-        assert False, 'The object "{name}" could not be selected'
+        assert False, f'The object "{name}" could not be selected'
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
 
@@ -207,6 +207,19 @@ def i_set_prop_to_value(prop, value):
         exec(f'bpy.context.{prop} = r"{value}"')
     except:
         exec(f"bpy.context.{prop} = {value}")
+
+
+@given(parsers.parse('I set "{prop}" to ""'))
+@when(parsers.parse('I set "{prop}" to ""'))
+def i_set_prop_to_value(prop):
+    try:
+        eval(f"bpy.context.{prop}")
+    except:
+        assert False, "Property does not exist"
+    try:
+        exec(f'bpy.context.{prop} = r""')
+    except:
+        pass
 
 
 @when(parsers.parse('I am on frame "{number}"'))

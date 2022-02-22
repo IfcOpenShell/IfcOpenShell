@@ -795,7 +795,7 @@ class DumbWallGenerator:
         # Standard cases are deprecated, so let's cull them
         ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
 
-        obj = bpy.data.objects.new(ifc_class[3:], mesh)
+        obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
         obj.location = self.location
         obj.rotation_euler[2] = self.rotation
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:

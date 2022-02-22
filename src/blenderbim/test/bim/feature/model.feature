@@ -12,7 +12,7 @@ Scenario: Add type instance - add from a mesh
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.relating_type" to "{cube}"
     When I press "bim.add_type_instance"
-    Then the object "IfcWall/Instance" exists
+    Then the object "IfcWall/Wall" exists
 
 Scenario: Add type instance - add from an empty
     Given an empty IFC project
@@ -25,7 +25,7 @@ Scenario: Add type instance - add from an empty
     And the variable "empty" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.relating_type" to "{empty}"
     When I press "bim.add_type_instance"
-    Then the object "IfcWall/Instance" exists
+    Then the object "IfcWall/Wall" exists
 
 Scenario: Add type instance - add a mesh where existing instances have changed context
     Given an empty IFC project
@@ -38,15 +38,15 @@ Scenario: Add type instance - add a mesh where existing instances have changed c
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.relating_type" to "{cube}"
     And I press "bim.add_type_instance"
-    And the object "IfcWall/Instance" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
-    And the object "IfcWall/Instance" is selected
+    And the object "IfcWall/Wall" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
+    And the object "IfcWall/Wall" is selected
     And the variable "context" is "{ifc}.by_type('IfcGeometricRepresentationSubContext')[-1].id()"
     And I set "scene.BIMRootProperties.contexts" to "{context}"
     And I press "bim.add_representation"
-    And the object "IfcWall/Instance" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
+    And the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
     When I press "bim.add_type_instance"
-    Then the object "IfcWall/Instance" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
-    And the object "IfcWall/Instance.001" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
+    Then the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
+    And the object "IfcWall/Wall.001" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
 
 Scenario: Add grid
     Given an empty IFC project

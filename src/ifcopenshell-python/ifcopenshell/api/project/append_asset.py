@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.owner.settings
 
 
 class Usecase:
@@ -76,7 +77,7 @@ class Usecase:
         }
         element = self.add_element(self.settings["element"])
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
-        added_contexts = [e for e in self.file.traverse(element) if e.is_a("IfcGeometricRepresentationContext")]
+        added_contexts = [e for e in self.file.traverse(element) if e.is_a() == "IfcGeometricRepresentationContext"]
         for added_context in added_contexts:
             equivalent_existing_context = self.get_equivalent_existing_context(added_context)
             if not equivalent_existing_context:
@@ -100,7 +101,7 @@ class Usecase:
         }
         element = self.add_element(self.settings["element"])
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
-        added_contexts = [e for e in self.file.traverse(element) if e.is_a("IfcGeometricRepresentationContext")]
+        added_contexts = [e for e in self.file.traverse(element) if e.is_a() == "IfcGeometricRepresentationContext"]
         for added_context in added_contexts:
             equivalent_existing_context = self.get_equivalent_existing_context(added_context)
             if not equivalent_existing_context:
