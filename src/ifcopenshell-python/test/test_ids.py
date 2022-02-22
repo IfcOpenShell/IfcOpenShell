@@ -54,20 +54,20 @@ class TestIdsParsing(unittest.TestCase):
         ids_file = ids.ids.open(IDS_URL)
         self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]["simpleValue"], "IfcWall")
 
-    def test_parse_predefinedtype_facet(self):
+    def test_parse_predefinedType_facet(self):
         IDS_URL = (
-            os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_predefinedtype.xml")
+            os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_predefinedType.xml")
         )
         ids_file = ids.ids.open(IDS_URL)
         self.assertEqual(
-            ids_file.specifications[0].requirements.terms[0].node["predefinedtype"]["simpleValue"], "CLADDING"
+            ids_file.specifications[0].requirements.terms[0].node["predefinedType"]["simpleValue"], "CLADDING"
         )
 
     def test_parse_property_facet(self):
         IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_property.xml")
         ids_file = ids.ids.open(IDS_URL)
         self.assertEqual(
-            ids_file.specifications[0].requirements.terms[0].node["propertyset"]["simpleValue"], "Test_PropertySet"
+            ids_file.specifications[0].requirements.terms[0].node["propertySet"]["simpleValue"], "Test_PropertySet"
         )
         self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]["simpleValue"], "Test_Parameter")
         self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"]["simpleValue"], "Test_Value")
@@ -141,9 +141,9 @@ class TestIdsAuthoring(unittest.TestCase):
     """Creating basic IDS"""
 
     def test_entity_create(self):
-        e = ids.entity.create(name="Test_Name", predefinedtype="Test_PredefinedType")
+        e = ids.entity.create(name="Test_Name", predefinedType="Test_PredefinedType")
         self.assertEqual(e.name, "Test_Name")
-        self.assertEqual(e.predefinedtype, "Test_PredefinedType")
+        self.assertEqual(e.predefinedType, "Test_PredefinedType")
 
     def test_classification_create(self):
         c = ids.classification.create(location="any", value="Test_Value", system="Test_System")
@@ -153,10 +153,10 @@ class TestIdsAuthoring(unittest.TestCase):
 
     def test_property_create(self):
         p = ids.property.create(
-            location="any", propertyset="Test_PropertySet", name="Test_Parameter", value="Test_Value"
+            location="any", propertySet="Test_PropertySet", name="Test_Parameter", value="Test_Value"
         )
         self.assertEqual(p.location, "any")
-        self.assertEqual(p.propertyset, "Test_PropertySet")
+        self.assertEqual(p.propertySet, "Test_PropertySet")
         self.assertEqual(p.name, "Test_Parameter")
         self.assertEqual(p.value, "Test_Value")
 
@@ -170,7 +170,7 @@ class TestIdsAuthoring(unittest.TestCase):
         self.assertEqual(s.name, "Test_Specification")
 
     def test_ids_add_content(self):
-        i = ids.ids()
+        i = ids.ids(title="My IDS")
         i.specifications.append(ids.specification(name="Test_Specification"))
         self.assertEqual(i.specifications[0].name, "Test_Specification")
         m = ids.material.create(location="any", value="Test_Value")
@@ -186,7 +186,7 @@ class TestIdsAuthoring(unittest.TestCase):
     """ Creating IDS with restrictions """
 
     def test_create_restrictions_enumeration(self):
-        i = ids.ids()
+        i = ids.ids(title="My IDS")
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
         r = ids.restriction.create(options=["testA", "testB"], type="enumeration", base="string")
@@ -197,11 +197,11 @@ class TestIdsAuthoring(unittest.TestCase):
         self.assertNotEqual(i.specifications[0].requirements.terms[0].value, "testC")
 
     def test_create_restrictions_bounds(self):
-        i = ids.ids()
+        i = ids.ids(title="My IDS")
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
         r = ids.restriction.create(options={"minInclusive": 0, "maxExclusive": 10}, type="bounds", base="integer")
-        p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
+        p = ids.property.create(location="any", propertySet="Test", name="Test", value=r)
         i.specifications[0].add_requirement(p)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, 0)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, 5)
@@ -209,11 +209,11 @@ class TestIdsAuthoring(unittest.TestCase):
         self.assertNotEqual(i.specifications[0].requirements.terms[0].value, 10)
 
     def test_create_restrictions_pattern_simple(self):
-        i = ids.ids()
+        i = ids.ids(title="My IDS")
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
         r = ids.restriction.create(options="[A-Z]{2,4}", type="pattern", base="string")
-        p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
+        p = ids.property.create(location="any", propertySet="Test", name="Test", value=r)
         i.specifications[0].add_requirement(p)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "XYZ")
         self.assertNotEqual(i.specifications[0].requirements.terms[0].value, "abc")
@@ -221,43 +221,43 @@ class TestIdsAuthoring(unittest.TestCase):
         self.assertNotEqual(i.specifications[0].requirements.terms[0].value, "A")
 
     def test_create_restrictions_pattern_advanced(self):
-        i = ids.ids()
+        i = ids.ids(title="My IDS")
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
         r = ids.restriction.create(options="(Wanddurchbruch|Deckendurchbruch).*", type="pattern", base="string")
-        p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
+        p = ids.property.create(location="any", propertySet="Test", name="Test", value=r)
         i.specifications[0].add_requirement(p)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "Wanddurchbruch")
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "Deckendurchbruch")
         self.assertNotEqual(i.specifications[0].requirements.terms[0].value, "Deeckendurchbruch")
 
     def test_create_restrictions_pattern_utf(self):
-        i = ids.ids()
+        i = ids.ids(title="My IDS")
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
         r = ids.restriction.create(options="èêóòâôæøåążźćęóʑʒʓʔʕʗʘʙʚʛʜʝʞ", type="pattern", base="string")
-        p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
+        p = ids.property.create(location="any", propertySet="Test", name="Test", value=r)
         i.specifications[0].add_requirement(p)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "èêóòâôæøåążźćęóʑʒʓʔʕʗʘʙʚʛʜʝʞ")
 
     """ Saving created IDS to IDS.xml """
 
     def test_created_ids_to_xml(self):
-        i = ids.ids()
+        i = ids.ids(title="My IDS")
         i.specifications.append(ids.specification(name="Test_Specification"))
-        e = ids.entity.create(name="Test_Name", predefinedtype="Test_PredefinedType")
+        e = ids.entity.create(name="Test_Name", predefinedType="Test_PredefinedType")
         c = ids.classification.create(location="any", value="Test_Value", system="Test_System")
         m = ids.material.create(location="any", value="Test_Value")
         re = ids.restriction.create(options=["testA", "testB"], type="enumeration", base="string")
         rb = ids.restriction.create(options={"minInclusive": 0, "maxExclusive": 10}, type="bounds", base="integer")
         rp1 = ids.restriction.create(options="[A-Z]{2,4}", type="pattern", base="string")
         rp2 = ids.restriction.create(options="èêóòâôæøåążźćęóʑʒʓʔʕʗʘʙʚʛʜʝʞ", type="pattern", base="string")
-        p1 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=re)
-        p2 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=rb)
-        p3 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=rp1)
-        p4 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=rp2)
+        p1 = ids.property.create(location="any", propertySet="Test_PropertySet", name="Test_Parameter", value=re)
+        p2 = ids.property.create(location="any", propertySet="Test_PropertySet", name="Test_Parameter", value=rb)
+        p3 = ids.property.create(location="any", propertySet="Test_PropertySet", name="Test_Parameter", value=rp1)
+        p4 = ids.property.create(location="any", propertySet="Test_PropertySet", name="Test_Parameter", value=rp2)
         p5 = ids.property.create(
-            location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=[re, rb, rp1]
+            location="any", propertySet="Test_PropertySet", name="Test_Parameter", value=[re, rb, rp1]
         )
         i.specifications[0].add_applicability(e)
         i.specifications[0].add_applicability(m)
@@ -276,12 +276,12 @@ class TestIdsAuthoring(unittest.TestCase):
 
     def test_create_full_information(self):
         i = ids.ids(
-            ifcversion="2.3.0.1",
+            title="Test IDS",
             description="test",
             author="test@test.com",
             copyright="test",
             version=1.23,
-            creation_date="2021-01-01",
+            date="2021-01-01",
             purpose="test",
             milestone="test",
         )
@@ -302,15 +302,15 @@ class TestIfcValidation(unittest.TestCase):
     def test_validate_all_facets(self):
         #Those are true: 
         e = ids.entity.create(name="IfcWall")
-        p1 = ids.property.create(location="any", propertyset="MySet", name="Param1", value="banan")
-        p2 = ids.property.create(location="any", propertyset="MySet", name="Param2", value=120.0)
-        p3 = ids.property.create(location="any", propertyset="Pset_WallCommon", name="LoadBearing", value=False)
+        p1 = ids.property.create(location="any", propertySet="MySet", name="Param1", value="banan")
+        p2 = ids.property.create(location="any", propertySet="MySet", name="Param2", value=120.0)
+        p3 = ids.property.create(location="any", propertySet="Pset_WallCommon", name="LoadBearing", value=False)
         #Those are false:
-        p4 = ids.property.create(location="any", propertyset="MySet", name="Param1", value="orange")
-        p5 = ids.property.create(location="any", propertyset="MySet", name="Param2", value=123.4)
-        p6 = ids.property.create(location="any", propertyset="Pset_WallCommon", name="LoadBearing", value=True)
+        p4 = ids.property.create(location="any", propertySet="MySet", name="Param1", value="orange")
+        p5 = ids.property.create(location="any", propertySet="MySet", name="Param2", value=123.4)
+        p6 = ids.property.create(location="any", propertySet="Pset_WallCommon", name="LoadBearing", value=True)
         
-        i = ids.ids()
+        i = ids.ids(title="My IDS")
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(e)
         i.specifications[0].add_requirement(p1)
