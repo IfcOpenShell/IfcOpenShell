@@ -65,7 +65,7 @@ class Usecase:
             self.calculate_finish()
         elif "ScheduleStart" in self.settings["attributes"].keys() and self.settings["task_time"].ScheduleDuration:
             self.calculate_finish()
-        elif "ScheduleFinish" in self.settings["attributes"].keys() and self.settings["task_time"].ScheduleStart:
+        elif self.settings["attributes"].get("ScheduleFinish", None) and self.settings["task_time"].ScheduleStart:
             self.calculate_duration()
 
         if self.settings["task_time"].ScheduleDuration and (
