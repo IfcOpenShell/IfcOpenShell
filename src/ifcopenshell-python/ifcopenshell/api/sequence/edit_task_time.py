@@ -40,11 +40,11 @@ class Usecase:
             del self.settings["attributes"]["ScheduleFinish"]
 
         duration_type = self.settings["attributes"].get("DurationType", self.settings["task_time"].DurationType)
-        if "ScheduleFinish" in self.settings["attributes"]:
+        if self.settings["attributes"].get("ScheduleFinish", None):
             self.settings["attributes"]["ScheduleFinish"] = ifcopenshell.util.sequence.get_soonest_working_day(
                 self.settings["attributes"]["ScheduleFinish"], duration_type, self.calendar
             )
-        if "ScheduleStart" in self.settings["attributes"]:
+        if self.settings["attributes"].get("ScheduleStart", None):
             self.settings["attributes"]["ScheduleStart"] = ifcopenshell.util.sequence.get_soonest_working_day(
                 self.settings["attributes"]["ScheduleStart"], duration_type, self.calendar
             )
@@ -63,7 +63,7 @@ class Usecase:
             and self.settings["task_time"].ScheduleStart
         ):
             self.calculate_finish()
-        elif "ScheduleStart" in self.settings["attributes"].keys() and self.settings["task_time"].ScheduleDuration:
+        elif self.settings["attributes"].get("ScheduleStart", None) and self.settings["task_time"].ScheduleDuration:
             self.calculate_finish()
         elif self.settings["attributes"].get("ScheduleFinish", None) and self.settings["task_time"].ScheduleStart:
             self.calculate_duration()
