@@ -72,6 +72,22 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.RemainingTime == "P1D"
         assert task_time.Completion == 0.5
 
+    def test_editing_just_a_start_date_with_no_duration_or_finish(self):
+        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())
+        ifcopenshell.api.run(
+            "sequence.edit_task_time",
+            self.file,
+            task_time=task_time,
+            attributes={
+                "ScheduleDuration": None,
+                "ScheduleStart": "2000-01-01T00:00:00",
+                "ScheduleFinish": None,
+            },
+        )
+        assert task_time.ScheduleStart == "2000-01-01T00:00:00"
+        assert task_time.ScheduleFinish is None
+        assert task_time.ScheduleDuration is None
+
     def test_schedule_finish_dates_are_auto_calculated_if_possible(self):
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())
         ifcopenshell.api.run(
