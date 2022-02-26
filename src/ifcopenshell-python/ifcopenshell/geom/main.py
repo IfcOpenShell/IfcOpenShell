@@ -266,13 +266,20 @@ def wrap_buffer_creation(fn):
     return inner
 
 
+# Hdf- Xml- and glTF- serializers don't support writing to a buffer, only to filename
+# so no wrap_buffer_creation() for these serializers
 serializer_dict = {}
 serializer_dict["obj"] = wrap_buffer_creation(ifcopenshell_wrapper.WaveFrontOBJSerializer)
 serializer_dict["svg"] = wrap_buffer_creation(ifcopenshell_wrapper.SvgSerializer)
+serializer_dict["xml"] = ifcopenshell_wrapper.XmlSerializer
 serializer_dict["buffer"] = ifcopenshell_wrapper.buffer
+
+# gltf and hdf5 availability depend on IfcOpenShell configuration settings
 try:
-    # HdfSerializer doesn't support writing to a buffer (obviously) only to filename
-    # so no wrap_buffer_creation()
+    serializer_dict["gltf"] = ifcopenshell_wrapper.GltfSerializer
+except: pass
+
+try:
     serializer_dict["hdf5"] = ifcopenshell_wrapper.HdfSerializer
 except:
     pass
