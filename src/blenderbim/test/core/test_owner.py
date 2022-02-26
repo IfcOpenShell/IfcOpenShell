@@ -225,3 +225,37 @@ class TestClearUser:
     def test_run(self, owner):
         owner.clear_user().should_be_called()
         subject.clear_user(owner)
+
+
+class TestAddActor:
+    def test_run(self, ifc):
+        ifc.run("owner.add_actor", ifc_class="IfcActor", actor="person").should_be_called().will_return("actor")
+        assert subject.add_actor(ifc, ifc_class="IfcActor", actor="person") == "actor"
+
+
+class TestRemoveActor:
+    def test_run(self, ifc):
+        ifc.run("owner.remove_actor", actor="actor").should_be_called()
+        subject.remove_actor(ifc, actor="actor")
+
+
+class TestEnableEditingActor:
+    def test_run(self, owner):
+        owner.set_actor("actor").should_be_called()
+        owner.import_actor_attributes("actor").should_be_called()
+        subject.enable_editing_actor(owner, actor="actor")
+
+
+class TestDisableEditingActor:
+    def test_run(self, owner):
+        owner.clear_actor().should_be_called()
+        subject.disable_editing_actor(owner)
+
+
+class TestEditActor:
+    def test_run(self, ifc, owner):
+        owner.get_actor().should_be_called().will_return("actor")
+        owner.export_actor_attributes().should_be_called().will_return("attributes")
+        ifc.run("owner.edit_actor", actor="actor", attributes="attributes").should_be_called()
+        owner.clear_actor().should_be_called()
+        subject.edit_actor(ifc, owner)

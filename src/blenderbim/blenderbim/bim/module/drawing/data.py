@@ -23,6 +23,8 @@ import blenderbim.tool as tool
 
 def refresh():
     TextData.is_loaded = False
+    SheetsData.is_loaded = False
+    DrawingsData.is_loaded = False
 
 
 class TextData:
@@ -54,3 +56,41 @@ class TextData:
         for rel in element.HasAssignments:
             if rel.is_a("IfcRelAssignsToProduct"):
                 return rel.RelatingProduct.Name or "Unnamed"
+
+
+class SheetsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"total_sheets": cls.total_sheets()}
+        cls.is_loaded = True
+
+    @classmethod
+    def total_sheets(cls):
+        return len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"])
+
+
+class DrawingsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"total_drawings": cls.total_drawings(), "location_hint": cls.location_hint()}
+        cls.is_loaded = True
+
+    @classmethod
+    def total_drawings(cls):
+        return len([e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"])
+
+    @classmethod
+    def location_hint(cls):
+        if bpy.context.scene.DocProperties.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
+            results = [("0", "Origin", "")]
+            results.extend(
+                [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcBuildingStorey")]
+            )
+            return results
+        return [(h.upper(), h, "") for h in ["North", "South", "East", "West"]]

@@ -132,3 +132,66 @@ class SelectSystemProducts(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.select_system_products(tool.System, system=tool.Ifc.get().by_id(self.system))
+
+
+class ShowPorts(bpy.types.Operator, Operator):
+    bl_idname = "bim.show_ports"
+    bl_label = "Show Ports"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.show_ports(tool.System, element=tool.Ifc.get_entity(context.active_object))
+
+
+class HidePorts(bpy.types.Operator, Operator):
+    bl_idname = "bim.hide_ports"
+    bl_label = "Hide Ports"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.hide_ports(tool.System, element=tool.Ifc.get_entity(context.active_object))
+
+
+class AddPort(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_port"
+    bl_label = "Add Ports"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.add_port(tool.Ifc, tool.System, element=tool.Ifc.get_entity(context.active_object))
+
+
+class ConnectPort(bpy.types.Operator, Operator):
+    bl_idname = "bim.connect_port"
+    bl_label = "Connect Ports"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) == 2
+
+    def _execute(self, context):
+        obj1 = context.active_object
+        obj2 = context.selected_objects[0] if context.selected_objects[1] == obj1 else context.selected_objects[1]
+        core.connect_port(tool.Ifc, port1=tool.Ifc.get_entity(obj1), port2=tool.Ifc.get_entity(obj2))
+
+
+class DisconnectPort(bpy.types.Operator, Operator):
+    bl_idname = "bim.disconnect_port"
+    bl_label = "Disconnect Ports"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disconnect_port(tool.Ifc, port=tool.Ifc.get_entity(context.active_object))
+
+
+class SetFlowDirection(bpy.types.Operator, Operator):
+    bl_idname = "bim.set_flow_direction"
+    bl_label = "Set Flow Direction"
+    bl_options = {"REGISTER", "UNDO"}
+    direction: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.set_flow_direction(
+            tool.Ifc, tool.System, port=tool.Ifc.get_entity(context.active_object), direction=self.direction
+        )

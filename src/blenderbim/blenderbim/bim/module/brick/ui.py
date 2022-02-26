@@ -51,7 +51,11 @@ class BIM_PT_brickschema(Panel):
         row.prop(self.props, "namespace", text="")
         row.prop(self.props, "brick_equipment_class", text="")
         row.operator("bim.add_brick", text="", icon="ADD")
+
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
         row.operator("bim.add_brick_feed", text="", icon="PLUGIN")
+        row.operator("bim.remove_brick", text="", icon="X")
 
         self.layout.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
 

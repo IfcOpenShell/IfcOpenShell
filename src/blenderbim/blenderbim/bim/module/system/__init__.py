@@ -20,20 +20,28 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AddPort,
     operator.AddSystem,
     operator.AssignSystem,
+    operator.ConnectPort,
     operator.DisableEditingSystem,
     operator.DisableSystemEditingUI,
+    operator.DisconnectPort,
     operator.EditSystem,
     operator.EnableEditingSystem,
+    operator.HidePorts,
     operator.LoadSystems,
     operator.RemoveSystem,
     operator.SelectSystemProducts,
+    operator.SetFlowDirection,
+    operator.ShowPorts,
     operator.UnassignSystem,
     prop.System,
     prop.BIMSystemProperties,
     ui.BIM_PT_systems,
     ui.BIM_PT_object_systems,
+    ui.BIM_PT_ports,
+    ui.BIM_PT_port,
     ui.BIM_UL_systems,
     ui.BIM_UL_object_systems,
 )

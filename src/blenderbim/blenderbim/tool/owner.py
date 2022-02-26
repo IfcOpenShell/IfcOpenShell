@@ -234,3 +234,27 @@ class Owner(blenderbim.core.tool.Owner):
     @classmethod
     def export_role_attributes(cls):
         return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMOwnerProperties.role_attributes)
+
+    @classmethod
+    def set_actor(cls, actor):
+        bpy.context.scene.BIMOwnerProperties.active_actor_id = actor.id()
+
+    @classmethod
+    def import_actor_attributes(cls, actor):
+        props = bpy.context.scene.BIMOwnerProperties
+        props.actor_attributes.clear()
+        blenderbim.bim.helper.import_attributes2(actor, props.actor_attributes)
+
+    @classmethod
+    def clear_actor(cls):
+        bpy.context.scene.BIMOwnerProperties.active_actor_id = 0
+
+    @classmethod
+    def export_actor_attributes(cls):
+        props = bpy.context.scene.BIMOwnerProperties
+        attributes = blenderbim.bim.helper.export_attributes(props.actor_attributes)
+        return attributes
+
+    @classmethod
+    def get_actor(cls):
+        return tool.Ifc().get().by_id(bpy.context.scene.BIMOwnerProperties.active_actor_id)

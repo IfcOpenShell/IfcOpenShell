@@ -36,6 +36,10 @@ class Ifc(blenderbim.core.tool.Ifc):
         return IfcStore.get_file()
 
     @classmethod
+    def get_path(cls):
+        return IfcStore.path
+
+    @classmethod
     def get_schema(cls):
         if IfcStore.get_file():
             return IfcStore.get_file().schema
@@ -63,5 +67,15 @@ class Ifc(blenderbim.core.tool.Ifc):
         IfcStore.link_element(element, obj)
 
     @classmethod
+    def delete(cls, element):
+        IfcStore.delete_element(element)
+
+    @classmethod
     def unlink(cls, element=None, obj=None):
         IfcStore.unlink_element(element, obj)
+
+    class Operator:
+        def execute(self, context):
+            IfcStore.execute_ifc_operator(self, context)
+            blenderbim.bim.handler.refresh_ui_data()
+            return {"FINISHED"}

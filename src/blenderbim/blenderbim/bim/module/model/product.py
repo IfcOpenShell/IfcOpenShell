@@ -25,7 +25,7 @@ import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.core.type
 import blenderbim.core.geometry
-from . import wall, slab, profile
+from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
@@ -81,6 +81,9 @@ class AddTypeInstance(bpy.types.Operator):
         elif material and material.is_a("IfcMaterialLayerSet"):
             if self.generate_layered_element(ifc_class, relating_type):
                 return {"FINISHED"}
+        if relating_type.is_a("IfcFlowSegmentType"):
+            if mep.MepGenerator(relating_type).generate():
+                return {"FINISHED"}
 
         building_obj = None
         if len(context.selected_objects) == 1 and context.active_object:
@@ -108,7 +111,7 @@ class AddTypeInstance(bpy.types.Operator):
         ]
         mesh = bpy.data.meshes.new(name="Instance")
         mesh.from_pydata(verts, edges, faces)
-        obj = bpy.data.objects.new("Instance", mesh)
+        obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
         obj.location = context.scene.cursor.location
         collection = context.view_layer.active_layer_collection.collection
         collection.objects.link(obj)

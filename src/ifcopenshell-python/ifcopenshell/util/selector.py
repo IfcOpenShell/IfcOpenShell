@@ -199,7 +199,9 @@ class Selector:
         if key in info:
             return info[key]
         elif "." in key:
-            pset_name, prop = key.split(".")
+            key_components = key.split(".")
+            pset_name = key_components[0]
+            prop = ".".join(key_components[1:])
             psets = ifcopenshell.util.element.get_psets(element)
             if pset_name in psets and prop in psets[pset_name]:
                 return psets[pset_name][prop]

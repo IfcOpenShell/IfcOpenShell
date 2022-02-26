@@ -20,7 +20,7 @@ import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.module.drawing.data import TextData
+from blenderbim.bim.module.drawing.data import TextData, SheetsData, DrawingsData
 
 
 class BIM_PT_camera(Panel):
@@ -66,9 +66,6 @@ class BIM_PT_camera(Panel):
         row.operator("bim.generate_references")
         row = layout.row()
         row.operator("bim.resize_text")
-
-        row = layout.row()
-        row.prop(props, "target_view")
 
         row = layout.row()
         row.prop(props, "cut_objects")
@@ -149,44 +146,61 @@ class BIM_PT_drawing_underlay(Panel):
 
 
 class BIM_PT_drawings(Panel):
-    bl_label = "SVG Drawings"
+    bl_label = "Drawings"
     bl_idname = "BIM_PT_drawings"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "output"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "BIM Documentation"
 
     def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        props = context.scene.DocProperties
+        if not DrawingsData.is_loaded:
+            DrawingsData.load()
 
-        row = layout.row(align=True)
-        row.operator("bim.add_drawing")
-        row.operator("bim.refresh_drawing_list", icon="FILE_REFRESH", text="")
+        self.props = context.scene.DocProperties
 
-        if props.drawings:
-            if props.active_drawing_index < len(props.drawings):
+        if not self.props.is_editing_drawings:
+            row = self.layout.row(align=True)
+            row.label(text=f"{DrawingsData.data['total_drawings']} Drawings Found", icon="IMAGE_DATA")
+            row.operator("bim.load_drawings", text="", icon="IMPORT")
+            return
+
+        row = self.layout.row(align=True)
+        row.prop(self.props, "target_view", text="")
+        row.prop(self.props, "location_hint", text="")
+        row.operator("bim.add_drawing", text="", icon="ADD")
+        row.operator("bim.disable_editing_drawings", text="", icon="CANCEL")
+
+        if self.props.drawings:
+            if self.props.active_drawing_index < len(self.props.drawings):
+                row = self.layout.row(align=True)
+                row.alignment = "RIGHT"
                 op = row.operator("bim.open_view", icon="URL", text="")
-                op.view = props.active_drawing.name
-                row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
-            layout.template_list("BIM_UL_drawinglist", "", props, "drawings", props, "active_drawing_index")
+                op.view = self.props.active_drawing.name
+                op = row.operator("bim.activate_view", icon="OUTLINER_OB_CAMERA", text="")
+                op.drawing = self.props.active_drawing.ifc_definition_id
+                row.operator("bim.create_drawing", text="", icon="OUTPUT")
+                row.operator("bim.remove_drawing", icon="X", text="").index = self.props.active_drawing_index
+            self.layout.template_list(
+                "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
+            )
 
-        row = layout.row()
-        row.operator("bim.add_ifc_file")
+        # Commented out until federated drawing generation is rebuilt
+        # row = self.layout.row()
+        # row.operator("bim.add_ifc_file")
 
-        for index, ifc_file in enumerate(props.ifc_files):
-            row = layout.row(align=True)
-            row.prop(ifc_file, "name", text="IFC #{}".format(index + 1))
-            row.operator("bim.select_doc_ifc_file", icon="FILE_FOLDER", text="").index = index
-            row.operator("bim.remove_ifc_file", icon="X", text="").index = index
+        # for index, ifc_file in enumerate(self.props.ifc_files):
+        #     row = self.layout.row(align=True)
+        #     row.prop(ifc_file, "name", text="IFC #{}".format(index + 1))
+        #     row.operator("bim.select_doc_ifc_file", icon="FILE_FOLDER", text="").index = index
+        #     row.operator("bim.remove_ifc_file", icon="X", text="").index = index
 
 
 class BIM_PT_schedules(Panel):
-    bl_label = "ODS Schedules"
+    bl_label = "Schedules"
     bl_idname = "BIM_PT_schedules"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "output"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "BIM Documentation"
 
     def draw(self, context):
         layout = self.layout
@@ -208,31 +222,39 @@ class BIM_PT_schedules(Panel):
 
 
 class BIM_PT_sheets(Panel):
-    bl_label = "SVG Sheets"
+    bl_label = "Sheets"
     bl_idname = "BIM_PT_sheets"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "output"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "BIM Documentation"
 
     def draw(self, context):
-        layout = self.layout
-        props = context.scene.DocProperties
+        if not SheetsData.is_loaded:
+            SheetsData.load()
 
-        row = layout.row(align=True)
-        row.prop(props, "titleblock", text="")
-        row.operator("bim.add_sheet")
+        self.props = context.scene.DocProperties
 
-        if props.sheets:
+        if not self.props.is_editing_sheets:
+            row = self.layout.row(align=True)
+            row.label(text=f"{SheetsData.data['total_sheets']} Sheets Found", icon="FILE")
+            row.operator("bim.load_sheets", text="", icon="IMPORT")
+            return
+
+        row = self.layout.row(align=True)
+        row.prop(self.props, "titleblock", text="")
+        row.operator("bim.add_sheet", text="", icon="ADD")
+        row.operator("bim.disable_editing_sheets", text="", icon="CANCEL")
+
+        if self.props.sheets:
+            row = self.layout.row(align=True)
+            row.alignment = "RIGHT"
             row.operator("bim.open_sheet", icon="URL", text="")
-            row.operator("bim.remove_sheet", icon="X", text="").index = props.active_sheet_index
+            row.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
+            row.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
+            row.operator("bim.create_sheets", icon="FILE_REFRESH", text="")
+            row.operator("bim.remove_sheet", icon="X", text="").index = self.props.active_sheet_index
 
-            layout.template_list("BIM_UL_generic", "", props, "sheets", props, "active_sheet_index")
-
-        row = layout.row(align=True)
-        row.operator("bim.add_drawing_to_sheet")
-        row.operator("bim.add_schedule_to_sheet")
-        row = layout.row()
-        row.operator("bim.create_sheets")
+        self.layout.template_list("BIM_UL_sheets", "", self.props, "sheets", self.props, "active_sheet_index")
 
 
 class BIM_PT_text(Panel):
@@ -289,21 +311,15 @@ class BIM_PT_text(Panel):
 
 class BIM_PT_annotation_utilities(Panel):
     bl_idname = "BIM_PT_annotation_utilities"
-    bl_label = "Drawing"
-    bl_options = {"DEFAULT_CLOSED"}
+    bl_label = "Annotation"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "BlenderBIM"
+    bl_category = "BIM Documentation"
 
     def draw(self, context):
         layout = self.layout
 
-        row = layout.row(align=True)
-        row.operator("bim.clean_wireframes")
-        row = layout.row(align=True)
-        row.operator("bim.add_grid")
-        row = layout.row(align=True)
-        row.operator("bim.add_sections_annotations")
+        self.props = context.scene.DocProperties
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Dim", icon="ARROW_LEFTRIGHT")
@@ -345,21 +361,8 @@ class BIM_PT_annotation_utilities(Panel):
         op.object_type = "MISC"
         op.data_type = "mesh"
 
-        props = context.scene.DocProperties
-
         row = layout.row(align=True)
-        row.operator("bim.add_drawing")
-        row.operator("bim.refresh_drawing_list", icon="FILE_REFRESH", text="")
-
-        if props.drawings:
-            if props.active_drawing_index < len(props.drawings):
-                op = row.operator("bim.open_view", icon="URL", text="")
-                op.view = props.active_drawing.name
-                row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
-            layout.template_list("BIM_UL_drawinglist", "", props, "drawings", props, "active_drawing_index")
-
-        layout.prop(props, "should_draw_decorations")
-        layout.prop(props, "decorations_colour")
+        row.prop(self.props, "should_draw_decorations", text="Viewport Annotations")
 
 
 class BIM_UL_drawinglist(bpy.types.UIList):
@@ -367,7 +370,17 @@ class BIM_UL_drawinglist(bpy.types.UIList):
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", text="", emboss=False)
-            op = row.operator("bim.open_view_camera", icon="OUTLINER_OB_CAMERA", text="")
-            op.view_name = item.name
+        else:
+            layout.label(text="", translate=False)
+
+
+class BIM_UL_sheets(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            split1 = row.split(factor=0.2)
+            split1.label(text=item.identification or "X")
+            split2 = split1.split(factor=0.8)
+            split2.label(text=item.name or "Unnamed")
         else:
             layout.label(text="", translate=False)

@@ -165,3 +165,23 @@ class TestRefreshBrickViewer:
         brick.run_view_brick_class(brick_class="class").should_be_called()
         brick.pop_brick_breadcrumb().should_be_called()
         subject.refresh_brick_viewer(brick)
+
+
+class TestRemoveBrick:
+    def test_run(self, ifc, brick):
+        brick.get_library_brick_reference("library", "brick_uri").should_be_called().will_return("reference")
+        ifc.run("library.remove_reference", reference="reference").should_be_called()
+        brick.remove_brick("brick_uri").should_be_called()
+        brick.run_refresh_brick_viewer().should_be_called()
+        subject.remove_brick(ifc, brick, library="library", brick_uri="brick_uri")
+
+    def test_do_not_remove_reference_if_no_reference_exists(self, ifc, brick):
+        brick.get_library_brick_reference("library", "brick_uri").should_be_called().will_return(None)
+        brick.remove_brick("brick_uri").should_be_called()
+        brick.run_refresh_brick_viewer().should_be_called()
+        subject.remove_brick(ifc, brick, library="library", brick_uri="brick_uri")
+
+    def test_do_not_check_references_if_no_library_specified(self, ifc, brick):
+        brick.remove_brick("brick_uri").should_be_called()
+        brick.run_refresh_brick_viewer().should_be_called()
+        subject.remove_brick(ifc, brick, library=None, brick_uri="brick_uri")

@@ -42,3 +42,9 @@ def unassign_object(ifc, collector, relating_obj=None, related_obj=None):
     collector.assign(relating_obj)
     collector.assign(related_obj)
     return rel
+
+
+def add_part_to_object(ifc, aggregator, collector, blender, obj, part_class, part_name=None):
+    part_obj = blender.create_ifc_object(ifc_class=part_class, name=part_name)
+    assign_object(ifc, aggregator, collector, relating_obj=obj, related_obj=part_obj)
+    blender.set_active_object(obj)

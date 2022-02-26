@@ -278,8 +278,9 @@ class Brick(blenderbim.core.tool.Brick):
         return name
 
     @classmethod
-    def run_add_brick_feed(source=None, destination=None):
-        return blenderbim.core.brick.add_brick_feed(tool.Ifc, tool.Brick, source=source, destination=destination)
+    def remove_brick(cls, brick_uri):
+        for triple in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
+            BrickStore.graph.remove(triple)
 
     @classmethod
     def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None):

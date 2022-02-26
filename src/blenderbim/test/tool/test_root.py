@@ -74,6 +74,18 @@ class TestGetElementType(NewFile):
         assert subject.get_element_type(element) == type
 
 
+class TestGetObjectName(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        assert subject.get_object_name(obj) == "Object"
+
+    def test_blender_number_suffixes_are_ignored(self):
+        obj = bpy.data.objects.new("Object.001", None)
+        assert subject.get_object_name(obj) == "Object"
+        obj = bpy.data.objects.new("Object.foo.123", None)
+        assert subject.get_object_name(obj) == "Object.foo"
+
+
 class TestGetObjectRepresentation(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -113,3 +125,28 @@ class TestLinkObjectData(NewFile):
 class TestRunGeometryAddRepresntation(NewFile):
     def test_nothing(self):
         pass
+
+
+class TestSetElementSpecificDisplaySettings(NewFile):
+    def test_opening_elements_display_as_wire(self):
+        ifc = ifcopenshell.file()
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        element = ifc.createIfcOpeningElement()
+        subject.set_element_specific_display_settings(obj, element)
+        assert obj.display_type == "WIRE"
+
+
+class TestSetObjectName(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        element = ifc.createIfcWall()
+        subject.set_object_name(obj, element)
+        assert obj.name == "IfcWall/Object"
+
+    def test_existing_ifc_prefixes_are_not_repeated(self):
+        ifc = ifcopenshell.file()
+        obj = bpy.data.objects.new("IfcSlab/Object", bpy.data.meshes.new("Mesh"))
+        element = ifc.createIfcWall()
+        subject.set_object_name(obj, element)
+        assert obj.name == "IfcWall/Object"
