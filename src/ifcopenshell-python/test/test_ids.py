@@ -56,7 +56,7 @@ class TestIdsParsing(unittest.TestCase):
 
     def test_parse_predefinedType_facet(self):
         IDS_URL = (
-            os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_predefinedType.xml")
+            os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_predefinedtype.xml")
         )
         ids_file = ids.ids.open(IDS_URL)
         self.assertEqual(
