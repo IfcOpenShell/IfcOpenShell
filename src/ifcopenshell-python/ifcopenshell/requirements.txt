@@ -1,4 +1,4 @@
-lxml==4.6.3
+lxml==4.6.5
 numpy==1.20.3
 regex==2021.4.4
 xmlschema==1.6.4
