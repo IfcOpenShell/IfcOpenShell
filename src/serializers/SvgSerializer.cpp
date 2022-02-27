@@ -1073,7 +1073,7 @@ void SvgSerializer::write(const geometry_data& data) {
 				}
 
 				TopoDS_Compound profile_edges;
-				if (profile_threshold_ != -1) {
+				if (profile_threshold_ != -1 && !(data.product->declaration().is("IfcWall") || data.product->declaration().is("IfcSlab"))) {
 					TopTools_IndexedDataMapOfShapeListOfShape map;
 					TopExp::MapShapesAndAncestors(*compound_to_hlr, TopAbs_EDGE, TopAbs_FACE, map);
 					if (map.Extent() > profile_threshold_) {
