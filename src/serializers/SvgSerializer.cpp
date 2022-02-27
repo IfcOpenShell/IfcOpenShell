@@ -1155,16 +1155,20 @@ void SvgSerializer::write(const geometry_data& data) {
 					}
 				}
 
-				if (is_floor_plan_ && storey) {
-					if (storey_hlr.find(storey) == storey_hlr.end()) {
-						if (use_hlr_poly_) {
-							storey_hlr[storey] = new HLRBRep_PolyAlgo;
-						} else {
-							storey_hlr[storey] = new HLRBRep_Algo;
+				if (is_floor_plan_) {
+					if (storey) {
+						if (storey_hlr.find(storey) == storey_hlr.end()) {
+							if (use_hlr_poly_) {
+								storey_hlr[storey] = new HLRBRep_PolyAlgo;
+							} else {
+								storey_hlr[storey] = new HLRBRep_Algo;
+							}
 						}
+						hlr_writer vis(*compound_to_hlr);
+						boost::apply_visitor(vis, storey_hlr[storey]);
+					} else {
+						Logger::Warning("Unable to invoke HLR due to absence of storey containment", data.product);
 					}
-					hlr_writer vis(*compound_to_hlr);
-					boost::apply_visitor(vis, storey_hlr[storey]);
 				}
 				else {
 					hlr_writer vis(*compound_to_hlr);
