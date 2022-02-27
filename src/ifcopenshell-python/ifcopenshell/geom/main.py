@@ -222,8 +222,11 @@ def consume_iterator(it, with_progress=False):
                 break
 
 
-def iterate(settings, file_or_filename, num_threads=1, include=None, exclude=None, with_progress=False):
+def iterate(settings, file_or_filename, num_threads=1, include=None, exclude=None, with_progress=False, cache=None):
     it = iterator(settings, file_or_filename, num_threads, include, exclude)
+    if cache:
+        hdf5_cache = serializers.hdf5(cache, settings)
+        it.set_cache(hdf5_cache)
     yield from consume_iterator(it, with_progress=with_progress)
 
 
