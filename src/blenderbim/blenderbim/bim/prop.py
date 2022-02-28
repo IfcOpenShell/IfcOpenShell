@@ -242,6 +242,24 @@ class Attribute(PropertyGroup):
 class ModuleVisibility(PropertyGroup):
     name: StringProperty(name="Name")
     is_visible: BoolProperty(name="Value", default=True, update=update_is_visible)
+    
+class PanelGroupVisibility(PropertyGroup):
+    # Scene panel groups
+    BIM_PT_project_info: BoolProperty(default=True)
+    BIM_PT_project_setup: BoolProperty(default=True)
+    BIM_PT_collaboration: BoolProperty(default=True)
+    BIM_PT_geometry: BoolProperty(default=True)
+    BIM_PT_services: BoolProperty(default=True)
+    BIM_PT_structural: BoolProperty(default=True)
+    BIM_PT_4D5D: BoolProperty(default=True)
+    BIM_PT_quality_control: BoolProperty(default=True)
+    BIM_PT_integrations: BoolProperty(default=True)
+    # Object panel groups
+    BIM_PT_object_metadata: BoolProperty(default=True)
+    BIM_PT_geometry_object: BoolProperty(default=True)
+    BIM_PT_services_object: BoolProperty(default=True)
+    BIM_PT_utilities_object: BoolProperty(default=True)
+    BIM_PT_misc_object: BoolProperty(default=True)
 
 
 class BIMProperties(PropertyGroup):
@@ -252,6 +270,7 @@ class BIMProperties(PropertyGroup):
         items=load_presets,
     )
     module_visibility: CollectionProperty(name="Module Visibility", type=ModuleVisibility)
+    panel_group_visibility: PointerProperty(name= "Panel-Group Visibility", type=PanelGroupVisibility)
     schema_dir: StringProperty(
         default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=update_schema_dir
     )

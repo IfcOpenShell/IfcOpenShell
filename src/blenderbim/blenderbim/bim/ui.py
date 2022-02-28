@@ -151,10 +151,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.BIMModelProperties, "occurrence_name_style")
         row = layout.row()
         row.prop(context.scene.BIMModelProperties, "occurrence_name_function")
-
+        
         row = self.layout.row()
         row.prop(context.scene.DocProperties, "decorations_colour")
-
+        
         row = self.layout.row(align=True)
         row.prop(context.scene.BIMProperties, "schema_dir")
         row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
@@ -187,9 +187,14 @@ def ifc_units(self, context):
 # Scene panel groups
 class BIM_PT_project_info(Panel):
     bl_label = "IFC Project Info"
+    bl_idname = "BIM_PT_project_info"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    
+    @classmethod
+    def poll(cls, context):
+        return context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
@@ -197,10 +202,15 @@ class BIM_PT_project_info(Panel):
 
 class BIM_PT_project_setup(Panel):
     bl_label = "IFC Project Setup"
+    bl_idname = "BIM_PT_project_setup"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    
+    @classmethod
+    def poll(cls, context):
+        return context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
@@ -208,10 +218,15 @@ class BIM_PT_project_setup(Panel):
 
 class BIM_PT_collaboration(Panel):
     bl_label = "IFC Collaboration"
+    bl_idname = "BIM_PT_collaboration"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    
+    @classmethod
+    def poll(cls, context):
+        return context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
@@ -219,6 +234,7 @@ class BIM_PT_collaboration(Panel):
 
 class BIM_PT_geometry(Panel):
     bl_label = "IFC Geometry"
+    bl_idname = "BIM_PT_geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -226,13 +242,14 @@ class BIM_PT_geometry(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Ifc.get() and context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_4D5D(Panel):
+    bl_idname = "BIM_PT_4D5D"
     bl_label = "IFC 4D/5D"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -241,7 +258,7 @@ class BIM_PT_4D5D(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Ifc.get() and context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
@@ -249,6 +266,7 @@ class BIM_PT_4D5D(Panel):
 
 class BIM_PT_structural(Panel):
     bl_label = "IFC Structural"
+    bl_idname = "BIM_PT_structural"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -256,7 +274,7 @@ class BIM_PT_structural(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Ifc.get() and context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
@@ -264,6 +282,7 @@ class BIM_PT_structural(Panel):
 
 class BIM_PT_services(Panel):
     bl_label = "IFC Services"
+    bl_idname = "BIM_PT_services"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -271,7 +290,7 @@ class BIM_PT_services(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Ifc.get() and context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
@@ -279,10 +298,15 @@ class BIM_PT_services(Panel):
 
 class BIM_PT_quality_control(Panel):
     bl_label = "IFC Quality Control"
+    bl_idname = "BIM_PT_quality_control"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    
+    @classmethod
+    def poll(cls, context):
+        return context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
@@ -290,10 +314,15 @@ class BIM_PT_quality_control(Panel):
 
 class BIM_PT_integrations(Panel):
     bl_label = "BIM Integrations"
+    bl_idname = "BIM_PT_integrations"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    
+    @classmethod
+    def poll(cls, context):
+        return context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
@@ -302,13 +331,14 @@ class BIM_PT_integrations(Panel):
 # Object panel groups
 class BIM_PT_object_metadata(Panel):
     bl_label = "IFC Object Metadata"
+    bl_idname = "BIM_PT_object_metadata"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Ifc.get() and context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
@@ -316,6 +346,7 @@ class BIM_PT_object_metadata(Panel):
 
 class BIM_PT_geometry_object(Panel):
     bl_label = "IFC Geometry"
+    bl_idname = "BIM_PT_geometry_object"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
@@ -323,7 +354,7 @@ class BIM_PT_geometry_object(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Ifc.get() and context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
@@ -331,6 +362,7 @@ class BIM_PT_geometry_object(Panel):
 
 class BIM_PT_services_object(Panel):
     bl_label = "IFC Services"
+    bl_idname = "BIM_PT_services_object"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
@@ -338,7 +370,7 @@ class BIM_PT_services_object(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Ifc.get() and context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
@@ -346,6 +378,7 @@ class BIM_PT_services_object(Panel):
 
 class BIM_PT_utilities_object(Panel):
     bl_label = "IFC Utilities"
+    bl_idname = "BIM_PT_utilities_object"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
@@ -353,7 +386,7 @@ class BIM_PT_utilities_object(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Ifc.get() and context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
@@ -361,6 +394,7 @@ class BIM_PT_utilities_object(Panel):
 
 class BIM_PT_misc_object(Panel):
     bl_label = "IFC Misc."
+    bl_idname = "BIM_PT_misc_object"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
@@ -368,7 +402,7 @@ class BIM_PT_misc_object(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Ifc.get() and context.scene.BIMProperties.panel_group_visibility[cls.bl_idname]
 
     def draw(self, context):
         pass
