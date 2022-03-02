@@ -21,6 +21,7 @@ import uuid
 import datetime
 import ifcopenshell
 import ifcopenshell.util.date
+import ifcopenshell.util.sequence
 import xml.etree.ElementTree as ET
 from .common import ScheduleIfcGenerator
 
@@ -110,6 +111,10 @@ class Ifc2P6:
             6: "Saturday",
             7: "Sunday",
         }
+
+        if not calendar.WorkingTimes:
+            return None
+
         for working_time in calendar.WorkingTimes:
             if not working_time.RecurrencePattern or working_time.RecurrencePattern.RecurrenceType != "WEEKLY":
                 continue
@@ -137,7 +142,7 @@ class Ifc2P6:
         results = []
         start = self.holiday_start_date
         finish = self.holiday_finish_date
-        if finish < start:
+        if not finish or not start or finish < start:
             return results
         while start < finish:
             start += datetime.timedelta(days=1)
@@ -206,17 +211,21 @@ class Ifc2P6:
         ET.SubElement(activity, "ActualFinishDate")
         ET.SubElement(activity, "ActualStartDate")
         calendar = ifcopenshell.util.sequence.derive_calendar(task)
-        ET.SubElement(activity, "CalendarObjectId").text = self.id_map[calendar]
+        if calendar:
+            ET.SubElement(activity, "CalendarObjectId").text = self.id_map[calendar]
         ET.SubElement(activity, "DurationPercentComplete").text = "0"
         ET.SubElement(activity, "Type").text = "Task Dependent"
         ET.SubElement(activity, "Status").text = "Not Started"
 
-        data_map = {
-            "RemainingEarlyStartDate": task.TaskTime.EarlyStart,
-            "RemainingEarlyFinishDate": task.TaskTime.EarlyFinish,
-            "RemainingLateStartDate": task.TaskTime.LateStart,
-            "RemainingLateFinishDate": task.TaskTime.LateFinish,
-        }
+        data_map = {}
+        if task.TaskTime:
+            data_map = {
+                "RemainingEarlyStartDate": task.TaskTime.EarlyStart,
+                "RemainingEarlyFinishDate": task.TaskTime.EarlyFinish,
+                "RemainingLateStartDate": task.TaskTime.LateStart,
+                "RemainingLateFinishDate": task.TaskTime.LateFinish,
+            }
+
         for key, value in data_map.items():
             el = ET.SubElement(activity, "RemainingEarlyStartDate")
             if value:
@@ -233,10 +242,13 @@ class Ifc2P6:
                     ET.SubElement(relationship, "Lag").text = str(duration.days * self.hours_per_day)
                 else:
                     ET.SubElement(relationship, "Lag").text = "0"
-                ET.SubElement(relationship, "PredecessorProjectObjectId").text = self.id_map[work_schedule]
-                ET.SubElement(relationship, "SuccessorProjectObjectId").text = self.id_map[work_schedule]
-                ET.SubElement(relationship, "PredecessorActivityObjectId").text = self.id_map[predecessor]
-                ET.SubElement(relationship, "SuccessorActivityObjectId").text = self.id_map[task]
+                if work_schedule in self.id_map:
+                    ET.SubElement(relationship, "PredecessorProjectObjectId").text = self.id_map[work_schedule]
+                    ET.SubElement(relationship, "SuccessorProjectObjectId").text = self.id_map[work_schedule]
+                if predecessor in self.id_map:
+                    ET.SubElement(relationship, "PredecessorActivityObjectId").text = self.id_map[predecessor]
+                if task in self.id_map:
+                    ET.SubElement(relationship, "SuccessorActivityObjectId").text = self.id_map[task]
                 ET.SubElement(relationship, "Type").text = {
                     "START_START": "Start to Start",
                     "START_FINISH": "Start to Finish",
@@ -258,7 +270,10 @@ class Ifc2P6:
     def link_element(self, element, el):
         self.id += 1
         ET.SubElement(el, "ObjectId").text = str(self.id)
-        guid = str(uuid.UUID(ifcopenshell.guid.expand(element.GlobalId))).upper()
+        try:
+            guid = str(uuid.UUID(ifcopenshell.guid.expand(element.GlobalId))).upper()
+        except:
+            guid = str(element.GlobalId)
         ET.SubElement(el, "GUID").text = "{" + guid + "}"
         self.id_map[element] = str(self.id)
         self.element_map[element] = el
