@@ -231,6 +231,15 @@ class Ifc2P6:
             if value:
                 el.text = value
 
+        if task.OperatesOn:
+            assignsToProcess = ET.SubElement(activity, "AssignsToProcess")
+            for proc in task.OperatesOn:
+                process = ET.SubElement(assignsToProcess, "Process")
+                ET.SubElement(process, "GlobalId").text = proc.GlobalId
+                for obj in proc.RelatedObjects:
+                    relObj = ET.SubElement(process, "RelatedObject")
+                    ET.SubElement(relObj, "GlobalId").text = obj.GlobalId
+
     def create_relationships(self, tasks, work_schedule):
         for task in tasks:
             for rel in task.IsSuccessorFrom or []:
