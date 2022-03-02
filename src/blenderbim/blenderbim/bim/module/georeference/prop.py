@@ -32,6 +32,7 @@ from bpy.props import (
 
 
 class BIMGeoreferenceProperties(PropertyGroup):
+    active_georeferencing_id: IntProperty(name="Active Georeferencing Id")
     is_editing: BoolProperty(name="Is Editing")
     map_conversion: CollectionProperty(name="Map Conversion", type=Attribute)
     projected_crs: CollectionProperty(name="Projected CRS", type=Attribute)

@@ -220,6 +220,20 @@ class Geometry:
     def should_generate_uvs(cls, obj): pass
     def should_use_presentation_style_assignment(cls): pass
 
+@interface
+class Georeference:
+    def set_georeferencing(cls, georeferencing): pass
+    def import_georeferencing_attributes(cls): pass
+    def import_projected_crs_attributes(cls, name, prop, data): pass
+    def clear_georeferencing(cls): pass
+    def get_georeferencing(cls): pass
+    def export_georeferencing_attributes(cls): pass
+    def export_map_attributes(self, attributes, prop): pass
+    def export_crs_attributes(self, attributes, prop): pass
+    def add_georeferencing(cls): pass
+    def remove_georeferencing(cls): pass
+    def set_blender_grid_north(cls): pass
+
 
 @interface
 class Ifc:
