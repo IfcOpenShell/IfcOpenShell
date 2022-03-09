@@ -1,52 +1,46 @@
-<!-- edited with XMLSpy v2021 rel. 3 (x64)  -->
-<!-- Version 0.4.1- July 26, 2021 - DRAFT  -->
-<!-- Most recent version available at: http://standards.buildingsmart.org/IDS  -->
-<xs:schema xmlns:ids="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ns1="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://standards.buildingsmart.org/IDS" elementFormDefault="qualified" attributeFormDefault="unqualified" version="0.4.1">
+<!-- edited with XMLSpy v2022 (x64) (http://www.altova.com) by Leon van Berlo (Overleaf Investments B.V.) -->
+<!-- February 8, 2022 - DRAFT  -->
+<xs:schema xmlns:ids="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://standards.buildingsmart.org/IDS" elementFormDefault="qualified" attributeFormDefault="unqualified" version="0.5.8">
 	<xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/xml.xsd"/>
 	<xs:import namespace="http://www.w3.org/2001/XMLSchema" schemaLocation="https://www.w3.org/2001/XMLSchema.xsd"/>
 	<xs:import namespace="http://www.w3.org/2001/XMLSchema-instance" schemaLocation="http://www.w3.org/2001/XMLSchema-instance"/>
 	<xs:element name="ids">
 		<xs:complexType>
-			<xs:complexContent>
-				<xs:extension base="ids:idsType">
-					<xs:sequence>
-						<xs:element name="info">
-							<xs:complexType>
-								<xs:choice maxOccurs="unbounded">
-									<xs:element name="ifcversion">
-										<xs:simpleType>
-											<xs:restriction base="xs:string">
-												<xs:enumeration value="2.3.0.1"/>
-												<xs:enumeration value="4.0.2.1"/>
-												<xs:enumeration value="4.3.0.0"/>
-											</xs:restriction>
-										</xs:simpleType>
-									</xs:element>
-									<xs:element name="description" type="xs:string" minOccurs="0"/>
-									<xs:element name="author" minOccurs="0">
-										<xs:simpleType>
-											<xs:restriction base="xs:string">
-												<xs:pattern value="[^@]+@[^\.]+\..+"/>
-											</xs:restriction>
-										</xs:simpleType>
-									</xs:element>
-									<xs:element name="copyright" type="xs:string"/>
-									<xs:element name="version" type="xs:decimal"/>
-									<xs:element name="date" type="xs:date"/>
-									<xs:element name="purpose" type="xs:string" minOccurs="0"/>
-									<xs:element name="milestone" type="xs:string" minOccurs="0"/>
-								</xs:choice>
-							</xs:complexType>
-						</xs:element>
-					</xs:sequence>
-				</xs:extension>
-			</xs:complexContent>
+			<xs:sequence>
+				<xs:element name="info">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="title" type="xs:string"/>
+							<xs:element name="copyright" type="xs:string" minOccurs="0"/>
+							<xs:element name="version" type="xs:string" minOccurs="0"/>
+							<xs:element name="description" type="xs:string" minOccurs="0"/>
+							<xs:element name="author" minOccurs="0">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:pattern value="[^@]+@[^\.]+\..+"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="date" type="xs:date" minOccurs="0"/>
+							<xs:element name="purpose" type="xs:string" minOccurs="0"/>
+							<xs:element name="milestone" type="xs:string" minOccurs="0"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="specifications">
+					<xs:complexType>
+						<xs:complexContent>
+							<xs:extension base="ids:specificationsType"/>
+						</xs:complexContent>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
 	<xs:complexType name="entityType">
 		<xs:sequence>
 			<xs:element name="name" type="ids:idsValue"/>
-			<xs:element name="predefinedtype" type="ids:idsValue" minOccurs="0"/>
+			<xs:element name="predefinedType" type="ids:idsValue" minOccurs="0"/>
 		</xs:sequence>
 	</xs:complexType>
 	<xs:complexType name="idsValue">
@@ -57,8 +51,8 @@
 		</xs:choice>
 	</xs:complexType>
 	<xs:complexType name="classificationType">
-		<xs:sequence maxOccurs="2">
-			<xs:element name="value" type="ids:idsValue"/>
+		<xs:sequence>
+			<xs:element name="value" type="ids:idsValue" minOccurs="0"/>
 			<xs:element name="system" type="ids:idsValue" minOccurs="0"/>
 		</xs:sequence>
 		<xs:attribute name="location" use="required">
@@ -73,12 +67,77 @@
 	</xs:complexType>
 	<xs:complexType name="applicabilityType">
 		<xs:sequence>
-			<xs:element name="entity" type="ids:entityType"/>
-			<xs:element name="classification" type="ids:classificationType" minOccurs="0"/>
+			<xs:element name="entity" type="ids:entityType" minOccurs="0"/>
+			<xs:element name="classification" type="ids:classificationType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="attribute" type="ids:attributeType" minOccurs="0" maxOccurs="unbounded"/>
 			<xs:element name="property" minOccurs="0" maxOccurs="unbounded">
 				<xs:complexType>
 					<xs:complexContent>
-						<xs:extension base="ids:propertyType"/>
+						<xs:extension base="ids:propertyType">
+							<xs:attribute name="measure">
+								<xs:annotation>
+									<xs:documentation>See the documentation and default units of these measures on https://github.com/buildingSMART/IDS/wiki/Physical-Quantities-and-Units</xs:documentation>
+								</xs:annotation>
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="String"/>
+										<xs:enumeration value="Number"/>
+										<xs:enumeration value="AmountOfSubstance"/>
+										<xs:enumeration value="AreaDensity"/>
+										<xs:enumeration value="Area"/>
+										<xs:enumeration value="DynamicViscosity"/>
+										<xs:enumeration value="ElectricCapacitance"/>
+										<xs:enumeration value="ElectricCharge"/>
+										<xs:enumeration value="ElectricConductance"/>
+										<xs:enumeration value="ElectricCurrent"/>
+										<xs:enumeration value="ElectricResistance"/>
+										<xs:enumeration value="ElectricVoltage"/>
+										<xs:enumeration value="Energy"/>
+										<xs:enumeration value="Force"/>
+										<xs:enumeration value="Frequency"/>
+										<xs:enumeration value="HeatFluxDensity"/>
+										<xs:enumeration value="Heating"/>
+										<xs:enumeration value="Illuminance"/>
+										<xs:enumeration value="IonConcentration"/>
+										<xs:enumeration value="IsoThermalMoistureCapacity"/>
+										<xs:enumeration value="Length"/>
+										<xs:enumeration value="Speed"/>
+										<xs:enumeration value="LuminousFlux"/>
+										<xs:enumeration value="LuminousIntensity"/>
+										<xs:enumeration value="MassDensity"/>
+										<xs:enumeration value="MassFlowRate"/>
+										<xs:enumeration value="Mass"/>
+										<xs:enumeration value="MassPerLength"/>
+										<xs:enumeration value="ModulusOfElasticity"/>
+										<xs:enumeration value="MoistureDiffusivity"/>
+										<xs:enumeration value="MolecularWeight"/>
+										<xs:enumeration value="MomentOfInertia"/>
+										<xs:enumeration value="PH"/>
+										<xs:enumeration value="PlanarForce"/>
+										<xs:enumeration value="Angle"/>
+										<xs:enumeration value="PlaneAngle"/>
+										<xs:enumeration value="Power"/>
+										<xs:enumeration value="Pressure"/>
+										<xs:enumeration value="RadioActivity"/>
+										<xs:enumeration value="Ratio"/>
+										<xs:enumeration value="RotationalFrequency"/>
+										<xs:enumeration value="SectionModulus"/>
+										<xs:enumeration value="SoundPower"/>
+										<xs:enumeration value="SoundPressure"/>
+										<xs:enumeration value="SpecificHeatCapacity"/>
+										<xs:enumeration value="TemperatureRateOfChange"/>
+										<xs:enumeration value="ThermalConductivity"/>
+										<xs:enumeration value="Temperature"/>
+										<xs:enumeration value="Time"/>
+										<xs:enumeration value="Torque"/>
+										<xs:enumeration value="VaporPermeability"/>
+										<xs:enumeration value="Volume"/>
+										<xs:enumeration value="VolumetricFlowRate"/>
+										<!-- kind of number defined in base of restriction -->
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:attribute>
+						</xs:extension>
 					</xs:complexContent>
 				</xs:complexType>
 			</xs:element>
@@ -100,9 +159,24 @@
 	</xs:complexType>
 	<xs:complexType name="propertyType">
 		<xs:sequence>
-			<xs:element name="propertyset" type="ids:idsValue"/>
+			<xs:element name="propertySet" type="ids:idsValue"/>
 			<xs:element name="name" type="ids:idsValue"/>
-			<xs:element name="value" type="ids:idsValue"/>
+			<xs:element name="value" type="ids:idsValue" minOccurs="0"/>
+		</xs:sequence>
+		<xs:attribute name="location" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="type"/>
+					<xs:enumeration value="instance"/>
+					<xs:enumeration value="any"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="attributeType">
+		<xs:sequence>
+			<xs:element name="name" type="ids:idsValue"/>
+			<xs:element name="value" type="ids:idsValue" minOccurs="0"/>
 		</xs:sequence>
 		<xs:attribute name="location" use="required">
 			<xs:simpleType>
@@ -116,7 +190,7 @@
 	</xs:complexType>
 	<xs:complexType name="materialType">
 		<xs:sequence>
-			<xs:element name="value" type="ids:idsValue"/>
+			<xs:element name="value" type="ids:idsValue" minOccurs="0"/>
 		</xs:sequence>
 		<xs:attribute name="location" use="required">
 			<xs:simpleType>
@@ -130,30 +204,75 @@
 	</xs:complexType>
 	<xs:complexType name="requirementsType">
 		<xs:sequence maxOccurs="unbounded">
-			<xs:element name="entity" type="ids:entityType" minOccurs="0">
+			<xs:element name="entity" minOccurs="0">
 				<xs:annotation>
 					<xs:documentation>Make sure 'Name' value of requirements entity is the same as the 'applicability' node, or a wildcard (inclusive pattern).</xs:documentation>
 				</xs:annotation>
+				<xs:complexType>
+					<xs:complexContent>
+						<xs:extension base="ids:entityType">
+							<xs:attribute name="instructions">
+								<xs:annotation>
+									<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
+								</xs:annotation>
+							</xs:attribute>
+						</xs:extension>
+					</xs:complexContent>
+				</xs:complexType>
 			</xs:element>
-			<xs:element name="classification" minOccurs="0">
+			<xs:element name="partOf" minOccurs="0" maxOccurs="unbounded">
+				<xs:complexType>
+					<xs:attribute name="entity" use="required">
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:enumeration value="IfcElementAssembly"/>
+								<xs:enumeration value="IfcGroup"/>
+								<xs:enumeration value="IfcSystem"/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:attribute>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="classification" minOccurs="0" maxOccurs="unbounded">
 				<xs:complexType>
 					<xs:complexContent>
 						<xs:extension base="ids:classificationType">
-							<xs:sequence>
-								<xs:element name="instructions" type="xs:string" minOccurs="0">
-									<xs:annotation>
-										<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
-									</xs:annotation>
-								</xs:element>
-							</xs:sequence>
 							<xs:attribute name="uri" type="xs:anyURI" use="optional"/>
 							<xs:attribute name="use" use="optional">
 								<xs:simpleType>
 									<xs:restriction base="xs:string">
-										<xs:enumeration value="required"/>
 										<xs:enumeration value="optional"/>
+										<xs:enumeration value="prohibited"/>
+										<xs:enumeration value="required"/>
 									</xs:restriction>
 								</xs:simpleType>
+							</xs:attribute>
+							<xs:attribute name="instructions">
+								<xs:annotation>
+									<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
+								</xs:annotation>
+							</xs:attribute>
+						</xs:extension>
+					</xs:complexContent>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="attribute" minOccurs="0" maxOccurs="unbounded">
+				<xs:complexType>
+					<xs:complexContent>
+						<xs:extension base="ids:attributeType">
+							<xs:attribute name="use" use="optional">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="optional"/>
+										<xs:enumeration value="prohibited"/>
+										<xs:enumeration value="required"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:attribute>
+							<xs:attribute name="instructions">
+								<xs:annotation>
+									<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
+								</xs:annotation>
 							</xs:attribute>
 						</xs:extension>
 					</xs:complexContent>
@@ -163,21 +282,83 @@
 				<xs:complexType>
 					<xs:complexContent>
 						<xs:extension base="ids:propertyType">
-							<xs:sequence>
-								<xs:element name="instructions" type="xs:string" minOccurs="0">
-									<xs:annotation>
-										<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
-									</xs:annotation>
-								</xs:element>
-							</xs:sequence>
 							<xs:attribute name="uri" type="xs:anyURI" use="optional"/>
 							<xs:attribute name="use" use="optional">
 								<xs:simpleType>
 									<xs:restriction base="xs:string">
-										<xs:enumeration value="required"/>
 										<xs:enumeration value="optional"/>
+										<xs:enumeration value="prohibited"/>
+										<xs:enumeration value="required"/>
 									</xs:restriction>
 								</xs:simpleType>
+							</xs:attribute>
+							<xs:attribute name="measure">
+								<xs:annotation>
+									<xs:documentation>See the documentation and default units of these measures on https://github.com/buildingSMART/IDS/wiki/Physical-Quantities-and-Units</xs:documentation>
+								</xs:annotation>
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="String"/>
+										<xs:enumeration value="Number"/>
+										<xs:enumeration value="AmountOfSubstance"/>
+										<xs:enumeration value="AreaDensity"/>
+										<xs:enumeration value="Area"/>
+										<xs:enumeration value="DynamicViscosity"/>
+										<xs:enumeration value="ElectricCapacitance"/>
+										<xs:enumeration value="ElectricCharge"/>
+										<xs:enumeration value="ElectricConductance"/>
+										<xs:enumeration value="ElectricCurrent"/>
+										<xs:enumeration value="ElectricResistance"/>
+										<xs:enumeration value="ElectricVoltage"/>
+										<xs:enumeration value="Energy"/>
+										<xs:enumeration value="Force"/>
+										<xs:enumeration value="Frequency"/>
+										<xs:enumeration value="HeatFluxDensity"/>
+										<xs:enumeration value="Heating"/>
+										<xs:enumeration value="Illuminance"/>
+										<xs:enumeration value="IonConcentration"/>
+										<xs:enumeration value="IsoThermalMoistureCapacity"/>
+										<xs:enumeration value="Length"/>
+										<xs:enumeration value="Speed"/>
+										<xs:enumeration value="LuminousFlux"/>
+										<xs:enumeration value="LuminousIntensity"/>
+										<xs:enumeration value="MassDensity"/>
+										<xs:enumeration value="MassFlowRate"/>
+										<xs:enumeration value="Mass"/>
+										<xs:enumeration value="MassPerLength"/>
+										<xs:enumeration value="ModulusOfElasticity"/>
+										<xs:enumeration value="MoistureDiffusivity"/>
+										<xs:enumeration value="MolecularWeight"/>
+										<xs:enumeration value="MomentOfInertia"/>
+										<xs:enumeration value="PH"/>
+										<xs:enumeration value="PlanarForce"/>
+										<xs:enumeration value="Angle"/>
+										<xs:enumeration value="PlaneAngle"/>
+										<xs:enumeration value="Power"/>
+										<xs:enumeration value="Pressure"/>
+										<xs:enumeration value="RadioActivity"/>
+										<xs:enumeration value="Ratio"/>
+										<xs:enumeration value="RotationalFrequency"/>
+										<xs:enumeration value="SectionModulus"/>
+										<xs:enumeration value="SoundPower"/>
+										<xs:enumeration value="SoundPressure"/>
+										<xs:enumeration value="SpecificHeatCapacity"/>
+										<xs:enumeration value="TemperatureRateOfChange"/>
+										<xs:enumeration value="ThermalConductivity"/>
+										<xs:enumeration value="Temperature"/>
+										<xs:enumeration value="Time"/>
+										<xs:enumeration value="Torque"/>
+										<xs:enumeration value="VaporPermeability"/>
+										<xs:enumeration value="Volume"/>
+										<xs:enumeration value="VolumetricFlowRate"/>
+										<!-- kind of number defined in base of restriction -->
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:attribute>
+							<xs:attribute name="instructions">
+								<xs:annotation>
+									<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
+								</xs:annotation>
 							</xs:attribute>
 						</xs:extension>
 					</xs:complexContent>
@@ -187,21 +368,20 @@
 				<xs:complexType>
 					<xs:complexContent>
 						<xs:extension base="ids:materialType">
-							<xs:sequence>
-								<xs:element name="instructions" type="xs:string" minOccurs="0">
-									<xs:annotation>
-										<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
-									</xs:annotation>
-								</xs:element>
-							</xs:sequence>
 							<xs:attribute name="uri" type="xs:anyURI" use="optional"/>
 							<xs:attribute name="use" use="optional">
 								<xs:simpleType>
 									<xs:restriction base="xs:string">
-										<xs:enumeration value="required"/>
 										<xs:enumeration value="optional"/>
+										<xs:enumeration value="prohibited"/>
+										<xs:enumeration value="required"/>
 									</xs:restriction>
 								</xs:simpleType>
+							</xs:attribute>
+							<xs:attribute name="instructions">
+								<xs:annotation>
+									<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
+								</xs:annotation>
 							</xs:attribute>
 						</xs:extension>
 					</xs:complexContent>
@@ -215,16 +395,41 @@
 			<xs:element name="requirements" type="ids:requirementsType"/>
 		</xs:sequence>
 		<xs:attribute name="name" type="xs:string" use="optional"/>
-		<xs:attribute name="necessity" use="required">
+		<xs:attribute name="use" use="required">
 			<xs:simpleType>
 				<xs:restriction base="xs:string">
-					<xs:enumeration value="required"/>
 					<xs:enumeration value="optional"/>
+					<xs:enumeration value="prohibited"/>
+					<xs:enumeration value="required"/>
 				</xs:restriction>
 			</xs:simpleType>
 		</xs:attribute>
+		<xs:attribute name="ifcVersion" use="required">
+			<xs:simpleType>
+				<xs:list>
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="IFC2X3"/>
+							<xs:enumeration value="IFC4"/>
+							<xs:enumeration value="IFC4_3"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:list>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="identifier">
+			<xs:annotation>
+				<xs:documentation>Author of the IDS can provide an identifier to the IDS. Beware: this cannot be enforced/assumed as (global) unique.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="description" type="xs:string" use="optional"/>
+		<xs:attribute name="instructions">
+			<xs:annotation>
+				<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
 	</xs:complexType>
-	<xs:complexType name="idsType">
+	<xs:complexType name="specificationsType">
 		<xs:sequence>
 			<xs:element name="specification" type="ids:specificationType" minOccurs="1" maxOccurs="unbounded"/>
 		</xs:sequence>

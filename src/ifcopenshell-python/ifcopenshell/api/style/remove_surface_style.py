@@ -37,7 +37,7 @@ class Usecase:
                     to_delete.add(texture)
 
         for attribute in self.settings["style"]:
-            if isinstance(attribute, ifcopenshell.entity_instance):
+            if isinstance(attribute, ifcopenshell.entity_instance) and attribute.id():
                 to_delete.add(attribute)
 
         self.file.remove(self.settings["style"])

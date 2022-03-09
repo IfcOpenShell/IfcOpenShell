@@ -38,7 +38,7 @@ def count_working_days(start, finish, calendar):
     current_date = datetime.date(start.year, start.month, start.day)
     finish_date = datetime.date(finish.year, finish.month, finish.day)
     while current_date < finish_date:
-        if is_working_day(current_date, calendar):
+        if calendar and calendar.WorkingTimes and is_working_day(current_date, calendar):
             result += 1
         current_date += datetime.timedelta(days=1)
     return result
@@ -49,7 +49,7 @@ def get_finish_date(start, duration, duration_type, calendar):
     abs_duration = abs(duration.days)
     date_offset = datetime.timedelta(days=1 if duration.days > 0 else -1)
     while abs_duration > 0:
-        if duration_type == "ELAPSEDTIME" or not calendar:
+        if duration_type == "ELAPSEDTIME" or not calendar or not calendar.WorkingTimes:
             abs_duration -= 1
         elif ifcopenshell.util.sequence.is_working_day(current_date, calendar):
             abs_duration -= 1
@@ -63,7 +63,7 @@ def get_finish_date(start, duration, duration_type, calendar):
 
 
 def get_soonest_working_day(start, duration_type, calendar):
-    if duration_type == "ELAPSEDTIME" or not calendar:
+    if duration_type == "ELAPSEDTIME" or not calendar or not calendar.WorkingTimes:
         return start
     while not is_working_day(start, calendar):
         start += datetime.timedelta(days=1)
@@ -71,7 +71,7 @@ def get_soonest_working_day(start, duration_type, calendar):
 
 
 def get_recent_working_day(start, duration_type, calendar):
-    if duration_type == "ELAPSEDTIME" or not calendar:
+    if duration_type == "ELAPSEDTIME" or not calendar or not calendar.WorkingTimes:
         return start
     while not is_working_day(start, calendar):
         start -= datetime.timedelta(days=1)

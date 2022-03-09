@@ -136,6 +136,8 @@
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"
 	#include "../serializers/HdfSerializer.h"
+	#include "../serializers/XmlSerializer.h"
+	#include "../serializers/GltfSerializer.h"
 	
 #ifdef HAS_SCHEMA_2x3
 	#include "../ifcparse/Ifc2x3.h"
