@@ -53,6 +53,12 @@ class TestCreateProject:
         project.run_context_add_context(
             context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
         ).should_be_called()
+        project.run_context_add_context(
+            context_type="Plan", context_identifier="Annotation", target_view="SECTION_VIEW", parent="plan"
+        ).should_be_called()
+        project.run_context_add_context(
+            context_type="Plan", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent="plan"
+        ).should_be_called()
 
         project.run_root_assign_class(obj="site", ifc_class="IfcSite", context="body").should_be_called()
         project.run_root_assign_class(obj="building", ifc_class="IfcBuilding", context="body").should_be_called()
@@ -93,6 +99,12 @@ class TestCreateProject:
         ).should_be_called().will_return("plan")
         project.run_context_add_context(
             context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
+        ).should_be_called()
+        project.run_context_add_context(
+            context_type="Plan", context_identifier="Annotation", target_view="SECTION_VIEW", parent="plan"
+        ).should_be_called()
+        project.run_context_add_context(
+            context_type="Plan", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent="plan"
         ).should_be_called()
 
         project.run_root_assign_class(obj="site", ifc_class="IfcSite", context="body").should_be_called()
@@ -143,6 +155,12 @@ class TestCreateProject:
         ).should_be_called().will_return("plan")
         project.run_context_add_context(
             context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
+        ).should_be_called()
+        project.run_context_add_context(
+            context_type="Plan", context_identifier="Annotation", target_view="SECTION_VIEW", parent="plan"
+        ).should_be_called()
+        project.run_context_add_context(
+            context_type="Plan", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent="plan"
         ).should_be_called()
 
         project.run_root_assign_class(obj="site", ifc_class="IfcSite", context="body").should_be_called()
