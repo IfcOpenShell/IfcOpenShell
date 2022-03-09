@@ -19,7 +19,7 @@
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
-from ifcopenshell.api.document.data import Data
+from blenderbim.bim.module.document.data import DocumentData, ObjectDocumentData
 
 
 class BIM_PT_documents(Panel):
@@ -36,14 +36,14 @@ class BIM_PT_documents(Panel):
         return IfcStore.get_file()
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not DocumentData.is_loaded:
+            DocumentData.load()
 
         self.props = context.scene.BIMDocumentProperties
 
         if not self.props.is_editing or self.props.is_editing == "information":
             row = self.layout.row(align=True)
-            row.label(text="{} Documents Found".format(len(Data.information)), icon="FILE")
+            row.label(text="{} Documents Found".format(DocumentData.data["total_information"]), icon="FILE")
             if self.props.is_editing == "information":
                 row.operator("bim.add_information", text="", icon="ADD")
                 row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
@@ -52,7 +52,7 @@ class BIM_PT_documents(Panel):
 
         if not self.props.is_editing or self.props.is_editing == "reference":
             row = self.layout.row(align=True)
-            row.label(text="{} References Found".format(len(Data.references)), icon="FILE_HIDDEN")
+            row.label(text="{} References Found".format(DocumentData.data["total_references"]), icon="FILE_HIDDEN")
             if self.props.is_editing == "reference":
                 row.operator("bim.add_document_reference", text="", icon="ADD")
                 row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
@@ -89,43 +89,26 @@ class BIM_PT_object_documents(Panel):
         return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
 
     def draw(self, context):
+        if not ObjectDocumentData.is_loaded:
+            ObjectDocumentData.load()
+
         obj = context.active_object
         self.oprops = obj.BIMObjectProperties
         self.sprops = context.scene.BIMDocumentProperties
         self.props = obj.BIMObjectDocumentProperties
         self.file = IfcStore.get_file()
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
-        if self.oprops.ifc_definition_id not in Data.products:
-            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
 
         self.draw_add_ui()
 
-        document_ids = Data.products[self.oprops.ifc_definition_id]
-
-        if not document_ids:
+        if not ObjectDocumentData.data["documents"]:
             row = self.layout.row(align=True)
             row.label(text="No Documents", icon="FILE")
 
-        for document_id in document_ids:
-            try:
-                document = Data.information[document_id]
-                document_type = "IfcDocumentInformation"
-                icon = "FILE"
-            except:
-                document = Data.references[document_id]
-                document_type = "IfcDocumentReference"
-                icon = "FILE_HIDDEN"
+        for document in ObjectDocumentData.data["documents"]:
             row = self.layout.row(align=True)
-            if self.file.schema == "IFC2X3":
-                if document_type == "IfcDocumentInformation":
-                    row.label(text=document.get("DocumentId") or "*", icon=icon)
-                elif document_type == "IfcDocumentReference":
-                    row.label(text=document.get("ItemReference") or "*", icon=icon)
-            else:
-                row.label(text=document.get("Identification") or "*", icon=icon)
-            row.label(text=document.get("Name") or "Unnamed")
-            row.operator("bim.unassign_document", text="", icon="X").document = document_id
+            row.label(text=document["identification"] or "*", icon="FILE")
+            row.label(text=document["name"] or "Unnamed")
+            row.operator("bim.unassign_document", text="", icon="X").document = document["id"]
 
     def draw_add_ui(self):
         if self.props.is_adding:
