@@ -18,7 +18,8 @@
 
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
-from ifcopenshell.api.classification.data import Data
+from blenderbim.bim.module.classification.data import ClassificationsData
+from blenderbim.bim.module.classification.data import ClassificationReferencesData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -43,7 +44,7 @@ def getClassifications(self, context):
     global classification_enum
     if len(classification_enum) < 1:
         classification_enum.clear()
-        classification_enum.extend([(str(i), n, "") for i, n in Data.library_classifications.items()])
+        classification_enum.extend([(str(i), n, "") for i, n in ClassificationsData.data["library_classifications"].items()])
         if classification_enum:
             getReferences(self, context, parent_id=int(classification_enum[0][0]))
     return classification_enum
@@ -56,7 +57,7 @@ def updateClassification(self, context):
 def getReferences(self, context, parent_id=None):
     props = context.scene.BIMClassificationProperties
     props.available_library_references.clear()
-    for reference in Data.library_file.by_id(parent_id).HasReferences:
+    for reference in ClassificationsData.data["library_file"].by_id(parent_id).HasReferences:
         new = props.available_library_references.add()
         new.identification = reference.Identification or ""
         new.name = reference.Name or ""
