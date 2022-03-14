@@ -22,12 +22,24 @@ import ifcopenshell
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {}
+        self.settings = {"parent": None}
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
         id_attribute = "DocumentId" if self.file.schema == "IFC2X3" else "Identification"
-        return self.file.create_entity(
+        information = self.file.create_entity(
             "IfcDocumentInformation", **{id_attribute: ifcopenshell.guid.new(), "Name": "Unnamed"}
         )
+        parent = self.settings["parent"]
+        if not parent and self.file.by_type("IfcProject"):
+            parent = self.file.by_type("IfcProject")[0]
+        if parent.is_a("IfcProject") or prarent.is_a("IfcContext"):
+            self.file.create_entity(
+                "IfcRelAssociatesDocument",
+                GlobalId=ifcopenshell.guid.new(),
+                OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
+                RelatingDocument=information,
+                RelatedObjects=[parent],
+            )
+        return information
