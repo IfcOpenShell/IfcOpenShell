@@ -41,7 +41,13 @@ class DocumentData:
 
     @classmethod
     def total_information(cls):
-        return len(tool.Ifc.get().by_type("IfcDocumentInformation"))
+        return len(
+            [
+                rel
+                for rel in tool.Ifc.get().by_type("IfcProject")[0].HasAssociations or []
+                if rel.is_a("IfcRelAssociatesDocument") and rel.RelatingDocument.is_a("IfcDocumentInformation")
+            ]
+        )
 
     @classmethod
     def total_references(cls):
