@@ -516,6 +516,14 @@ endif
 	cd dist/working/owlrl-6.0.2/ && cp -r owlrl ../../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Required by brickschema
+	# This is a bit of a dodgy one, it should be provided by setuptools which Blender doesn't ship.
+	mkdir dist/working
+	cd dist/working && wget https://blenderbim.org/builds/pkg_resources.tar.gz
+	cd dist/working && tar -xzvf pkg_resources*
+	cd dist/working/ && cp -r pkg_resources ../blenderbim/libs/site/packages/
+	rm -rf dist/working
+
 	cd dist/blenderbim && sed -i "s/999999/$(VERSION)/" __init__.py
 	cd dist && zip -r blenderbim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
 	rm -rf dist/blenderbim
