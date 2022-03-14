@@ -300,6 +300,33 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	%}
 };
 
+%extend IfcGeom::BRepElement {
+    double calc_volume_() const {
+        double v;
+        if ($self->geometry().calculate_volume(v)) {
+            return v;
+        } else {
+            return std::numeric_limits<double>::quiet_NaN();
+        }
+    }
+
+    double calc_surface_area_() const {
+        double v;
+        if ($self->geometry().calculate_surface_area(v)) {
+            return v;
+        } else {
+            return std::numeric_limits<double>::quiet_NaN();
+        }
+    }
+
+    %pythoncode %{
+        # Hide the getters with read-only property implementations
+        geometry = property(geometry)
+        volume = property(calc_volume_)
+        surface_area = property(calc_surface_area_)
+    %}    
+};
+
 %extend IfcGeom::Material {
 	%pythoncode %{
         # Hide the getters with read-only property implementations
