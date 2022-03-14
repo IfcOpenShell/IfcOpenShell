@@ -56,7 +56,7 @@ class Usecase:
             "IfcRelAssociatesDocument",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                # TODO: owner history
+                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
                 "RelatingDocument": self.settings["document"],
             }
         )
