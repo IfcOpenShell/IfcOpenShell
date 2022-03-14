@@ -134,6 +134,22 @@ class Debug:
 
 
 @interface
+class Document:
+    def disable_document_assignment_ui(cls, obj): pass
+    def disable_editing_document(cls): pass
+    def disable_editing_ui(cls): pass
+    def enable_document_assignment_ui(cls, obj): pass
+    def enable_information_editing_ui(cls): pass
+    def enable_reference_editing_ui(cls): pass
+    def export_document_attributes(cls): pass
+    def import_document_attributes(cls, document): pass
+    def import_information(cls): pass
+    def import_references(cls): pass
+    def is_document_information(cls, document): pass
+    def set_active_document(cls, document): pass
+
+
+@interface
 class Drawing:
     def create_annotation_object(cls, object_type): pass
     def create_camera(cls, name, matrix): pass
