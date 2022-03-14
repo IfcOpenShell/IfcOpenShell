@@ -310,7 +310,6 @@ ifeq ($(PLATFORM), win)
 	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
 endif
 	rm -rf dist/working
-endif
 
 	# Required by hpp-fcl
 	mkdir dist/working
@@ -386,6 +385,8 @@ ifeq ($(PLATFORM), win)
 	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
 endif
 	rm -rf dist/working
+# https://github.com/humanoid-path-planner/hpp-fcl/issues/272
+endif
 
 	# Required by BIMTester
 	mkdir dist/working
