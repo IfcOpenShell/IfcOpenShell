@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
@@ -85,12 +86,20 @@ class ObjectDocumentData:
                     identification = rel.RelatingDocument.ItemReference
                 else:
                     identification = rel.RelatingDocument.Identification
+                location = rel.RelatingDocument.Location
+                if location is None and rel.RelatingDocument.ReferencedDocument:
+                    location = rel.RelatingDocument.ReferencedDocument.Location
+                if location:
+                    if not "://" in location:
+                        if not os.path.isabs(location):
+                            location = os.path.abspath(os.path.join(os.path.dirname(tool.Ifc.get_path()), location))
+                        location = "file://" + location
                 results.append(
                     {
-                        "type": rel.RelatingDocument.is_a(),
                         "id": rel.RelatingDocument.id(),
                         "identification": identification,
                         "name": rel.RelatingDocument.Name,
+                        "location": location,
                     }
                 )
         return results

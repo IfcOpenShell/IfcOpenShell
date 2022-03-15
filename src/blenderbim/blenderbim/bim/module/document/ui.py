@@ -113,6 +113,8 @@ class BIM_PT_object_documents(Panel):
             row = self.layout.row(align=True)
             row.label(text=document["identification"] or "*", icon="FILE")
             row.label(text=document["name"] or "Unnamed")
+            if document["location"]:
+                row.operator("bim.open_uri", icon="URL", text="").uri = document["location"]
             row.operator("bim.unassign_document", text="", icon="X").document = document["id"]
 
     def draw_add_ui(self):
