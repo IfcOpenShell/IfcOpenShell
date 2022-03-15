@@ -611,10 +611,14 @@ class LinkIfc(bpy.types.Operator):
     bl_description = "Link a Blender file"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.blend;*.blend1", options={"HIDDEN"})
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def execute(self, context):
         new = context.scene.BIMProjectProperties.links.add()
-        new.name = self.filepath
+        filepath = self.filepath
+        if self.use_relative_path:
+            filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
+        new.name = filepath
         bpy.ops.bim.load_link(filepath=self.filepath)
         return {"FINISHED"}
 
@@ -646,13 +650,16 @@ class UnloadLink(bpy.types.Operator):
     filepath: bpy.props.StringProperty()
 
     def execute(self, context):
+        filepath = self.filepath
+        if not os.path.isabs(filepath):
+            filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), filepath))
         for collection in context.scene.collection.children:
-            if collection.library and collection.library.filepath == self.filepath:
+            if collection.library and collection.library.filepath == filepath:
                 context.scene.collection.children.unlink(collection)
         for scene in bpy.data.scenes:
-            if scene.library and scene.library.filepath == self.filepath:
+            if scene.library and scene.library.filepath == filepath:
                 bpy.data.scenes.remove(scene)
-        link = context.scene.BIMProjectProperties.links.get(self.filepath)
+        link = context.scene.BIMProjectProperties.links.get(filepath)
         link.is_loaded = False
         return {"FINISHED"}
 
@@ -665,16 +672,19 @@ class LoadLink(bpy.types.Operator):
     filepath: bpy.props.StringProperty()
 
     def execute(self, context):
+        filepath = self.filepath
+        if not os.path.isabs(filepath):
+            filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), filepath))
         with bpy.data.libraries.load(self.filepath, link=True) as (data_from, data_to):
             data_to.scenes = data_from.scenes
         for scene in bpy.data.scenes:
-            if not scene.library or scene.library.filepath != self.filepath:
+            if not scene.library or scene.library.filepath != filepath:
                 continue
             for child in scene.collection.children:
                 if "IfcProject" not in child.name:
                     continue
                 bpy.data.scenes[0].collection.children.link(child)
-        link = context.scene.BIMProjectProperties.links.get(self.filepath)
+        link = context.scene.BIMProjectProperties.links.get(filepath)
         link.is_loaded = True
         return {"FINISHED"}
 
