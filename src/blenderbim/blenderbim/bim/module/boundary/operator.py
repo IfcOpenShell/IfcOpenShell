@@ -44,6 +44,19 @@ class Loader:
         self.load_settings()
         self.load_importer()
 
+    def create_mesh(self, boundary):
+        # ConnectionGeometry is optional in IFC schema for some reasons.
+        if not boundary.ConnectionGeometry:
+            return None
+        surface = boundary.ConnectionGeometry.SurfaceOnRelatingElement
+        # workaround for unvalid geometry provided by Revit. See https://github.com/IfcOpenShell/IfcOpenShell/issues/635#issuecomment-770366838
+        if surface.is_a("IfcCurveBoundedPlane") and not getattr(surface, "InnerBoundaries", None):
+            surface.InnerBoundaries = ()
+        shape = ifcopenshell.geom.create_shape(self.settings, surface)
+        mesh = self.ifc_importer.create_mesh(None, shape)
+        self.ifc_importer.link_mesh(shape, mesh)
+        return mesh
+
     def load_settings(self):
         self.settings = ifcopenshell.geom.settings()
         self.settings.set(self.settings.EXCLUDE_SOLIDS_AND_SURFACES, False)
@@ -61,13 +74,7 @@ class Loader:
         obj = tool.Ifc.get_object(boundary)
         if obj:
             return obj
-        surface = boundary.ConnectionGeometry.SurfaceOnRelatingElement
-        # workaround for unvalid geometry provided by Revit. See https://github.com/IfcOpenShell/IfcOpenShell/issues/635#issuecomment-770366838
-        if surface.is_a("IfcCurveBoundedPlane") and not getattr(surface, "InnerBoundaries", None):
-            surface.InnerBoundaries = ()
-        shape = ifcopenshell.geom.create_shape(self.settings, surface)
-        mesh = self.ifc_importer.create_mesh(None, shape)
-        self.ifc_importer.link_mesh(shape, mesh)
+        mesh = self.create_mesh(boundary)
         obj = bpy.data.objects.new(f"{boundary.is_a()}/{boundary.Name}", mesh)
         obj.matrix_world = blender_space.matrix_world
         boundaries_collection = get_boundaries_collection(blender_space)
