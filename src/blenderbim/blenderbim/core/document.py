@@ -17,16 +17,31 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def load_information(document):
-    document.import_information()
-    document.enable_information_editing_ui()
-    document.disable_editing_document()
+def load_project_documents(document):
+    document.clear_document_tree()
+    document.import_project_documents()
+    document.clear_breadcrumbs()
+    document.enable_editing_ui()
 
 
-def load_references(document):
-    document.import_references()
-    document.enable_reference_editing_ui()
-    document.disable_editing_document()
+def load_document(document_tool, document=None):
+    document_tool.clear_document_tree()
+    document_tool.import_subdocuments(document)
+    document_tool.import_references(document)
+    document_tool.disable_editing_document()
+    document_tool.add_breadcrumb(document)
+
+
+def load_parent_document(document):
+    document.clear_document_tree()
+    document.remove_latest_breadcrumb()
+    parent = document.get_active_breadcrumb()
+    if parent:
+        document.import_subdocuments(parent)
+        document.import_references(parent)
+        document.disable_editing_document()
+    else:
+        document.import_project_documents()
 
 
 def disable_document_editing_ui(document):
@@ -44,52 +59,52 @@ def disable_editing_document(document):
 
 
 def add_information(ifc, document):
-    result = ifc.run("document.add_information")
-    document.import_information()
-    document.import_document_attributes(result)
-    document.set_active_document(result)
+    document.clear_document_tree()
+    parent = document.get_active_breadcrumb()
+    ifc.run("document.add_information", parent=parent)
+    if parent:
+        document.import_subdocuments(parent)
+        document.import_references(parent)
+    else:
+        document.import_project_documents()
 
 
 def add_reference(ifc, document):
-    result = ifc.run("document.add_reference")
-    document.import_references()
-    document.import_document_attributes(result)
-    document.set_active_document(result)
+    parent = document.get_active_breadcrumb()
+    ifc.run("document.add_reference", information=parent)
+    document.clear_document_tree()
+    document.import_subdocuments(parent)
+    document.import_references(parent)
 
 
-def edit_information(ifc, document, information=None):
-    attributes = document.export_document_attributes()
-    ifc.run("document.edit_information", information=information, attributes=attributes)
-    document.disable_editing_document()
-    document.import_information()
-
-
-def edit_reference(ifc, document, reference=None):
-    attributes = document.export_document_attributes()
-    ifc.run("document.edit_reference", reference=reference, attributes=attributes)
-    document.disable_editing_document()
-    document.import_references()
+def edit_document(ifc, document_tool, document=None):
+    attributes = document_tool.export_document_attributes()
+    if document_tool.is_document_information(document):
+        ifc.run("document.edit_information", information=document, attributes=attributes)
+    else:
+        ifc.run("document.edit_reference", reference=document, attributes=attributes)
+    document_tool.disable_editing_document()
+    document_tool.clear_document_tree()
+    parent = document_tool.get_active_breadcrumb()
+    if parent:
+        document_tool.import_subdocuments(parent)
+        document_tool.import_references(parent)
+    else:
+        document_tool.import_project_documents()
 
 
 def remove_document(ifc, document_tool, document=None):
+    document_tool.clear_document_tree()
     if document_tool.is_document_information(document):
-        ifc.run("document.remove_document", document=document)
-        document_tool.import_information()
+        ifc.run("document.remove_information", information=document)
     else:
-        ifc.run("document.remove_document", document=document)
-        document_tool.import_references()
-    document_tool.disable_editing_document()
-
-
-def enable_assigning_document(document, obj=None):
-    document.import_references()
-    document.enable_reference_editing_ui()
-    document.disable_editing_document()
-    document.enable_document_assignment_ui(obj)
-
-
-def disable_assigning_document(document, obj=None):
-    document.disable_document_assignment_ui(obj)
+        ifc.run("document.remove_reference", reference=document)
+    parent = document_tool.get_active_breadcrumb()
+    if parent:
+        document_tool.import_subdocuments(parent)
+        document_tool.import_references(parent)
+    else:
+        document_tool.import_project_documents()
 
 
 def assign_document(ifc, product=None, document=None):
