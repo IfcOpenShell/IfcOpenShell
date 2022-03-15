@@ -25,8 +25,20 @@ from blenderbim.bim import import_ifc
 
 class Document(blenderbim.core.tool.Document):
     @classmethod
-    def disable_document_assignment_ui(cls, obj):
-        obj.BIMObjectDocumentProperties.is_adding = ""
+    def add_breadcrumb(cls, document):
+        props = bpy.context.scene.BIMDocumentProperties
+        new = props.breadcrumbs.add()
+        new.name = str(document.id())
+
+    @classmethod
+    def clear_breadcrumbs(cls):
+        props = bpy.context.scene.BIMDocumentProperties
+        props.breadcrumbs.clear()
+
+    @classmethod
+    def clear_document_tree(cls):
+        props = bpy.context.scene.BIMDocumentProperties
+        props.documents.clear()
 
     @classmethod
     def disable_editing_document(cls):
@@ -34,23 +46,21 @@ class Document(blenderbim.core.tool.Document):
 
     @classmethod
     def disable_editing_ui(cls):
-        bpy.context.scene.BIMDocumentProperties.is_editing = ""
+        bpy.context.scene.BIMDocumentProperties.is_editing = False
 
     @classmethod
-    def enable_document_assignment_ui(cls, obj):
-        obj.BIMObjectDocumentProperties.is_adding = "IfcDocumentReference"
-
-    @classmethod
-    def enable_information_editing_ui(cls):
-        bpy.context.scene.BIMDocumentProperties.is_editing = "information"
-
-    @classmethod
-    def enable_reference_editing_ui(cls):
-        bpy.context.scene.BIMDocumentProperties.is_editing = "reference"
+    def enable_editing_ui(cls):
+        bpy.context.scene.BIMDocumentProperties.is_editing = True
 
     @classmethod
     def export_document_attributes(cls):
         return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMDocumentProperties.document_attributes)
+
+    @classmethod
+    def get_active_breadcrumb(cls):
+        props = bpy.context.scene.BIMDocumentProperties
+        if len(props.breadcrumbs):
+            return tool.Ifc.get().by_id(int(props.breadcrumbs[-1].name))
 
     @classmethod
     def import_document_attributes(cls, document):
@@ -59,34 +69,63 @@ class Document(blenderbim.core.tool.Document):
         blenderbim.bim.helper.import_attributes2(document, props.document_attributes)
 
     @classmethod
-    def import_information(cls):
+    def import_project_documents(cls):
         props = bpy.context.scene.BIMDocumentProperties
         props.documents.clear()
-        for element in tool.Ifc.get().by_type("IfcDocumentInformation"):
-            new = props.documents.add()
-            new.ifc_definition_id = element.id()
-            new.name = element.Name or "Unnamed"
-            if tool.Ifc.get_schema() == "IFC2X3":
-                new.identification = element.DocumentId or "*"
-            else:
-                new.identification = element.Identification or "*"
+        project = tool.Ifc.get().by_type("IfcProject")[0]
+        for rel in project.HasAssociations or []:
+            if rel.is_a("IfcRelAssociatesDocument") and rel.RelatingDocument.is_a("IfcDocumentInformation"):
+                element = rel.RelatingDocument
+                new = props.documents.add()
+                new.ifc_definition_id = element.id()
+                new.name = element.Name or "Unnamed"
+                new.is_information = True
+                if tool.Ifc.get_schema() == "IFC2X3":
+                    new.identification = element.DocumentId or "*"
+                else:
+                    new.identification = element.Identification or "*"
 
     @classmethod
-    def import_references(cls):
+    def import_references(cls, document):
         props = bpy.context.scene.BIMDocumentProperties
-        props.documents.clear()
-        for element in tool.Ifc.get().by_type("IfcDocumentReference"):
-            new = props.documents.add()
-            new.ifc_definition_id = element.id()
-            new.name = element.Name or "Unnamed"
-            if tool.Ifc.get_schema() == "IFC2X3":
+        if tool.Ifc.get_schema() == "IFC2X3":
+            for element in document.DocumentReferences or []:
+                new = props.documents.add()
+                new.ifc_definition_id = element.id()
+                new.name = element.Name or "Unnamed"
                 new.identification = element.ItemReference or "*"
-            else:
+                new.is_information = False
+        else:
+            for element in document.HasDocumentReferences:
+                new = props.documents.add()
+                new.ifc_definition_id = element.id()
+                new.name = element.Name or "Unnamed"
                 new.identification = element.Identification or "*"
+                new.is_information = False
+
+    @classmethod
+    def import_subdocuments(cls, document):
+        props = bpy.context.scene.BIMDocumentProperties
+        if document.IsPointer:
+            for element in document.IsPointer[0].RelatedDocuments or []:
+                new = props.documents.add()
+                new.ifc_definition_id = element.id()
+                new.name = element.Name or "Unnamed"
+                new.is_information = True
+                if tool.Ifc.get_schema() == "IFC2X3":
+                    new.identification = element.DocumentId or "*"
+                else:
+                    new.identification = element.Identification or "*"
 
     @classmethod
     def is_document_information(cls, document):
         return document.is_a("IfcDocumentInformation")
+
+    @classmethod
+    def remove_latest_breadcrumb(cls):
+        props = bpy.context.scene.BIMDocumentProperties
+        if len(props.breadcrumbs):
+            props.breadcrumbs.remove(len(props.breadcrumbs) - 1)
 
     @classmethod
     def set_active_document(cls, document):

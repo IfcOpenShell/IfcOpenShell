@@ -135,17 +135,20 @@ class Debug:
 
 @interface
 class Document:
-    def disable_document_assignment_ui(cls, obj): pass
+    def add_breadcrumb(cls, document): pass
+    def clear_breadcrumbs(cls): pass
+    def clear_document_tree(cls): pass
     def disable_editing_document(cls): pass
     def disable_editing_ui(cls): pass
-    def enable_document_assignment_ui(cls, obj): pass
-    def enable_information_editing_ui(cls): pass
-    def enable_reference_editing_ui(cls): pass
+    def enable_editing_ui(cls): pass
     def export_document_attributes(cls): pass
+    def get_active_breadcrumb(cls): pass
     def import_document_attributes(cls, document): pass
-    def import_information(cls): pass
-    def import_references(cls): pass
+    def import_project_documents(cls): pass
+    def import_references(cls, document): pass
+    def import_subdocuments(cls, document): pass
     def is_document_information(cls, document): pass
+    def remove_latest_breadcrumb(cls): pass
     def set_active_document(cls, document): pass
 
 

@@ -26,22 +26,32 @@ from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.document.data import Data
 
 
-class LoadInformation(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.load_information"
-    bl_label = "Load Information"
+class LoadProjectDocuments(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.load_project_documents"
+    bl_label = "Load Project Documents"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.load_information(tool.Document)
+        core.load_project_documents(tool.Document)
 
 
-class LoadDocumentReferences(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.load_document_references"
-    bl_label = "Load Document References"
+class LoadDocument(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.load_document"
+    bl_label = "Load Document"
+    bl_options = {"REGISTER", "UNDO"}
+    document: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.load_document(tool.Document, document=tool.Ifc.get().by_id(self.document))
+
+
+class LoadParentDocument(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.load_parent_document"
+    bl_label = "Load Parent Document"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.load_references(tool.Document)
+        core.load_parent_document(tool.Document)
 
 
 class DisableDocumentEditingUI(bpy.types.Operator, tool.Ifc.Operator):
@@ -90,24 +100,14 @@ class AddDocumentReference(bpy.types.Operator, tool.Ifc.Operator):
         core.add_reference(tool.Ifc, tool.Document)
 
 
-class EditInformation(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.edit_information"
+class EditDocument(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_document"
     bl_label = "Edit Information"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         props = context.scene.BIMDocumentProperties
-        core.edit_information(tool.Ifc, tool.Document, information=tool.Ifc.get().by_id(props.active_document_id))
-
-
-class EditDocumentReference(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.edit_document_reference"
-    bl_label = "Edit Document Reference"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        props = context.scene.BIMDocumentProperties
-        core.edit_reference(tool.Ifc, tool.Document, reference=tool.Ifc.get().by_id(props.active_document_id))
+        core.edit_document(tool.Ifc, tool.Document, document=tool.Ifc.get().by_id(props.active_document_id))
 
 
 class RemoveDocument(bpy.types.Operator, tool.Ifc.Operator):
@@ -118,28 +118,6 @@ class RemoveDocument(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.remove_document(tool.Ifc, tool.Document, document=tool.Ifc.get().by_id(self.document))
-
-
-class EnableAssigningDocument(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.enable_assigning_document"
-    bl_label = "Enable Assigning Document"
-    bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-
-    def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        core.enable_assigning_document(tool.Document, obj)
-
-
-class DisableAssigningDocument(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.disable_assigning_document"
-    bl_label = "Disable Assigning Document"
-    bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-
-    def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        core.enable_assigning_document(tool.Document, obj)
 
 
 class AssignDocument(bpy.types.Operator, tool.Ifc.Operator):
