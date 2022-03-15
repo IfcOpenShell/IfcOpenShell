@@ -82,10 +82,20 @@ class ObjectDocumentData:
             if rel.is_a("IfcRelAssociatesDocument"):
                 if not rel.RelatingDocument.is_a("IfcDocumentReference"):
                     continue
+
+                name = rel.RelatingDocument.Name
+                if not name and rel.RelatingDocument.ReferencedDocument:
+                    name = rel.RelatingDocument.ReferencedDocument.Name
+
                 if tool.Ifc.get_schema() == "IFC2X3":
                     identification = rel.RelatingDocument.ItemReference
+                    if not identification and rel.RelatingDocument.ReferencedDocument:
+                        identification = rel.RelatingDocument.ReferencedDocument.DocumentId
                 else:
                     identification = rel.RelatingDocument.Identification
+                    if not identification and rel.RelatingDocument.ReferencedDocument:
+                        identification = rel.RelatingDocument.ReferencedDocument.Identification
+
                 location = rel.RelatingDocument.Location
                 if location is None and rel.RelatingDocument.ReferencedDocument:
                     location = rel.RelatingDocument.ReferencedDocument.Location
@@ -94,11 +104,12 @@ class ObjectDocumentData:
                         if not os.path.isabs(location):
                             location = os.path.abspath(os.path.join(os.path.dirname(tool.Ifc.get_path()), location))
                         location = "file://" + location
+
                 results.append(
                     {
                         "id": rel.RelatingDocument.id(),
                         "identification": identification,
-                        "name": rel.RelatingDocument.Name,
+                        "name": name,
                         "location": location,
                     }
                 )
