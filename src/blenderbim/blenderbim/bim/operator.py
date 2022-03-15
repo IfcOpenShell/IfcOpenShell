@@ -22,6 +22,7 @@ import json
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
+import blenderbim.tool as tool
 from . import schema
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.ui import IFCFileSelector
@@ -44,8 +45,9 @@ class SelectURIAttribute(bpy.types.Operator):
     bl_label = "Select URI Attribute"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select a local file"
-    data_path: bpy.props.StringProperty(name="Data Path")
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    data_path: bpy.props.StringProperty(name="Data Path")
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def execute(self, context):
         # data_path contains the latter half of the path to the string_value property
@@ -64,7 +66,10 @@ class SelectURIAttribute(bpy.types.Operator):
                     # Do you know a better way?
                     pass
         if attribute:
-            attribute.string_value = self.filepath
+            filepath = self.filepath
+            if self.use_relative_path:
+                filepath = os.path.relpath(filepath, os.path.dirname(tool.Ifc.get_path()))
+            attribute.string_value = filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):

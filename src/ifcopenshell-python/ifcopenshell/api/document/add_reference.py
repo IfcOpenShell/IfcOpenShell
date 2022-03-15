@@ -25,8 +25,6 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        id_attribute = "ItemReference" if self.file.schema == "IFC2X3" else "Identification"
-        attributes = {id_attribute: "X"}
-        if self.file.schema != "IFC2X3":
-            attributes["ReferencedDocument"] = self.settings["information"]
-        return self.file.create_entity("IfcDocumentReference", **attributes)
+        if self.file.schema == "IFC2X3":
+            return self.file.create_entity("IfcDocumentReference")
+        return self.file.create_entity("IfcDocumentReference", ReferencedDocument=self.settings["information"])
