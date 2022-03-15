@@ -33,11 +33,37 @@ class IfcClassData:
     def load(cls):
         cls.is_loaded = True
         cls.data = {
+            "ifc_products": cls.ifc_products(),
             "contexts": cls.contexts(),
             "has_entity": cls.has_entity(),
             "name": cls.name(),
             "ifc_class": cls.ifc_class(),
         }
+
+    @classmethod
+    def ifc_products(cls):
+        products = [
+            "IfcElement",
+            "IfcElementType",
+            "IfcSpatialElement",
+            "IfcGroup",
+            "IfcStructuralItem",
+            "IfcContext",
+            "IfcAnnotation",
+            "IfcRelSpaceBoundary",
+        ]
+        if tool.Ifc.get_schema() == "IFC2X3":
+            products = [
+                "IfcElement",
+                "IfcElementType",
+                "IfcSpatialStructureElement",
+                "IfcGroup",
+                "IfcStructuralItem",
+                "IfcAnnotation",
+                "IfcRelSpaceBoundary",
+            ]
+        return [(e, e, "") for e in products]
+
 
     @classmethod
     def contexts(cls):
