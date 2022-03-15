@@ -190,10 +190,11 @@ class Attribute(PropertyGroup):
     bool_value: BoolProperty(name="Value", update=updateAttributeValue)
     int_value: IntProperty(name="Value", update=updateAttributeValue)
     float_value: FloatProperty(name="Value", update=updateAttributeValue)
-    is_null: BoolProperty(name="Is Null")
-    is_optional: BoolProperty(name="Is Optional")
     enum_items: StringProperty(name="Value")
     enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeValue)
+    is_null: BoolProperty(name="Is Null")
+    is_optional: BoolProperty(name="Is Optional")
+    is_uri: BoolProperty(name="Is Uri", default=False)
 
     def get_value(self):
         if self.is_null:
