@@ -39,6 +39,39 @@ class OpenUri(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SelectURIAttribute(bpy.types.Operator):
+    bl_idname = "bim.select_uri_attribute"
+    bl_label = "Select URI Attribute"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select a local file"
+    data_path: bpy.props.StringProperty(name="Data Path")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        # data_path contains the latter half of the path to the string_value property
+        # I have no idea how to find out the former half, so let's just use brute force.
+        data_path = self.data_path.replace(".string_value", "")
+        attribute = None
+        try:
+            attribute = eval(f"bpy.context.scene.{data_path}")
+        except:
+            try:
+                attribute = eval(f"bpy.context.active_object.{data_path}")
+            except:
+                try:
+                    attribute = eval(f"bpy.context.active_object.active_material.{data_path}")
+                except:
+                    # Do you know a better way?
+                    pass
+        if attribute:
+            attribute.string_value = self.filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
 class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.select_ifc_file"
     bl_label = "Select IFC File"
