@@ -22,7 +22,7 @@ import ifcopenshell.api
 
 class TestAddInformation(test.bootstrap.IFC4):
     def test_adding_information(self):
-        self.file.createIfcProject()
+        project = self.file.createIfcProject()
         element = ifcopenshell.api.run("document.add_information", self.file, parent=None)
         assert element.is_a("IfcDocumentInformation")
         assert len(self.file.by_type("IfcDocumentInformation")) == 1
@@ -33,3 +33,15 @@ class TestAddInformation(test.bootstrap.IFC4):
         rel = element.DocumentInfoForObjects[0]
         assert rel.is_a("IfcRelAssociatesDocument")
         assert rel.RelatedObjects[0] == project
+
+    def test_adding_a_subdocument(self):
+        project = self.file.createIfcProject()
+        parent = ifcopenshell.api.run("document.add_information", self.file, parent=None)
+        element = ifcopenshell.api.run("document.add_information", self.file, parent=parent)
+        assert element.is_a("IfcDocumentInformation")
+        assert len(self.file.by_type("IfcDocumentInformation")) == 2
+        assert element.IsPointedTo[0].RelatingDocument == parent
+        assert parent.IsPointer[0].RelatedDocuments[0] == element
+        element2 = ifcopenshell.api.run("document.add_information", self.file, parent=parent)
+        assert element in parent.IsPointer[0].RelatedDocuments
+        assert element2 in parent.IsPointer[0].RelatedDocuments
