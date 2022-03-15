@@ -116,6 +116,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
                 "Green": 0.5,
                 "Blue": 0.5,
             },
+            "SpecularColour": 0.0,
             "SpecularHighlight": {"IfcSpecularRoughness": 0.2},
             "ReflectanceMethod": "NOTDEFINED",
         }

@@ -19,7 +19,7 @@ Scenario: Add representation
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     Then the object "IfcWall/Cube" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
-    When the variable "context" is "{ifc}.by_type('IfcGeometricRepresentationSubContext')[-1].id()"
+    When the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.TargetView == 'PLAN_VIEW'][0].id()"
     And I set "scene.BIMRootProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     Then the object "IfcWall/Cube" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
@@ -36,7 +36,7 @@ Scenario: Add representation - add a new representation to a typed instance
     Then the object "IfcWall/Wall" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcWall/Wall.001" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     When the object "IfcWall/Wall" is selected
-    And the variable "context" is "{ifc}.by_type('IfcGeometricRepresentationSubContext')[-1].id()"
+    And the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.TargetView == 'PLAN_VIEW'][0].id()"
     And I set "scene.BIMRootProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     Then the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
