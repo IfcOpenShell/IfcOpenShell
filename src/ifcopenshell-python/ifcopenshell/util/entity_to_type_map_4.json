@@ -90,7 +90,8 @@
         "IfcDistributionChamberElementType"
     ],
     "IfcDoor": [
-        "IfcDoorType"
+        "IfcDoorType",
+        "IfcDoorStyle"
     ],
     "IfcDuctFitting": [
         "IfcDuctFittingType"
@@ -306,7 +307,8 @@
         "IfcWasteTerminalType"
     ],
     "IfcWindow": [
-        "IfcWindowType"
+        "IfcWindowType",
+        "IfcWindowStyle"
     ],
     "IfcBeamStandardCase": [
         "IfcBeamType"

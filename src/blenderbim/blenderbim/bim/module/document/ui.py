@@ -69,9 +69,7 @@ class BIM_PT_documents(Panel):
             row.operator("bim.enable_editing_document", text="", icon="GREASEPENCIL").document = ifc_definition_id
             row.operator("bim.remove_document", text="", icon="X").document = ifc_definition_id
 
-        self.layout.template_list(
-            "BIM_UL_documents", "", self.props, "documents", self.props, "active_document_index"
-        )
+        self.layout.template_list("BIM_UL_documents", "", self.props, "documents", self.props, "active_document_index")
 
         if self.props.active_document_id:
             draw_attributes(self.props.document_attributes, self.layout)
@@ -136,9 +134,7 @@ class BIM_PT_object_documents(Panel):
                 row.operator("bim.assign_document", text="", icon="ADD").document = document.ifc_definition_id
         row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
 
-        self.layout.template_list(
-            "BIM_UL_documents", "", self.props, "documents", self.props, "active_document_index"
-        )
+        self.layout.template_list("BIM_UL_documents", "", self.props, "documents", self.props, "active_document_index")
 
 
 class BIM_UL_documents(UIList):

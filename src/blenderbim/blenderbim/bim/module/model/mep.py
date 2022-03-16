@@ -34,7 +34,6 @@ from math import pi, degrees
 from mathutils import Vector, Matrix
 
 
-
 class MepGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
