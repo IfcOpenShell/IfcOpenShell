@@ -285,11 +285,13 @@ class IfcImporter:
             if c.ContextIdentifier in ["Body", "Facetation"]
         ]
         # Ideally, all representations should be in a subcontext, but some BIM programs don't do this correctly
-        self.body_contexts.extend([
-            c.id()
-            for c in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)
-            if c.ContextType == "Model"
-        ])
+        self.body_contexts.extend(
+            [
+                c.id()
+                for c in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)
+                if c.ContextType == "Model"
+            ]
+        )
         if self.body_contexts:
             self.settings.set_context_ids(self.body_contexts)
         # Annotation is to accommodate broken Revit files
@@ -365,7 +367,7 @@ class IfcImporter:
 
     def is_native_swept_disk_solid(self, representations):
         for representation in representations:
-            items = representation["raw"].Items or [] # Be forgiving of invalid IFCs because Revit :(
+            items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
             if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
                 return True
         return False
@@ -1724,10 +1726,10 @@ class IfcImporter:
             ):
                 verts = [None] * len(geometry.verts)
                 for i in range(0, len(geometry.verts), 3):
-                    verts[i], verts[i+1], verts[i+2] = ifcopenshell.util.geolocation.enh2xyz(
+                    verts[i], verts[i + 1], verts[i + 2] = ifcopenshell.util.geolocation.enh2xyz(
                         geometry.verts[i],
-                        geometry.verts[i+1],
-                        geometry.verts[i+2],
+                        geometry.verts[i + 1],
+                        geometry.verts[i + 2],
                         float(props.blender_eastings) * self.unit_scale,
                         float(props.blender_northings) * self.unit_scale,
                         float(props.blender_orthogonal_height) * self.unit_scale,

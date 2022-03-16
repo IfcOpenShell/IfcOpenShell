@@ -19,7 +19,7 @@
 import os
 from pathlib import Path
 from blenderbim.bim.prop import StrProperty
-from blenderbim.bim.module.root.prop import getIfcClasses
+from blenderbim.bim.module.root.prop import get_ifc_classes
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -33,14 +33,11 @@ from bpy.props import (
 )
 
 scenarios_enum = []
-classes_enum = []
 
 
 def purge():
     global scenarios_enum
-    global classes_enum
     scenarios_enum = []
-    classes_enum = []
 
 
 def getScenarios(self, context):
@@ -68,7 +65,7 @@ class BimTesterProperties(PropertyGroup):
     feature: StringProperty(default="", name="Feature / IDS", update=refreshScenarios)
     steps: StringProperty(default="", name="Custom Steps")
     ifc_file: StringProperty(default="", name="IFC File")
-    audit_ifc_class: EnumProperty(items=getIfcClasses, name="Audit Class")
+    audit_ifc_class: EnumProperty(items=get_ifc_classes, name="Audit Class")
     qa_reject_element_reason: StringProperty(name="Element Rejection Reason")
     scenario: EnumProperty(items=getScenarios, name="Scenario")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")

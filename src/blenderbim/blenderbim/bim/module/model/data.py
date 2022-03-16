@@ -39,7 +39,12 @@ class AuthoringData:
     @classmethod
     def ifc_classes(cls):
         results = []
-        classes = {e.is_a() for e in tool.Ifc.get().by_type("IfcElementType")}
+        classes = {
+            e.is_a()
+            for e in tool.Ifc.get().by_type("IfcElementType")
+            + tool.Ifc.get().by_type("IfcDoorStyle")
+            + tool.Ifc.get().by_type("IfcWindowStyle")
+        }
         results.extend([(c, c, "") for c in sorted(classes)])
         return results
 
