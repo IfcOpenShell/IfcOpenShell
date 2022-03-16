@@ -1230,7 +1230,7 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
         start = time.time()
         ifc2msp = Ifc2Msp()
         ifc2msp.work_schedule = self.file.by_type("IfcWorkSchedule")[0]
-        ifc2msp.xml = self.filepath
+        ifc2msp.xml = bpy.path.ensure_ext(self.filepath, ".xml")
         ifc2msp.file = self.file
         ifc2msp.holiday_start_date = parser.parse(self.holiday_start_date).date()
         ifc2msp.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
@@ -1259,7 +1259,7 @@ class ExportP6(bpy.types.Operator, ImportHelper):
         self.file = IfcStore.get_file()
         start = time.time()
         ifc2p6 = Ifc2P6()
-        ifc2p6.xml = self.filepath
+        ifc2p6.xml = bpy.path.ensure_ext(self.filepath, ".xml")
         ifc2p6.file = self.file
         ifc2p6.holiday_start_date = parser.parse(self.holiday_start_date).date()
         ifc2p6.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
