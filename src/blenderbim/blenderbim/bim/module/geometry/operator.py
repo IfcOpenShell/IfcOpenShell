@@ -355,6 +355,7 @@ class OverrideDeleteTrait:
 class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
     bl_idname = "object.delete"
     bl_label = "Delete"
+    bl_options = {"REGISTER", "UNDO"}
     use_global: bpy.props.BoolProperty(default=False)
     confirm: bpy.props.BoolProperty(default=True)
 
@@ -371,7 +372,10 @@ class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_confirm(self, event)
+        if self.confirm:
+            return context.window_manager.invoke_confirm(self, event)
+        self.confirm = True
+        return self.execute(context)
 
     def _execute(self, context):
         for obj in context.selected_objects:
@@ -383,6 +387,7 @@ class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
 class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
     bl_idname = "outliner.delete"
     bl_label = "Delete"
+    bl_options = {"REGISTER", "UNDO"}
     hierarchy: bpy.props.BoolProperty(default=False)
 
     @classmethod
@@ -453,6 +458,7 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
 class OverrideDuplicateMove(bpy.types.Operator):
     bl_idname = "object.duplicate_move"
     bl_label = "Duplicate Objects"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
