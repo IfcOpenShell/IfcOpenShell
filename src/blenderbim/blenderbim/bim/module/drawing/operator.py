@@ -1070,8 +1070,10 @@ class CopyGrid(bpy.types.Operator):
         return helper.get_active_drawing(context.scene)[0] is not None
 
     def execute(self, context):
+        drawing = tool.Ifc.get_entity(context.scene.camera)
+        target_view = tool.Drawing.get_drawing_target_view(drawing)
         subcontext = ifcopenshell.util.representation.get_context(
-            IfcStore.get_file(), "Plan", "Annotation", context.scene.camera.data.BIMCameraProperties.target_view
+            IfcStore.get_file(), "Plan", "Annotation", target_view
         )
         if not subcontext:
             return {"FINISHED"}
@@ -1080,8 +1082,8 @@ class CopyGrid(bpy.types.Operator):
         view_coll, camera = helper.get_active_drawing(context.scene)
         is_ortho = camera.data.type == "ORTHO"
         bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
-        clipping = is_ortho and camera.data.BIMCameraProperties.target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
-        elevating = is_ortho and camera.data.BIMCameraProperties.target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
+        clipping = is_ortho and target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
+        elevating = is_ortho and target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
 
         def grep(coll):
             results = []

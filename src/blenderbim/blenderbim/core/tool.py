@@ -172,6 +172,7 @@ class Drawing:
     def ensure_unique_identification(cls, identification): pass
     def export_text_literal_attributes(cls, obj): pass
     def generate_drawing_matrix(cls, target_view, location_hint): pass
+    def generate_drawing_name(cls, target_view, location_hint): pass
     def generate_sheet_identification(cls): pass
     def get_annotation_context(cls, target_view): pass
     def get_body_context(cls): pass
