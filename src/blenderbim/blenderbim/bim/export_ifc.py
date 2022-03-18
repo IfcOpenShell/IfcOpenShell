@@ -28,6 +28,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.placement
 import blenderbim.tool as tool
+import blenderbim.core.geometry
 import blenderbim.core.aggregate
 import blenderbim.core.spatial
 import blenderbim.core.style
@@ -179,6 +180,7 @@ class IfcExporter:
             self.sync_object_placement(grid_obj)
             if grid_obj.matrix_world != obj.matrix_world:
                 bpy.ops.bim.update_representation(obj=obj.name)
+        tool.Geometry.record_object_position(obj)
 
     def get_application_name(self):
         return "BlenderBIM"
