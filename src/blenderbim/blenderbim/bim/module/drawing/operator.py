@@ -678,6 +678,7 @@ class ActivateView(bpy.types.Operator):
                     project_collection.children["Views"].children[camera.users_collection[0].name].hide_viewport = False
         bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
         bpy.ops.bim.activate_drawing_style()
+        core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
         return {"FINISHED"}
 
 

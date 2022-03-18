@@ -159,6 +159,7 @@ class Drawing:
     def create_svg_sheet(cls, document, titleblock): pass
     def delete_collection(cls, collection): pass
     def delete_drawing_elements(cls, elements): pass
+    def delete_object(cls, obj): pass
     def disable_editing_drawings(cls): pass
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
@@ -193,6 +194,7 @@ class Drawing:
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def set_drawing_collection_name(cls, group, collection): pass
     def show_decorations(cls): pass
+    def sync_object_placement(cls, obj): pass
     def update_text_value(cls, obj): pass
 
 
@@ -247,6 +249,9 @@ class Ifc:
     def get_entity(cls, obj): pass
     def get_object(cls, entity): pass
     def get_schema(cls): pass
+    def is_deleted(cls, element): pass
+    def is_edited(cls, obj): pass
+    def is_moved(cls, obj): pass
     def link(cls, element, obj): pass
     def run(cls, command, **kwargs): pass
     def set(cls, ifc): pass

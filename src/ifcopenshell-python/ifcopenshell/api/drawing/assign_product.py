@@ -31,16 +31,32 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        if self.settings["related_object"].HasAssignments:
-            for assignment in self.settings["related_object"].HasAssignments:
-                if (
-                    assignment.is_a("IfcRelAssignsToProduct")
-                    and assignment.RelatingProduct == self.settings["relating_product"]
-                ):
+        is_grid_axis = self.settings["relating_product"].is_a("IfcGridAxis")
+
+        if is_grid_axis:
+            if self.settings["related_object"].HasAssignments:
+                for rel in self.settings["related_object"].HasAssignments:
+                    if rel.is_a("IfcRelAssignsToProduct") and rel.Name == self.settings["relating_product"].AxisTag:
+                        return
+        elif self.settings["related_object"].HasAssignments:
+            for rel in self.settings["related_object"].HasAssignments:
+                if rel.is_a("IfcRelAssignsToProduct") and rel.RelatingProduct == self.settings["relating_product"]:
                     return
 
         referenced_by = None
-        if self.settings["relating_product"].ReferencedBy:
+
+        if is_grid_axis:
+            axis = self.settings["relating_product"]
+            grid = None
+            for attribute in ("PartOfW", "PartOfV", "PartOfU"):
+                if getattr(axis, attribute, None):
+                    grid = getattr(axis, attribute)[0]
+            self.settings["relating_product"] = grid
+            for rel in grid.ReferencedBy:
+                if rel.Name == axis.AxisTag:
+                    referenced_by = rel
+                    break
+        elif self.settings["relating_product"].ReferencedBy:
             referenced_by = self.settings["relating_product"].ReferencedBy[0]
 
         if referenced_by:
@@ -58,4 +74,7 @@ class Usecase:
                     "RelatingProduct": self.settings["relating_product"],
                 }
             )
+
+        if is_grid_axis:
+            referenced_by.Name = axis.AxisTag
         return referenced_by
