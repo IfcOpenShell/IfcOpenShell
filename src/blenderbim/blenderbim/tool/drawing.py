@@ -260,6 +260,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             new = bpy.context.scene.DocProperties.drawings.add()
             new.ifc_definition_id = drawing.id()
             new.name = drawing.Name or "Unnamed"
+            new.target_view = cls.get_drawing_target_view(drawing)
 
     @classmethod
     def import_sheets(cls):
@@ -349,3 +350,16 @@ class Drawing(blenderbim.core.tool.Drawing):
             for variable in re.findall("{{.*?}}", value):
                 value = value.replace(variable, selector.get_element_value(product, variable[2:-2]) or "")
         obj.BIMTextProperties.value = value
+
+    # TODO below this point is highly experimental prototype code with no tests
+
+    @classmethod
+    def generate_drawing_name(cls, target_view, location_hint):
+        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and location_hint:
+            location = tool.Ifc.get().by_id(location_hint)
+            if target_view == "REFLECTED_PLAN_VIEW":
+                target_view = "RCP_VIEW"
+            return (location.Name or "UNNAMED").upper() + " " + target_view.split("_")[0]
+        elif target_view in ("SECTION_VIEW", "ELEVATION_VIEW") and location_hint:
+            return location_hint + " " + target_view.split("_")[0]
+        return target_view

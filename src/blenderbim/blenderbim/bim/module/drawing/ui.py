@@ -369,7 +369,16 @@ class BIM_UL_drawinglist(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.prop(item, "name", text="", emboss=False)
+            icon = "UV_FACESEL"
+            if item.target_view == "ELEVATION_VIEW":
+                icon = "UV_VERTEXSEL"
+            elif item.target_view == "SECTION_VIEW":
+                icon = "UV_EDGESEL"
+            elif item.target_view == "REFLECTED_PLAN_VIEW":
+                icon = "XRAY"
+            elif item.target_view == "MODEL_VIEW":
+                icon = "SNAP_VOLUME"
+            row.prop(item, "name", text="", icon=icon, emboss=False)
         else:
             layout.label(text="", translate=False)
 
