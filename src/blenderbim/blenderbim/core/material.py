@@ -25,3 +25,12 @@ def add_default_material(ifc, material):
     obj = material.add_default_material_object()
     ifc.link(ifc.run("material.add_material", name="Default"), obj)
     return obj
+
+
+def load_materials(material, material_type):
+    material.import_material_definitions(material_type)
+    material.enable_editing_materials()
+
+
+def disable_editing_materials(material):
+    material.disable_editing_materials()

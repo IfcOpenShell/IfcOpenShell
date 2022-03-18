@@ -31,11 +31,22 @@ from ifcopenshell.api.material.data import Data
 from ifcopenshell.api.profile.data import Data as ProfileData
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
+class LoadMaterials(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.load_materials"
+    bl_label = "Load Materials"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.load_materials(tool.Material, context.scene.BIMMaterialProperties.material_type)
+
+
+class DisableEditingMaterials(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_editing_materials"
+    bl_label = "Disable Editing Materials"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disable_editing_materials(tool.Material)
 
 
 class AssignParameterizedProfile(bpy.types.Operator):
@@ -68,7 +79,7 @@ class AssignParameterizedProfile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddDefaultMaterial(bpy.types.Operator, Operator):
+class AddDefaultMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_default_material"
     bl_label = "Add Default Material"
     bl_options = {"REGISTER", "UNDO"}
@@ -131,7 +142,7 @@ class RemoveMaterial(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class UnlinkMaterial(bpy.types.Operator, Operator):
+class UnlinkMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unlink_material"
     bl_label = "Unlink Material"
     bl_options = {"REGISTER", "UNDO"}

@@ -18,6 +18,7 @@
 
 import bpy
 from ifcopenshell.api.material.data import Data
+from blenderbim.bim.module.material.data import MaterialsData
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
@@ -102,6 +103,24 @@ def getMaterialTypes(self, context):
         materialtypes_enum.clear()
         materialtypes_enum = [(m, m, "") for m in material_types]
     return materialtypes_enum
+
+
+def get_material_types(self, context):
+    if not MaterialsData.is_loaded:
+        MaterialsData.load()
+    return MaterialsData.data["material_types"]
+
+
+class Material(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
+class BIMMaterialProperties(PropertyGroup):
+    is_editing: BoolProperty(name="Is Editing", default=False)
+    material_type: EnumProperty(items=get_material_types, name="Material Type")
+    materials: CollectionProperty(name="Materials", type=Material)
+    active_material_index: IntProperty(name="Active Material Index")
 
 
 class BIMObjectMaterialProperties(PropertyGroup):

@@ -34,3 +34,64 @@ class TestAddDefaultMaterialObject(NewFile):
         material = subject.add_default_material_object()
         assert isinstance(material, bpy.types.Material)
         assert material.name == "Default"
+
+
+class TestDisableEditingMaterials(NewFile):
+    def test_run(self):
+        bpy.context.scene.BIMMaterialProperties.is_editing = True
+        subject.disable_editing_materials()
+        assert bpy.context.scene.BIMMaterialProperties.is_editing is False
+
+
+class TestEnableEditingMaterials(NewFile):
+    def test_run(self):
+        bpy.context.scene.BIMMaterialProperties.is_editing = False
+        subject.enable_editing_materials()
+        assert bpy.context.scene.BIMMaterialProperties.is_editing is True
+
+
+class TestImportMaterialDefinitions(NewFile):
+    def test_import_materials(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material = ifc.createIfcMaterial(Name="Name")
+        subject.import_material_definitions("IfcMaterial")
+        props = bpy.context.scene.BIMMaterialProperties
+        assert props.materials[0].ifc_definition_id == material.id()
+        assert props.materials[0].name == "Name"
+
+    def test_import_material_layer_sets(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material = ifc.createIfcMaterialLayerSet(LayerSetName="Name")
+        subject.import_material_definitions("IfcMaterialLayerSet")
+        props = bpy.context.scene.BIMMaterialProperties
+        assert props.materials[0].ifc_definition_id == material.id()
+        assert props.materials[0].name == "Name"
+
+    def test_import_material_profile_sets(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material = ifc.createIfcMaterialProfileSet(Name="Name")
+        subject.import_material_definitions("IfcMaterialProfileSet")
+        props = bpy.context.scene.BIMMaterialProperties
+        assert props.materials[0].ifc_definition_id == material.id()
+        assert props.materials[0].name == "Name"
+
+    def test_import_material_constituent_sets(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material = ifc.createIfcMaterialConstituentSet(Name="Name")
+        subject.import_material_definitions("IfcMaterialConstituentSet")
+        props = bpy.context.scene.BIMMaterialProperties
+        assert props.materials[0].ifc_definition_id == material.id()
+        assert props.materials[0].name == "Name"
+
+    def test_import_material_lists(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material = ifc.createIfcMaterialList()
+        subject.import_material_definitions("IfcMaterialList")
+        props = bpy.context.scene.BIMMaterialProperties
+        assert props.materials[0].ifc_definition_id == material.id()
+        assert props.materials[0].name == "Unnamed"

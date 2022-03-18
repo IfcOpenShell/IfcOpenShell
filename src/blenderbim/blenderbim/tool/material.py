@@ -27,3 +27,25 @@ class Material(blenderbim.core.tool.Material):
     @classmethod
     def add_default_material_object(cls):
         return bpy.data.materials.new("Default")
+
+    @classmethod
+    def disable_editing_materials(cls):
+        bpy.context.scene.BIMMaterialProperties.is_editing = False
+
+    @classmethod
+    def enable_editing_materials(cls):
+        bpy.context.scene.BIMMaterialProperties.is_editing = True
+
+    @classmethod
+    def import_material_definitions(cls, material_type):
+        props = bpy.context.scene.BIMMaterialProperties
+        props.materials.clear()
+        for material in tool.Ifc.get().by_type(material_type):
+            new = props.materials.add()
+            new.ifc_definition_id = material.id()
+            if material.is_a("IfcMaterialLayerSet"):
+                new.name = material.LayerSetName or "Unnamed"
+            elif material.is_a("IfcMaterialList"):
+                new.name = "Unnamed"
+            else:
+                new.name = material.Name or "Unnamed"

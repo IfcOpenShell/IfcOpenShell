@@ -32,3 +32,16 @@ class TestAddDefaultMaterial:
         ifc.run("material.add_material", name="Default").should_be_called().will_return("material")
         ifc.link("material", "obj").should_be_called()
         assert subject.add_default_material(ifc, material) == "obj"
+
+
+class TestLoadMaterials:
+    def test_run(self, material):
+        material.import_material_definitions("material_type").should_be_called()
+        material.enable_editing_materials().should_be_called()
+        subject.load_materials(material, "material_type")
+
+
+class TestDisableEditingMaterials:
+    def test_run(self, material):
+        material.disable_editing_materials().should_be_called()
+        subject.disable_editing_materials(material)
