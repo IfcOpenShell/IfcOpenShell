@@ -17,11 +17,44 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.bim.helper
-from bpy.types import Panel
+from bpy.types import Panel, UIList
 from ifcopenshell.api.material.data import Data
 from ifcopenshell.api.profile.data import Data as ProfileData
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
+from blenderbim.bim.module.material.data import MaterialsData
+
+
+class BIM_PT_materials(Panel):
+    bl_label = "IFC Materials"
+    bl_idname = "BIM_PT_materials"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_geometry"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        if not MaterialsData.is_loaded:
+            MaterialsData.load()
+
+        self.props = context.scene.BIMMaterialProperties
+
+        row = self.layout.row(align=True)
+        row.label(text="{} Materials Found".format(MaterialsData.data["total_materials"]), icon="MATERIAL")
+        if self.props.is_editing:
+            row.operator("bim.disable_editing_materials", text="", icon="CANCEL")
+        else:
+            row = self.layout.row(align=True)
+            row.prop(self.props, "material_type", text="")
+            row.operator("bim.load_materials", text="", icon="IMPORT")
+            return
+
+        self.layout.template_list("BIM_UL_materials", "", self.props, "materials", self.props, "active_material_index")
 
 
 class BIM_PT_material(Panel):
@@ -333,3 +366,10 @@ class BIM_PT_object_material(Panel):
         if total_thickness:
             row = self.layout.row(align=True)
             row.label(text=f"Total Thickness: {total_thickness:.3f}")
+
+
+class BIM_UL_materials(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)

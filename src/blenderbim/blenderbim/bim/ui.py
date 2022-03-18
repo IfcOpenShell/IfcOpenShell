@@ -233,7 +233,7 @@ class BIM_PT_geometry(Panel):
 
 
 class BIM_PT_4D5D(Panel):
-    bl_label = "IFC 4D/5D"
+    bl_label = "IFC Costing and Scheduling"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"

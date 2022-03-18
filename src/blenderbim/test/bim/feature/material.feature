@@ -1,6 +1,19 @@
 @material
 Feature: Material
 
+Scenario: Load materials
+    Given an empty IFC project
+    And I press "bim.add_default_material"
+    When I press "bim.load_materials"
+    Then nothing happens
+
+Scenario: Disable editing materials
+    Given an empty IFC project
+    And I press "bim.add_default_material"
+    And I press "bim.load_materials"
+    When I press "bim.disable_editing_materials"
+    Then nothing happens
+
 Scenario: Add default material
     Given an empty IFC project
     When I press "bim.add_default_material"
