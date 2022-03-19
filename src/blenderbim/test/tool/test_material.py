@@ -50,6 +50,21 @@ class TestEnableEditingMaterials(NewFile):
         assert bpy.context.scene.BIMMaterialProperties.is_editing is True
 
 
+class TestGetActiveMaterialType(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        bpy.context.scene.BIMMaterialProperties.material_type = "IfcMaterial"
+        assert subject.get_active_material_type() == "IfcMaterial"
+        bpy.context.scene.BIMMaterialProperties.material_type = "IfcMaterialLayerSet"
+        assert subject.get_active_material_type() == "IfcMaterialLayerSet"
+
+
+class TestGetName(NewFile):
+    def test_run(self):
+        assert subject.get_name(bpy.data.materials.new("Material")) == "Material"
+
+
 class TestImportMaterialDefinitions(NewFile):
     def test_import_materials(self):
         ifc = ifcopenshell.file()
@@ -95,3 +110,11 @@ class TestImportMaterialDefinitions(NewFile):
         props = bpy.context.scene.BIMMaterialProperties
         assert props.materials[0].ifc_definition_id == material.id()
         assert props.materials[0].name == "Unnamed"
+
+
+class TestIsEditingMaterials(NewFile):
+    def test_run(self):
+        bpy.context.scene.BIMMaterialProperties.is_editing = False
+        subject.is_editing_materials() is False
+        bpy.context.scene.BIMMaterialProperties.is_editing = True
+        subject.is_editing_materials() is True

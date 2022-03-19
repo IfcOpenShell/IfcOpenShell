@@ -278,7 +278,10 @@ class Material:
     def add_default_material_object(cls): pass
     def disable_editing_materials(cls): pass
     def enable_editing_materials(cls): pass
+    def get_active_material_type(cls): pass
+    def get_name(cls, obj): pass
     def import_material_definitions(cls, material_type): pass
+    def is_editing_materials(cls): pass
 
 
 @interface
