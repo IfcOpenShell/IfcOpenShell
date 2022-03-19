@@ -4240,6 +4240,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 			  : (std::min)(min_edge_length(wire) / 2., getValue(GV_PRECISION) * 10.);
 	}
 
+	// @todo: should this start from 0 in case of n > 64?
 	for (int i = 2; i < n; ++i) {
 
 		std::vector<int> js;
