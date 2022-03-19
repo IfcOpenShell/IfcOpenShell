@@ -37,6 +37,14 @@ class Material(blenderbim.core.tool.Material):
         bpy.context.scene.BIMMaterialProperties.is_editing = True
 
     @classmethod
+    def get_active_material_type(cls):
+        return bpy.context.scene.BIMMaterialProperties.material_type
+
+    @classmethod
+    def get_name(cls, obj):
+        return obj.name
+
+    @classmethod
     def import_material_definitions(cls, material_type):
         props = bpy.context.scene.BIMMaterialProperties
         props.materials.clear()
@@ -49,3 +57,7 @@ class Material(blenderbim.core.tool.Material):
                 new.name = "Unnamed"
             else:
                 new.name = material.Name or "Unnamed"
+
+    @classmethod
+    def is_editing_materials(cls):
+        return bpy.context.scene.BIMMaterialProperties.is_editing

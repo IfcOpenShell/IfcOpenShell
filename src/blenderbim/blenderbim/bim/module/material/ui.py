@@ -54,6 +54,14 @@ class BIM_PT_materials(Panel):
             row.operator("bim.load_materials", text="", icon="IMPORT")
             return
 
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+
+        if self.props.material_type == "IfcMaterial":
+            row.operator("bim.add_material", text="", icon="ADD")
+        else:
+            row.operator("bim.add_material_set", text="", icon="ADD").set_type = self.props.material_type
+
         self.layout.template_list("BIM_UL_materials", "", self.props, "materials", self.props, "active_material_index")
 
 
@@ -74,7 +82,8 @@ class BIM_PT_material(Panel):
             row.operator("bim.remove_material", icon="X", text="Remove IFC Material")
             row.operator("bim.unlink_material", icon="UNLINKED", text="")
         else:
-            row.operator("bim.add_material", icon="ADD", text="Create IFC Material")
+            op = row.operator("bim.add_material", icon="ADD", text="Create IFC Material")
+            op.obj = context.active_object.active_material.name
 
 
 class BIM_PT_object_material(Panel):
@@ -113,7 +122,7 @@ class BIM_PT_object_material(Panel):
         if not Data.materials:
             row = self.layout.row(align=True)
             row.label(text="No Materials Available")
-            row.operator("bim.add_default_material", icon="ADD", text="")
+            row.operator("bim.add_material", icon="ADD", text="").obj = ""
             return
 
         if self.product_data:

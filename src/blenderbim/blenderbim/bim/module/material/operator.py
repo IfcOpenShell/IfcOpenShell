@@ -79,45 +79,29 @@ class AssignParameterizedProfile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddDefaultMaterial(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_default_material"
-    bl_label = "Add Default Material"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        core.add_default_material(tool.Ifc, tool.Material)
-        Data.load(IfcStore.get_file())
-
-
-class AddMaterial(bpy.types.Operator):
+class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_material"
     bl_label = "Add Material"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        obj = bpy.data.materials.get(self.obj) if self.obj else context.active_object.active_material
-        self.file = IfcStore.get_file()
-        result = ifcopenshell.api.run("material.add_material", self.file, **{"name": obj.name})
-        IfcStore.link_element(result, obj)
-        if obj.BIMMaterialProperties.ifc_style_id:
-            context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
-            if context:
-                ifcopenshell.api.run(
-                    "style.assign_material_style",
-                    self.file,
-                    **{
-                        "material": result,
-                        "style": self.file.by_id(obj.BIMMaterialProperties.ifc_style_id),
-                        "context": context,
-                    },
-                )
+        obj = bpy.data.materials.get(self.obj) if self.obj else None
+        core.add_material(tool.Ifc, tool.Material, tool.Style, obj=obj)
         Data.load(IfcStore.get_file())
         material_prop_purge()
-        return {"FINISHED"}
+
+
+class AddMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_material_set"
+    bl_label = "Add Material Set"
+    bl_options = {"REGISTER", "UNDO"}
+    set_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.add_material_set(tool.Ifc, tool.Material, set_type=self.set_type)
+        Data.load(IfcStore.get_file())
+        material_prop_purge()
 
 
 class RemoveMaterial(bpy.types.Operator):
