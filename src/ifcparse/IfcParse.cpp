@@ -212,6 +212,9 @@ void IfcSpfStream::Close() {
 	}
 #endif
 	delete[] buffer;
+	if (stream) {
+		fclose(stream);
+	}
 }
 
 //
