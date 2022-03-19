@@ -124,7 +124,7 @@ class Usecase:
         )
 
     def get_rel_associates_material(self, material):
-        if self.file.schema == "IFC2X3":
+        if self.file.schema == "IFC2X3" or material.is_a("IfcMaterialList"):
             rel = [
                 r
                 for r in self.file.by_type("IfcRelAssociatesMaterial")
