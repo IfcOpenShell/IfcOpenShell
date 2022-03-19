@@ -5224,8 +5224,11 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTo
 							PERF("boolean operation: result min face-face dist check");
 
 							if ((v = min_face_face_distance(r, 1.e-4)) < 1.e-4) {
-								reason = 2;
-								success = false;
+								// #2095 Check if this distance wasn't already realized in the input first operand.
+								if (v < min_face_face_distance(a, 1.e-4)) {
+									reason = 2;
+									success = false;
+								}
 							}
 						}
 
