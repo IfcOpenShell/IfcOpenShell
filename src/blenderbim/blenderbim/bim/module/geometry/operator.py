@@ -369,6 +369,8 @@ class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
             return IfcStore.execute_ifc_operator(self, context)
         for obj in context.selected_objects:
             bpy.data.objects.remove(obj)
+        # Required otherwise gizmos are still visible
+        context.view_layer.objects.active = None
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -381,6 +383,8 @@ class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
         for obj in context.selected_objects:
             self.delete_ifc_object(obj)
             bpy.data.objects.remove(obj)
+        # Required otherwise gizmos are still visible
+        context.view_layer.objects.active = None
         return {"FINISHED"}
 
 
@@ -410,7 +414,6 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
             if item.bl_rna.identifier == "Collection":
                 collection = bpy.data.collections.get(item.name)
                 collection_data = self.get_collection_objects_and_children(collection)
-                print(collection_data)
                 objects_to_delete |= collection_data["objects"]
                 collections_to_delete |= collection_data["children"]
                 collections_to_delete.add(collection)
