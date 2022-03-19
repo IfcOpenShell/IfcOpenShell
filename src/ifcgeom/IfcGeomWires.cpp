@@ -681,6 +681,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& resu
 		polygon.Append(pnt);
 	}
 
+	// @todo the strict tolerance should also govern these arbitrary precision increases
 	const double eps = getValue(GV_PRECISION) * 10;
 	const bool closed_by_proximity = polygon.Length() >= 3 && polygon.First().Distance(polygon.Last()) < eps;
 	if (closed_by_proximity) {
