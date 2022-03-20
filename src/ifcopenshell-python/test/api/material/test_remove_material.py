@@ -89,3 +89,29 @@ class TestRemoveMaterial(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcMaterial")) == 0
         assert len(self.file.by_type("IfcRelAssociatesMaterial")) == 1
         assert len(self.file.by_type("IfcMaterialList")[0].Materials) == 0
+
+    def test_removing_a_material_with_a_style_definition(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        context = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
+        material = ifcopenshell.api.run("material.add_material", self.file)
+        style = ifcopenshell.api.run("style.add_style", self.file)
+        ifcopenshell.api.run("style.assign_material_style", self.file, material=material, style=style, context=context)
+        assert len(self.file.by_type("IfcMaterialDefinitionRepresentation")) == 1
+        assert len(self.file.by_type("IfcStyledRepresentation")) == 1
+        assert len(self.file.by_type("IfcStyledItem")) == 1
+        assert len(self.file.by_type("IfcSurfaceStyle")) == 1
+        ifcopenshell.api.run("material.remove_material", self.file, material=material)
+        assert len(self.file.by_type("IfcMaterial")) == 0
+        assert len(self.file.by_type("IfcMaterialDefinitionRepresentation")) == 0
+        assert len(self.file.by_type("IfcStyledRepresentation")) == 0
+        assert len(self.file.by_type("IfcStyledItem")) == 0
+        assert len(self.file.by_type("IfcSurfaceStyle")) == 1
+
+    def test_removing_a_material_with_properties(self):
+        material = ifcopenshell.api.run("material.add_material", self.file)
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=material, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
+        assert material.HasProperties
+        ifcopenshell.api.run("material.remove_material", self.file, material=material)
+        assert len(self.file.by_type("IfcMaterialProperties")) == 0
+        assert len(self.file.by_type("IfcPropertySingleValue")) == 0
