@@ -40,6 +40,10 @@ class Usecase:
                 self.file.remove(inverse)
             elif inverse.is_a("IfcRelAssociatesMaterial"):
                 self.file.remove(inverse)
+            elif inverse.is_a("IfcMaterialProperties"):
+                for prop in inverse.Properties or []:
+                    self.file.remove(prop)
+                self.file.remove(inverse)
             elif inverse.is_a("IfcMaterialDefinitionRepresentation"):
                 for representation in inverse.Representations:
                     for item in representation.Items:
