@@ -48,7 +48,7 @@ class Selector:
                     comparison: contains | morethanequalto | lessthanequalto | equal | morethan | lessthan
                     contains: "*="
                     morethanequalto: ">="
-                    lessthanequalto: "<"
+                    lessthanequalto: "<="
                     equal: "="
                     morethan: ">"
                     lessthan: "<"
