@@ -41,6 +41,7 @@ classes = (
     operator.RemoveLayer,
     operator.RemoveListItem,
     operator.RemoveMaterial,
+    operator.RemoveMaterialSet,
     operator.RemoveProfile,
     operator.ReorderMaterialSetItem,
     operator.UnassignMaterial,

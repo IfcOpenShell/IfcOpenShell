@@ -29,6 +29,10 @@ class Material(blenderbim.core.tool.Material):
         return bpy.data.materials.new("Default")
 
     @classmethod
+    def delete_object(cls, obj):
+        bpy.data.materials.remove(obj)
+
+    @classmethod
     def disable_editing_materials(cls):
         bpy.context.scene.BIMMaterialProperties.is_editing = False
 

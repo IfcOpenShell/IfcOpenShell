@@ -276,6 +276,7 @@ class Library:
 @interface
 class Material:
     def add_default_material_object(cls): pass
+    def delete_object(cls, obj): pass
     def disable_editing_materials(cls): pass
     def enable_editing_materials(cls): pass
     def get_active_material_type(cls): pass

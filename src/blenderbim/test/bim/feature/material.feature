@@ -46,8 +46,18 @@ Scenario: Remove material
     And the object "Cube" is selected
     And I add a material
     And I press "bim.add_material(obj='Material')"
-    When I press "bim.remove_material"
-    Then the material "Material" is not an IFC material
+    And the variable "material" is "{ifc}.by_type('IfcMaterial')[0].id()"
+    When I press "bim.remove_material(material={material})"
+    Then the material "Material" does not exist
+
+Scenario: Remove material set
+    Given an empty IFC project
+    And I set "scene.BIMMaterialProperties.material_type" to "IfcMaterialLayerSet"
+    And I press "bim.load_materials"
+    And I press "bim.add_material_set(set_type='IfcMaterialLayerSet')"
+    And the variable "material" is "{ifc}.by_type('IfcMaterialLayerSet')[0].id()"
+    When I press "bim.remove_material_set(material={material})"
+    Then nothing happens
 
 Scenario: Unlink material
     Given an empty IFC project

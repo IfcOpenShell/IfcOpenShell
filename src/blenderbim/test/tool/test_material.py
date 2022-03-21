@@ -36,6 +36,14 @@ class TestAddDefaultMaterialObject(NewFile):
         assert material.name == "Default"
 
 
+class TestDeleteObject(NewFile):
+    def test_run(self):
+        material = subject.add_default_material_object()
+        assert bpy.data.materials.get("Default")
+        subject.delete_object(material)
+        assert not bpy.data.materials.get("Default")
+
+
 class TestDisableEditingMaterials(NewFile):
     def test_run(self):
         bpy.context.scene.BIMMaterialProperties.is_editing = True
