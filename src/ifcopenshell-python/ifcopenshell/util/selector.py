@@ -46,7 +46,8 @@ class Selector:
                     and: "&"
                     or: "|"
                     not: "!"
-                    comparison: (not)* (contains | morethanequalto | lessthanequalto | equal | morethan | lessthan)
+                    comparison: (not)* (oneof | contains | morethanequalto | lessthanequalto | equal | morethan | lessthan)
+                    oneof: "%="
                     contains: "*="
                     morethanequalto: ">="
                     lessthanequalto: "<="
@@ -245,6 +246,8 @@ class Selector:
             return element_value >= value
         elif comparison == "lessthanequalto":
             return element_value <= value
+        elif comparison == "oneof":
+            return element_value in value.split(",")
         return False
 
     @classmethod

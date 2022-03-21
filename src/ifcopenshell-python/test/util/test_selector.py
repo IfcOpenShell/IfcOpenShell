@@ -90,3 +90,19 @@ class TestSelector(test.bootstrap.IFC4):
         assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo<20]') == [element]
         assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo>=4.2]') == [element]
         assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo<=4.2]') == [element]
+
+    def test_comparing_if_value_contains_a_wildcard_string(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element.Name = "Foobar"
+        assert subject.Selector.parse(self.file, '.IfcElement[Name*="Foo"]') == [element]
+        assert subject.Selector.parse(self.file, '.IfcElement[Name*="oba"]') == [element]
+        assert subject.Selector.parse(self.file, '.IfcElement[Name*="abc"]') == []
+
+    def test_comparing_if_value_is_in_a_list(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element.Name = "Foobar"
+        assert subject.Selector.parse(self.file, '.IfcElement[Name%="Foobar,Foobaz"]') == [element]
+        element.Name = "Foobaz"
+        assert subject.Selector.parse(self.file, '.IfcElement[Name%="Foobar,Foobaz"]') == [element]
+        element.Name = "Foobat"
+        assert subject.Selector.parse(self.file, '.IfcElement[Name%="Foobar,Foobaz"]') == []
