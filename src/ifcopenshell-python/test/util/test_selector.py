@@ -45,3 +45,31 @@ class TestSelector(test.bootstrap.IFC4):
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
         assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo="Bar"]') == [element]
+
+    def test_selecting_by_integer_property(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": 42})
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=42]') == [element]
+
+    def test_selecting_by_float_property(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": 4.2})
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=4.2]') == [element]
+
+    def test_selecting_by_boolean_property(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": True})
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=TRUE]') == [element]
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": False})
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=FALSE]') == [element]
+
+    def test_selecting_by_null_property(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=NULL]') == []
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": None})
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=NULL]') == [element]
