@@ -59,8 +59,14 @@ class BIM_PT_materials(Panel):
 
         if self.props.material_type == "IfcMaterial":
             row.operator("bim.add_material", text="", icon="ADD")
+            if self.props.materials and self.props.active_material_index < len(self.props.materials):
+                material = self.props.materials[self.props.active_material_index]
+                row.operator("bim.remove_material", text="", icon="X").material = material.ifc_definition_id
         else:
             row.operator("bim.add_material_set", text="", icon="ADD").set_type = self.props.material_type
+            if self.props.materials and self.props.active_material_index < len(self.props.materials):
+                material = self.props.materials[self.props.active_material_index]
+                row.operator("bim.remove_material_set", text="", icon="X").material = material.ifc_definition_id
 
         self.layout.template_list("BIM_UL_materials", "", self.props, "materials", self.props, "active_material_index")
 
@@ -78,8 +84,9 @@ class BIM_PT_material(Panel):
 
     def draw(self, context):
         row = self.layout.row(align=True)
-        if bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id):
-            row.operator("bim.remove_material", icon="X", text="Remove IFC Material")
+        material_id = context.active_object.active_material.BIMObjectProperties.ifc_definition_id
+        if bool(material_id):
+            row.operator("bim.remove_material", icon="X", text="Remove IFC Material").material = material_id
             row.operator("bim.unlink_material", icon="UNLINKED", text="")
         else:
             op = row.operator("bim.add_material", icon="ADD", text="Create IFC Material")

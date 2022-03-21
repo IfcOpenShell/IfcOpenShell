@@ -104,26 +104,26 @@ class AddMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
         material_prop_purge()
 
 
-class RemoveMaterial(bpy.types.Operator):
+class RemoveMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_material"
     bl_label = "Remove Material"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    material: bpy.props.IntProperty()
 
     def _execute(self, context):
-        obj = bpy.data.materials.get(self.obj) if self.obj else context.active_object.active_material
-        self.file = IfcStore.get_file()
-        result = ifcopenshell.api.run(
-            "material.remove_material",
-            self.file,
-            **{"material": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)},
-        )
-        obj.BIMObjectProperties.ifc_definition_id = 0
+        core.remove_material(tool.Ifc, tool.Material, tool.Style, material=tool.Ifc.get().by_id(self.material))
         Data.load(IfcStore.get_file())
-        return {"FINISHED"}
+
+
+class RemoveMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_material_set"
+    bl_label = "Remove Material Set"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.remove_material_set(tool.Ifc, tool.Material, material=tool.Ifc.get().by_id(self.material))
+        Data.load(IfcStore.get_file())
 
 
 class UnlinkMaterial(bpy.types.Operator, tool.Ifc.Operator):

@@ -43,6 +43,22 @@ def add_material_set(ifc, material, set_type=None):
     return ifc_material
 
 
+def remove_material(ifc, material_tool, style, material=None):
+    obj = ifc.get_object(material)
+    ifc.unlink(element=material)
+    ifc.run("material.remove_material", material=material)
+    if obj and not style.get_style(obj):
+        material_tool.delete_object(obj)
+    if material_tool.is_editing_materials():
+        material_tool.import_material_definitions(material_tool.get_active_material_type())
+
+
+def remove_material_set(ifc, material_tool, material=None):
+    ifc.run("material.remove_material_set", material=material)
+    if material_tool.is_editing_materials():
+        material_tool.import_material_definitions(material_tool.get_active_material_type())
+
+
 def load_materials(material, material_type):
     material.import_material_definitions(material_type)
     material.enable_editing_materials()
