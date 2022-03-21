@@ -36,7 +36,7 @@ class Selector:
                     class_selector: "." WORD filter ?
                     filter: "[" filter_key (comparison filter_value)? "]"
                     filter_key: WORD | pset_or_qto
-                    filter_value: ESCAPED_STRING
+                    filter_value: ESCAPED_STRING | SIGNED_FLOAT | SIGNED_INT | BOOLEAN | NULL
                     pset_or_qto: /[A-Za-z0-9_]+/ "." /[A-Za-z0-9_]+/
                     lfunction: and | or
                     inverse_relationship: types | contains_elements | boundedby
@@ -52,6 +52,8 @@ class Selector:
                     equal: "="
                     morethan: ">"
                     lessthan: "<"
+                    BOOLEAN: "TRUE" | "FALSE"
+                    NULL: "NULL"
 
                     // Embed common.lark for packaging
                     DIGIT: "0".."9"
@@ -168,10 +170,20 @@ class Selector:
         comparison = value = None
         if len(filter_rule.children) > 1:
             comparison = filter_rule.children[1].children[0].data
-            value = filter_rule.children[2].children[0][1:-1]
+            token_type = filter_rule.children[2].children[0].type
+            if token_type == "ESCAPED_STRING":
+                value = str(filter_rule.children[2].children[0][1:-1])
+            elif token_type == "SIGNED_INT":
+                value = int(filter_rule.children[2].children[0])
+            elif token_type == "SIGNED_FLOAT":
+                value = float(filter_rule.children[2].children[0])
+            elif token_type == "BOOLEAN":
+                value = filter_rule.children[2].children[0] == "TRUE"
+            elif token_type == "NULL":
+                value = None
         for element in elements:
             element_value = cls.get_element_value(element, key)
-            if element_value is None:
+            if element_value is None and value is not None:
                 continue
             if not comparison or cls.filter_element(element, element_value, comparison, value):
                 results.append(element)
@@ -217,7 +229,7 @@ class Selector:
     @classmethod
     def filter_element(cls, element, element_value, comparison, value):
         if comparison == "equal":
-            return str(element_value) == value
+            return element_value == value
         elif comparison == "contains":
             return value in str(element_value)
         elif comparison == "morethan":
