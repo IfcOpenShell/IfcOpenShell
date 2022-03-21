@@ -73,3 +73,20 @@ class TestSelector(test.bootstrap.IFC4):
         assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=NULL]') == []
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": None})
         assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=NULL]') == [element]
+
+    def test_comparing_by_not_equal(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element.Name = "Foobar"
+        assert subject.Selector.parse(self.file, '.IfcElement[Name!="Foobaz"]') == [element]
+        assert subject.Selector.parse(self.file, '.IfcElement[Name!="Foobar"]') == []
+
+    def test_comparing_by_ranges(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": 4.2})
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo>2]') == [element]
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo>20]') == []
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo<2]') == []
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo<20]') == [element]
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo>=4.2]') == [element]
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo<=4.2]') == [element]

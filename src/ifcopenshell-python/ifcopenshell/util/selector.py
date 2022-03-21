@@ -45,7 +45,8 @@ class Selector:
                     boundedby: "@@"
                     and: "&"
                     or: "|"
-                    comparison: contains | morethanequalto | lessthanequalto | equal | morethan | lessthan
+                    not: "!"
+                    comparison: (not)* (contains | morethanequalto | lessthanequalto | equal | morethan | lessthan)
                     contains: "*="
                     morethanequalto: ">="
                     lessthanequalto: "<="
@@ -170,6 +171,8 @@ class Selector:
         comparison = value = None
         if len(filter_rule.children) > 1:
             comparison = filter_rule.children[1].children[0].data
+            if comparison == "not":
+                comparison += filter_rule.children[1].children[1].data
             token_type = filter_rule.children[2].children[0].type
             if token_type == "ESCAPED_STRING":
                 value = str(filter_rule.children[2].children[0][1:-1])
@@ -228,18 +231,20 @@ class Selector:
 
     @classmethod
     def filter_element(cls, element, element_value, comparison, value):
-        if comparison == "equal":
+        if comparison.startswith("not"):
+            return not cls.filter_element(element, element_value, comparison[3:], value)
+        elif comparison == "equal":
             return element_value == value
         elif comparison == "contains":
             return value in str(element_value)
         elif comparison == "morethan":
-            return element_value > float(value)
+            return element_value > value
         elif comparison == "lessthan":
-            return element_value < float(value)
+            return element_value < value
         elif comparison == "morethanequalto":
-            return element_value >= float(value)
+            return element_value >= value
         elif comparison == "lessthanequalto":
-            return element_value <= float(value)
+            return element_value <= value
         return False
 
     @classmethod
