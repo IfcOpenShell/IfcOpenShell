@@ -82,6 +82,7 @@ jobs:
           sudo /usr/bin/python -m pip install src/bcf
           sudo /usr/bin/python -m pip install pytest
           sudo /usr/bin/python -m pip install isodate
+          sudo /usr/bin/python -m pip install lark
 
       - name: Test
         run: |
