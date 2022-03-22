@@ -389,3 +389,6 @@ class BIM_UL_materials(UIList):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)
+            row2 = row.row()
+            row2.alignment = "RIGHT"
+            row2.label(text=str(item.total_elements))

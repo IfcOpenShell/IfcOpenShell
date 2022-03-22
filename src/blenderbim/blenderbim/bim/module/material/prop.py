@@ -114,6 +114,7 @@ def get_material_types(self, context):
 class Material(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    total_elements: IntProperty(name="Total Elements")
 
 
 class BIMMaterialProperties(PropertyGroup):

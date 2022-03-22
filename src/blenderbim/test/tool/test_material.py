@@ -82,6 +82,7 @@ class TestImportMaterialDefinitions(NewFile):
         props = bpy.context.scene.BIMMaterialProperties
         assert props.materials[0].ifc_definition_id == material.id()
         assert props.materials[0].name == "Name"
+        assert props.materials[0].total_elements == 0
 
     def test_import_material_layer_sets(self):
         ifc = ifcopenshell.file()
@@ -91,6 +92,7 @@ class TestImportMaterialDefinitions(NewFile):
         props = bpy.context.scene.BIMMaterialProperties
         assert props.materials[0].ifc_definition_id == material.id()
         assert props.materials[0].name == "Name"
+        assert props.materials[0].total_elements == 0
 
     def test_import_material_profile_sets(self):
         ifc = ifcopenshell.file()
@@ -100,6 +102,7 @@ class TestImportMaterialDefinitions(NewFile):
         props = bpy.context.scene.BIMMaterialProperties
         assert props.materials[0].ifc_definition_id == material.id()
         assert props.materials[0].name == "Name"
+        assert props.materials[0].total_elements == 0
 
     def test_import_material_constituent_sets(self):
         ifc = ifcopenshell.file()
@@ -109,6 +112,7 @@ class TestImportMaterialDefinitions(NewFile):
         props = bpy.context.scene.BIMMaterialProperties
         assert props.materials[0].ifc_definition_id == material.id()
         assert props.materials[0].name == "Name"
+        assert props.materials[0].total_elements == 0
 
     def test_import_material_lists(self):
         ifc = ifcopenshell.file()
@@ -118,6 +122,7 @@ class TestImportMaterialDefinitions(NewFile):
         props = bpy.context.scene.BIMMaterialProperties
         assert props.materials[0].ifc_definition_id == material.id()
         assert props.materials[0].name == "Unnamed"
+        assert props.materials[0].total_elements == 0
 
 
 class TestIsEditingMaterials(NewFile):
