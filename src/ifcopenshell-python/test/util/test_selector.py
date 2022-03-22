@@ -50,29 +50,29 @@ class TestSelector(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": 42})
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=42]') == [element]
+        assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo=42]") == [element]
 
     def test_selecting_by_float_property(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": 4.2})
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=4.2]') == [element]
+        assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo=4.2]") == [element]
 
     def test_selecting_by_boolean_property(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": True})
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=TRUE]') == [element]
+        assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo=TRUE]") == [element]
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": False})
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=FALSE]') == [element]
+        assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo=FALSE]") == [element]
 
     def test_selecting_by_null_property(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=NULL]') == []
+        assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo=NULL]") == []
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": None})
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo=NULL]') == [element]
+        assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo=NULL]") == [element]
 
     def test_comparing_by_not_equal(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -84,12 +84,12 @@ class TestSelector(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": 4.2})
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo>2]') == [element]
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo>20]') == []
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo<2]') == []
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo<20]') == [element]
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo>=4.2]') == [element]
-        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo<=4.2]') == [element]
+        assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo>2]") == [element]
+        assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo>20]") == []
+        assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo<2]") == []
+        assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo<20]") == [element]
+        assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo>=4.2]") == [element]
+        assert subject.Selector.parse(self.file, ".IfcElement[Foo_Bar.Foo<=4.2]") == [element]
 
     def test_comparing_if_value_contains_a_wildcard_string(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -106,3 +106,20 @@ class TestSelector(test.bootstrap.IFC4):
         assert subject.Selector.parse(self.file, '.IfcElement[Name%="Foobar,Foobaz"]') == [element]
         element.Name = "Foobat"
         assert subject.Selector.parse(self.file, '.IfcElement[Name%="Foobar,Foobaz"]') == []
+
+    def test_getting_occurrences_of_a_filtered_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element2, relating_type=element_type)
+        assert subject.Selector.parse(self.file, "* .IfcWallType") == [element, element2]
+
+    def test_getting_decomposition_of_a_filtered_type(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcMember")
+        building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        assert subject.Selector.parse(self.file, "@ .IfcBuilding") == [element, subelement]

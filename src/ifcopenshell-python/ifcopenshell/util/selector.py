@@ -39,10 +39,10 @@ class Selector:
                     filter_value: ESCAPED_STRING | SIGNED_FLOAT | SIGNED_INT | BOOLEAN | NULL
                     pset_or_qto: /[A-Za-z0-9_]+/ "." /[A-Za-z0-9_]+/
                     lfunction: and | or
-                    inverse_relationship: types | contains_elements | boundedby
+                    inverse_relationship: types | decomposed_by | bounded_by
                     types: "*"
-                    contains_elements: "@"
-                    boundedby: "@@"
+                    decomposed_by: "@"
+                    bounded_by: "@@"
                     and: "&"
                     or: "|"
                     not: "!"
@@ -141,10 +141,9 @@ class Selector:
                     results.extend(element.Types[0].RelatedObjects)
                 elif hasattr(element, "ObjectTypeOf") and element.ObjectTypeOf:
                     results.extend(element.ObjectTypeOf[0].RelatedObjects)
-            elif inverse_relationship == "contains_elements" and hasattr(element, "ContainsElements"):
-                for relationship in element.ContainsElements:
-                    results.extend(relationship.RelatedElements)
-            elif inverse_relationship == "boundedby" and hasattr(element, "BoundedBy"):
+            elif inverse_relationship == "decomposed_by":
+                results.extend(ifcopenshell.util.element.get_decomposition(element))
+            elif inverse_relationship == "bounded_by" and hasattr(element, "BoundedBy"):
                 for relationship in element.BoundedBy:
                     results.append(relationship.RelatedBuildingElement)
         return results
