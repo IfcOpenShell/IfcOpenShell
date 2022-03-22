@@ -25,6 +25,7 @@ import blenderbim.tool as tool
 
 def refresh():
     MaterialsData.is_loaded = False
+    ObjectMaterialData.is_loaded = False
 
 
 class MaterialsData:
@@ -67,3 +68,19 @@ class MaterialsData:
         if tool.Ifc.get_schema() == "IFC2X3":
             material_types = ["IfcMaterial", "IfcMaterialLayerSet", "IfcMaterialList"]
         return [(m, m, "") for m in material_types]
+
+
+class ObjectMaterialData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "materials": cls.materials(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def materials(cls):
+        return sorted([(str(m.id()), m.Name or "Unnamed", "") for m in tool.Ifc.get().by_type("IfcMaterial")], key=lambda x: x[1])
