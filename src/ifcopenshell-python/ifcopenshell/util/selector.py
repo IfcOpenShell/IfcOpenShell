@@ -24,8 +24,9 @@ import lark
 
 class Selector:
     @classmethod
-    def parse(cls, ifc_file, query):
+    def parse(cls, ifc_file, query, elements=None):
         cls.file = ifc_file
+        cls.elements = elements
 
         l = lark.Lark(
             """start: query (lfunction query)*
@@ -157,7 +158,10 @@ class Selector:
         elif class_selector.children[0] == "FMHEM":
             elements = ifcopenshell.util.fm.get_fmhem_types(cls.file)
         else:
-            elements = cls.file.by_type(class_selector.children[0])
+            if cls.elements is None:
+                elements = cls.file.by_type(class_selector.children[0])
+            else:
+                elements = [e for e in cls.elements if e.is_a(class_selector.children[0])]
         if len(class_selector.children) > 1 and class_selector.children[1].data == "filter":
             return cls.filter_elements(elements, class_selector.children[1])
         return elements

@@ -112,9 +112,9 @@ class TestSelector(test.bootstrap.IFC4):
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element2, relating_type=element_type)
-        assert subject.Selector.parse(self.file, "* .IfcWallType") == [element, element2]
+        element_type2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element2, relating_type=element_type2)
+        assert set(subject.Selector.parse(self.file, "* .IfcWallType")) == {element, element2}
 
     def test_getting_decomposition_of_a_filtered_type(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -122,4 +122,10 @@ class TestSelector(test.bootstrap.IFC4):
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
-        assert subject.Selector.parse(self.file, "@ .IfcBuilding") == [element, subelement]
+        assert set(subject.Selector.parse(self.file, "@ .IfcBuilding")) == {element, subelement}
+
+    def test_selecting_elements_from_a_prefiltered_list(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        assert subject.Selector.parse(self.file, ".IfcWall", elements=[element])
+        assert not subject.Selector.parse(self.file, ".IfcWall", elements=[element2])
