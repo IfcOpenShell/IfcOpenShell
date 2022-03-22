@@ -44,6 +44,7 @@ classes = (
     operator.RemoveMaterialSet,
     operator.RemoveProfile,
     operator.ReorderMaterialSetItem,
+    operator.SelectByMaterial,
     operator.UnassignMaterial,
     operator.UnlinkMaterial,
     prop.Material,

@@ -49,6 +49,16 @@ class DisableEditingMaterials(bpy.types.Operator, tool.Ifc.Operator):
         core.disable_editing_materials(tool.Material)
 
 
+class SelectByMaterial(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.select_by_material"
+    bl_label = "Select By Material"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.select_by_material(tool.Material, material=tool.Ifc.get().by_id(self.material))
+
+
 class AssignParameterizedProfile(bpy.types.Operator):
     bl_idname = "bim.assign_parameterized_profile"
     bl_label = "Assign Parameterized Profile"

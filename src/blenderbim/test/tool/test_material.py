@@ -68,6 +68,16 @@ class TestGetActiveMaterialType(NewFile):
         assert subject.get_active_material_type() == "IfcMaterialLayerSet"
 
 
+class TestGetElementsByMaterial(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        material = ifcopenshell.api.run("material.add_material", ifc)
+        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material)
+        assert subject.get_elements_by_material(material) == {element}
+
+
 class TestGetName(NewFile):
     def test_run(self):
         assert subject.get_name(bpy.data.materials.new("Material")) == "Material"
@@ -131,3 +141,15 @@ class TestIsEditingMaterials(NewFile):
         subject.is_editing_materials() is False
         bpy.context.scene.BIMMaterialProperties.is_editing = True
         subject.is_editing_materials() is True
+
+
+class TestSelectElements(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcPump")
+        obj = bpy.data.objects.new("Object", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(element, obj)
+        subject.select_elements([element])
+        assert obj in bpy.context.selected_objects

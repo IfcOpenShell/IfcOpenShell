@@ -45,6 +45,10 @@ class Material(blenderbim.core.tool.Material):
         return bpy.context.scene.BIMMaterialProperties.material_type
 
     @classmethod
+    def get_elements_by_material(cls, material):
+        return set(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+
+    @classmethod
     def get_name(cls, obj):
         return obj.name
 
@@ -66,3 +70,10 @@ class Material(blenderbim.core.tool.Material):
     @classmethod
     def is_editing_materials(cls):
         return bpy.context.scene.BIMMaterialProperties.is_editing
+
+    @classmethod
+    def select_elements(cls, elements):
+        for element in elements:
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                obj.select_set(True)

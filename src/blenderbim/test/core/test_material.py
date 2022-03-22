@@ -147,3 +147,10 @@ class TestDisableEditingMaterials:
     def test_run(self, material):
         material.disable_editing_materials().should_be_called()
         subject.disable_editing_materials(material)
+
+
+class TestSelectByMaterial:
+    def test_run(self, material):
+        material.get_elements_by_material("material").should_be_called().will_return("elements")
+        material.select_elements("elements").should_be_called()
+        subject.select_by_material(material, material="material")
