@@ -41,6 +41,12 @@ class MaterialsData:
 
     @classmethod
     def total_materials(cls):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return (
+                len(tool.Ifc.get().by_type("IfcMaterial"))
+                + len(tool.Ifc.get().by_type("IfcMaterialLayerSet"))
+                + len(tool.Ifc.get().by_type("IfcMaterialList"))
+            )
         return (
             len(tool.Ifc.get().by_type("IfcMaterial"))
             + len(tool.Ifc.get().by_type("IfcMaterialConstituentSet"))

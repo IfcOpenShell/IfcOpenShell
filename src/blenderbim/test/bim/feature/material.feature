@@ -110,3 +110,12 @@ Scenario: Assign material - Assign a material profile set
     When I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     Then nothing happens
+
+Scenario: Select by material
+Scenario: Load materials - then add material
+    Given an empty IFC project
+    And I press "bim.load_materials"
+    And I press "bim.add_material(obj='')"
+    And the variable "material" is "{ifc}.by_type('IfcMaterial')[0].id()"
+    When I press "bim.select_by_material(material={material})"
+    Then nothing happens
