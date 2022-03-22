@@ -22,7 +22,7 @@ from ifcopenshell.api.material.data import Data
 from ifcopenshell.api.profile.data import Data as ProfileData
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
-from blenderbim.bim.module.material.data import MaterialsData
+from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialData
 
 
 class BIM_PT_materials(Panel):
@@ -119,6 +119,9 @@ class BIM_PT_object_material(Panel):
         return True
 
     def draw(self, context):
+        if not ObjectMaterialData.is_loaded:
+            ObjectMaterialData.load()
+
         self.file = IfcStore.get_file()
         self.oprops = context.active_object.BIMObjectProperties
         self.props = context.active_object.BIMObjectMaterialProperties
@@ -130,7 +133,7 @@ class BIM_PT_object_material(Panel):
             ProfileData.load(self.file)
         self.product_data = Data.products[self.oprops.ifc_definition_id]
 
-        if not Data.materials:
+        if not ObjectMaterialData.data["materials"]:
             row = self.layout.row(align=True)
             row.label(text="No Materials Available")
             row.operator("bim.add_material", icon="ADD", text="").obj = ""
