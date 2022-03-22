@@ -133,6 +133,29 @@ def get_material(element, should_skip_usage=False):
         return get_material(relating_type, should_skip_usage)
 
 
+def get_elements_by_material(ifc_file, material):
+    results = []
+    for inverse in ifc_file.get_inverse(material):
+        if inverse.is_a("IfcRelAssociatesMaterial"):
+            results.extend(inverse.RelatedObjects)
+        elif inverse.is_a("IfcMaterialLayer"):
+            for material_set in inverse.ToMaterialLayerSet:
+                results.extend(get_elements_by_material(ifc_file, material_set))
+        elif inverse.is_a("IfcMaterialProfile"):
+            for material_set in inverse.ToMaterialProfileSet:
+                results.extend(get_elements_by_material(ifc_file, material_set))
+        elif inverse.is_a("IfcMaterialConstituent"):
+            for material_set in inverse.ToMaterialConstituentSet:
+                results.extend(get_elements_by_material(ifc_file, material_set))
+        elif inverse.is_a("IfcMaterialLayerSetUsage"):
+            results.extend(get_elements_by_material(ifc_file, inverse))
+        elif inverse.is_a("IfcMaterialProfileSetUsage"):
+            results.extend(get_elements_by_material(ifc_file, inverse))
+        elif inverse.is_a("IfcMaterialList"):
+            results.extend(get_elements_by_material(ifc_file, inverse))
+    return results
+
+
 def get_layers(ifc_file, element):
     layers = []
     representations = []

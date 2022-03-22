@@ -61,6 +61,7 @@ class Material(blenderbim.core.tool.Material):
                 new.name = "Unnamed"
             else:
                 new.name = material.Name or "Unnamed"
+            new.total_elements = len(set(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)))
 
     @classmethod
     def is_editing_materials(cls):
