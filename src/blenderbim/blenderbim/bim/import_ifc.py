@@ -1356,12 +1356,12 @@ class IfcImporter:
         elif surface_style.ReflectanceMethod == "FLAT":
             blender_material.use_nodes = True
 
-            output = {n.type: n for n in self.settings["material"].node_tree.nodes}.get("OUTPUT_MATERIAL", None)
+            output = {n.type: n for n in blender_material.node_tree.nodes}.get("OUTPUT_MATERIAL", None)
             bsdf = blender_material.node_tree.nodes["Principled BSDF"]
 
             mix = blender_material.node_tree.nodes.new(type="ShaderNodeMixShader")
             mix.location = bsdf.location
-            blender_material.node_tree.links.new(lightpath.outputs[0], output.inputs["Surface"])
+            blender_material.node_tree.links.new(mix.outputs[0], output.inputs["Surface"])
 
             blender_material.node_tree.nodes.remove(bsdf)
 
