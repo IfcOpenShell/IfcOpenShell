@@ -48,7 +48,7 @@ class IfcExporter:
             self.sync_deletions()
             self.sync_all_objects()
             self.sync_edited_objects()
-        extension = self.ifc_export_settings.output_file.split(".")[-1]
+        extension = self.ifc_export_settings.output_file.split(".")[-1].lower()
         if extension == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
                 filename, ext = os.path.splitext(os.path.basename(self.ifc_export_settings.output_file))
