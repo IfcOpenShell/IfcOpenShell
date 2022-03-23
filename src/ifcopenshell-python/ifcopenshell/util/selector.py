@@ -55,7 +55,7 @@ class Selector:
                     equal: "="
                     morethan: ">"
                     lessthan: "<"
-                    BOOLEAN: "TRUE" | "FALSE"
+                    BOOLEAN: "TRUE" | "FALSE" | "true" | "false"| "True" | "False"
                     NULL: "NULL"
 
                     // Embed common.lark for packaging
