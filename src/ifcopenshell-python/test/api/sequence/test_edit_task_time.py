@@ -34,19 +34,19 @@ class TestEditTaskTime(test.bootstrap.IFC4):
                 "UserDefinedDataOrigin": "UserDefinedDataOrigin",
                 "DurationType": "ELAPSEDTIME",
                 "ScheduleDuration": "P1D",
-                "ScheduleStart": "2000-01-01T00:00:00",
-                "ScheduleFinish": "2000-01-02T00:00:00",
+                "ScheduleStart": "2000-01-01T09:00:00",
+                "ScheduleFinish": "2000-01-01T17:00:00",
                 "EarlyStart": "2000-01-01T00:00:00",
-                "EarlyFinish": "2000-01-02T00:00:00",
+                "EarlyFinish": "2000-01-01T00:00:00",
                 "LateStart": "2000-01-01T00:00:00",
-                "LateFinish": "2000-01-02T00:00:00",
+                "LateFinish": "2000-01-01T00:00:00",
                 "FreeFloat": "P0D",
                 "TotalFloat": "P0D",
                 "IsCritical": True,
                 "StatusTime": "2000-01-01T00:00:00",
                 "ActualDuration": "P1D",
-                "ActualStart": "2000-01-01T00:00:00",
-                "ActualFinish": "2000-01-02T00:00:00",
+                "ActualStart": "2000-01-01T09:00:00",
+                "ActualFinish": "2000-01-01T17:00:00",
                 "RemainingTime": "P1D",
                 "Completion": 0.5,
             },
@@ -56,19 +56,19 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.UserDefinedDataOrigin == "UserDefinedDataOrigin"
         assert task_time.DurationType == "ELAPSEDTIME"
         assert task_time.ScheduleDuration == "P1D"
-        assert task_time.ScheduleStart == "2000-01-01T00:00:00"
-        assert task_time.ScheduleFinish == "2000-01-02T00:00:00"
+        assert task_time.ScheduleStart == "2000-01-01T09:00:00"
+        assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
         assert task_time.EarlyStart == "2000-01-01T00:00:00"
-        assert task_time.EarlyFinish == "2000-01-02T00:00:00"
+        assert task_time.EarlyFinish == "2000-01-01T00:00:00"
         assert task_time.LateStart == "2000-01-01T00:00:00"
-        assert task_time.LateFinish == "2000-01-02T00:00:00"
+        assert task_time.LateFinish == "2000-01-01T00:00:00"
         assert task_time.FreeFloat == "P0D"
         assert task_time.TotalFloat == "P0D"
         assert task_time.IsCritical == True
         assert task_time.StatusTime == "2000-01-01T00:00:00"
         assert task_time.ActualDuration == "P1D"
-        assert task_time.ActualStart == "2000-01-01T00:00:00"
-        assert task_time.ActualFinish == "2000-01-02T00:00:00"
+        assert task_time.ActualStart == "2000-01-01T09:00:00"
+        assert task_time.ActualFinish == "2000-01-01T17:00:00"
         assert task_time.RemainingTime == "P1D"
         assert task_time.Completion == 0.5
 
@@ -80,11 +80,11 @@ class TestEditTaskTime(test.bootstrap.IFC4):
             task_time=task_time,
             attributes={
                 "ScheduleDuration": None,
-                "ScheduleStart": "2000-01-01T00:00:00",
+                "ScheduleStart": "2000-01-01T09:00:00",
                 "ScheduleFinish": None,
             },
         )
-        assert task_time.ScheduleStart == "2000-01-01T00:00:00"
+        assert task_time.ScheduleStart == "2000-01-01T09:00:00"
         assert task_time.ScheduleFinish is None
         assert task_time.ScheduleDuration is None
 
@@ -104,7 +104,7 @@ class TestEditTaskTime(test.bootstrap.IFC4):
                 "ScheduleFinish": None,
             },
         )
-        assert task_time.ScheduleStart == "2000-01-01T00:00:00"
+        assert task_time.ScheduleStart == "2000-01-01T09:00:00"
         assert task_time.ScheduleFinish is None
         assert task_time.ScheduleDuration is None
 
@@ -117,13 +117,13 @@ class TestEditTaskTime(test.bootstrap.IFC4):
             attributes={
                 "DurationType": "ELAPSEDTIME",
                 "ScheduleDuration": "P1D",
-                "ScheduleStart": "2000-01-01T00:00:00",
+                "ScheduleStart": "2000-01-01T09:00:00",
             },
         )
         assert task_time.DurationType == "ELAPSEDTIME"
         assert task_time.ScheduleDuration == "P1D"
-        assert task_time.ScheduleStart == "2000-01-01T00:00:00"
-        assert task_time.ScheduleFinish == "2000-01-02T00:00:00"
+        assert task_time.ScheduleStart == "2000-01-01T09:00:00"
+        assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
 
     def test_schedule_durations_are_auto_calculated_if_possible(self):
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())
@@ -133,14 +133,14 @@ class TestEditTaskTime(test.bootstrap.IFC4):
             task_time=task_time,
             attributes={
                 "DurationType": "ELAPSEDTIME",
-                "ScheduleStart": "2000-01-01T00:00:00",
-                "ScheduleFinish": "2000-01-02T00:00:00",
+                "ScheduleStart": "2000-01-01T09:00:00",
+                "ScheduleFinish": "2000-01-01T17:00:00",
             },
         )
         assert task_time.DurationType == "ELAPSEDTIME"
         assert task_time.ScheduleDuration == "P1D"
-        assert task_time.ScheduleStart == "2000-01-01T00:00:00"
-        assert task_time.ScheduleFinish == "2000-01-02T00:00:00"
+        assert task_time.ScheduleStart == "2000-01-01T09:00:00"
+        assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
 
     def test_a_duration_takes_priority_over_start_and_finish_dates(self):
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())
@@ -151,14 +151,14 @@ class TestEditTaskTime(test.bootstrap.IFC4):
             attributes={
                 "DurationType": "ELAPSEDTIME",
                 "ScheduleDuration": "P1D",
-                "ScheduleStart": "2000-01-01T00:00:00",
-                "ScheduleFinish": "2000-01-03T00:00:00",
+                "ScheduleStart": "2000-01-01T09:00:00",
+                "ScheduleFinish": "2000-01-03T17:00:00",
             },
         )
         assert task_time.DurationType == "ELAPSEDTIME"
         assert task_time.ScheduleDuration == "P1D"
-        assert task_time.ScheduleStart == "2000-01-01T00:00:00"
-        assert task_time.ScheduleFinish == "2000-01-02T00:00:00"
+        assert task_time.ScheduleStart == "2000-01-01T09:00:00"
+        assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
 
     def test_durations_can_be_specified_in_datetime_objects(self):
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())
@@ -169,13 +169,13 @@ class TestEditTaskTime(test.bootstrap.IFC4):
             attributes={
                 "DurationType": "ELAPSEDTIME",
                 "ScheduleDuration": datetime.timedelta(days=1),
-                "ScheduleStart": "2000-01-01T00:00:00",
+                "ScheduleStart": "2000-01-01T09:00:00",
             },
         )
         assert task_time.DurationType == "ELAPSEDTIME"
         assert task_time.ScheduleDuration == "P1D"
-        assert task_time.ScheduleStart == "2000-01-01T00:00:00"
-        assert task_time.ScheduleFinish == "2000-01-02T00:00:00"
+        assert task_time.ScheduleStart == "2000-01-01T09:00:00"
+        assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
 
     def test_zero_durations_are_allowed(self):
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())
@@ -186,10 +186,10 @@ class TestEditTaskTime(test.bootstrap.IFC4):
             attributes={
                 "DurationType": "ELAPSEDTIME",
                 "ScheduleDuration": datetime.timedelta(),
-                "ScheduleStart": "2000-01-01T00:00:00",
+                "ScheduleStart": "2000-01-01T09:00:00",
             },
         )
         assert task_time.DurationType == "ELAPSEDTIME"
         assert task_time.ScheduleDuration == "P0D"
-        assert task_time.ScheduleStart == "2000-01-01T00:00:00"
-        assert task_time.ScheduleFinish == "2000-01-01T00:00:00"
+        assert task_time.ScheduleStart == "2000-01-01T09:00:00"
+        assert task_time.ScheduleFinish == "2000-01-01T09:00:00"
