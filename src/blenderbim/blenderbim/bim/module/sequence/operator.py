@@ -989,6 +989,7 @@ class GenerateGanttChart(bpy.types.Operator):
         data = {
             "pID": task.id(),
             "pName": task.Name,
+            "pCaption": task.Name,
             "pStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
             "pEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
             "pPlanStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
@@ -999,6 +1000,7 @@ class GenerateGanttChart(bpy.types.Operator):
             "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
             "pOpen": 1,
             "pCost": 1,
+            "ifcduration": task.TaskTime.ScheduleDuration if task.TaskTime else "",
         }
         if task.TaskTime and task.TaskTime.IsCritical:
             data["pClass"] = "gtaskred"
