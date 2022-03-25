@@ -40,12 +40,28 @@ def count_working_days(start, finish, calendar):
     while current_date < finish_date:
         if calendar and calendar.WorkingTimes and is_working_day(current_date, calendar):
             result += 1
+        elif not calendar:
+            result += 1
         current_date += datetime.timedelta(days=1)
     return result
 
 
-def get_finish_date(start, duration, duration_type, calendar):
-    current_date = datetime.date(start.year, start.month, start.day)
+def get_start_or_finish_date(start, duration, duration_type, calendar, date_type="FINISH"):
+    if not duration.days:
+        # Typically a milestone will have zero duration, so the start == finish
+        return start
+    # We minus 1 because the start day itself is counted as a day
+    duration = datetime.timedelta(days=duration.days - 1)
+    if date_type == "START":
+        duration = -duration
+    result = offset_date(start, duration, duration_type, calendar)
+    if date_type == "START":
+        return datetime.datetime.combine(result, datetime.time(9))
+    return datetime.datetime.combine(result, datetime.time(17))
+
+
+def offset_date(start, duration, duration_type, calendar):
+    current_date = start
     abs_duration = abs(duration.days)
     date_offset = datetime.timedelta(days=1 if duration.days > 0 else -1)
     while abs_duration > 0:
