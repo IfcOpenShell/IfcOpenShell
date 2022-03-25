@@ -38,7 +38,7 @@
 <script type="text/javascript">
 var g = new JSGantt.GanttChart(document.getElementById('GanttChartDIV'), 'day');
 g.setOptions({
-    vCaptionType: 'Complete',  // Set to Show Caption : None,Caption,Resource,Duration,Complete,
+    vCaptionType: 'Caption',  // Set to Show Caption : None,Caption,Resource,Duration,Complete,
     vQuarterColWidth: 36,
     vDateTaskDisplayFormat: 'day dd month yyyy', // Shown in tool tip box
     vDayMajorDateDisplayFormat: 'mon yyyy - Week ww',// Set format to dates in the "Major" header of the "Day" view
@@ -50,6 +50,8 @@ g.setOptions({
     vFormatArr: ['Day', 'Week', 'Month', 'Quarter'], // Even with setUseSingleCell using Hour format on such a large chart can cause issues in some browsers,
     vShowRes: false, // Disable the resource column.
     vShowComp: false, // Disable the completion column.
+    vShowDur: false, // Disable the duration column, because jsgantt doesn't calculate durations the way we want.
+    vAdditionalHeaders: {ifcduration: {title: 'Duration'}},
     vUseToolTip: false, // Disable tooltips.
     vTotalHeight: 900,
 });
