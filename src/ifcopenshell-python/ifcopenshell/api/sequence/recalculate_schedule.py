@@ -36,6 +36,9 @@ class Usecase:
         self.start_dates = []
         self.build_network_graph()
 
+        if not self.start_dates:
+            return
+
         self.pending_nodes = set(self.g.nodes)
         while self.pending_nodes:
             remaining_nodes = set()
