@@ -1681,6 +1681,10 @@ class EnableEditingSequenceTimeLag(bpy.types.Operator):
 
     def import_attributes(self, name, prop, data):
         if name == "LagValue":
+            prop = self.props.time_lag_attributes.add()
+            prop.name = name
+            prop.is_null = data[name] is None
+            prop.is_optional = False
             if isinstance(data[name], isodate.Duration):
                 prop.data_type = "string"
                 prop.string_value = (
