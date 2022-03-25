@@ -127,13 +127,16 @@ class Usecase:
 
     def update_task_times(self):
         for ifc_definition_id in self.g.nodes:
+            if ifc_definition_id in ("start", "finish"):
+                continue
             data = self.g.nodes[ifc_definition_id]
-            if not data["duration"]:
+            task = self.file.by_id(ifc_definition_id)
+            if not task.TaskTime:
                 continue
             ifcopenshell.api.run(
                 "sequence.edit_task_time",
                 self.file,
-                task_time=self.file.by_id(ifc_definition_id).TaskTime,
+                task_time=task.TaskTime,
                 attributes={
                     "FreeFloat": ifcopenshell.util.date.datetime2ifc(data["free_float"], "IfcDuration"),
                     "TotalFloat": ifcopenshell.util.date.datetime2ifc(data["total_float"], "IfcDuration"),
