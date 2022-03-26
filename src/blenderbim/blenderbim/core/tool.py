@@ -432,7 +432,9 @@ class Structural:
 class Style:
     def can_support_rendering_style(cls, obj): pass
     def disable_editing(cls, obj): pass
+    def disable_editing_styles(cls): pass
     def enable_editing(cls, obj): pass
+    def enable_editing_styles(cls): pass
     def export_surface_attributes(cls, obj): pass
     def get_context(cls, obj): pass
     def get_name(cls, obj): pass
@@ -443,6 +445,7 @@ class Style:
     def get_surface_shading_style(cls, obj): pass
     def get_surface_texture_style(cls, obj): pass
     def get_uv_maps(cls, representation): pass
+    def import_presentation_styles(cls, style_type): pass
     def import_surface_attributes(cls, style, obj): pass
 
 

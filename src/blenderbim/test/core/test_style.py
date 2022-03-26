@@ -174,3 +174,16 @@ class TestEditStyle:
         ifc.run("style.edit_presentation_style", style="style", attributes="attributes").should_be_called()
         style.disable_editing("obj").should_be_called()
         subject.edit_style(ifc, style, obj="obj")
+
+
+class TestLoadStyles:
+    def test_run(self, style):
+        style.import_presentation_styles("style_type").should_be_called()
+        style.enable_editing_styles().should_be_called()
+        subject.load_styles(style, style_type="style_type")
+
+
+class TestDisableEditingStyles:
+    def test_run(self, style):
+        style.disable_editing_styles().should_be_called()
+        subject.disable_editing_styles(style)
