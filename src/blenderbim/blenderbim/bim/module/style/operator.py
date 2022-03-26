@@ -59,9 +59,10 @@ class RemoveStyle(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_style"
     bl_label = "Remove Style"
     bl_options = {"REGISTER", "UNDO"}
+    style: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
+        core.remove_style(tool.Ifc, tool.Material, tool.Style, style=tool.Ifc.get().by_id(self.style))
 
 
 class AddStyle(bpy.types.Operator, Operator):

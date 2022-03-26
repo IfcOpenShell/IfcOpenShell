@@ -14,7 +14,8 @@ Scenario: Remove style
     And I add a cube
     And I add a material
     And I press "bim.add_style"
-    When I press "bim.remove_style"
+    And the variable "style" is "{ifc}.by_type('IfcSurfaceStyle')[0].id()"
+    When I press "bim.remove_style(style={style})"
     Then nothing happens
 
 Scenario: Add style

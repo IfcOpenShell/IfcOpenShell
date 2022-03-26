@@ -49,6 +49,10 @@ class Style(blenderbim.core.tool.Style):
         return blenderbim.bim.helper.export_attributes(obj.BIMStyleProperties.attributes)
 
     @classmethod
+    def get_active_style_type(cls):
+        return bpy.context.scene.BIMStylesProperties.style_type
+
+    @classmethod
     def get_context(cls, obj):
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
@@ -188,3 +192,7 @@ class Style(blenderbim.core.tool.Style):
     def import_surface_attributes(cls, style, obj):
         obj.BIMStyleProperties.attributes.clear()
         blenderbim.bim.helper.import_attributes2(style, obj.BIMStyleProperties.attributes)
+
+    @classmethod
+    def is_editing_styles(cls):
+        return bpy.context.scene.BIMStylesProperties.is_editing
