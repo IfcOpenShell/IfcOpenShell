@@ -156,6 +156,7 @@ class UpdateRepresentation(bpy.types.Operator):
 
     def update_obj_mesh_representation(self, context, obj):
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        tool.Geometry.clear_cache(product)
 
         if product.is_a("IfcGridAxis"):
             ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": product})
