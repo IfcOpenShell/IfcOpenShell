@@ -112,7 +112,6 @@ Scenario: Assign material - Assign a material profile set
     Then nothing happens
 
 Scenario: Select by material
-Scenario: Load materials - then add material
     Given an empty IFC project
     And I press "bim.load_materials"
     And I press "bim.add_material(obj='')"

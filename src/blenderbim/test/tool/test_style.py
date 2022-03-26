@@ -78,6 +78,16 @@ class TestExportSurfaceAttributes(NewFile):
         assert subject.export_surface_attributes(obj) == {"Name": "Name", "Side": "BOTH"}
 
 
+class TestGetActiveStyleType(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        bpy.context.scene.BIMStylesProperties.style_type = "IfcSurfaceStyle"
+        assert subject.get_active_style_type() == "IfcSurfaceStyle"
+        bpy.context.scene.BIMStylesProperties.style_type = "IfcCurveStyle"
+        assert subject.get_active_style_type() == "IfcCurveStyle"
+
+
 class TestGetContext(NewFile):
     def test_run(self):
         bpy.ops.bim.create_project()
@@ -408,3 +418,11 @@ class TestImportPresentationStyles(NewFile):
         assert props.styles[0].ifc_definition_id == style.id()
         assert props.styles[0].name == "Name"
         assert props.styles[0].total_elements == 0
+
+
+class TestIsEditingStyles(NewFile):
+    def test_run(self):
+        bpy.context.scene.BIMStylesProperties.is_editing = False
+        subject.is_editing_styles() is False
+        bpy.context.scene.BIMStylesProperties.is_editing = True
+        subject.is_editing_styles() is True

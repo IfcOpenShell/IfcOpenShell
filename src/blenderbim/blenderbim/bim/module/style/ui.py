@@ -51,15 +51,15 @@ class BIM_PT_styles(Panel):
             row.operator("bim.load_styles", text="", icon="IMPORT").style_type = self.props.style_type
             return
 
-        #row = self.layout.row(align=True)
-        #row.alignment = "RIGHT"
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
 
         #row.operator("bim.add_presentation_style", text="", icon="ADD")
-        #if self.props.styles and self.props.active_style_index < len(self.props.styles):
-        #    style = self.props.styles[self.props.active_style_index]
+        if self.props.styles and self.props.active_style_index < len(self.props.styles):
+            style = self.props.styles[self.props.active_style_index]
         #    op = row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF")
         #    op.style = style.ifc_definition_id
-        #    row.operator("bim.remove_style", text="", icon="X").style = style.ifc_definition_id
+            row.operator("bim.remove_style", text="", icon="X").style = style.ifc_definition_id
 
         self.layout.template_list("BIM_UL_styles", "", self.props, "styles", self.props, "active_style_index")
 
@@ -86,7 +86,7 @@ class BIM_PT_style(Panel):
             row.operator("bim.update_style_colours", icon="GREASEPENCIL")
             row.operator("bim.update_style_textures", icon="TEXTURE", text="")
             row.operator("bim.unlink_style", icon="UNLINKED", text="")
-            row.operator("bim.remove_style", icon="X", text="")
+            row.operator("bim.remove_style", icon="X", text="").style = props.ifc_style_id
         else:
             row.operator("bim.add_style", icon="ADD")
 

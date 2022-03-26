@@ -33,10 +33,14 @@ def add_style(ifc, style, obj=None):
     return element
 
 
-def remove_style(ifc, style, obj=None):
-    element = style.get_style(obj)
-    ifc.unlink(obj=obj, element=element)
-    ifc.run("style.remove_style", style=element)
+def remove_style(ifc, material, style_tool, style=None):
+    obj = ifc.get_object(style)
+    ifc.unlink(obj=obj, element=style)
+    ifc.run("style.remove_style", style=style)
+    if obj and not ifc.get_entity(obj):
+        material.delete_object(obj)
+    if style_tool.is_editing_styles():
+        style_tool.import_presentation_styles(style_tool.get_active_style_type())
 
 
 def update_style_colours(ifc, style, obj=None):

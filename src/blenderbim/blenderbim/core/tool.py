@@ -436,6 +436,7 @@ class Style:
     def enable_editing(cls, obj): pass
     def enable_editing_styles(cls): pass
     def export_surface_attributes(cls, obj): pass
+    def get_active_style_type(cls): pass
     def get_context(cls, obj): pass
     def get_name(cls, obj): pass
     def get_style(cls, obj): pass
@@ -447,6 +448,7 @@ class Style:
     def get_uv_maps(cls, representation): pass
     def import_presentation_styles(cls, style_type): pass
     def import_surface_attributes(cls, style, obj): pass
+    def is_editing_styles(cls): pass
 
 
 @interface
