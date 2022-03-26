@@ -57,6 +57,10 @@ class BIM_PT_units(Panel):
 
         if self.props.unit_classes == "IfcMonetaryUnit":
             row.operator("bim.add_monetary_unit", text="", icon="ADD")
+        elif self.props.unit_classes in ("IfcConversionBasedUnit", "IfcConversionBasedUnitWithOffset"):
+            row.prop(self.props, "conversion_unit_types", text="")
+            op = row.operator("bim.add_conversion_based_unit", text="", icon="ADD")
+            op.name = self.props.conversion_unit_types
         elif self.props.unit_classes == "IfcDerivedUnit":
             pass  # TODO
         elif self.props.unit_classes == "IfcSIUnit":

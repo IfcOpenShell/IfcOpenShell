@@ -94,6 +94,16 @@ class RemoveUnit(bpy.types.Operator, Operator):
         core.remove_unit(tool.Ifc, tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
 
 
+class AddConversionBasedUnit(bpy.types.Operator, Operator):
+    bl_idname = "bim.add_conversion_based_unit"
+    bl_label = "Add Conversion Based Unit"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.add_conversion_based_unit(tool.Ifc, tool.Unit, name=self.name)
+
+
 class AddMonetaryUnit(bpy.types.Operator, Operator):
     bl_idname = "bim.add_monetary_unit"
     bl_label = "Add Monetary Unit"

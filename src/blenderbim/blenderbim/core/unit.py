@@ -32,7 +32,9 @@ def assign_scene_units(ifc, unit):
         areaunit = ifc.run("unit.add_conversion_based_unit", name=area_name)
         volumeunit = ifc.run("unit.add_conversion_based_unit", name=volume_name)
 
-    ifc.run("unit.assign_unit", units=[lengthunit, areaunit, volumeunit])
+    planeangleunit = ifc.run("unit.add_conversion_based_unit", name="degree")
+
+    ifc.run("unit.assign_unit", units=[lengthunit, areaunit, volumeunit, planeangleunit])
 
 
 def assign_unit(ifc, unit_tool, unit=None):
@@ -73,6 +75,12 @@ def add_si_unit(ifc, unit, unit_type=None):
 
 def add_context_dependent_unit(ifc, unit, unit_type=None, name=None):
     result = ifc.run("unit.add_context_dependent_unit", unit_type=unit_type, name=name)
+    unit.import_units()
+    return result
+
+
+def add_conversion_based_unit(ifc, unit, name=None):
+    result = ifc.run("unit.add_conversion_based_unit", name=name)
     unit.import_units()
     return result
 

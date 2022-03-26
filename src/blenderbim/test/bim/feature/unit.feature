@@ -50,6 +50,16 @@ Scenario: Add context dependent unit
     When I press "bim.add_context_dependent_unit(name='THINGAMAJIGS', unit_type='LENGTHUNIT')"
     Then nothing happens
 
+Scenario: Add conversion based unit
+    Given an empty IFC project
+    When I press "bim.add_conversion_based_unit(name='inch')"
+    Then nothing happens
+
+Scenario: Add conversion based unit with offset
+    Given an empty IFC project
+    When I press "bim.add_conversion_based_unit(name='fahrenheit')"
+    Then nothing happens
+
 Scenario: Enable editing unit
     Given an empty IFC project
     And the variable "unit" is "{ifc}.by_type('IfcSIUnit')[0].id()"
