@@ -563,8 +563,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangleHollowProfileDef* l, 
 	const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
 	const double d = l->WallThickness() * getValue(GV_LENGTH_UNIT);
 
-	const bool fr1 = !l->OuterFilletRadius();
-	const bool fr2 = !l->InnerFilletRadius();
+	const bool fr1 = !!l->OuterFilletRadius();
+	const bool fr2 = !!l->InnerFilletRadius();
 
 	const double r1 = fr1 ? (*l->OuterFilletRadius()) * getValue(GV_LENGTH_UNIT) : 0.;
 	const double r2 = fr2 ? (*l->InnerFilletRadius()) * getValue(GV_LENGTH_UNIT) : 0.;
