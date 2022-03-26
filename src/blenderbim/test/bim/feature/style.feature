@@ -57,3 +57,20 @@ Scenario: Edit style
     And I press "bim.enable_editing_style"
     When I press "bim.edit_style"
     Then nothing happens
+
+Scenario: Load styles
+    Given an empty IFC project
+    And I add a cube
+    And I add a material
+    And I press "bim.add_style"
+    When I press "bim.load_styles(style_type='IfcSurfaceStyle')"
+    Then nothing happens
+
+Scenario: Disable editing styles
+    Given an empty IFC project
+    And I add a cube
+    And I add a material
+    And I press "bim.add_style"
+    And I press "bim.load_styles(style_type='IfcSurfaceStyle')"
+    When I press "bim.disable_editing_style"
+    Then nothing happens

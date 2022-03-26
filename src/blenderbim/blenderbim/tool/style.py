@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -32,8 +33,16 @@ class Style(blenderbim.core.tool.Style):
         obj.BIMStyleProperties.is_editing = False
 
     @classmethod
+    def disable_editing_styles(cls):
+        bpy.context.scene.BIMStylesProperties.is_editing = False
+
+    @classmethod
     def enable_editing(cls, obj):
         obj.BIMStyleProperties.is_editing = True
+
+    @classmethod
+    def enable_editing_styles(cls):
+        bpy.context.scene.BIMStylesProperties.is_editing = True
 
     @classmethod
     def export_surface_attributes(cls, obj):
@@ -165,6 +174,15 @@ class Style(blenderbim.core.tool.Style):
             for uv_map in item.HasTextures or []:
                 results.append(uv_map)
         return results
+
+    @classmethod
+    def import_presentation_styles(cls, style_type):
+        props = bpy.context.scene.BIMStylesProperties
+        props.styles.clear()
+        for style in tool.Ifc.get().by_type(style_type):
+            new = props.styles.add()
+            new.ifc_definition_id = style.id()
+            new.name = style.Name or "Unnamed"
 
     @classmethod
     def import_surface_attributes(cls, style, obj):

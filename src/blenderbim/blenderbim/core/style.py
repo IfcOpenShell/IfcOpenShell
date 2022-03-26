@@ -97,3 +97,12 @@ def edit_style(ifc, style, obj=None):
     attributes = style.export_surface_attributes(obj)
     ifc.run("style.edit_presentation_style", style=style.get_style(obj), attributes=attributes)
     style.disable_editing(obj)
+
+
+def load_styles(style, style_type=None):
+    style.import_presentation_styles(style_type)
+    style.enable_editing_styles()
+
+
+def disable_editing_styles(style):
+    style.disable_editing_styles()

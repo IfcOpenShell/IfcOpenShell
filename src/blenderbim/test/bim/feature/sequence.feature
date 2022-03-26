@@ -79,7 +79,7 @@ Scenario: Animate the construction of a wall
     Then "scene.objects.get('IfcWall/Cube').hide_viewport" is "False"
     And "scene.objects.get('IfcWall/Cube').hide_render" is "False"
     And "scene.objects.get('IfcWall/Cube').color" is "[0.0, 1.0, 0.0, 1]"
-    When I am on frame "6"
+    When I am on frame "7"
     Then "scene.objects.get('IfcWall/Cube').color" is "[1.0, 1.0, 1.0, 1]"
 
 Scenario: Animate the demolition of a wall
@@ -116,7 +116,7 @@ Scenario: Animate the demolition of a wall
     Then "scene.objects.get('IfcWall/Cube').hide_viewport" is "False"
     And "scene.objects.get('IfcWall/Cube').hide_render" is "False"
     And "scene.objects.get('IfcWall/Cube').color" is "[1.0, 0.0, 0.0, 1]"
-    When I am on frame "6"
+    When I am on frame "7"
     Then "scene.objects.get('IfcWall/Cube').hide_viewport" is "True"
     And "scene.objects.get('IfcWall/Cube').hide_render" is "True"
     And "scene.objects.get('IfcWall/Cube').color" is "[0.0, 0.0, 0.0, 1]"
@@ -151,7 +151,7 @@ Scenario: Animate the operation of a wall
     Then "scene.objects.get('IfcWall/Cube').color" is "[1.0, 1.0, 1.0, 1]"
     When I am on frame "2"
     Then "scene.objects.get('IfcWall/Cube').color" is "[0.0, 0.0, 1.0, 1]"
-    When I am on frame "6"
+    When I am on frame "7"
     Then "scene.objects.get('IfcWall/Cube').color" is "[1.0, 1.0, 1.0, 1]"
 
 Scenario: Animate the movement of a wall
@@ -200,7 +200,7 @@ Scenario: Animate the movement of a wall
     And "scene.objects.get('IfcWall/ToObject').color" is "[1.0, 1.0, 0.0, 1]"
     And "scene.objects.get('IfcWall/ToObject').hide_viewport" is "False"
     And "scene.objects.get('IfcWall/ToObject').hide_render" is "False"
-    When I am on frame "6"
+    When I am on frame "7"
     Then "scene.objects.get('IfcWall/FromObject').color" is "[0.0, 0.0, 0.0, 1]"
     Then "scene.objects.get('IfcWall/FromObject').hide_viewport" is "True"
     Then "scene.objects.get('IfcWall/FromObject').hide_render" is "True"
@@ -239,7 +239,7 @@ Scenario: Animate the consumption of a wall
     Then "scene.objects.get('IfcWall/Cube').color" is "[0.0, 1.0, 1.0, 1]"
     And "scene.objects.get('IfcWall/Cube').hide_viewport" is "False"
     And "scene.objects.get('IfcWall/Cube').hide_render" is "False"
-    When I am on frame "6"
+    When I am on frame "7"
     Then "scene.objects.get('IfcWall/Cube').color" is "[0.0, 0.0, 0.0, 1]"
     Then "scene.objects.get('IfcWall/Cube').hide_viewport" is "True"
     Then "scene.objects.get('IfcWall/Cube').hide_render" is "True"
