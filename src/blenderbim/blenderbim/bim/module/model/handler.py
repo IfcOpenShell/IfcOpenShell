@@ -27,6 +27,7 @@ from bpy.app.handlers import persistent
 @persistent
 def load_post(*args):
     ifcopenshell.api.add_pre_listener("attribute.edit_attributes", "BlenderBIM.Root.SyncName", root.sync_name)
+    ifcopenshell.api.add_pre_listener("style.edit_presentation_style", "BlenderBIM.Root.SyncStyleName", root.sync_name)
 
     ifcopenshell.api.add_post_listener(
         "geometry.add_representation", "BlenderBIM.Product.GenerateBox", product.generate_box
