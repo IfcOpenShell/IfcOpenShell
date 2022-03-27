@@ -163,8 +163,7 @@ class IfcImporter:
         self.settings = ifcopenshell.geom.settings()
         self.settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
         self.settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
-        # See https://github.com/IfcOpenShell/IfcOpenShell/issues/2053
-        # self.settings.set(self.settings.STRICT_TOLERANCE, True)
+        self.settings.set(self.settings.STRICT_TOLERANCE, True)
         self.settings_native = ifcopenshell.geom.settings()
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
