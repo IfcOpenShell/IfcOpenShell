@@ -19,6 +19,7 @@
 import os
 import re
 import bpy
+import math
 import bmesh
 import mathutils
 import webbrowser
@@ -407,6 +408,95 @@ class Drawing(blenderbim.core.tool.Drawing):
     def generate_reference_annotation(cls, drawing, reference_element, context):
         if reference_element.is_a("IfcGridAxis"):
             return cls.generate_grid_axis_reference_annotation(drawing, reference_element, context)
+        elif reference_element.is_a("IfcAnnotation") and reference_element.ObjectType == "DRAWING":
+            psets = ifcopenshell.util.element.get_psets(reference_element)
+            target_view = psets.get("EPset_Drawing", {}).get("TargetView", None)
+            if target_view == "ELEVATION_VIEW":
+                return cls.generate_elevation_reference_annotation(drawing, reference_element, context)
+
+    @classmethod
+    def generate_elevation_reference_annotation(cls, drawing, reference_element, context):
+        reference_obj = tool.Ifc.get_object(reference_element)
+        reference_obj.matrix_world
+        camera = tool.Ifc.get_object(drawing)
+
+        def is_perpendicular(a, b):
+            axes = [mathutils.Vector((1, 0, 0)), mathutils.Vector((0, 1, 0)), mathutils.Vector((0, 0, 1))]
+            a_quaternion = a.matrix_world.to_quaternion()
+            b_quaternion = b.matrix_world.to_quaternion()
+            for axis in axes:
+                if abs((a_quaternion @ axis).angle((b_quaternion @ axis)) - (math.pi / 2)) < 1e-5:
+                    return True
+            return False
+
+        def get_camera_block(obj):
+            raster_x = obj.data.BIMCameraProperties.raster_x
+            raster_y = obj.data.BIMCameraProperties.raster_y
+
+            if raster_x > raster_y:
+                width = obj.data.ortho_scale
+                height = width / raster_x * raster_y
+            else:
+                height = obj.data.ortho_scale
+                width = height / raster_y * raster_x
+            depth = obj.data.clip_end
+
+            verts = (
+                obj.matrix_world @ mathutils.Vector((-width / 2, -height /2, -depth)),
+                obj.matrix_world @ mathutils.Vector((-width / 2, -height /2, 0)),
+                obj.matrix_world @ mathutils.Vector((-width / 2, height /2, -depth)),
+                obj.matrix_world @ mathutils.Vector((-width / 2, height /2, 0)),
+                obj.matrix_world @ mathutils.Vector((width / 2, -height /2, -depth)),
+                obj.matrix_world @ mathutils.Vector((width / 2, -height /2, 0)),
+                obj.matrix_world @ mathutils.Vector((width / 2, height /2, -depth)),
+                obj.matrix_world @ mathutils.Vector((width / 2, height /2, 0))
+            )
+            faces = [
+                [0, 1, 3, 2],
+                [2, 3, 7, 6],
+                [6, 7, 5, 4],
+                [4, 5, 1, 0],
+                [2, 6, 4, 0],
+                [7, 3, 1, 5],
+            ]
+            return {"verts": verts, "faces": faces}
+
+        def is_intersecting(a, b):
+            a_block = get_camera_block(a)
+            a_tree = mathutils.bvhtree.BVHTree.FromPolygons(a_block["verts"], a_block["faces"])
+            b_block = get_camera_block(b)
+            b_tree = mathutils.bvhtree.BVHTree.FromPolygons(b_block["verts"], b_block["faces"])
+            return bool(a_tree.overlap(b_tree))
+
+        def to_camera_coords(camera, reference_obj):
+            mat = reference_obj.matrix_world.copy()
+            xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
+            xyz[2] = 0
+            xyz = camera.matrix_world @ xyz
+            mat[0][3] = xyz[0]
+            mat[1][3] = xyz[1]
+            mat[2][3] = xyz[2]
+            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start))
+            annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
+            mat[0][3] += annotation_offset[0]
+            mat[1][3] += annotation_offset[1]
+            mat[2][3] += annotation_offset[2]
+            return mat
+
+        if is_perpendicular(camera, reference_obj) and is_intersecting(camera, reference_obj):
+            obj = bpy.data.objects.new(reference_obj.name, None)
+            obj.empty_display_size = 0.1
+            obj.matrix_world = to_camera_coords(camera, reference_obj)
+
+            element = cls.run_root_assign_class(
+                obj=obj,
+                ifc_class="IfcAnnotation",
+                predefined_type="ELEVATION",
+                should_add_representation=False,
+                context=context,
+                ifc_representation_class=None,
+            )
+            return element
 
     @classmethod
     def generate_grid_axis_reference_annotation(cls, drawing, reference_element, context):

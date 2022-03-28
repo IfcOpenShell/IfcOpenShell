@@ -1125,6 +1125,101 @@ class GridDecorator(BaseDecorator):
         self.draw_label(context, text, p1, dir, vcenter=True, gap=0)
 
 
+class ElevationDecorator(LevelDecorator):
+    objecttype = "ELEVATION"
+
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
+        #define CIRCLE_SIZE 8.0
+        #define TRIANGLE_L 22.63
+        #define TRIANGLE_W 11.31
+    """
+    )
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+    uniform float viewportDrawingScale;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    void triangle_head(in vec4 side, in vec4 dir, in float length, in float width, in float radius, out vec4 head[5]) {
+        vec4 nose = side * length;
+        vec4 ear = dir * width;
+        head[0] = side * -radius;
+        head[1] = nose * -.5;
+        head[2] = vec4(0) + ear;
+        head[3] = nose * .5;
+        head[4] = side * radius;
+    }
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        // vec4 dir = normalize(vec4(1, 0, 0, 0));
+        vec4 gap = dir * viewportDrawingScale * TRIANGLE_L * .5;
+        vec4 side = vec4(cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy, 0, 0);
+        vec4 p;
+
+        vec4 head[CIRCLE_SEGS];
+        circle_head(viewportDrawingScale * CIRCLE_SIZE, head);
+
+        vec4 head3[5];
+
+        // start edge circle
+        for(int i=0; i<CIRCLE_SEGS; i++) {
+            p = p0w + head[i];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+        }
+        p = p0w + head[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // start edge triangle
+        triangle_head(side, dir, viewportDrawingScale * TRIANGLE_L, viewportDrawingScale * TRIANGLE_W, viewportDrawingScale * CIRCLE_SIZE, head3);
+        p = p0w + head3[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head3[1];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head3[2];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head3[3];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head3[4];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // reference divider
+        p = p0w + normalize(vec4(-1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + normalize(vec4(1, 0, 0, 0)) * viewportDrawingScale * CIRCLE_SIZE;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def decorate(self, context, obj):
+        center = obj.matrix_world.translation
+        v1 = obj.matrix_world @ Vector((0, 0, 0))
+        v2 = obj.matrix_world @ Vector((0, 0, -1))
+        self.draw_lines(context, obj, [v1, v2], [(0, 1)])
+
+
 class SectionViewDecorator(LevelDecorator):
     objecttype = "SECTION"
 
@@ -1328,6 +1423,7 @@ class DecorationsHandler:
         StairDecorator,
         BreakDecorator,
         SectionViewDecorator,
+        ElevationDecorator,
         TextDecorator,
     ]
 
