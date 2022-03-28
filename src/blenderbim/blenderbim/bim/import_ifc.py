@@ -1298,10 +1298,7 @@ class IfcImporter:
             name = style.Name or str(style.id())
             blender_material = bpy.data.materials.new(name)
 
-        old_definition_id = blender_material.BIMObjectProperties.ifc_definition_id
-        if not old_definition_id:
-            self.link_element(style, blender_material)
-        blender_material.BIMObjectProperties.ifc_definition_id = old_definition_id
+        self.link_element(style, blender_material)
 
         blender_material.BIMMaterialProperties.ifc_style_id = style.id()
         self.material_creator.styles[style.id()] = blender_material
