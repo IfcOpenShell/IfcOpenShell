@@ -413,60 +413,15 @@ class Drawing(blenderbim.core.tool.Drawing):
             target_view = psets.get("EPset_Drawing", {}).get("TargetView", None)
             if target_view == "ELEVATION_VIEW":
                 return cls.generate_elevation_reference_annotation(drawing, reference_element, context)
+            elif target_view == "SECTION_VIEW":
+                return cls.generate_section_reference_annotation(drawing, reference_element, context)
 
     @classmethod
-    def generate_elevation_reference_annotation(cls, drawing, reference_element, context):
+    def generate_section_reference_annotation(cls, drawing, reference_element, context):
         reference_obj = tool.Ifc.get_object(reference_element)
         reference_obj.matrix_world
         camera = tool.Ifc.get_object(drawing)
-
-        def is_perpendicular(a, b):
-            axes = [mathutils.Vector((1, 0, 0)), mathutils.Vector((0, 1, 0)), mathutils.Vector((0, 0, 1))]
-            a_quaternion = a.matrix_world.to_quaternion()
-            b_quaternion = b.matrix_world.to_quaternion()
-            for axis in axes:
-                if abs((a_quaternion @ axis).angle((b_quaternion @ axis)) - (math.pi / 2)) < 1e-5:
-                    return True
-            return False
-
-        def get_camera_block(obj):
-            raster_x = obj.data.BIMCameraProperties.raster_x
-            raster_y = obj.data.BIMCameraProperties.raster_y
-
-            if raster_x > raster_y:
-                width = obj.data.ortho_scale
-                height = width / raster_x * raster_y
-            else:
-                height = obj.data.ortho_scale
-                width = height / raster_y * raster_x
-            depth = obj.data.clip_end
-
-            verts = (
-                obj.matrix_world @ mathutils.Vector((-width / 2, -height /2, -depth)),
-                obj.matrix_world @ mathutils.Vector((-width / 2, -height /2, 0)),
-                obj.matrix_world @ mathutils.Vector((-width / 2, height /2, -depth)),
-                obj.matrix_world @ mathutils.Vector((-width / 2, height /2, 0)),
-                obj.matrix_world @ mathutils.Vector((width / 2, -height /2, -depth)),
-                obj.matrix_world @ mathutils.Vector((width / 2, -height /2, 0)),
-                obj.matrix_world @ mathutils.Vector((width / 2, height /2, -depth)),
-                obj.matrix_world @ mathutils.Vector((width / 2, height /2, 0))
-            )
-            faces = [
-                [0, 1, 3, 2],
-                [2, 3, 7, 6],
-                [6, 7, 5, 4],
-                [4, 5, 1, 0],
-                [2, 6, 4, 0],
-                [7, 3, 1, 5],
-            ]
-            return {"verts": verts, "faces": faces}
-
-        def is_intersecting(a, b):
-            a_block = get_camera_block(a)
-            a_tree = mathutils.bvhtree.BVHTree.FromPolygons(a_block["verts"], a_block["faces"])
-            b_block = get_camera_block(b)
-            b_tree = mathutils.bvhtree.BVHTree.FromPolygons(b_block["verts"], b_block["faces"])
-            return bool(a_tree.overlap(b_tree))
+        bounds = helper.ortho_view_frame(camera.data) if camera.data.type == "ORTHO" else None
 
         def to_camera_coords(camera, reference_obj):
             mat = reference_obj.matrix_world.copy()
@@ -476,14 +431,90 @@ class Drawing(blenderbim.core.tool.Drawing):
             mat[0][3] = xyz[0]
             mat[1][3] = xyz[1]
             mat[2][3] = xyz[2]
-            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start))
+            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
             mat[0][3] += annotation_offset[0]
             mat[1][3] += annotation_offset[1]
             mat[2][3] += annotation_offset[2]
             return mat
 
-        if is_perpendicular(camera, reference_obj) and is_intersecting(camera, reference_obj):
+        def clip_to_camera_boundary(mesh, bounds):
+            mesh.verts.ensure_lookup_table()
+            points = [v.co for v in mesh.verts[0:2]]
+            points = helper.clip_segment(bounds, points)
+            if points is None:
+                return None
+            mesh.verts[0].co = points[0]
+            mesh.verts[1].co = points[1]
+            return mesh
+
+        if cls.is_perpendicular(camera, reference_obj) and cls.is_intersecting(camera, reference_obj):
+            reference_mesh = cls.get_camera_block(reference_obj)
+            obj_matrix = to_camera_coords(camera, reference_obj)
+
+            # The reference mesh vertices represent a view cube. To convert this into a section line we:
+            # 1. Select the 4 +Z vertices local to the reference element. This is the cutting plane.
+            verts_local_to_reference = [reference_obj.matrix_world.inverted() @ v for v in reference_mesh["verts"]]
+            cutting_plane_verts = sorted(verts_local_to_reference, key=lambda x: x.z)[-4:]
+            # Filter verts with the same XY coords
+            #set([v.xy for v in cutting_plane_verts])
+
+            global_cutting_plane_verts = [reference_obj.matrix_world @ v for v in cutting_plane_verts]
+            # 2. Project the cutting plane onto our viewing camera.
+            verts_local_to_camera = [camera.matrix_world.inverted() @ v for v in global_cutting_plane_verts]
+            # 3. Collapse verts with the same XY coords, and set Z to be just below the clip_start so it's visible
+            collapsed_verts = []
+            for vert in verts_local_to_camera:
+                if not [True for v in collapsed_verts if (vert.xy - v.xy).length < 1e-2]:
+                    collapsed_verts.append(mathutils.Vector((vert.x, vert.y, -camera.data.clip_start - 0.05)))
+            # 4. The first two vertices is the section line
+            section_line = collapsed_verts[0:2]
+            global_section_line = [camera.matrix_world @ v for v in section_line]
+            local_section_line = [obj_matrix.inverted() @ v for v in global_section_line]
+
+            mesh = bpy.data.meshes.new(name="Annotation")
+            mesh.from_pydata(local_section_line, [(0, 1)], [])
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+            bm = clip_to_camera_boundary(bm, bounds)
+            bm.to_mesh(mesh)
+            bm.free()
+
+            obj = bpy.data.objects.new(reference_obj.name, mesh)
+            obj.matrix_world = obj_matrix
+
+            element = cls.run_root_assign_class(
+                obj=obj,
+                ifc_class="IfcAnnotation",
+                predefined_type="SECTION",
+                should_add_representation=True,
+                context=context,
+                ifc_representation_class=None,
+            )
+            return element
+
+    @classmethod
+    def generate_elevation_reference_annotation(cls, drawing, reference_element, context):
+        reference_obj = tool.Ifc.get_object(reference_element)
+        reference_obj.matrix_world
+        camera = tool.Ifc.get_object(drawing)
+
+        def to_camera_coords(camera, reference_obj):
+            mat = reference_obj.matrix_world.copy()
+            xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
+            xyz[2] = 0
+            xyz = camera.matrix_world @ xyz
+            mat[0][3] = xyz[0]
+            mat[1][3] = xyz[1]
+            mat[2][3] = xyz[2]
+            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
+            annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
+            mat[0][3] += annotation_offset[0]
+            mat[1][3] += annotation_offset[1]
+            mat[2][3] += annotation_offset[2]
+            return mat
+
+        if cls.is_perpendicular(camera, reference_obj) and cls.is_intersecting(camera, reference_obj):
             obj = bpy.data.objects.new(reference_obj.name, None)
             obj.empty_display_size = 0.1
             obj.matrix_world = to_camera_coords(camera, reference_obj)
@@ -530,7 +561,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         def to_camera_coords(obj, mesh):
             mesh.transform(camera.matrix_world.inverted() @ obj.matrix_world)
             obj.matrix_world = camera.matrix_world
-            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start))
+            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
             obj.matrix_world[0][3] += annotation_offset[0]
             obj.matrix_world[1][3] += annotation_offset[1]
@@ -584,6 +615,57 @@ class Drawing(blenderbim.core.tool.Drawing):
             ifc_representation_class=None,
         )
         return element
+
+    @classmethod
+    def is_perpendicular(cls, a, b):
+        axes = [mathutils.Vector((1, 0, 0)), mathutils.Vector((0, 1, 0)), mathutils.Vector((0, 0, 1))]
+        a_quaternion = a.matrix_world.to_quaternion()
+        b_quaternion = b.matrix_world.to_quaternion()
+        for axis in axes:
+            if abs((a_quaternion @ axis).angle((b_quaternion @ axis)) - (math.pi / 2)) < 1e-5:
+                return True
+        return False
+
+    @classmethod
+    def get_camera_block(cls, obj):
+        raster_x = obj.data.BIMCameraProperties.raster_x
+        raster_y = obj.data.BIMCameraProperties.raster_y
+
+        if raster_x > raster_y:
+            width = obj.data.ortho_scale
+            height = width / raster_x * raster_y
+        else:
+            height = obj.data.ortho_scale
+            width = height / raster_y * raster_x
+        depth = obj.data.clip_end
+
+        verts = (
+            obj.matrix_world @ mathutils.Vector((-width / 2, -height /2, -depth)),
+            obj.matrix_world @ mathutils.Vector((-width / 2, -height /2, 0)),
+            obj.matrix_world @ mathutils.Vector((-width / 2, height /2, -depth)),
+            obj.matrix_world @ mathutils.Vector((-width / 2, height /2, 0)),
+            obj.matrix_world @ mathutils.Vector((width / 2, -height /2, -depth)),
+            obj.matrix_world @ mathutils.Vector((width / 2, -height /2, 0)),
+            obj.matrix_world @ mathutils.Vector((width / 2, height /2, -depth)),
+            obj.matrix_world @ mathutils.Vector((width / 2, height /2, 0))
+        )
+        faces = [
+            [0, 1, 3, 2],
+            [2, 3, 7, 6],
+            [6, 7, 5, 4],
+            [4, 5, 1, 0],
+            [2, 6, 4, 0],
+            [7, 3, 1, 5],
+        ]
+        return {"verts": verts, "faces": faces}
+
+    @classmethod
+    def is_intersecting(cls, a, b):
+        a_block = cls.get_camera_block(a)
+        a_tree = mathutils.bvhtree.BVHTree.FromPolygons(a_block["verts"], a_block["faces"])
+        b_block = cls.get_camera_block(b)
+        b_tree = mathutils.bvhtree.BVHTree.FromPolygons(b_block["verts"], b_block["faces"])
+        return bool(a_tree.overlap(b_tree))
 
     @classmethod
     def sync_object_representation(cls, obj):
