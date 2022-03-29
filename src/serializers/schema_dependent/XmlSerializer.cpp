@@ -380,6 +380,37 @@ void format_quantities(IfcSchema::IfcPhysicalQuantity::list::ptr quantities, ptr
 	}
 }
 
+#ifdef SCHEMA_IfcRelNests_HAS_RelatedObjects
+// Format IfcTask instances and insert into the DOM.
+void format_tasks(IfcSchema::IfcTask* task, ptree& node) {
+	ptree* ntask = format_entity_instance(task, node);
+	
+	if (ntask) {
+#ifdef SCHEMA_IfcTask_HAS_TaskTime
+		IfcSchema::IfcTaskTime* task_time = task->TaskTime();
+		if (task_time)
+		{
+			format_entity_instance(task_time, *ntask);
+		}
+#endif
+
+		IfcSchema::IfcRelNests::list::ptr nested_by = task->IsNestedBy();
+		for (IfcSchema::IfcRelNests::list::it it = nested_by->begin(); it != nested_by->end(); ++it)
+		{
+			IfcSchema::IfcObjectDefinition::list::ptr related_objects = (*it)->RelatedObjects();
+			for (IfcSchema::IfcObjectDefinition::list::it it2 = related_objects->begin(); it2 != related_objects->end(); ++it2)
+			{
+				if (!(*it2)->declaration().is(IfcSchema::IfcTask::Class())) {
+					continue;
+				}
+				IfcSchema::IfcTask* task2 = (*it2)->as<IfcSchema::IfcTask>();
+				format_tasks(task2, *ntask);
+			}
+		}
+	}
+}
+#endif
+
 } // ~unnamed namespace
 
 void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
@@ -392,7 +423,7 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	}
 	IfcSchema::IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties, quantities, types, layers, materials;
+	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, tasks;
 	
 	// Write the SPF header as XML nodes.
 	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
@@ -479,6 +510,18 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 		}
 	}
 
+	// Write all tasks and values as XML nodes.
+	IfcSchema::IfcTask::list::ptr ptasks = file->instances_by_type<IfcSchema::IfcTask>();
+	for (IfcSchema::IfcTask::list::it it = ptasks->begin(); it != ptasks->end(); ++it) {
+		IfcSchema::IfcTask* ptask = *it;
+#ifdef SCHEMA_IfcRelNests_HAS_RelatedObjects
+		if (ptask->Nests()->size() == 0) {
+			format_tasks(ptask, tasks);
+		}
+#else
+		format_entity_instance(ptask, tasks);
+#endif
+	}
 
 	// Write all type objects as XML nodes.
 	IfcSchema::IfcTypeObject::list::ptr type_objects = file->instances_by_type<IfcSchema::IfcTypeObject>();
@@ -565,8 +608,9 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	root.add_child("ifc.units",         units);
 	root.add_child("ifc.properties",    properties);
 	root.add_child("ifc.quantities",    quantities);
+	root.add_child("ifc.tasks",			tasks);
 	root.add_child("ifc.types",         types);
-    	root.add_child("ifc.layers",        layers);
+    root.add_child("ifc.layers",        layers);
 	root.add_child("ifc.materials",     materials);
 	root.add_child("ifc.decomposition", decomposition);
 
