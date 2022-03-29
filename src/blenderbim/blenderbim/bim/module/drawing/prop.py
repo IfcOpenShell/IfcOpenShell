@@ -293,6 +293,7 @@ class DocProperties(PropertyGroup):
     )
     location_hint: EnumProperty(items=get_location_hint, name="Location Hint")
     drawings: CollectionProperty(name="Drawings", type=Drawing)
+    active_drawing_id: IntProperty(name="Active Drawing Id")
     active_drawing_index: IntProperty(name="Active Drawing Index")
     current_drawing_index: IntProperty(name="Current Drawing Index")
     schedules: CollectionProperty(name="Schedules", type=Schedule)
@@ -311,10 +312,6 @@ class DocProperties(PropertyGroup):
     @property
     def active_schedule(self):
         return self.schedules[self.active_schedule_index]
-
-    @property
-    def active_drawing(self):
-        return self.drawings[self.active_drawing_index]
 
     @property
     def active_sheet(self):

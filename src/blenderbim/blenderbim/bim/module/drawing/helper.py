@@ -260,14 +260,11 @@ def format_distance(value, isArea=False, hide_units=True):
 def get_active_drawing(scene):
     """Get active drawing collection and camera"""
     props = scene.DocProperties
-    if props.active_drawing_index is None or len(props.drawings) == 0:
-        return None, None
     try:
-        drawing = props.active_drawing
-        camera = tool.Ifc.get_object(tool.Ifc.get().by_id(drawing.ifc_definition_id))
+        camera = tool.Ifc.get_object(tool.Ifc.get().by_id(props.active_drawing_id))
         return camera.users_collection[0], camera
-    except (KeyError, IndexError):
-        raise RuntimeError("missing drawing collection")
+    except:
+        return None, None
 
 
 def get_project_collection(scene):

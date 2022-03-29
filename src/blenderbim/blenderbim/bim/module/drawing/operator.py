@@ -82,6 +82,11 @@ class AddDrawing(bpy.types.Operator, Operator):
             target_view=self.props.target_view,
             location_hint=hint,
         )
+        try:
+            drawing = tool.Ifc.get().by_id(self.props.active_drawing_id)
+            core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
+        except:
+            pass
 
 
 class CreateDrawing(bpy.types.Operator):
@@ -777,12 +782,10 @@ class RemoveDrawing(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_drawing"
     bl_label = "Remove Drawing"
     bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()
+    drawing: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.DocProperties
-        drawing = tool.Ifc.get().by_id(props.drawings[self.index].ifc_definition_id)
-        core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
+        core.remove_drawing(tool.Ifc, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
 
 
 class AddDrawingStyle(bpy.types.Operator):
