@@ -459,6 +459,8 @@ class CreateDrawing(bpy.types.Operator):
                 svg_writer.annotations.setdefault("dimension_objs", []).append(obj)
             elif element.ObjectType == "ELEVATION":
                 svg_writer.annotations.setdefault("elevation_objs", []).append(obj)
+            elif element.ObjectType == "SECTION":
+                svg_writer.annotations.setdefault("section_objs", []).append(obj)
             elif element.ObjectType == "BREAKLINE":
                 svg_writer.annotations["break_obj"] = obj
             elif element.ObjectType == "HIDDEN_LINE":

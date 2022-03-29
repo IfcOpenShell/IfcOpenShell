@@ -290,6 +290,9 @@ class SvgWriter:
         for obj in self.annotations.get("elevation_objs", []):
             self.draw_elevation_annotation(obj)
 
+        for obj in self.annotations.get("section_objs", []):
+            self.draw_section_annotation(obj)
+
         for text_obj in self.annotations.get("text_objs", []):
             self.draw_text_annotation(text_obj, text_obj.location)
 
@@ -429,6 +432,29 @@ class SvgWriter:
             else:
                 position = Vector((0, 0, 0))
             self.draw_text_annotation(obj, position)
+
+    def draw_section_annotation(self, obj):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+
+        self.draw_line_annotation((obj, obj.data), ["solid"])
+
+        v1 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, 0)))
+        v2 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, -1)))
+        angle = -math.degrees((v2 - v1).xy.angle_signed(Vector((0, 1))))
+
+        for vert in obj.data.vertices:
+            point = obj.matrix_world @ vert.co
+            symbol_position = self.project_point_onto_camera(point)
+            symbol_position = Vector(((x_offset + symbol_position.x), (y_offset - symbol_position.y)))
+            transform = "rotate({}, {}, {})".format(
+                angle,
+                (symbol_position * self.scale)[0],
+                (symbol_position * self.scale)[1],
+            )
+
+            self.svg.add(self.svg.use("#section-arrow", insert=tuple(symbol_position * self.scale), transform=transform))
+            self.svg.add(self.svg.use("#section-tag", insert=tuple(symbol_position * self.scale)))
 
     def draw_elevation_annotation(self, obj):
         x_offset = self.raw_width / 2
