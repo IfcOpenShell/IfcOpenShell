@@ -286,7 +286,12 @@ class SvgWriter:
                         },
                     )
                 )
-        self.draw_text_annotations()
+
+        for obj in self.annotations.get("elevation_objs", []):
+            self.draw_elevation_annotation(obj)
+
+        for text_obj in self.annotations.get("text_objs", []):
+            self.draw_text_annotation(text_obj, text_obj.location)
 
     def draw_ifc_annotation(self):
         x_offset = self.raw_width / 2
@@ -425,9 +430,25 @@ class SvgWriter:
                 position = Vector((0, 0, 0))
             self.draw_text_annotation(obj, position)
 
-    def draw_text_annotations(self):
-        for text_obj in self.annotations.get("text_objs", []):
-            self.draw_text_annotation(text_obj, text_obj.location)
+    def draw_elevation_annotation(self, obj):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+        symbol_position = self.project_point_onto_camera(obj.location)
+        symbol_position = Vector(((x_offset + symbol_position.x), (y_offset - symbol_position.y)))
+
+        v1 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, 0)))
+        v2 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, -1)))
+        angle = -math.degrees((v2 - v1).xy.angle_signed(Vector((0, 1))))
+
+        transform = "rotate({}, {}, {})".format(
+            angle,
+            (symbol_position * self.scale)[0],
+            (symbol_position * self.scale)[1],
+        )
+
+        self.svg.add(self.svg.use("#elevation-arrow", insert=tuple(symbol_position * self.scale), transform=transform))
+        self.svg.add(self.svg.use("#elevation-tag", insert=tuple(symbol_position * self.scale)))
+
 
     def draw_text_annotation(self, text_obj, position):
         x_offset = self.raw_width / 2
@@ -646,6 +667,7 @@ class SvgWriter:
         )
 
     def project_point_onto_camera(self, point):
+        # TODO is this needlessly complex?
         return self.camera.matrix_world.inverted() @ geometry.intersect_line_plane(
             point.xyz,
             point.xyz - Vector(self.camera_projection),
