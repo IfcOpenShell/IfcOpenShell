@@ -407,6 +407,27 @@ void format_tasks(IfcSchema::IfcTask* task, ptree& node) {
 				format_tasks(task2, *ntask);
 			}
 		}
+
+#ifdef SCHEMA_IfcProcess_HAS_OperatesOn
+		auto operates = task->OperatesOn();
+		if (operates->size() > 0)
+		{
+			ptree noperates_on;
+			for (auto i = operates->begin(); i != operates->end(); ++i)
+			{
+				auto objects = (*i)->RelatedObjects();
+				for (auto it2 = objects->begin(); it2 != objects->end(); ++it2)
+				{
+					auto object = (*it2);
+					ptree nobject;
+					nobject.put("<xmlattr>.id", object->GlobalId());
+					noperates_on.add_child("Object", nobject);
+				}
+			}
+
+			ntask->add_child("OperatesOn", noperates_on);
+		}
+#endif
 	}
 }
 #endif
