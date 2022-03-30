@@ -419,7 +419,6 @@ void format_tasks(IfcSchema::IfcTask* task, ptree& node) {
 		IfcSchema::IfcRelAssignsToProcess::list::ptr operates = task->OperatesOn();
 		if (operates->size() > 0)
 		{
-			ptree noperates_on;
 			for (IfcSchema::IfcRelAssignsToProcess::list::it i = operates->begin(); i != operates->end(); ++i)
 			{
 				IfcSchema::IfcObjectDefinition::list::ptr objects = (*i)->RelatedObjects();
@@ -428,11 +427,9 @@ void format_tasks(IfcSchema::IfcTask* task, ptree& node) {
 					IfcSchema::IfcObjectDefinition* object = (*it2);
 					ptree nobject;
 					nobject.put("<xmlattr>.id", object->GlobalId());
-					noperates_on.add_child("Object", nobject);
+					ntask->add_child("OperatesOn", nobject);
 				}
 			}
-
-			ntask->add_child("OperatesOn", noperates_on);
 		}
 #endif
 
