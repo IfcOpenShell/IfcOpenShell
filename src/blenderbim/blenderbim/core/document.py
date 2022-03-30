@@ -61,7 +61,8 @@ def disable_editing_document(document):
 def add_information(ifc, document):
     document.clear_document_tree()
     parent = document.get_active_breadcrumb()
-    ifc.run("document.add_information", parent=parent)
+    information = ifc.run("document.add_information", parent=parent)
+    ifc.run("document.add_reference", information=information)
     if parent:
         document.import_subdocuments(parent)
         document.import_references(parent)

@@ -64,14 +64,16 @@ class TestAddInformation:
     def test_add_and_reload_tree_at_project_root(self, ifc, document):
         document.clear_document_tree().should_be_called()
         document.get_active_breadcrumb().should_be_called().will_return(None)
-        ifc.run("document.add_information", parent=None).should_be_called()
+        ifc.run("document.add_information", parent=None).should_be_called().will_return("information")
+        ifc.run("document.add_reference", information="information").should_be_called()
         document.import_project_documents().should_be_called()
         subject.add_information(ifc, document)
 
     def test_add_and_reload_tree_at_current_parent(self, ifc, document):
         document.clear_document_tree().should_be_called()
         document.get_active_breadcrumb().should_be_called().will_return("parent")
-        ifc.run("document.add_information", parent="parent").should_be_called()
+        ifc.run("document.add_information", parent="parent").should_be_called().will_return("information")
+        ifc.run("document.add_reference", information="information").should_be_called()
         document.import_subdocuments("parent").should_be_called()
         document.import_references("parent").should_be_called()
         subject.add_information(ifc, document)
