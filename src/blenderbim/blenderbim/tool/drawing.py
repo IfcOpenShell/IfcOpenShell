@@ -273,16 +273,45 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def import_sheets(cls):
-        bpy.context.scene.DocProperties.sheets.clear()
+        props = bpy.context.scene.DocProperties
+        expanded_sheets = {s.ifc_definition_id for s in props.sheets if s.is_expanded}
+        props.sheets.clear()
         sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"]
         for sheet in sheets:
-            new = bpy.context.scene.DocProperties.sheets.add()
+            new = props.sheets.add()
             new.ifc_definition_id = sheet.id()
             if tool.Ifc.get_schema() == "IFC2X3":
                 new.identification = sheet.DocumentId
             else:
                 new.identification = sheet.Identification
             new.name = sheet.Name
+            new.is_sheet = True
+            new.is_expanded = sheet.id() in expanded_sheets
+
+            if not new.is_expanded:
+                continue
+
+            if tool.Ifc.get_schema() == "IFC2X3":
+                references = sheet.DocumentReferences or []
+            else:
+                references = sheet.HasDocumentReferences or []
+
+            for reference in references:
+                new = props.sheets.add()
+                new.ifc_definition_id = reference.id()
+                new.is_sheet = False
+
+                if tool.Ifc.get_schema() == "IFC2X3":
+                    new.identification = reference.ItemReference or "X"
+                    element = [
+                        r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference
+                    ][0].RelatedObjects[0]
+                else:
+                    new.identification = reference.Identification or "X"
+                    element = reference.DocumentRefForObjects[0].RelatedObjects[0]
+
+                new.name = element.Name
+                new.reference_type = "DRAWING"
 
     @classmethod
     def import_text_attributes(cls, obj):
@@ -456,9 +485,6 @@ class Drawing(blenderbim.core.tool.Drawing):
             # 1. Select the 4 +Z vertices local to the reference element. This is the cutting plane.
             verts_local_to_reference = [reference_obj.matrix_world.inverted() @ v for v in reference_mesh["verts"]]
             cutting_plane_verts = sorted(verts_local_to_reference, key=lambda x: x.z)[-4:]
-            # Filter verts with the same XY coords
-            #set([v.xy for v in cutting_plane_verts])
-
             global_cutting_plane_verts = [reference_obj.matrix_world @ v for v in cutting_plane_verts]
             # 2. Project the cutting plane onto our viewing camera.
             verts_local_to_camera = [camera.matrix_world.inverted() @ v for v in global_cutting_plane_verts]
@@ -640,14 +666,14 @@ class Drawing(blenderbim.core.tool.Drawing):
         depth = obj.data.clip_end
 
         verts = (
-            obj.matrix_world @ mathutils.Vector((-width / 2, -height /2, -depth)),
-            obj.matrix_world @ mathutils.Vector((-width / 2, -height /2, 0)),
-            obj.matrix_world @ mathutils.Vector((-width / 2, height /2, -depth)),
-            obj.matrix_world @ mathutils.Vector((-width / 2, height /2, 0)),
-            obj.matrix_world @ mathutils.Vector((width / 2, -height /2, -depth)),
-            obj.matrix_world @ mathutils.Vector((width / 2, -height /2, 0)),
-            obj.matrix_world @ mathutils.Vector((width / 2, height /2, -depth)),
-            obj.matrix_world @ mathutils.Vector((width / 2, height /2, 0))
+            obj.matrix_world @ mathutils.Vector((-width / 2, -height / 2, -depth)),
+            obj.matrix_world @ mathutils.Vector((-width / 2, -height / 2, 0)),
+            obj.matrix_world @ mathutils.Vector((-width / 2, height / 2, -depth)),
+            obj.matrix_world @ mathutils.Vector((-width / 2, height / 2, 0)),
+            obj.matrix_world @ mathutils.Vector((width / 2, -height / 2, -depth)),
+            obj.matrix_world @ mathutils.Vector((width / 2, -height / 2, 0)),
+            obj.matrix_world @ mathutils.Vector((width / 2, height / 2, -depth)),
+            obj.matrix_world @ mathutils.Vector((width / 2, height / 2, 0)),
         )
         faces = [
             [0, 1, 3, 2],

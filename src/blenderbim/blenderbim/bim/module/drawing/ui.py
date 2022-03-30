@@ -246,14 +246,19 @@ class BIM_PT_sheets(Panel):
         row.operator("bim.add_sheet", text="", icon="ADD")
         row.operator("bim.disable_editing_sheets", text="", icon="CANCEL")
 
-        if self.props.sheets:
+        if self.props.sheets and self.props.active_sheet_index < len(self.props.sheets):
+            active_sheet = self.props.sheets[self.props.active_sheet_index]
             row = self.layout.row(align=True)
             row.alignment = "RIGHT"
             row.operator("bim.open_sheet", icon="URL", text="")
             row.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
             row.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
             row.operator("bim.create_sheets", icon="FILE_REFRESH", text="")
-            row.operator("bim.remove_sheet", icon="X", text="").index = self.props.active_sheet_index
+            if active_sheet.is_sheet:
+                row.operator("bim.remove_sheet", icon="X", text="").sheet = active_sheet.ifc_definition_id
+            else:
+                op = row.operator("bim.remove_drawing_from_sheet", icon="X", text="")
+                op.reference = active_sheet.ifc_definition_id
 
         self.layout.template_list("BIM_UL_sheets", "", self.props, "sheets", self.props, "active_sheet_index")
 
@@ -388,9 +393,22 @@ class BIM_UL_sheets(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            split1 = row.split(factor=0.2)
-            split1.label(text=item.identification or "X")
-            split2 = split1.split(factor=0.8)
-            split2.label(text=item.name or "Unnamed")
+
+            if item.is_sheet:
+                if item.is_expanded:
+                    row.operator(
+                        "bim.contract_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
+                    ).sheet = item.ifc_definition_id
+                else:
+                    row.operator(
+                        "bim.expand_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
+                    ).sheet = item.ifc_definition_id
+            else:
+                row.label(text="", icon="BLANK1")
+                if item.reference_type == "DRAWING":
+                    row.label(text="", icon="IMAGE_DATA")
+
+            name = "{} - {}".format(item.identification or "X", item.name or "Unnamed")
+            row.label(text=name)
         else:
             layout.label(text="", translate=False)

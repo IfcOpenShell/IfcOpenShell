@@ -85,7 +85,7 @@ def open_sheet(drawing, sheet=None):
 
 
 def remove_sheet(ifc, drawing, sheet=None):
-    ifc.run("document.remove_document", document=sheet)
+    ifc.run("document.remove_information", information=sheet)
     drawing.import_sheets()
 
 

@@ -221,8 +221,9 @@ class Sheet(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     identification: StringProperty(name="Identification")
     name: StringProperty(name="Name", get=get_name, set=set_name)
-    drawings: CollectionProperty(name="Drawings", type=Drawing)
-    active_drawing_index: IntProperty(name="Active Drawing Index")
+    is_sheet: BoolProperty(name="Is Sheet", default=False)
+    reference_type: StringProperty(name="Reference Type")
+    is_expanded: BoolProperty(name="Is Expanded", default=False)
 
 
 class DrawingStyle(PropertyGroup):
@@ -312,10 +313,6 @@ class DocProperties(PropertyGroup):
     @property
     def active_schedule(self):
         return self.schedules[self.active_schedule_index]
-
-    @property
-    def active_sheet(self):
-        return self.sheets[self.active_sheet_index]
 
 
 class BIMCameraProperties(PropertyGroup):

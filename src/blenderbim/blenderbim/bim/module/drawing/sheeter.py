@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import xml.etree.ElementTree as ET
-import urllib.parse
-import pystache
-import ntpath
 import os
+import ntpath
+import pystache
+import urllib.parse
+import xml.etree.ElementTree as ET
+import blenderbim.tool as tool
 from shutil import copy
 from xml.dom import minidom
 
@@ -59,11 +60,16 @@ class SheetBuilder:
         with open(sheet_path, "w") as f:
             f.write(minidom.parseString(ET.tostring(root)).toprettyxml(indent="    "))
 
-    def add_drawing(self, view_name, sheet_name):
-        sheet_path = os.path.join(self.data_dir, "sheets", sheet_name + ".svg")
-        view_path = os.path.join(self.data_dir, "diagrams", view_name + ".svg")
+    def add_drawing(self, drawing, sheet):
+        filename = drawing.Name
+        sheet_name = tool.Drawing.get_sheet_filename(sheet)
+        sheet_dir = os.path.join(self.data_dir, "sheets")
+        drawing_dir = os.path.join(self.data_dir, "diagrams")
+        sheet_path = os.path.join(sheet_dir, sheet_name + ".svg")
+        drawing_path = os.path.join(drawing_dir, filename + ".svg")
+        underlay_path = os.path.join(drawing_dir, filename + ".png")
 
-        if not os.path.isfile(view_path):
+        if not os.path.isfile(sheet_path):
             raise FileNotFoundError
 
         ET.register_namespace("", "http://www.w3.org/2000/svg")
@@ -72,7 +78,7 @@ class SheetBuilder:
         sheet_tree = ET.parse(sheet_path)
         sheet_root = sheet_tree.getroot()
 
-        view_tree = ET.parse(view_path)
+        view_tree = ET.parse(drawing_path)
         view_root = view_tree.getroot()
 
         # The view is placed into a group with a background image element.
@@ -80,24 +86,46 @@ class SheetBuilder:
         # here to accommodate browsers which do not nest images.
         view = ET.SubElement(sheet_root, "g")
         view.attrib["data-type"] = "drawing"
+        view.attrib["data-guid"] = drawing.GlobalId
         view_width = self.convert_to_mm(view_root.attrib.get("width"))
         view_height = self.convert_to_mm(view_root.attrib.get("height"))
 
-        background = ET.SubElement(view, "image")
-        background.attrib["xlink:href"] = "../diagrams/{}.png".format(view_name)
-        background.attrib["x"] = "30"
-        background.attrib["y"] = "30"
-        background.attrib["width"] = str(view_width)
-        background.attrib["height"] = str(view_height)
+        if os.path.isfile(underlay_path):
+            background = ET.SubElement(view, "image")
+            background.attrib["xlink:href"] = os.path.relpath(underlay_path, sheet_dir)
+            background.attrib["x"] = "30"
+            background.attrib["y"] = "30"
+            background.attrib["width"] = str(view_width)
+            background.attrib["height"] = str(view_height)
 
-        foreground = ET.SubElement(view, "image")
-        foreground.attrib["xlink:href"] = "../diagrams/{}.svg".format(view_name)
-        foreground.attrib["x"] = "30"
-        foreground.attrib["y"] = "30"
-        foreground.attrib["width"] = str(view_width)
-        foreground.attrib["height"] = str(view_height)
+        if os.path.isfile(drawing_path):
+            foreground = ET.SubElement(view, "image")
+            foreground.attrib["xlink:href"] = os.path.relpath(drawing_path, sheet_dir)
+            foreground.attrib["x"] = "30"
+            foreground.attrib["y"] = "30"
+            foreground.attrib["width"] = str(view_width)
+            foreground.attrib["height"] = str(view_height)
 
         self.add_view_title(30, view_height + 35, view)
+        sheet_tree.write(sheet_path)
+
+    def remove_drawing(self, drawing, sheet):
+        sheet_name = tool.Drawing.get_sheet_filename(sheet)
+        sheet_dir = os.path.join(self.data_dir, "sheets")
+        sheet_path = os.path.join(sheet_dir, sheet_name + ".svg")
+
+        ET.register_namespace("", "http://www.w3.org/2000/svg")
+
+        sheet_tree = ET.parse(sheet_path)
+        sheet_root = sheet_tree.getroot()
+
+        print('removing drawing', sheet_root.findall("{http://www.w3.org/2000/svg}g"))
+        for g in sheet_root.findall("{http://www.w3.org/2000/svg}g"):
+            print('checking g', g)
+            if g.attrib["data-type"] == "drawing" and g.attrib["data-guid"] == drawing.GlobalId:
+                sheet_root.remove(g)
+                break
+
         sheet_tree.write(sheet_path)
 
     def add_schedule(self, schedule_name, sheet_name):
