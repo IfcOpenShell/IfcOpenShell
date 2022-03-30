@@ -380,7 +380,6 @@ void format_quantities(IfcSchema::IfcPhysicalQuantity::list::ptr quantities, ptr
 	}
 }
 
-#ifdef SCHEMA_IfcRelNests_HAS_RelatedObjects
 // Format IfcTask instances and insert into the DOM.
 void format_tasks(IfcSchema::IfcTask* task, ptree& node) {
 	ptree* ntask = format_entity_instance(task, node);
@@ -394,6 +393,50 @@ void format_tasks(IfcSchema::IfcTask* task, ptree& node) {
 		}
 #endif
 
+#ifdef SCHEMA_IfcProcess_HAS_IsSuccessorFrom
+		IfcSchema::IfcRelSequence::list::ptr successor_from = task->IsSuccessorFrom();
+		for (IfcSchema::IfcRelSequence::list::it it = successor_from->begin(); it != successor_from->end(); ++it)
+		{
+			IfcSchema::IfcProcess* relating_process = (*it)->RelatingProcess();
+			ptree nobject;
+			nobject.put("<xmlattr>.id", relating_process->GlobalId());
+			ntask->add_child("IsSuccessorFrom", nobject);
+		}
+#endif
+
+#ifdef SCHEMA_IfcProcess_HAS_IsPredecessorTo
+		IfcSchema::IfcRelSequence::list::ptr predecessor_to = task->IsPredecessorTo();
+		for (IfcSchema::IfcRelSequence::list::it it = predecessor_to->begin(); it != predecessor_to->end(); ++it)
+		{
+			IfcSchema::IfcProcess* relating_process = (*it)->RelatedProcess();
+			ptree nobject;
+			nobject.put("<xmlattr>.id", relating_process->GlobalId());
+			ntask->add_child("IsPredecessorTo", nobject);
+		}
+#endif
+
+#ifdef SCHEMA_IfcProcess_HAS_OperatesOn
+		IfcSchema::IfcRelAssignsToProcess::list::ptr operates = task->OperatesOn();
+		if (operates->size() > 0)
+		{
+			ptree noperates_on;
+			for (IfcSchema::IfcRelAssignsToProcess::list::it i = operates->begin(); i != operates->end(); ++i)
+			{
+				IfcSchema::IfcObjectDefinition::list::ptr objects = (*i)->RelatedObjects();
+				for (IfcSchema::IfcObjectDefinition::list::it it2 = objects->begin(); it2 != objects->end(); ++it2)
+				{
+					IfcSchema::IfcObjectDefinition* object = (*it2);
+					ptree nobject;
+					nobject.put("<xmlattr>.id", object->GlobalId());
+					noperates_on.add_child("Object", nobject);
+				}
+			}
+
+			ntask->add_child("OperatesOn", noperates_on);
+		}
+#endif
+
+#ifdef SCHEMA_IfcObjectDefinition_HAS_IsNestedBy
 		IfcSchema::IfcRelNests::list::ptr nested_by = task->IsNestedBy();
 		for (IfcSchema::IfcRelNests::list::it it = nested_by->begin(); it != nested_by->end(); ++it)
 		{
@@ -407,30 +450,9 @@ void format_tasks(IfcSchema::IfcTask* task, ptree& node) {
 				format_tasks(task2, *ntask);
 			}
 		}
-
-#ifdef SCHEMA_IfcProcess_HAS_OperatesOn
-		auto operates = task->OperatesOn();
-		if (operates->size() > 0)
-		{
-			ptree noperates_on;
-			for (auto i = operates->begin(); i != operates->end(); ++i)
-			{
-				auto objects = (*i)->RelatedObjects();
-				for (auto it2 = objects->begin(); it2 != objects->end(); ++it2)
-				{
-					auto object = (*it2);
-					ptree nobject;
-					nobject.put("<xmlattr>.id", object->GlobalId());
-					noperates_on.add_child("Object", nobject);
-				}
-			}
-
-			ntask->add_child("OperatesOn", noperates_on);
-		}
 #endif
 	}
-}
-#endif
+}									  
 
 } // ~unnamed namespace
 
@@ -535,13 +557,13 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	IfcSchema::IfcTask::list::ptr ptasks = file->instances_by_type<IfcSchema::IfcTask>();
 	for (IfcSchema::IfcTask::list::it it = ptasks->begin(); it != ptasks->end(); ++it) {
 		IfcSchema::IfcTask* ptask = *it;
-#ifdef SCHEMA_IfcRelNests_HAS_RelatedObjects
+#ifdef SCHEMA_IfcObjectDefinition_HAS_Nests
 		if (ptask->Nests()->size() == 0) {
 			format_tasks(ptask, tasks);
 		}
 #else
-		format_entity_instance(ptask, tasks);
-#endif
+		format_tasks(ptask, tasks);
+#endif	
 	}
 
 	// Write all type objects as XML nodes.
@@ -631,7 +653,7 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	root.add_child("ifc.quantities",    quantities);
 	root.add_child("ifc.tasks",			tasks);
 	root.add_child("ifc.types",         types);
-    root.add_child("ifc.layers",        layers);
+	root.add_child("ifc.layers",        layers);
 	root.add_child("ifc.materials",     materials);
 	root.add_child("ifc.decomposition", decomposition);
 
