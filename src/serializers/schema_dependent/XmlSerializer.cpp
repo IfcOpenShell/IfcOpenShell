@@ -553,17 +553,28 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 		}
 	}
 
-	// Write all tasks and values as XML nodes.
-	IfcSchema::IfcTask::list::ptr ptasks = file->instances_by_type<IfcSchema::IfcTask>();
-	for (IfcSchema::IfcTask::list::it it = ptasks->begin(); it != ptasks->end(); ++it) {
-		IfcSchema::IfcTask* ptask = *it;
-#ifdef SCHEMA_IfcObjectDefinition_HAS_Nests
-		if (ptask->Nests()->size() == 0) {
-			format_tasks(ptask, tasks);
+	// Write all work schedules and values as XML nodes.
+	IfcSchema::IfcWorkSchedule::list::ptr pschedules = file->instances_by_type<IfcSchema::IfcWorkSchedule>();
+	for (IfcSchema::IfcWorkSchedule::list::it it = pschedules->begin(); it != pschedules->end(); ++it) {
+		IfcSchema::IfcWorkSchedule* schedule = *it;
+		ptree* nschedule = format_entity_instance(schedule, tasks);
+
+		if(nschedule) {
+			IfcSchema::IfcRelAssignsToControl::list::ptr controls = schedule->Controls();
+			for(IfcSchema::IfcRelAssignsToControl::list::it it2 = controls->begin(); it2 != controls->end(); ++it2) {
+				IfcSchema::IfcRelAssignsToControl* control = *it2;
+				
+				IfcSchema::IfcObjectDefinition::list::ptr objects = control->RelatedObjects();
+				for(IfcSchema::IfcObjectDefinition::list::it it3 = objects->begin(); it3 != objects->end(); ++it3) {
+					IfcSchema::IfcObjectDefinition* object = *it3;
+					
+					if (object && object->declaration().is(IfcSchema::IfcTask::Class())) {
+						IfcSchema::IfcTask* task = object->as<IfcSchema::IfcTask>();
+						format_tasks(task, *nschedule);
+					}
+				}
+			}
 		}
-#else
-		format_tasks(ptask, tasks);
-#endif	
 	}
 
 	// Write all type objects as XML nodes.
