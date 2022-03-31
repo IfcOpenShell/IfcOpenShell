@@ -415,18 +415,34 @@ void format_tasks(IfcSchema::IfcTask* task, ptree& node) {
 		}
 #endif
 
+		IfcSchema::IfcPropertySetDefinition::list::ptr property_sets = get_related
+			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinition>
+			(task, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
+
+		for (IfcSchema::IfcPropertySetDefinition::list::it it = property_sets->begin(); it != property_sets->end(); ++it) {
+			IfcSchema::IfcPropertySetDefinition* pset = *it;
+			if (pset->declaration().is(IfcSchema::IfcPropertySet::Class())) {
+				format_entity_instance(pset, *ntask, true);
+			}
+			else if (pset->declaration().is(IfcSchema::IfcElementQuantity::Class())) {
+				format_entity_instance(pset, *ntask, true);
+			}
+		}
+
 #ifdef SCHEMA_IfcProcess_HAS_OperatesOn
 		IfcSchema::IfcRelAssignsToProcess::list::ptr operates = task->OperatesOn();
 		if (operates->size() > 0)
 		{
 			for (IfcSchema::IfcRelAssignsToProcess::list::it i = operates->begin(); i != operates->end(); ++i)
 			{
-				IfcSchema::IfcObjectDefinition::list::ptr objects = (*i)->RelatedObjects();
+				IfcSchema::IfcRelAssignsToProcess* operation = (*i);
+				IfcSchema::IfcObjectDefinition::list::ptr objects = operation->RelatedObjects();
 				for (IfcSchema::IfcObjectDefinition::list::it it2 = objects->begin(); it2 != objects->end(); ++it2)
 				{
 					IfcSchema::IfcObjectDefinition* object = (*it2);
 					ptree nobject;
 					nobject.put("<xmlattr>.id", object->GlobalId());
+					nobject.put("<xmlattr>.Type", object->declaration().name());
 					ntask->add_child("OperatesOn", nobject);
 				}
 			}
@@ -555,7 +571,7 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	for (IfcSchema::IfcWorkSchedule::list::it it = pschedules->begin(); it != pschedules->end(); ++it) {
 		IfcSchema::IfcWorkSchedule* schedule = *it;
 		ptree* nschedule = format_entity_instance(schedule, tasks);
-
+		
 		if(nschedule) {
 			IfcSchema::IfcRelAssignsToControl::list::ptr controls = schedule->Controls();
 			for(IfcSchema::IfcRelAssignsToControl::list::it it2 = controls->begin(); it2 != controls->end(); ++it2) {
