@@ -185,7 +185,7 @@ class Selector:
             elif token_type == "SIGNED_FLOAT":
                 value = float(filter_rule.children[2].children[0])
             elif token_type == "BOOLEAN":
-                value = filter_rule.children[2].children[0] == "TRUE"
+                value = filter_rule.children[2].children[0] in ["TRUE", "true"]
             elif token_type == "NULL":
                 value = None
         for element in elements:
