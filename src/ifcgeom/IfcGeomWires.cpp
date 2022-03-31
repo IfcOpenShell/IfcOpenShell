@@ -606,7 +606,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 			}
 		}
 
-		if (isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.), 0., 100 * getValue(GV_PRECISION) / (2 * M_PI * radius))) {
+		// @todo is 100. not too much? Check with the original issue.
+		const double precision_markup = getValue(IfcGeom::Kernel::GV_PRECISION_FACTOR) == 1. ? 1. : 100.;
+
+		if (isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.), 0., precision_markup * getValue(GV_PRECISION) / (2 * M_PI * radius))) {
 			e = BRepBuilderAPI_MakeEdge(curve).Edge();
 		} else {
 			BRepBuilderAPI_MakeEdge me (curve,flts[0],flts[1]);
