@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import blenderbim.tool as tool
 
 
 class LibraryGenerator:
