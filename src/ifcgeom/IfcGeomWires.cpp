@@ -92,7 +92,12 @@
 #include <TopTools_ListIteratorOfListOfShape.hxx>
 
 #include <BRepAdaptor_CompCurve.hxx>
+
+#include <Standard_Version.hxx>
+#if OCC_VERSION_HEX < 0x70600
 #include <BRepAdaptor_HCompCurve.hxx>
+#endif
+
 #include <Approx_Curve3d.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
@@ -483,8 +488,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 		Logger::Warning("Approximating BasisCurve due to possible discontinuities", l);
 		TopoDS_Wire w;
 		if (!convert_wire(basis_curve, w)) return false;
+#if OCC_VERSION_HEX < 0x70600
 		BRepAdaptor_CompCurve cc(w, true);
 		Handle(Adaptor3d_HCurve) hcc = Handle(Adaptor3d_HCurve)(new BRepAdaptor_HCompCurve(cc));
+#else
+		auto hcc = new BRepAdaptor_CompCurve(w, true);
+#endif
 		// @todo, arbitrary numbers here, note they cannot be too high as contiguous memory is allocated based on them.
 		Approx_Curve3d approx(hcc, getValue(GV_PRECISION), GeomAbs_C0, 10, 10);
 		curve = approx.Curve();
