@@ -437,26 +437,34 @@ if(HDF5_SUPPORT)
 
     if (HDF5_LIBRARY_DIR)
     	# result of the HDF5 ctest package
-    	
+
+
         if (WIN32)
-        	set(zlib_post lib)
+            # Windows
+            set(zlib_post zlib)
         	set(lib_ext lib)
+        elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+            # macOS
+            set(zlib_post libz)
+            set(lib_ext dylib)
         else()
-        	set(lib_ext a)
+            # linux
+            set(zlib_post libz)
+            set(lib_ext so)
         endif()
-        
-        SET(HDF5_LIBRARIES 
+
+        SET(HDF5_LIBRARIES
             "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
             "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libz${zlib_post}.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libsz.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libaec.${lib_ext}"
+            "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
+#            "${HDF5_LIBRARY_DIR}/libsz.${lib_ext}"
+#            "${HDF5_LIBRARY_DIR}/libaec.${lib_ext}"
         )
     endif()
-    
+
     if (NOT HDF5_LIBRARIES)
     	# debian default
-    	
+
         SET(HDF5_LIBRARIES
             /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.so
             /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.so

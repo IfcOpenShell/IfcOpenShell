@@ -1,0 +1,42 @@
+name: ci-ifcopenshell-daily
+
+on:
+  push:
+    paths:
+      - src/**
+      - conda/**
+      - .github/workflows/ci-daily-build.yml
+    branches:
+      - pr-daily-build
+jobs:
+  test:
+    name: ${{ matrix.platform.name }}-${{ matrix.pyver.name }}-${{ matrix.xcode.name }}
+    runs-on: ${{ matrix.platform.distver }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: [
+          { name: py39, distver: '3.9' },
+          { name: py310, distver: '3.10'}
+        ]
+        platform: [
+          { name: Windows, distver: windows-latest, short: 'win-64' },
+          { name: Linux, distver: ubuntu-latest, short: 'linux-64' },
+          { name: macOS, distver: macos-latest, short: 'osx-64' }
+        ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - uses: seanmiddleditch/gha-setup-ninja@master
+      - uses: conda-incubator/setup-miniconda@v2  # https://github.com/conda-incubator/setup-miniconda
+      with:
+        activate-environment: conda-build
+        python-version: ${{ matrix.pyver.distver }}
+        environment-file: conda/environment.yml
+      - name: build test and upload ifcopenshell
+        run: |
+          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell --no-remove-work-dir
