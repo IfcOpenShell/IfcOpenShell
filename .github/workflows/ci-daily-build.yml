@@ -7,7 +7,7 @@ on:
       - conda/**
       - .github/workflows/ci-daily-build.yml
     branches:
-      - pr-daily-build
+      - pr-daily-builds
 jobs:
   test:
     name: ${{ matrix.platform.name }}-${{ matrix.pyver.name }}-${{ matrix.xcode.name }}
