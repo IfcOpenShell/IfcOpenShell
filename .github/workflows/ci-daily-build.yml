@@ -33,10 +33,10 @@ jobs:
           submodules: recursive
       - uses: seanmiddleditch/gha-setup-ninja@master
       - uses: conda-incubator/setup-miniconda@v2  # https://github.com/conda-incubator/setup-miniconda
-      with:
-        activate-environment: conda-build
-        python-version: ${{ matrix.pyver.distver }}
-        environment-file: conda/environment.yml
+        with:
+          activate-environment: conda-build
+          python-version: ${{ matrix.pyver.distver }}
+          environment-file: conda/environment.yml
       - name: build test and upload ifcopenshell
         run: |
           conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell --no-remove-work-dir
