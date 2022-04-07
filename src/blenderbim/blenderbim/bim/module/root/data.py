@@ -32,12 +32,47 @@ class IfcClassData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data = {
-            "contexts": cls.contexts(),
-            "has_entity": cls.has_entity(),
-            "name": cls.name(),
-            "ifc_class": cls.ifc_class(),
-        }
+        cls.data = {}
+        cls.data["ifc_products"] = cls.ifc_products()
+        cls.data["ifc_classes"] = cls.ifc_classes()
+        cls.data["contexts"] = cls.contexts()
+        cls.data["has_entity"] = cls.has_entity()
+        cls.data["name"] = cls.name()
+        cls.data["ifc_class"] = cls.ifc_class()
+
+    @classmethod
+    def ifc_products(cls):
+        products = [
+            "IfcElement",
+            "IfcElementType",
+            "IfcSpatialElement",
+            "IfcGroup",
+            "IfcStructuralItem",
+            "IfcContext",
+            "IfcAnnotation",
+            "IfcRelSpaceBoundary",
+        ]
+        if tool.Ifc.get_schema() == "IFC2X3":
+            products = [
+                "IfcElement",
+                "IfcElementType",
+                "IfcSpatialStructureElement",
+                "IfcGroup",
+                "IfcStructuralItem",
+                "IfcAnnotation",
+                "IfcRelSpaceBoundary",
+            ]
+        return [(e, e, "") for e in products]
+
+    @classmethod
+    def ifc_classes(cls):
+        ifc_product = bpy.context.scene.BIMRootProperties.ifc_product
+        declaration = tool.Ifc.schema().declaration_by_name(ifc_product)
+        declarations = ifcopenshell.util.schema.get_subtypes(declaration)
+        names = [d.name() for d in declarations]
+        if ifc_product == "IfcElementType":
+            names.extend(("IfcDoorStyle", "IfcWindowStyle"))
+        return [(c, c, "") for c in sorted(names)]
 
     @classmethod
     def contexts(cls):

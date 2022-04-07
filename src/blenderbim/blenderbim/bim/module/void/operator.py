@@ -44,6 +44,7 @@ class AddOpening(bpy.types.Operator):
         if not element_id:
             return {"FINISHED"}
         element = self.file.by_id(element_id)
+        tool.Geometry.clear_cache(element)
         if element.is_a("IfcOpeningElement"):
             self.report({"WARNING"}, "An IfcOpeningElement can't be voided")
             return {"FINISHED"}
@@ -132,6 +133,7 @@ class RemoveOpening(bpy.types.Operator):
                 should_sync_changes_first=False,
             )
 
+        tool.Geometry.clear_cache(tool.Ifc.get_entity(obj))
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 

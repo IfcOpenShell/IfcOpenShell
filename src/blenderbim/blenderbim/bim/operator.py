@@ -22,6 +22,7 @@ import json
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
+import blenderbim.tool as tool
 from . import schema
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.ui import IFCFileSelector
@@ -37,6 +38,43 @@ class OpenUri(bpy.types.Operator):
     def execute(self, context):
         webbrowser.open(self.uri)
         return {"FINISHED"}
+
+
+class SelectURIAttribute(bpy.types.Operator):
+    bl_idname = "bim.select_uri_attribute"
+    bl_label = "Select URI Attribute"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select a local file"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    data_path: bpy.props.StringProperty(name="Data Path")
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+
+    def execute(self, context):
+        # data_path contains the latter half of the path to the string_value property
+        # I have no idea how to find out the former half, so let's just use brute force.
+        data_path = self.data_path.replace(".string_value", "")
+        attribute = None
+        try:
+            attribute = eval(f"bpy.context.scene.{data_path}")
+        except:
+            try:
+                attribute = eval(f"bpy.context.active_object.{data_path}")
+            except:
+                try:
+                    attribute = eval(f"bpy.context.active_object.active_material.{data_path}")
+                except:
+                    # Do you know a better way?
+                    pass
+        if attribute:
+            filepath = self.filepath
+            if self.use_relative_path:
+                filepath = os.path.relpath(filepath, os.path.dirname(tool.Ifc.get_path()))
+            attribute.string_value = filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
 
 
 class SelectIfcFile(bpy.types.Operator, IFCFileSelector):

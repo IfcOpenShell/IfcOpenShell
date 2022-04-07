@@ -163,6 +163,7 @@ class IfcImporter:
         self.settings = ifcopenshell.geom.settings()
         self.settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
         self.settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
+        self.settings.set(self.settings.STRICT_TOLERANCE, True)
         self.settings_native = ifcopenshell.geom.settings()
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
@@ -283,11 +284,13 @@ class IfcImporter:
             if c.ContextIdentifier in ["Body", "Facetation"]
         ]
         # Ideally, all representations should be in a subcontext, but some BIM programs don't do this correctly
-        self.body_contexts.extend([
-            c.id()
-            for c in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)
-            if c.ContextType == "Model"
-        ])
+        self.body_contexts.extend(
+            [
+                c.id()
+                for c in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)
+                if c.ContextType == "Model"
+            ]
+        )
         if self.body_contexts:
             self.settings.set_context_ids(self.body_contexts)
         # Annotation is to accommodate broken Revit files
@@ -363,7 +366,7 @@ class IfcImporter:
 
     def is_native_swept_disk_solid(self, representations):
         for representation in representations:
-            items = representation["raw"].Items or [] # Be forgiving of invalid IFCs because Revit :(
+            items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
             if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
                 return True
         return False
@@ -1295,10 +1298,7 @@ class IfcImporter:
             name = style.Name or str(style.id())
             blender_material = bpy.data.materials.new(name)
 
-        old_definition_id = blender_material.BIMObjectProperties.ifc_definition_id
-        if not old_definition_id:
-            self.link_element(style, blender_material)
-        blender_material.BIMObjectProperties.ifc_definition_id = old_definition_id
+        self.link_element(style, blender_material)
 
         blender_material.BIMMaterialProperties.ifc_style_id = style.id()
         self.material_creator.styles[style.id()] = blender_material
@@ -1352,12 +1352,12 @@ class IfcImporter:
         elif surface_style.ReflectanceMethod == "FLAT":
             blender_material.use_nodes = True
 
-            output = {n.type: n for n in self.settings["material"].node_tree.nodes}.get("OUTPUT_MATERIAL", None)
+            output = {n.type: n for n in blender_material.node_tree.nodes}.get("OUTPUT_MATERIAL", None)
             bsdf = blender_material.node_tree.nodes["Principled BSDF"]
 
             mix = blender_material.node_tree.nodes.new(type="ShaderNodeMixShader")
             mix.location = bsdf.location
-            blender_material.node_tree.links.new(lightpath.outputs[0], output.inputs["Surface"])
+            blender_material.node_tree.links.new(mix.outputs[0], output.inputs["Surface"])
 
             blender_material.node_tree.nodes.remove(bsdf)
 
@@ -1722,10 +1722,10 @@ class IfcImporter:
             ):
                 verts = [None] * len(geometry.verts)
                 for i in range(0, len(geometry.verts), 3):
-                    verts[i], verts[i+1], verts[i+2] = ifcopenshell.util.geolocation.enh2xyz(
+                    verts[i], verts[i + 1], verts[i + 2] = ifcopenshell.util.geolocation.enh2xyz(
                         geometry.verts[i],
-                        geometry.verts[i+1],
-                        geometry.verts[i+2],
+                        geometry.verts[i + 1],
+                        geometry.verts[i + 2],
                         float(props.blender_eastings) * self.unit_scale,
                         float(props.blender_northings) * self.unit_scale,
                         float(props.blender_orthogonal_height) * self.unit_scale,

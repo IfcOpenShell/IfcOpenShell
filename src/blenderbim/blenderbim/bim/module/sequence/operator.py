@@ -989,6 +989,7 @@ class GenerateGanttChart(bpy.types.Operator):
         data = {
             "pID": task.id(),
             "pName": task.Name,
+            "pCaption": task.Name,
             "pStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
             "pEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
             "pPlanStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
@@ -999,6 +1000,7 @@ class GenerateGanttChart(bpy.types.Operator):
             "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
             "pOpen": 1,
             "pCost": 1,
+            "ifcduration": task.TaskTime.ScheduleDuration if task.TaskTime else "",
         }
         if task.TaskTime and task.TaskTime.IsCritical:
             data["pClass"] = "gtaskred"
@@ -1230,7 +1232,7 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
         start = time.time()
         ifc2msp = Ifc2Msp()
         ifc2msp.work_schedule = self.file.by_type("IfcWorkSchedule")[0]
-        ifc2msp.xml = self.filepath
+        ifc2msp.xml = bpy.path.ensure_ext(self.filepath, ".xml")
         ifc2msp.file = self.file
         ifc2msp.holiday_start_date = parser.parse(self.holiday_start_date).date()
         ifc2msp.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
@@ -1259,7 +1261,7 @@ class ExportP6(bpy.types.Operator, ImportHelper):
         self.file = IfcStore.get_file()
         start = time.time()
         ifc2p6 = Ifc2P6()
-        ifc2p6.xml = self.filepath
+        ifc2p6.xml = bpy.path.ensure_ext(self.filepath, ".xml")
         ifc2p6.file = self.file
         ifc2p6.holiday_start_date = parser.parse(self.holiday_start_date).date()
         ifc2p6.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
@@ -1679,6 +1681,10 @@ class EnableEditingSequenceTimeLag(bpy.types.Operator):
 
     def import_attributes(self, name, prop, data):
         if name == "LagValue":
+            prop = self.props.time_lag_attributes.add()
+            prop.name = name
+            prop.is_null = data[name] is None
+            prop.is_optional = False
             if isinstance(data[name], isodate.Duration):
                 prop.data_type = "string"
                 prop.string_value = (

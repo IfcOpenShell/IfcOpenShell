@@ -18,10 +18,31 @@
 
 import bpy
 import blenderbim.tool as tool
+import ifcopenshell
 
 
 def refresh():
+    StylesData.is_loaded = False
     StyleAttributesData.is_loaded = False
+
+
+class StylesData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"style_types": cls.style_types(), "total_styles": cls.total_styles()}
+
+    @classmethod
+    def style_types(cls):
+        declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle")
+        declarations = ifcopenshell.util.schema.get_subtypes(declaration)
+        return [(c, c, "") for c in sorted([d.name() for d in declarations])]
+
+    @classmethod
+    def total_styles(cls):
+        return len(tool.Ifc.get().by_type("IfcPresentationStyle"))
 
 
 class StyleAttributesData:

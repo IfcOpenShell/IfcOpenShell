@@ -19,13 +19,18 @@
 import os
 import re
 import bpy
+import math
+import bmesh
 import mathutils
 import webbrowser
+import numpy as np
 import blenderbim.core.tool
+import blenderbim.core.geometry
 import blenderbim.tool as tool
 import ifcopenshell.util.representation
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.annotation as annotation
+import blenderbim.bim.module.drawing.helper as helper
 
 
 class Drawing(blenderbim.core.tool.Drawing):
@@ -82,6 +87,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             obj = tool.Ifc.get_object(element)
             if obj:
                 bpy.data.objects.remove(obj)
+
+    @classmethod
+    def delete_object(cls, obj):
+        bpy.data.objects.remove(obj)
 
     @classmethod
     def disable_editing_drawings(cls):
@@ -260,19 +269,49 @@ class Drawing(blenderbim.core.tool.Drawing):
             new = bpy.context.scene.DocProperties.drawings.add()
             new.ifc_definition_id = drawing.id()
             new.name = drawing.Name or "Unnamed"
+            new.target_view = cls.get_drawing_target_view(drawing)
 
     @classmethod
     def import_sheets(cls):
-        bpy.context.scene.DocProperties.sheets.clear()
+        props = bpy.context.scene.DocProperties
+        expanded_sheets = {s.ifc_definition_id for s in props.sheets if s.is_expanded}
+        props.sheets.clear()
         sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"]
         for sheet in sheets:
-            new = bpy.context.scene.DocProperties.sheets.add()
+            new = props.sheets.add()
             new.ifc_definition_id = sheet.id()
             if tool.Ifc.get_schema() == "IFC2X3":
                 new.identification = sheet.DocumentId
             else:
                 new.identification = sheet.Identification
             new.name = sheet.Name
+            new.is_sheet = True
+            new.is_expanded = sheet.id() in expanded_sheets
+
+            if not new.is_expanded:
+                continue
+
+            if tool.Ifc.get_schema() == "IFC2X3":
+                references = sheet.DocumentReferences or []
+            else:
+                references = sheet.HasDocumentReferences or []
+
+            for reference in references:
+                new = props.sheets.add()
+                new.ifc_definition_id = reference.id()
+                new.is_sheet = False
+
+                if tool.Ifc.get_schema() == "IFC2X3":
+                    new.identification = reference.ItemReference or "X"
+                    element = [
+                        r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference
+                    ][0].RelatedObjects[0]
+                else:
+                    new.identification = reference.Identification or "X"
+                    element = reference.DocumentRefForObjects[0].RelatedObjects[0]
+
+                new.name = element.Name
+                new.reference_type = "DRAWING"
 
     @classmethod
     def import_text_attributes(cls, obj):
@@ -349,3 +388,335 @@ class Drawing(blenderbim.core.tool.Drawing):
             for variable in re.findall("{{.*?}}", value):
                 value = value.replace(variable, selector.get_element_value(product, variable[2:-2]) or "")
         obj.BIMTextProperties.value = value
+
+    # TODO below this point is highly experimental prototype code with no tests
+
+    @classmethod
+    def generate_drawing_name(cls, target_view, location_hint):
+        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and location_hint:
+            location = tool.Ifc.get().by_id(location_hint)
+            if target_view == "REFLECTED_PLAN_VIEW":
+                target_view = "RCP_VIEW"
+            return (location.Name or "UNNAMED").upper() + " " + target_view.split("_")[0]
+        elif target_view in ("SECTION_VIEW", "ELEVATION_VIEW") and location_hint:
+            return location_hint + " " + target_view.split("_")[0]
+        return target_view
+
+    @classmethod
+    def get_potential_reference_elements(cls, drawing):
+        elements = []
+        existing_references = cls.get_group_elements(cls.get_drawing_group(drawing))
+        for element in tool.Ifc.get().by_type("IfcAnnotation"):
+            if element in existing_references or element == drawing:
+                continue
+            if element.ObjectType == "DRAWING":
+                psets = ifcopenshell.util.element.get_psets(element)
+                if psets.get("EPset_Drawing", {}).get("TargetView", None) in ("SECTION_VIEW", "ELEVATION_VIEW"):
+                    elements.append(element)
+        for element in tool.Ifc.get().by_type("IfcGridAxis"):
+            elements.append(element)
+        return elements
+
+    @classmethod
+    def get_drawing_reference_annotation(cls, drawing, reference_element):
+        if drawing == reference_element:
+            return True
+        for element in cls.get_group_elements(cls.get_drawing_group(drawing)):
+            if element.is_a("IfcAnnotation"):
+                for rel in element.HasAssignments:
+                    if rel.is_a("IfcRelAssignsToProduct"):
+                        if rel.RelatingProduct == reference_element:
+                            return element
+                        # We cannot associate IfcGridAxis directly, so we establish a convention:
+                        # IfcRelAssignsToProduct.RelatingProduct = IfcGrid
+                        # IfcRelAssignsToProduct.Name = IfcGridAxis.AxisTag
+                        elif reference_element.is_a("IfcGridAxis") and rel.Name == reference_element.AxisTag:
+                            return element
+
+    @classmethod
+    def generate_reference_annotation(cls, drawing, reference_element, context):
+        if reference_element.is_a("IfcGridAxis"):
+            return cls.generate_grid_axis_reference_annotation(drawing, reference_element, context)
+        elif reference_element.is_a("IfcAnnotation") and reference_element.ObjectType == "DRAWING":
+            psets = ifcopenshell.util.element.get_psets(reference_element)
+            target_view = psets.get("EPset_Drawing", {}).get("TargetView", None)
+            if target_view == "ELEVATION_VIEW":
+                return cls.generate_elevation_reference_annotation(drawing, reference_element, context)
+            elif target_view == "SECTION_VIEW":
+                return cls.generate_section_reference_annotation(drawing, reference_element, context)
+
+    @classmethod
+    def generate_section_reference_annotation(cls, drawing, reference_element, context):
+        reference_obj = tool.Ifc.get_object(reference_element)
+        reference_obj.matrix_world
+        camera = tool.Ifc.get_object(drawing)
+        bounds = helper.ortho_view_frame(camera.data) if camera.data.type == "ORTHO" else None
+
+        def to_camera_coords(camera, reference_obj):
+            mat = reference_obj.matrix_world.copy()
+            xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
+            xyz[2] = 0
+            xyz = camera.matrix_world @ xyz
+            mat[0][3] = xyz[0]
+            mat[1][3] = xyz[1]
+            mat[2][3] = xyz[2]
+            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
+            annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
+            mat[0][3] += annotation_offset[0]
+            mat[1][3] += annotation_offset[1]
+            mat[2][3] += annotation_offset[2]
+            return mat
+
+        def clip_to_camera_boundary(mesh, bounds):
+            mesh.verts.ensure_lookup_table()
+            points = [v.co for v in mesh.verts[0:2]]
+            points = helper.clip_segment(bounds, points)
+            if points is None:
+                return None
+            mesh.verts[0].co = points[0]
+            mesh.verts[1].co = points[1]
+            return mesh
+
+        if cls.is_perpendicular(camera, reference_obj) and cls.is_intersecting(camera, reference_obj):
+            reference_mesh = cls.get_camera_block(reference_obj)
+            obj_matrix = to_camera_coords(camera, reference_obj)
+
+            # The reference mesh vertices represent a view cube. To convert this into a section line we:
+            # 1. Select the 4 +Z vertices local to the reference element. This is the cutting plane.
+            verts_local_to_reference = [reference_obj.matrix_world.inverted() @ v for v in reference_mesh["verts"]]
+            cutting_plane_verts = sorted(verts_local_to_reference, key=lambda x: x.z)[-4:]
+            global_cutting_plane_verts = [reference_obj.matrix_world @ v for v in cutting_plane_verts]
+            # 2. Project the cutting plane onto our viewing camera.
+            verts_local_to_camera = [camera.matrix_world.inverted() @ v for v in global_cutting_plane_verts]
+            # 3. Collapse verts with the same XY coords, and set Z to be just below the clip_start so it's visible
+            collapsed_verts = []
+            for vert in verts_local_to_camera:
+                if not [True for v in collapsed_verts if (vert.xy - v.xy).length < 1e-2]:
+                    collapsed_verts.append(mathutils.Vector((vert.x, vert.y, -camera.data.clip_start - 0.05)))
+            # 4. The first two vertices is the section line
+            section_line = collapsed_verts[0:2]
+            global_section_line = [camera.matrix_world @ v for v in section_line]
+            local_section_line = [obj_matrix.inverted() @ v for v in global_section_line]
+
+            mesh = bpy.data.meshes.new(name="Annotation")
+            mesh.from_pydata(local_section_line, [(0, 1)], [])
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+            bm = clip_to_camera_boundary(bm, bounds)
+            bm.to_mesh(mesh)
+            bm.free()
+
+            obj = bpy.data.objects.new(reference_obj.name, mesh)
+            obj.matrix_world = obj_matrix
+
+            element = cls.run_root_assign_class(
+                obj=obj,
+                ifc_class="IfcAnnotation",
+                predefined_type="SECTION",
+                should_add_representation=True,
+                context=context,
+                ifc_representation_class=None,
+            )
+            return element
+
+    @classmethod
+    def generate_elevation_reference_annotation(cls, drawing, reference_element, context):
+        reference_obj = tool.Ifc.get_object(reference_element)
+        reference_obj.matrix_world
+        camera = tool.Ifc.get_object(drawing)
+
+        def to_camera_coords(camera, reference_obj):
+            mat = reference_obj.matrix_world.copy()
+            xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
+            xyz[2] = 0
+            xyz = camera.matrix_world @ xyz
+            mat[0][3] = xyz[0]
+            mat[1][3] = xyz[1]
+            mat[2][3] = xyz[2]
+            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
+            annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
+            mat[0][3] += annotation_offset[0]
+            mat[1][3] += annotation_offset[1]
+            mat[2][3] += annotation_offset[2]
+            return mat
+
+        if cls.is_perpendicular(camera, reference_obj) and cls.is_intersecting(camera, reference_obj):
+            obj = bpy.data.objects.new(reference_obj.name, None)
+            obj.empty_display_size = 0.1
+            obj.matrix_world = to_camera_coords(camera, reference_obj)
+
+            element = cls.run_root_assign_class(
+                obj=obj,
+                ifc_class="IfcAnnotation",
+                predefined_type="ELEVATION",
+                should_add_representation=False,
+                context=context,
+                ifc_representation_class=None,
+            )
+            return element
+
+    @classmethod
+    def generate_grid_axis_reference_annotation(cls, drawing, reference_element, context):
+        target_view = tool.Drawing.get_drawing_target_view(drawing)
+
+        camera = tool.Ifc.get_object(drawing)
+
+        is_ortho = camera.data.type == "ORTHO"
+        bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
+        clipping = is_ortho and target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
+        elevating = is_ortho and target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
+
+        def clone(src):
+            dst = src.copy()
+            dst.data = dst.data.copy()
+            dst.name = dst.name.replace("IfcGridAxis/", "")
+            dst.BIMObjectProperties.ifc_definition_id = 0
+            dst.data.BIMMeshProperties.ifc_definition_id = 0
+            return dst
+
+        def disassemble(obj):
+            mesh = bmesh.new()
+            mesh.verts.ensure_lookup_table()
+            mesh.from_mesh(obj.data)
+            return obj, mesh
+
+        def assemble(obj, mesh):
+            mesh.to_mesh(obj.data)
+            return obj
+
+        def to_camera_coords(obj, mesh):
+            mesh.transform(camera.matrix_world.inverted() @ obj.matrix_world)
+            obj.matrix_world = camera.matrix_world
+            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
+            annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
+            obj.matrix_world[0][3] += annotation_offset[0]
+            obj.matrix_world[1][3] += annotation_offset[1]
+            obj.matrix_world[2][3] += annotation_offset[2]
+            return obj, mesh
+
+        def clip_to_camera_boundary(mesh):
+            mesh.verts.ensure_lookup_table()
+            points = [v.co for v in mesh.verts[0:2]]
+            points = helper.clip_segment(bounds, points)
+            if points is None:
+                return None
+            mesh.verts[0].co = points[0]
+            mesh.verts[1].co = points[1]
+            return mesh
+
+        def draw_grids_vertically(mesh):
+            mesh.verts.ensure_lookup_table()
+            points = [v.co for v in mesh.verts[0:2]]
+            points = helper.elevate_segment(bounds, points)
+            if points is None:
+                return None
+            points = helper.clip_segment(bounds, points)
+            if points is None:
+                return None
+            mesh.verts[0].co = points[0]
+            mesh.verts[1].co = points[1]
+            return mesh
+
+        obj = tool.Ifc.get_object(reference_element)
+        if not obj:
+            return
+        obj, mesh = to_camera_coords(*disassemble(clone(obj)))
+
+        if clipping:
+            mesh = clip_to_camera_boundary(mesh)
+        elif elevating:
+            mesh = draw_grids_vertically(mesh)
+
+        if mesh is None:
+            return
+
+        assemble(obj, mesh)
+
+        element = cls.run_root_assign_class(
+            obj=obj,
+            ifc_class="IfcAnnotation",
+            predefined_type="GRID",
+            should_add_representation=True,
+            context=context,
+            ifc_representation_class=None,
+        )
+        return element
+
+    @classmethod
+    def is_perpendicular(cls, a, b):
+        axes = [mathutils.Vector((1, 0, 0)), mathutils.Vector((0, 1, 0)), mathutils.Vector((0, 0, 1))]
+        a_quaternion = a.matrix_world.to_quaternion()
+        b_quaternion = b.matrix_world.to_quaternion()
+        for axis in axes:
+            if abs((a_quaternion @ axis).angle((b_quaternion @ axis)) - (math.pi / 2)) < 1e-5:
+                return True
+        return False
+
+    @classmethod
+    def get_camera_block(cls, obj):
+        raster_x = obj.data.BIMCameraProperties.raster_x
+        raster_y = obj.data.BIMCameraProperties.raster_y
+
+        if raster_x > raster_y:
+            width = obj.data.ortho_scale
+            height = width / raster_x * raster_y
+        else:
+            height = obj.data.ortho_scale
+            width = height / raster_y * raster_x
+        depth = obj.data.clip_end
+
+        verts = (
+            obj.matrix_world @ mathutils.Vector((-width / 2, -height / 2, -depth)),
+            obj.matrix_world @ mathutils.Vector((-width / 2, -height / 2, 0)),
+            obj.matrix_world @ mathutils.Vector((-width / 2, height / 2, -depth)),
+            obj.matrix_world @ mathutils.Vector((-width / 2, height / 2, 0)),
+            obj.matrix_world @ mathutils.Vector((width / 2, -height / 2, -depth)),
+            obj.matrix_world @ mathutils.Vector((width / 2, -height / 2, 0)),
+            obj.matrix_world @ mathutils.Vector((width / 2, height / 2, -depth)),
+            obj.matrix_world @ mathutils.Vector((width / 2, height / 2, 0)),
+        )
+        faces = [
+            [0, 1, 3, 2],
+            [2, 3, 7, 6],
+            [6, 7, 5, 4],
+            [4, 5, 1, 0],
+            [2, 6, 4, 0],
+            [7, 3, 1, 5],
+        ]
+        return {"verts": verts, "faces": faces}
+
+    @classmethod
+    def is_intersecting(cls, a, b):
+        a_block = cls.get_camera_block(a)
+        a_tree = mathutils.bvhtree.BVHTree.FromPolygons(a_block["verts"], a_block["faces"])
+        b_block = cls.get_camera_block(b)
+        b_tree = mathutils.bvhtree.BVHTree.FromPolygons(b_block["verts"], b_block["faces"])
+        return bool(a_tree.overlap(b_tree))
+
+    @classmethod
+    def sync_object_representation(cls, obj):
+        bpy.ops.bim.update_representation(obj=obj.name)
+
+    @classmethod
+    def sync_object_placement(cls, obj):
+        blender_matrix = np.array(obj.matrix_world)
+        element = tool.Ifc.get_entity(obj)
+        if (obj.scale - mathutils.Vector((1.0, 1.0, 1.0))).length > 1e-4:
+            bpy.ops.bim.update_representation(obj=obj.name)
+            return element
+        if element.is_a("IfcGridAxis"):
+            return cls.sync_grid_axis_object_placement(obj, element)
+        if not hasattr(element, "ObjectPlacement"):
+            return
+        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        return element
+
+    @classmethod
+    def sync_grid_axis_object_placement(cls, obj, element):
+        grid = (element.PartOfU or element.PartOfV or element.PartOfW)[0]
+        grid_obj = tool.Ifc.get_object(grid)
+        if grid_obj:
+            cls.sync_object_placement(grid_obj)
+            if grid_obj.matrix_world != obj.matrix_world:
+                bpy.ops.bim.update_representation(obj=obj.name)
+        tool.Geometry.record_object_position(obj)

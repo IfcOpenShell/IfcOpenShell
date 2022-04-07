@@ -17,11 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell
-import ifcopenshell.util.schema
-import ifcopenshell.util.attribute
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty, Attribute
+from blenderbim.bim.module.unit.data import UnitsData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -35,34 +33,22 @@ from bpy.props import (
 )
 
 
-unitclasses_enum = []
-namedunittypes_enum = []
+def get_unit_classes(self, context):
+    if not UnitsData.is_loaded:
+        UnitsData.load()
+    return UnitsData.data["unit_classes"]
 
 
-def purge():
-    global unitclasses_enum
-    global namedunittypes_enum
-    unitclasses_enum = []
-    namedunittypes_enum = []
+def get_conversion_unit_types(self, context):
+    if not UnitsData.is_loaded:
+        UnitsData.load()
+    return UnitsData.data["conversion_unit_types"]
 
 
-def getUnitClasses(self, context):
-    global unitclasses_enum
-    if not len(unitclasses_enum) and IfcStore.get_file():
-        declarations = ifcopenshell.util.schema.get_subtypes(IfcStore.get_schema().declaration_by_name("IfcNamedUnit"))
-        unitclasses_enum.extend([(c, c, "") for c in sorted([d.name() for d in declarations])])
-        unitclasses_enum.extend([("IfcDerivedUnit", "IfcDerivedUnit", ""), ("IfcMonetaryUnit", "IfcMonetaryUnit", "")])
-    return unitclasses_enum
-
-
-def getNamedUnitTypes(self, context):
-    global namedunittypes_enum
-    if not len(namedunittypes_enum) and IfcStore.get_file():
-        values = ifcopenshell.util.attribute.get_enum_items(
-            IfcStore.get_schema().declaration_by_name("IfcNamedUnit").all_attributes()[1]
-        )
-        namedunittypes_enum.extend([(c, c, "") for c in sorted(values)])
-    return namedunittypes_enum
+def get_named_unit_types(self, context):
+    if not UnitsData.is_loaded:
+        UnitsData.load()
+    return UnitsData.data["named_unit_types"]
 
 
 class Unit(PropertyGroup):
@@ -78,6 +64,7 @@ class BIMUnitProperties(PropertyGroup):
     units: CollectionProperty(name="Units", type=Unit)
     active_unit_index: IntProperty(name="Active Unit Index")
     active_unit_id: IntProperty(name="Active Unit Id")
-    unit_classes: EnumProperty(items=getUnitClasses, name="Unit Classes")
-    named_unit_types: EnumProperty(items=getNamedUnitTypes, name="Named Unit Types")
+    unit_classes: EnumProperty(items=get_unit_classes, name="Unit Classes")
+    conversion_unit_types: EnumProperty(items=get_conversion_unit_types, name="Conversion Unit Types")
+    named_unit_types: EnumProperty(items=get_named_unit_types, name="Named Unit Types")
     unit_attributes: CollectionProperty(name="Unit Attributes", type=Attribute)

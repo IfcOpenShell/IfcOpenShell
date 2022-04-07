@@ -157,6 +157,9 @@ class UpdateRepresentation(bpy.types.Operator):
     def update_obj_mesh_representation(self, context, obj):
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
 
+        if not product.is_a("IfcGridAxis"):
+            tool.Geometry.clear_cache(product)
+
         if product.is_a("IfcGridAxis"):
             ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": product})
             return
@@ -355,6 +358,7 @@ class OverrideDeleteTrait:
 class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
     bl_idname = "object.delete"
     bl_label = "Delete"
+    bl_options = {"REGISTER", "UNDO"}
     use_global: bpy.props.BoolProperty(default=False)
     confirm: bpy.props.BoolProperty(default=True)
 
@@ -368,21 +372,29 @@ class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
             return IfcStore.execute_ifc_operator(self, context)
         for obj in context.selected_objects:
             bpy.data.objects.remove(obj)
+        # Required otherwise gizmos are still visible
+        context.view_layer.objects.active = None
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_confirm(self, event)
+        if self.confirm:
+            return context.window_manager.invoke_confirm(self, event)
+        self.confirm = True
+        return self.execute(context)
 
     def _execute(self, context):
         for obj in context.selected_objects:
             self.delete_ifc_object(obj)
             bpy.data.objects.remove(obj)
+        # Required otherwise gizmos are still visible
+        context.view_layer.objects.active = None
         return {"FINISHED"}
 
 
 class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
     bl_idname = "outliner.delete"
     bl_label = "Delete"
+    bl_options = {"REGISTER", "UNDO"}
     hierarchy: bpy.props.BoolProperty(default=False)
 
     @classmethod
@@ -405,7 +417,6 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
             if item.bl_rna.identifier == "Collection":
                 collection = bpy.data.collections.get(item.name)
                 collection_data = self.get_collection_objects_and_children(collection)
-                print(collection_data)
                 objects_to_delete |= collection_data["objects"]
                 collections_to_delete |= collection_data["children"]
                 collections_to_delete.add(collection)
@@ -453,6 +464,7 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
 class OverrideDuplicateMove(bpy.types.Operator):
     bl_idname = "object.duplicate_move"
     bl_label = "Duplicate Objects"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):

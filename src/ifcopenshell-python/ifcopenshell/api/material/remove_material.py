@@ -29,8 +29,8 @@ class Usecase:
     def execute(self):
         inverse_elements = self.file.get_inverse(self.settings["material"])
         self.file.remove(self.settings["material"])
-        # TODO: this is probably not robust enough
-        # TODO: purge material definition representation
+        # TODO: Right now, we we choose only to delete set items (e.g. a layer) but not the material set
+        # This can lead to invalid material sets, but we assume the user will deal with it
         for inverse in inverse_elements:
             if inverse.is_a("IfcMaterialConstituent"):
                 self.file.remove(inverse)
@@ -39,4 +39,14 @@ class Usecase:
             elif inverse.is_a("IfcMaterialProfile"):
                 self.file.remove(inverse)
             elif inverse.is_a("IfcRelAssociatesMaterial"):
+                self.file.remove(inverse)
+            elif inverse.is_a("IfcMaterialProperties"):
+                for prop in inverse.Properties or []:
+                    self.file.remove(prop)
+                self.file.remove(inverse)
+            elif inverse.is_a("IfcMaterialDefinitionRepresentation"):
+                for representation in inverse.Representations:
+                    for item in representation.Items:
+                        self.file.remove(item)
+                    self.file.remove(representation)
                 self.file.remove(inverse)

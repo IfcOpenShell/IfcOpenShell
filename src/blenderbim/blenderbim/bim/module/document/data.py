@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
@@ -35,17 +36,29 @@ class DocumentData:
     def load(cls):
         cls.data = {
             "total_information": cls.total_information(),
-            "total_references": cls.total_references(),
+            "parent_document": cls.parent_document(),
         }
         cls.is_loaded = True
 
     @classmethod
     def total_information(cls):
-        return len(tool.Ifc.get().by_type("IfcDocumentInformation"))
+        return len(
+            [
+                rel
+                for rel in tool.Ifc.get().by_type("IfcProject")[0].HasAssociations or []
+                if rel.is_a("IfcRelAssociatesDocument") and rel.RelatingDocument.is_a("IfcDocumentInformation")
+            ]
+        )
 
     @classmethod
-    def total_references(cls):
-        return len(tool.Ifc.get().by_type("IfcDocumentReference"))
+    def parent_document(cls):
+        props = bpy.context.scene.BIMDocumentProperties
+        if len(props.breadcrumbs):
+            parent = tool.Ifc.get().by_id(int(props.breadcrumbs[-1].name))
+            if tool.Ifc.get_schema() == "IFC2X3":
+                return str(parent.DocumentId)
+            return str(parent.Identification)
+        return ""
 
 
 class ObjectDocumentData:
@@ -69,16 +82,35 @@ class ObjectDocumentData:
             if rel.is_a("IfcRelAssociatesDocument"):
                 if not rel.RelatingDocument.is_a("IfcDocumentReference"):
                     continue
+
+                name = rel.RelatingDocument.Name
+                if not name and rel.RelatingDocument.ReferencedDocument:
+                    name = rel.RelatingDocument.ReferencedDocument.Name
+
                 if tool.Ifc.get_schema() == "IFC2X3":
                     identification = rel.RelatingDocument.ItemReference
+                    if not identification and rel.RelatingDocument.ReferencedDocument:
+                        identification = rel.RelatingDocument.ReferencedDocument.DocumentId
                 else:
                     identification = rel.RelatingDocument.Identification
+                    if not identification and rel.RelatingDocument.ReferencedDocument:
+                        identification = rel.RelatingDocument.ReferencedDocument.Identification
+
+                location = rel.RelatingDocument.Location
+                if location is None and rel.RelatingDocument.ReferencedDocument:
+                    location = rel.RelatingDocument.ReferencedDocument.Location
+                if location:
+                    if not "://" in location:
+                        if not os.path.isabs(location):
+                            location = os.path.abspath(os.path.join(os.path.dirname(tool.Ifc.get_path()), location))
+                        location = "file://" + location
+
                 results.append(
                     {
-                        "type": rel.RelatingDocument.is_a(),
                         "id": rel.RelatingDocument.id(),
                         "identification": identification,
-                        "name": rel.RelatingDocument.Name,
+                        "name": name,
+                        "location": location,
                     }
                 )
         return results

@@ -16,16 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-
 
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {}
+        self.settings = {"information": None}
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        id_attribute = "ItemReference" if self.file.schema == "IFC2X3" else "Identification"
-        return self.file.create_entity("IfcDocumentReference", **{id_attribute: ifcopenshell.guid.new()})
+        if self.file.schema == "IFC2X3":
+            return self.file.create_entity("IfcDocumentReference")
+        return self.file.create_entity("IfcDocumentReference", ReferencedDocument=self.settings["information"])

@@ -42,6 +42,9 @@ namespace IfcGeom {
 	private:
 		Kernel* implementation_;
 
+	protected:
+		Kernel() {};
+
 	public:
 		// Tolerances and settings for various geometrical operations:
 		enum GeomValue {
@@ -80,7 +83,7 @@ namespace IfcGeom {
 			GV_BOOLEAN_ATTEMPT_2D
 		};
 
-		Kernel(IfcParse::IfcFile* file_ = 0);
+		Kernel(IfcParse::IfcFile* file_);
 		
 		virtual ~Kernel() {}
 

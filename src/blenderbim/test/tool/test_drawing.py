@@ -399,10 +399,13 @@ class TestImportDrawings(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         drawing = ifc.createIfcAnnotation(Name="FOOBAR", ObjectType="DRAWING")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"TargetView": "PLAN_VIEW"})
         subject.import_drawings()
         props = bpy.context.scene.DocProperties
         assert props.drawings[0].ifc_definition_id == drawing.id()
         assert props.drawings[0].name == "FOOBAR"
+        assert props.drawings[0].target_view == "PLAN_VIEW"
 
 
 class TestImportSheets(NewFile):

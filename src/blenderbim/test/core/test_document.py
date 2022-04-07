@@ -21,20 +21,23 @@ import blenderbim.core.document as subject
 from test.core.bootstrap import ifc, document
 
 
-class TestLoadInformation:
+class TestLoadProjectDocuments:
     def test_run(self, document):
-        document.import_information().should_be_called()
-        document.enable_information_editing_ui().should_be_called()
-        document.disable_editing_document().should_be_called()
-        subject.load_information(document)
+        document.clear_document_tree().should_be_called()
+        document.import_project_documents().should_be_called()
+        document.clear_breadcrumbs().should_be_called()
+        document.enable_editing_ui().should_be_called()
+        subject.load_project_documents(document)
 
 
-class TestLoadReferences:
+class TestLoadDocument:
     def test_run(self, document):
-        document.import_references().should_be_called()
-        document.enable_reference_editing_ui().should_be_called()
+        document.clear_document_tree().should_be_called()
+        document.import_subdocuments("document").should_be_called()
+        document.import_references("document").should_be_called()
         document.disable_editing_document().should_be_called()
-        subject.load_references(document)
+        document.add_breadcrumb("document").should_be_called()
+        subject.load_document(document, document="document")
 
 
 class TestDisableDocumentEditingUi:
@@ -58,70 +61,74 @@ class TestDisableEditingDocument:
 
 
 class TestAddInformation:
-    def test_run(self, ifc, document):
-        ifc.run("document.add_information").should_be_called().will_return("information")
-        document.import_information().should_be_called()
-        document.import_document_attributes("information").should_be_called()
-        document.set_active_document("information").should_be_called()
+    def test_add_and_reload_tree_at_project_root(self, ifc, document):
+        document.clear_document_tree().should_be_called()
+        document.get_active_breadcrumb().should_be_called().will_return(None)
+        ifc.run("document.add_information", parent=None).should_be_called().will_return("information")
+        ifc.run("document.add_reference", information="information").should_be_called()
+        document.import_project_documents().should_be_called()
+        subject.add_information(ifc, document)
+
+    def test_add_and_reload_tree_at_current_parent(self, ifc, document):
+        document.clear_document_tree().should_be_called()
+        document.get_active_breadcrumb().should_be_called().will_return("parent")
+        ifc.run("document.add_information", parent="parent").should_be_called().will_return("information")
+        ifc.run("document.add_reference", information="information").should_be_called()
+        document.import_subdocuments("parent").should_be_called()
+        document.import_references("parent").should_be_called()
         subject.add_information(ifc, document)
 
 
 class TestAddReference:
     def test_run(self, ifc, document):
-        ifc.run("document.add_reference").should_be_called().will_return("reference")
-        document.import_references().should_be_called()
-        document.import_document_attributes("reference").should_be_called()
-        document.set_active_document("reference").should_be_called()
+        document.get_active_breadcrumb().should_be_called().will_return("parent")
+        ifc.run("document.add_reference", information="parent").should_be_called()
+        document.clear_document_tree().should_be_called()
+        document.import_subdocuments("parent").should_be_called()
+        document.import_references("parent").should_be_called()
         subject.add_reference(ifc, document)
 
 
-class TestEditInformation:
-    def test_run(self, ifc, document):
+class TestEditDocument:
+    def test_edit_information(self, ifc, document):
         document.export_document_attributes().should_be_called().will_return("attributes")
-        ifc.run("document.edit_information", information="information", attributes="attributes").should_be_called()
+        document.is_document_information("document").should_be_called().will_return(True)
+        ifc.run("document.edit_information", information="document", attributes="attributes").should_be_called()
         document.disable_editing_document().should_be_called()
-        document.import_information().should_be_called()
-        subject.edit_information(ifc, document, information="information")
+        document.clear_document_tree().should_be_called()
+        document.get_active_breadcrumb().should_be_called().will_return(None)
+        document.import_project_documents().should_be_called()
+        subject.edit_document(ifc, document, document="document")
 
-
-class TestEditInformation:
-    def test_run(self, ifc, document):
+    def test_edit_reference(self, ifc, document):
         document.export_document_attributes().should_be_called().will_return("attributes")
-        ifc.run("document.edit_reference", reference="reference", attributes="attributes").should_be_called()
+        document.is_document_information("document").should_be_called().will_return(False)
+        ifc.run("document.edit_reference", reference="document", attributes="attributes").should_be_called()
         document.disable_editing_document().should_be_called()
-        document.import_references().should_be_called()
-        subject.edit_reference(ifc, document, reference="reference")
+        document.clear_document_tree().should_be_called()
+        document.get_active_breadcrumb().should_be_called().will_return("parent")
+        document.import_subdocuments("parent").should_be_called()
+        document.import_references("parent").should_be_called()
+        subject.edit_document(ifc, document, document="document")
 
 
 class TestRemoveDocument:
     def test_remove_information(self, ifc, document):
+        document.clear_document_tree().should_be_called()
         document.is_document_information("document").should_be_called().will_return(True)
-        ifc.run("document.remove_document", document="document").should_be_called()
-        document.import_information().should_be_called()
-        document.disable_editing_document().should_be_called()
+        ifc.run("document.remove_information", information="document").should_be_called()
+        document.get_active_breadcrumb().should_be_called().will_return(None)
+        document.import_project_documents().should_be_called()
         subject.remove_document(ifc, document, document="document")
 
     def test_remove_reference(self, ifc, document):
+        document.clear_document_tree().should_be_called()
         document.is_document_information("document").should_be_called().will_return(False)
-        ifc.run("document.remove_document", document="document").should_be_called()
-        document.import_references().should_be_called()
-        document.disable_editing_document().should_be_called()
+        ifc.run("document.remove_reference", reference="document").should_be_called()
+        document.get_active_breadcrumb().should_be_called().will_return("parent")
+        document.import_subdocuments("parent").should_be_called()
+        document.import_references("parent").should_be_called()
         subject.remove_document(ifc, document, document="document")
-
-
-class TestEnableAssigningDocument:
-    def test_run(self, document):
-        document.import_references().should_be_called()
-        document.enable_reference_editing_ui().should_be_called()
-        document.disable_editing_document().should_be_called()
-        document.enable_document_assignment_ui("obj").should_be_called()
-        subject.enable_assigning_document(document, obj="obj")
-
-
-class TestDisableAssigningDocument:
-    def test_run(self, document):
-        document.disable_document_assignment_ui("obj").should_be_called()
-        subject.disable_assigning_document(document, obj="obj")
 
 
 class TestAssignDocument:

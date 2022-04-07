@@ -299,7 +299,7 @@ private:
 
 public:
 	MAKE_TYPE_NAME(Kernel)()
-		: IfcGeom::Kernel(0)
+		: IfcGeom::Kernel()
 		, deflection_tolerance(0.001)
 		, max_faces_to_orient(-1.0)
 		, ifc_length_unit(1.0)
@@ -321,7 +321,7 @@ public:
 	{}
 
 	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other)
-		: IfcGeom::Kernel(0)
+		: IfcGeom::Kernel()
 		, deflection_tolerance(other.deflection_tolerance)
 		, max_faces_to_orient(other.max_faces_to_orient)
 		, ifc_length_unit(other.ifc_length_unit)

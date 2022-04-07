@@ -37,7 +37,12 @@ class Usecase:
                     inverse.RelatedObjects = related_objects
                     should_remove_pset = False
         if should_remove_pset:
+            if self.settings["pset"].is_a("IfcPropertySet"):
+                properties = self.settings["pset"].HasProperties or []
+            elif self.settings["pset"].is_a("IfcQuantitySet"):
+                properties = self.settings["pset"].Quantities or []
+            for prop in properties:
+                self.file.remove(prop)
             self.file.remove(self.settings["pset"])
         for element in to_purge:
             self.file.remove(element)
-        # TODO: implement deep purging

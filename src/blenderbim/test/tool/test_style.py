@@ -50,6 +50,13 @@ class TestDisableEditing(NewFile):
         assert obj.BIMStyleProperties.is_editing is False
 
 
+class TestDisableEditingStyles(NewFile):
+    def test_run(self):
+        bpy.context.scene.BIMStylesProperties.is_editing = True
+        subject.disable_editing_styles()
+        assert bpy.context.scene.BIMStylesProperties.is_editing is False
+
+
 class TestEnableEditing(NewFile):
     def test_run(self):
         obj = bpy.data.materials.new("Material")
@@ -57,11 +64,28 @@ class TestEnableEditing(NewFile):
         assert obj.BIMStyleProperties.is_editing is True
 
 
+class TestEnableEditingStyles(NewFile):
+    def test_run(self):
+        bpy.context.scene.BIMStylesProperties.is_editing = False
+        subject.enable_editing_styles()
+        assert bpy.context.scene.BIMStylesProperties.is_editing is True
+
+
 class TestExportSurfaceAttributes(NewFile):
     def test_run(self):
         TestImportSurfaceAttributes().test_run()
         obj = bpy.data.materials.get("Material")
         assert subject.export_surface_attributes(obj) == {"Name": "Name", "Side": "BOTH"}
+
+
+class TestGetActiveStyleType(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        bpy.context.scene.BIMStylesProperties.style_type = "IfcSurfaceStyle"
+        assert subject.get_active_style_type() == "IfcSurfaceStyle"
+        bpy.context.scene.BIMStylesProperties.style_type = "IfcCurveStyle"
+        assert subject.get_active_style_type() == "IfcCurveStyle"
 
 
 class TestGetContext(NewFile):
@@ -116,6 +140,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
                 "Green": 0.5,
                 "Blue": 0.5,
             },
+            "SpecularColour": 0.0,
             "SpecularHighlight": {"IfcSpecularRoughness": 0.2},
             "ReflectanceMethod": "NOTDEFINED",
         }
@@ -351,3 +376,53 @@ class TestImportSurfaceAttributes(NewFile):
         assert len(obj.BIMStyleProperties.attributes) == 2
         assert obj.BIMStyleProperties.attributes.get("Name").string_value == "Name"
         assert obj.BIMStyleProperties.attributes.get("Side").enum_value == "BOTH"
+
+
+class TestImportPresentationStyles(NewFile):
+    def test_import_curve_styles(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        style = ifc.createIfcCurveStyle(Name="Name")
+        subject.import_presentation_styles("IfcCurveStyle")
+        props = bpy.context.scene.BIMStylesProperties
+        assert props.styles[0].ifc_definition_id == style.id()
+        assert props.styles[0].name == "Name"
+        assert props.styles[0].total_elements == 0
+
+    def test_import_fillarea_styles(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        style = ifc.createIfcFillAreaStyle(Name="Name")
+        subject.import_presentation_styles("IfcFillAreaStyle")
+        props = bpy.context.scene.BIMStylesProperties
+        assert props.styles[0].ifc_definition_id == style.id()
+        assert props.styles[0].name == "Name"
+        assert props.styles[0].total_elements == 0
+
+    def test_import_surface_styles(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        style = ifc.createIfcSurfaceStyle(Name="Name")
+        subject.import_presentation_styles("IfcSurfaceStyle")
+        props = bpy.context.scene.BIMStylesProperties
+        assert props.styles[0].ifc_definition_id == style.id()
+        assert props.styles[0].name == "Name"
+        assert props.styles[0].total_elements == 0
+
+    def test_import_text_styles(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        style = ifc.createIfcTextStyle(Name="Name")
+        subject.import_presentation_styles("IfcTextStyle")
+        props = bpy.context.scene.BIMStylesProperties
+        assert props.styles[0].ifc_definition_id == style.id()
+        assert props.styles[0].name == "Name"
+        assert props.styles[0].total_elements == 0
+
+
+class TestIsEditingStyles(NewFile):
+    def test_run(self):
+        bpy.context.scene.BIMStylesProperties.is_editing = False
+        subject.is_editing_styles() is False
+        bpy.context.scene.BIMStylesProperties.is_editing = True
+        subject.is_editing_styles() is True

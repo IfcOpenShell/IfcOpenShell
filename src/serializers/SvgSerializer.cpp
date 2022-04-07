@@ -36,7 +36,6 @@
 #include <TopoDS_Edge.hxx>
 #include <TopExp_Explorer.hxx>
 #include <BRep_Tool.hxx>
-#include <BRepAlgo_Section.hxx>
 #include <BRepTools.hxx>
 #include <BRepAlgoAPI_Section.hxx>
 #include <ShapeAnalysis_FreeBounds.hxx>

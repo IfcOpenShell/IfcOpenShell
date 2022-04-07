@@ -92,7 +92,12 @@
 #include <TopTools_ListIteratorOfListOfShape.hxx>
 
 #include <BRepAdaptor_CompCurve.hxx>
+
+#include <Standard_Version.hxx>
+#if OCC_VERSION_HEX < 0x70600
 #include <BRepAdaptor_HCompCurve.hxx>
+#endif
+
 #include <Approx_Curve3d.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
@@ -483,8 +488,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 		Logger::Warning("Approximating BasisCurve due to possible discontinuities", l);
 		TopoDS_Wire w;
 		if (!convert_wire(basis_curve, w)) return false;
+#if OCC_VERSION_HEX < 0x70600
 		BRepAdaptor_CompCurve cc(w, true);
 		Handle(Adaptor3d_HCurve) hcc = Handle(Adaptor3d_HCurve)(new BRepAdaptor_HCompCurve(cc));
+#else
+		auto hcc = new BRepAdaptor_CompCurve(w, true);
+#endif
 		// @todo, arbitrary numbers here, note they cannot be too high as contiguous memory is allocated based on them.
 		Approx_Curve3d approx(hcc, getValue(GV_PRECISION), GeomAbs_C0, 10, 10);
 		curve = approx.Curve();
@@ -606,7 +615,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 			}
 		}
 
-		if (isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.), 0., 100 * getValue(GV_PRECISION) / (2 * M_PI * radius))) {
+		// @todo is 100. not too much? Check with the original issue.
+		const double precision_markup = getValue(IfcGeom::Kernel::GV_PRECISION_FACTOR) == 1. ? 1. : 100.;
+
+		if (isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.), 0., precision_markup * getValue(GV_PRECISION) / (2 * M_PI * radius))) {
 			e = BRepBuilderAPI_MakeEdge(curve).Edge();
 		} else {
 			BRepBuilderAPI_MakeEdge me (curve,flts[0],flts[1]);
@@ -681,6 +693,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& resu
 		polygon.Append(pnt);
 	}
 
+	// @todo the strict tolerance should also govern these arbitrary precision increases
 	const double eps = getValue(GV_PRECISION) * 10;
 	const bool closed_by_proximity = polygon.Length() >= 3 && polygon.First().Distance(polygon.Last()) < eps;
 	if (closed_by_proximity) {

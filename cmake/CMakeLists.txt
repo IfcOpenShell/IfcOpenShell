@@ -62,6 +62,10 @@ endif()
 OPTION(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 OPTION(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
 
+IF(NOT CMAKE_BUILD_TYPE)
+	SET(CMAKE_BUILD_TYPE "Release")
+ENDIF()
+
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
 # OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
 include(GNUInstallDirs)
@@ -477,10 +481,6 @@ if(HDF5_SUPPORT)
     add_definitions(-DWITH_HDF5)
 	set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_HDF5)
 endif()
-
-IF(NOT CMAKE_BUILD_TYPE)
-	SET(CMAKE_BUILD_TYPE "Release")
-ENDIF()
 
 if(ENABLE_BUILD_OPTIMIZATIONS)
 	if(MSVC)
