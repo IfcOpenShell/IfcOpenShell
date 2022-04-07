@@ -1510,8 +1510,10 @@ class IfcImporter:
         elif element.is_a("IfcStructuralConnection"):
             return self.structural_connection_collection.objects.link(obj)
         elif element.is_a("IfcAnnotation") and self.is_drawing_annotation(element):
-            group = [r for r in element.HasAssignments if r.is_a("IfcRelAssignsToGroup")][0].RelatingGroup
-            return self.collections[group.GlobalId].objects.link(obj)
+            group = [r for r in element.HasAssignments if r.is_a("IfcRelAssignsToGroup")]
+            if group: # annotations could exist that are not in an IfcGroup
+                group = group[0].RelatingGroup
+                return self.collections[group.GlobalId].objects.link(obj)
 
         container = ifcopenshell.util.element.get_container(element)
         if container:
@@ -1552,6 +1554,10 @@ class IfcImporter:
             "STAIR_ARROW",
             "TEXT",
             "TEXT_LEADER",
+            "LEADER",
+            "HATCH",
+            "LINEWORK",
+            "AREA",
         ]
 
     def get_element_matrix(self, element):
