@@ -40,6 +40,7 @@ requirements:
     - requests
     - nlohmann_json
     - isodate
+    - numpy >= 1.17
 
 test:
   imports:
@@ -47,6 +48,12 @@ test:
   requires:
     - pytest
     - pytest-cov
+    - numpy
+    - lxml
+    - isodate
+    - lark
+    - networkx
+    - xmlschema
   source_files:
     - test
     - src/ifcopenshell-python
