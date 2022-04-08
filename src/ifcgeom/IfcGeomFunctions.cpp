@@ -4599,6 +4599,13 @@ namespace {
 
 				if (outer_wire.IsNull() || !it2.Value().IsSame(outer_wire)) {
 					wires.push_back(TopoDS::Wire(it2.Value()));
+
+					if (shape_index == 0 && num_wires > 0) {
+						// An inner wire on the first operand face: reverse, because
+						// MakeFace expects inner boundaries to be added as bounded
+						// areas.
+						wires.back().Reverse();
+					}
 				}
 			}
 
