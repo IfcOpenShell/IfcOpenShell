@@ -10,7 +10,7 @@ on:
       - pr-daily-builds
 jobs:
   test:
-    name: ${{ matrix.platform.name }}-${{ matrix.pyver.name }}-${{ matrix.xcode.name }}
+    name: ${{ matrix.platform.name }}-${{ matrix.pyver.name }}
     runs-on: ${{ matrix.platform.distver }}
     defaults:
       run:
