@@ -40,7 +40,7 @@ requirements:
     - requests
     - nlohmann_json
     - isodate
-    - numpy >= 1.17
+    - numpy >=1.17
 
 test:
   imports:
