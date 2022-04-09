@@ -1552,6 +1552,10 @@ class IfcImporter:
             "STAIR_ARROW",
             "TEXT",
             "TEXT_LEADER",
+            "LEADER",
+            "HATCH",
+            "LINEWORK",
+            "AREA",
         ]
 
     def get_element_matrix(self, element):
