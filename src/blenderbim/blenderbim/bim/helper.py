@@ -48,6 +48,9 @@ def draw_attribute(attribute, layout, copy_operator=None):
     if copy_operator:
         op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = attribute.name
+    if attribute.is_uri:
+        op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
+        op.data_path = attribute.path_from_id("string_value")
 
 
 def import_attributes(ifc_class, props, data, callback=None):
@@ -78,6 +81,8 @@ def import_attribute(attribute, props, data, callback=None):
         props.remove(len(props) - 1)
     elif data_type == "string":
         new.string_value = "" if new.is_null else data[attribute.name()]
+        if attribute.type_of_attribute().declared_type().name() == "IfcURIReference":
+            new.is_uri = True
     elif data_type == "boolean":
         new.bool_value = False if new.is_null else data[attribute.name()]
     elif data_type == "integer":

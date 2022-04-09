@@ -168,6 +168,7 @@ IfcSpfStream::IfcSpfStream(const std::string& fn)
 		eof = len == 0;
 		ptr = 0;
 		fclose(stream);
+		stream = nullptr;
 #ifdef USE_MMAP	
 	}
 #endif
@@ -212,6 +213,9 @@ void IfcSpfStream::Close() {
 	}
 #endif
 	delete[] buffer;
+	if (stream) {
+		fclose(stream);
+	}
 }
 
 //

@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -17,15 +17,23 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import ifcopenshell.api
+
+
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"document": None}
+        self.settings = {"information": None}
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        self.file.remove(self.settings["document"])
-        for rel in self.file.by_type("IfcRelAssociatesDocument"):
-            if not rel.RelatingDocument:
-                self.file.remove(rel)
+        for reference in self.settings["information"].HasDocumentReferences or []:
+            ifcopenshell.api.run("document.remove_reference", self.file, reference=reference)
+        for rel in self.settings["information"].IsPointer or []:
+            for information in rel.RelatedDocuments:
+                ifcopenshell.api.run("document.remove_information", self.file, information=information)
+            self.file.remove(rel)
+        for rel in self.settings["information"].DocumentInfoForObjects or []:
+            self.file.remove(rel)
+        self.file.remove(self.settings["information"])

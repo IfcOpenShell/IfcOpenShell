@@ -59,9 +59,10 @@ class RemoveStyle(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_style"
     bl_label = "Remove Style"
     bl_options = {"REGISTER", "UNDO"}
+    style: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
+        core.remove_style(tool.Ifc, tool.Material, tool.Style, style=tool.Ifc.get().by_id(self.style))
 
 
 class AddStyle(bpy.types.Operator, Operator):
@@ -107,3 +108,22 @@ class EditStyle(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.edit_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
+
+
+class DisableEditingStyles(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_styles"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_label = "Disable Editing Styles"
+
+    def _execute(self, context):
+        core.disable_editing_styles(tool.Style)
+
+
+class LoadStyles(bpy.types.Operator, Operator):
+    bl_idname = "bim.load_styles"
+    bl_label = "Load Styles"
+    bl_options = {"REGISTER", "UNDO"}
+    style_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.load_styles(tool.Style, style_type=self.style_type)

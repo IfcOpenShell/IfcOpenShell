@@ -24,6 +24,7 @@ from blenderbim.tool.collector import Collector
 from blenderbim.tool.context import Context
 from blenderbim.tool.debug import Debug
 from blenderbim.tool.demo import Demo
+from blenderbim.tool.document import Document
 from blenderbim.tool.drawing import Drawing
 from blenderbim.tool.geometry import Geometry
 from blenderbim.tool.ifc import Ifc

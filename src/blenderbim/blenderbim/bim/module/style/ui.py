@@ -17,9 +17,51 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.bim.helper
-from bpy.types import Panel
+from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.style.data import StyleAttributesData
+from blenderbim.bim.module.style.data import StylesData, StyleAttributesData
+
+
+class BIM_PT_styles(Panel):
+    bl_label = "IFC Styles"
+    bl_idname = "BIM_PT_styles"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_geometry"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        if not StylesData.is_loaded:
+            StylesData.load()
+
+        self.props = context.scene.BIMStylesProperties
+
+        row = self.layout.row(align=True)
+        row.label(text="{} Styles Found".format(StylesData.data["total_styles"]), icon="MATERIAL")
+        row = self.layout.row(align=True)
+        if self.props.is_editing:
+            row.operator("bim.disable_editing_styles", text="", icon="CANCEL")
+        else:
+            row.prop(self.props, "style_type", text="")
+            row.operator("bim.load_styles", text="", icon="IMPORT").style_type = self.props.style_type
+            return
+
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+
+        #row.operator("bim.add_presentation_style", text="", icon="ADD")
+        if self.props.styles and self.props.active_style_index < len(self.props.styles):
+            style = self.props.styles[self.props.active_style_index]
+        #    op = row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF")
+        #    op.style = style.ifc_definition_id
+            row.operator("bim.remove_style", text="", icon="X").style = style.ifc_definition_id
+
+        self.layout.template_list("BIM_UL_styles", "", self.props, "styles", self.props, "active_style_index")
 
 
 class BIM_PT_style(Panel):
@@ -44,7 +86,7 @@ class BIM_PT_style(Panel):
             row.operator("bim.update_style_colours", icon="GREASEPENCIL")
             row.operator("bim.update_style_textures", icon="TEXTURE", text="")
             row.operator("bim.unlink_style", icon="UNLINKED", text="")
-            row.operator("bim.remove_style", icon="X", text="")
+            row.operator("bim.remove_style", icon="X", text="").style = props.ifc_style_id
         else:
             row.operator("bim.add_style", icon="ADD")
 
@@ -89,3 +131,13 @@ class BIM_PT_style_attributes(Panel):
                 row = self.layout.row(align=True)
                 row.label(text=attribute["name"])
                 row.label(text=attribute["value"])
+
+
+class BIM_UL_styles(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
+            #row2 = row.row()
+            #row2.alignment = "RIGHT"
+            #row2.label(text=str(item.total_elements))

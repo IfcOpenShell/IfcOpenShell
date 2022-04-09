@@ -27,3 +27,53 @@ class Material(blenderbim.core.tool.Material):
     @classmethod
     def add_default_material_object(cls):
         return bpy.data.materials.new("Default")
+
+    @classmethod
+    def delete_object(cls, obj):
+        bpy.data.materials.remove(obj)
+
+    @classmethod
+    def disable_editing_materials(cls):
+        bpy.context.scene.BIMMaterialProperties.is_editing = False
+
+    @classmethod
+    def enable_editing_materials(cls):
+        bpy.context.scene.BIMMaterialProperties.is_editing = True
+
+    @classmethod
+    def get_active_material_type(cls):
+        return bpy.context.scene.BIMMaterialProperties.material_type
+
+    @classmethod
+    def get_elements_by_material(cls, material):
+        return set(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+
+    @classmethod
+    def get_name(cls, obj):
+        return obj.name
+
+    @classmethod
+    def import_material_definitions(cls, material_type):
+        props = bpy.context.scene.BIMMaterialProperties
+        props.materials.clear()
+        for material in tool.Ifc.get().by_type(material_type):
+            new = props.materials.add()
+            new.ifc_definition_id = material.id()
+            if material.is_a("IfcMaterialLayerSet"):
+                new.name = material.LayerSetName or "Unnamed"
+            elif material.is_a("IfcMaterialList"):
+                new.name = "Unnamed"
+            else:
+                new.name = material.Name or "Unnamed"
+            new.total_elements = len(set(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)))
+
+    @classmethod
+    def is_editing_materials(cls):
+        return bpy.context.scene.BIMMaterialProperties.is_editing
+
+    @classmethod
+    def select_elements(cls, elements):
+        for element in elements:
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                obj.select_set(True)

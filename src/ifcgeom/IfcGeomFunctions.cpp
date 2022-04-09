@@ -4240,6 +4240,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 			  : (std::min)(min_edge_length(wire) / 2., getValue(GV_PRECISION) * 10.);
 	}
 
+	// @todo: should this start from 0 in case of n > 64?
 	for (int i = 2; i < n; ++i) {
 
 		std::vector<int> js;
@@ -4598,6 +4599,13 @@ namespace {
 
 				if (outer_wire.IsNull() || !it2.Value().IsSame(outer_wire)) {
 					wires.push_back(TopoDS::Wire(it2.Value()));
+
+					if (shape_index == 0 && num_wires > 0) {
+						// An inner wire on the first operand face: reverse, because
+						// MakeFace expects inner boundaries to be added as bounded
+						// areas.
+						wires.back().Reverse();
+					}
 				}
 			}
 
@@ -5224,8 +5232,11 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTo
 							PERF("boolean operation: result min face-face dist check");
 
 							if ((v = min_face_face_distance(r, 1.e-4)) < 1.e-4) {
-								reason = 2;
-								success = false;
+								// #2095 Check if this distance wasn't already realized in the input first operand.
+								if (v < min_face_face_distance(a, 1.e-4)) {
+									reason = 2;
+									success = false;
+								}
 							}
 						}
 

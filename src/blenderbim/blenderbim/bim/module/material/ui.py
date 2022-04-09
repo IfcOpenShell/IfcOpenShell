@@ -17,11 +17,62 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.bim.helper
-from bpy.types import Panel
+from bpy.types import Panel, UIList
 from ifcopenshell.api.material.data import Data
 from ifcopenshell.api.profile.data import Data as ProfileData
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
+from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialData
+
+
+class BIM_PT_materials(Panel):
+    bl_label = "IFC Materials"
+    bl_idname = "BIM_PT_materials"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_geometry"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        if not MaterialsData.is_loaded:
+            MaterialsData.load()
+
+        self.props = context.scene.BIMMaterialProperties
+
+        row = self.layout.row(align=True)
+        row.label(text="{} Materials Found".format(MaterialsData.data["total_materials"]), icon="MATERIAL")
+        if self.props.is_editing:
+            row.operator("bim.disable_editing_materials", text="", icon="CANCEL")
+        else:
+            row = self.layout.row(align=True)
+            row.prop(self.props, "material_type", text="")
+            row.operator("bim.load_materials", text="", icon="IMPORT")
+            return
+
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+
+        if self.props.material_type == "IfcMaterial":
+            row.operator("bim.add_material", text="", icon="ADD")
+            if self.props.materials and self.props.active_material_index < len(self.props.materials):
+                material = self.props.materials[self.props.active_material_index]
+                op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
+                op.material = material.ifc_definition_id
+                row.operator("bim.remove_material", text="", icon="X").material = material.ifc_definition_id
+        else:
+            row.operator("bim.add_material_set", text="", icon="ADD").set_type = self.props.material_type
+            if self.props.materials and self.props.active_material_index < len(self.props.materials):
+                material = self.props.materials[self.props.active_material_index]
+                op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
+                op.material = material.ifc_definition_id
+                row.operator("bim.remove_material_set", text="", icon="X").material = material.ifc_definition_id
+
+        self.layout.template_list("BIM_UL_materials", "", self.props, "materials", self.props, "active_material_index")
 
 
 class BIM_PT_material(Panel):
@@ -37,11 +88,13 @@ class BIM_PT_material(Panel):
 
     def draw(self, context):
         row = self.layout.row(align=True)
-        if bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id):
-            row.operator("bim.remove_material", icon="X", text="Remove IFC Material")
+        material_id = context.active_object.active_material.BIMObjectProperties.ifc_definition_id
+        if bool(material_id):
+            row.operator("bim.remove_material", icon="X", text="Remove IFC Material").material = material_id
             row.operator("bim.unlink_material", icon="UNLINKED", text="")
         else:
-            row.operator("bim.add_material", icon="ADD", text="Create IFC Material")
+            op = row.operator("bim.add_material", icon="ADD", text="Create IFC Material")
+            op.obj = context.active_object.active_material.name
 
 
 class BIM_PT_object_material(Panel):
@@ -66,6 +119,9 @@ class BIM_PT_object_material(Panel):
         return True
 
     def draw(self, context):
+        if not ObjectMaterialData.is_loaded:
+            ObjectMaterialData.load()
+
         self.file = IfcStore.get_file()
         self.oprops = context.active_object.BIMObjectProperties
         self.props = context.active_object.BIMObjectMaterialProperties
@@ -77,10 +133,10 @@ class BIM_PT_object_material(Panel):
             ProfileData.load(self.file)
         self.product_data = Data.products[self.oprops.ifc_definition_id]
 
-        if not Data.materials:
+        if not ObjectMaterialData.data["materials"]:
             row = self.layout.row(align=True)
             row.label(text="No Materials Available")
-            row.operator("bim.add_default_material", icon="ADD", text="")
+            row.operator("bim.add_material", icon="ADD", text="").obj = ""
             return
 
         if self.product_data:
@@ -333,3 +389,13 @@ class BIM_PT_object_material(Panel):
         if total_thickness:
             row = self.layout.row(align=True)
             row.label(text=f"Total Thickness: {total_thickness:.3f}")
+
+
+class BIM_UL_materials(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
+            row2 = row.row()
+            row2.alignment = "RIGHT"
+            row2.label(text=str(item.total_elements))

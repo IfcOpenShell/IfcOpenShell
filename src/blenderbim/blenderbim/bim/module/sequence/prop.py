@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import isodate
 import ifcopenshell.api
 import ifcopenshell.util.attribute
 from blenderbim.bim.ifc import IfcStore
@@ -184,6 +185,16 @@ def updateTaskDuration(self, context):
     props = context.scene.BIMWorkScheduleProperties
     if not props.is_task_update_enabled:
         return
+
+    if self.duration == "-":
+        return
+
+    try:
+        isodate.parse_duration(self.duration),
+    except:
+        self.duration = "-"
+        return
+
     self.file = IfcStore.get_file()
     task = self.file.by_id(self.ifc_definition_id)
     if task.TaskTime:

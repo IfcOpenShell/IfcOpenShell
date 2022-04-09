@@ -82,6 +82,11 @@ class AddDrawing(bpy.types.Operator, Operator):
             target_view=self.props.target_view,
             location_hint=hint,
         )
+        try:
+            drawing = tool.Ifc.get().by_id(self.props.active_drawing_id)
+            core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
+        except:
+            pass
 
 
 class CreateDrawing(bpy.types.Operator):
@@ -301,12 +306,13 @@ class CreateDrawing(bpy.types.Operator):
             elements = set(ifc.by_type("IfcElement")) - set(ifc.by_type("IfcOpeningElement"))
 
             self.setup_serialiser(ifc)
-            cache_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True)
             cache = IfcStore.get_cache()
             [cache.remove(guid) for guid in invalidated_guids]
 
             if target_view_contexts and elements:
-                geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, INCLUDE_CURVES=True)
+                geom_settings = ifcopenshell.geom.settings(
+                    DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
+                )
                 geom_settings.set_context_ids(target_view_contexts)
                 it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
                 it.set_cache(cache)
@@ -317,18 +323,14 @@ class CreateDrawing(bpy.types.Operator):
                 elements -= processed
 
             if body_contexts and elements:
-                geom_settings = ifcopenshell.geom.settings(
-                    DISABLE_TRIANGULATION=True,
-                )
+                geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
                 geom_settings.set_context_ids(body_contexts)
                 it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
                 it.set_cache(cache)
                 for elem in self.yield_from_iterator(it):
                     self.serialiser.write(elem)
 
-            geom_settings = ifcopenshell.geom.settings(
-                DISABLE_TRIANGULATION=True,
-            )
+            geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
             it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
             for elem in self.yield_from_iterator(it):
                 self.serialiser.write(elem)
@@ -345,7 +347,9 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def setup_serialiser(self, ifc):
-        self.svg_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, INCLUDE_CURVES=True)
+        self.svg_settings = ifcopenshell.geom.settings(
+            DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
+        )
         self.svg_buffer = ifcopenshell.geom.serializers.buffer()
         self.serialiser = ifcopenshell.geom.serializers.svg(self.svg_buffer, self.svg_settings)
         self.serialiser.setFile(ifc)
@@ -453,6 +457,10 @@ class CreateDrawing(bpy.types.Operator):
                 svg_writer.annotations.setdefault("equal_objs", []).append(obj)
             elif element.ObjectType == "DIMENSION":
                 svg_writer.annotations.setdefault("dimension_objs", []).append(obj)
+            elif element.ObjectType == "ELEVATION":
+                svg_writer.annotations.setdefault("elevation_objs", []).append(obj)
+            elif element.ObjectType == "SECTION":
+                svg_writer.annotations.setdefault("section_objs", []).append(obj)
             elif element.ObjectType == "BREAKLINE":
                 svg_writer.annotations["break_obj"] = obj
             elif element.ObjectType == "HIDDEN_LINE":
@@ -563,7 +571,6 @@ class AddDrawingToSheet(bpy.types.Operator):
     bl_idname = "bim.add_drawing_to_sheet"
     bl_label = "Add Drawing To Sheet"
     bl_options = {"REGISTER", "UNDO"}
-    # TODO: check undo redo
 
     @classmethod
     def poll(cls, context):
@@ -572,9 +579,78 @@ class AddDrawingToSheet(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.DocProperties
+        active_drawing = props.drawings[props.active_drawing_index]
+        active_sheet = props.sheets[props.active_sheet_index]
+        drawing = tool.Ifc.get().by_id(active_drawing.ifc_definition_id)
+        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
+        if not sheet.is_a("IfcDocumentInformation"):
+            return {"FINISHED"}
+
+        if tool.Ifc.get_schema() == "IFC2X3":
+            references = sheet.DocumentReferences or []
+        else:
+            references = sheet.HasDocumentReferences or []
+
+        has_drawing = False
+        for reference in references:
+            new = props.sheets.add()
+            new.ifc_definition_id = reference.id()
+            new.is_sheet = False
+
+            if tool.Ifc.get_schema() == "IFC2X3":
+                new.identification = reference.ItemReference or "X"
+                element = [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference][
+                    0
+                ].RelatedObjects[0]
+            else:
+                new.identification = reference.Identification or "X"
+                element = reference.DocumentRefForObjects[0].RelatedObjects[0]
+            if element == drawing:
+                has_drawing = True
+                break
+
+        if has_drawing:
+            return {"FINISHED"}
+
+        reference = tool.Ifc.run("document.add_reference", information=sheet)
+        if tool.Ifc.get_schema() == "IFC2X3":
+            attributes = {"ItemReference": str(len(sheet.DocumentReferences or []))}
+        else:
+            attributes = {"Identification": str(len(sheet.HasDocumentReferences or []))}
+        tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
+        tool.Ifc.run("document.assign_document", product=drawing, document=reference)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
-        sheet_builder.add_drawing(props.active_drawing.name, props.active_sheet.name)
+        sheet_builder.add_drawing(drawing, sheet)
+
+        tool.Drawing.import_sheets()
+        return {"FINISHED"}
+
+
+class RemoveDrawingFromSheet(bpy.types.Operator):
+    bl_idname = "bim.remove_drawing_from_sheet"
+    bl_label = "Remove Drawing From Sheet"
+    bl_options = {"REGISTER", "UNDO"}
+    reference: bpy.props.IntProperty()
+
+    def execute(self, context):
+        reference = tool.Ifc.get().by_id(self.reference)
+        if tool.Ifc.get_schema() == "IFC2X3":
+            sheet = reference.ReferenceToDocument[0]
+            drawing = [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference][
+                0
+            ].RelatedObjects[0]
+        else:
+            sheet = reference.ReferencedDocument
+            drawing = reference.DocumentRefForObjects[0].RelatedObjects[0]
+
+        tool.Ifc.run("document.unassign_document", product=drawing, document=reference)
+        tool.Ifc.run("document.remove_reference", reference=reference)
+
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.data_dir = context.scene.BIMProperties.data_dir
+        sheet_builder.remove_drawing(drawing, sheet)
+        tool.Drawing.import_sheets()
         return {"FINISHED"}
 
 
@@ -590,7 +666,8 @@ class CreateSheets(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         props = scene.DocProperties
-        name = props.active_sheet.name
+        active_sheet = props.sheets[props.active_sheet_index]
+        name = active_sheet.name
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = scene.BIMProperties.data_dir
         sheet_builder.build(name)
@@ -677,7 +754,9 @@ class ActivateView(bpy.types.Operator):
 
                     project_collection.children["Views"].children[camera.users_collection[0].name].hide_viewport = False
         bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
+        bpy.context.scene.DocProperties.active_drawing_id = self.drawing
         bpy.ops.bim.activate_drawing_style()
+        core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
         return {"FINISHED"}
 
 
@@ -777,12 +856,10 @@ class RemoveDrawing(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_drawing"
     bl_label = "Remove Drawing"
     bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()
+    drawing: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.DocProperties
-        drawing = tool.Ifc.get().by_id(props.drawings[self.index].ifc_definition_id)
-        core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
+        core.remove_drawing(tool.Ifc, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
 
 
 class AddDrawingStyle(bpy.types.Operator):
@@ -935,12 +1012,10 @@ class RemoveSheet(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_sheet"
     bl_label = "Remove Sheet"
     bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()
+    sheet: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.props = context.scene.DocProperties
-        sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
-        core.remove_sheet(tool.Ifc, tool.Drawing, sheet=sheet)
+        core.remove_sheet(tool.Ifc, tool.Drawing, sheet=tool.Ifc.get().by_id(self.sheet))
 
 
 class AddSchedule(bpy.types.Operator):
@@ -1070,8 +1145,10 @@ class CopyGrid(bpy.types.Operator):
         return helper.get_active_drawing(context.scene)[0] is not None
 
     def execute(self, context):
+        drawing = tool.Ifc.get_entity(context.scene.camera)
+        target_view = tool.Drawing.get_drawing_target_view(drawing)
         subcontext = ifcopenshell.util.representation.get_context(
-            IfcStore.get_file(), "Plan", "Annotation", context.scene.camera.data.BIMCameraProperties.target_view
+            IfcStore.get_file(), "Plan", "Annotation", target_view
         )
         if not subcontext:
             return {"FINISHED"}
@@ -1080,8 +1157,8 @@ class CopyGrid(bpy.types.Operator):
         view_coll, camera = helper.get_active_drawing(context.scene)
         is_ortho = camera.data.type == "ORTHO"
         bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
-        clipping = is_ortho and camera.data.BIMCameraProperties.target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
-        elevating = is_ortho and camera.data.BIMCameraProperties.target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
+        clipping = is_ortho and target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
+        elevating = is_ortho and target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
 
         def grep(coll):
             results = []
@@ -1313,3 +1390,31 @@ class DisableEditingDrawings(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.disable_editing_drawings(tool.Drawing)
+
+
+class ExpandSheet(bpy.types.Operator):
+    bl_idname = "bim.expand_sheet"
+    bl_label = "Expand Sheet"
+    bl_options = {"REGISTER", "UNDO"}
+    sheet: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        for sheet in [s for s in props.sheets if s.ifc_definition_id == self.sheet]:
+            sheet.is_expanded = True
+        core.load_sheets(tool.Drawing)
+        return {"FINISHED"}
+
+
+class ContractSheet(bpy.types.Operator):
+    bl_idname = "bim.contract_sheet"
+    bl_label = "Contract Sheet"
+    bl_options = {"REGISTER", "UNDO"}
+    sheet: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        for sheet in [s for s in props.sheets if s.ifc_definition_id == self.sheet]:
+            sheet.is_expanded = False
+        core.load_sheets(tool.Drawing)
+        return {"FINISHED"}

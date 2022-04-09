@@ -172,14 +172,15 @@ class BIM_PT_drawings(Panel):
 
         if self.props.drawings:
             if self.props.active_drawing_index < len(self.props.drawings):
+                active_drawing = self.props.drawings[self.props.active_drawing_index]
                 row = self.layout.row(align=True)
                 row.alignment = "RIGHT"
                 op = row.operator("bim.open_view", icon="URL", text="")
-                op.view = self.props.active_drawing.name
+                op.view = active_drawing.name
                 op = row.operator("bim.activate_view", icon="OUTLINER_OB_CAMERA", text="")
-                op.drawing = self.props.active_drawing.ifc_definition_id
+                op.drawing = active_drawing.ifc_definition_id
                 row.operator("bim.create_drawing", text="", icon="OUTPUT")
-                row.operator("bim.remove_drawing", icon="X", text="").index = self.props.active_drawing_index
+                row.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
             self.layout.template_list(
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )
@@ -245,14 +246,19 @@ class BIM_PT_sheets(Panel):
         row.operator("bim.add_sheet", text="", icon="ADD")
         row.operator("bim.disable_editing_sheets", text="", icon="CANCEL")
 
-        if self.props.sheets:
+        if self.props.sheets and self.props.active_sheet_index < len(self.props.sheets):
+            active_sheet = self.props.sheets[self.props.active_sheet_index]
             row = self.layout.row(align=True)
             row.alignment = "RIGHT"
             row.operator("bim.open_sheet", icon="URL", text="")
             row.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
             row.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
             row.operator("bim.create_sheets", icon="FILE_REFRESH", text="")
-            row.operator("bim.remove_sheet", icon="X", text="").index = self.props.active_sheet_index
+            if active_sheet.is_sheet:
+                row.operator("bim.remove_sheet", icon="X", text="").sheet = active_sheet.ifc_definition_id
+            else:
+                op = row.operator("bim.remove_drawing_from_sheet", icon="X", text="")
+                op.reference = active_sheet.ifc_definition_id
 
         self.layout.template_list("BIM_UL_sheets", "", self.props, "sheets", self.props, "active_sheet_index")
 
@@ -369,7 +375,16 @@ class BIM_UL_drawinglist(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.prop(item, "name", text="", emboss=False)
+            icon = "UV_FACESEL"
+            if item.target_view == "ELEVATION_VIEW":
+                icon = "UV_VERTEXSEL"
+            elif item.target_view == "SECTION_VIEW":
+                icon = "UV_EDGESEL"
+            elif item.target_view == "REFLECTED_PLAN_VIEW":
+                icon = "XRAY"
+            elif item.target_view == "MODEL_VIEW":
+                icon = "SNAP_VOLUME"
+            row.prop(item, "name", text="", icon=icon, emboss=False)
         else:
             layout.label(text="", translate=False)
 
@@ -378,9 +393,22 @@ class BIM_UL_sheets(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            split1 = row.split(factor=0.2)
-            split1.label(text=item.identification or "X")
-            split2 = split1.split(factor=0.8)
-            split2.label(text=item.name or "Unnamed")
+
+            if item.is_sheet:
+                if item.is_expanded:
+                    row.operator(
+                        "bim.contract_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
+                    ).sheet = item.ifc_definition_id
+                else:
+                    row.operator(
+                        "bim.expand_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
+                    ).sheet = item.ifc_definition_id
+            else:
+                row.label(text="", icon="BLANK1")
+                if item.reference_type == "DRAWING":
+                    row.label(text="", icon="IMAGE_DATA")
+
+            name = "{} - {}".format(item.identification or "X", item.name or "Unnamed")
+            row.label(text=name)
         else:
             layout.label(text="", translate=False)

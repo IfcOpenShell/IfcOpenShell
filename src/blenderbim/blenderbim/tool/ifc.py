@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import numpy as np
 import ifcopenshell.api
 import blenderbim.core.tool
 from blenderbim.bim.ifc import IfcStore
@@ -43,6 +44,26 @@ class Ifc(blenderbim.core.tool.Ifc):
     def get_schema(cls):
         if IfcStore.get_file():
             return IfcStore.get_file().schema
+
+    @classmethod
+    def is_deleted(cls, element):
+        return element.id() in IfcStore.deleted_ids
+
+    @classmethod
+    def is_edited(cls, obj):
+        return list(obj.scale) != [1.0, 1.0, 1.0] or obj in IfcStore.edited_objs
+
+    @classmethod
+    def is_moved(cls, obj):
+        if not obj.BIMObjectProperties.location_checksum:
+            return True  # Let's be conservative
+        loc_check = np.frombuffer(eval(obj.BIMObjectProperties.location_checksum))
+        rot_check = np.frombuffer(eval(obj.BIMObjectProperties.rotation_checksum))
+        loc_real = np.array(obj.matrix_world.translation).flatten()
+        rot_real = np.array(obj.matrix_world.to_3x3()).flatten()
+        if np.allclose(loc_check, loc_real, atol=1e-4) and np.allclose(rot_check, rot_real, atol=1e-2):
+            return False
+        return True
 
     @classmethod
     def schema(cls):

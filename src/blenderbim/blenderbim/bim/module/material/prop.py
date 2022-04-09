@@ -18,6 +18,7 @@
 
 import bpy
 from ifcopenshell.api.material.data import Data
+from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialData
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
@@ -32,18 +33,15 @@ from bpy.props import (
     CollectionProperty,
 )
 
-materials_enum = []
 materialtypes_enum = []
 profileclasses_enum = []
 parameterizedprofileclasses_enum = []
 
 
 def purge():
-    global materials_enum
     global materialtypes_enum
     global profileclasses_enum
     global parameterizedprofileclasses_enum
-    materials_enum = []
     materialtypes_enum = []
     profileclasses_enum = []
     parameterizedprofileclasses_enum = []
@@ -77,12 +75,10 @@ def getParameterizedProfileClasses(self, context):
     return parameterizedprofileclasses_enum
 
 
-def getMaterials(self, context):
-    global materials_enum
-    if len(materials_enum) == 0 and IfcStore.get_file():
-        materials_enum.clear()
-        materials_enum = [(str(m_id), m["Name"], "") for m_id, m in Data.materials.items()]
-    return materials_enum
+def get_materials(self, context):
+    if not ObjectMaterialData.is_loaded:
+        ObjectMaterialData.load()
+    return ObjectMaterialData.data["materials"]
 
 
 def getMaterialTypes(self, context):
@@ -104,9 +100,28 @@ def getMaterialTypes(self, context):
     return materialtypes_enum
 
 
+def get_material_types(self, context):
+    if not MaterialsData.is_loaded:
+        MaterialsData.load()
+    return MaterialsData.data["material_types"]
+
+
+class Material(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    total_elements: IntProperty(name="Total Elements")
+
+
+class BIMMaterialProperties(PropertyGroup):
+    is_editing: BoolProperty(name="Is Editing", default=False)
+    material_type: EnumProperty(items=get_material_types, name="Material Type")
+    materials: CollectionProperty(name="Materials", type=Material)
+    active_material_index: IntProperty(name="Active Material Index")
+
+
 class BIMObjectMaterialProperties(PropertyGroup):
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
-    material: EnumProperty(items=getMaterials, name="Material")
+    material: EnumProperty(items=get_materials, name="Material")
     is_editing: BoolProperty(name="Is Editing", default=False)
     material_set_usage_attributes: CollectionProperty(name="Material Set Usage Attributes", type=Attribute)
     material_set_attributes: CollectionProperty(name="Material Set Attributes", type=Attribute)
@@ -115,7 +130,7 @@ class BIMObjectMaterialProperties(PropertyGroup):
     material_set_item_profile_attributes: CollectionProperty(
         name="Material Set Item Profile Attributes", type=Attribute
     )
-    material_set_item_material: EnumProperty(items=getMaterials, name="Material")
+    material_set_item_material: EnumProperty(items=get_materials, name="Material")
     profile_classes: EnumProperty(items=getProfileClasses, name="Profile Classes")
     parameterized_profile_classes: EnumProperty(
         items=getParameterizedProfileClasses, name="Parameterized Profile Classes"

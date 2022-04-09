@@ -134,12 +134,32 @@ class Debug:
 
 
 @interface
+class Document:
+    def add_breadcrumb(cls, document): pass
+    def clear_breadcrumbs(cls): pass
+    def clear_document_tree(cls): pass
+    def disable_editing_document(cls): pass
+    def disable_editing_ui(cls): pass
+    def enable_editing_ui(cls): pass
+    def export_document_attributes(cls): pass
+    def get_active_breadcrumb(cls): pass
+    def import_document_attributes(cls, document): pass
+    def import_project_documents(cls): pass
+    def import_references(cls, document): pass
+    def import_subdocuments(cls, document): pass
+    def is_document_information(cls, document): pass
+    def remove_latest_breadcrumb(cls): pass
+    def set_active_document(cls, document): pass
+
+
+@interface
 class Drawing:
     def create_annotation_object(cls, object_type): pass
     def create_camera(cls, name, matrix): pass
     def create_svg_sheet(cls, document, titleblock): pass
     def delete_collection(cls, collection): pass
     def delete_drawing_elements(cls, elements): pass
+    def delete_object(cls, obj): pass
     def disable_editing_drawings(cls): pass
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
@@ -153,6 +173,7 @@ class Drawing:
     def ensure_unique_identification(cls, identification): pass
     def export_text_literal_attributes(cls, obj): pass
     def generate_drawing_matrix(cls, target_view, location_hint): pass
+    def generate_drawing_name(cls, target_view, location_hint): pass
     def generate_sheet_identification(cls): pass
     def get_annotation_context(cls, target_view): pass
     def get_body_context(cls): pass
@@ -173,6 +194,7 @@ class Drawing:
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def set_drawing_collection_name(cls, group, collection): pass
     def show_decorations(cls): pass
+    def sync_object_placement(cls, obj): pass
     def update_text_value(cls, obj): pass
 
 
@@ -227,6 +249,9 @@ class Ifc:
     def get_entity(cls, obj): pass
     def get_object(cls, entity): pass
     def get_schema(cls): pass
+    def is_deleted(cls, element): pass
+    def is_edited(cls, obj): pass
+    def is_moved(cls, obj): pass
     def link(cls, element, obj): pass
     def run(cls, command, **kwargs): pass
     def set(cls, ifc): pass
@@ -251,6 +276,15 @@ class Library:
 @interface
 class Material:
     def add_default_material_object(cls): pass
+    def delete_object(cls, obj): pass
+    def disable_editing_materials(cls): pass
+    def enable_editing_materials(cls): pass
+    def get_active_material_type(cls): pass
+    def get_elements_by_material(cls, material): pass
+    def get_name(cls, obj): pass
+    def import_material_definitions(cls, material_type): pass
+    def is_editing_materials(cls): pass
+    def select_elements(cls, elements): pass
 
 
 @interface
@@ -398,8 +432,11 @@ class Structural:
 class Style:
     def can_support_rendering_style(cls, obj): pass
     def disable_editing(cls, obj): pass
+    def disable_editing_styles(cls): pass
     def enable_editing(cls, obj): pass
+    def enable_editing_styles(cls): pass
     def export_surface_attributes(cls, obj): pass
+    def get_active_style_type(cls): pass
     def get_context(cls, obj): pass
     def get_name(cls, obj): pass
     def get_style(cls, obj): pass
@@ -409,7 +446,9 @@ class Style:
     def get_surface_shading_style(cls, obj): pass
     def get_surface_texture_style(cls, obj): pass
     def get_uv_maps(cls, representation): pass
+    def import_presentation_styles(cls, style_type): pass
     def import_surface_attributes(cls, style, obj): pass
+    def is_editing_styles(cls): pass
 
 
 @interface
