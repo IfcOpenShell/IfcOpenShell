@@ -111,6 +111,18 @@ public:
 	std::map<int, TopoDS_Shape> Shape;
 };
 
+namespace util {
+	template <typename T>
+	typename std::enable_if<std::is_pointer<T>::value, T&>::type conditional_address_of(T& t) {
+		return t;
+	}
+
+	template <typename T>
+	typename std::enable_if<!std::is_pointer<T>::value, T*>::type conditional_address_of(T& t) {
+		return &t;
+	}
+}
+
 class IFC_GEOM_API MAKE_TYPE_NAME(Kernel) : public IfcGeom::Kernel {
 private:
 
@@ -126,7 +138,7 @@ private:
 	class faceset_helper {
 	private:
 		MAKE_TYPE_NAME(Kernel)* kernel_;
-		std::set<LP> duplicates_;
+		std::set<typename std::conditional<std::is_pointer<LP>::value, LP, const LP*>::type> duplicates_;
 		std::map<const void*, int> vertex_mapping_;
 		std::map<std::pair<int, int>, TopoDS_Edge> edges_;
 		// not always in use
@@ -225,8 +237,8 @@ private:
 			return true;
 		}
 
-		bool wire(LP loop, TopoDS_Wire& wire) {
-			if (duplicates_.find(loop) != duplicates_.end()) {
+		bool wire(const LP& loop, TopoDS_Wire& wire) {
+			if (duplicates_.find(util::conditional_address_of(loop)) != duplicates_.end()) {
 				return false;
 			}
 			BRep_Builder builder;

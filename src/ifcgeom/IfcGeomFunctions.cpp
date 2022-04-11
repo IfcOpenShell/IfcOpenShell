@@ -5613,7 +5613,7 @@ IfcGeom::Kernel::faceset_helper<CP, LP>::faceset_helper(
 
 			if (edge_sets.find(segment_set) != edge_sets.end()) {
 				duplicate_faces++;
-				duplicates_.insert(*ps);
+				duplicates_.insert(util::conditional_address_of(*ps));
 				continue;
 			}
 			edge_sets.insert(segment_set);
