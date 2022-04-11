@@ -626,11 +626,13 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 		ptree* ncalendar = format_entity_instance(calendar, calendars);
 
 		if (ncalendar) {
-			auto working_times = calendar->WorkingTimes().value();
-			for(auto it2 = working_times->begin(); it2 != working_times->end(); ++it2)
-			{
-				auto working_time = *it2;
-				format_entity_instance(working_time, *ncalendar);
+			IfcSchema::IfcWorkTime::list::ptr working_times = calendar->WorkingTimes().value_or(nullptr);
+			if (working_times != nullptr) {
+				for (IfcSchema::IfcWorkTime::list::it it2 = working_times->begin(); it2 != working_times->end(); ++it2)
+				{
+					IfcSchema::IfcWorkTime* working_time = *it2;
+					format_entity_instance(working_time, *ncalendar);
+				}
 			}
 		}
 	}
