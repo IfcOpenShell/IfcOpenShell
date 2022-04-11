@@ -479,7 +479,7 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	}
 	IfcSchema::IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, tasks;
+	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, tasks, calendars;
 	
 	// Write the SPF header as XML nodes.
 	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
@@ -590,6 +590,24 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 		}
 	}
 
+	// Write all work calendars and values as XML nodes.
+#ifdef SCHEMA_HAS_IfcWorkCalendar
+	IfcSchema::IfcWorkCalendar::list::ptr pcalendars = file->instances_by_type<IfcSchema::IfcWorkCalendar>();
+	for (IfcSchema::IfcWorkCalendar::list::it it = pcalendars->begin(); it != pcalendars->end(); ++it) {
+		IfcSchema::IfcWorkCalendar* calendar = *it;
+		ptree* ncalendar = format_entity_instance(calendar, calendars);
+
+		if (ncalendar) {
+			auto working_times = calendar->WorkingTimes().value();
+			for(auto it2 = working_times->begin(); it2 != working_times->end(); ++it2)
+			{
+				auto working_time = *it2;
+				format_entity_instance(working_time, *ncalendar);
+			}
+		}
+	}
+#endif
+
 	// Write all type objects as XML nodes.
 	IfcSchema::IfcTypeObject::list::ptr type_objects = file->instances_by_type<IfcSchema::IfcTypeObject>();
 	for (IfcSchema::IfcTypeObject::list::it it = type_objects->begin(); it != type_objects->end(); ++it) {
@@ -676,6 +694,7 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	root.add_child("ifc.properties",    properties);
 	root.add_child("ifc.quantities",    quantities);
 	root.add_child("ifc.tasks",			tasks);
+	root.add_child("ifc.calendars",		calendars);
 	root.add_child("ifc.types",         types);
 	root.add_child("ifc.layers",        layers);
 	root.add_child("ifc.materials",     materials);
