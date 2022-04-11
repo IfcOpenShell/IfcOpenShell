@@ -31,6 +31,12 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+      - name: Download MacOSX SDK
+        run: |
+          curl -o MacOSX10.13.sdk.tar.xz -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz.tar.xz && \
+          tar xf MacOSX10.13.sdk.tar.xz && \
+          sudo mv -v MacOSX10.13.sdk /opt/ && \
+          ls /opt/
       - uses: seanmiddleditch/gha-setup-ninja@master
       - uses: conda-incubator/setup-miniconda@v2  # https://github.com/conda-incubator/setup-miniconda
         with:
