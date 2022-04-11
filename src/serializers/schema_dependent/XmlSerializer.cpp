@@ -383,7 +383,7 @@ void format_quantities(IfcSchema::IfcPhysicalQuantity::list::ptr quantities, ptr
 // Format IfcTask instances and insert into the DOM.
 void format_tasks(IfcSchema::IfcTask* task, ptree& node) {
 	ptree* ntask = format_entity_instance(task, node);
-	
+
 	if (ntask) {
 #ifdef SCHEMA_IfcTask_HAS_TaskTime
 		IfcSchema::IfcTaskTime* task_time = task->TaskTime();
@@ -439,15 +439,43 @@ void format_tasks(IfcSchema::IfcTask* task, ptree& node) {
 				IfcSchema::IfcObjectDefinition::list::ptr objects = operation->RelatedObjects();
 				for (IfcSchema::IfcObjectDefinition::list::it it2 = objects->begin(); it2 != objects->end(); ++it2)
 				{
-					IfcSchema::IfcObjectDefinition* object = (*it2);
+					IfcSchema::IfcObjectDefinition* object = *it2;
 					ptree nobject;
 					nobject.put("<xmlattr>.id", object->GlobalId());
-					nobject.put("<xmlattr>.Type", object->declaration().name());
-					ntask->add_child("OperatesOn", nobject);
+					if (object->declaration().is(IfcSchema::IfcProduct::Class()))
+					{
+						ntask->add_child("Input", nobject);
+					}
+					else if (object->declaration().is(IfcSchema::IfcResource::Class()))
+					{
+						ntask->add_child("Resource", nobject);
+					}
+					else if (object->declaration().is(IfcSchema::IfcControl::Class()))
+					{
+						ntask->add_child("Control", nobject);
+					}
+					else
+					{
+						nobject.put("<xmlattr>.Type", object->declaration().name());
+						ntask->add_child("OperatesOn", nobject);
+					}
 				}
 			}
 		}
 #endif
+
+		IfcSchema::IfcRelAssigns::list::ptr assignments = task->HasAssignments();
+		for (IfcSchema::IfcRelAssigns::list::it i = assignments->begin(); i != assignments->end(); ++i)
+		{
+			IfcSchema::IfcRelAssigns* assignment = *i;
+			if (assignment->declaration().is(IfcSchema::IfcRelAssignsToProduct::Class())) {
+				IfcSchema::IfcRelAssignsToProduct* assign_to_product = assignment->as<IfcSchema::IfcRelAssignsToProduct>();
+				IfcSchema::IfcProduct* product = assign_to_product->RelatingProduct()->as<IfcSchema::IfcProduct>();
+				ptree nobject;
+				nobject.put("<xmlattr>.id", product->GlobalId());
+				ntask->add_child("Output", nobject);
+			}
+		}
 
 #ifdef SCHEMA_IfcObjectDefinition_HAS_IsNestedBy
 		IfcSchema::IfcRelNests::list::ptr nested_by = task->IsNestedBy();
@@ -465,7 +493,7 @@ void format_tasks(IfcSchema::IfcTask* task, ptree& node) {
 		}
 #endif
 	}
-}									  
+}
 
 } // ~unnamed namespace
 
