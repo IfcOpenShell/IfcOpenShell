@@ -667,10 +667,11 @@ class CreateSheets(bpy.types.Operator):
         scene = context.scene
         props = scene.DocProperties
         active_sheet = props.sheets[props.active_sheet_index]
-        name = active_sheet.name
+        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
+        name = tool.Drawing.get_sheet_filename(sheet)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = scene.BIMProperties.data_dir
-        sheet_builder.build(name)
+        sheet_builder.build(sheet)
 
         svg2pdf_command = context.preferences.addons["blenderbim"].preferences.svg2pdf_command
         svg2dxf_command = context.preferences.addons["blenderbim"].preferences.svg2dxf_command

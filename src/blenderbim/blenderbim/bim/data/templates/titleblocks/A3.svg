@@ -172,7 +172,7 @@
          id="tspan2527"
          x="544.94287"
          y="284.13919"
-         style="stroke-width:0.264583px">{{revision}}</tspan></text>
+         style="stroke-width:0.264583px">{{Revision}}</tspan></text>
     <text
        id="text2533"
        y="284.13919"
@@ -182,7 +182,7 @@
          style="stroke-width:0.264583px"
          y="284.13919"
          x="485.07742"
-         id="tspan2531">{{number}}</tspan></text>
+         id="tspan2531">{{Identification}} - {{Name}}</tspan></text>
   </g>
   <g
      style="stroke-width:3.77953"

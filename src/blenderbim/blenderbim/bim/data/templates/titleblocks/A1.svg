@@ -173,7 +173,7 @@
          style="stroke-width:0.999999px"
          y="1036.1166"
          x="3030.9653"
-         id="tspan2527">{{revision}}</tspan></text>
+         id="tspan2527">{{Revision}}</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.3918px;line-height:125%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.999999px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -183,7 +183,7 @@
          id="tspan2531"
          x="2804.7021"
          y="1036.1166"
-         style="stroke-width:0.999999px">{{number}}</tspan></text>
+         style="stroke-width:0.999999px">{{Identification}} - {{Name}}</tspan></text>
   </g>
   <g
      transform="matrix(0.26458333,0,0,0.26458334,-3.180917e-5,297.00003)"
