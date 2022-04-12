@@ -9,7 +9,8 @@ There are different methods of installation, depending on your situation.
 2. **Daily build installation** is recommended for power users helping with testing.
 3. **Unpackaged installation** is recommended for package managers.
 4. **Distro installation** is recommended for those who use a Linux package manager.
-5. **Source installation** is recommended for developers.
+5. **Source installation: packaged** is recommended for distributing a build from source.
+6. **Source installation: live** is recommended for developers who are actively coding.
 
 Packaged installation
 ---------------------
@@ -128,8 +129,8 @@ Distro installation
 
 Those on Arch Linux can check out this `AUR package <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
 
-Source installation
--------------------
+Source installation: packaged
+-----------------------------
 
 It is possible to run the latest bleeding edge version of BlenderBIM without
 having to wait for an official release, since BlenderBIM is coded in Python and
@@ -142,18 +143,27 @@ compile IfcOpenShell is out of scope of this document.
 
 You can create your own package by using the Makefile as shown below. You can
 choose between a ``PLATFORM`` of ``linux``, ``macos``, and ``win``. You can
-choose between a ``PYVERSION`` of ``py39`` and ``py37``.
+choose between a ``PYVERSION`` of ``py39``, ``py37``, or ``py310``.
 ::
 
     $ cd src/blenderbim
     $ make dist PLATFORM=linux PYVERSION=py39
     $ ls dist/
 
-However, creating a build, uninstalling the old add-on, and installing a new
-build is a slow process. You can do this, but we do not recommend it. A more
-rapid approach is to follow the **Daily build installation** method, as this
-provides all dependencies for you out of the box.  Then, we can replace certain
-Python files that tend to be updated frequently with those from the Git
+This will give you a fully packaged Blender add-on zip that you can distribute
+and install.
+
+Source installation: live
+-------------------------
+
+One option for developers who want to install a build from source is to follow
+the instructions from the **Source installation: packaged**. However, creating a
+build, uninstalling the old add-on, and installing a new build is a slow
+process. Although it works, it is very slow, so do not recommend it.
+
+A more rapid approach is to follow the **Daily build installation** method, as
+this provides all dependencies for you out of the box.  Then, we can replace
+certain Python files that tend to be updated frequently with those from the Git
 repository. We're going to use symlinks (Windows users can use ``mklink``), so
 we can code in our Git repository, and see the changes in our Blender
 installation.
