@@ -247,6 +247,41 @@ class Geometry:
     def should_generate_uvs(cls, obj): pass
     def should_use_presentation_style_assignment(cls): pass
 
+@interface
+class Georeference:
+    def clear_projected_crs(cls): pass
+    def clear_map_conversion(cls): pass
+    def import_projected_crs(cls): pass
+    def import_map_conversion(cls): pass
+    def set_has_true_north_prop(cls): pass
+    def set_true_north_props(cls): pass
+    def enable_editing(cls): pass
+    def disable_editing(cls): pass
+    def get_projected_crs_attributes(cls): pass
+    def get_map_conversion_attributes(cls): pass
+    def get_true_north_attributes(cls): pass
+    def edit_georeferencing(cls, projected_crs, map_conversion, true_north): pass
+    def get_file(cls): pass
+    def import_projected_crs_attributes(cls, name, prop, data): pass
+    def import_map_conversion_attributes(cls, name, prop, data): pass
+    def export_crs_attributes(cls, attributes, prop): pass
+    def export_map_attributes(cls, attributes, prop): pass
+    def set_ifc_grid_north(cls): pass
+    def set_blender_grid_north(cls): pass
+    def get_cursor_location(cls): pass
+    def set_cursor_location(cls, coordinates, scale): pass
+    def get_scale(cls): pass
+    def get_coordinates_from_coordinate_output_prop(cls): pass
+    def set_ifc_true_north(cls): pass
+    def set_blender_true_north(cls): pass
+    def get_map_conversion(cls): pass
+    def get_easting_northing_height_from_xyz(cls, map_conversion): pass
+    def get_xyz_from_easting_northig_height(cls, map_conversion): pass
+    def set_coordinate_output_prop(cls, coordinates): pass
+    def get_x_angle_from_sun_position(cls): pass
+    def set_xaxis_vector_from_angle(cls, x_angle): pass
+    def get_angle_from_xaxis(cls): pass
+    def set_sun_pos_north_offset(cls, angle): pass
 
 @interface
 class Ifc:
