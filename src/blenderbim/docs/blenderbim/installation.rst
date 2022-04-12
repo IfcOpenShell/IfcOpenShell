@@ -35,8 +35,9 @@ follow the same instructions as a packaged installation.
 
 You will need to choose which daily build to download.
 
+- If you are on Blender >=3.1, choose py310
+- If you are on Blender >=2.93 and <3.1, choose py39
 - If you are on Blender <2.93, choose py37
-- If you are on Blender >=2.93, choose py39
 - Choose linux, macos, or win depending on your operating system
 
 Daily builds are not always stable. Sometimes, a build may be delayed, or
@@ -147,7 +148,7 @@ choose between a ``PYVERSION`` of ``py39``, ``py37``, or ``py310``.
 ::
 
     $ cd src/blenderbim
-    $ make dist PLATFORM=linux PYVERSION=py39
+    $ make dist PLATFORM=linux PYVERSION=py310
     $ ls dist/
 
 This will give you a fully packaged Blender add-on zip that you can distribute
