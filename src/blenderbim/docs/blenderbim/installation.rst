@@ -5,15 +5,14 @@ Installation
 
 There are different methods of installation, depending on your situation.
 
-1. **Packaged installation** is recommended for regular users.
-2. **Daily build installation** is recommended for power users helping with testing.
-3. **Unpackaged installation** is recommended for package managers.
-4. **Distro installation** is recommended for those who use a Linux package manager.
-5. **Source installation: packaged** is recommended for distributing a build from source.
-6. **Source installation: live** is recommended for developers who are actively coding.
+1. **Stable installation** is recommended for regular users.
+2. **Unstable installation** is recommended for power users helping with testing.
+3. **Building from source** is recommended for distributing a build from source.
+4. **Live development environment** is recommended for developers who are actively coding.
+5. **Distro installation** is recommended for those who use a Linux package manager.
 
-Packaged installation
----------------------
+Stable installation
+-------------------
 
 The BlenderBIM Add-on is packaged like a regular Blender add-on, so installation
 is the same as any other Blender add-on. The full instructions for end-user
@@ -25,26 +24,129 @@ Like all Blender add-ons, they can be installed using ``Edit > Preferences >
 Addons > Install > Choose Downloaded ZIP > Enable Add-on Checkbox``. You can
 enable add-ons permanently by using ``Save User Settings`` from the Addons menu.
 
-Daily build installation
-------------------------
+Unstable installation
+---------------------
 
-Daily builds are almost the same as **Packaged installation**, except that they
-are typically updated every day. Simply download a daily build from the `Github
-releases page <https://github.com/IfcOpenShell/IfcOpenShell/releases>`__, then
-follow the same instructions as a packaged installation.
+**Unstable installation** is almost the same as **Stable installation**, except
+that they are typically updated every day. Simply download a daily build from
+the `Github releases page
+<https://github.com/IfcOpenShell/IfcOpenShell/releases>`__, then follow the same
+instructions as a packaged installation.
 
-You will need to choose which daily build to download.
+You will need to choose which build to download.
 
 - If you are on Blender >=3.1, choose py310
 - If you are on Blender >=2.93 and <3.1, choose py39
 - If you are on Blender <2.93, choose py37
 - Choose linux, macos, or win depending on your operating system
 
-Daily builds are not always stable. Sometimes, a build may be delayed, or
-contain broken code. We try to avoid this, but it happens.
+Sometimes, a build may be delayed, or contain broken code. We try to avoid this,
+but it happens.
 
-Unpackaged installation
------------------------
+Building from source
+--------------------
+
+It is possible to run the latest bleeding edge version of BlenderBIM without
+having to wait for an official release, since BlenderBIM is coded in Python and
+doesn't require any compilation.
+
+Note that the BlenderBIM Add-on does depend on IfcOpenShell, and IfcOpenShell
+does require compilation. The following instructions will use a pre-built
+IfcOpenShell (using an IfcOpenBot build) for convenience. Instructions on how to
+compile IfcOpenShell is out of scope of this document.
+
+You can create your own package by using the Makefile as shown below. You can
+choose between a ``PLATFORM`` of ``linux``, ``macos``, and ``win``. You can
+choose between a ``PYVERSION`` of ``py39``, ``py37``, or ``py310``.
+::
+
+    $ cd src/blenderbim
+    $ make dist PLATFORM=linux PYVERSION=py310
+    $ ls dist/
+
+This will give you a fully packaged Blender add-on zip that you can distribute
+and install.
+
+Live development environment
+----------------------------
+
+One option for developers who want to actively develop from source is to follow
+the instructions from **Building from source**. However, creating a build,
+uninstalling the old add-on, and installing a new build is a slow process.
+Although it works, it is very slow, so we do not recommend it.
+
+A more rapid approach is to follow the **Unstable installation** method, as this
+provides all dependencies for you out of the box.  Then, we can replace certain
+Python files that tend to be updated frequently with those from the Git
+repository. We're going to use symlinks (Windows users can use ``mklink``), so
+we can code in our Git repository, and see the changes in our Blender
+installation (you will need to restart Blender to see changes).
+
+In addition, we're also going to replace the Python code of the IfcOpenShell
+dependency with our Git repository, since most of the BlenderBIM Add-on
+functionality is agnostic of Blender, and is actually part of IfcOpenShell.
+Therefore, we need to keep this dependency highly updated as well.
+
+The downside with this approach is that if a new dependency is added, or a
+compiled dependency version requirement has changed, or the build system
+changes, you'll need to fix your setup manually. But this is relatively rare.
+
+::
+
+    $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+    $ cd IfcOpenShell
+
+    # Remove the Blender add-on Python code
+    $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/bim/
+
+    # Replace them with links to the Git repository
+    $ ln -s src/blenderbim/blenderbim/bim /path/to/blender/X.XX/scripts/addons/blenderbim/bim
+
+    # Remove the IfcOpenShell dependency Python code
+    $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/api
+    $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/util
+
+    # Replace them with links to the Git repository
+    $ ln -s src/ifcopenshell-python/ifcopenshell/api /path/to/blender/X.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/api
+    $ ln -s src/ifcopenshell-python/ifcopenshell/util /path/to/blender/X.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/util
+
+On Windows:
+
+::
+
+    $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+    $ cd IfcOpenShell
+
+    # Remove the Blender add-on Python code
+    $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\bim\"
+
+    # Replace them with links to the Git repository
+    $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\bim" "src\blenderbim\blenderbim\bim"
+
+    # Remove the IfcOpenShell dependency Python code
+    $ rd \S \Q "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api"
+    $ rd \S \Q "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util"
+
+    # Replace them with links to the Git repository
+    $ mklink \D "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api" "src\ifcopenshell-python\ifcopenshell\api"
+    $ mklink \D "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util" "src\ifcopenshell-python\ifcopenshell\util"
+
+
+After you modify your code in the Git repository, you will need to restart
+Blender for the changes to take effect. In ``Edit > Preferences > Add-ons`` you
+will see that the version number of the BlenderBIM Add-on has changed to
+``0.0.999999``, which represents an un-versioned BlenderBIM Add-on.
+
+Distro installation
+-------------------
+
+Those on Arch Linux can check out this `AUR package <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
+
+Tips for package managers
+-------------------------
+
+If you are interested in packaging the BlenderBIM Add-on for a packaging
+manager, read on.
 
 The BlenderBIM Add-on is fully contained in the ``blenderbim/`` subfolder of the
 Blender add-ons directory. This is typically distributed as a zipfile as per
@@ -60,9 +162,8 @@ This corresponds to the structure found in the source code `here
 <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/blenderbim/blenderbim>`__.
 
 The BlenderBIM Add-on is complex, and requires many dependencies, including
-Python modules, binaries, and static assets. These dependencies are bundled with
-the add-on for convenience in the **Packaged installation** and **Daily build
-installation** methods.
+Python modules, binaries, and static assets. When packaged for users, these
+dependencies are bundled with the add-on for convenience.
 
 If you choose to install the BlenderBIM Add-on and use your own system
 dependencies, the source of truth for how dependencies are bundled are found in
@@ -94,7 +195,7 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
     elementpath
     six
     lark-parser
-    fcl
+    hppfcl
     behave
     parse
     parse_type
@@ -110,14 +211,8 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
 Notes:
 
 1. ``ifcopenshell`` almost always requires the latest version due to the fast paced nature of the add-on development.
-2. ``fcl`` is not bundled for MacOS, due to lack of maintained community build. This is required for clash detection.
-3. ``behave`` requires `patches <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcbimtester/patch>`__.
-4. ``ifcjson`` can be found `here <https://github.com/IFCJSON-Team/IFC2JSON_python/tree/master/file_converters>`__.
-
-Required binaries are:
-::
-
-    libs/IfcConvert
+2. ``behave`` requires `patches <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcbimtester/patch>`__.
+3. ``ifcjson`` can be found `here <https://github.com/IFCJSON-Team/IFC2JSON_python/tree/master/file_converters>`__.
 
 Required static assets are:
 ::
@@ -125,130 +220,31 @@ Required static assets are:
     bim/data/gantt/jsgantt.js (from jsgantt-improved)
     bim/data/gantt/jsgantt.css (from jsgantt-improved)
 
-Distro installation
--------------------
-
-Those on Arch Linux can check out this `AUR package <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
-
-Source installation: packaged
------------------------------
-
-It is possible to run the latest bleeding edge version of BlenderBIM without
-having to wait for an official release, since BlenderBIM is coded in Python and
-doesn't require any compilation.
-
-Note that the BlenderBIM Add-on does depend on IfcOpenShell, and IfcOpenShell
-does require compilation. The following instructions will use a pre-built
-IfcOpenShell (using an IfcOpenBot build) for convenience. Instructions on how to
-compile IfcOpenShell is out of scope of this document.
-
-You can create your own package by using the Makefile as shown below. You can
-choose between a ``PLATFORM`` of ``linux``, ``macos``, and ``win``. You can
-choose between a ``PYVERSION`` of ``py39``, ``py37``, or ``py310``.
-::
-
-    $ cd src/blenderbim
-    $ make dist PLATFORM=linux PYVERSION=py310
-    $ ls dist/
-
-This will give you a fully packaged Blender add-on zip that you can distribute
-and install.
-
-Source installation: live
--------------------------
-
-One option for developers who want to install a build from source is to follow
-the instructions from the **Source installation: packaged**. However, creating a
-build, uninstalling the old add-on, and installing a new build is a slow
-process. Although it works, it is very slow, so do not recommend it.
-
-A more rapid approach is to follow the **Daily build installation** method, as
-this provides all dependencies for you out of the box.  Then, we can replace
-certain Python files that tend to be updated frequently with those from the Git
-repository. We're going to use symlinks (Windows users can use ``mklink``), so
-we can code in our Git repository, and see the changes in our Blender
-installation.
-
-In addition, we're also going to replace the Python code of the IfcOpenShell
-dependency with our Git repository, since most of the BlenderBIM Add-on
-functionality is agnostic of Blender, and is actually part of IfcOpenShell.
-Therefore, we need to keep this dependency highly updated as well.
-
-The downside with this approach is that if a new dependency is added, or a
-compiled dependency version requirement has changed, or the build system
-changes, you'll need to fix your setup manually. But this is relatively rare.
-
-::
-
-    $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
-    $ cd IfcOpenShell
-
-    # Remove the Blender add-on Python code
-    $ rm -r /path/to/blender/2.XX/scripts/addons/blenderbim/bim/
-
-    # Replace them with links to the Git repository
-    $ ln -s src/blenderbim/blenderbim/bim /path/to/blender/2.XX/scripts/addons/blenderbim/bim
-
-    # Remove the IfcOpenShell dependency Python code
-    $ rm -r /path/to/blender/2.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/api
-    $ rm -r /path/to/blender/2.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/util
-
-    # Replace them with links to the Git repository
-    $ ln -s src/ifcopenshell-python/ifcopenshell/api /path/to/blender/2.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/api
-    $ ln -s src/ifcopenshell-python/ifcopenshell/util /path/to/blender/2.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/util
-
-On Windows:
-
-::
-
-    $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
-    $ cd IfcOpenShell
-
-    # Remove the Blender add-on Python code
-    $ rd /S /Q "\path\to\blender\2.XX\scripts\addons\blenderbim\bim\"
-
-    # Replace them with links to the Git repository
-    $ mklink /D "\path\to\blender\2.XX\scripts\addons\blenderbim\bim" "src\blenderbim\blenderbim\bim"
-
-    # Remove the IfcOpenShell dependency Python code
-    $ rd \S \Q "\path\to\blender\2.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api"
-    $ rd \S \Q "\path\to\blender\2.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util"
-
-    # Replace them with links to the Git repository
-    $ mklink \D "\path\to\blender\2.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api" "src\ifcopenshell-python\ifcopenshell\api"
-    $ mklink \D "\path\to\blender\2.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util" "src\ifcopenshell-python\ifcopenshell\util"
-
-
-After you modify your code in the Git repository, you will need to restart
-Blender for the changes to take effect. In ``Edit > Preferences > Add-ons`` you
-will see that the version number of BlenderBIM has changed to ``0.0.999999``,
-which represents an un-versioned BlenderBIM.
-
 Where is the BlenderBIM Add-on installed?
 -----------------------------------------
 
 If you downloaded Blender as a ``.zip`` file without running an installer, you
 will find the BlenderBIM Add-on installed in the following directory, where
-``2.XX`` is the Blender version:
+``X.XX`` is the Blender version:
 ::
 
-    /path/to/blender/2.XX/scripts/addons/
+    /path/to/blender/X.XX/scripts/addons/
 
 Otherwise, if you installed Blender using an installation package, the add-ons
 folder depends on which operating system you use. On Linux:
 ::
 
-    ~/.config/blender/2.XX/scripts/addons/
+    ~/.config/blender/X.XX/scripts/addons/
 
 On Mac:
 ::
 
-    /Users/{YOUR_USER}/Library/Application Support/Blender/2.XX/
+    /Users/{YOUR_USER}/Library/Application Support/Blender/X.XX/
 
 On Windows:
 ::
 
-    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\2.XX\scripts\addons
+    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\X.XX\scripts\addons
 
 Upon installation, the BlenderBIM Add-on is stored in the ``blenderbim/``
 directory.
@@ -275,8 +271,10 @@ FAQ
 
 1. I get an error similar to "ImportError: IfcOpenShell not built for 'linux/64bit/python3.7'"
 
-If you are using Blender <2.93, then you need to use a daily build. See the
-instructions above for a daily build installation.
+Check which BlenderBIM Add-on build you are using. The zip will have either
+``py37``, ``py39``, or ``py310`` in the name. See the instructions in the
+**Unstable installation** section to check that you have installed the correct
+version.
 
 2. I am on Ubuntu and get an error similar to "ImportError: /lib/x86_64-linux-gnu/libm.so.6: version GLIBC_2.29 not found"
 
