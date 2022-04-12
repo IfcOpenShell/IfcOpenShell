@@ -18,10 +18,10 @@
 
 import ifcopenshell.util.geolocation
 from bpy.types import Panel
-from ifcopenshell.api.georeference.data import Data
+#from ifcopenshell.api.georeference.data import Data
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes, draw_attribute
-
+from blenderbim.bim.module.georeference.data import GeoreferenceData
 
 class BIM_PT_gis(Panel):
     bl_label = "IFC Georeferencing"
@@ -31,18 +31,15 @@ class BIM_PT_gis(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_parent_id = "BIM_PT_geometry"
-
-    @classmethod
-    def poll(cls, context):
-        return IfcStore.get_file()
-
+    
     def draw(self, context):
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
         props = context.scene.BIMGeoreferenceProperties
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
-
+        
+        if not GeoreferenceData.is_loaded:
+            GeoreferenceData.load()
+        
         if props.is_editing:
             return self.draw_editable_ui(context)
         self.draw_ui(context)
@@ -76,18 +73,19 @@ class BIM_PT_gis(Panel):
         row.prop(props, "true_north_ordinate")
         if hasattr(context.scene, "sun_pos_properties"):
             row = self.layout.row(align=True)
-            row.operator("bim.set_ifc_true_north", text="Set IFC North")
-            row.operator("bim.set_blender_true_north", text="Set Blender North")
+        #    row.operator("bim.set_ifc_true_north", text="Set IFC North")
+        #    row.operator("bim.set_blender_true_north", text="Set Blender North")
+
 
     def draw_ui(self, context):
         props = context.scene.BIMGeoreferenceProperties
 
-        if not Data.projected_crs:
+        if not GeoreferenceData.data["projected_crs"]:
             row = self.layout.row(align=True)
             row.label(text="Not Georeferenced")
             if IfcStore.get_file().schema != "IFC2X3":
                 row.operator("bim.add_georeferencing", icon="ADD", text="")
-
+        
         if props.has_blender_offset:
             row = self.layout.row()
             row.label(text="Blender Offset", icon="TRACKING_REFINE_FORWARDS")
@@ -123,13 +121,13 @@ class BIM_PT_gis(Panel):
             row = self.layout.row()
             row.label(text="Not Georeferenced")
 
-        if Data.projected_crs:
+        if GeoreferenceData.data["projected_crs"]:
             row = self.layout.row(align=True)
             row.label(text="Projected CRS", icon="WORLD")
             row.operator("bim.enable_editing_georeferencing", icon="GREASEPENCIL", text="")
             row.operator("bim.remove_georeferencing", icon="X", text="")
 
-        for key, value in Data.projected_crs.items():
+        for key, value in GeoreferenceData.data["projected_crs"].items():
             if key == "id" or key == "type" or not value:
                 continue
             if key == "MapUnit":
@@ -140,11 +138,11 @@ class BIM_PT_gis(Panel):
             row.label(text=key)
             row.label(text=str(value))
 
-        if Data.map_conversion:
+        if GeoreferenceData.data["map_conversion"]:
             row = self.layout.row(align=True)
             row.label(text="Map Conversion", icon="GRID")
 
-        for key, value in Data.map_conversion.items():
+        for key, value in GeoreferenceData.data["map_conversion"].items():
             if key == "id" or key == "type" or key == "SourceCRS" or key == "TargetCRS" or value is None:
                 continue
             row = self.layout.row(align=True)
@@ -157,22 +155,22 @@ class BIM_PT_gis(Panel):
                     text=str(
                         round(
                             ifcopenshell.util.geolocation.xaxis2angle(
-                                Data.map_conversion["XAxisAbscissa"], Data.map_conversion["XAxisOrdinate"]
+                                GeoreferenceData.data["map_conversion"]["XAxisAbscissa"], GeoreferenceData.data["map_conversion"]["XAxisOrdinate"]
                             ),
                             3,
                         )
                     )
                 )
 
-        if Data.true_north:
+        if GeoreferenceData.data["true_north"]:
             row = self.layout.row()
             row.label(text="True North", icon="LIGHT_SUN")
             row = self.layout.row(align=True)
             row.label(text="Vector")
-            row.label(text=str(Data.true_north[0:2])[1:-1])
+            row.label(text=str(GeoreferenceData.data["true_north"][0:2])[1:-1])
             row = self.layout.row(align=True)
             row.label(text="Derived Angle")
-            row.label(text=str(round(ifcopenshell.util.geolocation.yaxis2angle(*Data.true_north[0:2]), 3)))
+            row.label(text=str(round(ifcopenshell.util.geolocation.yaxis2angle(*GeoreferenceData.data["true_north"][0:2]), 3)))            
 
 
 class BIM_PT_gis_utilities(Panel):
@@ -188,11 +186,12 @@ class BIM_PT_gis_utilities(Panel):
 
         row = self.layout.row(align=True)
         row.prop(props, "coordinate_input", text="Input")
-        row.operator("bim.get_cursor_location", text="", icon="TRACKER")
+        #row.operator("bim.get_cursor_location", text="", icon="TRACKER")
         row = self.layout.row(align=True)
         row.prop(props, "coordinate_output", text="Output")
-        row.operator("bim.set_cursor_location", text="", icon="TRACKER")
+        #row.operator("bim.set_cursor_location", text="", icon="TRACKER")
 
         row = self.layout.row(align=True)
-        row.operator("bim.convert_local_to_global", text="Local to Global")
-        row.operator("bim.convert_global_to_local", text="Global to Local")
+        #row.operator("bim.convert_local_to_global", text="Local to Global")
+        #row.operator("bim.convert_global_to_local", text="Global to Local")
+
