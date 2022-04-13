@@ -286,6 +286,8 @@ class BIM_UL_links(UIList):
             row = layout.row(align=True)
             if item.is_loaded:
                 row.label(text=item.name)
+                op = row.operator("bim.toggle_link_visibility", text="", icon="HIDE_OFF")
+                op.collection_name = item.collection_name
                 op = row.operator("bim.unload_link", text="", icon="UNLINKED")
                 op.filepath = item.name
             else:

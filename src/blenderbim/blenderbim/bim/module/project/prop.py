@@ -85,6 +85,7 @@ class FilterCategory(PropertyGroup):
 
 class Link(PropertyGroup):
     name: StringProperty(name="Name")
+    collection_name: StringProperty(name="Collection Name")
     is_loaded: BoolProperty(name="Is Loaded", default=False)
 
 

@@ -685,7 +685,28 @@ class LoadLink(bpy.types.Operator):
                     continue
                 bpy.data.scenes[0].collection.children.link(child)
         link = context.scene.BIMProjectProperties.links.get(filepath)
+        link.collection_name = child.name
         link.is_loaded = True
+        return {"FINISHED"}
+
+
+class ToggleLinkVisibility(bpy.types.Operator):
+    bl_idname = "bim.toggle_link_visibility"
+    bl_label = "Toggle Link Visibility"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Toggle visibility between SOLID and WIREFRAME"
+    collection_name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        collection_name = self.collection_name
+        objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, bpy.data.collections[collection_name].all_objects)
+        for i,obj in enumerate(objs):
+            if i == 0:
+                if obj.display_type == "WIRE":
+                    display_type = "TEXTURED"
+                else:
+                    display_type = "WIRE"
+            obj.display_type = display_type
         return {"FINISHED"}
 
 

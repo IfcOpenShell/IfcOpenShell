@@ -28,6 +28,7 @@ classes = (
     operator.UnlinkIfc,
     operator.UnloadLink,
     operator.LoadLink,
+    operator.ToggleLinkVisibility,
     operator.SelectLibraryFile,
     operator.ChangeLibraryElement,
     operator.RefreshLibrary,
