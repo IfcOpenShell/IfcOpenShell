@@ -180,7 +180,7 @@ class SheetBuilder:
         root = tree.getroot()
 
         self.build_titleblock(root, sheet)
-        self.build_drawings(root, sheet_name)
+        self.build_drawings(root, sheet)
         self.build_schedules(root.findall('{http://www.w3.org/2000/svg}g[@data-type="schedule"]'))
 
         with open(os.path.join(self.data_dir, "build", sheet_name, f"{sheet_name}.svg"), "wb") as output:
@@ -192,8 +192,15 @@ class SheetBuilder:
         titleblock.append(self.parse_embedded_svg(image, sheet.get_info()))
         titleblock.remove(image)
 
-    def build_drawings(self, root, sheet_name):
+    def build_drawings(self, root, sheet):
+        sheet_name = tool.Drawing.get_sheet_filename(sheet)
+        references = tool.Drawing.get_document_references(sheet)
+        drawing_references = {tool.Drawing.get_reference_element(r): r for r in  references}
+
         for view in root.findall('{http://www.w3.org/2000/svg}g[@data-type="drawing"]'):
+            drawing = [d for d in drawing_references.keys() if d and d.GlobalId == view.attrib["data-guid"]][0]
+            reference = drawing_references[drawing]
+
             images = view.findall("{http://www.w3.org/2000/svg}image")
 
             background = None
@@ -208,8 +215,6 @@ class SheetBuilder:
                 elif image.attrib["data-type"] == "view-title":
                     view_title = image
 
-            self.scale = "NTS"
-
             if foreground is not None:
                 view.append(self.parse_embedded_svg(foreground, {}))
 
@@ -219,12 +224,11 @@ class SheetBuilder:
 
             if view_title is not None:
                 foreground_path = self.get_href(foreground)
-                view.append(
-                    self.parse_embedded_svg(
-                        view_title,
-                        {"no": 1, "name": ntpath.basename(foreground_path)[0:-4], "scale": self.scale},
-                    )
-                )
+                data = reference.get_info()
+                if not data["Name"]:
+                    data["Name"] = ntpath.basename(foreground_path)[0:-4]
+                data["Scale"] = tool.Drawing.get_drawing_human_scale(drawing)
+                view.append(self.parse_embedded_svg(view_title, data))
 
             for image in images:
                 view.remove(image)

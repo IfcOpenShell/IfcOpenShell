@@ -70,7 +70,7 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.96055365px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:0.26458332px"
          y="103.10933"
          x="32.822662"
-         id="tspan857">{{no}}</tspan></text>
+         id="tspan857">{{Identification}}</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:17.71626091px;line-height:125%;font-family:Arial;-inkscape-font-specification:Arial;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458329px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -80,7 +80,7 @@
          id="tspan861"
          x="39.12896"
          y="100.19173"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.54325247px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:start;text-anchor:start;stroke-width:0.26458329px">{{name}}</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.54325247px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:start;text-anchor:start;stroke-width:0.26458329px">{{Name}}</tspan></text>
     <text
        id="text867"
        y="105.0553"
@@ -90,6 +90,6 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.54325247px;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:start;text-anchor:start;stroke-width:0.26458332px"
          y="105.0553"
          x="39.285267"
-         id="tspan865">{{scale}}</tspan></text>
+         id="tspan865">{{Scale}}</tspan></text>
   </g>
 </svg>
