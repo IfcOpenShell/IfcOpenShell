@@ -291,24 +291,17 @@ class Drawing(blenderbim.core.tool.Drawing):
             if not new.is_expanded:
                 continue
 
-            if tool.Ifc.get_schema() == "IFC2X3":
-                references = sheet.DocumentReferences or []
-            else:
-                references = sheet.HasDocumentReferences or []
-
-            for reference in references:
+            for reference in cls.get_document_references(sheet):
                 new = props.sheets.add()
                 new.ifc_definition_id = reference.id()
                 new.is_sheet = False
 
                 if tool.Ifc.get_schema() == "IFC2X3":
                     new.identification = reference.ItemReference or "X"
-                    element = [
-                        r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference
-                    ][0].RelatedObjects[0]
                 else:
                     new.identification = reference.Identification or "X"
-                    element = reference.DocumentRefForObjects[0].RelatedObjects[0]
+
+                element = cls.get_reference_element(reference)
 
                 new.name = element.Name
                 new.reference_type = "DRAWING"
@@ -720,3 +713,21 @@ class Drawing(blenderbim.core.tool.Drawing):
             if grid_obj.matrix_world != obj.matrix_world:
                 bpy.ops.bim.update_representation(obj=obj.name)
         tool.Geometry.record_object_position(obj)
+
+    @classmethod
+    def get_document_references(cls, document):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return document.DocumentReferences or []
+        return document.HasDocumentReferences or []
+
+    @classmethod
+    def get_reference_element(cls, reference):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return [
+                r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference
+            ][0].RelatedObjects[0]
+        return reference.DocumentRefForObjects[0].RelatedObjects[0]
+
+    @classmethod
+    def get_drawing_human_scale(cls, drawing):
+        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"]["HumanScale"]
