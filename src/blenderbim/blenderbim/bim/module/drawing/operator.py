@@ -635,14 +635,8 @@ class RemoveDrawingFromSheet(bpy.types.Operator):
 
     def execute(self, context):
         reference = tool.Ifc.get().by_id(self.reference)
-        if tool.Ifc.get_schema() == "IFC2X3":
-            sheet = reference.ReferenceToDocument[0]
-            drawing = [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference][
-                0
-            ].RelatedObjects[0]
-        else:
-            sheet = reference.ReferencedDocument
-            drawing = reference.DocumentRefForObjects[0].RelatedObjects[0]
+        sheet = tool.Drawing.get_reference_sheet(reference)
+        drawing = tool.Drawing.get_reference_element(reference)
 
         tool.Ifc.run("document.unassign_document", product=drawing, document=reference)
         tool.Ifc.run("document.remove_reference", reference=reference)
@@ -667,10 +661,11 @@ class CreateSheets(bpy.types.Operator):
         scene = context.scene
         props = scene.DocProperties
         active_sheet = props.sheets[props.active_sheet_index]
-        name = active_sheet.name
+        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
+        name = tool.Drawing.get_sheet_filename(sheet)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = scene.BIMProperties.data_dir
-        sheet_builder.build(name)
+        sheet_builder.build(sheet)
 
         svg2pdf_command = context.preferences.addons["blenderbim"].preferences.svg2pdf_command
         svg2dxf_command = context.preferences.addons["blenderbim"].preferences.svg2dxf_command

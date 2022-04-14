@@ -201,7 +201,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             name = document.Identification or "X"
         else:
             name = document.DocumentId or "X"
-        name += " - " + document.Name or "Unnamed"
+        name += " - " + (document.Name or "Unnamed")
         return name
 
     @classmethod
@@ -291,24 +291,17 @@ class Drawing(blenderbim.core.tool.Drawing):
             if not new.is_expanded:
                 continue
 
-            if tool.Ifc.get_schema() == "IFC2X3":
-                references = sheet.DocumentReferences or []
-            else:
-                references = sheet.HasDocumentReferences or []
-
-            for reference in references:
+            for reference in cls.get_document_references(sheet):
                 new = props.sheets.add()
                 new.ifc_definition_id = reference.id()
                 new.is_sheet = False
 
                 if tool.Ifc.get_schema() == "IFC2X3":
                     new.identification = reference.ItemReference or "X"
-                    element = [
-                        r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference
-                    ][0].RelatedObjects[0]
                 else:
                     new.identification = reference.Identification or "X"
-                    element = reference.DocumentRefForObjects[0].RelatedObjects[0]
+
+                element = cls.get_reference_element(reference)
 
                 new.name = element.Name
                 new.reference_type = "DRAWING"
@@ -720,3 +713,39 @@ class Drawing(blenderbim.core.tool.Drawing):
             if grid_obj.matrix_world != obj.matrix_world:
                 bpy.ops.bim.update_representation(obj=obj.name)
         tool.Geometry.record_object_position(obj)
+
+    @classmethod
+    def get_document_references(cls, document):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return document.DocumentReferences or []
+        return document.HasDocumentReferences or []
+
+    @classmethod
+    def get_reference_element(cls, reference):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return [
+                r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference
+            ][0].RelatedObjects[0]
+        return reference.DocumentRefForObjects[0].RelatedObjects[0]
+
+    @classmethod
+    def get_drawing_human_scale(cls, drawing):
+        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"]["HumanScale"]
+
+    @classmethod
+    def get_annotation_element(cls, element):
+        for rel in element.HasAssignments:
+            if rel.is_a("IfcRelAssignsToProduct"):
+                return rel.RelatingProduct
+
+    @classmethod
+    def get_drawing_reference(cls, drawing):
+        for rel in drawing.HasAssociations:
+            if rel.is_a("IfcRelAssociatesDocument"):
+                return rel.RelatingDocument
+
+    @classmethod
+    def get_reference_sheet(cls, reference):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return reference.ReferenceToDocument[0]
+        return reference.ReferencedDocument

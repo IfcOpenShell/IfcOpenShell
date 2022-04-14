@@ -115,7 +115,7 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
     ifc.run("group.assign_group", group=group, product=element)
     collector.assign(camera)
     pset = ifc.run("pset.add_pset", product=element, name="EPset_Drawing")
-    ifc.run("pset.edit_pset", pset=pset, properties={"TargetView": target_view, "Scale": "1/100"})
+    ifc.run("pset.edit_pset", pset=pset, properties={"TargetView": target_view, "Scale": "1/100", "HumanScale": "1:100"})
     drawing.import_drawings()
 
 
