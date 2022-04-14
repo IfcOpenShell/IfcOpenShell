@@ -453,8 +453,22 @@ class SvgWriter:
                 (symbol_position * self.scale)[1],
             )
 
-            self.svg.add(self.svg.use("#section-arrow", insert=tuple(symbol_position * self.scale), transform=transform))
+            self.svg.add(
+                self.svg.use("#section-arrow", insert=tuple(symbol_position * self.scale), transform=transform)
+            )
             self.svg.add(self.svg.use("#section-tag", insert=tuple(symbol_position * self.scale)))
+
+            reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
+            text_position = list(symbol_position * self.scale)
+            text_style = {
+                "font-size": annotation.Annotator.get_svg_text_size(2.5),
+                "font-family": "OpenGost Type B TT",
+                "text-anchor": "middle",
+                "alignment-baseline": "middle",
+                "dominant-baseline": "middle",
+            }
+            self.svg.add(self.svg.text(reference_id, insert=(text_position[0], text_position[1] - 2.5), **text_style))
+            self.svg.add(self.svg.text(sheet_id, insert=(text_position[0], text_position[1] + 2.5), **text_style))
 
     def draw_elevation_annotation(self, obj):
         x_offset = self.raw_width / 2
@@ -475,6 +489,34 @@ class SvgWriter:
         self.svg.add(self.svg.use("#elevation-arrow", insert=tuple(symbol_position * self.scale), transform=transform))
         self.svg.add(self.svg.use("#elevation-tag", insert=tuple(symbol_position * self.scale)))
 
+        reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
+        text_position = list(symbol_position * self.scale)
+        text_style = {
+            "font-size": annotation.Annotator.get_svg_text_size(2.5),
+            "font-family": "OpenGost Type B TT",
+            "text-anchor": "middle",
+            "alignment-baseline": "middle",
+            "dominant-baseline": "middle",
+        }
+        self.svg.add(self.svg.text(reference_id, insert=(text_position[0], text_position[1] - 2.5), **text_style))
+        self.svg.add(self.svg.text(sheet_id, insert=(text_position[0], text_position[1] + 2.5), **text_style))
+
+    def get_reference_and_sheet_id_from_annotation(self, element):
+        reference_id = "-"
+        sheet_id = "-"
+        drawing = tool.Drawing.get_annotation_element(element)
+        reference = tool.Drawing.get_drawing_reference(drawing)
+        if reference:
+            sheet = tool.Drawing.get_reference_sheet(reference)
+            if sheet:
+                if tool.Ifc.get_schema() == "IFC2X3":
+                    reference_id = reference.ItemReference or "-"
+                    sheet_id = sheet.DocumentId or "-"
+                else:
+                    reference_id = reference.Identification or "-"
+                    sheet_id = sheet.Identification or "-"
+                return (reference_id, sheet_id)
+        return ("-", "-")
 
     def draw_text_annotation(self, text_obj, position):
         x_offset = self.raw_width / 2
