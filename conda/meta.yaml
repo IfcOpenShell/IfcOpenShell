@@ -56,12 +56,12 @@ test:
     - xmlschema
   source_files:
     - test
-    - src/ifcopenshell-python/api
-    - src/ifcopenshell-python/util
-    - src/ifcopenshell-python/bootstrap.py
-    - src/ifcopenshell-python/test_file.py
-    - src/ifcopenshell-python/test_wall_opening.py
-    - src/ifcopenshell-python/__init__.py
+    - src/ifcopenshell-python/test/api
+    - src/ifcopenshell-python/test/util
+    - src/ifcopenshell-python/test/bootstrap.py
+    - src/ifcopenshell-python/test/test_file.py
+    - src/ifcopenshell-python/test/test_wall_opening.py
+    - src/ifcopenshell-python/test/__init__.py
 
 about:
   home: http://ifcopenshell.org
