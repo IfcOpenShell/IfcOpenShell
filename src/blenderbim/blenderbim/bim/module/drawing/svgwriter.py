@@ -544,7 +544,7 @@ class SvgWriter:
 
         if text_obj.BIMTextProperties.symbol != "None":
             self.svg.add(
-                self.svg.use("#{}".format(text_obj.BIMTextProperties.symbol), insert=tuple(text_position * self.scale))
+                self.svg.use(f"#{text_obj.BIMTextProperties.symbol}", insert=tuple(text_position * self.scale))
             )
 
         if text_literal.BoxAlignment == "top-left":
@@ -575,11 +575,15 @@ class SvgWriter:
             alignment_baseline = "baseline"
             text_anchor = "end"
 
-        text_body = text_literal.Literal
-        if text_obj.name in self.annotations.get("template_variables", {}):
-            text_body = pystache.render(text_body, self.annotations["template_variables"][text_obj.name])
+        literal = text_literal.Literal
 
-        for line_number, text_line in enumerate(text_body.split("\n")):
+        product = tool.Drawing.get_text_product(element)
+        selector = ifcopenshell.util.selector.Selector
+        variables = {}
+        for variable in re.findall("{{.*?}}", literal):
+            literal = literal.replace(variable, selector.get_element_value(product, variable[2:-2]) or "")
+
+        for line_number, text_line in enumerate(literal.replace("\\n", "\n").split("\n")):
             self.svg.add(
                 self.svg.text(
                     text_line,
