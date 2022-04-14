@@ -10,7 +10,7 @@ on:
       - pr-daily-builds
 jobs:
   test:
-    name: ${{ matrix.platform.name }}-${{ matrix.pyver.name }}
+    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
     runs-on: ${{ matrix.platform.distver }}
     defaults:
       run:
@@ -23,9 +23,12 @@ jobs:
           { name: py310, distver: '3.10'}
         ]
         platform: [
-          { name: Windows, distver: windows-latest, short: 'win-64' },
-          { name: Linux, distver: ubuntu-latest, short: 'linux-64' },
-          { name: macOS, distver: macos-latest, short: 'osx-64' }
+          { name: Windows, distver: windows-2022, upload: 'true' },
+          { name: Windows, distver: windows-2019, upload: 'false' },
+          { name: Linux, distver: ubuntu-20.04,  upload: 'false' },
+          { name: Linux, distver: ubuntu-18.04,  upload: 'true' },
+          { name: macOS, distver: macos-11, upload: 'true' },
+          { name: macOS, distver: macos-10.15, upload: 'false' }
         ]
     steps:
       - uses: actions/checkout@v2
@@ -44,6 +47,11 @@ jobs:
           activate-environment: conda-build
           python-version: ${{ matrix.pyver.distver }}
           environment-file: conda/environment.yml
-      - name: build test and upload ifcopenshell
+      - name: build, test and upload ifcopenshell
+        if: ${{ matrix.platform.upload == 'true' }}
         run: |
           conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell --no-remove-work-dir
+      - name: build & test ifcopenshell
+        if: ${{ matrix.platform.upload == 'false' }}
+        run: |
+          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --no-remove-work-dir
