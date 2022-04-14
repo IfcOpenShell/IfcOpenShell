@@ -201,7 +201,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             name = document.Identification or "X"
         else:
             name = document.DocumentId or "X"
-        name += " - " + document.Name or "Unnamed"
+        name += " - " + (document.Name or "Unnamed")
         return name
 
     @classmethod

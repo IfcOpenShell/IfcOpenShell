@@ -67,7 +67,7 @@ class SheetBuilder:
         drawing_dir = os.path.join(self.data_dir, "diagrams")
         sheet_path = os.path.join(sheet_dir, sheet_name + ".svg")
         drawing_path = os.path.join(drawing_dir, filename + ".svg")
-        underlay_path = os.path.join(drawing_dir, filename + ".png")
+        underlay_path = os.path.join(drawing_dir, filename + "-underlay.png")
 
         if not os.path.isfile(sheet_path):
             raise FileNotFoundError
