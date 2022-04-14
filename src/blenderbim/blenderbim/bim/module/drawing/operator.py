@@ -635,14 +635,8 @@ class RemoveDrawingFromSheet(bpy.types.Operator):
 
     def execute(self, context):
         reference = tool.Ifc.get().by_id(self.reference)
-        if tool.Ifc.get_schema() == "IFC2X3":
-            sheet = reference.ReferenceToDocument[0]
-            drawing = [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference][
-                0
-            ].RelatedObjects[0]
-        else:
-            sheet = reference.ReferencedDocument
-            drawing = reference.DocumentRefForObjects[0].RelatedObjects[0]
+        sheet = tool.Drawing.get_reference_sheet(reference)
+        drawing = tool.Drawing.get_reference_element(reference)
 
         tool.Ifc.run("document.unassign_document", product=drawing, document=reference)
         tool.Ifc.run("document.remove_reference", reference=reference)

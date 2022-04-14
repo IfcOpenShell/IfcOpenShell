@@ -731,3 +731,21 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def get_drawing_human_scale(cls, drawing):
         return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"]["HumanScale"]
+
+    @classmethod
+    def get_annotation_element(cls, element):
+        for rel in element.HasAssignments:
+            if rel.is_a("IfcRelAssignsToProduct"):
+                return rel.RelatingProduct
+
+    @classmethod
+    def get_drawing_reference(cls, drawing):
+        for rel in drawing.HasAssociations:
+            if rel.is_a("IfcRelAssociatesDocument"):
+                return rel.RelatingDocument
+
+    @classmethod
+    def get_reference_sheet(cls, reference):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return reference.ReferenceToDocument[0]
+        return reference.ReferencedDocument
