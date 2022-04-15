@@ -246,15 +246,24 @@ class Geometry:
 class Georeference:
     def clear_projected_crs(cls): pass
     def clear_map_conversion(cls): pass
+    def set_has_true_north_prop(cls, data): pass
+    def set_true_north_prop(cls, data): pass
+    def get_true_north_props(cls, props): pass
+    def enable_editing(cls): pass
+    def disable_editing(cls): pass
     def get_file(cls): pass
-    def set_false_is_editing(cls): pass
     def import_projected_crs_attributes(cls, name, prop, data): pass
     def import_map_conversion_attributes(cls, name, prop, data): pass
     def export_crs_attributes(cls, attributes, prop): pass
     def export_map_attributes(cls, attributes, prop): pass
     def set_ifc_grid_north(cls): pass
     def set_blender_grid_north(cls): pass
-     
+    def get_cursor_location(cls): pass
+    def set_cursor_location(cls): pass
+    def set_ifc_true_north(cls): pass
+    def set_blender_true_north(cls): pass
+    def convert_local_to_global(cls, map_conversion): pass
+    def convert_global_to_local(cls, map_conversion): pass
 
 @interface
 class Ifc:
