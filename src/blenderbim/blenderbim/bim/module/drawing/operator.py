@@ -119,9 +119,10 @@ class CreateDrawing(bpy.types.Operator):
         start = time.time()
         self.profile_code("Start drawing generation process")
         self.props = context.scene.DocProperties
+        self.cprops = self.camera.data.BIMCameraProperties
         self.drawing_name = self.file.by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
         self.get_scale()
-        if self.camera.data.BIMCameraProperties.update_representation(self.camera):
+        if self.cprops.update_representation(self.camera):
             bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
         underlay_svg = self.generate_underlay(context)
         self.profile_code("Generate underlay")
@@ -186,12 +187,12 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_underlay(self, context):
-        if not self.props.has_underlay:
+        if not self.cprops.has_underlay:
             return
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-underlay.svg")
         context.scene.render.filepath = svg_path[0:-4] + ".png"
         drawing_style = context.scene.DocProperties.drawing_styles[
-            self.camera.data.BIMCameraProperties.active_drawing_style_index
+            self.cprops.active_drawing_style_index
         ]
 
         if drawing_style.render_type == "DEFAULT":
@@ -246,7 +247,7 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_linework(self, context):
-        if not self.props.has_linework:
+        if not self.cprops.has_linework:
             return
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-linework.svg")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
@@ -410,7 +411,7 @@ class CreateDrawing(bpy.types.Operator):
         return re.sub("[^0-9a-zA-Z]+", "", name)
 
     def generate_annotation(self, context):
-        if not self.props.has_annotation:
+        if not self.cprops.has_annotation:
             return
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-annotation.svg")
         if os.path.isfile(svg_path) and self.props.should_use_annotation_cache:
@@ -420,7 +421,7 @@ class CreateDrawing(bpy.types.Operator):
         svg_writer = svgwriter.SvgWriter()
 
         drawing_style = context.scene.DocProperties.drawing_styles[
-            camera.data.BIMCameraProperties.active_drawing_style_index
+            self.cprops.active_drawing_style_index
         ]
 
         render = context.scene.render

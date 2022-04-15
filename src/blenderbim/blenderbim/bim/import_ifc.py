@@ -1682,6 +1682,12 @@ class IfcImporter:
                 else:
                     camera.BIMCameraProperties.diagram_scale = "CUSTOM"
                     camera.BIMCameraProperties.custom_diagram_scale = pset["Scale"]
+            if "HasUnderlay" in pset:
+                camera.BIMCameraProperties.has_underlay = pset["HasUnderlay"]
+            if "HasLinework" in pset:
+                camera.BIMCameraProperties.has_linework = pset["HasLinework"]
+            if "HasAnnotation" in pset:
+                camera.BIMCameraProperties.has_annotation = pset["HasAnnotation"]
         return camera
 
     def create_curve(self, element, shape):
