@@ -18,71 +18,60 @@
 
 import bpy
 import blenderbim.bim.helper
-import ifcopenshell
 
 from blenderbim.bim.module.georeference.data import GeoreferenceData
+
+from math import radians, degrees, atan, tan, cos, sin
 
 def add_georeferencing(ifc):
     ifc.run("georeference.add_georeferencing")
 
-def enable_editing_georeferencing(georeference): #TODO simplify this function
+def enable_editing_georeferencing(georeference):
+    props = bpy.context.scene.BIMGeoreferenceProperties
+    
     georeference.clear_projected_crs()
     
     blenderbim.bim.helper.import_attributes(
         "IfcProjectedCRS",
-        bpy.context.scene.BIMGeoreferenceProperties.projected_crs,
+        props.projected_crs,
         GeoreferenceData.data["projected_crs"],
         georeference.import_projected_crs_attributes,
     )
-    
+       
     georeference.clear_map_conversion()
-    
+        
     blenderbim.bim.helper.import_attributes(
             "IfcMapConversion",
-            bpy.context.scene.BIMGeoreferenceProperties.map_conversion,
+            props.map_conversion,
             GeoreferenceData.data["map_conversion"],
             georeference.import_map_conversion_attributes,
         )
     
-    bpy.context.scene.BIMGeoreferenceProperties.has_true_north = bool(GeoreferenceData.data["true_north"])
-    
-    if GeoreferenceData.data["true_north"]:
-        bpy.context.scene.BIMGeoreferenceProperties.true_north_abscissa = str(GeoreferenceData.data["true_north"][0])
-        bpy.context.scene.BIMGeoreferenceProperties.true_north_ordinate = str(GeoreferenceData.data["true_north"][1])
-    
-    bpy.context.scene.BIMGeoreferenceProperties.is_editing = True
+    georeference.set_has_true_north_prop(GeoreferenceData.data["true_north"])
+    georeference.set_true_north_prop(GeoreferenceData.data["true_north"])
+    georeference.enable_editing()
     
 def remove_georeferencing(ifc):
     ifc.run("georeference.remove_georeferencing")
     
 def edit_georeferencing(ifc, georeference):
     props = bpy.context.scene.BIMGeoreferenceProperties
-    ifc_file = georeference.get_file()
 
     projected_crs = blenderbim.bim.helper.export_attributes(props.projected_crs, georeference.export_crs_attributes)
     map_conversion = blenderbim.bim.helper.export_attributes(props.map_conversion, georeference.export_map_attributes)
-
-    true_north = None
-#    if props.has_true_north:
-#        try:
-#            true_north = [float(props.true_north_abscissa), float(props.true_north_ordinate)]
-#        except ValueError:
-#            self.report({"ERROR"}, "True North Abscissa and Ordinate expect a number")
-
-    ifcopenshell.api.run( #TODO use ifc.run
+    
+    true_north = georeference.get_true_north_props(props)
+    
+    ifc.run(
         "georeference.edit_georeferencing",
-        ifc_file,
         **{
             "map_conversion": map_conversion,
             "projected_crs": projected_crs,
             "true_north": true_north,
         }
     )
-
-    bpy.ops.bim.disable_editing_georeferencing()
-
-def disable_editing_georeferencing(georeference):
-    georeference.set_false_is_editing()
+    
+    georeference.disable_editing()
     
 def set_ifc_grid_north(georeference):
     georeference.set_ifc_grid_north()
@@ -90,4 +79,21 @@ def set_ifc_grid_north(georeference):
 def set_blender_grid_north(georeference):
     georeference.set_blender_grid_north()
 
+def get_cursor_location(georeference):
+    georeference.get_cursor_location()
+    
+def set_cursor_location(georeference):
+    georeference.set_cursor_location()
+
+def set_ifc_true_north(georeference):
+    georeference.set_ifc_true_north()
+
+def set_blender_true_north(georeference):
+    georeference.set_blender_true_north()
+
+def convert_local_to_global(georeference):
+    georeference.convert_local_to_global(GeoreferenceData.data["map_conversion"])
+    
+def convert_global_to_local(georeference):
+    georeference.convert_global_to_local(GeoreferenceData.data["map_conversion"])
 

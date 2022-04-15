@@ -19,7 +19,6 @@
 import bpy
 import blenderbim.tool as tool
 import blenderbim.core.georeference as core
-import blenderbim.bim.handler
 
 class AddGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_georeferencing"
@@ -79,10 +78,85 @@ class SetBlenderGridNorth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.set_blender_grid_north"
     bl_label = "Set Blender Grid North"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Set Blender grif north"
+    bl_description = "Set Blender grid north"
     
     def _execute(self, context):
         core.set_blender_grid_north()
 
+class GetCursorLocation(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.get_cursor_location"
+    bl_label = "Get Cursor Location"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Insert the current cursor coordinates"
+    
+    @classmethod
+    def poll(cls, context): #TODO is it right to use the poll method?
+        file = tool.Ifc.get()
+        return file and file.by_type("IfcUnitAssignment")
+    
+    def _execute(self, context):
+        core.get_cursor_location(tool.Georeference)
+        
+class SetCursorLocation(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.set_cursor_location"
+    bl_label = "Set Cursor Location"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Set curson location to coordinates"
 
+    @classmethod
+    def poll(cls, context): #TODO is it right to use the poll method?
+        file = tool.Ifc.get()
+        props = context.scene.BIMGeoreferenceProperties
+        return file and file.by_type("IfcUnitAssignment") and props.coordinate_output.count(",") == 2
+    
+    def _execute(self, context):
+        core.set_cursor_location(tool.Georeference)
+        
+class SetIfcTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.set_ifc_true_north"
+    bl_label = "Set IFC True North"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Set IFC True north"
+
+    def _execute(self, context):
+        core.set_ifc_true_north(tool.Georeference)
+
+class SetBlenderTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.set_blender_true_north"
+    bl_label = "Set Blender True North"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Set Blender true north"
+
+    def _execute(self, context):
+        core.set_blender_true_north(tool.Georeference)
+
+class ConvertLocalToGlobal(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.convert_local_to_global"
+    bl_label = "Convert Local To Global"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Convert local coordinate to global coordinate"
+    
+    @classmethod
+    def poll(cls, context):
+        file = tool.Ifc.get()
+        props = context.scene.BIMGeoreferenceProperties
+        return file and props.coordinate_input.count(",") == 2
+        
+    def _execute(self, context):
+        core.convert_local_to_global(tool.Georeference)
+        
+class ConvertGlobalToLocal(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.convert_global_to_local"
+    bl_label = "Convert Global To Local"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Convert global coordinate to local coordinate"
+    
+    @classmethod
+    def poll(cls, context):
+        file = tool.Ifc.get()
+        props = context.scene.BIMGeoreferenceProperties
+        return file and file.by_type("IfcUnitAssignment") and props.coordinate_input.count(",") == 2
+    
+    def _execute(self, context):
+        core.convert_global_to_local(tool.Georeference)
 
