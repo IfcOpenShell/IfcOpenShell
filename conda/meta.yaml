@@ -62,6 +62,10 @@ test:
     - src/ifcopenshell-python/test/test_file.py
     - src/ifcopenshell-python/test/test_wall_opening.py
     - src/ifcopenshell-python/test/__init__.py
+  commands:
+    #- pip install bcf-client
+    #- cd test && python tests.py
+    #- cd ../src/ifcopenshell-python/test && pytest -p no:pytest-blender
 
 about:
   home: http://ifcopenshell.org
