@@ -474,7 +474,7 @@ class CreateDrawing(bpy.types.Operator):
                 svg_writer.annotations["section_level_obj"] = obj
             elif element.ObjectType == "TEXT":
                 svg_writer.annotations.setdefault("text_objs", []).append(obj)
-            elif element.ObjectType == "MISC":
+            else:
                 svg_writer.annotations.setdefault("misc_objs", []).append(obj)
 
         svg_writer.annotations["attributes"] = [a.name for a in drawing_style.attributes]
