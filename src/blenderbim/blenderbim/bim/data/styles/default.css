@@ -23,10 +23,19 @@ text { fill: black; stroke: none; }
 .cut { fill: black; stroke: black; stroke-linecap: 'round'; stroke-width: 0.35; fill-rule: evenodd; }
 .projection { fill: white; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
-.hidden { stroke-dasharray: 3, 2; }
 .solid {}
-.leader { marker-end: url(#leader-marker); }
-.stair { marker-start: url(#stair-marker-start); marker-end: url(#stair-marker-end); }
+.IfcAnnotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
+.PredefinedType-MISC { fill: red; stroke: blue; stroke-width: 1; }
+.PredefinedType-GRID { marker-start: url(#grid-marker); marker-end: url(#grid-marker); }
+.PredefinedType-SECTIONLEVEL { marker-start: url(#section-level-marker); stroke-dasharray: 12.5, 3, 3, 3; }
+.PredefinedType-PLANLEVEL { marker-end: url(#plan-level-marker); }
+.PredefinedType-DIMENSION { marker-start: url(#dimension-marker-start); marker-end: url(#dimension-marker-end); }
+.PredefinedType-HIDDENLINE { stroke-dasharray: 3, 2; }
+.PredefinedType-STAIR { marker-start: url(#stair-marker-start); marker-end: url(#stair-marker-end); }
+.PredefinedType-BOUNDARY { fill: none; stroke: red; stroke-width: 1; stroke-dasharray: 12, 4, 3, 4, 3, 4; }
+.PredefinedType-TEXT { fill: black; stroke: none; }
+path.PredefinedType-TEXTLEADER { marker-end: url(#leader-marker); }
+text.PredefinedType-TEXTLEADER { fill: black; stroke: none; }
 .break { fill: white; }
 .breakline { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; marker-mid: url(#breakline-marker); }
 .material-blank { fill: white; }
@@ -44,5 +53,4 @@ text { fill: black; stroke: none; }
 .material-honeycomb { fill: url(#honeycomb); }
 .material-sand { fill: url(#sand); }
 .material-concrete { fill: url(#concrete); stroke-width: 0.5; }
-.material-boundary { fill: none; stroke: red; stroke-width: 1; stroke-dasharray: 12,4,3,4,3,4; }
 .IfcSpace { fill: none; stroke: none; }
