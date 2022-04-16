@@ -24,6 +24,7 @@ import pystache
 import xml.etree.ElementTree as ET
 import svgwrite
 import ifcopenshell
+import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
@@ -153,8 +154,8 @@ class SvgWriter:
 
         for grid_obj in self.annotations.get("grid_objs", []):
             matrix_world = grid_obj.matrix_world
+            classes = self.get_attribute_classes(grid_obj)
             for edge in grid_obj.data.edges:
-                classes = ["annotation", "grid"]
                 v0_global = matrix_world @ grid_obj.data.vertices[edge.vertices[0]].co.xyz
                 v1_global = matrix_world @ grid_obj.data.vertices[edge.vertices[1]].co.xyz
                 v0 = self.project_point_onto_camera(v0_global)
@@ -167,8 +168,6 @@ class SvgWriter:
                         start=tuple(start * self.scale), end=tuple(end * self.scale), class_=" ".join(classes)
                     )
                 )
-                line["marker-start"] = "url(#grid-marker)"
-                line["marker-end"] = "url(#grid-marker)"
                 line["stroke-dasharray"] = "12.5, 3, 3, 3"
                 axis_tag = tool.Ifc.get_entity(grid_obj).Name
                 self.svg.add(
@@ -201,13 +200,13 @@ class SvgWriter:
         self.draw_ifc_annotation()
 
         for obj in self.annotations.get("misc_objs", []):
-            self.draw_misc_annotation(obj, ["IfcAnnotation"])
+            self.draw_misc_annotation(obj)
 
         for obj_data in self.annotations.get("hidden_objs", []):
-            self.draw_line_annotation(obj_data, ["hidden"])
+            self.draw_line_annotation(obj_data)
 
         for obj_data in self.annotations.get("solid_objs", []):
-            self.draw_line_annotation(obj_data, ["solid"])
+            self.draw_line_annotation(obj_data)
 
         self.draw_leader_annotations()
 
@@ -216,8 +215,8 @@ class SvgWriter:
 
         if self.annotations.get("section_level_obj"):
             matrix_world = self.annotations["section_level_obj"].matrix_world
+            classes = self.get_attribute_classes(self.annotations["section_level_obj"])
             for spline in self.annotations["section_level_obj"].data.splines:
-                classes = ["annotation", "section-level"]
                 points = self.get_spline_points(spline)
                 projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
                 d = " ".join(
@@ -228,8 +227,6 @@ class SvgWriter:
                 )
                 d = "M{}".format(d[1:])
                 path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
-                path["marker-start"] = "url(#section-level-marker)"
-                path["stroke-dasharray"] = "12.5, 3, 3, 3"
                 text_position = Vector(
                     (
                         (x_offset + projected_points[0].x) * self.scale,
@@ -258,8 +255,8 @@ class SvgWriter:
 
         if self.annotations.get("stair_obj"):
             matrix_world = self.annotations["stair_obj"].matrix_world
+            classes = self.get_attribute_classes(self.annotations["stair_obj"])
             for spline in self.annotations["stair_obj"].data.splines:
-                classes = ["annotation", "stair"]
                 points = self.get_spline_points(spline)
                 projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
                 d = " ".join(
@@ -316,13 +313,13 @@ class SvgWriter:
                     )
                 )
 
-    def draw_misc_annotation(self, obj, classes):
+    def draw_misc_annotation(self, obj):
         # We have to decide whether this should come from Blender or from IFC.
         # For the moment, for convenience of experimenting with ideas, it comes
         # from Blender. In the future, it should probably come from IFC.
         if not isinstance(obj.data, bpy.types.Mesh):
             return
-        classes.extend(self.get_attribute_classes(obj))
+        classes = self.get_attribute_classes(obj)
         if len(obj.data.polygons) == 0:
             self.draw_edge_annotation(obj, classes)
             return
@@ -332,6 +329,7 @@ class SvgWriter:
         for polygon in obj.data.polygons:
             points = [obj.data.vertices[v] for v in polygon.vertices]
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
+            projected_points.append(projected_points[0])
             d = " ".join(
                 [
                     "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
@@ -342,12 +340,12 @@ class SvgWriter:
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
     def get_attribute_classes(self, obj):
-        classes = [obj.name.split("/")[0]]
-        for slot in obj.material_slots:
-            if slot.material:
-                classes.append("material-{}".format(re.sub("[^0-9a-zA-Z]+", "", slot.material.name)))
-        global_id = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId
-        classes.append("globalid-{}".format(global_id))
+        element = tool.Ifc.get_entity(obj)
+        global_id = "GlobalId-{}".format(element.GlobalId)
+        predefined_type = "PredefinedType-" + self.canonicalise_class_name(
+            str(ifcopenshell.util.element.get_predefined_type(element))
+        )
+        classes = [global_id, element.is_a(), predefined_type]
         for attribute in self.annotations.get("attributes", []):
             result = self.get_obj_value(obj, attribute)
             if result:
@@ -355,6 +353,9 @@ class SvgWriter:
                     "{}-{}".format(re.sub("[^0-9a-zA-Z]+", "", attribute), re.sub("[^0-9a-zA-Z]+", "", result))
                 )
         return classes
+
+    def canonicalise_class_name(self, name):
+        return re.sub("[^0-9a-zA-Z]+", "", name)
 
     def get_obj_value(self, obj, key):
         # This is a duplicate implementation of the IFC selector key in Blender
@@ -381,14 +382,14 @@ class SvgWriter:
             if result:
                 return result.string_value
 
-    def draw_line_annotation(self, obj_data, classes):
+    def draw_line_annotation(self, obj_data):
         # TODO: properly scope these offsets
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
 
         obj, data = obj_data
 
-        classes.extend(["annotation"])
+        classes = self.get_attribute_classes(obj)
         matrix_world = obj.matrix_world
 
         if isinstance(data, bpy.types.Curve):
@@ -424,7 +425,7 @@ class SvgWriter:
 
     def draw_leader_annotations(self):
         for obj in self.annotations.get("leader_objs", []):
-            self.draw_line_annotation((obj, obj.data), ["leader"])
+            self.draw_line_annotation((obj, obj.data))
             spline = obj.data.splines[0]
             spline_points = spline.bezier_points if spline.bezier_points else spline.points
             if spline_points:
@@ -437,7 +438,7 @@ class SvgWriter:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
 
-        self.draw_line_annotation((obj, obj.data), ["solid"])
+        self.draw_line_annotation((obj, obj.data))
 
         v1 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, 0)))
         v2 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, -1)))
@@ -632,8 +633,8 @@ class SvgWriter:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
         matrix_world = obj.matrix_world
+        classes = self.get_attribute_classes(obj)
         for spline in obj.data.splines:
-            classes = ["annotation", "plan-level"]
             points = self.get_spline_points(spline)
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
             d = " ".join(
@@ -644,7 +645,6 @@ class SvgWriter:
             )
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
-            path["marker-end"] = "url(#plan-level-marker)"
             text_position = Vector(
                 (
                     (x_offset + projected_points[0].x) * self.scale,
@@ -676,6 +676,7 @@ class SvgWriter:
             )
 
     def draw_dimension_annotations(self, dimension_obj, text_override=None):
+        classes = self.get_attribute_classes(dimension_obj)
         matrix_world = dimension_obj.matrix_world
         for spline in dimension_obj.data.splines:
             points = self.get_spline_points(spline)
@@ -684,7 +685,7 @@ class SvgWriter:
                     continue
                 v0_global = matrix_world @ points[i].co.xyz
                 v1_global = matrix_world @ points[i + 1].co.xyz
-                self.draw_dimension_annotation(v0_global, v1_global, text_override)
+                self.draw_dimension_annotation(v0_global, v1_global, classes, text_override)
 
     def draw_measureit_arch_dimension_annotations(self):
         try:
@@ -694,10 +695,11 @@ class SvgWriter:
         except:
             return
         for coord in coords:
-            self.draw_dimension_annotation(Vector(coord[0]), Vector(coord[1]))
+            self.draw_dimension_annotation(
+                Vector(coord[0]), Vector(coord[1]), ["IfcAnnotation", "PredefinedType-DIMENSION"]
+            )
 
-    def draw_dimension_annotation(self, v0_global, v1_global, text_override=None):
-        classes = ["annotation", "dimension"]
+    def draw_dimension_annotation(self, v0_global, v1_global, classes, text_override=None):
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
         v0 = self.project_point_onto_camera(v0_global)
@@ -719,8 +721,6 @@ class SvgWriter:
         line = self.svg.add(
             self.svg.line(start=tuple(start * self.scale), end=tuple(end * self.scale), class_=" ".join(classes))
         )
-        line["marker-start"] = "url(#dimension-marker-start)"
-        line["marker-end"] = "url(#dimension-marker-end)"
         if text_override is not None:
             text = text_override
         else:
