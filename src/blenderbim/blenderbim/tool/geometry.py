@@ -202,9 +202,16 @@ class Geometry(blenderbim.core.tool.Geometry):
 
         ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
-        mesh = ifc_importer.create_mesh(element, shape)
-        ifc_importer.material_creator.load_existing_materials()
-        ifc_importer.material_creator.create(element, obj, mesh)
+
+        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            mesh = ifc_importer.create_camera(element, shape)
+        if element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
+            mesh = ifc_importer.create_curve(element, shape)
+        elif shape:
+            mesh = ifc_importer.create_mesh(element, shape)
+            ifc_importer.material_creator.load_existing_materials()
+            ifc_importer.material_creator.create(element, obj, mesh)
+
         return mesh
 
     @classmethod
