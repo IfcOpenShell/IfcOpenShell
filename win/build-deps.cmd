@@ -210,10 +210,10 @@ if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patc
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd msvc
 cd vs%VS_VER:~2,2%
-call .\msbuild.bat gc LIB %VS_PLATFORM% Release
+call .\msbuild.bat gc LIB %VS_PLATFORM% %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
-copy ..\..\lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpir"
+copy ..\..\lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpir"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :mpfr
@@ -235,9 +235,9 @@ if "%VS_VER%"=="2017" (
 call :BuildSolution "%DEPENDENCY_DIR%\%mpfr_sln%\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM This command fails because not all msvc projects are patched with the right sdk version
-IF NOT EXIST lib\%VS_PLATFORM%\Release\mpfr.lib GOTO :Error
+IF NOT EXIST lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\mpfr.lib GOTO :Error
 IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
-copy lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpfr"
+copy lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpfr"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :HDF5
