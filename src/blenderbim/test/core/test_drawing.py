@@ -121,7 +121,7 @@ class TestOpenSheet:
 
 class TestRemoveSheet:
     def test_run(self, ifc, drawing):
-        ifc.run("document.remove_document", document="sheet").should_be_called()
+        ifc.run("document.remove_information", information="sheet").should_be_called()
         drawing.import_sheets().should_be_called()
         subject.remove_sheet(ifc, drawing, sheet="sheet")
 
@@ -162,7 +162,16 @@ class TestAddDrawing:
         collector.assign("obj").should_be_called()
         ifc.run("pset.add_pset", product="element", name="EPset_Drawing").should_be_called().will_return("pset")
         ifc.run(
-            "pset.edit_pset", pset="pset", properties={"TargetView": "target_view", "Scale": "1/100"}
+            "pset.edit_pset",
+            pset="pset",
+            properties={
+                "TargetView": "target_view",
+                "Scale": "1/100",
+                "HumanScale": "1:100",
+                "HasUnderlay": False,
+                "HasLinework": True,
+                "HasAnnotation": True,
+            },
         ).should_be_called()
         drawing.import_drawings().should_be_called()
         subject.add_drawing(ifc, collector, drawing, target_view="target_view", location_hint="location_hint")

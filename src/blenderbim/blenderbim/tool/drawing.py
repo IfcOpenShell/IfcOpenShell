@@ -176,7 +176,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_drawing_target_view(cls, drawing):
-        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"]["TargetView"]
+        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("TargetView", "MODEL_VIEW")
 
     @classmethod
     def get_group_elements(cls, group):
@@ -730,7 +730,11 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_drawing_human_scale(cls, drawing):
-        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"]["HumanScale"]
+        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("HumanScale", "NTS")
+
+    @classmethod
+    def has_linework(cls, drawing):
+        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("HasLinework", False)
 
     @classmethod
     def get_annotation_element(cls, element):

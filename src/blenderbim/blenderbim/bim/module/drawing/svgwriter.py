@@ -149,9 +149,6 @@ class SvgWriter:
             self.draw_dimension_annotations(obj)
         self.draw_measureit_arch_dimension_annotations()
 
-        if self.annotations.get("break_obj"):
-            self.draw_break_annotations(self.annotations["break_obj"])
-
         for grid_obj in self.annotations.get("grid_objs", []):
             matrix_world = grid_obj.matrix_world
             classes = self.get_attribute_classes(grid_obj)
@@ -292,6 +289,9 @@ class SvgWriter:
 
         for text_obj in self.annotations.get("text_objs", []):
             self.draw_text_annotation(text_obj, text_obj.location)
+
+        if self.annotations.get("break_obj"):
+            self.draw_break_annotations(self.annotations["break_obj"])
 
     def draw_ifc_annotation(self):
         x_offset = self.raw_width / 2
