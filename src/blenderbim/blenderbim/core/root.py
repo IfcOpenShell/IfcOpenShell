@@ -21,6 +21,7 @@ def copy_class(ifc, collector, geometry, root, obj=None):
     element = ifc.get_entity(obj)
     if not element:
         return
+    representation = root.get_object_representation(obj)
     element = ifc.run("root.copy_class", product=element)
     ifc.link(element, obj)
     relating_type = root.get_element_type(element)
@@ -28,7 +29,6 @@ def copy_class(ifc, collector, geometry, root, obj=None):
         ifc.run("type.map_type_representations", related_object=element, relating_type=relating_type)
         root.link_object_data(ifc.get_object(relating_type), obj)
     else:
-        representation = root.get_object_representation(obj)
         if representation:
             root.run_geometry_add_representation(
                 obj=obj,

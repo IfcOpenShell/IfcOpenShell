@@ -58,6 +58,9 @@ class Root(blenderbim.core.tool.Root):
     def get_object_representation(cls, obj):
         if obj.data and obj.data.BIMMeshProperties.ifc_definition_id:
             return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        element = tool.Ifc.get_entity(obj)
+        if not obj.data and getattr(element, "ObjectType", None) == "TEXT":
+            return element.Representation.Representations[0]
 
     @classmethod
     def get_representation_context(cls, representation):
