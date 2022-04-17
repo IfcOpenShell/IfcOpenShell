@@ -8,6 +8,12 @@ on:
       - .github/workflows/ci-daily-build.yml
     branches:
       - pr-daily-builds
+# Only trigger, when the build workflow succeeded
+  workflow_run:
+    workflows: ["ci"]
+    types:
+      - completed
+
 jobs:
   test:
     name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
