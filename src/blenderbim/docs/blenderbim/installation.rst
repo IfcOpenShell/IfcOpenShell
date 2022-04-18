@@ -137,6 +137,12 @@ Blender for the changes to take effect. In ``Edit > Preferences > Add-ons`` you
 will see that the version number of the BlenderBIM Add-on has changed to
 ``0.0.999999``, which represents an un-versioned BlenderBIM Add-on.
 
+There is a useful Blender Addon that adds a Reboot button in File menù.
+In this way, it's possible to directly restart Blender and test the modified source code.
+The add on is available `here <https://blenderartists.org/uploads/short-url/yto1sjw7pqDRVNQzpVLmn51PEDN.zip>`__
+(check also the related forum discussion `here <https://blenderartists.org/t/reboot-blender-addon/640465/13>`__)
+
+
 Distro installation
 -------------------
 
