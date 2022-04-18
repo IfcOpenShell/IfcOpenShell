@@ -148,6 +148,11 @@ class TestGetPredefinedTypeIFC4(test.bootstrap.IFC4):
         element.ObjectType = "FOOBAR"
         assert subject.get_predefined_type(element) == "FOOBAR"
 
+    def test_getting_an_element_type_without_a_predefined_type_attribute(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcAnnotation")
+        element.ObjectType = "FOOBAR"
+        assert subject.get_predefined_type(element) == "FOOBAR"
+
     def test_getting_an_inherited_predefined_type(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
