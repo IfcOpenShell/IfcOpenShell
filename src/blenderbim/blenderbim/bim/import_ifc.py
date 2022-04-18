@@ -1509,9 +1509,10 @@ class IfcImporter:
             return self.structural_member_collection.objects.link(obj)
         elif element.is_a("IfcStructuralConnection"):
             return self.structural_connection_collection.objects.link(obj)
-        elif element.is_a("IfcAnnotation") and self.is_drawing_annotation(element):
-            group = [r for r in element.HasAssignments if r.is_a("IfcRelAssignsToGroup")][0].RelatingGroup
-            return self.collections[group.GlobalId].objects.link(obj)
+        elif element.is_a("IfcAnnotation"):
+            group = self.get_drawing_group(element)
+            if group:
+                return self.collections[group.GlobalId].objects.link(obj)
 
         container = ifcopenshell.util.element.get_container(element)
         if container:
@@ -1531,32 +1532,16 @@ class IfcImporter:
         return element.ObjectType in [
             "DIMENSION",
             "EQUAL_DIMENSION",
-            "MISC",
             "PLAN_LEVEL",
             "SECTION_LEVEL",
             "STAIR_ARROW",
             "TEXT_LEADER",
         ]
 
-    def is_drawing_annotation(self, element):
-        return element.ObjectType in [
-            "BREAKLINE",
-            "DIMENSION",
-            "DRAWING",
-            "EQUAL_DIMENSION",
-            "GRID",
-            "HIDDEN_LINE",
-            "MISC",
-            "PLAN_LEVEL",
-            "SECTION_LEVEL",
-            "STAIR_ARROW",
-            "TEXT",
-            "TEXT_LEADER",
-            "LEADER",
-            "HATCH",
-            "LINEWORK",
-            "AREA",
-        ]
+    def get_drawing_group(self, element):
+        for rel in element.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToGroup"):
+                return rel.RelatingGroup
 
     def get_element_matrix(self, element):
         result = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)

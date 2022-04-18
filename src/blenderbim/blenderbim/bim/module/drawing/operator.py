@@ -442,13 +442,15 @@ class CreateDrawing(bpy.types.Operator):
         svg_writer.camera_height = height
         svg_writer.camera_projection = tuple(camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
 
-        for obj in camera.users_collection[0].objects:
-            if "IfcAnnotation/" not in obj.name:
+        for element in tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(self.camera_element)):
+            if not element.is_a("IfcAnnotation"):
                 continue
-            element = tool.Ifc.get_entity(obj)
+            obj = tool.Ifc.get_object(element)
+            if not obj:
+                continue
             if element.ObjectType == "GRID":
                 svg_writer.annotations.setdefault("grid_objs", []).append(obj)
-            elif obj.type == "CAMERA":
+            elif element.ObjectType == "DRAWING":
                 continue
             elif element.ObjectType == "TEXT_LEADER":
                 svg_writer.annotations.setdefault("leader_objs", []).append(obj)
