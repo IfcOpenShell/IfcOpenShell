@@ -444,40 +444,52 @@ if(HDF5_SUPPORT)
         # Find zlib using cmake find_library. How should this be implemented?
         # FIND_LIBRARY(NAMES z libz libz_debug PATHS ... NO_DEFAULT_PATH)
 
-        if (WIN32)
-            # Windows
-            set(zlib_post zlib)
-        	set(lib_ext lib)
-        elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-            # macOS
-            set(zlib_post libz)
-            set(lib_ext dylib)
-        else()
-            # linux
-            set(zlib_post libz)
-            set(lib_ext so)
-        endif()
 
         if ("$ENV{CONDA_BUILD}" STREQUAL "")
+            # result of the HDF5 ctest package
+
             if (WIN32)
-                # Should we use dynamic dll for windows also?
-                #set(lib_ext dll)
+                set(zlib_post lib)
+                set(lib_ext lib)
             else()
                 set(lib_ext a)
             endif()
+
+            if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+                set(debug_postfix "_debug")
+            endif()
+
+            SET(HDF5_LIBRARIES
+                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libhdf5${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libz${zlib_post}${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libsz${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libaec${debug_postfix}.${lib_ext}"
+                    )
+
+        ELSE()
+            MESSAGE(STATUS "Packaging hdf5 and zlib for conda distribution")
+            if (WIN32)
+                # Windows
+                set(zlib_post zlib)
+                set(lib_ext lib)
+            elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+                # macOS
+                set(zlib_post libz)
+                set(lib_ext dylib)
+            else()
+                # linux
+                set(zlib_post libz)
+                set(lib_ext so)
+            endif()
+
+            SET(HDF5_LIBRARIES
+                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
+                    )
         endif()
 
-        if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-		    set(debug_postfix "_debug")
-	    endif()
-
-        SET(HDF5_LIBRARIES
-            "${HDF5_LIBRARY_DIR}/libhdf5_cpp${debug_postfix}.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libhdf5${debug_postfix}.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/${zlib_post}${debug_postfix}.${lib_ext}"
-#            "${HDF5_LIBRARY_DIR}/libsz${debug_postfix}.${lib_ext}"
-#            "${HDF5_LIBRARY_DIR}/libaec${debug_postfix}.${lib_ext}"
-        )
     endif()
 
     if (NOT HDF5_LIBRARIES)
