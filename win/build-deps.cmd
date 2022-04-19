@@ -229,9 +229,12 @@ if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patc
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 if "%VS_VER%"=="2017" (
   set mpfr_sln=build.vc15
+  set orig_platform_toolset=v141
 ) else (
   set mpfr_sln=build.vs19
+  set orig_platform_toolset=v142
 )
+powershell -c "get-childitem %DEPENDENCY_DIR%\%mpfr_sln% -recurse -include *.vcxproj | select -expand fullname | foreach { (Get-Content $_) -replace '%orig_platform_toolset%', 'v%VC_VER:.=%' | Set-Content $_ }"
 call :BuildSolution "%DEPENDENCY_DIR%\%mpfr_sln%\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM This command fails because not all msvc projects are patched with the right sdk version
