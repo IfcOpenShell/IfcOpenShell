@@ -442,46 +442,10 @@ class CreateDrawing(bpy.types.Operator):
         svg_writer.camera_height = height
         svg_writer.camera_projection = tuple(camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
 
-        for element in tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(self.camera_element)):
-            if not element.is_a("IfcAnnotation"):
-                continue
-            obj = tool.Ifc.get_object(element)
-            if not obj:
-                continue
-            if element.ObjectType == "GRID":
-                svg_writer.annotations.setdefault("grid_objs", []).append(obj)
-            elif element.ObjectType == "DRAWING":
-                continue
-            elif element.ObjectType == "TEXT_LEADER":
-                svg_writer.annotations.setdefault("leader_objs", []).append(obj)
-            elif element.ObjectType == "STAIR_ARROW":
-                svg_writer.annotations["stair_obj"] = obj
-            elif element.ObjectType == "EQUAL_DIMENSION":
-                svg_writer.annotations.setdefault("equal_objs", []).append(obj)
-            elif element.ObjectType == "DIMENSION":
-                svg_writer.annotations.setdefault("dimension_objs", []).append(obj)
-            elif element.ObjectType == "ELEVATION":
-                svg_writer.annotations.setdefault("elevation_objs", []).append(obj)
-            elif element.ObjectType == "SECTION":
-                svg_writer.annotations.setdefault("section_objs", []).append(obj)
-            elif element.ObjectType == "BREAKLINE":
-                svg_writer.annotations["break_obj"] = obj
-            elif element.ObjectType == "HIDDEN_LINE":
-                svg_writer.annotations.setdefault("hidden_objs", []).append((obj, obj.data))
-            elif element.ObjectType == "SOLID_LINE":
-                svg_writer.annotations.setdefault("solid_objs", []).append((obj, obj.data))
-            elif element.ObjectType == "PLAN_LEVEL":
-                svg_writer.annotations.setdefault("plan_level_objs", []).append(obj)
-            elif element.ObjectType == "SECTION_LEVEL":
-                svg_writer.annotations["section_level_obj"] = obj
-            elif element.ObjectType == "TEXT":
-                svg_writer.annotations.setdefault("text_objs", []).append(obj)
-            else:
-                svg_writer.annotations.setdefault("misc_objs", []).append(obj)
+        elements = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(self.camera_element))
+        svg_writer.annotations = sorted(elements, key=lambda a : tool.Drawing.get_annotation_z_index(a))
 
-        svg_writer.annotations["attributes"] = [a.name for a in drawing_style.attributes]
-        # TODO: This was the old 2D annotation box checking system, prepare to deprecate
-        svg_writer.annotations["annotation_objs"] = []
+        #svg_writer.annotations["attributes"] = [a.name for a in drawing_style.attributes]
 
         svg_writer.write("annotation")
         return svg_writer.output
