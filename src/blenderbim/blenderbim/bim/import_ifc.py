@@ -428,10 +428,12 @@ class IfcImporter:
         props.has_blender_offset = True
 
     def guess_absolute_coordinate(self):
-        # Civil BIM applications like to work in absolute coordinates, where the ObjectPlacement is 0,0,0 but each
-        # individual coordinate of the shape representation is in absolute values.
+        # Civil BIM applications like to work in absolute coordinates, where the
+        # ObjectPlacement is usually 0,0,0 (but not always, so we'll need to
+        # check for the actual transformation) but each individual coordinate of
+        # the shape representation is in absolute values.
         offset_point = self.get_offset_point()
-        if not offset_point:
+        if offset_point is None:
             return
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.blender_eastings = str(offset_point[0])
@@ -441,34 +443,41 @@ class IfcImporter:
 
     def get_offset_point(self):
         elements_checked = 0
-        # If more than these points aren't far away, the file probably isn't absolutely positioned
-        element_checking_threshold = 100
-        if self.file.schema == "IFC2X3":
-            # IFC2X3 does not have IfcCartesianPointList3D
-            point_lists = []
-        else:
-            point_lists = self.file.by_type("IfcCartesianPointList3D")
-        for point_list in point_lists:
-            elements_checked += 1
-            if elements_checked > element_checking_threshold:
-                return
-            for i, point in enumerate(point_list.CoordList):
-                if len(point) == 3 and self.is_point_far_away(point, is_meters=False):
-                    return point
-
-        for point in self.file.by_type("IfcCartesianPoint"):
-            is_used_in_placement = False
-            for inverse in self.file.get_inverse(point):
-                if inverse.is_a("IfcAxis2Placement3D"):
-                    is_used_in_placement = True
-                    break
-            if is_used_in_placement:
+        # If more than these elements aren't far away, the file probably isn't absolutely positioned
+        element_checking_threshold = 10
+        for element in self.file.by_type("IfcElement"):
+            if not element.Representation:
                 continue
             elements_checked += 1
             if elements_checked > element_checking_threshold:
                 return
-            if len(point.Coordinates) == 3 and self.is_point_far_away(point, is_meters=False):
-                return point.Coordinates
+            if not self.does_element_likely_have_geometry_far_away(element):
+                continue
+            shape = ifcopenshell.geom.create_shape(self.settings, element)
+            m = shape.transformation.matrix.data
+            mat = np.array(
+                ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
+            )
+            point = np.array(
+                (
+                    shape.geometry.verts[0] / self.unit_scale,
+                    shape.geometry.verts[1] / self.unit_scale,
+                    shape.geometry.verts[2] / self.unit_scale,
+                    0.0,
+                )
+            )
+            return mat @ point
+
+    def does_element_likely_have_geometry_far_away(self, element):
+        for representation in element.Representation.Representations:
+            for subelement in self.file.traverse(representation):
+                if subelement.is_a("IfcCartesianPointList3D"):
+                    for point in subelement.CoordList:
+                        if len(point) == 3 and self.is_point_far_away(point, is_meters=False):
+                            return True
+                if subelement.is_a("IfcCartesianPoint"):
+                    if len(subelement.Coordinates) == 3 and self.is_point_far_away(subelement, is_meters=False):
+                        return True
 
     def apply_blender_offset_to_matrix_world(self, obj, matrix):
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -1719,15 +1728,27 @@ class IfcImporter:
                 and geometry.verts
                 and self.is_point_far_away((geometry.verts[0], geometry.verts[1], geometry.verts[2]))
             ):
+                m = shape.transformation.matrix.data
+                mat = np.array(
+                    ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
+                )
+                offset_point = np.linalg.inv(mat) @ np.array(
+                    (
+                        float(props.blender_eastings),
+                        float(props.blender_northings),
+                        float(props.blender_orthogonal_height),
+                        0.0,
+                    )
+                )
                 verts = [None] * len(geometry.verts)
                 for i in range(0, len(geometry.verts), 3):
                     verts[i], verts[i + 1], verts[i + 2] = ifcopenshell.util.geolocation.enh2xyz(
                         geometry.verts[i],
                         geometry.verts[i + 1],
                         geometry.verts[i + 2],
-                        float(props.blender_eastings) * self.unit_scale,
-                        float(props.blender_northings) * self.unit_scale,
-                        float(props.blender_orthogonal_height) * self.unit_scale,
+                        offset_point[0] * self.unit_scale,
+                        offset_point[1] * self.unit_scale,
+                        offset_point[2] * self.unit_scale,
                         float(props.blender_x_axis_abscissa),
                         float(props.blender_x_axis_ordinate),
                     )
