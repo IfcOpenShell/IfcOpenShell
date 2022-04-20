@@ -50,6 +50,25 @@ applications combine both of these invalid workarounds. To see which workaround
 was used on an object, check the "Blender Offset" property in the ``Transform``
 object panel.
 
+Sometimes, a model shifts their coordinates for some objects, but not all. For
+example, the walls in a model may have their object placement or cartesian
+points shifted to map coordinates, however, the object placement of the site is
+still at 0, 0, 0. This creates a problem, because either we can display the
+walls accurately, or the site placement accurately, but not both. Users may not
+even realise this is an issue because many IFC viewers don't show object
+placements because they are "invisible". However, because the BlenderBIM Add-on
+is a full authoring platform, we do need to show these placements and thus it is
+the users responsibility to reconcile this inconsistency in their coordinates.
+Either the user needs to fix their file to consistently offset all coordinates,
+or the user needs to manually tell the BlenderBIM Add-on which offset to choose.
+In the absence of manual intervention, the BlenderBIM Add-on will make an
+intelligent guess, but it may be wrong.
+
+To manually specify an offset, simply load an IFC project with Advanced Mode
+enabled. Then enable the ``Import and Offset Model`` option and specify a new
+coordinate to replace the origin's default of 0,0,0 in the ``Model Offset
+Coordinates`` option.
+
 Coordinates and precision limits
 --------------------------------
 
