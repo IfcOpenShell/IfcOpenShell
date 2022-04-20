@@ -47,13 +47,13 @@ class BIM_PT_camera(Panel):
 
         col = layout.column(align=True)
         row = col.row(align=True)
-        row.prop(dprops, "has_underlay", icon="OUTLINER_OB_IMAGE")
+        row.prop(props, "has_underlay", icon="OUTLINER_OB_IMAGE")
         row.prop(dprops, "should_use_underlay_cache", text="", icon="FILE_REFRESH")
         row = col.row(align=True)
-        row.prop(dprops, "has_linework", icon="IMAGE_DATA")
+        row.prop(props, "has_linework", icon="IMAGE_DATA")
         row.prop(dprops, "should_use_linework_cache", text="", icon="FILE_REFRESH")
         row = col.row(align=True)
-        row.prop(dprops, "has_annotation", icon="MOD_EDGESPLIT")
+        row.prop(props, "has_annotation", icon="MOD_EDGESPLIT")
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
 
         row = layout.row()

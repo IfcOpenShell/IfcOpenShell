@@ -115,7 +115,18 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
     ifc.run("group.assign_group", group=group, product=element)
     collector.assign(camera)
     pset = ifc.run("pset.add_pset", product=element, name="EPset_Drawing")
-    ifc.run("pset.edit_pset", pset=pset, properties={"TargetView": target_view, "Scale": "1/100"})
+    ifc.run(
+        "pset.edit_pset",
+        pset=pset,
+        properties={
+            "TargetView": target_view,
+            "Scale": "1/100",
+            "HumanScale": "1:100",
+            "HasUnderlay": False,
+            "HasLinework": True,
+            "HasAnnotation": True,
+        },
+    )
     drawing.import_drawings()
 
 
@@ -161,6 +172,9 @@ def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None)
 
 
 def sync_references(ifc, collector, drawing_tool, drawing=None):
+    if not drawing_tool.has_linework(drawing):
+        return
+
     context = drawing_tool.get_annotation_context(drawing_tool.get_drawing_target_view(drawing))
     if not context:
         return

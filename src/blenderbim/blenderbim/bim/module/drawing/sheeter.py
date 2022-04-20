@@ -67,7 +67,7 @@ class SheetBuilder:
         drawing_dir = os.path.join(self.data_dir, "diagrams")
         sheet_path = os.path.join(sheet_dir, sheet_name + ".svg")
         drawing_path = os.path.join(drawing_dir, filename + ".svg")
-        underlay_path = os.path.join(drawing_dir, filename + ".png")
+        underlay_path = os.path.join(drawing_dir, filename + "-underlay.png")
 
         if not os.path.isfile(sheet_path):
             raise FileNotFoundError
@@ -92,6 +92,7 @@ class SheetBuilder:
 
         if os.path.isfile(underlay_path):
             background = ET.SubElement(view, "image")
+            background.attrib["data-type"] = "background"
             background.attrib["xlink:href"] = os.path.relpath(underlay_path, sheet_dir)
             background.attrib["x"] = "30"
             background.attrib["y"] = "30"
@@ -100,6 +101,7 @@ class SheetBuilder:
 
         if os.path.isfile(drawing_path):
             foreground = ET.SubElement(view, "image")
+            foreground.attrib["data-type"] = "foreground"
             foreground.attrib["xlink:href"] = os.path.relpath(drawing_path, sheet_dir)
             foreground.attrib["x"] = "30"
             foreground.attrib["y"] = "30"
@@ -119,9 +121,7 @@ class SheetBuilder:
         sheet_tree = ET.parse(sheet_path)
         sheet_root = sheet_tree.getroot()
 
-        print('removing drawing', sheet_root.findall("{http://www.w3.org/2000/svg}g"))
         for g in sheet_root.findall("{http://www.w3.org/2000/svg}g"):
-            print('checking g', g)
             if g.attrib["data-type"] == "drawing" and g.attrib["data-guid"] == drawing.GlobalId:
                 sheet_root.remove(g)
                 break
@@ -160,13 +160,15 @@ class SheetBuilder:
         title_tree = ET.parse(os.path.join(self.data_dir, "templates", "view-title.svg"))
         title_root = title_tree.getroot()
         title = ET.SubElement(parent, "image")
+        title.attrib["data-type"] = "view-title"
         title.attrib["xlink:href"] = "../templates/view-title.svg"
         title.attrib["x"] = str(x)
         title.attrib["y"] = str(y)
         title.attrib["width"] = str(self.convert_to_mm(title_root.attrib.get("width")))
         title.attrib["height"] = str(self.convert_to_mm(title_root.attrib.get("height")))
 
-    def build(self, sheet_name):
+    def build(self, sheet):
+        sheet_name = tool.Drawing.get_sheet_filename(sheet)
         os.makedirs(os.path.join(self.data_dir, "build", sheet_name), exist_ok=True)
 
         sheet_path = os.path.join(self.data_dir, "sheets", f"{sheet_name}.svg")
@@ -177,47 +179,59 @@ class SheetBuilder:
         tree = ET.parse(sheet_path)
         root = tree.getroot()
 
-        titleblock = root.findall('{http://www.w3.org/2000/svg}g[@data-type="titleblock"]')[0]
-        image = titleblock.findall("{http://www.w3.org/2000/svg}image")[0]
-        titleblock.append(self.parse_embedded_svg(image, {"number": sheet_name, "revision": "A"}))
-        titleblock.remove(image)
-
-        self.group_number = 1
-        self.build_drawings(root.findall('{http://www.w3.org/2000/svg}g[@data-type="drawing"]'), sheet_name)
+        self.build_titleblock(root, sheet)
+        self.build_drawings(root, sheet)
         self.build_schedules(root.findall('{http://www.w3.org/2000/svg}g[@data-type="schedule"]'))
 
         with open(os.path.join(self.data_dir, "build", sheet_name, f"{sheet_name}.svg"), "wb") as output:
             tree.write(output)
 
-    def build_drawings(self, drawings, sheet_name):
-        for view in drawings:
+    def build_titleblock(self, root, sheet):
+        titleblock = root.findall('{http://www.w3.org/2000/svg}g[@data-type="titleblock"]')[0]
+        image = titleblock.findall("{http://www.w3.org/2000/svg}image")[0]
+        titleblock.append(self.parse_embedded_svg(image, sheet.get_info()))
+        titleblock.remove(image)
+
+    def build_drawings(self, root, sheet):
+        sheet_name = tool.Drawing.get_sheet_filename(sheet)
+        references = tool.Drawing.get_document_references(sheet)
+        drawing_references = {tool.Drawing.get_reference_element(r): r for r in  references}
+
+        for view in root.findall('{http://www.w3.org/2000/svg}g[@data-type="drawing"]'):
+            drawing = [d for d in drawing_references.keys() if d and d.GlobalId == view.attrib["data-guid"]][0]
+            reference = drawing_references[drawing]
+
             images = view.findall("{http://www.w3.org/2000/svg}image")
-            background = images[0]
-            foreground = images[1]
-            view_title = images[2]
-            self.scale = "NTS"
 
-            # Add foreground
-            view.append(self.parse_embedded_svg(foreground, {}))
+            background = None
+            foreground = None
+            view_title = None
 
-            # Add background
-            background_path = os.path.join(self.data_dir, "sheets", self.get_href(background))
+            for image in images:
+                if image.attrib["data-type"] == "background":
+                    background = image
+                elif image.attrib["data-type"] == "foreground":
+                    foreground = image
+                elif image.attrib["data-type"] == "view-title":
+                    view_title = image
 
-            copy(background_path, os.path.join(self.data_dir, "build", sheet_name))
+            if foreground is not None:
+                view.append(self.parse_embedded_svg(foreground, {}))
 
-            # Add view title
-            foreground_path = self.get_href(foreground)
-            view.append(
-                self.parse_embedded_svg(
-                    view_title,
-                    {"no": self.group_number, "name": ntpath.basename(foreground_path)[0:-4], "scale": self.scale},
-                )
-            )
+            if background is not None:
+                background_path = os.path.join(self.data_dir, "sheets", self.get_href(background))
+                copy(background_path, os.path.join(self.data_dir, "build", sheet_name))
+
+            if view_title is not None:
+                foreground_path = self.get_href(foreground)
+                data = reference.get_info()
+                if not data["Name"]:
+                    data["Name"] = ntpath.basename(foreground_path)[0:-4]
+                data["Scale"] = tool.Drawing.get_drawing_human_scale(drawing)
+                view.append(self.parse_embedded_svg(view_title, data))
 
             for image in images:
                 view.remove(image)
-
-            self.group_number += 1
 
     def build_schedules(self, schedules):
         for group in schedules:
@@ -231,14 +245,12 @@ class SheetBuilder:
             path = self.get_href(schedule)
             group.append(
                 self.parse_embedded_svg(
-                    group_title, {"no": self.group_number, "name": ntpath.basename(path)[0:-4], "scale": self.scale}
+                    group_title, {"no": 1, "name": ntpath.basename(path)[0:-4], "scale": self.scale}
                 )
             )
 
             for image in images:
                 group.remove(image)
-
-            self.group_number += 1
 
     def get_href(self, element):
         return urllib.parse.unquote(element.attrib.get("{http://www.w3.org/1999/xlink}href"))

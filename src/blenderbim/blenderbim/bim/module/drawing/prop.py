@@ -72,8 +72,10 @@ def update_diagram_scale(self, context):
     scale = self.diagram_scale
     if scale == "CUSTOM":
         scale = self.custom_diagram_scale
-    scale = scale.split("|")[1]
-    element = tool.Ifc.get_entity(context.scene.camera)
+    if "|" not in scale:
+        return
+    human_scale, scale = scale.split("|")
+    element = tool.Ifc.get_entity(context.active_object)
     if not element:
         return
     pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing")
@@ -81,7 +83,9 @@ def update_diagram_scale(self, context):
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
         pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
-    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Scale": scale})
+    ifcopenshell.api.run(
+        "pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Scale": scale, "HumanScale": human_scale}
+    )
 
 
 def get_diagram_scales(self, context):
@@ -147,6 +151,30 @@ def get_diagram_scales(self, context):
 def update_drawing_name(self, context):
     drawing = tool.Ifc.get().by_id(self.ifc_definition_id)
     core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
+
+
+def update_has_underlay(self, context):
+    update_layer(self, context, "HasUnderlay", self.has_underlay)
+
+
+def update_has_linework(self, context):
+    update_layer(self, context, "HasLinework", self.has_linework)
+
+
+def update_has_annotation(self, context):
+    update_layer(self, context, "HasAnnotation", self.has_annotation)
+
+
+def update_layer(self, context, name, value):
+    element = tool.Ifc.get_entity(context.active_object)
+    if not element:
+        return
+    pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing")
+    if pset:
+        pset = tool.Ifc.get().by_id(pset["id"])
+    else:
+        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
+    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={name: value})
 
 
 def getTitleblocks(self, context):
@@ -272,9 +300,6 @@ class RasterStyleProperty(enum.Enum):
 
 
 class DocProperties(PropertyGroup):
-    has_underlay: BoolProperty(name="Underlay", default=False)
-    has_linework: BoolProperty(name="Linework", default=True)
-    has_annotation: BoolProperty(name="Annotation", default=True)
     should_use_underlay_cache: BoolProperty(name="Use Underlay Cache", default=False)
     should_use_linework_cache: BoolProperty(name="Use Linework Cache", default=False)
     should_use_annotation_cache: BoolProperty(name="Use Annotation Cache", default=False)
@@ -316,6 +341,9 @@ class DocProperties(PropertyGroup):
 
 
 class BIMCameraProperties(PropertyGroup):
+    has_underlay: BoolProperty(name="Underlay", default=False, update=update_has_underlay)
+    has_linework: BoolProperty(name="Linework", default=True, update=update_has_linework)
+    has_annotation: BoolProperty(name="Annotation", default=True, update=update_has_annotation)
     representation: StringProperty(name="Representation")
     view_name: StringProperty(name="View Name")
     diagram_scale: EnumProperty(items=get_diagram_scales, name="Drawing Scale", update=update_diagram_scale)

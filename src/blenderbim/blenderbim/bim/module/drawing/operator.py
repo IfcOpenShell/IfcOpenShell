@@ -119,9 +119,10 @@ class CreateDrawing(bpy.types.Operator):
         start = time.time()
         self.profile_code("Start drawing generation process")
         self.props = context.scene.DocProperties
+        self.cprops = self.camera.data.BIMCameraProperties
         self.drawing_name = self.file.by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
         self.get_scale()
-        if self.camera.data.BIMCameraProperties.update_representation(self.camera):
+        if self.cprops.update_representation(self.camera):
             bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
         underlay_svg = self.generate_underlay(context)
         self.profile_code("Generate underlay")
@@ -186,12 +187,12 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_underlay(self, context):
-        if not self.props.has_underlay:
+        if not self.cprops.has_underlay:
             return
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-underlay.svg")
         context.scene.render.filepath = svg_path[0:-4] + ".png"
         drawing_style = context.scene.DocProperties.drawing_styles[
-            self.camera.data.BIMCameraProperties.active_drawing_style_index
+            self.cprops.active_drawing_style_index
         ]
 
         if drawing_style.render_type == "DEFAULT":
@@ -246,7 +247,7 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_linework(self, context):
-        if not self.props.has_linework:
+        if not self.cprops.has_linework:
             return
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-linework.svg")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
@@ -410,7 +411,7 @@ class CreateDrawing(bpy.types.Operator):
         return re.sub("[^0-9a-zA-Z]+", "", name)
 
     def generate_annotation(self, context):
-        if not self.props.has_annotation:
+        if not self.cprops.has_annotation:
             return
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-annotation.svg")
         if os.path.isfile(svg_path) and self.props.should_use_annotation_cache:
@@ -420,7 +421,7 @@ class CreateDrawing(bpy.types.Operator):
         svg_writer = svgwriter.SvgWriter()
 
         drawing_style = context.scene.DocProperties.drawing_styles[
-            camera.data.BIMCameraProperties.active_drawing_style_index
+            self.cprops.active_drawing_style_index
         ]
 
         render = context.scene.render
@@ -441,44 +442,10 @@ class CreateDrawing(bpy.types.Operator):
         svg_writer.camera_height = height
         svg_writer.camera_projection = tuple(camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
 
-        for obj in camera.users_collection[0].objects:
-            if "IfcAnnotation/" not in obj.name:
-                continue
-            element = tool.Ifc.get_entity(obj)
-            if element.ObjectType == "GRID":
-                svg_writer.annotations.setdefault("grid_objs", []).append(obj)
-            elif obj.type == "CAMERA":
-                continue
-            elif element.ObjectType == "TEXT_LEADER":
-                svg_writer.annotations.setdefault("leader_objs", []).append(obj)
-            elif element.ObjectType == "STAIR_ARROW":
-                svg_writer.annotations["stair_obj"] = obj
-            elif element.ObjectType == "EQUAL_DIMENSION":
-                svg_writer.annotations.setdefault("equal_objs", []).append(obj)
-            elif element.ObjectType == "DIMENSION":
-                svg_writer.annotations.setdefault("dimension_objs", []).append(obj)
-            elif element.ObjectType == "ELEVATION":
-                svg_writer.annotations.setdefault("elevation_objs", []).append(obj)
-            elif element.ObjectType == "SECTION":
-                svg_writer.annotations.setdefault("section_objs", []).append(obj)
-            elif element.ObjectType == "BREAKLINE":
-                svg_writer.annotations["break_obj"] = obj
-            elif element.ObjectType == "HIDDEN_LINE":
-                svg_writer.annotations.setdefault("hidden_objs", []).append((obj, obj.data))
-            elif element.ObjectType == "SOLID_LINE":
-                svg_writer.annotations.setdefault("solid_objs", []).append((obj, obj.data))
-            elif element.ObjectType == "PLAN_LEVEL":
-                svg_writer.annotations.setdefault("plan_level_objs", []).append(obj)
-            elif element.ObjectType == "SECTION_LEVEL":
-                svg_writer.annotations["section_level_obj"] = obj
-            elif element.ObjectType == "TEXT":
-                svg_writer.annotations.setdefault("text_objs", []).append(obj)
-            elif element.ObjectType == "MISC":
-                svg_writer.annotations.setdefault("misc_objs", []).append(obj)
+        elements = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(self.camera_element))
+        svg_writer.annotations = sorted(elements, key=lambda a : tool.Drawing.get_annotation_z_index(a))
 
-        svg_writer.annotations["attributes"] = [a.name for a in drawing_style.attributes]
-        # TODO: This was the old 2D annotation box checking system, prepare to deprecate
-        svg_writer.annotations["annotation_objs"] = []
+        #svg_writer.annotations["attributes"] = [a.name for a in drawing_style.attributes]
 
         svg_writer.write("annotation")
         return svg_writer.output
@@ -635,14 +602,8 @@ class RemoveDrawingFromSheet(bpy.types.Operator):
 
     def execute(self, context):
         reference = tool.Ifc.get().by_id(self.reference)
-        if tool.Ifc.get_schema() == "IFC2X3":
-            sheet = reference.ReferenceToDocument[0]
-            drawing = [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference][
-                0
-            ].RelatedObjects[0]
-        else:
-            sheet = reference.ReferencedDocument
-            drawing = reference.DocumentRefForObjects[0].RelatedObjects[0]
+        sheet = tool.Drawing.get_reference_sheet(reference)
+        drawing = tool.Drawing.get_reference_element(reference)
 
         tool.Ifc.run("document.unassign_document", product=drawing, document=reference)
         tool.Ifc.run("document.remove_reference", reference=reference)
@@ -667,10 +628,11 @@ class CreateSheets(bpy.types.Operator):
         scene = context.scene
         props = scene.DocProperties
         active_sheet = props.sheets[props.active_sheet_index]
-        name = active_sheet.name
+        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
+        name = tool.Drawing.get_sheet_filename(sheet)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = scene.BIMProperties.data_dir
-        sheet_builder.build(name)
+        sheet_builder.build(sheet)
 
         svg2pdf_command = context.preferences.addons["blenderbim"].preferences.svg2pdf_command
         svg2dxf_command = context.preferences.addons["blenderbim"].preferences.svg2dxf_command
