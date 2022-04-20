@@ -391,6 +391,8 @@ class IfcImporter:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             return
+        if self.ifc_import_settings.should_offset_model:
+            return self.set_manual_blender_offset()
         if self.file.schema == "IFC2X3":
             project = self.file.by_type("IfcProject")[0]
         else:
@@ -402,6 +404,13 @@ class IfcImporter:
         if building and self.is_element_far_away(building):
             return self.guess_georeferencing(building)
         return self.guess_absolute_coordinate()
+
+    def set_manual_blender_offset(self):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        props.blender_eastings = str(self.ifc_import_settings.model_offset_coordinates[0])
+        props.blender_northings = str(self.ifc_import_settings.model_offset_coordinates[1])
+        props.blender_orthogonal_height = str(self.ifc_import_settings.model_offset_coordinates[2])
+        props.has_blender_offset = True
 
     def guess_georeferencing(self, element):
         if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
@@ -476,11 +485,6 @@ class IfcImporter:
                     float(props.blender_x_axis_abscissa),
                     float(props.blender_x_axis_ordinate),
                 )
-
-        if self.ifc_import_settings.should_offset_model:
-            matrix[0, 3] += self.ifc_import_settings.model_offset_coordinates[0]
-            matrix[1, 3] += self.ifc_import_settings.model_offset_coordinates[1]
-            matrix[2, 3] += self.ifc_import_settings.model_offset_coordinates[2]
 
         return mathutils.Matrix(matrix.tolist())
 
