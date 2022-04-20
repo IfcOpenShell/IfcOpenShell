@@ -65,7 +65,7 @@ class SvgWriter:
         self.data_dir = None
         self.vector_style = None
         self.human_scale = "NTS"
-        self.annotations = {}
+        self.annotations = []
         self.background_image = None
         self.scale = 1 / 100  # 1:100
 
@@ -140,178 +140,163 @@ class SvgWriter:
                 self.draw_line(element, "background")
 
     def draw_annotations(self):
-        x_offset = self.raw_width / 2
-        y_offset = self.raw_height / 2
+        for element in self.annotations:
+            obj = tool.Ifc.get_object(element)
+            if not obj or element.ObjectType == "DRAWING":
+                continue
+            elif element.ObjectType == "GRID":
+                self.draw_grid_annotation(obj)
+            elif element.ObjectType == "TEXT_LEADER":
+                self.draw_leader_annotation(obj)
+            elif element.ObjectType == "STAIR_ARROW":
+                self.draw_stair_annotation(obj)
+            elif element.ObjectType == "EQUAL_DIMENSION":
+                self.draw_dimension_annotations(obj, text_override="EQ")
+            elif element.ObjectType == "DIMENSION":
+                self.draw_dimension_annotations(obj)
+            elif element.ObjectType == "ELEVATION":
+                self.draw_elevation_annotation(obj)
+            elif element.ObjectType == "SECTION":
+                self.draw_section_annotation(obj)
+            elif element.ObjectType == "BREAKLINE":
+                self.draw_break_annotations(obj)
+            elif element.ObjectType == "HIDDEN_LINE":
+                self.draw_line_annotation(obj)
+            elif element.ObjectType == "PLAN_LEVEL":
+                self.draw_plan_level_annotation(obj)
+            elif element.ObjectType == "SECTION_LEVEL":
+                self.draw_section_level_annotation(obj)
+            elif element.ObjectType == "TEXT":
+                self.draw_text_annotation(obj, obj.location)
+            else:
+                self.draw_misc_annotation(obj)
 
-        for obj in self.annotations.get("equal_objs", []):
-            self.draw_dimension_annotations(obj, text_override="EQ")
-        for obj in self.annotations.get("dimension_objs", []):
-            self.draw_dimension_annotations(obj)
+        # Experimental integration with the MeasureIt-ARCH Add-on
         self.draw_measureit_arch_dimension_annotations()
 
-        for grid_obj in self.annotations.get("grid_objs", []):
-            matrix_world = grid_obj.matrix_world
-            classes = self.get_attribute_classes(grid_obj)
-            for edge in grid_obj.data.edges:
-                v0_global = matrix_world @ grid_obj.data.vertices[edge.vertices[0]].co.xyz
-                v1_global = matrix_world @ grid_obj.data.vertices[edge.vertices[1]].co.xyz
-                v0 = self.project_point_onto_camera(v0_global)
-                v1 = self.project_point_onto_camera(v1_global)
-                start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
-                end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
-                vector = end - start
-                line = self.svg.add(
-                    self.svg.line(
-                        start=tuple(start * self.scale), end=tuple(end * self.scale), class_=" ".join(classes)
-                    )
-                )
-                line["stroke-dasharray"] = "12.5, 3, 3, 3"
-                axis_tag = tool.Ifc.get_entity(grid_obj).Name
-                self.svg.add(
-                    self.svg.text(
-                        axis_tag,
-                        insert=tuple(start * self.scale),
-                        **{
-                            "font-size": annotation.Annotator.get_svg_text_size(5.0),
-                            "font-family": "OpenGost Type B TT",
-                            "text-anchor": "middle",
-                            "alignment-baseline": "middle",
-                            "dominant-baseline": "middle",
-                        },
-                    )
-                )
-                self.svg.add(
-                    self.svg.text(
-                        axis_tag,
-                        insert=tuple(end * self.scale),
-                        **{
-                            "font-size": annotation.Annotator.get_svg_text_size(5.0),
-                            "font-family": "OpenGost Type B TT",
-                            "text-anchor": "middle",
-                            "alignment-baseline": "middle",
-                            "dominant-baseline": "middle",
-                        },
-                    )
-                )
-
-        self.draw_ifc_annotation()
-
-        for obj in self.annotations.get("misc_objs", []):
-            self.draw_misc_annotation(obj)
-
-        for obj_data in self.annotations.get("hidden_objs", []):
-            self.draw_line_annotation(obj_data)
-
-        for obj_data in self.annotations.get("solid_objs", []):
-            self.draw_line_annotation(obj_data)
-
-        self.draw_leader_annotations()
-
-        for obj in self.annotations.get("plan_level_objs", []):
-            self.draw_plan_level_annotation(obj)
-
-        if self.annotations.get("section_level_obj"):
-            matrix_world = self.annotations["section_level_obj"].matrix_world
-            classes = self.get_attribute_classes(self.annotations["section_level_obj"])
-            for spline in self.annotations["section_level_obj"].data.splines:
-                points = self.get_spline_points(spline)
-                projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
-                d = " ".join(
-                    [
-                        "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
-                        for p in projected_points
-                    ]
-                )
-                d = "M{}".format(d[1:])
-                path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
-                text_position = Vector(
-                    (
-                        (x_offset + projected_points[0].x) * self.scale,
-                        ((y_offset - projected_points[0].y) * self.scale) - 3.5,
-                    )
-                )
-                # TODO: allow metric to be configurable
-                rl = (matrix_world @ points[0].co.xyz).z
-                if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                    rl = helper.format_distance(rl)
-                else:
-                    rl = "{:.3f}m".format(rl)
-                self.svg.add(
-                    self.svg.text(
-                        "RL +{}".format(rl),
-                        insert=tuple(text_position),
-                        **{
-                            "font-size": annotation.Annotator.get_svg_text_size(2.5),
-                            "font-family": "OpenGost Type B TT",
-                            "text-anchor": "start",
-                            "alignment-baseline": "baseline",
-                            "dominant-baseline": "baseline",
-                        },
-                    )
-                )
-
-        if self.annotations.get("stair_obj"):
-            matrix_world = self.annotations["stair_obj"].matrix_world
-            classes = self.get_attribute_classes(self.annotations["stair_obj"])
-            for spline in self.annotations["stair_obj"].data.splines:
-                points = self.get_spline_points(spline)
-                projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
-                d = " ".join(
-                    [
-                        "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
-                        for p in projected_points
-                    ]
-                )
-                d = "M{}".format(d[1:])
-                start = Vector(((x_offset + projected_points[0].x), (y_offset - projected_points[0].y)))
-                next_point = Vector(((x_offset + projected_points[1].x), (y_offset - projected_points[1].y)))
-                text_position = (start * self.scale) - ((next_point - start).normalized() * 5)
-                path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
-                self.svg.add(
-                    self.svg.text(
-                        "UP",
-                        insert=tuple(text_position),
-                        **{
-                            "font-size": annotation.Annotator.get_svg_text_size(2.5),
-                            "font-family": "OpenGost Type B TT",
-                            "text-anchor": "middle",
-                            "alignment-baseline": "middle",
-                            "dominant-baseline": "middle",
-                        },
-                    )
-                )
-
-        for obj in self.annotations.get("elevation_objs", []):
-            self.draw_elevation_annotation(obj)
-
-        for obj in self.annotations.get("section_objs", []):
-            self.draw_section_annotation(obj)
-
-        for text_obj in self.annotations.get("text_objs", []):
-            self.draw_text_annotation(text_obj, text_obj.location)
-
-        if self.annotations.get("break_obj"):
-            self.draw_break_annotations(self.annotations["break_obj"])
-
-    def draw_ifc_annotation(self):
+    def draw_section_level_annotation(self, obj):
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
-        for annotation in self.annotations.get("annotation_objs", []):
-            for edge in annotation["edges"]:
-                v0_global = annotation["vertices"][edge[0]]
-                v1_global = annotation["vertices"][edge[1]]
-                v0 = self.project_point_onto_camera(v0_global)
-                v1 = self.project_point_onto_camera(v1_global)
-                start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
-                end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
-                vector = end - start
-                line = self.svg.add(
-                    self.svg.line(
-                        start=tuple(start * self.scale),
-                        end=tuple(end * self.scale),
-                        class_=" ".join(annotation["classes"]),
-                    )
+        matrix_world = obj.matrix_world
+        classes = self.get_attribute_classes(obj)
+        for spline in obj.data.splines:
+            points = self.get_spline_points(spline)
+            projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
+            d = " ".join(
+                [
+                    "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    for p in projected_points
+                ]
+            )
+            d = "M{}".format(d[1:])
+            path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
+            text_position = Vector(
+                (
+                    (x_offset + projected_points[0].x) * self.scale,
+                    ((y_offset - projected_points[0].y) * self.scale) - 3.5,
                 )
+            )
+            # TODO: allow metric to be configurable
+            rl = (matrix_world @ points[0].co.xyz).z
+            if bpy.context.scene.unit_settings.system == "IMPERIAL":
+                rl = helper.format_distance(rl)
+            else:
+                rl = "{:.3f}m".format(rl)
+            self.svg.add(
+                self.svg.text(
+                    "RL +{}".format(rl),
+                    insert=tuple(text_position),
+                    **{
+                        "font-size": annotation.Annotator.get_svg_text_size(2.5),
+                        "font-family": "OpenGost Type B TT",
+                        "text-anchor": "start",
+                        "alignment-baseline": "baseline",
+                        "dominant-baseline": "baseline",
+                    },
+                )
+            )
+
+
+    def draw_stair_annotation(self, obj):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+        matrix_world = obj.matrix_world
+        classes = self.get_attribute_classes(obj)
+        for spline in obj.data.splines:
+            points = self.get_spline_points(spline)
+            projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
+            d = " ".join(
+                [
+                    "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    for p in projected_points
+                ]
+            )
+            d = "M{}".format(d[1:])
+            start = Vector(((x_offset + projected_points[0].x), (y_offset - projected_points[0].y)))
+            next_point = Vector(((x_offset + projected_points[1].x), (y_offset - projected_points[1].y)))
+            text_position = (start * self.scale) - ((next_point - start).normalized() * 5)
+            path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
+            self.svg.add(
+                self.svg.text(
+                    "UP",
+                    insert=tuple(text_position),
+                    **{
+                        "font-size": annotation.Annotator.get_svg_text_size(2.5),
+                        "font-family": "OpenGost Type B TT",
+                        "text-anchor": "middle",
+                        "alignment-baseline": "middle",
+                        "dominant-baseline": "middle",
+                    },
+                )
+            )
+
+    def draw_grid_annotation(self, obj):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+        matrix_world = obj.matrix_world
+        classes = self.get_attribute_classes(obj)
+        for edge in obj.data.edges:
+            v0_global = matrix_world @ obj.data.vertices[edge.vertices[0]].co.xyz
+            v1_global = matrix_world @ obj.data.vertices[edge.vertices[1]].co.xyz
+            v0 = self.project_point_onto_camera(v0_global)
+            v1 = self.project_point_onto_camera(v1_global)
+            start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
+            end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+            vector = end - start
+            line = self.svg.add(
+                self.svg.line(
+                    start=tuple(start * self.scale), end=tuple(end * self.scale), class_=" ".join(classes)
+                )
+            )
+            line["stroke-dasharray"] = "12.5, 3, 3, 3"
+            axis_tag = tool.Ifc.get_entity(obj).Name
+            self.svg.add(
+                self.svg.text(
+                    axis_tag,
+                    insert=tuple(start * self.scale),
+                    **{
+                        "font-size": annotation.Annotator.get_svg_text_size(5.0),
+                        "font-family": "OpenGost Type B TT",
+                        "text-anchor": "middle",
+                        "alignment-baseline": "middle",
+                        "dominant-baseline": "middle",
+                    },
+                )
+            )
+            self.svg.add(
+                self.svg.text(
+                    axis_tag,
+                    insert=tuple(end * self.scale),
+                    **{
+                        "font-size": annotation.Annotator.get_svg_text_size(5.0),
+                        "font-family": "OpenGost Type B TT",
+                        "text-anchor": "middle",
+                        "alignment-baseline": "middle",
+                        "dominant-baseline": "middle",
+                    },
+                )
+            )
+
 
     def draw_misc_annotation(self, obj):
         # We have to decide whether this should come from Blender or from IFC.
@@ -346,12 +331,13 @@ class SvgWriter:
             str(ifcopenshell.util.element.get_predefined_type(element))
         )
         classes = [global_id, element.is_a(), predefined_type]
-        for attribute in self.annotations.get("attributes", []):
-            result = self.get_obj_value(obj, attribute)
-            if result:
-                classes.append(
-                    "{}-{}".format(re.sub("[^0-9a-zA-Z]+", "", attribute), re.sub("[^0-9a-zA-Z]+", "", result))
-                )
+        # TODO: reimplement
+        # for attribute in self.annotations.get("attributes", []):
+        #     result = self.get_obj_value(obj, attribute)
+        #     if result:
+        #         classes.append(
+        #             "{}-{}".format(re.sub("[^0-9a-zA-Z]+", "", attribute), re.sub("[^0-9a-zA-Z]+", "", result))
+        #         )
         return classes
 
     def canonicalise_class_name(self, name):
@@ -382,18 +368,16 @@ class SvgWriter:
             if result:
                 return result.string_value
 
-    def draw_line_annotation(self, obj_data):
+    def draw_line_annotation(self, obj):
         # TODO: properly scope these offsets
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
 
-        obj, data = obj_data
-
         classes = self.get_attribute_classes(obj)
         matrix_world = obj.matrix_world
 
-        if isinstance(data, bpy.types.Curve):
-            for spline in data.splines:
+        if isinstance(obj.data, bpy.types.Curve):
+            for spline in obj.data.splines:
                 points = self.get_spline_points(spline)
                 projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
                 d = " ".join(
@@ -404,7 +388,7 @@ class SvgWriter:
                 )
                 d = "M{}".format(d[1:])
                 path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
-        elif isinstance(data, bpy.types.Mesh):
+        elif isinstance(obj.data, bpy.types.Mesh):
             self.draw_edge_annotation(obj, classes)
 
     def draw_edge_annotation(self, obj, classes):
@@ -423,22 +407,21 @@ class SvgWriter:
                 self.svg.line(start=tuple(start * self.scale), end=tuple(end * self.scale), class_=" ".join(classes))
             )
 
-    def draw_leader_annotations(self):
-        for obj in self.annotations.get("leader_objs", []):
-            self.draw_line_annotation((obj, obj.data))
-            spline = obj.data.splines[0]
-            spline_points = spline.bezier_points if spline.bezier_points else spline.points
-            if spline_points:
-                position = obj.matrix_world @ spline_points[0].co.xyz
-            else:
-                position = Vector((0, 0, 0))
-            self.draw_text_annotation(obj, position)
+    def draw_leader_annotation(self, obj):
+        self.draw_line_annotation(obj)
+        spline = obj.data.splines[0]
+        spline_points = spline.bezier_points if spline.bezier_points else spline.points
+        if spline_points:
+            position = obj.matrix_world @ spline_points[0].co.xyz
+        else:
+            position = Vector((0, 0, 0))
+        self.draw_text_annotation(obj, position)
 
     def draw_section_annotation(self, obj):
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
 
-        self.draw_line_annotation((obj, obj.data))
+        self.draw_line_annotation(obj)
 
         v1 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, 0)))
         v2 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, -1)))
