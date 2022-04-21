@@ -119,9 +119,6 @@ class BIM_PT_gis(Panel):
                     )
                 )
             )
-        elif IfcStore.get_file().schema == "IFC2X3":
-            row = self.layout.row()
-            row.label(text="Not Georeferenced")
 
         if Data.projected_crs:
             row = self.layout.row(align=True)
