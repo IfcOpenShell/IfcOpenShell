@@ -47,7 +47,6 @@ classes = (
     operator.EnableEditingText,
     operator.EnableEditingTextProduct,
     operator.ExpandSheet,
-    operator.GenerateReferences,
     operator.LoadDrawings,
     operator.LoadSheets,
     operator.OpenSheet,
