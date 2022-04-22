@@ -66,6 +66,7 @@ class SvgWriter:
         self.vector_style = None
         self.human_scale = "NTS"
         self.annotations = []
+        self.metadata = []
         self.background_image = None
         self.scale = 1 / 100  # 1:100
 
@@ -331,42 +332,14 @@ class SvgWriter:
             str(ifcopenshell.util.element.get_predefined_type(element))
         )
         classes = [global_id, element.is_a(), predefined_type]
-        # TODO: reimplement
-        # for attribute in self.annotations.get("attributes", []):
-        #     result = self.get_obj_value(obj, attribute)
-        #     if result:
-        #         classes.append(
-        #             "{}-{}".format(re.sub("[^0-9a-zA-Z]+", "", attribute), re.sub("[^0-9a-zA-Z]+", "", result))
-        #         )
+        for key in self.metadata:
+            value = ifcopenshell.util.selector.Selector.get_element_value(element, key)
+            if value:
+                classes.append(self.canonicalise_class_name(key) + "-" + self.canonicalise_class_name(str(value)))
         return classes
 
     def canonicalise_class_name(self, name):
         return re.sub("[^0-9a-zA-Z]+", "", name)
-
-    def get_obj_value(self, obj, key):
-        # This is a duplicate implementation of the IFC selector key in Blender
-        # In the future if all this becomes purely IFC based this can be deleted
-        if "." in key and key.split(".")[0] == "type":
-            try:
-                obj = obj.BIMObjectProperties.relating_type
-            except:
-                return
-            key = ".".join(key.split(".")[1:])
-        result = obj.BIMObjectProperties.attributes.get(key)
-        if result:
-            return result.string_value
-        elif key == "Name":
-            return obj.name.split("/")[1]
-        elif "." in key:
-            pset_name, prop = key.split(".")
-            pset = obj.BIMObjectProperties.psets.get(pset_name)
-            if not pset:
-                pset = obj.BIMObjectProperties.qtos.get(pset_name)
-            if not pset:
-                return
-            result = pset.properties.get(prop)
-            if result:
-                return result.string_value
 
     def draw_line_annotation(self, obj):
         # TODO: properly scope these offsets

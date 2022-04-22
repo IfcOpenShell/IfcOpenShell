@@ -723,14 +723,21 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def get_reference_element(cls, reference):
         if tool.Ifc.get_schema() == "IFC2X3":
-            return [
-                r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference
-            ][0].RelatedObjects[0]
+            return [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference][
+                0
+            ].RelatedObjects[0]
         return reference.DocumentRefForObjects[0].RelatedObjects[0]
 
     @classmethod
     def get_drawing_human_scale(cls, drawing):
         return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("HumanScale", "NTS")
+
+    @classmethod
+    def get_drawing_metadata(cls, drawing):
+        return [
+            v.strip()
+            for v in ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("Metadata", "").split(",")
+        ]
 
     @classmethod
     def get_annotation_z_index(cls, drawing):

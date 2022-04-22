@@ -444,8 +444,7 @@ class CreateDrawing(bpy.types.Operator):
 
         elements = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(self.camera_element))
         svg_writer.annotations = sorted(elements, key=lambda a : tool.Drawing.get_annotation_z_index(a))
-
-        #svg_writer.annotations["attributes"] = [a.name for a in drawing_style.attributes]
+        svg_writer.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
 
         svg_writer.write("annotation")
         return svg_writer.output
