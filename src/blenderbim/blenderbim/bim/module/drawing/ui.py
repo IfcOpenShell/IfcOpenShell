@@ -361,9 +361,13 @@ class BIM_PT_annotation_utilities(Panel):
         op = row.operator("bim.add_annotation", text="Breakline", icon="FCURVE")
         op.object_type = "BREAKLINE"
         op.data_type = "mesh"
-        op = row.operator("bim.add_annotation", text="Misc", icon="MESH_MONKEY")
-        op.object_type = "MISC"
+        op = row.operator("bim.add_annotation", text="Line", icon="MESH_MONKEY")
+        op.object_type = "LINEWORK"
         op.data_type = "mesh"
+
+        row = layout.row(align=True)
+        op = row.operator("bim.add_annotation", text="Fill Area", icon="NODE_TEXTURE")
+        op.object_type = "FILL_AREA"
 
         row = layout.row(align=True)
         row.prop(self.props, "should_draw_decorations", text="Viewport Annotations")

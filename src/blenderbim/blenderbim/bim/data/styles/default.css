@@ -23,9 +23,8 @@ text { fill: black; stroke: none; }
 .cut { fill: black; stroke: black; stroke-linecap: 'round'; stroke-width: 0.35; fill-rule: evenodd; }
 .projection { fill: white; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
-.solid {}
 .IfcAnnotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
-.PredefinedType-MISC { stroke: black; stroke-width: 0.25; }
+.PredefinedType-LINEWORK { stroke: black; stroke-width: 0.25; }
 .PredefinedType-BACKGROUND { stroke: black; stroke-width: 0.18; }
 .PredefinedType-GRID { marker-start: url(#grid-marker); marker-end: url(#grid-marker); }
 .PredefinedType-SECTION { stroke-dasharray: 12.5, 3, 3, 3; }
@@ -37,11 +36,11 @@ text { fill: black; stroke: none; }
 .PredefinedType-BOUNDARY { fill: none; stroke: red; stroke-width: 1; stroke-dasharray: 12, 4, 3, 4, 3, 4; }
 .PredefinedType-BATTING { marker-start: url(#batting); stroke: none; }
 .PredefinedType-SEALANT { fill: url(#crosshatch1); stroke-width: 0.25; }
+.PredefinedType-FILLAREA { fill: white; stroke: none; }
+.PredefinedType-BREAKLINE { fill: none; stroke: black; stroke-width: 0.25; marker-mid: url(#breakline-marker); }
 .PredefinedType-TEXT { fill: black; stroke: none; }
 path.PredefinedType-TEXTLEADER { marker-end: url(#leader-marker); }
 text.PredefinedType-TEXTLEADER { fill: black; stroke: none; }
-.break { fill: white; }
-.breakline { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; marker-mid: url(#breakline-marker); }
 .material-blank { fill: white; }
 .material-diagonal1 { fill: url(#diagonal1); }
 .material-diagonal2 { fill: url(#diagonal2); }

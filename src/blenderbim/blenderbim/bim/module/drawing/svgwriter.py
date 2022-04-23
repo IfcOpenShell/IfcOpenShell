@@ -557,14 +557,16 @@ class SvgWriter:
                 )
             )
 
-    def draw_break_annotations(self, break_obj):
+    def draw_break_annotations(self, obj):
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
 
-        matrix_world = break_obj.matrix_world
-        for polygon in break_obj.data.polygons:
-            points = [break_obj.data.vertices[v] for v in polygon.vertices]
+        classes = self.get_attribute_classes(obj)
+        matrix_world = obj.matrix_world
+        for edge in obj.data.edges:
+            points = [obj.data.vertices[v] for v in edge.vertices]
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
+            projected_points = [projected_points[0], (projected_points[0] + projected_points[1]) / 2, projected_points[1]]
             d = " ".join(
                 [
                     "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
@@ -572,18 +574,8 @@ class SvgWriter:
                 ]
             )
             d = "M{}".format(d[1:])
-            path = self.svg.add(self.svg.path(d=d, class_=" ".join(["break"])))
+            path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
-            break_points = [
-                projected_points[0],
-                ((projected_points[1] - projected_points[0]) / 2) + projected_points[0],
-                projected_points[1],
-            ]
-            d = " ".join(
-                ["L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale) for p in break_points]
-            )
-            d = "M{}".format(d[1:])
-            path = self.svg.add(self.svg.path(d=d, class_=" ".join(["breakline"])))
 
     def draw_plan_level_annotation(self, obj):
         x_offset = self.raw_width / 2
