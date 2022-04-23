@@ -67,7 +67,7 @@ IF(NOT CMAKE_BUILD_TYPE)
 ENDIF()
 
 # QtViewer requires Qt5
-OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" ON)
+OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF)
 include(GNUInstallDirs)
 if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND (NOT BUILD_IFCGEOM))
     message(STATUS "'IfcGeom' is required with current outputs")
