@@ -46,10 +46,11 @@ class Drawing(blenderbim.core.tool.Drawing):
             "PLAN_LEVEL": "curve",
             "SECTION_LEVEL": "curve",
             "BREAKLINE": "mesh",
-            "MISC": "mesh",
+            "FILL_AREA": "mesh",
+            "LINEWORK": "mesh",
         }[object_type]
         obj = annotation.Annotator.get_annotation_obj(object_type, data_type)
-        if object_type == "BREAKLINE":
+        if object_type == "FILL_AREA":
             obj = annotation.Annotator.add_plane_to_annotation(obj)
         elif object_type != "TEXT":
             obj = annotation.Annotator.add_line_to_annotation(obj)
