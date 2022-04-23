@@ -17,25 +17,39 @@
 #                                                                              #
 ################################################################################
 
-cmake_minimum_required(VERSION 3.1.3)
+# Find QT header files
+SET(QT_MIN_VERSION "4.5.0")
+FIND_PACKAGE(Qt4 REQUIRED)
+FIND_PACKAGE(Qt4 COMPONENTS QtCore QtGui QtOpenGL)
 
-message("Running CMakeLists.txt in /src/qtviewer")
-message("Provide the path to Qt5 via CMAKE_PREFIX_PATH")
+INCLUDE(${QT_USE_FILE})
+SET(CMAKE_PACKAGE_QTGUI TRUE)
 
-find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED)
+# Find QT header files
+IF("$ENV{QT_INCLUDE_DIR}" STREQUAL "") 
+        SET(QT_INCLUDE_DIR "/usr/include/QT4/" CACHE FILEPATH "QT4 header files")
+        MESSAGE(STATUS "Looking for QT4 include files in: ${QT_INCLUDE_DIR}")
+        MESSAGE(STATUS "Use QT_INCLUDE_DIR to specify another directory")
+ELSE()
+        SET(QT_INCLUDE_DIR $ENV{QT_INCLUDE_DIR} CACHE FILEPATH "QT4 header files")
+        MESSAGE(STATUS "Looking for QT4 include files in: ${QT_INCLUDE_DIR}")
+ENDIF()
 
-add_executable(QtViewer
+
+INCLUDE_DIRECTORIES(${QT_INCLUDE_DIR})
+
+SET(QTviewer_SRCS
         ../../src/qtviewer/mainwindow.h
         ../../src/qtviewer/mainwindow.cpp
         ../../src/qtviewer/main.cpp
 )
-
-set_target_properties(QtViewer PROPERTIES
-	AUTOMOC On
+SET(QTviewer_MOC_SRCS 
+        ../../src/qtviewer/mainwindow.h
 )
 
-target_link_libraries(QTviewer
-	${IFCLIBS}
-	Qt5::Core Qt5::Gui Qt5::OpenGL Qt5::Widgets
-	${OPENCASCADE_LIBRARIES}
-)
+QT_WRAP_CPP(QTviewer QTviewer_SRCS ${QTviewer_MOC_SRCS})
+
+ADD_EXECUTABLE(  QTviewer ${QTviewer_SRCS} ${QTviewer_MOC_SRCS})
+#http://www.qtcentre.org/wiki/index.php?title=Compiling_Qt4_apps_with_CMake
+
+TARGET_LINK_LIBRARIES (QTviewer ${IFCLIBS} ${QT_LIBRARIES} ${OPENCASCADE_LIBRARIES})
