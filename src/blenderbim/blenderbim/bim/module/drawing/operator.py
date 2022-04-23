@@ -444,8 +444,7 @@ class CreateDrawing(bpy.types.Operator):
 
         elements = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(self.camera_element))
         svg_writer.annotations = sorted(elements, key=lambda a : tool.Drawing.get_annotation_z_index(a))
-
-        #svg_writer.annotations["attributes"] = [a.name for a in drawing_style.attributes]
+        svg_writer.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
 
         svg_writer.write("annotation")
         return svg_writer.output
@@ -737,68 +736,6 @@ class SelectDocIfcFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
-
-
-class GenerateReferences(bpy.types.Operator):
-    bl_idname = "bim.generate_references"
-    bl_label = "Generate References"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        self.camera = context.scene.camera
-        self.filter_potential_references()
-        if self.camera.data.BIMCameraProperties.target_view == "PLAN_VIEW":
-            self.generate_grids()
-        if self.camera.data.BIMCameraProperties.target_view == "ELEVATION_VIEW":
-            self.generate_grids()
-            self.generate_levels(context)
-        if self.camera.data.BIMCameraProperties.target_view == "SECTION_VIEW":
-            self.generate_grids()
-            self.generate_levels(context)
-        return {"FINISHED"}
-
-    def filter_potential_references(self):
-        for name in ["grids", "levels"]:
-            setattr(self, name, [])
-        for obj in bpy.data.objects:
-            if "IfcGridAxis/" in obj.name:
-                self.grids.append(obj)
-            if "IfcBuildingStorey/" in obj.name:
-                self.levels.append(obj)
-
-    def generate_grids(self):
-        # TODO
-        pass
-
-    def generate_levels(self, context):
-        if self.camera.data.BIMCameraProperties.raster_x > self.camera.data.BIMCameraProperties.raster_y:
-            width = self.camera.data.ortho_scale
-            height = (
-                width / self.camera.data.BIMCameraProperties.raster_x * self.camera.data.BIMCameraProperties.raster_y
-            )
-        else:
-            height = self.camera.data.ortho_scale
-            width = (
-                height / self.camera.data.BIMCameraProperties.raster_y * self.camera.data.BIMCameraProperties.raster_x
-            )
-        level_obj = annotation.Annotator.get_annotation_obj("Section Level", "curve", context)
-
-        width_in_mm = width * 1000
-        real_world_width_in_mm = width_in_mm * scale
-        offset_in_mm = 20
-        offset_percentage = offset_in_mm / real_world_width_in_mm
-
-        for obj in self.levels:
-            projection = self.project_point_onto_camera(obj.location)
-            co1 = self.camera.matrix_world @ Vector((width / 2 - (offset_percentage * width), projection[1], -1))
-            co2 = self.camera.matrix_world @ Vector((-(width / 2), projection[1], -1))
-            annotation.Annotator.add_line_to_annotation(level_obj, context, co1, co2)
-
-    def project_point_onto_camera(self, point):
-        projection = self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-        return self.camera.matrix_world.inverted() @ geometry.intersect_line_plane(
-            point.xyz, point.xyz - projection, self.camera.location, projection
-        )
 
 
 class ResizeText(bpy.types.Operator):

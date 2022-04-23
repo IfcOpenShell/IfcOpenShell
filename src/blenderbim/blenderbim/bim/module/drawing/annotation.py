@@ -157,7 +157,7 @@ class Annotator:
             obj = bpy.data.objects.new(object_type, None)
             collection.objects.link(obj)
             return obj
-        elif object_type == "TEXT_LEADER":
+        elif object_type in ("TEXT_LEADER", "SECTION_LEVEL"):
             data = bpy.data.curves.new(object_type, type="CURVE")
             data.dimensions = "3D"
             data.resolution_u = 2

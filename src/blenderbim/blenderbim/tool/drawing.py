@@ -408,6 +408,10 @@ class Drawing(blenderbim.core.tool.Drawing):
                     elements.append(element)
         for element in tool.Ifc.get().by_type("IfcGridAxis"):
             elements.append(element)
+        target_view = tool.Drawing.get_drawing_target_view(drawing)
+        if target_view in ("SECTION_VIEW", "ELEVATION_VIEW"):
+            for element in tool.Ifc.get().by_type("IfcBuildingStorey"):
+                elements.append(element)
         return elements
 
     @classmethod
@@ -437,6 +441,72 @@ class Drawing(blenderbim.core.tool.Drawing):
                 return cls.generate_elevation_reference_annotation(drawing, reference_element, context)
             elif target_view == "SECTION_VIEW":
                 return cls.generate_section_reference_annotation(drawing, reference_element, context)
+        elif reference_element.is_a("IfcBuildingStorey"):
+            return cls.generate_storey_annotation(drawing, reference_element, context)
+
+    @classmethod
+    def generate_storey_annotation(cls, drawing, reference_element, context):
+        camera = tool.Ifc.get_object(drawing)
+        bounds = helper.ortho_view_frame(camera.data) if camera.data.type == "ORTHO" else None
+        reference_obj = tool.Ifc.get_object(reference_element)
+
+        def to_camera_coords(camera, reference_obj):
+            mat = reference_obj.matrix_world.copy()
+            xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
+            xyz[2] = 0
+            xyz = camera.matrix_world @ xyz
+            mat[0][3] = xyz[0]
+            mat[1][3] = xyz[1]
+            mat[2][3] = xyz[2]
+            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
+            annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
+            mat[0][3] += annotation_offset[0]
+            mat[1][3] += annotation_offset[1]
+            mat[2][3] += annotation_offset[2]
+            return mat
+
+        def project_point_onto_camera(point, camera):
+            projection = camera.matrix_world.to_quaternion() @ mathutils.Vector((0, 0, -1))
+            return camera.matrix_world.inverted() @ mathutils.geometry.intersect_line_plane(
+                point.xyz, point.xyz - projection, camera.location, projection
+            )
+
+        obj_matrix = to_camera_coords(camera, reference_obj)
+
+        if camera.data.BIMCameraProperties.raster_x > camera.data.BIMCameraProperties.raster_y:
+            width = camera.data.ortho_scale
+            height = width / camera.data.BIMCameraProperties.raster_x * camera.data.BIMCameraProperties.raster_y
+        else:
+            height = camera.data.ortho_scale
+            width = height / camera.data.BIMCameraProperties.raster_y * camera.data.BIMCameraProperties.raster_x
+
+        projection = project_point_onto_camera(reference_obj.location, camera)
+        co1 = camera.matrix_world @ mathutils.Vector((width / 2, projection[1], -1))
+        co2 = camera.matrix_world @ mathutils.Vector((-(width / 2), projection[1], -1))
+        co1 = obj_matrix.inverted() @ co1
+        co2 = obj_matrix.inverted() @ co2
+
+        data = bpy.data.curves.new("Annotation", type="CURVE")
+        data.dimensions = "3D"
+        data.resolution_u = 2
+
+        polyline = data.splines.new("POLY")
+        polyline.points.add(1)
+        polyline.points[-2].co = list(co1) + [1]
+        polyline.points[-1].co = list(co2) + [1]
+
+        obj = bpy.data.objects.new(reference_obj.name, data)
+        obj.matrix_world = obj_matrix
+
+        element = cls.run_root_assign_class(
+            obj=obj,
+            ifc_class="IfcAnnotation",
+            predefined_type="SECTION_LEVEL",
+            should_add_representation=True,
+            context=context,
+            ifc_representation_class=None,
+        )
+        return element
 
     @classmethod
     def generate_section_reference_annotation(cls, drawing, reference_element, context):
@@ -723,14 +793,21 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def get_reference_element(cls, reference):
         if tool.Ifc.get_schema() == "IFC2X3":
-            return [
-                r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference
-            ][0].RelatedObjects[0]
+            return [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference][
+                0
+            ].RelatedObjects[0]
         return reference.DocumentRefForObjects[0].RelatedObjects[0]
 
     @classmethod
     def get_drawing_human_scale(cls, drawing):
         return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("HumanScale", "NTS")
+
+    @classmethod
+    def get_drawing_metadata(cls, drawing):
+        return [
+            v.strip()
+            for v in ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("Metadata", "").split(",")
+        ]
 
     @classmethod
     def get_annotation_z_index(cls, drawing):
