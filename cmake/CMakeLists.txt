@@ -66,8 +66,8 @@ IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
 ENDIF()
 
-# TODO QtViewer is deprecated ATM as it uses the 0.4 API
-# OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
+# QtViewer requires Qt5
+OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" ON)
 include(GNUInstallDirs)
 if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND (NOT BUILD_IFCGEOM))
     message(STATUS "'IfcGeom' is required with current outputs")
@@ -885,6 +885,9 @@ INSTALL(FILES  ${SERIALIZERS_S_FILES}
 )
 endif()
 
+IF(BUILD_QTVIEWER)
+    ADD_SUBDIRECTORY(../src/qtviewer qtviewer)
+endif()
 
 list(APPEND CPACK_SOURCE_IGNORE_FILES
   .git
