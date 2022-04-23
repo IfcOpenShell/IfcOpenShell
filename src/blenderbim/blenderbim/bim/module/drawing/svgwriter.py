@@ -180,6 +180,9 @@ class SvgWriter:
         y_offset = self.raw_height / 2
         matrix_world = obj.matrix_world
         classes = self.get_attribute_classes(obj)
+        element = tool.Ifc.get_entity(obj)
+        storey = tool.Drawing.get_annotation_element(element)
+        tag = storey.Name if storey else element.Description
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
@@ -203,19 +206,16 @@ class SvgWriter:
                 rl = helper.format_distance(rl)
             else:
                 rl = "{:.3f}m".format(rl)
-            self.svg.add(
-                self.svg.text(
-                    "RL +{}".format(rl),
-                    insert=tuple(text_position),
-                    **{
-                        "font-size": annotation.Annotator.get_svg_text_size(2.5),
-                        "font-family": "OpenGost Type B TT",
-                        "text-anchor": "start",
-                        "alignment-baseline": "baseline",
-                        "dominant-baseline": "baseline",
-                    },
-                )
-            )
+            text_style = {
+                "font-size": annotation.Annotator.get_svg_text_size(2.5),
+                "font-family": "OpenGost Type B TT",
+                "text-anchor": "start",
+                "alignment-baseline": "baseline",
+                "dominant-baseline": "baseline",
+            }
+            self.svg.add(self.svg.text(f"RL +{rl}", insert=tuple(text_position), **text_style))
+            if tag:
+                self.svg.add(self.svg.text(tag, insert=(text_position[0], text_position[1] - 5), **text_style))
 
 
     def draw_stair_annotation(self, obj):

@@ -28,6 +28,7 @@ text { fill: black; stroke: none; }
 .PredefinedType-MISC { stroke: black; stroke-width: 0.25; }
 .PredefinedType-BACKGROUND { stroke: black; stroke-width: 0.18; }
 .PredefinedType-GRID { marker-start: url(#grid-marker); marker-end: url(#grid-marker); }
+.PredefinedType-SECTION { stroke-dasharray: 12.5, 3, 3, 3; }
 .PredefinedType-SECTIONLEVEL { marker-start: url(#section-level-marker); stroke-dasharray: 12.5, 3, 3, 3; }
 .PredefinedType-PLANLEVEL { marker-end: url(#plan-level-marker); }
 .PredefinedType-DIMENSION { marker-start: url(#dimension-marker-start); marker-end: url(#dimension-marker-end); }
