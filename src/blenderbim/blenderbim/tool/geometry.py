@@ -76,10 +76,6 @@ class Geometry(blenderbim.core.tool.Geometry):
         bpy.data.meshes.remove(data)
 
     @classmethod
-    def does_object_have_mesh_with_faces(cls, obj):
-        return bool(isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons))
-
-    @classmethod
     def does_representation_id_exist(cls, representation_id):
         try:
             tool.Ifc.get().by_id(representation_id)

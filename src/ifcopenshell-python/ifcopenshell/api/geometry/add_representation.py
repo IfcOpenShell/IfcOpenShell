@@ -115,7 +115,7 @@ class Usecase:
         if self.settings["context"].is_a() == "IfcGeometricRepresentationContext":
             return self.create_variable_representation()
         if self.settings["context"].ContextIdentifier == "Annotation":
-            return self.create_geometric_set_representation()
+            return self.create_annotation_representation(is_2d=False)
         elif self.settings["context"].ContextIdentifier == "Axis":
             return self.create_curve3d_representation()
         elif self.settings["context"].ContextIdentifier == "Body":
@@ -149,7 +149,7 @@ class Usecase:
             shape_representation.Items = items
             return shape_representation
         elif self.settings["context"].ContextIdentifier == "Annotation":
-            return self.create_annotation2d_representation()
+            return self.create_annotation_representation(is_2d=True)
         elif self.settings["context"].ContextIdentifier == "Axis":
             return self.create_curve2d_representation()
         elif self.settings["context"].ContextIdentifier == "Body":
@@ -170,7 +170,7 @@ class Usecase:
         elif self.settings["context"].ContextIdentifier == "SurveyPoints":
             pass
         else:
-            return self.create_annotation2d_representation()
+            return self.create_annotation_representation(is_2d=True)
 
     def create_lighting_representation(self):
         return self.file.createIfcShapeRepresentation(
@@ -289,15 +289,15 @@ class Usecase:
             self.create_curves(is_2d=True),
         )
 
-    def create_annotation_fill_areas(self):
+    def create_annotation_fill_areas(self, is_2d=False):
         items = []
         if self.file.schema != "IFC2X3":
-            points = self.create_cartesian_point_list_from_vertices(self.settings["geometry"].vertices, is_2d=True)
+            points = self.create_cartesian_point_list_from_vertices(self.settings["geometry"].vertices, is_2d=is_2d)
         for polygon in self.settings["geometry"].polygons:
             if self.file.schema == "IFC2X3":
-                curve = self.create_curve_from_polygon_ifc2x3(polygon, is_2d=True)
+                curve = self.create_curve_from_polygon_ifc2x3(polygon, is_2d=is_2d)
             else:
-                curve = self.create_curve_from_polygon(points, polygon, is_2d=True)
+                curve = self.create_curve_from_polygon(points, polygon, is_2d=is_2d)
             items.append(self.file.createIfcAnnotationFillArea(OuterBoundary=curve))
         return items
 
@@ -623,15 +623,15 @@ class Usecase:
             return (co / self.settings["unit_scale"]) + self.settings["coordinate_offset"]
         return co / self.settings["unit_scale"]
 
-    def create_annotation2d_representation(self):
+    def create_annotation_representation(self, is_2d=False):
         if isinstance(self.settings["geometry"], bpy.types.Mesh) and len(self.settings["geometry"].polygons):
-            items = self.create_annotation_fill_areas()
+            items = self.create_annotation_fill_areas(is_2d=is_2d)
         else:
-            items = [self.file.createIfcGeometricCurveSet(self.create_curves(is_2d=True))]
+            items = [self.file.createIfcGeometricCurveSet(self.create_curves(is_2d=is_2d))]
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
-            "Annotation2D",
+            "Annotation2D" if is_2d else "GeometricSet",
             items,
         )
 
