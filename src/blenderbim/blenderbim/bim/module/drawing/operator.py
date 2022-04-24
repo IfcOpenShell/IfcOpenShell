@@ -302,7 +302,7 @@ class CreateDrawing(bpy.types.Operator):
                     body_contexts.append(rep_context.id())
                     continue
 
-            elements = set(ifc.by_type("IfcElement")) - set(ifc.by_type("IfcOpeningElement"))
+            elements = tool.Drawing.get_drawing_elements(self.camera_element)
 
             self.setup_serialiser(ifc)
             cache = IfcStore.get_cache()
