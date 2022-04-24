@@ -170,12 +170,33 @@ class BaseDecorator:
         returns: iterable of blender objects
         """
         results = []
+        decoration_presets = (
+            "DIMENSION",
+            "EQUAL_DIMENSION",
+            "TEXT_LEADER",
+            "STAIR_ARROW",
+            "HIDDEN_LINE",
+            "PLAN_LEVEL",
+            "SECTION_LEVEL",
+            "BREAKLINE",
+            "GRID",
+            "ELEVATION",
+            "SECTION",
+            "TEXT",
+        )
         for obj in collection.all_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            if element.is_a("IfcAnnotation") and element.ObjectType == self.objecttype:
-                results.append(obj)
+            if element.is_a("IfcAnnotation"):
+                if element.ObjectType == self.objecttype:
+                    results.append(obj)
+                elif (
+                    self.objecttype == "MISC"
+                    and element.ObjectType not in decoration_presets
+                    and isinstance(obj.data, bpy.types.Mesh)
+                ):
+                    results.append(obj)
         return results
 
     def get_path_geom(self, obj, topo=True):
@@ -247,7 +268,7 @@ class BaseDecorator:
         """perform actual drawing stuff"""
         raise NotImplementedError()
 
-    def draw_lines(self, context, obj, vertices, indices, topology=None):
+    def draw_lines(self, context, obj, vertices, indices, topology=None, is_scale_dependant=True):
         region = context.region
         region3d = context.region_data
         color = context.scene.DocProperties.decorations_colour
@@ -277,14 +298,15 @@ class BaseDecorator:
         self.shader.uniform_float("winsize", (region.width, region.height))
         self.shader.uniform_float("color", color)
 
-        # Horrific prototype code
-        factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
-        camera_width_px = factor * context.region.width
-        mm_to_px = camera_width_px / self.camera_width_mm
-        # 0.00025 is a magic constant number I visually discovered to get the right number.
-        # It probably should be dynamically calculated using system.dpi or something.
-        viewport_drawing_scale = 0.00025 * mm_to_px
-        self.shader.uniform_float("viewportDrawingScale", viewport_drawing_scale)
+        if is_scale_dependant:
+            # Horrific prototype code
+            factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
+            camera_width_px = factor * context.region.width
+            mm_to_px = camera_width_px / self.camera_width_mm
+            # 0.00025 is a magic constant number I visually discovered to get the right number.
+            # It probably should be dynamically calculated using system.dpi or something.
+            viewport_drawing_scale = 0.00025 * mm_to_px
+            self.shader.uniform_float("viewportDrawingScale", viewport_drawing_scale)
 
         batch.draw(self.shader)
 
@@ -671,6 +693,7 @@ class HiddenDecorator(BaseDecorator):
 
     GEOM_GLSL = """
     uniform vec2 winsize;
+    uniform float viewportDrawingScale;
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
@@ -725,10 +748,61 @@ class HiddenDecorator(BaseDecorator):
         self.draw_lines(context, obj, verts, idxs)
 
 
-class MiscDecorator(HiddenDecorator):
+class MiscDecorator(BaseDecorator):
     objecttype = "MISC"
 
-    FRAG_GLSL = BaseDecorator.FRAG_GLSL
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+    uniform float viewportDrawingScale;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    out float dist; // distance from starging point along segment
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * 1;
+
+        vec4 p;
+
+        // NB: something should be used to affect position, otherwise compiler eliminates winsize
+
+        dist = 0;
+        p = p0w + gap;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        dist = length(edge);
+        p = p1w - gap;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    FRAG_GLSL = """
+    uniform vec4 color;
+    in vec2 gl_FragCoord;
+    in float dist;
+    out vec4 fragColor;
+
+    void main() {
+        fragColor = color;
+    }
+    """
+
+    def decorate(self, context, obj):
+        if obj.data.is_editmode:
+            verts, idxs = self.get_editmesh_geom(obj)
+        else:
+            verts, idxs = self.get_mesh_geom(obj)
+        self.draw_lines(context, obj, verts, idxs, is_scale_dependant=False)
 
 
 class LevelDecorator(BaseDecorator):
@@ -990,21 +1064,10 @@ class BreakDecorator(BaseDecorator):
 
     def decorate(self, context, obj):
         if obj.data.is_editmode:
-            verts = self.get_editmesh_geom(obj)
+            verts, idxs = self.get_editmesh_geom(obj)
         else:
-            verts = self.get_mesh_geom(obj)
-        self.draw_lines(context, obj, verts, [(0, 1)])
-
-    def get_mesh_geom(self, obj):
-        # first vertices only
-        vertices = [obj.matrix_world @ obj.data.vertices[i].co for i in (0, 1)]
-        return vertices
-
-    def get_editmesh_geom(self, obj):
-        # first vertices only
-        mesh = bmesh.from_edit_mesh(obj.data)
-        vertices = [obj.matrix_world @ v.co for v in mesh.edges[0].verts]
-        return vertices
+            verts, idxs = self.get_mesh_geom(obj)
+        self.draw_lines(context, obj, verts, idxs)
 
 
 class GridDecorator(BaseDecorator):
@@ -1361,7 +1424,6 @@ class SectionDecorator(LevelDecorator):
         vert_map = {v.freeze(): (obj.matrix_world.inverted() @ v).x for v in verts}
         verts = sorted(verts, key=lambda v: vert_map[v], reverse=True)
         self.draw_lines(context, obj, verts, idxs)
-
 
 
 class TextDecorator(BaseDecorator):
