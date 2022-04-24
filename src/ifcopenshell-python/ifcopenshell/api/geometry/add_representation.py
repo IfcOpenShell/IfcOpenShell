@@ -665,13 +665,18 @@ class Usecase:
         )
 
     def create_annotation3d_representation(self):
-        geometry = self.create_curves(should_exclude_faces=True, is_2d=False)
-        geometry.extend(self.create_curve_bounded_planes())
+        items = []
+        curves = self.create_curves(should_exclude_faces=True, is_2d=False)
+        if curves:
+            items.append(self.file.createIfcGeometricCurveSet(curves))
+        surfaces = self.create_curve_bounded_planes()
+        if surfaces:
+            items.append(self.file.createIfcGeometricSet(surfaces))
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
             "GeometricSet",
-            [self.file.createIfcGeometricSet(geometry)],
+            items,
         )
 
     def create_geometric_curve_set_representation(self, is_2d=False):
