@@ -401,13 +401,4 @@ class BIMTextProperties(PropertyGroup):
         update=refreshFontSize,
         name="Font Size",
     )
-    symbol: EnumProperty(
-        items=[
-            ("None", "None", ""),
-            ("rectangle-tag", "Rectangle Tag", ""),
-            ("door-tag", "Door Tag", ""),
-        ],
-        update=refreshFontSize,
-        name="Symbol",
-    )
     relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object)

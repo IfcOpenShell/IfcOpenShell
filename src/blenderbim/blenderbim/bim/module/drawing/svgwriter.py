@@ -499,10 +499,9 @@ class SvgWriter:
             (text_position * self.scale)[1],
         )
 
-        if text_obj.BIMTextProperties.symbol != "None":
-            self.svg.add(
-                self.svg.use(f"#{text_obj.BIMTextProperties.symbol}", insert=tuple(text_position * self.scale))
-            )
+        symbol = tool.Drawing.get_annotation_symbol(element)
+        if symbol:
+            self.svg.add(self.svg.use(f"#{symbol}", insert=tuple(text_position * self.scale)))
 
         if text_literal.BoxAlignment == "top-left":
             alignment_baseline = "hanging"
