@@ -39,6 +39,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         data_type = {
             "DIMENSION": "curve",
             "EQUAL_DIMENSION": "curve",
+            "RADIUS": "curve",
             "TEXT": "empty",
             "TEXT_LEADER": "curve",
             "STAIR_ARROW": "curve",

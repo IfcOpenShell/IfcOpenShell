@@ -66,12 +66,6 @@ class BIM_PT_camera(Panel):
         row.operator("bim.resize_text")
 
         row = layout.row()
-        row.prop(props, "cut_objects")
-        if props.cut_objects == "CUSTOM":
-            row = layout.row()
-            row.prop(props, "cut_objects_custom")
-
-        row = layout.row()
         row.prop(props, "raster_x")
         row = layout.row()
         row.prop(props, "raster_y")
@@ -326,11 +320,19 @@ class BIM_PT_annotation_utilities(Panel):
         self.props = context.scene.DocProperties
 
         row = layout.row(align=True)
-        op = row.operator("bim.add_annotation", text="Dim", icon="ARROW_LEFTRIGHT")
+        op = row.operator("bim.add_annotation", text="Dim", icon="FIXED_SIZE")
         op.object_type = "DIMENSION"
         op.data_type = "curve"
-        op = row.operator("bim.add_annotation", text="Dim (Eq)", icon="ARROW_LEFTRIGHT")
-        op.object_type = "EQUAL_DIMENSION"
+        op = row.operator("bim.add_annotation", text="Angle", icon="DRIVER_ROTATIONAL_DIFFERENCE")
+        op.object_type = "ANGLE"
+        op.data_type = "mesh"
+
+        row = layout.row(align=True)
+        op = row.operator("bim.add_annotation", text="Radius", icon="FORWARD")
+        op.object_type = "RADIUS"
+        op.data_type = "curve"
+        op = row.operator("bim.add_annotation", text="Diameter", icon="ARROW_LEFTRIGHT")
+        op.object_type = "DIAMETER"
         op.data_type = "curve"
 
         row = layout.row(align=True)

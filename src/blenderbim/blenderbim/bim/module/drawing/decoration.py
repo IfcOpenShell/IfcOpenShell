@@ -590,6 +590,98 @@ class LeaderDecorator(BaseDecorator):
         self.draw_label(context, obj.BIMTextProperties.value, pos, dir, gap=0, center=False, vcenter=False)
 
 
+class RadiusDecorator(BaseDecorator):
+    """Decorating text with arrows
+    - head point with arrow
+    """
+
+    objecttype = "RADIUS"
+
+    DEF_GLSL = (
+        BaseDecorator.DEF_GLSL
+        + """
+        #define ARROW_ANGLE PI / 12.0
+        #define ARROW_SIZE 16.0
+    """
+    )
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+    uniform float viewportDrawingScale;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+    in uint type[];
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+        uint t0 = type[0], t1 = type[1];
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap1 = vec4(0);
+
+        vec4 p;
+
+        // end edge arrow for last segment
+        if (t1 == 2u) {
+            vec4 head[3];
+            arrow_head(dir, viewportDrawingScale * ARROW_SIZE, ARROW_ANGLE, head);
+
+            gl_Position = p1;
+            EmitVertex();
+            p = p1w - head[1];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p1w - head[2];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            gl_Position = p1;
+            EmitVertex();
+            EndPrimitive();
+
+            gap1 = dir * viewportDrawingScale * ARROW_SIZE;
+        }
+
+        // stem, adjusted for and arrow
+        gl_Position = p0;
+        EmitVertex();
+        p = p1w - gap1;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def get_spline_end(self, obj):
+        spline = obj.data.splines[0]
+        spline_points = spline.bezier_points if spline.bezier_points else spline.points
+        if not spline_points:
+            return Vector((0, 0, 0))
+        return obj.matrix_world @ spline_points[0].co
+
+    def decorate(self, context, obj):
+        verts, idxs, topo = self.get_path_geom(obj)
+        self.draw_lines(context, obj, verts, idxs, topo)
+        self.draw_labels(context, obj)
+
+    def draw_labels(self, context, obj):
+        region = context.region
+        region3d = context.region_data
+        dir = Vector((1, 0))
+        pos = location_3d_to_region_2d(region, region3d, self.get_spline_end(obj))
+
+        spline = obj.data.splines[0]
+        spline_points = spline.bezier_points if spline.bezier_points else spline.points
+        if spline_points:
+            length = (spline_points[-1].co - spline_points[-2].co).length
+            text = self.format_value(context, length)
+            self.draw_label(context, text, pos, dir, gap=0, center=False, vcenter=False)
+
+
 class StairDecorator(BaseDecorator):
     """Decorating stairs
     - head point with arrow
@@ -997,7 +1089,7 @@ class SectionLevelDecorator(LevelDecorator):
 
 
 class BreakDecorator(BaseDecorator):
-    """Decorator for dimension objects
+    """Decorator for breakline objects
     - first edge of a mesh with zigzag thingy in the middle
 
     Uses first two vertices in verts list.
@@ -1517,6 +1609,7 @@ class DecorationsHandler:
         GridDecorator,
         HiddenDecorator,
         LeaderDecorator,
+        RadiusDecorator,
         MiscDecorator,
         PlanLevelDecorator,
         SectionLevelDecorator,
