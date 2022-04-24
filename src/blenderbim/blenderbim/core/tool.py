@@ -206,7 +206,6 @@ class Geometry:
     def clear_scale(cls, obj): pass
     def create_dynamic_voids(cls, obj): pass
     def delete_data(cls, data): pass
-    def does_object_have_mesh_with_faces(cls, obj): pass
     def does_representation_id_exist(cls, representation_id): pass
     def duplicate_object_data(cls, obj): pass
     def get_cartesian_point_coordinate_offset(cls, obj): pass
