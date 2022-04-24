@@ -46,6 +46,7 @@ namespace IfcGeom {
 		IfcUtil::IfcBaseEntity* instance;
 		std::array<double, 3> position;
 		std::array<double, 3> normal;
+		double ray_distance;
 		double dot_product;
 	};
 
@@ -467,6 +468,7 @@ namespace IfcGeom {
 					ordered.insert({ u,	{ u, sidx, c,
 						{P.X(), P.Y(), P.Z()},
 						{V.X(), V.Y(), V.Z()},
+						d.XYZ().Dot(p0.XYZ() - P.XYZ()),
 						V.Dot(d)
 					} });
 				}
