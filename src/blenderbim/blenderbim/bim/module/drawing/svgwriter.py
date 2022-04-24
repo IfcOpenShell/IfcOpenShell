@@ -155,6 +155,8 @@ class SvgWriter:
                 self.draw_dimension_annotations(obj, text_override="EQ")
             elif element.ObjectType == "DIMENSION":
                 self.draw_dimension_annotations(obj)
+            elif element.ObjectType == "RADIUS":
+                self.draw_radius_annotations(obj)
             elif element.ObjectType == "ELEVATION":
                 self.draw_elevation_annotation(obj)
             elif element.ObjectType == "SECTION":
@@ -621,6 +623,45 @@ class SvgWriter:
                     },
                 )
             )
+
+    def draw_radius_annotations(self, obj):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+        classes = self.get_attribute_classes(obj)
+        element = tool.Ifc.get_entity(obj)
+        matrix_world = obj.matrix_world
+        for spline in obj.data.splines:
+            points = self.get_spline_points(spline)
+            projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
+            d = " ".join(
+                [
+                    "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    for p in projected_points
+                ]
+            )
+            d = "M{}".format(d[1:])
+            path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
+
+            p0 = Vector(((x_offset + projected_points[0].x) * self.scale, (y_offset - projected_points[0].y) * self.scale))
+            p1 = Vector(((x_offset + projected_points[1].x) * self.scale, (y_offset - projected_points[1].y) * self.scale))
+            text_offset = (p0 - p1).xy.normalized() * 5
+            text_position = projected_points[0]
+            text_position = Vector(((x_offset + text_position.x) * self.scale, (y_offset - text_position.y) * self.scale))
+            text_position += text_offset
+
+            text_style = {
+                "font-size": annotation.Annotator.get_svg_text_size(2.5),
+                "font-family": "OpenGost Type B TT",
+                "text-anchor": "middle",
+                "alignment-baseline": "middle",
+                "dominant-baseline": "middle",
+            }
+
+            radius = ((matrix_world @ points[-1].co) - (matrix_world @ points[-2].co)).length
+            radius = helper.format_distance(radius)
+            tag = element.Description or f"R{radius}"
+
+            self.svg.add(self.svg.text(tag, insert=tuple(text_position), **text_style))
 
     def draw_dimension_annotations(self, dimension_obj, text_override=None):
         classes = self.get_attribute_classes(dimension_obj)
