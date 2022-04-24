@@ -404,8 +404,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             if element in existing_references or element == drawing:
                 continue
             if element.ObjectType == "DRAWING":
-                psets = ifcopenshell.util.element.get_psets(element)
-                if psets.get("EPset_Drawing", {}).get("TargetView", None) in ("SECTION_VIEW", "ELEVATION_VIEW"):
+                pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing", {})
+                if pset.get("TargetView", None) in ("SECTION_VIEW", "ELEVATION_VIEW") and pset.get(
+                    "GlobalReferencing", False
+                ):
                     elements.append(element)
         for element in tool.Ifc.get().by_type("IfcGridAxis"):
             elements.append(element)
@@ -820,7 +822,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def has_linework(cls, drawing):
-        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("HasLinework", False)
+        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasLinework", False)
 
     @classmethod
     def get_annotation_element(cls, element):
