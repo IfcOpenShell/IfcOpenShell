@@ -825,6 +825,20 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasLinework", False)
 
     @classmethod
+    def get_drawing_elements(cls, drawing):
+        pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
+        include = pset.get("Include", None)
+        if include:
+            elements = set(ifcopenshell.util.selector.Selector.parse(tool.Ifc.get(), include))
+        else:
+            elements = set(tool.Ifc.get().by_type("IfcElement"))
+        exclude = pset.get("Exclude", None)
+        if exclude:
+            elements -= set(ifcopenshell.util.selector.Selector.parse(tool.Ifc.get(), exclude, elements=elements))
+        elements -= set(tool.Ifc.get().by_type("IfcOpeningElement"))
+        return elements
+
+    @classmethod
     def get_annotation_element(cls, element):
         for rel in element.HasAssignments:
             if rel.is_a("IfcRelAssignsToProduct"):
