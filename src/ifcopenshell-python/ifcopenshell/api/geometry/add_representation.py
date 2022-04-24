@@ -115,7 +115,7 @@ class Usecase:
         if self.settings["context"].is_a() == "IfcGeometricRepresentationContext":
             return self.create_variable_representation()
         if self.settings["context"].ContextIdentifier == "Annotation":
-            return self.create_annotation_representation(is_2d=False)
+            return self.create_annotation3d_representation()
         elif self.settings["context"].ContextIdentifier == "Axis":
             return self.create_curve3d_representation()
         elif self.settings["context"].ContextIdentifier == "Body":
@@ -149,7 +149,7 @@ class Usecase:
             shape_representation.Items = items
             return shape_representation
         elif self.settings["context"].ContextIdentifier == "Annotation":
-            return self.create_annotation_representation(is_2d=True)
+            return self.create_annotation2d_representation()
         elif self.settings["context"].ContextIdentifier == "Axis":
             return self.create_curve2d_representation()
         elif self.settings["context"].ContextIdentifier == "Body":
@@ -170,7 +170,7 @@ class Usecase:
         elif self.settings["context"].ContextIdentifier == "SurveyPoints":
             pass
         else:
-            return self.create_annotation_representation(is_2d=True)
+            return self.create_annotation2d_representation()
 
     def create_lighting_representation(self):
         return self.file.createIfcShapeRepresentation(
@@ -289,6 +289,25 @@ class Usecase:
             self.create_curves(is_2d=True),
         )
 
+    def create_curve_bounded_planes(self, is_2d=False):
+        items = []
+        if self.file.schema != "IFC2X3":
+            points = self.create_cartesian_point_list_from_vertices(self.settings["geometry"].vertices, is_2d=False)
+        for polygon in self.settings["geometry"].polygons:
+            plane = self.create_plane(polygon)
+            if self.file.schema == "IFC2X3":
+                curve = self.create_curve_from_polygon_ifc2x3(polygon, is_2d=False)
+            else:
+                curve = self.create_curve_from_polygon(points, polygon, is_2d=False)
+            items.append(self.file.createIfcCurveBoundedPlane(BasisSurface=plane, OuterBoundary=curve))
+        return items
+
+    def create_plane(self, polygon):
+        return self.file.createIfcPlane(Position=self.file.createIfcAxis2Placement3D(
+            Location=self.file.createIfcCartesianPoint(polygon.center),
+            Axis=self.file.createIfcDirection(polygon.normal),
+        ))
+
     def create_annotation_fill_areas(self, is_2d=False):
         items = []
         if self.file.schema != "IFC2X3":
@@ -316,22 +335,27 @@ class Usecase:
         ]
         return self.file.createIfcPolyline([points[i] for i in indices])
 
-    def create_curves(self, is_2d=False):
+    def create_curves(self, should_exclude_faces=False, is_2d=False):
         if isinstance(self.settings["geometry"], bpy.types.Mesh):
             if self.file.schema == "IFC2X3":
-                return self.create_curves_from_mesh_ifc2x3(is_2d=is_2d)
+                return self.create_curves_from_mesh_ifc2x3(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
             else:
-                return self.create_curves_from_mesh(is_2d=is_2d)
+                return self.create_curves_from_mesh(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
         elif isinstance(self.settings["geometry"], bpy.types.Curve):
             return self.create_curves_from_curve(is_2d=is_2d)
 
-    def create_curves_from_mesh(self, is_2d=False):
+    def create_curves_from_mesh(self, should_exclude_faces=False, is_2d=False):
         curves = []
         points = self.create_cartesian_point_list_from_vertices(self.settings["geometry"].vertices, is_2d=is_2d)
         edge_loops = []
         previous_edge = None
         edge_loop = []
-        for edge in self.settings["geometry"].edges:
+        face_edges = set()
+        if should_exclude_faces:
+            [face_edges.union([self.settings["geometry"].edge_keys.index(ek) for ek in p.edge_keys]) for p in self.settings["geometry"].polygons]
+        for i, edge in enumerate(self.settings["geometry"].edges):
+            if should_exclude_faces and i in face_edges:
+                continue
             if (Vector(points.CoordList[edge.vertices[0]]) - Vector(points.CoordList[edge.vertices[1]])).length < 0.001:
                 # Maybe we should warn the user to weld vertices in this scenario?
                 continue
@@ -348,7 +372,7 @@ class Usecase:
             curves.append(self.file.createIfcIndexedPolyCurve(points, edge_loop))
         return curves
 
-    def create_curves_from_mesh_ifc2x3(self, is_2d=False):
+    def create_curves_from_mesh_ifc2x3(self, should_exclude_faces=False, is_2d=False):
         curves = []
         points = [
             self.create_cartesian_point(v.co.x, v.co.y, v.co.z if not is_2d else None)
@@ -358,7 +382,12 @@ class Usecase:
         edge_loops = []
         previous_edge = None
         edge_loop = []
-        for edge in self.settings["geometry"].edges:
+        face_edges = set()
+        if should_exclude_faces:
+            [face_edges.union([self.settings["geometry"].edge_keys.index(ek) for ek in p.edge_keys]) for p in self.settings["geometry"].polygons]
+        for i, edge in enumerate(self.settings["geometry"].edges):
+            if should_exclude_faces and i in face_edges:
+                continue
             if (Vector(coord_list[edge.vertices[0]]) - Vector(coord_list[edge.vertices[1]])).length < 0.001:
                 # Maybe we should warn the user to weld vertices in this scenario?
                 continue
@@ -623,16 +652,26 @@ class Usecase:
             return (co / self.settings["unit_scale"]) + self.settings["coordinate_offset"]
         return co / self.settings["unit_scale"]
 
-    def create_annotation_representation(self, is_2d=False):
+    def create_annotation2d_representation(self):
         if isinstance(self.settings["geometry"], bpy.types.Mesh) and len(self.settings["geometry"].polygons):
-            items = self.create_annotation_fill_areas(is_2d=is_2d)
+            items = self.create_annotation_fill_areas(is_2d=True)
         else:
-            items = [self.file.createIfcGeometricCurveSet(self.create_curves(is_2d=is_2d))]
+            items = [self.file.createIfcGeometricCurveSet(self.create_curves(is_2d=True))]
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
-            "Annotation2D" if is_2d else "GeometricSet",
+            "Annotation2D",
             items,
+        )
+
+    def create_annotation3d_representation(self):
+        geometry = self.create_curves(should_exclude_faces=True, is_2d=False)
+        geometry.extend(self.create_curve_bounded_planes())
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "GeometricSet",
+            [self.file.createIfcGeometricSet(geometry)],
         )
 
     def create_geometric_curve_set_representation(self, is_2d=False):
