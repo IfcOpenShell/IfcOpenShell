@@ -171,6 +171,7 @@ class TestAddDrawing:
                 "HasUnderlay": False,
                 "HasLinework": True,
                 "HasAnnotation": True,
+                "GlobalReferencing": True,
             },
         ).should_be_called()
         drawing.import_drawings().should_be_called()

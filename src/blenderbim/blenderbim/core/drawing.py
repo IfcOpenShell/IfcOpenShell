@@ -125,6 +125,7 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
             "HasUnderlay": False,
             "HasLinework": True,
             "HasAnnotation": True,
+            "GlobalReferencing": True,
         },
     )
     drawing.import_drawings()
