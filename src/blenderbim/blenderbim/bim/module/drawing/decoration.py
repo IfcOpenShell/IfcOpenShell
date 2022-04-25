@@ -378,11 +378,11 @@ class BaseDecorator:
             elif "/" in precision:
                 precision = int(precision.split("/")[1])
         elif unit_system == "METRIC":
-            precision = 3
+            precision = 4
         else:
             return
 
-        return bpy.utils.units.to_string(unit_system, "LENGTH", value, precision=precision, split_unit=True)
+        return bpy.utils.units.to_string(unit_system, "LENGTH", value, precision=precision)
 
 
 class DimensionDecorator(BaseDecorator):
@@ -478,6 +478,10 @@ class DimensionDecorator(BaseDecorator):
             length = (v1 - v0).length
             text = self.format_value(context, length)
             self.draw_label(context, text, p0 + (dir) * 0.5, dir)
+
+
+class DiameterDecorator(DimensionDecorator):
+    objecttype = "DIAMETER"
 
 
 class LeaderDecorator(BaseDecorator):
@@ -1585,6 +1589,7 @@ class DecorationsHandler:
         HiddenDecorator,
         LeaderDecorator,
         RadiusDecorator,
+        DiameterDecorator,
         MiscDecorator,
         PlanLevelDecorator,
         SectionLevelDecorator,
