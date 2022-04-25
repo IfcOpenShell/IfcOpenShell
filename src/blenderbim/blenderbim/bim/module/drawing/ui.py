@@ -320,7 +320,7 @@ class BIM_PT_annotation_utilities(Panel):
         self.props = context.scene.DocProperties
 
         row = layout.row(align=True)
-        op = row.operator("bim.add_annotation", text="Dim", icon="FIXED_SIZE")
+        op = row.operator("bim.add_annotation", text="Dimension", icon="FIXED_SIZE")
         op.object_type = "DIMENSION"
         op.data_type = "curve"
         op = row.operator("bim.add_annotation", text="Angle", icon="DRIVER_ROTATIONAL_DIFFERENCE")
