@@ -172,7 +172,6 @@ class BaseDecorator:
         results = []
         decoration_presets = (
             "DIMENSION",
-            "EQUAL_DIMENSION",
             "TEXT_LEADER",
             "STAIR_ARROW",
             "HIDDEN_LINE",
@@ -479,29 +478,6 @@ class DimensionDecorator(BaseDecorator):
             length = (v1 - v0).length
             text = self.format_value(context, length)
             self.draw_label(context, text, p0 + (dir) * 0.5, dir)
-
-
-class EqualityDecorator(DimensionDecorator):
-    """Decorator for equality objects
-    - outlines each segment
-    - augments with arrows on both sides
-    - puts 'EQ' label
-    """
-
-    objecttype = "EQUAL_DIMENSION"
-
-    def draw_labels(self, context, obj, vertices, indices):
-        region = context.region
-        region3d = context.region_data
-        for i0, i1 in indices:
-            v0 = Vector(vertices[i0])
-            v1 = Vector(vertices[i1])
-            p0 = location_3d_to_region_2d(region, region3d, v0)
-            p1 = location_3d_to_region_2d(region, region3d, v1)
-            dir = p1 - p0
-            if dir.length < 1:
-                continue
-            self.draw_label(context, "EQ", p0 + (dir) * 0.5, dir)
 
 
 class LeaderDecorator(BaseDecorator):
@@ -1605,7 +1581,6 @@ class TextDecorator(BaseDecorator):
 class DecorationsHandler:
     decorators_classes = [
         DimensionDecorator,
-        EqualityDecorator,
         GridDecorator,
         HiddenDecorator,
         LeaderDecorator,

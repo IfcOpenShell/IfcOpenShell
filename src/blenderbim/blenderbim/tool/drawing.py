@@ -38,7 +38,6 @@ class Drawing(blenderbim.core.tool.Drawing):
     def create_annotation_object(cls, object_type):
         data_type = {
             "DIMENSION": "curve",
-            "EQUAL_DIMENSION": "curve",
             "RADIUS": "curve",
             "TEXT": "empty",
             "TEXT_LEADER": "curve",
