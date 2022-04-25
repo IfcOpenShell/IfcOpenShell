@@ -329,7 +329,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         if user_command:
             commands = eval(user_command)
             for command in commands:
-                subprocess.run(command)
+                subprocess.Popen(command)
         else:
             webbrowser.open("file://" + path)
 

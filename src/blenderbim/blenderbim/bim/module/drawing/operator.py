@@ -53,7 +53,7 @@ def open_with_user_command(user_command, path):
     if user_command:
         commands = eval(user_command)
         for command in commands:
-            subprocess.run(command)
+            subprocess.Popen(command)
     else:
         webbrowser.open("file://" + path)
 
