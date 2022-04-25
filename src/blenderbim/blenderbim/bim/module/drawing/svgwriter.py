@@ -151,8 +151,6 @@ class SvgWriter:
                 self.draw_leader_annotation(obj)
             elif element.ObjectType == "STAIR_ARROW":
                 self.draw_stair_annotation(obj)
-            elif element.ObjectType == "EQUAL_DIMENSION":
-                self.draw_dimension_annotations(obj, text_override="EQ")
             elif element.ObjectType == "DIMENSION":
                 self.draw_dimension_annotations(obj)
             elif element.ObjectType == "RADIUS":
@@ -663,10 +661,12 @@ class SvgWriter:
 
             self.svg.add(self.svg.text(tag, insert=tuple(text_position), **text_style))
 
-    def draw_dimension_annotations(self, dimension_obj, text_override=None):
-        classes = self.get_attribute_classes(dimension_obj)
-        matrix_world = dimension_obj.matrix_world
-        for spline in dimension_obj.data.splines:
+    def draw_dimension_annotations(self, obj):
+        classes = self.get_attribute_classes(obj)
+        matrix_world = obj.matrix_world
+        element = tool.Ifc.get_entity(obj)
+        text_override = element.Description
+        for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             for i, p in enumerate(points):
                 if i + 1 >= len(points):
