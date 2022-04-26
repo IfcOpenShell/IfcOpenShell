@@ -42,7 +42,7 @@
 
 struct Ifc4x3_rc2 {
 
-static const IfcParse::schema_definition& get_schema();
+IFC_PARSE_API static const IfcParse::schema_definition& get_schema();
 
 static const char* const Identifier;
 
