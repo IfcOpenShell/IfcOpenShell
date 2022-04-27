@@ -55,6 +55,8 @@ namespace IfcParse {
 
 	class IFC_PARSE_API parameter_type {
 	public:
+		virtual ~parameter_type() {}
+
 		virtual const named_type* as_named_type() const { return static_cast<named_type*>(0); }
 		virtual const simple_type* as_simple_type() const { return static_cast<simple_type*>(0); }
 		virtual const aggregation_type* as_aggregation_type() const { return static_cast<aggregation_type*>(0); }
@@ -106,6 +108,8 @@ namespace IfcParse {
 			, bound2_(bound2)
 			, type_of_element_(type_of_element)
 		{}
+
+		virtual ~aggregation_type() { delete type_of_element_; }
 
 		aggregate_type type_of_aggregation() const { return type_of_aggregation_; }
 		int bound1() const { return bound1_; }
@@ -160,6 +164,8 @@ namespace IfcParse {
 			: declaration(name, index_in_schema)
 			, declared_type_(declared_type)	{}
 
+		virtual ~type_declaration() { delete declared_type_; }
+
 		const parameter_type* declared_type() const { return declared_type_; }
 
 		virtual const type_declaration* as_type_declaration() const { return this; }
@@ -202,6 +208,8 @@ namespace IfcParse {
 			: name_(name)
 			, type_of_attribute_(type_of_attribute)
 			, optional_(optional) {}
+
+		~attribute() { delete type_of_attribute_; }
 
 		const std::string& name() const { return name_; }
 		const parameter_type* type_of_attribute() const { return type_of_attribute_; }
@@ -276,6 +284,8 @@ namespace IfcParse {
 			, is_abstract_(is_abstract)
 			, supertype_(supertype)
 		{}
+
+		virtual ~entity();
 
 		bool is(const std::string& name) const {
 			if (name == name_) return true;
@@ -387,6 +397,8 @@ namespace IfcParse {
 
 	class IFC_PARSE_API instance_factory {
 	public:
+		virtual ~instance_factory() {}
+
 		virtual IfcUtil::IfcBaseClass* operator()(IfcEntityInstanceData* data) const = 0;
 	};
 
@@ -453,6 +465,8 @@ namespace IfcParse {
 	IFC_PARSE_API std::vector<std::string> schema_names();
 
 	IFC_PARSE_API void register_schema(schema_definition*);
+
+	IFC_PARSE_API void clear_schemas();
 }
 
 #endif

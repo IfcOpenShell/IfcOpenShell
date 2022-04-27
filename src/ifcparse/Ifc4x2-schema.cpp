@@ -15808,9 +15808,16 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
 #pragma optimize("", on)
 #endif
         
-const schema_definition& Ifc4x2::get_schema() {
+static std::unique_ptr<schema_definition> schema;
 
-    static const schema_definition* s = IFC4X2_populate_schema();
-    return *s;
+void Ifc4x2::clear_schema() {
+    schema.reset();
+}
+
+const schema_definition& Ifc4x2::get_schema() {
+    if (!schema) {
+        schema.reset(IFC4X2_populate_schema());
+    }
+    return *schema;
 }
 

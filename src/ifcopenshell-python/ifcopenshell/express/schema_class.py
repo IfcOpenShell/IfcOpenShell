@@ -283,10 +283,22 @@ __attribute__((optnone))
 
         self.statements.extend(
             (
-                "const schema_definition& %s::get_schema() {" % schema_name_title,
+                "static std::unique_ptr<schema_definition> schema;",
                 "",
-                "    static const schema_definition* s = %(schema_name)s_populate_schema();" % locals(),
-                "    return *s;",
+                "void %s::clear_schema() {" % schema_name_title,
+                "    schema.reset();",
+                "}",
+                "",
+            )
+        )
+
+        self.statements.extend(
+            (
+                "const schema_definition& %s::get_schema() {" % schema_name_title,
+                "    if (!schema) {",
+                "        schema.reset(%(schema_name)s_populate_schema());" % locals(),
+                "    }",
+                "    return *schema;",
                 "}",
                 "",
                 "",
