@@ -33,12 +33,26 @@ class TestSelector(test.bootstrap.IFC4):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
         assert subject.Selector.parse(self.file, f"#{element.GlobalId}") == [element]
 
+    def test_selecting_by_attribute_existence(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element.Name = "Foobar"
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        assert subject.Selector.parse(self.file, '.IfcElement[Name]') == [element]
+        assert subject.Selector.parse(self.file, '.IfcElement[Description]') == []
+
     def test_selecting_by_attribute(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element.Name = "Foobar"
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
         assert subject.Selector.parse(self.file, '.IfcElement[Name="Foobar"]') == [element]
         assert subject.Selector.parse(self.file, '.IfcElement[Name="Foobaz"]') == []
+
+    def test_selecting_by_property_existence(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo]') == [element]
+        assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Fox]') == []
 
     def test_selecting_by_string_property(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
