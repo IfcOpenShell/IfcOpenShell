@@ -38,7 +38,8 @@ class Drawing(blenderbim.core.tool.Drawing):
     def create_annotation_object(cls, object_type):
         data_type = {
             "DIMENSION": "curve",
-            "EQUAL_DIMENSION": "curve",
+            "RADIUS": "curve",
+            "DIAMETER": "curve",
             "TEXT": "empty",
             "TEXT_LEADER": "curve",
             "STAIR_ARROW": "curve",
@@ -46,10 +47,11 @@ class Drawing(blenderbim.core.tool.Drawing):
             "PLAN_LEVEL": "curve",
             "SECTION_LEVEL": "curve",
             "BREAKLINE": "mesh",
-            "MISC": "mesh",
+            "FILL_AREA": "mesh",
+            "LINEWORK": "mesh",
         }[object_type]
         obj = annotation.Annotator.get_annotation_obj(object_type, data_type)
-        if object_type == "BREAKLINE":
+        if object_type == "FILL_AREA":
             obj = annotation.Annotator.add_plane_to_annotation(obj)
         elif object_type != "TEXT":
             obj = annotation.Annotator.add_line_to_annotation(obj)
@@ -327,7 +329,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         if user_command:
             commands = eval(user_command)
             for command in commands:
-                subprocess.run(command)
+                subprocess.Popen(command)
         else:
             webbrowser.open("file://" + path)
 
@@ -403,8 +405,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             if element in existing_references or element == drawing:
                 continue
             if element.ObjectType == "DRAWING":
-                psets = ifcopenshell.util.element.get_psets(element)
-                if psets.get("EPset_Drawing", {}).get("TargetView", None) in ("SECTION_VIEW", "ELEVATION_VIEW"):
+                pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing", {})
+                if pset.get("TargetView", None) in ("SECTION_VIEW", "ELEVATION_VIEW") and pset.get(
+                    "GlobalReferencing", False
+                ):
                     elements.append(element)
         for element in tool.Ifc.get().by_type("IfcGridAxis"):
             elements.append(element)
@@ -814,8 +818,26 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Annotation", {}).get("ZIndex", 0)
 
     @classmethod
+    def get_annotation_symbol(cls, drawing):
+        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Annotation", {}).get("Symbol", None)
+
+    @classmethod
     def has_linework(cls, drawing):
-        return ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("HasLinework", False)
+        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasLinework", False)
+
+    @classmethod
+    def get_drawing_elements(cls, drawing):
+        pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
+        include = pset.get("Include", None)
+        if include:
+            elements = set(ifcopenshell.util.selector.Selector.parse(tool.Ifc.get(), include))
+        else:
+            elements = set(tool.Ifc.get().by_type("IfcElement"))
+        exclude = pset.get("Exclude", None)
+        if exclude:
+            elements -= set(ifcopenshell.util.selector.Selector.parse(tool.Ifc.get(), exclude, elements=elements))
+        elements -= set(tool.Ifc.get().by_type("IfcOpeningElement"))
+        return elements
 
     @classmethod
     def get_annotation_element(cls, element):

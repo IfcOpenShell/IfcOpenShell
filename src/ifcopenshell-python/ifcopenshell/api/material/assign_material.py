@@ -91,11 +91,23 @@ class Usecase:
                 subelement.SweptArea = profile
 
     def create_layer_set_usage(self, material_set):
+        if self.settings["product"].is_a() in [
+            "IfcSlab",
+            "IfcSlabStandardCase",
+            "IfcSlabElementedCase",
+            "IfcRoof",
+            "IfcRamp",
+            "IfcPlate",
+            "IfcPlateStandardCase",
+        ]:
+            layer_set_direction = "AXIS3"
+        else:
+            layer_set_direction = "AXIS2"
         return self.file.create_entity(
             "IfcMaterialLayerSetUsage",
             **{
                 "ForLayerSet": material_set,
-                "LayerSetDirection": "AXIS2" if self.settings["product"].is_a("IfcWall") else "AXIS3",
+                "LayerSetDirection": layer_set_direction,
                 "DirectionSense": "POSITIVE",
                 "OffsetFromReferenceLine": 0,
             }

@@ -206,25 +206,14 @@ class UpdateRepresentation(bpy.types.Operator):
 
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
 
-        [
-            blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=s.material)
-            for s in obj.material_slots
-            if s.material and not s.material.BIMMaterialProperties.ifc_style_id
-        ]
-
-        if isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons):
+        if tool.Geometry.is_body_representation(new_representation):
+            [tool.Geometry.run_style_add_style(obj=mat) for mat in tool.Geometry.get_object_materials_without_styles(obj)]
             ifcopenshell.api.run(
                 "style.assign_representation_styles",
                 self.file,
-                **{
-                    "shape_representation": new_representation,
-                    "styles": [
-                        self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
-                        for s in obj.material_slots
-                        if s.material
-                    ],
-                    "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
-                },
+                shape_representation=new_representation,
+                styles=tool.Geometry.get_styles(obj),
+                should_use_presentation_style_assignment=context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
             )
             tool.Geometry.record_object_materials(obj)
 
@@ -332,8 +321,8 @@ class CopyRepresentation(bpy.types.Operator, Operator):
 
 class OverrideDeleteTrait:
     def delete_ifc_object(self, obj):
-        if obj.BIMObjectProperties.ifc_definition_id:
-            element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+        element = tool.Ifc.get_entity(obj)
+        if element:
             IfcStore.delete_element(element)
             if getattr(element, "FillsVoids", None):
                 self.remove_filling(element)

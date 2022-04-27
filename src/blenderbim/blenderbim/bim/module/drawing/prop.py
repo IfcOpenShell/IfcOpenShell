@@ -351,19 +351,6 @@ class BIMCameraProperties(PropertyGroup):
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
     is_nts: BoolProperty(name="Is NTS")
-    cut_objects: EnumProperty(
-        items=[
-            (
-                ".IfcWall|.IfcSlab|.IfcCurtainWall|.IfcStair|.IfcStairFlight|.IfcColumn|.IfcBeam|.IfcMember|.IfcCovering|.IfcSpace",
-                "Overall Plan / Section",
-                "",
-            ),
-            (".IfcElement", "Detail Drawing", ""),
-            ("CUSTOM", "Custom", ""),
-        ],
-        name="Cut Objects",
-    )
-    cut_objects_custom: StringProperty(name="Custom Cut")
     active_drawing_style_index: IntProperty(name="Active Drawing Style Index")
 
     # For now, this JSON dump are all the parameters that determine a camera's "Block representation"
@@ -400,14 +387,5 @@ class BIMTextProperties(PropertyGroup):
         default="2.5",
         update=refreshFontSize,
         name="Font Size",
-    )
-    symbol: EnumProperty(
-        items=[
-            ("None", "None", ""),
-            ("rectangle-tag", "Rectangle Tag", ""),
-            ("door-tag", "Door Tag", ""),
-        ],
-        update=refreshFontSize,
-        name="Symbol",
     )
     relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object)
