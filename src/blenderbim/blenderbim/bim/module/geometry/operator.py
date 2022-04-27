@@ -321,8 +321,8 @@ class CopyRepresentation(bpy.types.Operator, Operator):
 
 class OverrideDeleteTrait:
     def delete_ifc_object(self, obj):
-        if obj.BIMObjectProperties.ifc_definition_id:
-            element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+        element = tool.Ifc.get_entity(obj)
+        if element:
             IfcStore.delete_element(element)
             if getattr(element, "FillsVoids", None):
                 self.remove_filling(element)
