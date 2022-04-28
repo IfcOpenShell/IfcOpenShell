@@ -246,19 +246,6 @@ class Geometry:
     def should_generate_uvs(cls, obj): pass
     def should_use_presentation_style_assignment(cls): pass
 
-@interface
-class Georeference:
-    def clear_projected_crs(cls): pass
-    def clear_map_conversion(cls): pass
-    def get_file(cls): pass
-    def set_false_is_editing(cls): pass
-    def import_projected_crs_attributes(cls, name, prop, data): pass
-    def import_map_conversion_attributes(cls, name, prop, data): pass
-    def export_crs_attributes(cls, attributes, prop): pass
-    def export_map_attributes(cls, attributes, prop): pass
-    def set_ifc_grid_north(cls): pass
-    def set_blender_grid_north(cls): pass
-     
 
 @interface
 class Ifc:
