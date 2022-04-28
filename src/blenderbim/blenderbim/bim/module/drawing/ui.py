@@ -217,7 +217,7 @@ class BIM_PT_schedules(Panel):
                 row = self.layout.row(align=True)
                 row.alignment = "RIGHT"
                 row.operator("bim.open_schedule", icon="URL", text="").schedule = active_schedule.ifc_definition_id
-                row.operator("bim.build_schedule", icon="LINENUMBERS_ON", text="")
+                row.operator("bim.build_schedule", icon="LINENUMBERS_ON", text="").schedule = active_schedule.ifc_definition_id
                 row.operator("bim.remove_schedule", icon="X", text="").schedule = active_schedule.ifc_definition_id
 
             self.layout.template_list("BIM_UL_generic", "", self.props, "schedules", self.props, "active_schedule_index")

@@ -624,7 +624,7 @@ class CreateSheets(bpy.types.Operator):
         props = scene.DocProperties
         active_sheet = props.sheets[props.active_sheet_index]
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
-        name = tool.Drawing.get_sheet_filename(sheet)
+        name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = scene.BIMProperties.data_dir
         sheet_builder.build(sheet)
@@ -956,18 +956,13 @@ class OpenSchedule(bpy.types.Operator, Operator):
         core.open_schedule(tool.Drawing, schedule=tool.Ifc.get().by_id(self.schedule))
 
 
-class BuildSchedule(bpy.types.Operator):
+class BuildSchedule(bpy.types.Operator, Operator):
     bl_idname = "bim.build_schedule"
     bl_label = "Build Schedule"
+    schedule: bpy.props.IntProperty()
 
-    def execute(self, context):
-        props = context.scene.DocProperties
-        schedule = props.active_schedule
-        schedule_creator = scheduler.Scheduler()
-        outfile = os.path.join(context.scene.BIMProperties.data_dir, "schedules", schedule.name + ".svg")
-        schedule_creator.schedule(schedule.file, outfile)
-        open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, outfile)
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.build_schedule(tool.Drawing, schedule=tool.Ifc.get().by_id(self.schedule))
 
 
 class AddScheduleToSheet(bpy.types.Operator):

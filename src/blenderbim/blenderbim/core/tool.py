@@ -156,6 +156,7 @@ class Document:
 class Drawing:
     def create_annotation_object(cls, object_type): pass
     def create_camera(cls, name, matrix): pass
+    def create_svg_schedule(cls, schedule): pass
     def create_svg_sheet(cls, document, titleblock): pass
     def delete_collection(cls, collection): pass
     def delete_drawing_elements(cls, elements): pass
@@ -179,6 +180,7 @@ class Drawing:
     def generate_sheet_identification(cls): pass
     def get_annotation_context(cls, target_view): pass
     def get_body_context(cls): pass
+    def get_document_uri(cls, document): pass
     def get_drawing_collection(cls, drawing): pass
     def get_drawing_group(cls, drawing): pass
     def get_drawing_target_view(cls, drawing): pass
@@ -186,7 +188,6 @@ class Drawing:
     def get_ifc_representation_class(cls, object_type): pass
     def get_name(cls, element): pass
     def get_schedule_location(cls, schedule): pass
-    def get_sheet_filename(cls, document): pass
     def get_text_literal(cls, obj): pass
     def get_text_product(cls, element): pass
     def import_drawings(cls): pass

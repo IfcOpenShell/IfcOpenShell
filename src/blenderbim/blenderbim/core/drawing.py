@@ -81,7 +81,7 @@ def add_sheet(ifc, drawing, titleblock=None):
 
 
 def open_sheet(drawing, sheet=None):
-    drawing.open_svg(drawing.get_sheet_filename(sheet))
+    drawing.open_svg(drawing.get_document_uri(sheet))
 
 
 def remove_sheet(ifc, drawing, sheet=None):
@@ -206,6 +206,11 @@ def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None)
         ifc.run("group.assign_group", group=drawing_tool.get_drawing_group(drawing), product=element)
     collector.assign(obj)
     drawing_tool.enable_editing(obj)
+
+
+def build_schedule(drawing, schedule=None):
+    drawing.create_svg_schedule(schedule)
+    drawing.open_svg(drawing.get_document_uri(schedule))
 
 
 def sync_references(ifc, collector, drawing_tool, drawing=None):
