@@ -31,8 +31,7 @@ class SheetBuilder:
         self.data_dir = None
         self.scale = "NTS"
 
-    def create(self, name, titleblock_name):
-        sheet_path = os.path.join(self.data_dir, "sheets", f"{name}.svg")
+    def create(self, sheet_path, titleblock_name):
         root = ET.Element("svg")
         root.attrib["xmlns"] = "http://www.w3.org/2000/svg"
         root.attrib["xmlns:xlink"] = "http://www.w3.org/1999/xlink"
@@ -62,7 +61,7 @@ class SheetBuilder:
 
     def add_drawing(self, drawing, sheet):
         filename = drawing.Name
-        sheet_name = tool.Drawing.get_sheet_filename(sheet)
+        sheet_name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
         sheet_dir = os.path.join(self.data_dir, "sheets")
         drawing_dir = os.path.join(self.data_dir, "diagrams")
         sheet_path = os.path.join(sheet_dir, sheet_name + ".svg")
@@ -112,7 +111,7 @@ class SheetBuilder:
         sheet_tree.write(sheet_path)
 
     def remove_drawing(self, drawing, sheet):
-        sheet_name = tool.Drawing.get_sheet_filename(sheet)
+        sheet_name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
         sheet_dir = os.path.join(self.data_dir, "sheets")
         sheet_path = os.path.join(sheet_dir, sheet_name + ".svg")
 
@@ -168,7 +167,7 @@ class SheetBuilder:
         title.attrib["height"] = str(self.convert_to_mm(title_root.attrib.get("height")))
 
     def build(self, sheet):
-        sheet_name = tool.Drawing.get_sheet_filename(sheet)
+        sheet_name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
         os.makedirs(os.path.join(self.data_dir, "build", sheet_name), exist_ok=True)
 
         sheet_path = os.path.join(self.data_dir, "sheets", f"{sheet_name}.svg")
@@ -193,7 +192,7 @@ class SheetBuilder:
         titleblock.remove(image)
 
     def build_drawings(self, root, sheet):
-        sheet_name = tool.Drawing.get_sheet_filename(sheet)
+        sheet_name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
         references = tool.Drawing.get_document_references(sheet)
         drawing_references = {tool.Drawing.get_reference_element(r): r for r in  references}
 

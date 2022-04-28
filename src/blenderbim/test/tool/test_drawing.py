@@ -51,7 +51,7 @@ class TestCreateCamera(NewFile):
 class TestCreateSvgSheet(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
-        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR")
+        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="DOCUMENTATION")
         subject.create_svg_sheet(document, "A1")
         assert os.path.isfile(os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", "X - FOOBAR.svg"))
 
@@ -221,6 +221,26 @@ class TestGetBodyContext(NewFile):
         assert subject.get_body_context() == context
 
 
+class TestGetDocumentUri(NewFile):
+    def test_get_sheet_uri(self):
+        ifc = ifcopenshell.file()
+        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="DOCUMENTATION")
+        result = subject.get_document_uri(document)
+        assert result == os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", "X - FOOBAR.svg")
+
+    def test_get_schedule_uri(self):
+        ifc = ifcopenshell.file()
+        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="SCHEDULE")
+        result = subject.get_document_uri(document)
+        assert result == os.path.join(bpy.context.scene.BIMProperties.data_dir, "schedules", "X - FOOBAR.svg")
+
+    def test_run_ifc2x3(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="DOCUMENTATION")
+        result = subject.get_document_uri(document)
+        assert result == os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", "X - FOOBAR.svg")
+
+
 class TestGetDrawingCollection(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -288,21 +308,10 @@ class TestGetScheduleLocation(NewFile):
 
     def test_run_ifc2x3(self):
         ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
         reference = ifc.createIfcDocumentReference(Location="uri")
         schedule = ifc.createIfcDocumentInformation(DocumentReferences=[reference])
-        subject.get_sheet_filename(schedule) == "uri"
-
-
-class TestGetSheetFilename(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="DOCUMENTATION")
-        subject.get_sheet_filename(document) == "X - FOOBAR"
-
-    def test_run_ifc2x3(self):
-        ifc = ifcopenshell.file(schema="IFC2X3")
-        document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="DOCUMENTATION")
-        subject.get_sheet_filename(document) == "X - FOOBAR"
+        subject.get_schedule_location(schedule) == "uri"
 
 
 class TestGenerateDrawingMatrix(NewFile):

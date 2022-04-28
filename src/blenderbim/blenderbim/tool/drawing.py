@@ -29,6 +29,7 @@ import blenderbim.core.geometry
 import blenderbim.tool as tool
 import ifcopenshell.util.representation
 import blenderbim.bim.module.drawing.sheeter as sheeter
+import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.helper as helper
 
@@ -73,10 +74,15 @@ class Drawing(blenderbim.core.tool.Drawing):
         return camera
 
     @classmethod
+    def create_svg_schedule(cls, schedule):
+        schedule_creator = scheduler.Scheduler()
+        schedule_creator.schedule(cls.get_schedule_location(schedule), cls.get_document_uri(schedule))
+
+    @classmethod
     def create_svg_sheet(cls, document, titleblock):
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_builder.create(cls.get_sheet_filename(document), titleblock)
+        sheet_builder.create(cls.get_document_uri(document), titleblock)
 
     @classmethod
     def delete_collection(cls, collection):
@@ -174,6 +180,18 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
     @classmethod
+    def get_document_uri(cls, document):
+        if hasattr(document, "Identification"):
+            name = document.Identification or "X"
+        else:
+            name = document.DocumentId or "X"
+        name += " - " + (document.Name or "Unnamed")
+        if document.Scope == "DOCUMENTATION":
+            return os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", name + ".svg")
+        elif document.Scope == "SCHEDULE":
+            return os.path.join(bpy.context.scene.BIMProperties.data_dir, "schedules", name + ".svg")
+
+    @classmethod
     def get_drawing_collection(cls, drawing):
         obj = tool.Ifc.get_object(drawing)
         return obj.users_collection[0]
@@ -210,15 +228,6 @@ class Drawing(blenderbim.core.tool.Drawing):
         if tool.Ifc.get_schema() == "IFC2X3":
             return schedule.DocumentReferences[0].Location
         return schedule.Location
-
-    @classmethod
-    def get_sheet_filename(cls, document):
-        if hasattr(document, "Identification"):
-            name = document.Identification or "X"
-        else:
-            name = document.DocumentId or "X"
-        name += " - " + (document.Name or "Unnamed")
-        return name
 
     @classmethod
     def generate_drawing_matrix(cls, target_view, location_hint):
@@ -367,10 +376,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         )
 
     @classmethod
-    def open_svg(cls, filename):
+    def open_svg(cls, uri):
         cls.open_with_user_command(
-            bpy.context.preferences.addons["blenderbim"].preferences.svg_command,
-            os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", filename + ".svg"),
+            bpy.context.preferences.addons["blenderbim"].preferences.svg_command, uri
         )
 
     @classmethod
