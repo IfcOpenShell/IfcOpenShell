@@ -183,12 +183,12 @@ class TestOpenSchedule:
 class TestUpdateScheduleName:
     def test_do_not_update_if_name_unchanged(self, ifc, drawing):
         drawing.get_name("schedule").should_be_called().will_return("name")
-        subject.update_drawing_name(ifc, drawing, schedule="schedule", name="name")
+        subject.update_schedule_name(ifc, drawing, schedule="schedule", name="name")
 
     def test_run(self, ifc, drawing):
         drawing.get_name("schedule").should_be_called().will_return("oldname")
         ifc.run("document.edit_information", information="schedule", attributes={"Name": "name"}).should_be_called()
-        subject.update_drawing_name(ifc, drawing, schedule="schedule", name="name")
+        subject.update_schedule_name(ifc, drawing, schedule="schedule", name="name")
 
 
 class TestLoadDrawings:

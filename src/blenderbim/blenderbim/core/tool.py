@@ -185,6 +185,7 @@ class Drawing:
     def get_group_elements(cls, group): pass
     def get_ifc_representation_class(cls, object_type): pass
     def get_name(cls, element): pass
+    def get_schedule_location(cls, schedule): pass
     def get_sheet_filename(cls, document): pass
     def get_text_literal(cls, obj): pass
     def get_text_product(cls, element): pass
@@ -193,6 +194,7 @@ class Drawing:
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
     def import_text_product(cls, obj): pass
+    def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def set_drawing_collection_name(cls, group, collection): pass
