@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+# ############################################################################ #
+
 import blenderbim.tool as tool
 
 def refresh():
@@ -33,6 +35,20 @@ class GeoreferenceData:
             "true_north" : cls.true_north(),
         }
         cls.is_loaded = True
+    
+    @classmethod
+    def is_georeferenced(cls):
+        ifc = tool.Ifc.get()
+        if ifc.schema == "IFC2X3":
+            return
+        
+        map_conversions = []
+        for context in ifc.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+            if not context.HasCoordinateOperation:
+                continue
+            map_conversions.append(context)
+                
+        return True if map_conversions else False
         
     @classmethod
     def map_conversion(cls):
