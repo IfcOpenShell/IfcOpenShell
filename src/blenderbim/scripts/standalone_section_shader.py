@@ -286,19 +286,6 @@ class SectionCutawayManager:
                         obj.data.materials.append(material)
 
 
-class BIM_OT_section_plane_include_object(Operator):
-    """Add a temporary empty object as a section cutaway. Cull all geometry rendering below the empty's local Z axis"""
-
-    bl_idname = "bim.section_plane_add"
-    bl_label = "Add Temporary Section Cutaway"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        SectionCutawayManager.add_section_plane(context)
-        SectionCutawayManager.clean()
-        return {"FINISHED"}
-
-
 class BIM_OT_section_plane_refresh(Operator):
     bl_idname = "bim.section_plane_refresh"
     bl_label = "Refresh Section Cutaway Shader"
