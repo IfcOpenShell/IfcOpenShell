@@ -18,6 +18,7 @@
 
 import ifcopenshell.util.geolocation
 from bpy.types import Panel
+#from ifcopenshell.api.georeference.data import Data
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes, draw_attribute
 from blenderbim.bim.module.georeference.data import GeoreferenceData
@@ -72,8 +73,8 @@ class BIM_PT_gis(Panel):
         row.prop(props, "true_north_ordinate")
         if hasattr(context.scene, "sun_pos_properties"):
             row = self.layout.row(align=True)
-            row.operator("bim.set_ifc_true_north", text="Set IFC North")
-            row.operator("bim.set_blender_true_north", text="Set Blender North")
+        #    row.operator("bim.set_ifc_true_north", text="Set IFC North")
+        #    row.operator("bim.set_blender_true_north", text="Set Blender North")
 
 
     def draw_ui(self, context):
@@ -82,7 +83,7 @@ class BIM_PT_gis(Panel):
         if not GeoreferenceData.data["projected_crs"]:
             row = self.layout.row(align=True)
             row.label(text="Not Georeferenced")
-            if IfcStore.get_file().schema != "IFC2X3": #TODO Is it correct to use IfcStore.get_file() or is it better tool.Ifc.get()?
+            if IfcStore.get_file().schema != "IFC2X3":
                 row.operator("bim.add_georeferencing", icon="ADD", text="")
         
         if props.has_blender_offset:
@@ -178,19 +179,16 @@ class BIM_PT_gis_utilities(Panel):
     bl_category = "BlenderBIM"
 
     def draw(self, context):
-        if not GeoreferenceData.is_loaded:
-            GeoreferenceData.load()
-        
         props = context.scene.BIMGeoreferenceProperties
 
         row = self.layout.row(align=True)
         row.prop(props, "coordinate_input", text="Input")
-        row.operator("bim.get_cursor_location", text="", icon="TRACKER")
+        #row.operator("bim.get_cursor_location", text="", icon="TRACKER")
         row = self.layout.row(align=True)
         row.prop(props, "coordinate_output", text="Output")
-        row.operator("bim.set_cursor_location", text="", icon="TRACKER")
+        #row.operator("bim.set_cursor_location", text="", icon="TRACKER")
 
         row = self.layout.row(align=True)
-        row.operator("bim.convert_local_to_global", text="Local to Global")
-        row.operator("bim.convert_global_to_local", text="Global to Local")
+        #row.operator("bim.convert_local_to_global", text="Local to Global")
+        #row.operator("bim.convert_global_to_local", text="Global to Local")
 
