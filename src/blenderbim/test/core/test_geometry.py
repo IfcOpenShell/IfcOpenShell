@@ -60,8 +60,8 @@ class TestAddRepresentation:
             profile_set_usage="profile_set_usage",
         ).should_be_called().will_return("representation")
 
-        # Styles are relevant for meshes with faces only
-        geometry.does_object_have_mesh_with_faces("obj").should_be_called().will_return(True)
+        # Styles are relevant for body representations only (as a simplification)
+        geometry.is_body_representation("representation").should_be_called().will_return(True)
 
         # Add styles
         geometry.get_object_materials_without_styles("obj").should_be_called().will_return(["material"])
@@ -102,7 +102,7 @@ class TestAddRepresentation:
             == "representation"
         )
 
-    def test_not_handling_styles_if_representation_has_no_faces(self, ifc, geometry, style, surveyor):
+    def test_not_handling_styles_if_not_a_body_representation(self, ifc, geometry, style, surveyor):
         TestEditObjectPlacement.predict(self, ifc, geometry, surveyor)
 
         # Add representation
@@ -126,8 +126,8 @@ class TestAddRepresentation:
             profile_set_usage="profile_set_usage",
         ).should_be_called().will_return("representation")
 
-        # Styles are relevant for meshes with faces only
-        geometry.does_object_have_mesh_with_faces("obj").should_be_called().will_return(False)
+        # Styles are relevant for body representations only (as a simplification)
+        geometry.is_body_representation("representation").should_be_called().will_return(False)
 
         # Assign representation to product
         ifc.run("geometry.assign_representation", product="element", representation="representation").should_be_called()

@@ -913,54 +913,52 @@ class RemoveSheet(bpy.types.Operator, Operator):
         core.remove_sheet(tool.Ifc, tool.Drawing, sheet=tool.Ifc.get().by_id(self.sheet))
 
 
-class AddSchedule(bpy.types.Operator):
+class AddSchedule(bpy.types.Operator, Operator):
     bl_idname = "bim.add_schedule"
     bl_label = "Add Schedule"
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        new = context.scene.DocProperties.schedules.add()
-        new.name = "SCHEDULE {}".format(len(context.scene.DocProperties.schedules))
-        return {"FINISHED"}
-
-
-class RemoveSchedule(bpy.types.Operator):
-    bl_idname = "bim.remove_schedule"
-    bl_label = "Remove Schedule"
-    bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        props = context.scene.DocProperties
-        props.schedules.remove(self.index)
-        return {"FINISHED"}
-
-
-class SelectScheduleFile(bpy.types.Operator):
-    bl_idname = "bim.select_schedule_file"
-    bl_label = "Select Documentation IFC File"
-    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    filter_glob: bpy.props.StringProperty(default="*.ods", options={"HIDDEN"})
-    index: bpy.props.IntProperty()
+    filter_glob: bpy.props.StringProperty(default="*.ods;*.xls;*.xlsx", options={"HIDDEN"})
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
-    def execute(self, context):
-        props = context.scene.DocProperties
-        props.active_schedule.file = self.filepath
-        return {"FINISHED"}
+    def _execute(self, context):
+        filepath = self.filepath
+        if self.use_relative_path:
+            filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
+        core.add_schedule(
+            tool.Ifc,
+            tool.Drawing,
+            uri=filepath,
+        )
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
 
+class RemoveSchedule(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_schedule"
+    bl_label = "Remove Schedule"
+    bl_options = {"REGISTER", "UNDO"}
+    schedule: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.remove_schedule(tool.Ifc, tool.Drawing, schedule=tool.Ifc.get().by_id(self.schedule))
+
+
+class OpenSchedule(bpy.types.Operator, Operator):
+    bl_idname = "bim.open_schedule"
+    bl_label = "Open Schedule"
+    bl_options = {"REGISTER", "UNDO"}
+    schedule: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.open_schedule(tool.Drawing, schedule=tool.Ifc.get().by_id(self.schedule))
+
+
 class BuildSchedule(bpy.types.Operator):
     bl_idname = "bim.build_schedule"
     bl_label = "Build Schedule"
-
-    @classmethod
-    def poll(cls, context):
-        return context.scene.DocProperties.active_schedule.file
 
     def execute(self, context):
         props = context.scene.DocProperties
@@ -1267,6 +1265,24 @@ class DisableEditingSheets(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.disable_editing_sheets(tool.Drawing)
+
+
+class LoadSchedules(bpy.types.Operator, Operator):
+    bl_idname = "bim.load_schedules"
+    bl_label = "Load Schedules"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.load_schedules(tool.Drawing)
+
+
+class DisableEditingSchedules(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_schedules"
+    bl_label = "Disable Editing Text Product"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disable_editing_schedules(tool.Drawing)
 
 
 class LoadDrawings(bpy.types.Operator, Operator):

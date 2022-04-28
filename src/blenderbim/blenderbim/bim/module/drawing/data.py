@@ -24,6 +24,7 @@ import blenderbim.tool as tool
 def refresh():
     TextData.is_loaded = False
     SheetsData.is_loaded = False
+    SchedulesData.is_loaded = False
     DrawingsData.is_loaded = False
 
 
@@ -94,3 +95,17 @@ class DrawingsData:
             )
             return results
         return [(h.upper(), h, "") for h in ["North", "South", "East", "West"]]
+
+
+class SchedulesData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"total_schedules": cls.total_schedules()}
+        cls.is_loaded = True
+
+    @classmethod
+    def total_schedules(cls):
+        return len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SCHEDULE"])
