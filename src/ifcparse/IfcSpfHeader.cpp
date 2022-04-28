@@ -46,6 +46,10 @@ HeaderEntity::HeaderEntity(const char * const datatype, size_t size, IfcFile* fi
 	}
 }
 
+HeaderEntity::~HeaderEntity()
+{
+	clearArguments();
+}
 
 void IfcSpfHeader::readSemicolon() {
 	if (!TokenFunc::isOperator(file_->tokens->Next(), ';')) {
