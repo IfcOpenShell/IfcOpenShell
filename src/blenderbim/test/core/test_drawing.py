@@ -126,6 +126,71 @@ class TestRemoveSheet:
         subject.remove_sheet(ifc, drawing, sheet="sheet")
 
 
+class TestLoadSchedules:
+    def test_run(self, drawing):
+        drawing.import_schedules().should_be_called()
+        drawing.enable_editing_schedules().should_be_called()
+        subject.load_schedules(drawing)
+
+
+class TestDisableEditingSchedules:
+    def test_run(self, drawing):
+        drawing.disable_editing_schedules().should_be_called()
+        subject.disable_editing_schedules(drawing)
+
+
+class TestAddSchedule:
+    def test_run(self, ifc, drawing):
+        ifc.run("document.add_information").should_be_called().will_return("schedule")
+        ifc.run("document.add_reference", information="schedule").should_be_called().will_return("reference")
+        ifc.get_schema().should_be_called().will_return("IFC4")
+        ifc.run(
+            "document.edit_information",
+            information="schedule",
+            attributes={"Identification": "X", "Name": "UNTITLED", "Scope": "SCHEDULE", "Location": "uri"},
+        ).should_be_called()
+        drawing.import_schedules().should_be_called()
+        subject.add_schedule(ifc, drawing, uri="uri")
+
+    def test_using_a_document_id_in_ifc2x3(self, ifc, drawing):
+        ifc.run("document.add_information").should_be_called().will_return("schedule")
+        ifc.run("document.add_reference", information="schedule").should_be_called().will_return("reference")
+        ifc.get_schema().should_be_called().will_return("IFC2X3")
+        ifc.run(
+            "document.edit_information",
+            information="schedule",
+            attributes={"DocumentId": "X", "Name": "UNTITLED", "Scope": "SCHEDULE"},
+        ).should_be_called()
+        ifc.run("document.edit_reference", reference="reference", attributes={"Location": "uri"}).should_be_called()
+        drawing.import_schedules().should_be_called()
+        subject.add_schedule(ifc, drawing, uri="uri")
+
+
+class TestRemoveSchedule:
+    def test_run(self, ifc, drawing):
+        ifc.run("document.remove_information", information="schedule").should_be_called()
+        drawing.import_schedules().should_be_called()
+        subject.remove_schedule(ifc, drawing, schedule="schedule")
+
+
+class TestOpenSchedule:
+    def test_run(self, drawing):
+        drawing.get_schedule_location("schedule").should_be_called().will_return("uri")
+        drawing.open_spreadsheet("uri").should_be_called()
+        subject.open_schedule(drawing, schedule="schedule")
+
+
+class TestUpdateScheduleName:
+    def test_do_not_update_if_name_unchanged(self, ifc, drawing):
+        drawing.get_name("schedule").should_be_called().will_return("name")
+        subject.update_drawing_name(ifc, drawing, schedule="schedule", name="name")
+
+    def test_run(self, ifc, drawing):
+        drawing.get_name("schedule").should_be_called().will_return("oldname")
+        ifc.run("document.edit_information", information="schedule", attributes={"Name": "name"}).should_be_called()
+        subject.update_drawing_name(ifc, drawing, schedule="schedule", name="name")
+
+
 class TestLoadDrawings:
     def test_run(self, drawing):
         drawing.import_drawings().should_be_called()

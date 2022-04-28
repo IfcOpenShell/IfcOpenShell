@@ -99,6 +99,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.context.scene.DocProperties.is_editing_drawings = False
 
     @classmethod
+    def disable_editing_schedules(cls):
+        bpy.context.scene.DocProperties.is_editing_schedules = False
+
+    @classmethod
     def disable_editing_sheets(cls):
         bpy.context.scene.DocProperties.is_editing_sheets = False
 
@@ -121,6 +125,10 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def enable_editing_drawings(cls):
         bpy.context.scene.DocProperties.is_editing_drawings = True
+
+    @classmethod
+    def enable_editing_schedules(cls):
+        bpy.context.scene.DocProperties.is_editing_schedules = True
 
     @classmethod
     def enable_editing_sheets(cls):
@@ -196,6 +204,12 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def get_name(cls, element):
         return element.Name
+
+    @classmethod
+    def get_schedule_location(cls, schedule):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return schedule.DocumentReferences[0].Location
+        return schedule.Location
 
     @classmethod
     def get_sheet_filename(cls, document):
@@ -274,6 +288,19 @@ class Drawing(blenderbim.core.tool.Drawing):
             new.target_view = cls.get_drawing_target_view(drawing)
 
     @classmethod
+    def import_schedules(cls):
+        bpy.context.scene.DocProperties.schedules.clear()
+        schedules = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SCHEDULE"]
+        for schedule in schedules:
+            new = bpy.context.scene.DocProperties.schedules.add()
+            new.ifc_definition_id = schedule.id()
+            new.name = schedule.Name or "Unnamed"
+            if tool.Ifc.get_schema() == "IFC2X3":
+                new.identification = schedule.DocumentId
+            else:
+                new.identification = schedule.Identification
+
+    @classmethod
     def import_sheets(cls):
         props = bpy.context.scene.DocProperties
         expanded_sheets = {s.ifc_definition_id for s in props.sheets if s.is_expanded}
@@ -332,6 +359,12 @@ class Drawing(blenderbim.core.tool.Drawing):
                 subprocess.Popen(command)
         else:
             webbrowser.open("file://" + path)
+
+    @classmethod
+    def open_spreadsheet(cls, uri):
+        cls.open_with_user_command(
+            bpy.context.preferences.addons["blenderbim"].preferences.spreadsheet_command, uri
+        )
 
     @classmethod
     def open_svg(cls, filename):

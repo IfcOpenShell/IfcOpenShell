@@ -20,7 +20,7 @@ import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.module.drawing.data import TextData, SheetsData, DrawingsData
+from blenderbim.bim.module.drawing.data import TextData, SheetsData, SchedulesData, DrawingsData
 
 
 class BIM_PT_camera(Panel):
@@ -196,22 +196,31 @@ class BIM_PT_schedules(Panel):
     bl_category = "BIM Documentation"
 
     def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        props = context.scene.DocProperties
+        if not SchedulesData.is_loaded:
+            SchedulesData.load()
 
-        row = layout.row(align=True)
-        row.operator("bim.add_schedule")
+        self.props = context.scene.DocProperties
 
-        if props.schedules:
-            row.operator("bim.build_schedule", icon="LINENUMBERS_ON", text="")
-            row.operator("bim.remove_schedule", icon="X", text="").index = props.active_schedule_index
+        if not self.props.is_editing_schedules:
+            row = self.layout.row(align=True)
+            row.label(text=f"{SchedulesData.data['total_schedules']} Schedules Found", icon="LONGDISPLAY")
+            row.operator("bim.load_schedules", text="", icon="IMPORT")
+            return
 
-            layout.template_list("BIM_UL_generic", "", props, "schedules", props, "active_schedule_index")
+        row = self.layout.row(align=True)
+        row.operator("bim.add_schedule", icon="ADD")
+        row.operator("bim.disable_editing_schedules", text="", icon="CANCEL")
 
-            row = layout.row()
-            row.prop(props.active_schedule, "file")
-            row.operator("bim.select_schedule_file", icon="FILE_FOLDER", text="")
+        if self.props.schedules:
+            if self.props.active_schedule_index < len(self.props.schedules):
+                active_schedule = self.props.schedules[self.props.active_schedule_index]
+                row = self.layout.row(align=True)
+                row.alignment = "RIGHT"
+                row.operator("bim.open_schedule", icon="URL", text="").schedule = active_schedule.ifc_definition_id
+                row.operator("bim.build_schedule", icon="LINENUMBERS_ON", text="")
+                row.operator("bim.remove_schedule", icon="X", text="").schedule = active_schedule.ifc_definition_id
+
+            self.layout.template_list("BIM_UL_generic", "", self.props, "schedules", self.props, "active_schedule_index")
 
 
 class BIM_PT_sheets(Panel):

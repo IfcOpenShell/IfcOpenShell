@@ -89,6 +89,42 @@ def remove_sheet(ifc, drawing, sheet=None):
     drawing.import_sheets()
 
 
+def load_schedules(drawing):
+    drawing.import_schedules()
+    drawing.enable_editing_schedules()
+
+
+def disable_editing_schedules(drawing):
+    drawing.disable_editing_schedules()
+
+
+def add_schedule(ifc, drawing, uri=None):
+    schedule = ifc.run("document.add_information")
+    reference = ifc.run("document.add_reference", information=schedule)
+    if ifc.get_schema() == "IFC2X3":
+        attributes = {"DocumentId": "X", "Name": "UNTITLED", "Scope": "SCHEDULE"}
+        ifc.run("document.edit_information", information=schedule, attributes=attributes)
+        ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
+    else:
+        attributes = {"Identification": "X", "Name": "UNTITLED", "Scope": "SCHEDULE", "Location": uri}
+        ifc.run("document.edit_information", information=schedule, attributes=attributes)
+    drawing.import_schedules()
+
+
+def remove_schedule(ifc, drawing, schedule=None):
+    ifc.run("document.remove_information", information=schedule)
+    drawing.import_schedules()
+
+
+def open_schedule(drawing, schedule=None):
+    drawing.open_spreadsheet(drawing.get_schedule_location(schedule))
+
+
+def update_schedule_name(ifc, drawing, schedule=None, name=None):
+    if drawing.get_name(schedule) != name:
+        ifc.run("document.edit_information", information=schedule, attributes={"Name": name})
+
+
 def load_drawings(drawing):
     drawing.import_drawings()
     drawing.enable_editing_drawings()

@@ -87,6 +87,13 @@ class TestDisableEditingDrawings(NewFile):
         assert bpy.context.scene.DocProperties.is_editing_drawings == False
 
 
+class TestDisableEditingSchedules(NewFile):
+    def test_run(self):
+        bpy.context.scene.DocProperties.is_editing_schedules = True
+        subject.disable_editing_schedules()
+        assert bpy.context.scene.DocProperties.is_editing_schedules == False
+
+
 class TestDisableEditingSheets(NewFile):
     def test_run(self):
         bpy.context.scene.DocProperties.is_editing_sheets = True
@@ -123,6 +130,13 @@ class TestEnableEditingDrawings(NewFile):
         bpy.context.scene.DocProperties.is_editing_drawings = False
         subject.enable_editing_drawings()
         assert bpy.context.scene.DocProperties.is_editing_drawings == True
+
+
+class TestEnableEditingSchedules(NewFile):
+    def test_run(self):
+        bpy.context.scene.DocProperties.is_editing_schedules = False
+        subject.enable_editing_schedules()
+        assert bpy.context.scene.DocProperties.is_editing_schedules == True
 
 
 class TestEnableEditingSheets(NewFile):
@@ -261,6 +275,22 @@ class TestGetName(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         assert subject.get_name(ifc.createIfcWall(Name="Foobar")) == "Foobar"
+
+
+class TestGetScheduleLocation(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        schedule = ifcopenshell.api.run("document.add_information", ifc)
+        schedule.Location = "uri"
+        reference = ifcopenshell.api.run("document.add_reference", ifc, information=schedule)
+        subject.get_schedule_location(schedule) == "uri"
+
+    def test_run_ifc2x3(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        reference = ifc.createIfcDocumentReference(Location="uri")
+        schedule = ifc.createIfcDocumentInformation(DocumentReferences=[reference])
+        subject.get_sheet_filename(schedule) == "uri"
 
 
 class TestGetSheetFilename(NewFile):
@@ -408,6 +438,30 @@ class TestImportDrawings(NewFile):
         assert props.drawings[0].target_view == "PLAN_VIEW"
 
 
+class TestImportSchedules(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifc.createIfcDocumentInformation(Identification="Y", Name="FOOBAZ")
+        document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="SCHEDULE")
+        subject.import_schedules()
+        props = bpy.context.scene.DocProperties
+        assert props.schedules[0].ifc_definition_id == document.id()
+        assert props.schedules[0].identification == "X"
+        assert props.schedules[0].name == "FOOBAR"
+
+    def test_run_ifc2x3(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        ifc.createIfcDocumentInformation(DocumentId="Y", Name="FOOBAZ")
+        document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="SCHEDULE")
+        subject.import_schedules()
+        props = bpy.context.scene.DocProperties
+        assert props.schedules[0].ifc_definition_id == document.id()
+        assert props.schedules[0].identification == "X"
+        assert props.schedules[0].name == "FOOBAR"
+
+
 class TestImportSheets(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -473,6 +527,11 @@ class TestImportTextProduct(NewFile):
         tool.Ifc.link(label, label_obj)
         subject.import_text_product(label_obj)
         assert label_obj.BIMTextProperties.relating_product is None
+
+
+class TestOpenSchedule(NewFile):
+    def open_spreadsheet(self):
+        pass
 
 
 class TestOpenSvg(NewFile):
