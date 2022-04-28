@@ -24,7 +24,7 @@ classes = (
     operator.DisableEditingGeoreferencing,
     operator.EditGeoreferencing,
     operator.SetIfcGridNorth,
-    operator.SetBlenderGridNorth,
+#    operator.SetBlenderGridNorth,
 #    operator.SetIfcTrueNorth,
 #    operator.SetBlenderTrueNorth,
     operator.RemoveGeoreferencing,
