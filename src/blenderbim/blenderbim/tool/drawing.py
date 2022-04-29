@@ -340,9 +340,12 @@ class Drawing(blenderbim.core.tool.Drawing):
                     new.identification = reference.Identification or "X"
 
                 element = cls.get_reference_element(reference)
-
-                new.name = element.Name
-                new.reference_type = "DRAWING"
+                if element:
+                    new.name = element.Name
+                    new.reference_type = "DRAWING"
+                else:
+                    new.name = cls.get_reference_document(reference).Name or "Unnamed"
+                    new.reference_type = "SCHEDULE"
 
     @classmethod
     def import_text_attributes(cls, obj):
@@ -838,10 +841,11 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def get_reference_element(cls, reference):
         if tool.Ifc.get_schema() == "IFC2X3":
-            return [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference][
-                0
-            ].RelatedObjects[0]
-        return reference.DocumentRefForObjects[0].RelatedObjects[0]
+            refs = [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference]
+        else:
+            refs = reference.DocumentRefForObjects
+        if refs:
+            return refs[0].RelatedObjects[0]
 
     @classmethod
     def get_drawing_human_scale(cls, drawing):
@@ -893,7 +897,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                 return rel.RelatingDocument
 
     @classmethod
-    def get_reference_sheet(cls, reference):
+    def get_reference_document(cls, reference):
         if tool.Ifc.get_schema() == "IFC2X3":
             return reference.ReferenceToDocument[0]
         return reference.ReferencedDocument

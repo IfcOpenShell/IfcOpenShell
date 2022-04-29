@@ -555,17 +555,11 @@ class AddDrawingToSheet(bpy.types.Operator):
 
         has_drawing = False
         for reference in references:
-            new = props.sheets.add()
-            new.ifc_definition_id = reference.id()
-            new.is_sheet = False
-
             if tool.Ifc.get_schema() == "IFC2X3":
-                new.identification = reference.ItemReference or "X"
                 element = [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference][
                     0
                 ].RelatedObjects[0]
             else:
-                new.identification = reference.Identification or "X"
                 element = reference.DocumentRefForObjects[0].RelatedObjects[0]
             if element == drawing:
                 has_drawing = True
@@ -583,7 +577,7 @@ class AddDrawingToSheet(bpy.types.Operator):
         tool.Ifc.run("document.assign_document", product=drawing, document=reference)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
-        sheet_builder.add_drawing(drawing, sheet)
+        sheet_builder.add_drawing(reference, drawing, sheet)
 
         tool.Drawing.import_sheets()
         return {"FINISHED"}
@@ -597,15 +591,18 @@ class RemoveDrawingFromSheet(bpy.types.Operator):
 
     def execute(self, context):
         reference = tool.Ifc.get().by_id(self.reference)
-        sheet = tool.Drawing.get_reference_sheet(reference)
-        drawing = tool.Drawing.get_reference_element(reference)
-
-        tool.Ifc.run("document.unassign_document", product=drawing, document=reference)
-        tool.Ifc.run("document.remove_reference", reference=reference)
+        sheet = tool.Drawing.get_reference_document(reference)
 
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
-        sheet_builder.remove_drawing(drawing, sheet)
+        sheet_builder.remove_drawing(reference, sheet)
+
+        drawing = tool.Drawing.get_reference_element(reference)
+        if drawing:
+            tool.Ifc.run("document.unassign_document", product=drawing, document=reference)
+
+        tool.Ifc.run("document.remove_reference", reference=reference)
+
         tool.Drawing.import_sheets()
         return {"FINISHED"}
 
@@ -624,6 +621,10 @@ class CreateSheets(bpy.types.Operator):
         props = scene.DocProperties
         active_sheet = props.sheets[props.active_sheet_index]
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
+
+        if not sheet.is_a("IfcDocumentInformation"):
+            return {"FINISHED"}
+
         name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = scene.BIMProperties.data_dir
@@ -978,9 +979,40 @@ class AddScheduleToSheet(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.DocProperties
+        active_schedule = props.schedules[props.active_schedule_index]
+        active_sheet = props.sheets[props.active_sheet_index]
+        schedule = tool.Ifc.get().by_id(active_schedule.ifc_definition_id)
+        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
+        if not sheet.is_a("IfcDocumentInformation"):
+            return {"FINISHED"}
+
+        if tool.Ifc.get_schema() == "IFC2X3":
+            references = sheet.DocumentReferences or []
+        else:
+            references = sheet.HasDocumentReferences or []
+
+        has_schedule = False
+        for reference in references:
+            if reference.Location == tool.Drawing.get_schedule_location(schedule):
+                has_schedule = True
+                break
+
+        if has_schedule:
+            return {"FINISHED"}
+
+        reference = tool.Ifc.run("document.add_reference", information=sheet)
+        if tool.Ifc.get_schema() == "IFC2X3":
+            attributes = {"ItemReference": str(len(sheet.DocumentReferences or []))}
+        else:
+            attributes = {"Identification": str(len(sheet.HasDocumentReferences or []))}
+        attributes["Location"] = tool.Drawing.get_schedule_location(schedule)
+        tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
+
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
-        sheet_builder.add_schedule(props.active_schedule.name, props.active_sheet.name)
+        sheet_builder.add_schedule(reference, schedule, sheet)
+
+        tool.Drawing.import_sheets()
         return {"FINISHED"}
 
 

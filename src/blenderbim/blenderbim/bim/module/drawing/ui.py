@@ -420,6 +420,8 @@ class BIM_UL_sheets(bpy.types.UIList):
                 row.label(text="", icon="BLANK1")
                 if item.reference_type == "DRAWING":
                     row.label(text="", icon="IMAGE_DATA")
+                elif item.reference_type == "SCHEDULE":
+                    row.label(text="", icon="LONGDISPLAY")
 
             name = "{} - {}".format(item.identification or "X", item.name or "Unnamed")
             row.label(text=name)
