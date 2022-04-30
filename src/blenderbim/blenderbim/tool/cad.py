@@ -24,6 +24,7 @@
 # Changes include:
 #
 #  - Instead of AutoVTX, user explicitly chooses V, T, or X mode
+#  - Instead of adding edges, existing edges are extended
 
 
 import sys
@@ -262,11 +263,17 @@ class Cad:
         return bm
 
     @classmethod
+    def perform_v(cls, bm, pt, target, edge, pts, vertex_indices):
+        bm = cls.perform_t(bm, pt, target, edge, pts, vertex_indices)
+        bm = cls.perform_t(bm, pt, edge, target, pts, vertex_indices)
+        return bm
+
+    @classmethod
     def prioritise_active_edge(cls, bm, edges):
         return [edges[0], edges[1]] if bm.select_history.active == edges[0] else [edges[1], edges[0]]
 
     @classmethod
-    def do_vtx_if_appropriate(cls, bm, edges):
+    def do_vtx_if_appropriate(cls, bm, edges, mode):
         vertex_indices = cls.get_vert_indices_from_bmedges(edges)
 
         # test 1, are there shared vers? if so return non-viable
@@ -285,6 +292,9 @@ class Cad:
             return {"NON_PLANAR_EDGES"}
 
         edges = cls.prioritise_active_edge(bm, edges)
-        # point must lie on an edge or the virtual extention of an edge
-        bm = cls.perform_t(bm, point, edges[0], edges[1], (p1, p2, p3, p4), vertex_indices)
+        # point must lie on an edge or the virtual extension of an edge
+        if mode == "T":
+            bm = cls.perform_t(bm, point, edges[0], edges[1], (p1, p2, p3, p4), vertex_indices)
+        elif mode == "V":
+            bm = cls.perform_v(bm, point, edges[0], edges[1], (p1, p2, p3, p4), vertex_indices)
         return bm

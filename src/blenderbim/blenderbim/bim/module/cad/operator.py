@@ -28,11 +28,8 @@ messages = {
 
 
 class CadTrimExtend(bpy.types.Operator):
-    """Weld intersecting edges, project converging edges towards their intersection"""
-
     bl_idname = "bim.cad_trim_extend"
     bl_label = "CAD Trim / Extend"
-    join_type: bpy.props.StringProperty()
 
     @classmethod
     def poll(cls, context):
@@ -61,7 +58,53 @@ class CadTrimExtend(bpy.types.Operator):
         edges = [e for e in bm.edges if e.select and not e.hide]
 
         if len(edges) == 2:
-            message = tool.Cad.do_vtx_if_appropriate(bm, edges)
+            message = tool.Cad.do_vtx_if_appropriate(bm, edges, mode="T")
+            if isinstance(message, set):
+                msg = messages.get(message.pop())
+                return self.cancel_message(msg)
+            bm = message
+        else:
+            return self.cancel_message("select two edges!")
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        bmesh.update_edit_mesh(me, loop_triangles=True)
+
+        return {"FINISHED"}
+
+
+class CadMitre(bpy.types.Operator):
+    bl_idname = "bim.cad_mitre"
+    bl_label = "CAD Trim / Extend"
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return bool(obj) and obj.type == "MESH"
+
+    def cancel_message(self, msg):
+        print(msg)
+        self.report({"WARNING"}, msg)
+        return {"CANCELLED"}
+
+    def execute(self, context):
+        # final attempt to enter unfragmented bm/mesh
+        # ghastly, but what can I do? it works with these
+        # fails without.
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.object.mode_set(mode="EDIT")
+
+        obj = context.active_object
+        me = obj.data
+
+        bm = bmesh.from_edit_mesh(me)
+        bm.verts.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+
+        edges = [e for e in bm.edges if e.select and not e.hide]
+
+        if len(edges) == 2:
+            message = tool.Cad.do_vtx_if_appropriate(bm, edges, mode="V")
             if isinstance(message, set):
                 msg = messages.get(message.pop())
                 return self.cancel_message(msg)
