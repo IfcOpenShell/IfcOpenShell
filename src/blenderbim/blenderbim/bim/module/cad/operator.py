@@ -27,11 +27,12 @@ messages = {
 }
 
 
-class TCAutoVTX(bpy.types.Operator):
+class CadTrimExtend(bpy.types.Operator):
     """Weld intersecting edges, project converging edges towards their intersection"""
 
-    bl_idname = "bim.vtx"
-    bl_label = "VTX autoVTX"
+    bl_idname = "bim.cad_trim_extend"
+    bl_label = "CAD Trim / Extend"
+    join_type: bpy.props.StringProperty()
 
     @classmethod
     def poll(cls, context):
@@ -44,7 +45,6 @@ class TCAutoVTX(bpy.types.Operator):
         return {"CANCELLED"}
 
     def execute(self, context):
-
         # final attempt to enter unfragmented bm/mesh
         # ghastly, but what can I do? it works with these
         # fails without.
