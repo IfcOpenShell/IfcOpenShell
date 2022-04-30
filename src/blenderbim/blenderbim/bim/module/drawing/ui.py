@@ -144,6 +144,10 @@ class BIM_PT_drawings(Panel):
     bl_region_type = "UI"
     bl_category = "BIM Documentation"
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+
     def draw(self, context):
         if not DrawingsData.is_loaded:
             DrawingsData.load()
@@ -195,6 +199,10 @@ class BIM_PT_schedules(Panel):
     bl_region_type = "UI"
     bl_category = "BIM Documentation"
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+
     def draw(self, context):
         if not SchedulesData.is_loaded:
             SchedulesData.load()
@@ -229,6 +237,10 @@ class BIM_PT_sheets(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "BIM Documentation"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not SheetsData.is_loaded:

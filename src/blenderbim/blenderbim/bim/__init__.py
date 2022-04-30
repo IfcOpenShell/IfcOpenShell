@@ -27,6 +27,7 @@ modules = {
     "root": None,
     "unit": None,
     "model": None,
+    "cad": None,
     "georeference": None,
     "context": None,
     "drawing": None,

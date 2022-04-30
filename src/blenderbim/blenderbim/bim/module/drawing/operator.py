@@ -40,6 +40,7 @@ import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.export_ifc
 from lxml import etree
+from math import pi
 from mathutils import Vector, Matrix, Euler, geometry
 from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from blenderbim.bim.ifc import IfcStore
