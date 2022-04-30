@@ -36,6 +36,7 @@ class CadTool(WorkSpaceTool):
     # https://docs.blender.org/api/current/bpy.types.KeyMapItems.html
     bl_keymap = (
         ("bim.cad_hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
+        ("bim.cad_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
     )
 
     def draw_settings(context, layout, tool):
@@ -61,4 +62,7 @@ class CadHotkey(bpy.types.Operator):
         return {"FINISHED"}
 
     def hotkey_S_E(self):
-        bpy.ops.bim.cad_trim_extend(join_type="T")
+        bpy.ops.bim.cad_trim_extend()
+
+    def hotkey_S_T(self):
+        bpy.ops.bim.cad_mitre()

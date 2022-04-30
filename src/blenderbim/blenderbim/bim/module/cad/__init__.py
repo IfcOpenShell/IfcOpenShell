@@ -21,6 +21,7 @@ from . import operator, workspace
 
 classes = (
     operator.CadTrimExtend,
+    operator.CadMitre,
     workspace.CadHotkey,
 )
 
