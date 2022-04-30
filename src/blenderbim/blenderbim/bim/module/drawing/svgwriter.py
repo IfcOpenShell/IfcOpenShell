@@ -462,7 +462,7 @@ class SvgWriter:
         drawing = tool.Drawing.get_annotation_element(element)
         reference = tool.Drawing.get_drawing_reference(drawing)
         if reference:
-            sheet = tool.Drawing.get_reference_sheet(reference)
+            sheet = tool.Drawing.get_reference_document(reference)
             if sheet:
                 if tool.Ifc.get_schema() == "IFC2X3":
                     reference_id = reference.ItemReference or "-"
