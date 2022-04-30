@@ -38,12 +38,14 @@ class CadTool(WorkSpaceTool):
         ("bim.cad_hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.cad_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
         ("bim.cad_fillet", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
+        # Enable Mesh Tools add-on to get this amazing tool
+        ("mesh.offset_edges", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
     )
 
     def draw_settings(context, layout, tool):
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="Extend / Trim", icon="EVENT_E")
+        row.label(text="Extend", icon="EVENT_E")
 
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
@@ -52,6 +54,10 @@ class CadTool(WorkSpaceTool):
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="Fillet", icon="EVENT_F")
+
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="Offset", icon="EVENT_O")
 
 
 class CadHotkey(bpy.types.Operator):
