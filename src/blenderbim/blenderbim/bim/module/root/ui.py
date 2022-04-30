@@ -54,7 +54,7 @@ class BIM_PT_class(Panel):
                 self.draw_class_dropdowns(
                     context,
                     root_prop.getIfcPredefinedTypes(context.scene.BIMRootProperties, context),
-                    should_draw_product=False,
+                    is_reassigning_class=True,
                 )
             else:
                 row = self.layout.row(align=True)
@@ -74,9 +74,9 @@ class BIM_PT_class(Panel):
             op.predefined_type = context.scene.BIMRootProperties.ifc_predefined_type if ifc_predefined_types else ""
             op.userdefined_type = context.scene.BIMRootProperties.ifc_userdefined_type
 
-    def draw_class_dropdowns(self, context, ifc_predefined_types, should_draw_product=True):
+    def draw_class_dropdowns(self, context, ifc_predefined_types, is_reassigning_class=False):
         props = context.scene.BIMRootProperties
-        if should_draw_product:
+        if not is_reassigning_class:
             row = self.layout.row()
             row.prop(props, "ifc_product")
         row = self.layout.row()
@@ -87,5 +87,6 @@ class BIM_PT_class(Panel):
         if ifc_predefined_types == "USERDEFINED":
             row = self.layout.row()
             row.prop(props, "ifc_userdefined_type")
-        row = self.layout.row()
-        row.prop(context.scene.BIMRootProperties, "contexts")
+        if not is_reassigning_class:
+            row = self.layout.row()
+            row.prop(context.scene.BIMRootProperties, "contexts")
