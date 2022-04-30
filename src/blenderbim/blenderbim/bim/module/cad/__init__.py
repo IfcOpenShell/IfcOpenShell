@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -17,16 +17,19 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import operator
+from . import operator, workspace
 
 classes = (
-    operator.TCAutoVTX,
+    operator.CadTrimExtend,
+    workspace.CadHotkey,
 )
 
 
 def register():
-    pass
+    if not bpy.app.background:
+        bpy.utils.register_tool(workspace.CadTool, after={"builtin.transform"}, separator=True, group=True)
 
 
 def unregister():
-    pass
+    if not bpy.app.background:
+        bpy.utils.unregister_tool(workspace.CadTool)
