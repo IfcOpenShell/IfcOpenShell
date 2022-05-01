@@ -41,6 +41,7 @@ class CadTool(WorkSpaceTool):
         # Enable Mesh Tools add-on to get this amazing tool
         ("mesh.offset_edges", {"type": "O", "value": "PRESS", "shift": True}, {"properties": []}),
         ("bim.cad_arc_from_2_points", {"type": "C", "value": "PRESS", "shift": True}, {"properties": []}),
+        ("bim.cad_arc_from_3_points", {"type": "V", "value": "PRESS", "shift": True}, {"properties": []}),
     )
 
     def draw_settings(context, layout, tool):
@@ -63,6 +64,10 @@ class CadTool(WorkSpaceTool):
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="2-Point Arc", icon="EVENT_C")
+
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="3-Point Arc", icon="EVENT_V")
 
 
 class CadHotkey(bpy.types.Operator):
