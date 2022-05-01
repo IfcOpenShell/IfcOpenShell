@@ -164,10 +164,11 @@ class Annotator:
             obj = bpy.data.objects.new(object_type, data)
             collection.objects.link(obj)
             return obj
-        for obj in collection.objects:
-            element = tool.Ifc.get_entity(obj)
-            if element and element.ObjectType == object_type:
-                return obj
+        if object_type != "ANGLE":
+            for obj in collection.objects:
+                element = tool.Ifc.get_entity(obj)
+                if element and element.ObjectType == object_type:
+                    return obj
         if data_type == "mesh":
             data = bpy.data.meshes.new(object_type)
         elif data_type == "curve":

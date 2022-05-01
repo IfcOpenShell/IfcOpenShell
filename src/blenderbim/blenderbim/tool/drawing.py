@@ -38,18 +38,19 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def create_annotation_object(cls, object_type):
         data_type = {
-            "DIMENSION": "curve",
-            "RADIUS": "curve",
+            "ANGLE": "mesh",
+            "BREAKLINE": "mesh",
             "DIAMETER": "curve",
+            "DIMENSION": "curve",
+            "FILL_AREA": "mesh",
+            "HIDDEN_LINE": "mesh",
+            "LINEWORK": "mesh",
+            "PLAN_LEVEL": "curve",
+            "RADIUS": "curve",
+            "SECTION_LEVEL": "curve",
+            "STAIR_ARROW": "curve",
             "TEXT": "empty",
             "TEXT_LEADER": "curve",
-            "STAIR_ARROW": "curve",
-            "HIDDEN_LINE": "mesh",
-            "PLAN_LEVEL": "curve",
-            "SECTION_LEVEL": "curve",
-            "BREAKLINE": "mesh",
-            "FILL_AREA": "mesh",
-            "LINEWORK": "mesh",
         }[object_type]
         obj = annotation.Annotator.get_annotation_obj(object_type, data_type)
         if object_type == "FILL_AREA":
