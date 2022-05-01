@@ -141,6 +141,7 @@ There is a useful Blender Addon that adds a Reboot button in File menù.
 In this way, it's possible to directly restart Blender and test the modified source code.
 The add on is available `here <https://blenderartists.org/uploads/short-url/yto1sjw7pqDRVNQzpVLmn51PEDN.zip>`__
 (check also the related forum discussion `here <https://blenderartists.org/t/reboot-blender-addon/640465/13>`__)
+There is also a VS Code called `Blender Development <https://marketplace.visualstudio.com/items?itemName=JacquesLucke.blender-development>`__ that has a similar functionality.
 
 
 Distro installation
