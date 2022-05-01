@@ -183,7 +183,8 @@ class Style(blenderbim.core.tool.Style):
     def import_presentation_styles(cls, style_type):
         props = bpy.context.scene.BIMStylesProperties
         props.styles.clear()
-        for style in tool.Ifc.get().by_type(style_type):
+        styles = sorted(tool.Ifc.get().by_type(style_type), key=lambda x: x.Name or "Unnamed")
+        for style in styles:
             new = props.styles.add()
             new.ifc_definition_id = style.id()
             new.name = style.Name or "Unnamed"
