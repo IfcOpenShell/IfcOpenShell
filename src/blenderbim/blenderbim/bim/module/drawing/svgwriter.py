@@ -20,7 +20,9 @@ import os
 import re
 import bpy
 import math
+import bmesh
 import pystache
+import mathutils
 import xml.etree.ElementTree as ET
 import svgwrite
 import ifcopenshell
@@ -153,6 +155,8 @@ class SvgWriter:
                 self.draw_stair_annotation(obj)
             elif element.ObjectType == "DIMENSION":
                 self.draw_dimension_annotations(obj)
+            elif element.ObjectType == "ANGLE":
+                self.draw_angle_annotations(obj)
             elif element.ObjectType == "RADIUS":
                 self.draw_radius_annotations(obj)
             elif element.ObjectType == "DIAMETER":
@@ -622,6 +626,113 @@ class SvgWriter:
                     },
                 )
             )
+
+    def draw_angle_annotations(self, obj):
+        # This implementation uses an SVG arc, which means that it can only draw
+        # arcs that are orthogonal to the view (e.g. not arcs in 3D).
+        # Gosh this is bad code :(
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+        classes = self.get_attribute_classes(obj)
+        matrix_world = obj.matrix_world
+
+        points = [v.co for v in obj.data.vertices][:3]
+        center = tool.Cad.get_center_of_arc(points, obj)
+
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bm.verts.ensure_lookup_table()
+        arc_end_verts = [v for v in bm.verts if len(v.link_edges) == 1]
+        arc_end_pts = [matrix_world @ v.co for v in arc_end_verts]
+
+        # Probably need this when rewriting to use an SVG polyline instead of an arc
+        # arc_path = [arc_end_verts[0]]
+        # while True:
+        #    last_point = arc_end_verts[0]
+        #    found_another_point = False
+        #    for edge in last_point.link_edges:
+        #        v = edge.other_vert(last_point)
+        #        if v not in arc_path:
+        #            found_another_point = True
+        #            arc_path.append(v)
+        #    if not found_another_point:
+        #        break
+
+        distance_between_end_verts = (arc_end_verts[0].co - arc_end_verts[1].co).length
+        arc_mid_vert = arc_end_verts[0].link_edges[0].other_vert(arc_end_verts[0])
+        is_reflex = 0 if (arc_mid_vert.co - arc_end_verts[1].co).length < distance_between_end_verts else 1
+
+        bm.free()
+
+        # Calculate the angle
+        # This is the true normal in 3D, whereas the camera projection we use is the drawing direction.
+        # This assumes (because we use SVG arcs) that the radius is always orthogonal to our view.
+        # When rewriting to use polylines, we should use this normal instead.
+        # normal = mathutils.geometry.normal([arc_end_pts[0], arc_end_pts[1], center])
+        normal = Vector(self.camera_projection)
+        dir1 = (arc_end_pts[0] - center).normalized()
+        dir2 = (arc_end_pts[1] - center).normalized()
+
+        # Let's get the matrix that represents the coordinate system of the arc.
+        # This matrix allows us to get 2D vectors for calculating the signed arc angle.
+        z = normal
+        x = (arc_end_pts[0] - center).normalized()
+        y = z.cross(x)
+        arc_matrix = mathutils.Matrix([x, y, z]).transposed().to_4x4()
+
+        dir1 = ((arc_matrix.inverted() @ arc_end_pts[0]) - (arc_matrix.inverted() @ center)).normalized()
+        dir2 = ((arc_matrix.inverted() @ arc_end_pts[1]) - (arc_matrix.inverted() @ center)).normalized()
+        angle = -dir1.xy.angle_signed(dir2.xy)
+
+        #if is_reflex:
+        #    angle = angle % (math.pi * 2)
+
+        # Center of gravity of all vertices, used to help position the text
+        cog = Vector((0, 0, 0))
+        for vert in obj.data.vertices:
+            cog += vert.co
+        cog = matrix_world @ (cog / len(obj.data.vertices))
+
+        radius = ((matrix_world @ obj.data.vertices[0].co) - center).length
+
+        arc_midpoint = center + ((cog - center).normalized() * radius)
+
+        text_position = self.project_point_onto_camera(arc_midpoint)
+        text_position = Vector(((x_offset + text_position.x) * self.scale, (y_offset - text_position.y) * self.scale))
+
+        center_projected = self.project_point_onto_camera(center)
+        center_position = Vector(
+            ((x_offset + center_projected.x) * self.scale, (y_offset - center_projected.y) * self.scale)
+        )
+        text_offset = (text_position - center_position).xy.normalized() * 5
+        text_position += text_offset
+
+        text_style = {
+            "font-size": annotation.Annotator.get_svg_text_size(2.5),
+            "font-family": "OpenGost Type B TT",
+            "text-anchor": "middle",
+            "alignment-baseline": "middle",
+            "dominant-baseline": "middle",
+        }
+
+        angle_text = abs(round(math.degrees(angle), 3))
+        if is_reflex:
+            angle_text = 360 - angle_text
+        self.svg.add(self.svg.text(f"{angle_text}deg", insert=tuple(text_position), **text_style))
+
+        # Draw SVG arc, see for details: http://xahlee.info/js/svg_circle_arc.html
+        arc_proj_end_pts = [self.project_point_onto_camera(v) for v in arc_end_pts]
+        p1 = Vector(((x_offset + arc_proj_end_pts[0].x) * self.scale, (y_offset - arc_proj_end_pts[0].y) * self.scale))
+        p2 = Vector(((x_offset + arc_proj_end_pts[1].x) * self.scale, (y_offset - arc_proj_end_pts[1].y) * self.scale))
+        r = radius * self.scale
+        # reflex = 1 if angle > math.pi else 0
+        reflex = is_reflex
+        if reflex:
+            sense = 0 if angle > 0 else 1
+        else:
+            sense = 1 if angle > 0 else 0
+        d = f"M {p1.x} {p1.y} A {r} {r} 0 {reflex} {sense} {p2.x} {p2.y}"
+        path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
     def draw_radius_annotations(self, obj):
         x_offset = self.raw_width / 2

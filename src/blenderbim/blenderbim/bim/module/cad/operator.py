@@ -223,6 +223,9 @@ class CadArcFrom2Points(bpy.types.Operator):
             layout.prop(self, prop)
 
     def execute(self, context):
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.object.mode_set(mode="EDIT")
+
         if bpy.context.mode != "EDIT_MESH":
             return {"CANCELLED"}
         obj = bpy.context.active_object
@@ -233,12 +236,13 @@ class CadArcFrom2Points(bpy.types.Operator):
         if not center:
             return {"CANCELLED"}
         mesh = obj.data
+        mw = obj.matrix_world
         bm = bmesh.from_edit_mesh(mesh)
         selected_verts = [v for v in bm.verts if v.select]
         if len(selected_verts) != 2:
             return {"CANCELLED"}
-        v1 = bpy_extras.view3d_utils.location_3d_to_region_2d(region, region_3d, selected_verts[0].co)
-        v2 = bpy_extras.view3d_utils.location_3d_to_region_2d(region, region_3d, selected_verts[1].co)
+        v1 = bpy_extras.view3d_utils.location_3d_to_region_2d(region, region_3d, mw @ selected_verts[0].co)
+        v2 = bpy_extras.view3d_utils.location_3d_to_region_2d(region, region_3d, mw @ selected_verts[1].co)
         l1 = v1 - center
         l2 = v2 - center
         angle = l1.angle_signed(l2)
@@ -252,10 +256,16 @@ class CadArcFrom2Points(bpy.types.Operator):
         v = selected_verts[0]
         bm.verts.remove(selected_verts[1])
         axis = region_3d.view_rotation @ mathutils.Vector((0, 0, 1))
-        bmesh.ops.spin(bm, geom=[v], axis=axis, cent=cursor, steps=self.resolution * 4, angle=-angle)
+        bmesh.ops.spin(
+            bm,
+            geom=[v],
+            axis=mw.inverted().to_quaternion() @ axis,
+            cent=mw.inverted() @ cursor,
+            steps=self.resolution * 4,
+            angle=-angle,
+        )
         bmesh.update_edit_mesh(mesh)
         mesh.update()
-        bm.free()
         return {"FINISHED"}
 
 
@@ -291,14 +301,15 @@ class CadArcFrom3Points(bpy.types.Operator):
         if len(selected_verts) != 3:
             return {"CANCELLED"}
         pts = [v.co for v in selected_verts]
-        center = tool.Cad.generate_3PT(pts, obj, self.resolution * 4)
+        center = tool.Cad.get_center_of_arc(pts, obj)
         if not center:
             return {"CANCELLED"}
 
         bpy.context.scene.cursor.location = center
         if self.only_recalculate_center:
-            bm.free()
             return {"FINISHED"}
+
+        center = obj.matrix_world.inverted() @ center
 
         def get_distance_to_other_points(vert):
             other_verts = [v for v in selected_verts if v != vert]
@@ -331,5 +342,4 @@ class CadArcFrom3Points(bpy.types.Operator):
         bmesh.ops.spin(bm, geom=[v], axis=normal, cent=center, steps=self.resolution * 4, angle=-angle)
         bmesh.update_edit_mesh(mesh)
         mesh.update()
-        bm.free()
         return {"FINISHED"}

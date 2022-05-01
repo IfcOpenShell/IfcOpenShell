@@ -303,10 +303,9 @@ class Cad:
         return bm
 
     @classmethod
-    def generate_3PT(cls, pts, obj, nv, mode=1):
+    def get_center_of_arc(cls, pts, obj):
         mw = obj.matrix_world
         V = Vector
-        nv = max(3, nv)
 
         # construction
         v1, v2, v3, v4 = V(pts[0]), V(pts[1]), V(pts[1]), V(pts[2])
