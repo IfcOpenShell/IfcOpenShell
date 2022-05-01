@@ -20,6 +20,7 @@ import bpy
 import math
 import bmesh
 import mathutils
+import bpy_extras
 import blenderbim.tool as tool
 
 messages = {
@@ -202,6 +203,55 @@ class CadFillet(bpy.types.Operator):
             chamfer_edge = [e for e in bm.edges if shared_vert in e.verts and v2 in e.verts][0]
             bm.edges.remove(chamfer_edge)
 
+        bmesh.update_edit_mesh(mesh)
+        mesh.update()
+        return {"FINISHED"}
+
+
+class CadArcFrom2Points(bpy.types.Operator):
+    bl_idname = "bim.cad_arc_from_2_points"
+    bl_label = "CAD Arc from 2 Points"
+    bl_options = {"REGISTER", "UNDO"}
+
+    resolution: bpy.props.IntProperty(name="Arc Resolution", min=1, default=1)
+    should_flip: bpy.props.BoolProperty(name="Flip", description="Flip arc", default=False)
+
+    def draw(self, context):
+        layout = self.layout
+        for prop in self.__class__.__annotations__.keys():
+            layout.prop(self, prop)
+
+    def execute(self, context):
+        if bpy.context.mode != "EDIT_MESH":
+            return {"CANCELLED"}
+        obj = bpy.context.active_object
+        region = bpy.context.region
+        region_3d = bpy.context.area.spaces.active.region_3d
+        cursor = bpy.context.scene.cursor.location
+        center = bpy_extras.view3d_utils.location_3d_to_region_2d(region, region_3d, cursor)
+        if not center:
+            return {"CANCELLED"}
+        mesh = obj.data
+        bm = bmesh.from_edit_mesh(mesh)
+        selected_verts = [v for v in bm.verts if v.select]
+        if len(selected_verts) != 2:
+            return {"CANCELLED"}
+        v1 = bpy_extras.view3d_utils.location_3d_to_region_2d(region, region_3d, selected_verts[0].co)
+        v2 = bpy_extras.view3d_utils.location_3d_to_region_2d(region, region_3d, selected_verts[1].co)
+        l1 = v1 - center
+        l2 = v2 - center
+        angle = l1.angle_signed(l2)
+
+        if self.should_flip:
+            if angle > 0:
+                angle = -((math.pi * 2) - angle)
+            else:
+                angle = (math.pi * 2) + angle
+
+        v = selected_verts[0]
+        bm.verts.remove(selected_verts[1])
+        axis = region_3d.view_rotation @ mathutils.Vector((0, 0, 1))
+        bmesh.ops.spin(bm, geom=[v], axis=axis, cent=cursor, steps=self.resolution * 4, angle=-angle)
         bmesh.update_edit_mesh(mesh)
         mesh.update()
         return {"FINISHED"}

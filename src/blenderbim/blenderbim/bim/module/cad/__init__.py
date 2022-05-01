@@ -20,9 +20,10 @@ import bpy
 from . import operator, workspace
 
 classes = (
-    operator.CadTrimExtend,
-    operator.CadMitre,
+    operator.CadArcFrom2Points,
     operator.CadFillet,
+    operator.CadMitre,
+    operator.CadTrimExtend,
     workspace.CadHotkey,
 )
 

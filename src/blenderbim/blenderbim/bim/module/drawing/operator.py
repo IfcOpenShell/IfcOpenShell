@@ -40,8 +40,7 @@ import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.export_ifc
 from lxml import etree
-from math import pi
-from mathutils import Vector, Matrix, Euler, geometry
+from mathutils import Vector
 from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.group.data import Data as GroupData
@@ -1356,45 +1355,4 @@ class ContractSheet(bpy.types.Operator):
         for sheet in [s for s in props.sheets if s.ifc_definition_id == self.sheet]:
             sheet.is_expanded = False
         core.load_sheets(tool.Drawing)
-        return {"FINISHED"}
-
-
-class ConvertEdgeToArc(bpy.types.Operator):
-    bl_idname = "bim.convert_edge_to_arc"
-    bl_label = "Convert Edge to Arc"
-    bl_options = {"REGISTER", "UNDO"}
-
-    resolution: bpy.props.IntProperty(name="Arc Resolution", min=1, default=1)
-    should_flip: bpy.props.BoolProperty(name="Flip", description="Flip arc", default=False)
-
-    def draw(self, context):
-        layout = self.layout
-        for prop in self.__class__.__annotations__.keys():
-            layout.prop(self, prop)
-
-    def execute(self, context):
-        if bpy.context.mode != "EDIT_MESH":
-            return {"CANCELLED"}
-        obj = bpy.context.active_object
-        cursor = obj.matrix_world.inverted() @ bpy.context.scene.cursor.location
-        mesh = obj.data
-        bm = bmesh.from_edit_mesh(mesh)
-        selected_verts = [v for v in bm.verts if v.select]
-        if len(selected_verts) != 2:
-            return {"CANCELLED"}
-        l1 = selected_verts[0].co - cursor
-        l2 = selected_verts[1].co - cursor
-        angle = l1.xy.angle_signed(l2.xy)
-
-        if self.should_flip:
-            if angle > 0:
-                angle = -((pi * 2) - angle)
-            else:
-                angle = (pi * 2) + angle
-
-        v = selected_verts[0]
-        bm.verts.remove(selected_verts[1])
-        bmesh.ops.spin(bm, geom=[v], axis=(0, 0, 1), cent=cursor, steps=self.resolution * 4, angle=-angle)
-        bmesh.update_edit_mesh(mesh)
-        mesh.update()
         return {"FINISHED"}
