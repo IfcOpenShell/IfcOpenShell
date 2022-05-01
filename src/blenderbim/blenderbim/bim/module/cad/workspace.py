@@ -37,9 +37,10 @@ class CadTool(WorkSpaceTool):
     bl_keymap = (
         ("bim.cad_hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.cad_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
-        ("bim.cad_fillet", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
+        ("bim.cad_fillet", {"type": "F", "value": "PRESS", "shift": True}, {"properties": []}),
         # Enable Mesh Tools add-on to get this amazing tool
-        ("mesh.offset_edges", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
+        ("mesh.offset_edges", {"type": "O", "value": "PRESS", "shift": True}, {"properties": []}),
+        ("bim.cad_arc_from_2_points", {"type": "C", "value": "PRESS", "shift": True}, {"properties": []}),
     )
 
     def draw_settings(context, layout, tool):
@@ -58,6 +59,10 @@ class CadTool(WorkSpaceTool):
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="Offset", icon="EVENT_O")
+
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="2-Point Arc", icon="EVENT_C")
 
 
 class CadHotkey(bpy.types.Operator):

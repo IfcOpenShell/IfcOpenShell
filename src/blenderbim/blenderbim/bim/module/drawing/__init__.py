@@ -34,7 +34,6 @@ classes = (
     operator.BuildSchedule,
     operator.CleanWireframes,
     operator.ContractSheet,
-    operator.ConvertEdgeToArc,
     operator.CopyGrid,
     operator.CreateDrawing,
     operator.CreateSheets,
