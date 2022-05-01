@@ -25,12 +25,15 @@
 #
 #  - Instead of AutoVTX, user explicitly chooses V, T, or X mode
 #  - Instead of adding edges, existing edges are extended
+#  - An arc is reconstructed from 3 points instead of a full circle
+#  - You can now derive the center from an arc without generating geometry
 
 
 import sys
 import bpy
+import math
 import bmesh
-from mathutils import Vector, geometry
+from mathutils import Vector, Matrix, geometry
 from mathutils.geometry import intersect_line_line as LineIntersect
 from mathutils.geometry import intersect_point_line as PtLineIntersect
 
@@ -298,3 +301,30 @@ class Cad:
         elif mode == "V":
             bm = cls.perform_v(bm, point, edges[0], edges[1], (p1, p2, p3, p4), vertex_indices)
         return bm
+
+    @classmethod
+    def generate_3PT(cls, pts, obj, nv, mode=1):
+        mw = obj.matrix_world
+        V = Vector
+        nv = max(3, nv)
+
+        # construction
+        v1, v2, v3, v4 = V(pts[0]), V(pts[1]), V(pts[1]), V(pts[2])
+        edge1_mid = v1.lerp(v2, 0.5)
+        edge2_mid = v3.lerp(v4, 0.5)
+        axis = geometry.normal(v1, v2, v4)
+        mat_rot = Matrix.Rotation(math.radians(90.0), 4, axis)
+
+        # triangle edges
+        v1_ = ((v1 - edge1_mid) @ mat_rot) + edge1_mid
+        v2_ = ((v2 - edge1_mid) @ mat_rot) + edge1_mid
+        v3_ = ((v3 - edge2_mid) @ mat_rot) + edge2_mid
+        v4_ = ((v4 - edge2_mid) @ mat_rot) + edge2_mid
+
+        r = geometry.intersect_line_line(v1_, v2_, v3_, v4_)
+        if r:
+            p1, _ = r
+            cp = mw @ p1
+            return cp
+        else:
+            print("not on a circle")

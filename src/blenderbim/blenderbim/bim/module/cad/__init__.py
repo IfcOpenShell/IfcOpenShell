@@ -21,6 +21,7 @@ from . import operator, workspace
 
 classes = (
     operator.CadArcFrom2Points,
+    operator.CadArcFrom3Points,
     operator.CadFillet,
     operator.CadMitre,
     operator.CadTrimExtend,

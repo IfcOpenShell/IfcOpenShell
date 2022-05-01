@@ -140,8 +140,9 @@ class CadFillet(bpy.types.Operator):
             layout.prop(self, prop)
 
     def execute(self, context):
-        if bpy.context.mode != "EDIT_MESH":
-            return {"CANCELLED"}
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.object.mode_set(mode="EDIT")
+
         obj = bpy.context.active_object
         cursor = obj.matrix_world.inverted() @ bpy.context.scene.cursor.location
         mesh = obj.data
@@ -205,6 +206,7 @@ class CadFillet(bpy.types.Operator):
 
         bmesh.update_edit_mesh(mesh)
         mesh.update()
+        bm.free()
         return {"FINISHED"}
 
 
@@ -212,7 +214,6 @@ class CadArcFrom2Points(bpy.types.Operator):
     bl_idname = "bim.cad_arc_from_2_points"
     bl_label = "CAD Arc from 2 Points"
     bl_options = {"REGISTER", "UNDO"}
-
     resolution: bpy.props.IntProperty(name="Arc Resolution", min=1, default=1)
     should_flip: bpy.props.BoolProperty(name="Flip", description="Flip arc", default=False)
 
@@ -254,4 +255,81 @@ class CadArcFrom2Points(bpy.types.Operator):
         bmesh.ops.spin(bm, geom=[v], axis=axis, cent=cursor, steps=self.resolution * 4, angle=-angle)
         bmesh.update_edit_mesh(mesh)
         mesh.update()
+        bm.free()
+        return {"FINISHED"}
+
+
+class CadArcFrom3Points(bpy.types.Operator):
+    bl_idname = "bim.cad_arc_from_3_points"
+    bl_label = "CAD Arc from 3 Points"
+    bl_options = {"REGISTER", "UNDO"}
+    resolution: bpy.props.IntProperty(name="Arc Resolution", min=1, default=1)
+    only_recalculate_center: bpy.props.BoolProperty(name="Only Recalculate Center", default=False)
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return obj and obj.type == "MESH" and context.mode == "EDIT_MESH"
+
+    def draw(self, context):
+        layout = self.layout
+        for prop in self.__class__.__annotations__.keys():
+            layout.prop(self, prop)
+
+    def execute(self, context):
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.object.mode_set(mode="EDIT")
+
+        if bpy.context.mode != "EDIT_MESH":
+            return {"CANCELLED"}
+
+        obj = bpy.context.edit_object
+        mesh = obj.data
+        bm = bmesh.from_edit_mesh(mesh)
+
+        selected_verts = [v for v in bm.verts if v.select]
+        if len(selected_verts) != 3:
+            return {"CANCELLED"}
+        pts = [v.co for v in selected_verts]
+        center = tool.Cad.generate_3PT(pts, obj, self.resolution * 4)
+        if not center:
+            return {"CANCELLED"}
+
+        bpy.context.scene.cursor.location = center
+        if self.only_recalculate_center:
+            bm.free()
+            return {"FINISHED"}
+
+        def get_distance_to_other_points(vert):
+            other_verts = [v for v in selected_verts if v != vert]
+            total_vector = mathutils.Vector((0, 0, 0))
+            for other_vert in other_verts:
+                total_vector += other_vert.co - vert.co
+            return total_vector.length
+
+        # For three selected points that represent a start, end, and point on an
+        # arc, the start and end verts can be identified by being furthest away
+        # from the other 2 points.
+        arc_end_verts = sorted(selected_verts, key=get_distance_to_other_points)[-2:]
+        normal = mathutils.geometry.normal(pts)
+
+        dir1 = (arc_end_verts[0].co - center).normalized()
+        dir2 = (arc_end_verts[1].co - center).normalized()
+
+        # Let's get the matrix that represents the coordinate system of the arc.
+        # This matrix allows us to get 2D vectors for calculating the signed arc angle.
+        z = normal
+        x = (arc_end_verts[0].co - center).normalized()
+        y = z.cross(x)
+        arc_matrix = mathutils.Matrix([x, y, z]).transposed().to_4x4()
+
+        dir1 = ((arc_matrix.inverted() @ arc_end_verts[0].co) - (arc_matrix.inverted() @ center)).normalized()
+        dir2 = ((arc_matrix.inverted() @ arc_end_verts[1].co) - (arc_matrix.inverted() @ center)).normalized()
+        angle = dir1.xy.angle_signed(dir2.xy)
+
+        v = arc_end_verts[0]
+        bmesh.ops.spin(bm, geom=[v], axis=normal, cent=center, steps=self.resolution * 4, angle=-angle)
+        bmesh.update_edit_mesh(mesh)
+        mesh.update()
+        bm.free()
         return {"FINISHED"}
