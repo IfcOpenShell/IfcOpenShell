@@ -140,7 +140,9 @@ class BIM_PT_ports(Panel):
         if not context.active_object:
             return False
         element = tool.Ifc.get_entity(context.active_object)
-        if not element or not element.is_a("IfcDistributionElement"):
+        if not element:
+            return False
+        if not element.is_a("IfcDistributionElement") and not element.is_a("IfcDistributionElementType"):
             return False
         return True
 
