@@ -473,7 +473,8 @@ class System:
     def get_ports(cls, element): pass
     def import_system_attributes(cls, system): pass
     def import_systems(cls): pass
-    def load_ports(cls, port): pass
+    def load_ports(cls, element, ports): pass
+    def run_geometry_edit_object_placement(cls, obj=None): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_elements(cls, elements): pass
     def select_system_products(cls, system): pass

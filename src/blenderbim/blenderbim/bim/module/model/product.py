@@ -143,7 +143,8 @@ class AddTypeInstance(bpy.types.Operator):
             mat[1][3] *= unit_scale
             mat[2][3] *= unit_scale
             port_obj = bpy.data.objects.new("Port", None)
-            port_obj.matrix_world = obj.matrix_world @ mathutils.Matrix(mat)
+            port_obj.matrix_world = mathutils.Matrix(mat)
+            port_obj.parent = obj
             port = tool.System.run_root_assign_class(obj=port_obj, ifc_class="IfcDistributionPort")
             tool.Ifc.run("system.assign_port", element=element, port=port)
 

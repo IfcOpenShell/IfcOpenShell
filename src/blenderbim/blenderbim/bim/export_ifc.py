@@ -148,7 +148,7 @@ class IfcExporter:
         return checksum != str([s.id() for s in tool.Geometry.get_styles(obj) if s])
 
     def sync_object_placement(self, obj):
-        if not self.has_object_moved(obj):
+        if not tool.Ifc.is_moved(obj):
             return
         blender_matrix = np.array(obj.matrix_world)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
@@ -161,17 +161,6 @@ class IfcExporter:
             return
         blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         return element
-
-    def has_object_moved(self, obj):
-        if not obj.BIMObjectProperties.location_checksum:
-            return True  # Let's be conservative
-        loc_check = np.frombuffer(eval(obj.BIMObjectProperties.location_checksum))
-        rot_check = np.frombuffer(eval(obj.BIMObjectProperties.rotation_checksum))
-        loc_real = np.array(obj.matrix_world.translation).flatten()
-        rot_real = np.array(obj.matrix_world.to_3x3()).flatten()
-        if np.allclose(loc_check, loc_real, atol=1e-4) and np.allclose(rot_check, rot_real, atol=1e-2):
-            return False
-        return True
 
     def sync_grid_axis_object_placement(self, obj, element):
         grid = (element.PartOfU or element.PartOfV or element.PartOfW)[0]
