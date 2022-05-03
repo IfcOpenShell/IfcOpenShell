@@ -131,7 +131,8 @@ for mod in modules.values():
 
 def on_register(scene):
     handler.setDefaultProperties(scene)
-    bpy.app.handlers.depsgraph_update_post.remove(on_register)
+    if not bpy.app.background:
+        bpy.app.handlers.depsgraph_update_post.remove(on_register)
 
 
 def register():
