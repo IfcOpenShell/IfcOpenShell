@@ -93,22 +93,31 @@ class TestSelectSystemProducts:
 class TestShowPorts:
     def test_run(self, system):
         system.get_ports("element").should_be_called().will_return(["port"])
-        system.load_ports(["port"]).should_be_called()
+        system.load_ports("element", ["port"]).should_be_called()
         system.select_elements(["port"]).should_be_called()
         subject.show_ports(system, element="element")
 
 
 class TestHidePorts:
-    def test_run(self, system):
+    def test_run(self, ifc, system):
+        ifc.get_object("element").should_be_called().will_return("obj")
+        ifc.is_moved("obj").should_be_called().will_return(True)
+        system.run_geometry_edit_object_placement(obj="obj").should_be_called()
+
         system.get_ports("element").should_be_called().will_return(["port"])
+
+        ifc.get_object("port").should_be_called().will_return("port_obj")
+        ifc.is_moved("port_obj").should_be_called().will_return(True)
+        system.run_geometry_edit_object_placement(obj="port_obj").should_be_called()
+
         system.delete_element_objects(["port"]).should_be_called()
-        subject.hide_ports(system, element="element")
+        subject.hide_ports(ifc, system, element="element")
 
 
 class TestAddPort:
     def test_run(self, ifc, system):
         system.get_ports("element").should_be_called().will_return(["port"])
-        system.load_ports(["port"]).should_be_called()
+        system.load_ports("element", ["port"]).should_be_called()
         system.create_empty_at_cursor_with_element_orientation("element").should_be_called().will_return("obj")
         system.run_root_assign_class(obj="obj", ifc_class="IfcDistributionPort").should_be_called().will_return("port")
         ifc.run("system.assign_port", element="element", port="port").should_be_called()

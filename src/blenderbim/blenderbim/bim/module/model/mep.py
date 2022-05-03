@@ -106,16 +106,13 @@ class MepGenerator:
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.Mep"})
 
-        start_port_matrix = obj.matrix_world
-        end_port_matrix = obj.matrix_world.copy()
-        end_port_location = end_port_matrix @ Vector((0, 0, self.length))
-        end_port_matrix[0][3] = end_port_location[0]
-        end_port_matrix[1][3] = end_port_location[1]
-        end_port_matrix[2][3] = end_port_location[2]
+        start_port_matrix = Matrix()
+        end_port_matrix = Matrix.Translation((0, 0, self.length))
 
         for mat in [start_port_matrix, end_port_matrix]:
             port_obj = bpy.data.objects.new("Port", None)
             port_obj.matrix_world = mat
+            port_obj.parent = obj
             port = tool.System.run_root_assign_class(obj=port_obj, ifc_class="IfcDistributionPort")
             tool.Ifc.run("system.assign_port", element=element, port=port)
 

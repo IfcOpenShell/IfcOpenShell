@@ -177,15 +177,21 @@ class TestLoadPorts(NewFile):
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", ifc)
         tool.Ifc().set(ifc)
+        element = ifc.createIfcChiller()
         port = ifc.createIfcDistributionPort()
-        subject.load_ports([port])
+        subject.load_ports(element, [port])
         obj = tool.Ifc.get_object(port)
         assert obj
         assert obj.users_collection
         assert list(obj.location) == [0, 0, 0]
 
 
-class TestRunAssignClassOperator(NewFile):
+class TestRunGeometryEditObjectPlacement(NewFile):
+    def test_nothing(self):
+        pass
+
+
+class TestRunRootAssignClass(NewFile):
     def test_nothing(self):
         pass
 
