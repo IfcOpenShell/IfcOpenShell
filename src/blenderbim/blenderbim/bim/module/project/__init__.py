@@ -57,7 +57,7 @@ classes = (
 
 def menu_func_export(self, context):
     op = self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
-    op.should_save_as = False
+    op.should_save_as = True
 
 
 def menu_func_import(self, context):
