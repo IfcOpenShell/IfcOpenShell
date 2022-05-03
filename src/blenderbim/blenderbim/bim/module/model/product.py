@@ -20,7 +20,9 @@ import bpy
 import mathutils
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.system
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.core.type
@@ -81,7 +83,7 @@ class AddTypeInstance(bpy.types.Operator):
         elif material and material.is_a("IfcMaterialLayerSet"):
             if self.generate_layered_element(ifc_class, relating_type):
                 return {"FINISHED"}
-        if relating_type.is_a("IfcFlowSegmentType"):
+        if relating_type.is_a("IfcFlowSegmentType") and not relating_type.RepresentationMaps:
             if mep.MepGenerator(relating_type).generate():
                 return {"FINISHED"}
 
@@ -117,11 +119,9 @@ class AddTypeInstance(bpy.types.Operator):
         collection.objects.link(obj)
         collection_obj = bpy.data.objects.get(collection.name)
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
+        element = tool.Ifc.get_entity(obj)
         blenderbim.core.type.assign_type(
-            tool.Ifc,
-            tool.Type,
-            element=tool.Ifc.get_entity(obj),
-            type=tool.Ifc.get().by_id(int(props.relating_type)),
+            tool.Ifc, tool.Type, element=element, type=relating_type
         )
 
         if building_obj:
@@ -135,6 +135,17 @@ class AddTypeInstance(bpy.types.Operator):
         else:
             if collection_obj and collection_obj.BIMObjectProperties.ifc_definition_id:
                 obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        for port in ifcopenshell.util.system.get_ports(relating_type):
+            mat = ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement)
+            mat[0][3] *= unit_scale
+            mat[1][3] *= unit_scale
+            mat[2][3] *= unit_scale
+            port_obj = bpy.data.objects.new("Port", None)
+            port_obj.matrix_world = obj.matrix_world @ mathutils.Matrix(mat)
+            port = tool.System.run_root_assign_class(obj=port_obj, ifc_class="IfcDistributionPort")
+            tool.Ifc.run("system.assign_port", element=element, port=port)
 
         bpy.ops.object.select_all(action="DESELECT")
         obj.select_set(True)
