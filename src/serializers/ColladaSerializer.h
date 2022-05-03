@@ -43,13 +43,14 @@
 
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
+#include "../serializers/serializers_api.h"
 #include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
 
-class ColladaSerializer : public WriteOnlyGeometrySerializer
+class SERIALIZERS_API ColladaSerializer : public WriteOnlyGeometrySerializer
 {
 	// TODO The vast amount of implement details of ColladaSerializer could be hidden to the cpp file.
 private:

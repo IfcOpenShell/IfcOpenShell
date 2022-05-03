@@ -17,44 +17,21 @@
 *                                                                              *
 ********************************************************************************/
 
-#include "../ifcparse/IfcSchema.h"
+#ifndef IFC_SERIALIZERS_API_H
+#define IFC_SERIALIZERS_API_H
 
-#include "ifc_parse_api.h"
-
-#ifndef ARGUMENTTYPE_H
-#define ARGUMENTTYPE_H
-
-namespace IfcUtil {
-
-	enum ArgumentType {
-		Argument_NULL,
-		Argument_DERIVED,
-		Argument_INT,
-		Argument_BOOL,
-		Argument_LOGICAL,
-		Argument_DOUBLE,
-		Argument_STRING,
-		Argument_BINARY,
-		Argument_ENUMERATION,
-		Argument_ENTITY_INSTANCE,
-
-		Argument_EMPTY_AGGREGATE,
-		Argument_AGGREGATE_OF_INT,
-		Argument_AGGREGATE_OF_DOUBLE,
-		Argument_AGGREGATE_OF_STRING,
-		Argument_AGGREGATE_OF_BINARY,
-		Argument_AGGREGATE_OF_ENTITY_INSTANCE,
-
-		Argument_AGGREGATE_OF_EMPTY_AGGREGATE,
-		Argument_AGGREGATE_OF_AGGREGATE_OF_INT,
-		Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,
-		Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE,
-
-		Argument_UNKNOWN
-	};
-
-	IFC_PARSE_API ArgumentType from_parameter_type(const IfcParse::parameter_type*);
-	IFC_PARSE_API ArgumentType make_aggregate(ArgumentType elem_type);
-}
+#ifdef IFC_SHARED_BUILD
+  #ifdef _WIN32
+    #ifdef Serializers_EXPORTS
+      #define SERIALIZERS_API __declspec(dllexport)
+    #else
+      #define SERIALIZERS_API __declspec(dllimport)
+    #endif
+  #else // simply assume *nix + GCC-like compiler
+    #define SERIALIZERS_API __attribute__((visibility("default")))
+  #endif
+#else
+  #define SERIALIZERS_API
+#endif
 
 #endif

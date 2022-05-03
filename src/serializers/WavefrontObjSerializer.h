@@ -24,10 +24,11 @@
 #include <string>
 #include <fstream>
 
+#include "../serializers/serializers_api.h"
 #include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 
 // http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
-class WaveFrontOBJSerializer : public WriteOnlyGeometrySerializer {
+class SERIALIZERS_API WaveFrontOBJSerializer : public WriteOnlyGeometrySerializer {
 private:
 	stream_or_filename obj_stream;
 	stream_or_filename mtl_stream;
