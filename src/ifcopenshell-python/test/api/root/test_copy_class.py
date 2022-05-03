@@ -149,3 +149,13 @@ class TestCopyClass(test.bootstrap.IFC4):
         ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=type)
         new = ifcopenshell.api.run("root.copy_class", self.file, product=type)
         assert not new.Types
+
+    def test_copying_distribution_ports(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
+        port = ifcopenshell.api.run("system.add_port", self.file)
+        ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
+        new_ports = ifcopenshell.util.system.get_ports(new)
+        assert port not in new_ports
+        assert new_ports[0].is_a("IfcDistributionPort")
+        assert ifcopenshell.util.system.get_ports(element) == [port]

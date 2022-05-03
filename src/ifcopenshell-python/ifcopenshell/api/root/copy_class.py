@@ -45,6 +45,17 @@ class Usecase:
                 inverse.RelatedObjects = [to_element]
                 pset = ifcopenshell.util.element.copy_deep(self.file, inverse.RelatingPropertyDefinition)
                 inverse.RelatingPropertyDefinition = pset
+            elif inverse.is_a("IfcRelNests") and inverse.RelatingObject == from_element:
+                ports = [e for e in inverse.RelatedObjects if e.is_a("IfcDistributionPort")]
+                if ports:
+                    new_ports = [ifcopenshell.api.run("root.copy_class", self.file, product=p) for p in ports]
+                    [
+                        ifcopenshell.api.run("system.unassign_port", self.file, element=from_element, port=p)
+                        for p in new_ports
+                    ]
+                    inverse = ifcopenshell.util.element.copy(self.file, inverse)
+                    inverse.RelatingObject = to_element
+                    inverse.RelatedObjects = new_ports
             elif inverse.is_a("IfcRelAggregates") and inverse.RelatingObject == from_element:
                 continue
             elif inverse.is_a("IfcRelContainedInSpatialStructure") and inverse.RelatingStructure == from_element:
