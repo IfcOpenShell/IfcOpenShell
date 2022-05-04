@@ -1,13 +1,18 @@
 Let's get started
 =================
 
-The BlenderBIM Add-on lets you analyse, create, and modify OpenBIM with Blender. 
+The BlenderBIM Add-on lets you analyse, create, and modify OpenBIM with Blender.
+
+.. note::
+
+   This documentation is incomplete. Would you like to help write more? `Get in touch! <https://osarch.org/chat/>`__
 
 .. toctree::
    :hidden:
    :maxdepth: 1
    :caption: For users:
 
+   users/introduction_to_bim
    users/installation
    users/exploring_an_ifc_model
    users/creating_your_first_ifc

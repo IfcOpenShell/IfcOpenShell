@@ -23,9 +23,13 @@ Installation
 
    `Download BlenderBIM Add-on <https://blenderbim.org/download.html>`__
 
+.. caution::
+
+   If you are not using Blender version >=3.1, please follow the **Unstable installation** instructions. :doc:`Read more <../devs/installation>`
+
 3. **Install the BlenderBIM Add-on**
 
-   Open up Blender, and access the ``Edit > Preferences`` window.
+   Open up Blender, and click on ``Edit > Preferences``.
 
    .. image:: install-blenderbim-1.png
 
