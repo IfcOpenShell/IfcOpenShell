@@ -1,5 +1,5 @@
-Developer guide
-===============
+Hello, world!
+=============
 
 The BlenderBIM Add-on takes a unique approach to authoring BIM data. Traditional
 BIM authoring apps create features that are tailored for a single discipline's

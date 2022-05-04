@@ -67,3 +67,6 @@ htmlcov
 
 # Blender
 *.blend1
+
+# Sphinx
+_build/
