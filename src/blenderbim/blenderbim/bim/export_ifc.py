@@ -97,6 +97,7 @@ class IfcExporter:
             except:
                 continue
             ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
+        IfcStore.deleted_ids.clear()
         return results
 
     def sync_all_objects(self):
