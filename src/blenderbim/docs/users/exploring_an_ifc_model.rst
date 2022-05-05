@@ -7,7 +7,7 @@ most users will be interested in.
 If you don't have an IFC model available, here's a small one for your
 convenience provided by the Institute for Automation and Applied Informatics
 (IAI) / Karlsruhe Institute of Technology.  It's in German, so you may need to
-use some creativity when reading the data.
+use some creativity when reading the data :)
 
 .. container:: blockbutton
 
@@ -106,7 +106,7 @@ pressing the button on the top right of the **Viewport** panel. The hotkey is
 
 .. tip::
 
-   Blender has lots of hotkeys to do things quickly, but these can take time to
+   Blender has lots of hotkeys to do things quickly. These can take time to
    learn but it is worth it as you will be much faster. These hotkeys can be
    customised in Blender's preferences.
 
@@ -114,7 +114,36 @@ pressing the button on the top right of the **Viewport** panel. The hotkey is
 Overview of all objects
 -----------------------
 
-TODO
+The **Outliner** panel on the top right shows a hierarchy of all the currently
+loaded physical **Objects** in your IFC project. These **Objects** correlate to
+what you can see in the **Viewport** panel.
+
+Every **Object** in the **Outliner** represents an IFC **Element**. These
+**Objects** have a name with the pattern ``Class/Name``. The class prefix
+represents the type of object, and the name is the name of the object.  Examples
+of classes you will see are ``IfcBuilding``, or ``IfcWall``. This naming
+convention makes it easy to quickly spot types of objects.
+
+.. image:: outliner.png
+
+Objects are organised in a hierarchy. By default, this hierarchy represents a
+breakdown of spaces, from large spaces such as a site and a building, down to
+smaller spaces like building storeys and room spaces. The hierarchy will always
+begin with an **IfcProject** object. You can click on the triangle to toggle the
+hierarchy.
+
+.. tip::
+
+   In large projects with deep hierarchies, you can ``Shift-LMB`` click the
+   triangle to recursively toggle the hierarchy. You can also click and drag the
+   ``MMB`` to pan left and right.
+
+When there are lots of objects, you can type a name in the filter box to quickly
+identify objects by name or type.
+
+Clicking on an object in the **Outliner** panel also selects the corresponding
+object in the **Viewport** panel. A good strategy to find objects is to then use
+``View > Frame Selected`` to zoom to it in the **Viewport**.
 
 Viewing element classes
 -----------------------
