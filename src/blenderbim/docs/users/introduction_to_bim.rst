@@ -12,9 +12,9 @@ described are:
 - **Actors**, like occupants, clients, architects, and liable parties
 - **Groups**, like systems, inventories, or zones
 
-These objects may have lots of data and relationships. The data might be a
-classification system, physical material, associated documents, simulation
-results, construction types, or location. The data may be relevant to multiple
+These objects may have lots of data and relationships. Examples of data might be
+classification systems, physical materials, associated documents, simulation
+results, and construction types. The data may be relevant to multiple
 disciplines, such a architecture, engineering, and construction.
 
 .. note::
@@ -26,7 +26,7 @@ disciplines, such a architecture, engineering, and construction.
 **Industry Foundation Classes**, or **IFC**, is an international standard for
 **BIM**. **IFC** is the most well-established open digital language for our
 built environment. Most software will be able to describe their **BIM** data
-using **IFC**.
+using **IFC**. Most commonly, **IFC** models will be shared as a ``.ifc`` file.
 
 For example, **IFC** will define a wall as an object that can have a name,
 construction type, and quantities. **IFC** will also describe that a wall that

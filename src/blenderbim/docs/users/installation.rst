@@ -10,7 +10,7 @@ Installation
 
     `Download Blender <https://www.blender.org/download/>`__
 
-.. note::
+.. tip::
 
     No administrator rights on Windows? Choose the "Portable .zip" option when
     downloading from the Blender website.
@@ -23,7 +23,7 @@ Installation
 
    `Download BlenderBIM Add-on <https://blenderbim.org/download.html>`__
 
-.. caution::
+.. warning::
 
    If you are not using Blender version >=3.1, please follow the **Unstable installation** instructions. :doc:`Read more <../devs/installation>`
 
@@ -38,7 +38,7 @@ Installation
 
    .. image:: install-blenderbim-2.png
 
-   .. caution::
+   .. warning::
    
       You do not need to unzip the add-on file. You should install it as a zipped file.
 
@@ -103,7 +103,7 @@ button in the Blender preferences window.
 Alternatively, you may uninstall manually by deleting the ``blenderbim/``
 directory in your Blender add-ons directory.
 
-.. caution::
+.. warning::
 
     It is important to follow the sequence of disabling, restarting, then removing.
     If you do not restart Blender, the add-on will fail to remove correctly, and you
