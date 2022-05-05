@@ -49,13 +49,20 @@ class Usecase:
                 ports = [e for e in inverse.RelatedObjects if e.is_a("IfcDistributionPort")]
                 if ports:
                     new_ports = [ifcopenshell.api.run("root.copy_class", self.file, product=p) for p in ports]
-                    [
-                        ifcopenshell.api.run("system.unassign_port", self.file, element=from_element, port=p)
-                        for p in new_ports
-                    ]
                     inverse = ifcopenshell.util.element.copy(self.file, inverse)
                     inverse.RelatingObject = to_element
                     inverse.RelatedObjects = new_ports
+                    for port in new_ports:
+                        ifcopenshell.api.run("system.unassign_port", self.file, element=from_element, port=port)
+                        matrix = ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement)
+                        ifcopenshell.api.run(
+                            "geometry.edit_object_placement",
+                            self.file,
+                            product=port,
+                            matrix=matrix,
+                            is_si=False,
+                            should_transform_children=False,
+                        )
             elif inverse.is_a("IfcRelAggregates") and inverse.RelatingObject == from_element:
                 continue
             elif inverse.is_a("IfcRelContainedInSpatialStructure") and inverse.RelatingStructure == from_element:

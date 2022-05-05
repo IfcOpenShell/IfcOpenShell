@@ -151,6 +151,8 @@ class TestCopyClass(test.bootstrap.IFC4):
         assert not new.Types
 
     def test_copying_distribution_ports(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.run("unit.assign_unit", self.file)
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
         port = ifcopenshell.api.run("system.add_port", self.file)
         ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)

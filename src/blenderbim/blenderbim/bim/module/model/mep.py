@@ -110,11 +110,9 @@ class MepGenerator:
         end_port_matrix = Matrix.Translation((0, 0, self.length))
 
         for mat in [start_port_matrix, end_port_matrix]:
-            port_obj = bpy.data.objects.new("Port", None)
-            port_obj.matrix_world = mat
-            port_obj.parent = obj
-            port = tool.System.run_root_assign_class(obj=port_obj, ifc_class="IfcDistributionPort")
+            port = tool.Ifc.run("root.create_entity", ifc_class="IfcDistributionPort")
             tool.Ifc.run("system.assign_port", element=element, port=port)
+            tool.Ifc.run("geometry.edit_object_placement", product=port, matrix=obj.matrix_world @ mat, is_si=True)
 
         obj.select_set(True)
         return obj

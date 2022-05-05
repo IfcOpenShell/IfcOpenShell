@@ -65,8 +65,8 @@ the **Navigate Gizmo**.
 .. image:: navigate-gizmo.png
 
 You can also use your mouse to navigate. Hover your mouse over the **Viewport**
-panel and click and drag the Middle Mouse Button (MMB) to **Orbit**. Scroll the
-mousewheel to **Zoom**, and use Shift-MMB to **Pan**.
+panel and click and drag the Middle Mouse Button (``MMB``) to **Orbit**. Scroll
+the mousewheel to **Zoom**, and use ``Shift-MMB`` to **Pan**.
 
 If you have a numpad, you can use the numpad keys to quickly switch to top,
 front, or side view. Use ``7`` for top view, ``1`` for front view, and ``3`` for
