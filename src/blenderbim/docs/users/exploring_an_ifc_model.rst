@@ -53,7 +53,63 @@ BIM capabilities compared to IFC2X3.
 Navigating a model in 3D
 ------------------------
 
-TODO
+To navigate, can use the **Navigate Gizmo** on the top right corner of the
+**Viewport** panel. Click and drag on the coloured axes to **Orbit**, click and
+drag on the magnifying glass to **Zoom**, and click and drag on the hand icon to
+**Pan**.  You can also click on the grid icon to switch between perspective and
+orthographic view.
+
+To switch to a top view, front view, or side view, click the relevant axis on
+the **Navigate Gizmo**.
+
+.. image:: navigate-gizmo.png
+
+You can also use your mouse to navigate. Hover your mouse over the **Viewport**
+panel and click and drag the Middle Mouse Button (MMB) to **Orbit**. Scroll the
+mousewheel to **Zoom**, and use Shift-MMB to **Pan**.
+
+If you have a numpad, you can use the numpad keys to quickly switch to top,
+front, or side view. Use ``7`` for top view, ``1`` for front view, and ``3`` for
+side view.
+
+.. warning::
+
+   Blender's hotkeys are context sensitive. This means that a hotkey has a
+   different meaning depending on the panel your mouse cursor is hovering over.
+   If you press ``7`` to go to top view, make sure your mouse cursor is over the
+   **Viewport** panel. Be very careful where your mouse is, or you might press a
+   hotkey and it will have unintended consequences!
+
+If you click on an object, such as a wall in the **Viewport** panel, you can
+zoom to the selected object by clicking on ``View > Frame Selected``. The hotkey
+is the ``.`` button on the numpad. After zooming into an element, when you
+**Orbit** the 3D view will rotate around the center of that element.
+
+You can also zoom to all objects in the project by clicking on ``View > Frame
+All``.
+
+.. image:: frame-selected.png
+
+Another good way to navigate is by flying or walking around similar to a video
+game. Choose ``View > Navigation > Walk Navigation``, or use the ``Shift-```
+hotkey (the backtick key is usually to the left of the number 1 on the
+keyboard). With **Walk Navigation** enabled, use the ``WASD`` keys and the mouse
+to move around like a video game. You can use the ``Shift`` key to switch
+between moving fast and slow. If you scroll with the mousewheel, it will adjust
+the speed that you move at.
+
+Sometimes, you want to look through objects. You can toggle **X-Ray Mode** by
+pressing the button on the top right of the **Viewport** panel. The hotkey is
+``Alt-Z``.
+
+.. image:: x-ray-mode.png
+
+.. tip::
+
+   Blender has lots of hotkeys to do things quickly, but these can take time to
+   learn but it is worth it as you will be much faster. These hotkeys can be
+   customised in Blender's preferences.
+
 
 Overview of all objects
 -----------------------
