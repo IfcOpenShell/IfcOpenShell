@@ -142,11 +142,10 @@ class AddTypeInstance(bpy.types.Operator):
             mat[0][3] *= unit_scale
             mat[1][3] *= unit_scale
             mat[2][3] *= unit_scale
-            port_obj = bpy.data.objects.new("Port", None)
-            port_obj.matrix_world = mathutils.Matrix(mat)
-            port_obj.parent = obj
-            port = tool.System.run_root_assign_class(obj=port_obj, ifc_class="IfcDistributionPort")
-            tool.Ifc.run("system.assign_port", element=element, port=port)
+            mat = obj.matrix_world @ mathutils.Matrix(mat)
+            new_port = tool.Ifc.run("root.create_entity", ifc_class="IfcDistributionPort")
+            tool.Ifc.run("system.assign_port", element=element, port=new_port)
+            tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
 
         bpy.ops.object.select_all(action="DESELECT")
         obj.select_set(True)

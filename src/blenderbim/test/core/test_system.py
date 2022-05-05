@@ -91,11 +91,15 @@ class TestSelectSystemProducts:
 
 
 class TestShowPorts:
-    def test_run(self, system):
+    def test_run(self, ifc, system):
+        ifc.get_object("element").should_be_called().will_return("obj")
+        ifc.is_moved("obj").should_be_called().will_return(True)
+        system.run_geometry_edit_object_placement(obj="obj").should_be_called()
+
         system.get_ports("element").should_be_called().will_return(["port"])
         system.load_ports("element", ["port"]).should_be_called()
         system.select_elements(["port"]).should_be_called()
-        subject.show_ports(system, element="element")
+        subject.show_ports(ifc, system, element="element")
 
 
 class TestHidePorts:
