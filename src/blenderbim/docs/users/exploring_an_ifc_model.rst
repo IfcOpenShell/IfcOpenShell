@@ -48,7 +48,8 @@ BIM capabilities compared to IFC2X3.
 .. tip::
 
    Blender's interface is highly customisable. Panels, panel types, colours,
-   sizes, and tabs may be edited to suit your workflow. 
+   sizes, and tabs may be edited to suit your workflow. If you want a `Hot Pink
+   theme <https://github.com/kame404/Blender-Themes>`__ look no further.
 
 Navigating a model in 3D
 ------------------------
@@ -141,14 +142,90 @@ hierarchy.
 When there are lots of objects, you can type a name in the filter box to quickly
 identify objects by name or type.
 
+.. image:: outliner-filter.png
+
 Clicking on an object in the **Outliner** panel also selects the corresponding
 object in the **Viewport** panel. A good strategy to find objects is to then use
 ``View > Frame Selected`` to zoom to it in the **Viewport**.
 
+The **Outliner** panel is also great for isolating portions of your project. You
+can include and exclude portions by clicking on the **Tick Icon** next to
+collections of objects in the hierarchy.
+
+Let's isolate a single building storey. Start by disabling the **Tick Icon**
+next to the **IfcProject** collection. This will hide everything in the project.
+Then navigate through the hierarchy and enable the **Tick Icon** next to an
+**IfcBuildingStory**.
+
+.. image:: outliner-isolate.png
+
 Viewing element classes
 -----------------------
 
-TODO
+Usually the first thing you'll want to check is the **Class** of element that an
+object represents. The IFC **Class** is an international classification system
+provided by IFC. Example IFC **Classes** are Wall, Slab, and Door. Every IFC
+element must have a **Class**.
+
+**Classes** aren't just for categorising elements. They also indicate what types of
+properties and relationships it is allowed to have. For example, a Wall
+**Class** can have a fire rating property, but a Grid **Class** cannot.
+
+.. note::
+
+   There are hundreds of **Classes** to represent all aspects of our built
+   environment, including non geometric classes like Task, Occupant, and CostItem.
+   However, we'll focus only on simple physical **Classes** in this guide. Don't
+   worry about memorising all the available **Classes**, you'll get a feel for them
+   as you explore more.
+
+To view an object's class, click on an object in the **Viewport** or **Outliner**
+panel, then switch to the **Object Properties** tab in the **Properties** panel.
+You can see the **Class** name in the **IFC Class** subpanel.
+
+.. image:: element-class.png
+
+In this case, the **Class** of our roof is an **IfcSlab**. You'll notice this is
+the same **Class** name used as a prefix for the object name in the **Outliner**
+panel. You can also see the name of the actively selected object in the top left
+of the **Viewport** panel.
+
+.. warning::
+
+   Not all IFC models use the correct **Class**. For example, a chair might be assigned
+   as the Wall **Class** instead the Furniture **Class**. There is a special
+   class known as **IfcBuildingElementProxy**, used when the user is unable to
+   find a more semantic **Class**. If you see many **IfcBuildingElementProxy**
+   **Classes**, it is likely a symptom of a low quality IFC model. If this is
+   the case, scold the project manager and ask them to do a better job.
+
+After **IfcSlab** it also says **ROOF**. This is known as the
+**Predefined Type** of the element. You can think of it as a further level of
+classification. In this case, it distinguishes our object as a roof slab,
+compared to other types of slabs. The **Predefined Type** is optional so you may
+not see it all the time.
+
+Press the **Select Icon** to select all objects that are of the same
+**IfcSlab** **Class**. Then, you can isolate these elements by going to ``Object
+> Show/Hide > Hide Unselected`` (hotkey ``Shift-H``). To show all elements again, you can use
+``Object > Show/Hide > Show Hidden Objects`` (hotkey ``Alt-H``). If you want to
+hide elements instead, you can use ``Object > Show/Hiden > Hide Selected``
+(hotkey ``H``).
+
+.. image:: element-class-select.png
+
+.. note::
+
+   Remember that Blender's hotkeys are context sensitive. Make sure your mouse
+   is hovering over the **Viewport** panel when you press a hotkey or no cake
+   for you.
+
+You can also see statistics about the number of selected objects. If you right
+click on the bottom right status bar and enable **Scene Statistics** you will
+see information like **Objects 4/4**, which means that 4 objects are selected
+out of 4 available objects. This is a great way of counting objects like toilets.
+
+.. image:: scene-statistics.png
 
 Viewing attributes and properties
 ---------------------------------
