@@ -315,8 +315,8 @@ class AddActor(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         props = bpy.context.scene.BIMOwnerProperties
-        if props.actor:
-            core.add_actor(tool.Ifc, ifc_class=props.actor_class, actor=tool.Ifc.get().by_id(int(props.actor)))
+        if props.the_actor:
+            core.add_actor(tool.Ifc, ifc_class=props.actor_class, actor=tool.Ifc.get().by_id(int(props.the_actor)))
 
 
 class EnableEditingActor(bpy.types.Operator, Operator):
