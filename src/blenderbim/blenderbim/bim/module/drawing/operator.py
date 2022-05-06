@@ -1246,34 +1246,34 @@ class DisableEditingText(bpy.types.Operator, Operator):
         core.disable_editing_text(tool.Drawing, obj=context.active_object)
 
 
-class EditTextProduct(bpy.types.Operator, Operator):
-    bl_idname = "bim.edit_text_product"
+class EditAssignedProduct(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_assigned_product"
     bl_label = "Edit Text Product"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         product = None
-        if context.active_object.BIMTextProperties.relating_product:
-            product = tool.Ifc.get_entity(context.active_object.BIMTextProperties.relating_product)
-        core.edit_text_product(tool.Ifc, tool.Drawing, obj=context.active_object, product=product)
+        if context.active_object.BIMAssignedProductProperties.relating_product:
+            product = tool.Ifc.get_entity(context.active_object.BIMAssignedProductProperties.relating_product)
+        core.edit_assigned_product(tool.Ifc, tool.Drawing, obj=context.active_object, product=product)
 
 
-class EnableEditingTextProduct(bpy.types.Operator, Operator):
-    bl_idname = "bim.enable_editing_text_product"
+class EnableEditingAssignedProduct(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_assigned_product"
     bl_label = "Enable Editing Text Product"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.enable_editing_text_product(tool.Drawing, obj=context.active_object)
+        core.enable_editing_assigned_product(tool.Drawing, obj=context.active_object)
 
 
-class DisableEditingTextProduct(bpy.types.Operator, Operator):
-    bl_idname = "bim.disable_editing_text_product"
+class DisableEditingAssignedProduct(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_assigned_product"
     bl_label = "Disable Editing Text Product"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.disable_editing_text_product(tool.Drawing, obj=context.active_object)
+        core.disable_editing_assigned_product(tool.Drawing, obj=context.active_object)
 
 
 class LoadSheets(bpy.types.Operator, Operator):

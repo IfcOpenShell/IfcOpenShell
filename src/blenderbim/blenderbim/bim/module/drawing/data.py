@@ -22,10 +22,31 @@ import blenderbim.tool as tool
 
 
 def refresh():
+    ProductAssignmentsData.is_loaded = False
     TextData.is_loaded = False
     SheetsData.is_loaded = False
     SchedulesData.is_loaded = False
     DrawingsData.is_loaded = False
+
+
+class ProductAssignmentsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"relating_product": cls.relating_product()}
+        cls.is_loaded = True
+
+    @classmethod
+    def relating_product(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if not element or not element.is_a("IfcAnnotation"):
+            return
+        for rel in element.HasAssignments:
+            if rel.is_a("IfcRelAssignsToProduct"):
+                name = rel.RelatingProduct.Name or "Unnamed"
+                return f"{rel.RelatingProduct.is_a()}/{name}"
 
 
 class TextData:
@@ -34,7 +55,7 @@ class TextData:
 
     @classmethod
     def load(cls):
-        cls.data = {"attributes": cls.attributes(), "relating_product": cls.relating_product()}
+        cls.data = {"attributes": cls.attributes()}
         cls.is_loaded = True
 
     @classmethod
@@ -48,15 +69,6 @@ class TextData:
             {"name": "Literal", "value": text_literal.Literal},
             {"name": "BoxAlignment", "value": text_literal.BoxAlignment},
         ]
-
-    @classmethod
-    def relating_product(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in ["TEXT", "TEXT_LEADER"]:
-            return
-        for rel in element.HasAssignments:
-            if rel.is_a("IfcRelAssignsToProduct"):
-                return rel.RelatingProduct.Name or "Unnamed"
 
 
 class SheetsData:

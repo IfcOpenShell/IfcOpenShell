@@ -118,8 +118,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         obj.BIMTextProperties.is_editing = False
 
     @classmethod
-    def disable_editing_text_product(cls, obj):
-        obj.BIMTextProperties.is_editing_product = False
+    def disable_editing_assigned_product(cls, obj):
+        obj.BIMAssignedProductProperties.is_editing_product = False
 
     @classmethod
     def enable_editing(cls, obj):
@@ -146,8 +146,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         obj.BIMTextProperties.is_editing = True
 
     @classmethod
-    def enable_editing_text_product(cls, obj):
-        obj.BIMTextProperties.is_editing_product = True
+    def enable_editing_assigned_product(cls, obj):
+        obj.BIMAssignedProductProperties.is_editing_product = True
 
     @classmethod
     def ensure_unique_drawing_name(cls, name):
@@ -282,7 +282,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             return items[0]
 
     @classmethod
-    def get_text_product(cls, element):
+    def get_assigned_product(cls, element):
         for rel in element.HasAssignments:
             if rel.is_a("IfcRelAssignsToProduct"):
                 return rel.RelatingProduct
@@ -356,13 +356,13 @@ class Drawing(blenderbim.core.tool.Drawing):
         blenderbim.bim.helper.import_attributes2(text, props.attributes)
 
     @classmethod
-    def import_text_product(cls, obj):
+    def import_assigned_product(cls, obj):
         element = tool.Ifc.get_entity(obj)
-        product = cls.get_text_product(element)
+        product = cls.get_assigned_product(element)
         if product:
-            obj.BIMTextProperties.relating_product = tool.Ifc.get_object(product)
+            obj.BIMAssignedProductProperties.relating_product = tool.Ifc.get_object(product)
         else:
-            obj.BIMTextProperties.relating_product = None
+            obj.BIMAssignedProductProperties.relating_product = None
 
     @classmethod
     def open_with_user_command(cls, user_command, path):
@@ -421,7 +421,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         if not element:
             return
         value = element.Literal
-        product = cls.get_text_product(tool.Ifc.get_entity(obj))
+        product = cls.get_assigned_product(tool.Ifc.get_entity(obj))
         if product:
             selector = ifcopenshell.util.selector.Selector()
             variables = {}

@@ -43,30 +43,30 @@ class TestEditText:
         subject.edit_text(ifc, drawing, obj="obj")
 
 
-class TestEnableEditingTextProduct:
+class TestEnableEditingAssignedProduct:
     def test_run(self, drawing):
-        drawing.enable_editing_text_product("obj").should_be_called()
-        drawing.import_text_product("obj").should_be_called()
-        subject.enable_editing_text_product(drawing, obj="obj")
+        drawing.enable_editing_assigned_product("obj").should_be_called()
+        drawing.import_assigned_product("obj").should_be_called()
+        subject.enable_editing_assigned_product(drawing, obj="obj")
 
 
-class TestDisableEditingTextProduct:
+class TestDisableEditingAssignedProduct:
     def test_run(self, drawing):
-        drawing.disable_editing_text_product("obj").should_be_called()
-        subject.disable_editing_text_product(drawing, obj="obj")
+        drawing.disable_editing_assigned_product("obj").should_be_called()
+        subject.disable_editing_assigned_product(drawing, obj="obj")
 
 
-class TestEditTextProduct:
+class TestEditAssignedProduct:
     def test_run(self, ifc, drawing):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        drawing.get_text_product("element").should_be_called().will_return("existing_product")
+        drawing.get_assigned_product("element").should_be_called().will_return("existing_product")
         ifc.run(
             "drawing.unassign_product", relating_product="existing_product", related_object="element"
         ).should_be_called()
         ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
         drawing.update_text_value("obj").should_be_called()
-        drawing.disable_editing_text_product("obj").should_be_called()
-        subject.edit_text_product(ifc, drawing, obj="obj", product="product")
+        drawing.disable_editing_assigned_product("obj").should_be_called()
+        subject.edit_assigned_product(ifc, drawing, obj="obj", product="product")
 
 
 class TestLoadSheets:
