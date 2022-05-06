@@ -1045,12 +1045,14 @@ namespace IfcGeom {
 						Logger::Error("Failed to find decomposing entity");
 					}
 
-					try {
-						kernel.convert(ifc_product->ObjectPlacement(), trsf);
-					} catch (const std::exception& e) {
-						Logger::Error(e);
-					} catch (...) {
-						Logger::Error("Failed to construct placement");
+					if (ifc_product->ObjectPlacement()) {
+						try {
+							kernel.convert(ifc_product->ObjectPlacement(), trsf);
+						} catch (const std::exception& e) {
+							Logger::Error(e);
+						} catch (...) {
+							Logger::Error("Failed to construct placement");
+						}
 					}
 				}
 			} catch (const std::exception& e) {

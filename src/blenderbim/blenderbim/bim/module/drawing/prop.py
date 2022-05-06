@@ -72,8 +72,10 @@ def update_diagram_scale(self, context):
     scale = self.diagram_scale
     if scale == "CUSTOM":
         scale = self.custom_diagram_scale
-    scale = scale.split("|")[1]
-    element = tool.Ifc.get_entity(context.scene.camera)
+    if "|" not in scale:
+        return
+    human_scale, scale = scale.split("|")
+    element = tool.Ifc.get_entity(context.active_object)
     if not element:
         return
     pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing")
@@ -81,7 +83,9 @@ def update_diagram_scale(self, context):
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
         pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
-    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Scale": scale})
+    ifcopenshell.api.run(
+        "pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Scale": scale, "HumanScale": human_scale}
+    )
 
 
 def get_diagram_scales(self, context):
@@ -95,7 +99,8 @@ def get_diagram_scales(self, context):
             diagram_scales_enum = [
                 ("CUSTOM", "Custom", ""),
                 ("1'=1'-0\"|1/1", "1'=1'-0\"", ""),
-                ('6"=1\'-0"|1/6', '6"=1\'-0"', ""),
+                ('6"=1\'-0"|1/2', '6"=1\'-0"', ""),
+                ('3"=1\'-0"|1/4', '3"=1\'-0"', ""),
                 ('1-1/2"=1\'-0"|1/8', '1-1/2"=1\'-0"', ""),
                 ('1"=1\'-0"|1/12', '1"=1\'-0"', ""),
                 ('3/4"=1\'-0"|1/16', '3/4"=1\'-0"', ""),
@@ -147,6 +152,35 @@ def get_diagram_scales(self, context):
 def update_drawing_name(self, context):
     drawing = tool.Ifc.get().by_id(self.ifc_definition_id)
     core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
+
+
+def update_schedule_name(self, context):
+    schedule = tool.Ifc.get().by_id(self.ifc_definition_id)
+    core.update_schedule_name(tool.Ifc, tool.Drawing, schedule=schedule, name=self.name)
+
+
+def update_has_underlay(self, context):
+    update_layer(self, context, "HasUnderlay", self.has_underlay)
+
+
+def update_has_linework(self, context):
+    update_layer(self, context, "HasLinework", self.has_linework)
+
+
+def update_has_annotation(self, context):
+    update_layer(self, context, "HasAnnotation", self.has_annotation)
+
+
+def update_layer(self, context, name, value):
+    element = tool.Ifc.get_entity(context.active_object)
+    if not element:
+        return
+    pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing")
+    if pset:
+        pset = tool.Ifc.get().by_id(pset["id"])
+    else:
+        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
+    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={name: value})
 
 
 def getTitleblocks(self, context):
@@ -203,8 +237,9 @@ class Drawing(PropertyGroup):
 
 
 class Schedule(PropertyGroup):
-    name: StringProperty(name="Name")
-    file: StringProperty(name="File")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    name: StringProperty(name="Name", update=update_schedule_name)
+    identification: StringProperty(name="Identification")
 
 
 class Sheet(PropertyGroup):
@@ -221,8 +256,9 @@ class Sheet(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     identification: StringProperty(name="Identification")
     name: StringProperty(name="Name", get=get_name, set=set_name)
-    drawings: CollectionProperty(name="Drawings", type=Drawing)
-    active_drawing_index: IntProperty(name="Active Drawing Index")
+    is_sheet: BoolProperty(name="Is Sheet", default=False)
+    reference_type: StringProperty(name="Reference Type")
+    is_expanded: BoolProperty(name="Is Expanded", default=False)
 
 
 class DrawingStyle(PropertyGroup):
@@ -271,14 +307,12 @@ class RasterStyleProperty(enum.Enum):
 
 
 class DocProperties(PropertyGroup):
-    has_underlay: BoolProperty(name="Underlay", default=False)
-    has_linework: BoolProperty(name="Linework", default=True)
-    has_annotation: BoolProperty(name="Annotation", default=True)
     should_use_underlay_cache: BoolProperty(name="Use Underlay Cache", default=False)
     should_use_linework_cache: BoolProperty(name="Use Linework Cache", default=False)
     should_use_annotation_cache: BoolProperty(name="Use Annotation Cache", default=False)
     should_extract: BoolProperty(name="Should Extract", default=True)
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
+    is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
     target_view: EnumProperty(
         items=[
             ("PLAN_VIEW", "Plan", ""),
@@ -309,16 +343,11 @@ class DocProperties(PropertyGroup):
         name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
     )
 
-    @property
-    def active_schedule(self):
-        return self.schedules[self.active_schedule_index]
-
-    @property
-    def active_sheet(self):
-        return self.sheets[self.active_sheet_index]
-
 
 class BIMCameraProperties(PropertyGroup):
+    has_underlay: BoolProperty(name="Underlay", default=False, update=update_has_underlay)
+    has_linework: BoolProperty(name="Linework", default=True, update=update_has_linework)
+    has_annotation: BoolProperty(name="Annotation", default=True, update=update_has_annotation)
     representation: StringProperty(name="Representation")
     view_name: StringProperty(name="View Name")
     diagram_scale: EnumProperty(items=get_diagram_scales, name="Drawing Scale", update=update_diagram_scale)
@@ -326,19 +355,6 @@ class BIMCameraProperties(PropertyGroup):
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
     is_nts: BoolProperty(name="Is NTS")
-    cut_objects: EnumProperty(
-        items=[
-            (
-                ".IfcWall|.IfcSlab|.IfcCurtainWall|.IfcStair|.IfcStairFlight|.IfcColumn|.IfcBeam|.IfcMember|.IfcCovering|.IfcSpace",
-                "Overall Plan / Section",
-                "",
-            ),
-            (".IfcElement", "Detail Drawing", ""),
-            ("CUSTOM", "Custom", ""),
-        ],
-        name="Cut Objects",
-    )
-    cut_objects_custom: StringProperty(name="Custom Cut")
     active_drawing_style_index: IntProperty(name="Active Drawing Style Index")
 
     # For now, this JSON dump are all the parameters that determine a camera's "Block representation"
@@ -361,7 +377,6 @@ class BIMCameraProperties(PropertyGroup):
 
 class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
-    is_editing_product: BoolProperty(name="Is Editing Product", default=False)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     value: StringProperty(name="Value", default="TEXT")
     font_size: EnumProperty(
@@ -376,13 +391,7 @@ class BIMTextProperties(PropertyGroup):
         update=refreshFontSize,
         name="Font Size",
     )
-    symbol: EnumProperty(
-        items=[
-            ("None", "None", ""),
-            ("rectangle-tag", "Rectangle Tag", ""),
-            ("door-tag", "Door Tag", ""),
-        ],
-        update=refreshFontSize,
-        name="Symbol",
-    )
+
+class BIMAssignedProductProperties(PropertyGroup):
+    is_editing_product: BoolProperty(name="Is Editing Product", default=False)
     relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object)

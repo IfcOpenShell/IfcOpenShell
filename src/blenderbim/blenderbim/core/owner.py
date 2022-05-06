@@ -165,3 +165,11 @@ def disable_editing_actor(owner):
 def edit_actor(ifc, owner):
     ifc.run("owner.edit_actor", actor=owner.get_actor(), attributes=owner.export_actor_attributes())
     disable_editing_actor(owner)
+
+
+def assign_actor(ifc, actor=None, element=None):
+    ifc.run("owner.assign_actor", relating_actor=actor, related_object=element)
+
+
+def unassign_actor(ifc, actor=None, element=None):
+    ifc.run("owner.unassign_actor", relating_actor=actor, related_object=element)

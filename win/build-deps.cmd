@@ -210,10 +210,10 @@ if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patc
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd msvc
 cd vs%VS_VER:~2,2%
-call .\msbuild.bat gc LIB %VS_PLATFORM% Release
+call .\msbuild.bat gc LIB %VS_PLATFORM% %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
-copy ..\..\lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpir"
+copy ..\..\lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpir"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :mpfr
@@ -229,15 +229,18 @@ if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patc
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 if "%VS_VER%"=="2017" (
   set mpfr_sln=build.vc15
+  set orig_platform_toolset=v141
 ) else (
   set mpfr_sln=build.vs19
+  set orig_platform_toolset=v142
 )
+powershell -c "get-childitem %DEPENDENCY_DIR%\%mpfr_sln% -recurse -include *.vcxproj | select -expand fullname | foreach { (Get-Content $_) -replace '%orig_platform_toolset%', 'v%VC_VER:.=%' | Set-Content $_ }"
 call :BuildSolution "%DEPENDENCY_DIR%\%mpfr_sln%\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM This command fails because not all msvc projects are patched with the right sdk version
-IF NOT EXIST lib\%VS_PLATFORM%\Release\mpfr.lib GOTO :Error
+IF NOT EXIST lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\mpfr.lib GOTO :Error
 IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
-copy lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpfr"
+copy lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpfr"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :HDF5
@@ -403,16 +406,15 @@ rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\samples"
 del "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\*.bat"
 
 :Python
+set DEPENDENCY_NAME=Python %PYTHON_VERSION%
+set DEPENDENCY_DIR=N/A
+set PYTHON_AMD64_POSTFIX=.amd64
+:: NOTE/TODO Beginning from 3.5.0: set PYTHON_AMD64_POSTFIX=-amd64
+IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
+:: NOTE/TODO 3.5.0 doesn't use MSI any longer, but exe: set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
+set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
+
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
-    set DEPENDENCY_NAME=Python %PYTHON_VERSION%
-    set DEPENDENCY_DIR=N/A
-
-    set PYTHON_AMD64_POSTFIX=.amd64
-    :: NOTE/TODO Beginning from 3.5.0: set PYTHON_AMD64_POSTFIX=-amd64
-    IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
-    :: NOTE/TODO 3.5.0 doesn't use MSI any longer, but exe: set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
-    set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
-
     cd "%DEPS_DIR%"
     call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
     IF NOT %ERRORLEVEL%==0 GOTO :Error
