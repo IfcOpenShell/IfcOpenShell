@@ -28,6 +28,7 @@ classes = (
     operator.AddPersonAndOrganisation,
     operator.AddPersonAttribute,
     operator.AddRole,
+    operator.AssignActor,
     operator.ClearUser,
     operator.DisableEditingActor,
     operator.DisableEditingAddress,
@@ -53,11 +54,13 @@ classes = (
     operator.RemovePersonAttribute,
     operator.RemoveRole,
     operator.SetUser,
+    operator.UnassignActor,
     prop.BIMOwnerProperties,
     ui.BIM_PT_people,
     ui.BIM_PT_organisations,
     ui.BIM_PT_owner,
     ui.BIM_PT_actor,
+    ui.BIM_PT_object_actor,
 )
 
 
