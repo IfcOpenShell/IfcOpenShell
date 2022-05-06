@@ -244,15 +244,15 @@ Here are some common attributes and what they mean:
 
 - **GlobalId**: a unique ID for the element useful for computer geeks
 - **Name**: a short name, code, number, or label to identify the object for a
-  human. Basically, if you had to annotate the object on a drawing or a
-  schedule, this is what you should see. For example, a pump **Name** might be
-  ``P-10-A``.
+  human. If you had to annotate the object on a drawing or a schedule, the
+  **Name** is what you should see. For example, a pump **Name** might be ``P-10-A``.
 - **Description**: typically the longer form of the name, written to be
   descriptive and readable for humans. For example a pump **Description** might
   be ``Water Suction Pump``.
 - **Tag**: this is an ID that may link it back to another BIM application. For
-  example if the IFC model was produced using Revit or ArchiCAD.
-- **Predefined Type**: basically a further level of classification to be read
+  example if the IFC model was produced using Revit or ArchiCAD, it might hold
+  the Revit or ArchiCAD element ID.
+- **Predefined Type**: A further level of classification to be read
   in conjunction with the IFC class.
 
 .. warning::
@@ -283,7 +283,8 @@ property defined by the author of the IFC model.
 
    It's important to distinguish between **Properties** that are
    part of the standard compared to custom ones. When **Properties** are
-   standardised, it means predictable digital workflows can be designed.
+   standardised, it makes it easy to manage data. So if you need to isolate all
+   ``LoadBearing`` elements, you now know exactly where to look.
 
 **Quantities** are very similar to properties. They also have a name and a
 value, and are grouped into **Quantity Sets**. Similarly, there are also common
