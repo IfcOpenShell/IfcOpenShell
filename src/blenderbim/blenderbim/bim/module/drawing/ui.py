@@ -20,7 +20,7 @@ import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.module.drawing.data import TextData, SheetsData, DrawingsData
+from blenderbim.bim.module.drawing.data import ProductAssignmentsData, TextData, SheetsData, SchedulesData, DrawingsData
 
 
 class BIM_PT_camera(Panel):
@@ -47,13 +47,13 @@ class BIM_PT_camera(Panel):
 
         col = layout.column(align=True)
         row = col.row(align=True)
-        row.prop(dprops, "has_underlay", icon="OUTLINER_OB_IMAGE")
+        row.prop(props, "has_underlay", icon="OUTLINER_OB_IMAGE")
         row.prop(dprops, "should_use_underlay_cache", text="", icon="FILE_REFRESH")
         row = col.row(align=True)
-        row.prop(dprops, "has_linework", icon="IMAGE_DATA")
+        row.prop(props, "has_linework", icon="IMAGE_DATA")
         row.prop(dprops, "should_use_linework_cache", text="", icon="FILE_REFRESH")
         row = col.row(align=True)
-        row.prop(dprops, "has_annotation", icon="MOD_EDGESPLIT")
+        row.prop(props, "has_annotation", icon="MOD_EDGESPLIT")
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
 
         row = layout.row()
@@ -63,15 +63,7 @@ class BIM_PT_camera(Panel):
         row.prop(props, "is_nts")
 
         row = layout.row()
-        row.operator("bim.generate_references")
-        row = layout.row()
         row.operator("bim.resize_text")
-
-        row = layout.row()
-        row.prop(props, "cut_objects")
-        if props.cut_objects == "CUSTOM":
-            row = layout.row()
-            row.prop(props, "cut_objects_custom")
 
         row = layout.row()
         row.prop(props, "raster_x")
@@ -152,6 +144,10 @@ class BIM_PT_drawings(Panel):
     bl_region_type = "UI"
     bl_category = "BIM Documentation"
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+
     def draw(self, context):
         if not DrawingsData.is_loaded:
             DrawingsData.load()
@@ -203,23 +199,40 @@ class BIM_PT_schedules(Panel):
     bl_region_type = "UI"
     bl_category = "BIM Documentation"
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+
     def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        props = context.scene.DocProperties
+        if not SchedulesData.is_loaded:
+            SchedulesData.load()
 
-        row = layout.row(align=True)
-        row.operator("bim.add_schedule")
+        self.props = context.scene.DocProperties
 
-        if props.schedules:
-            row.operator("bim.build_schedule", icon="LINENUMBERS_ON", text="")
-            row.operator("bim.remove_schedule", icon="X", text="").index = props.active_schedule_index
+        if not self.props.is_editing_schedules:
+            row = self.layout.row(align=True)
+            row.label(text=f"{SchedulesData.data['total_schedules']} Schedules Found", icon="LONGDISPLAY")
+            row.operator("bim.load_schedules", text="", icon="IMPORT")
+            return
 
-            layout.template_list("BIM_UL_generic", "", props, "schedules", props, "active_schedule_index")
+        row = self.layout.row(align=True)
+        row.operator("bim.add_schedule", icon="ADD")
+        row.operator("bim.disable_editing_schedules", text="", icon="CANCEL")
 
-            row = layout.row()
-            row.prop(props.active_schedule, "file")
-            row.operator("bim.select_schedule_file", icon="FILE_FOLDER", text="")
+        if self.props.schedules:
+            if self.props.active_schedule_index < len(self.props.schedules):
+                active_schedule = self.props.schedules[self.props.active_schedule_index]
+                row = self.layout.row(align=True)
+                row.alignment = "RIGHT"
+                row.operator("bim.open_schedule", icon="URL", text="").schedule = active_schedule.ifc_definition_id
+                row.operator(
+                    "bim.build_schedule", icon="LINENUMBERS_ON", text=""
+                ).schedule = active_schedule.ifc_definition_id
+                row.operator("bim.remove_schedule", icon="X", text="").schedule = active_schedule.ifc_definition_id
+
+            self.layout.template_list(
+                "BIM_UL_generic", "", self.props, "schedules", self.props, "active_schedule_index"
+            )
 
 
 class BIM_PT_sheets(Panel):
@@ -228,6 +241,10 @@ class BIM_PT_sheets(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "BIM Documentation"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not SheetsData.is_loaded:
@@ -246,16 +263,54 @@ class BIM_PT_sheets(Panel):
         row.operator("bim.add_sheet", text="", icon="ADD")
         row.operator("bim.disable_editing_sheets", text="", icon="CANCEL")
 
-        if self.props.sheets:
+        if self.props.sheets and self.props.active_sheet_index < len(self.props.sheets):
+            active_sheet = self.props.sheets[self.props.active_sheet_index]
             row = self.layout.row(align=True)
             row.alignment = "RIGHT"
             row.operator("bim.open_sheet", icon="URL", text="")
             row.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
             row.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
             row.operator("bim.create_sheets", icon="FILE_REFRESH", text="")
-            row.operator("bim.remove_sheet", icon="X", text="").index = self.props.active_sheet_index
+            if active_sheet.is_sheet:
+                row.operator("bim.remove_sheet", icon="X", text="").sheet = active_sheet.ifc_definition_id
+            else:
+                op = row.operator("bim.remove_drawing_from_sheet", icon="X", text="")
+                op.reference = active_sheet.ifc_definition_id
 
         self.layout.template_list("BIM_UL_sheets", "", self.props, "sheets", self.props, "active_sheet_index")
+
+
+class BIM_PT_product_assignments(Panel):
+    bl_label = "IFC Product Assignments"
+    bl_idname = "BIM_PT_product_assignments"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get() or not context.active_object:
+            return
+        element = tool.Ifc.get_entity(context.active_object)
+        if not element:
+            return
+        return element.is_a("IfcAnnotation")
+
+    def draw(self, context):
+        if not ProductAssignmentsData.is_loaded:
+            ProductAssignmentsData.load()
+
+        props = context.active_object.BIMAssignedProductProperties
+
+        if props.is_editing_product:
+            row = self.layout.row(align=True)
+            row.prop(props, "relating_product", text="")
+            row.operator("bim.edit_assigned_product", icon="CHECKMARK", text="")
+            row.operator("bim.disable_editing_assigned_product", icon="CANCEL", text="")
+        else:
+            row = self.layout.row(align=True)
+            row.label(text=ProductAssignmentsData.data["relating_product"] or "No Relating Product", icon="OBJECT_DATA")
+            row.operator("bim.enable_editing_assigned_product", icon="GREASEPENCIL", text="")
 
 
 class BIM_PT_text(Panel):
@@ -294,16 +349,6 @@ class BIM_PT_text(Panel):
                 row.label(text=attribute["name"])
                 row.label(text=attribute["value"])
 
-        if props.is_editing_product:
-            row = self.layout.row(align=True)
-            row.prop(props, "relating_product", text="")
-            row.operator("bim.edit_text_product", icon="CHECKMARK", text="")
-            row.operator("bim.disable_editing_text_product", icon="CANCEL", text="")
-        else:
-            row = self.layout.row(align=True)
-            row.label(text=TextData.data["relating_product"] or "No Relating Product", icon="OBJECT_DATA")
-            row.operator("bim.enable_editing_text_product", icon="GREASEPENCIL", text="")
-
         row = self.layout.row()
         row.prop(props, "font_size")
         row = self.layout.row()
@@ -323,11 +368,19 @@ class BIM_PT_annotation_utilities(Panel):
         self.props = context.scene.DocProperties
 
         row = layout.row(align=True)
-        op = row.operator("bim.add_annotation", text="Dim", icon="ARROW_LEFTRIGHT")
+        op = row.operator("bim.add_annotation", text="Dimension", icon="FIXED_SIZE")
         op.object_type = "DIMENSION"
         op.data_type = "curve"
-        op = row.operator("bim.add_annotation", text="Dim (Eq)", icon="ARROW_LEFTRIGHT")
-        op.object_type = "EQUAL_DIMENSION"
+        op = row.operator("bim.add_annotation", text="Angle", icon="DRIVER_ROTATIONAL_DIFFERENCE")
+        op.object_type = "ANGLE"
+        op.data_type = "mesh"
+
+        row = layout.row(align=True)
+        op = row.operator("bim.add_annotation", text="Radius", icon="FORWARD")
+        op.object_type = "RADIUS"
+        op.data_type = "curve"
+        op = row.operator("bim.add_annotation", text="Diameter", icon="ARROW_LEFTRIGHT")
+        op.object_type = "DIAMETER"
         op.data_type = "curve"
 
         row = layout.row(align=True)
@@ -358,9 +411,13 @@ class BIM_PT_annotation_utilities(Panel):
         op = row.operator("bim.add_annotation", text="Breakline", icon="FCURVE")
         op.object_type = "BREAKLINE"
         op.data_type = "mesh"
-        op = row.operator("bim.add_annotation", text="Misc", icon="MESH_MONKEY")
-        op.object_type = "MISC"
+        op = row.operator("bim.add_annotation", text="Line", icon="MESH_MONKEY")
+        op.object_type = "LINEWORK"
         op.data_type = "mesh"
+
+        row = layout.row(align=True)
+        op = row.operator("bim.add_annotation", text="Fill Area", icon="NODE_TEXTURE")
+        op.object_type = "FILL_AREA"
 
         row = layout.row(align=True)
         row.prop(self.props, "should_draw_decorations", text="Viewport Annotations")
@@ -388,9 +445,24 @@ class BIM_UL_sheets(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            split1 = row.split(factor=0.2)
-            split1.label(text=item.identification or "X")
-            split2 = split1.split(factor=0.8)
-            split2.label(text=item.name or "Unnamed")
+
+            if item.is_sheet:
+                if item.is_expanded:
+                    row.operator(
+                        "bim.contract_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
+                    ).sheet = item.ifc_definition_id
+                else:
+                    row.operator(
+                        "bim.expand_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
+                    ).sheet = item.ifc_definition_id
+            else:
+                row.label(text="", icon="BLANK1")
+                if item.reference_type == "DRAWING":
+                    row.label(text="", icon="IMAGE_DATA")
+                elif item.reference_type == "SCHEDULE":
+                    row.label(text="", icon="LONGDISPLAY")
+
+            name = "{} - {}".format(item.identification or "X", item.name or "Unnamed")
+            row.label(text=name)
         else:
             layout.label(text="", translate=False)

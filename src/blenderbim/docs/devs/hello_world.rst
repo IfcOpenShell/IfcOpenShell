@@ -1,5 +1,5 @@
-Developer guide
-===============
+Hello, world!
+=============
 
 The BlenderBIM Add-on takes a unique approach to authoring BIM data. Traditional
 BIM authoring apps create features that are tailored for a single discipline's
@@ -63,7 +63,7 @@ architecture flow charts and diagrams. The code and its comments will guide you
 through the process.
 
 Before playing with the demo module, you may want to switch to using a source
-installation. See :ref:`blenderbim/installation` for details.
+installation. See `blenderbim/installation <./installation.rst>`_ for details.
 
 To see the demo module in action, you'll need to enable it. In
 ``src/blenderbim/blenderbim/bim/__init__.py``, uncomment the line for the demo
@@ -95,8 +95,8 @@ and how to test and structure it so that you can build incredibly complex
 features in a maintainable way.
 
 Tests for quality checking also exist. The system is designed so that you can
-do "Test Driven Development". For reference on how to run these tests, see
-:ref:`blenderbim/running_tests` for details. You can find the tests here:
+do "Test Driven Development". For reference on how to run these tests, see `blenderbim/running_tests <./running_tests.rst>`_
+for details. You can find the tests here:
 
 ::
 

@@ -168,6 +168,7 @@ class IfcImporter:
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
+        self.settings_2d.set(self.settings.STRICT_TOLERANCE, True)
         self.project = None
         self.collections = {}
         self.elements = set()
@@ -391,6 +392,8 @@ class IfcImporter:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             return
+        if self.ifc_import_settings.should_offset_model:
+            return self.set_manual_blender_offset()
         if self.file.schema == "IFC2X3":
             project = self.file.by_type("IfcProject")[0]
         else:
@@ -402,6 +405,13 @@ class IfcImporter:
         if building and self.is_element_far_away(building):
             return self.guess_georeferencing(building)
         return self.guess_absolute_coordinate()
+
+    def set_manual_blender_offset(self):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        props.blender_eastings = str(self.ifc_import_settings.model_offset_coordinates[0])
+        props.blender_northings = str(self.ifc_import_settings.model_offset_coordinates[1])
+        props.blender_orthogonal_height = str(self.ifc_import_settings.model_offset_coordinates[2])
+        props.has_blender_offset = True
 
     def guess_georeferencing(self, element):
         if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
@@ -419,10 +429,12 @@ class IfcImporter:
         props.has_blender_offset = True
 
     def guess_absolute_coordinate(self):
-        # Civil BIM applications like to work in absolute coordinates, where the ObjectPlacement is 0,0,0 but each
-        # individual coordinate of the shape representation is in absolute values.
+        # Civil BIM applications like to work in absolute coordinates, where the
+        # ObjectPlacement is usually 0,0,0 (but not always, so we'll need to
+        # check for the actual transformation) but each individual coordinate of
+        # the shape representation is in absolute values.
         offset_point = self.get_offset_point()
-        if not offset_point:
+        if offset_point is None:
             return
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.blender_eastings = str(offset_point[0])
@@ -432,34 +444,41 @@ class IfcImporter:
 
     def get_offset_point(self):
         elements_checked = 0
-        # If more than these points aren't far away, the file probably isn't absolutely positioned
-        element_checking_threshold = 100
-        if self.file.schema == "IFC2X3":
-            # IFC2X3 does not have IfcCartesianPointList3D
-            point_lists = []
-        else:
-            point_lists = self.file.by_type("IfcCartesianPointList3D")
-        for point_list in point_lists:
-            elements_checked += 1
-            if elements_checked > element_checking_threshold:
-                return
-            for i, point in enumerate(point_list.CoordList):
-                if len(point) == 3 and self.is_point_far_away(point, is_meters=False):
-                    return point
-
-        for point in self.file.by_type("IfcCartesianPoint"):
-            is_used_in_placement = False
-            for inverse in self.file.get_inverse(point):
-                if inverse.is_a("IfcAxis2Placement3D"):
-                    is_used_in_placement = True
-                    break
-            if is_used_in_placement:
+        # If more than these elements aren't far away, the file probably isn't absolutely positioned
+        element_checking_threshold = 10
+        for element in self.file.by_type("IfcElement"):
+            if not element.Representation:
                 continue
             elements_checked += 1
             if elements_checked > element_checking_threshold:
                 return
-            if len(point.Coordinates) == 3 and self.is_point_far_away(point, is_meters=False):
-                return point.Coordinates
+            if not self.does_element_likely_have_geometry_far_away(element):
+                continue
+            shape = ifcopenshell.geom.create_shape(self.settings, element)
+            m = shape.transformation.matrix.data
+            mat = np.array(
+                ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
+            )
+            point = np.array(
+                (
+                    shape.geometry.verts[0] / self.unit_scale,
+                    shape.geometry.verts[1] / self.unit_scale,
+                    shape.geometry.verts[2] / self.unit_scale,
+                    0.0,
+                )
+            )
+            return mat @ point
+
+    def does_element_likely_have_geometry_far_away(self, element):
+        for representation in element.Representation.Representations:
+            for subelement in self.file.traverse(representation):
+                if subelement.is_a("IfcCartesianPointList3D"):
+                    for point in subelement.CoordList:
+                        if len(point) == 3 and self.is_point_far_away(point, is_meters=False):
+                            return True
+                if subelement.is_a("IfcCartesianPoint"):
+                    if len(subelement.Coordinates) == 3 and self.is_point_far_away(subelement, is_meters=False):
+                        return True
 
     def apply_blender_offset_to_matrix_world(self, obj, matrix):
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -476,11 +495,6 @@ class IfcImporter:
                     float(props.blender_x_axis_abscissa),
                     float(props.blender_x_axis_ordinate),
                 )
-
-        if self.ifc_import_settings.should_offset_model:
-            matrix[0, 3] += self.ifc_import_settings.model_offset_coordinates[0]
-            matrix[1, 3] += self.ifc_import_settings.model_offset_coordinates[1]
-            matrix[2, 3] += self.ifc_import_settings.model_offset_coordinates[2]
 
         return mathutils.Matrix(matrix.tolist())
 
@@ -505,6 +519,8 @@ class IfcImporter:
             if grid.Representation:
                 shape = ifcopenshell.geom.create_shape(self.settings_2d, grid)
             grid_obj = self.create_product(grid, shape)
+            grid_obj.lock_location = (True, True, True)
+            grid_obj.lock_rotation = (True, True, True)
             collection = bpy.data.collections.new(self.get_name(grid))
             u_axes = bpy.data.collections.new("UAxes")
             collection.children.link(u_axes)
@@ -522,6 +538,8 @@ class IfcImporter:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
+            obj.lock_location = (True, True, True)
+            obj.lock_rotation = (True, True, True)
             self.link_element(axis, obj)
             self.set_matrix_world(obj, grid_obj.matrix_world)
             grid_collection.objects.link(obj)
@@ -1509,9 +1527,10 @@ class IfcImporter:
             return self.structural_member_collection.objects.link(obj)
         elif element.is_a("IfcStructuralConnection"):
             return self.structural_connection_collection.objects.link(obj)
-        elif element.is_a("IfcAnnotation") and self.is_drawing_annotation(element):
-            group = [r for r in element.HasAssignments if r.is_a("IfcRelAssignsToGroup")][0].RelatingGroup
-            return self.collections[group.GlobalId].objects.link(obj)
+        elif element.is_a("IfcAnnotation"):
+            group = self.get_drawing_group(element)
+            if group:
+                return self.collections[group.GlobalId].objects.link(obj)
 
         container = ifcopenshell.util.element.get_container(element)
         if container:
@@ -1531,28 +1550,16 @@ class IfcImporter:
         return element.ObjectType in [
             "DIMENSION",
             "EQUAL_DIMENSION",
-            "MISC",
             "PLAN_LEVEL",
             "SECTION_LEVEL",
             "STAIR_ARROW",
             "TEXT_LEADER",
         ]
 
-    def is_drawing_annotation(self, element):
-        return element.ObjectType in [
-            "BREAKLINE",
-            "DIMENSION",
-            "DRAWING",
-            "EQUAL_DIMENSION",
-            "GRID",
-            "HIDDEN_LINE",
-            "MISC",
-            "PLAN_LEVEL",
-            "SECTION_LEVEL",
-            "STAIR_ARROW",
-            "TEXT",
-            "TEXT_LEADER",
-        ]
+    def get_drawing_group(self, element):
+        for rel in element.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToGroup"):
+                return rel.RelatingGroup
 
     def get_element_matrix(self, element):
         result = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
@@ -1678,6 +1685,12 @@ class IfcImporter:
                 else:
                     camera.BIMCameraProperties.diagram_scale = "CUSTOM"
                     camera.BIMCameraProperties.custom_diagram_scale = pset["Scale"]
+            if "HasUnderlay" in pset:
+                camera.BIMCameraProperties.has_underlay = pset["HasUnderlay"]
+            if "HasLinework" in pset:
+                camera.BIMCameraProperties.has_linework = pset["HasLinework"]
+            if "HasAnnotation" in pset:
+                camera.BIMCameraProperties.has_annotation = pset["HasAnnotation"]
         return camera
 
     def create_curve(self, element, shape):
@@ -1720,15 +1733,27 @@ class IfcImporter:
                 and geometry.verts
                 and self.is_point_far_away((geometry.verts[0], geometry.verts[1], geometry.verts[2]))
             ):
+                m = shape.transformation.matrix.data
+                mat = np.array(
+                    ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
+                )
+                offset_point = np.linalg.inv(mat) @ np.array(
+                    (
+                        float(props.blender_eastings),
+                        float(props.blender_northings),
+                        float(props.blender_orthogonal_height),
+                        0.0,
+                    )
+                )
                 verts = [None] * len(geometry.verts)
                 for i in range(0, len(geometry.verts), 3):
                     verts[i], verts[i + 1], verts[i + 2] = ifcopenshell.util.geolocation.enh2xyz(
                         geometry.verts[i],
                         geometry.verts[i + 1],
                         geometry.verts[i + 2],
-                        float(props.blender_eastings) * self.unit_scale,
-                        float(props.blender_northings) * self.unit_scale,
-                        float(props.blender_orthogonal_height) * self.unit_scale,
+                        offset_point[0] * self.unit_scale,
+                        offset_point[1] * self.unit_scale,
+                        offset_point[2] * self.unit_scale,
                         float(props.blender_x_axis_abscissa),
                         float(props.blender_x_axis_ordinate),
                     )

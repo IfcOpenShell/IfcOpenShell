@@ -185,14 +185,16 @@ class Selector:
             elif token_type == "SIGNED_FLOAT":
                 value = float(filter_rule.children[2].children[0])
             elif token_type == "BOOLEAN":
-                value = filter_rule.children[2].children[0] == "TRUE"
+                value = filter_rule.children[2].children[0].lower() == 'true'
             elif token_type == "NULL":
                 value = None
         for element in elements:
             element_value = cls.get_element_value(element, key)
             if element_value is None and value is not None:
                 continue
-            if not comparison or cls.filter_element(element, element_value, comparison, value):
+            if comparison and cls.filter_element(element, element_value, comparison, value):
+                results.append(element)
+            elif not comparison and element_value:
                 results.append(element)
         return results
 

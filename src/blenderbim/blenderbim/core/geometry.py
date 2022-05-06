@@ -21,11 +21,12 @@ import blenderbim.core.style
 
 def edit_object_placement(ifc, geometry, surveyor, obj=None):
     element = ifc.get_entity(obj)
-    if element:
-        geometry.clear_cache(element)
-        geometry.clear_scale(obj)
-        ifc.run("geometry.edit_object_placement", product=element, matrix=surveyor.get_absolute_matrix(obj))
-        geometry.record_object_position(obj)
+    if not element:
+        return
+    geometry.clear_cache(element)
+    geometry.clear_scale(obj)
+    ifc.run("geometry.edit_object_placement", product=element, matrix=surveyor.get_absolute_matrix(obj))
+    geometry.record_object_position(obj)
 
 
 def add_representation(
@@ -55,7 +56,7 @@ def add_representation(
         profile_set_usage=profile_set_usage,
     )
 
-    if geometry.does_object_have_mesh_with_faces(obj):
+    if geometry.is_body_representation(representation):
         [geometry.run_style_add_style(obj=mat) for mat in geometry.get_object_materials_without_styles(obj)]
         ifc.run(
             "style.assign_representation_styles",

@@ -4599,6 +4599,13 @@ namespace {
 
 				if (outer_wire.IsNull() || !it2.Value().IsSame(outer_wire)) {
 					wires.push_back(TopoDS::Wire(it2.Value()));
+
+					if (shape_index == 0 && num_wires > 0) {
+						// An inner wire on the first operand face: reverse, because
+						// MakeFace expects inner boundaries to be added as bounded
+						// areas.
+						wires.back().Reverse();
+					}
 				}
 			}
 
@@ -5606,7 +5613,7 @@ IfcGeom::Kernel::faceset_helper<CP, LP>::faceset_helper(
 
 			if (edge_sets.find(segment_set) != edge_sets.end()) {
 				duplicate_faces++;
-				duplicates_.insert(*ps);
+				duplicates_.insert(util::conditional_address_of(*ps));
 				continue;
 			}
 			edge_sets.insert(segment_set);
@@ -5639,8 +5646,8 @@ IfcGeom::Kernel::faceset_helper<CP, LP>::faceset_helper(
 		}
 	}
 
-	if (loops_removed || (non_manifold && should_be_closed)) {
-		Logger::Warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges");
+	if (duplicates_.size() || loops_removed || (non_manifold && should_be_closed)) {
+		Logger::Warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " degenerate loops eliminated and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges");
 	}
 }
 

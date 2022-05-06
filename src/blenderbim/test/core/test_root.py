@@ -28,6 +28,7 @@ class TestCopyClass:
 
     def test_copy_with_new_geometry_derived_from_the_type(self, ifc, collector, root):
         ifc.get_entity("obj").should_be_called().will_return("original_element")
+        root.get_object_representation("obj").should_be_called().will_return("representation")
         ifc.run("root.copy_class", product="original_element").should_be_called().will_return("element")
         ifc.link("element", "obj").should_be_called()
         root.get_element_type("element").should_be_called().will_return("type")
@@ -41,12 +42,12 @@ class TestCopyClass:
 
     def test_copy_with_new_geometry_added_afresh_for_speed(self, ifc, collector, geometry, root):
         ifc.get_entity("obj").should_be_called().will_return("original_element")
+        root.get_object_representation("obj").should_be_called().will_return("representation")
         ifc.run("root.copy_class", product="original_element").should_be_called().will_return("element")
         ifc.link("element", "obj").should_be_called()
         root.get_element_type("element").should_be_called().will_return("type")
         root.does_type_have_representations("type").should_be_called().will_return(False)
 
-        root.get_object_representation("obj").should_be_called().will_return("representation")
         root.get_representation_context("representation").should_be_called().will_return("context")
         geometry.get_ifc_representation_class("element", "representation").should_be_called().will_return(
             "ifc_representation_class"
@@ -64,17 +65,18 @@ class TestCopyClass:
 
     def test_copy_with_no_new_geometry(self, ifc, collector, geometry, root):
         ifc.get_entity("obj").should_be_called().will_return("original_element")
+        root.get_object_representation("obj").should_be_called().will_return(None)
         ifc.run("root.copy_class", product="original_element").should_be_called().will_return("element")
         ifc.link("element", "obj").should_be_called()
         root.get_element_type("element").should_be_called().will_return("type")
         root.does_type_have_representations("type").should_be_called().will_return(False)
-        root.get_object_representation("obj").should_be_called().will_return(None)
         collector.assign("obj").should_be_called()
         root.is_opening_element("element").should_be_called().will_return(False)
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
 
     def test_copied_openings_have_dynamic_voids_added(self, ifc, collector, root):
         ifc.get_entity("obj").should_be_called().will_return("original_element")
+        root.get_object_representation("obj").should_be_called().will_return(None)
         ifc.run("root.copy_class", product="original_element").should_be_called().will_return("element")
         ifc.link("element", "obj").should_be_called()
         root.get_element_type("element").should_be_called().will_return("type")

@@ -49,7 +49,7 @@ public:
 	IfcGeom::IteratorImplementation* construct(const std::string& schema_name, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&, int);
 };
 
-IteratorFactoryImplementation& iterator_implementations();
+IFC_GEOM_API IteratorFactoryImplementation& iterator_implementations();
 
 namespace IfcGeom {
 
