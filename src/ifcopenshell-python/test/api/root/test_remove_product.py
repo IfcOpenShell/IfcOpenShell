@@ -130,3 +130,13 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert len(list(self.file)) == total_entities - 2
         assert len(self.file.by_type("IfcDoor")) == 0
         assert len(self.file.by_type("IfcRelFillsElement")) == 0
+
+    def test_removing_all_distribution_ports(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
+        port = ifcopenshell.api.run("system.add_port", self.file, element=element)
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert len(list(self.file)) == total_entities - 3
+        assert len(self.file.by_type("IfcChiller")) == 0
+        assert len(self.file.by_type("IfcRelNests")) == 0
+        assert len(self.file.by_type("IfcDistributionPort")) == 0
