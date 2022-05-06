@@ -161,17 +161,17 @@ class Drawing:
     def delete_collection(cls, collection): pass
     def delete_drawing_elements(cls, elements): pass
     def delete_object(cls, obj): pass
+    def disable_editing_assigned_product(cls, obj): pass
     def disable_editing_drawings(cls): pass
     def disable_editing_schedules(cls): pass
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
-    def disable_editing_text_product(cls, obj): pass
     def enable_editing(cls, obj): pass
+    def enable_editing_assigned_product(cls, obj): pass
     def enable_editing_drawings(cls): pass
     def enable_editing_schedules(cls): pass
     def enable_editing_sheets(cls): pass
     def enable_editing_text(cls, obj): pass
-    def enable_editing_text_product(cls, obj): pass
     def ensure_unique_drawing_name(cls, name): pass
     def ensure_unique_identification(cls, identification): pass
     def export_text_literal_attributes(cls, obj): pass
@@ -179,6 +179,7 @@ class Drawing:
     def generate_drawing_name(cls, target_view, location_hint): pass
     def generate_sheet_identification(cls): pass
     def get_annotation_context(cls, target_view): pass
+    def get_assigned_product(cls, element): pass
     def get_body_context(cls): pass
     def get_document_uri(cls, document): pass
     def get_drawing_collection(cls, drawing): pass
@@ -189,12 +190,11 @@ class Drawing:
     def get_name(cls, element): pass
     def get_schedule_location(cls, schedule): pass
     def get_text_literal(cls, obj): pass
-    def get_text_product(cls, element): pass
+    def import_assigned_product(cls, obj): pass
     def import_drawings(cls): pass
     def import_schedules(cls): pass
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
-    def import_text_product(cls, obj): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass

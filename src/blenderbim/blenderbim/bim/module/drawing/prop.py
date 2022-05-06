@@ -377,7 +377,6 @@ class BIMCameraProperties(PropertyGroup):
 
 class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
-    is_editing_product: BoolProperty(name="Is Editing Product", default=False)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     value: StringProperty(name="Value", default="TEXT")
     font_size: EnumProperty(
@@ -392,4 +391,7 @@ class BIMTextProperties(PropertyGroup):
         update=refreshFontSize,
         name="Font Size",
     )
+
+class BIMAssignedProductProperties(PropertyGroup):
+    is_editing_product: BoolProperty(name="Is Editing Product", default=False)
     relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object)
