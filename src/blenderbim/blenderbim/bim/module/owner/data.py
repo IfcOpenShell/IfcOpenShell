@@ -93,15 +93,17 @@ class PeopleData(RolesAddressesData):
     def get_people(cls):
         people = []
         for person in tool.Ifc.get().by_type("IfcPerson"):
+            roles = cls.get_roles(person)
             people.append(
                 {
                     "id": person.id(),
                     "props": bpy.context.scene.BIMOwnerProperties.person_attributes,
                     "name": cls.get_person_name(person),
+                    "roles_label": ", ".join([r["label"] for r in roles]),
                     "is_editing": cls.get_person_is_editing(person),
                     "is_engaged": bool(person.EngagedIn),
                     "list_attributes": cls.get_person_list_attributes(person),
-                    "roles": cls.get_roles(person),
+                    "roles": roles,
                     "addresses": cls.get_addresses(person),
                 }
             )
@@ -151,14 +153,16 @@ class OrganisationsData(RolesAddressesData):
     def get_organisations(cls):
         organisations = []
         for organisation in tool.Ifc.get().by_type("IfcOrganization"):
+            roles = cls.get_roles(organisation)
             organisations.append(
                 {
                     "id": organisation.id(),
                     "props": bpy.context.scene.BIMOwnerProperties.organisation_attributes,
                     "name": organisation.Name,
+                    "roles_label": ", ".join([r["label"] for r in roles]),
                     "is_editing": bpy.context.scene.BIMOwnerProperties.active_organisation_id == organisation.id(),
                     "is_engaged": bool(organisation.Engages),
-                    "roles": cls.get_roles(organisation),
+                    "roles": roles,
                     "addresses": cls.get_addresses(organisation),
                 }
             )
@@ -212,13 +216,13 @@ class ActorData:
     @classmethod
     def load(cls):
         cls.data = {
-            "actor": cls.actor(),
+            "the_actor": cls.the_actor(),
             "actors": cls.actors(),
         }
         cls.is_loaded = True
 
     @classmethod
-    def actor(cls):
+    def the_actor(cls):
         ifc_class = bpy.context.scene.BIMOwnerProperties.actor_type
         return [(str(p.id()), p[0] or "Unnamed", "") for p in tool.Ifc.get().by_type(ifc_class)]
 
@@ -228,5 +232,14 @@ class ActorData:
         props = bpy.context.scene.BIMOwnerProperties
         for actor in tool.Ifc.get().by_type(props.actor_class, include_subtypes=False):
             is_editing = props.active_actor_id == actor.id()
-            actors.append({"id": actor.id(), "name": actor.Name or "Unnamed", "is_editing": is_editing})
+            if actor.TheActor.is_a("IfcPerson"):
+                the_actor = actor.TheActor.Identification or "N/A"
+            elif actor.TheActor.is_a("IfcOrganization"):
+                the_actor = actor.TheActor.Identification or "N/A"
+            elif actor.TheActor.is_a("IfcPersonAndOrganization"):
+                the_actor = actor.TheActor.ThePerson.Identification or "N/A"
+                the_actor += "-" + actor.TheActor.TheOrganization.Identification or "N/A"
+            actors.append(
+                {"id": actor.id(), "name": actor.Name or "Unnamed", "the_actor": the_actor, "is_editing": is_editing}
+            )
         return actors

@@ -44,14 +44,14 @@ def get_user_organisation(self, context):
     return OwnerData.data["user_organisation"]
 
 
-def get_actor(self, context):
+def get_the_actor(self, context):
     if not ActorData.is_loaded:
         ActorData.load()
-    return ActorData.data["actor"]
+    return ActorData.data["the_actor"]
 
 
 def update_actor_type(self, context):
-    ActorData.data["actor"] = ActorData.actor()
+    ActorData.data["the_actor"] = ActorData.the_actor()
 
 
 def update_actor_class(self, context):
@@ -94,4 +94,4 @@ class BIMOwnerProperties(PropertyGroup):
         name="Actor Type",
         update=update_actor_type,
     )
-    actor: EnumProperty(items=get_actor, name="Actor")
+    the_actor: EnumProperty(items=get_the_actor, name="Actor")
