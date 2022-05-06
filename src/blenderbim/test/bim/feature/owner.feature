@@ -277,3 +277,30 @@ Scenario: Edit actor
     And I press "bim.enable_editing_actor(actor={actor})"
     When I press "bim.edit_actor"
     Then "scene.BIMOwnerProperties.active_actor_id" is "0"
+
+Scenario: Assign actor
+    Given an empty IFC project
+    And I press "bim.add_person"
+    And I press "bim.add_actor"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the variable "actor" is "{ifc}.by_type('IfcActor')[0].id()"
+    And the object "IfcWall/Cube" is selected
+    When I press "bim.assign_actor(actor={actor})"
+    Then nothing happens
+
+Scenario: Unassign actor
+    Given an empty IFC project
+    And I press "bim.add_person"
+    And I press "bim.add_actor"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the variable "actor" is "{ifc}.by_type('IfcActor')[0].id()"
+    And the object "IfcWall/Cube" is selected
+    And I press "bim.assign_actor(actor={actor})"
+    When I press "bim.unassign_actor(actor={actor})"
+    Then nothing happens

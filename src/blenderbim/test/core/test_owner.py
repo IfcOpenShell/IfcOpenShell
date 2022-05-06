@@ -259,3 +259,15 @@ class TestEditActor:
         ifc.run("owner.edit_actor", actor="actor", attributes="attributes").should_be_called()
         owner.clear_actor().should_be_called()
         subject.edit_actor(ifc, owner)
+
+
+class TestAssignActor:
+    def test_run(self, ifc, owner):
+        ifc.run("owner.assign_actor", relating_actor="actor", related_object="element").should_be_called()
+        subject.assign_actor(ifc, actor="actor", element="element")
+
+
+class TestUnassignActor:
+    def test_run(self, ifc, owner):
+        ifc.run("owner.unassign_actor", relating_actor="actor", related_object="element").should_be_called()
+        subject.unassign_actor(ifc, actor="actor", element="element")

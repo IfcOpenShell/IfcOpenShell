@@ -18,7 +18,7 @@
 
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.owner.data import OwnerData, ActorData
+from blenderbim.bim.module.owner.data import OwnerData, ActorData, ObjectActorData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -48,6 +48,12 @@ def get_the_actor(self, context):
     if not ActorData.is_loaded:
         ActorData.load()
     return ActorData.data["the_actor"]
+
+
+def get_actor(self, context):
+    if not ObjectActorData.is_loaded:
+        ObjectActorData.load()
+    return ObjectActorData.data["actor"]
 
 
 def update_actor_type(self, context):
@@ -95,3 +101,4 @@ class BIMOwnerProperties(PropertyGroup):
         update=update_actor_type,
     )
     the_actor: EnumProperty(items=get_the_actor, name="Actor")
+    actor: EnumProperty(items=get_actor, name="Actor")

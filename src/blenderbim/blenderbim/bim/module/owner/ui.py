@@ -19,7 +19,7 @@
 import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
-from blenderbim.bim.module.owner.data import PeopleData, OrganisationsData, OwnerData, ActorData
+from blenderbim.bim.module.owner.data import PeopleData, OrganisationsData, OwnerData, ActorData, ObjectActorData
 
 
 def draw_roles(box, parent):
@@ -281,3 +281,38 @@ class BIM_PT_actor(bpy.types.Panel):
             row.label(text=actor["the_actor"])
             row.operator("bim.enable_editing_actor", icon="GREASEPENCIL", text="").actor = actor["id"]
             row.operator("bim.remove_actor", icon="X", text="").actor = actor["id"]
+
+
+class BIM_PT_object_actor(bpy.types.Panel):
+    bl_label = "IFC Actor"
+    bl_idname = "BIM_PT_object_actor"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_misc_object"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
+
+    def draw(self, context):
+        if not ObjectActorData.is_loaded:
+            ObjectActorData.load()
+
+        self.props = context.scene.BIMOwnerProperties
+
+        if not ObjectActorData.data["actor"]:
+            row = self.layout.row(align=True)
+            row.label(text="No Actors Found", icon="USER")
+            return
+
+        row = self.layout.row(align=True)
+        row.prop(self.props, "actor", text="")
+        row.operator("bim.assign_actor", icon="ADD", text="").actor = int(self.props.actor)
+
+        for actor in ObjectActorData.data["actors"]:
+            row = self.layout.row(align=True)
+            row.label(text=actor["name"], icon="USER")
+            row.label(text=actor["role"])
+            row.operator("bim.unassign_actor", icon="X", text="").actor = actor["id"]
