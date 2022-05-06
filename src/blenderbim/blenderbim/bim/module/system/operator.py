@@ -154,11 +154,20 @@ class HidePorts(bpy.types.Operator, Operator):
 
 class AddPort(bpy.types.Operator, Operator):
     bl_idname = "bim.add_port"
-    bl_label = "Add Ports"
+    bl_label = "Add Port"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         core.add_port(tool.Ifc, tool.System, element=tool.Ifc.get_entity(context.active_object))
+
+
+class RemovePort(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_port"
+    bl_label = "Remove Port"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.remove_port(tool.Ifc, tool.System, port=tool.Ifc.get_entity(context.active_object))
 
 
 class ConnectPort(bpy.types.Operator, Operator):

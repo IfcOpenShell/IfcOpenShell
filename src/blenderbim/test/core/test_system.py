@@ -93,6 +93,15 @@ class TestSelectSystemProducts:
 class TestShowPorts:
     def test_run(self, ifc, system):
         ifc.get_object("element").should_be_called().will_return("obj")
+        ifc.is_moved("obj").should_be_called().will_return(False)
+
+        system.get_ports("element").should_be_called().will_return(["port"])
+        system.load_ports("element", ["port"]).should_be_called()
+        system.select_elements(["port"]).should_be_called()
+        subject.show_ports(ifc, system, element="element")
+
+    def test_syncing_locations_if_objects_moved_prior_to_showing_ports(self, ifc, system):
+        ifc.get_object("element").should_be_called().will_return("obj")
         ifc.is_moved("obj").should_be_called().will_return(True)
         system.run_geometry_edit_object_placement(obj="obj").should_be_called()
 
@@ -104,6 +113,20 @@ class TestShowPorts:
 
 class TestHidePorts:
     def test_run(self, ifc, system):
+        ifc.get_object("element").should_be_called().will_return("obj")
+        ifc.is_moved("obj").should_be_called().will_return(False)
+
+        system.get_ports("element").should_be_called().will_return(["port"])
+
+        ifc.get_object("port").should_be_called().will_return("port_obj")
+        ifc.is_moved("port_obj").should_be_called().will_return(True)
+        system.run_geometry_edit_object_placement(obj="port_obj").should_be_called()
+
+        system.delete_element_objects(["port"]).should_be_called()
+        subject.hide_ports(ifc, system, element="element")
+
+
+    def test_syncing_locations_if_objects_moved_prior_to_hiding_ports(self, ifc, system):
         ifc.get_object("element").should_be_called().will_return("obj")
         ifc.is_moved("obj").should_be_called().will_return(True)
         system.run_geometry_edit_object_placement(obj="obj").should_be_called()
@@ -126,6 +149,13 @@ class TestAddPort:
         system.run_root_assign_class(obj="obj", ifc_class="IfcDistributionPort").should_be_called().will_return("port")
         ifc.run("system.assign_port", element="element", port="port").should_be_called()
         subject.add_port(ifc, system, element="element")
+
+
+class TestRemovePort:
+    def test_run(self, ifc, system):
+        system.delete_element_objects(["port"]).should_be_called()
+        ifc.run("root.remove_product", product="port").should_be_called()
+        subject.remove_port(ifc, system, port="port")
 
 
 class TestSetFlowDirection:

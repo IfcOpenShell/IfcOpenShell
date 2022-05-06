@@ -97,6 +97,11 @@ def add_port(ifc, system, element=None):
     ifc.run("system.assign_port", element=element, port=port)
 
 
+def remove_port(ifc, system, port=None):
+    system.delete_element_objects([port])
+    ifc.run("root.remove_product", product=port)
+
+
 def connect_port(ifc, port1=None, port2=None):
     ifc.run("system.connect_port", port1=port1, port2=port2)
 
