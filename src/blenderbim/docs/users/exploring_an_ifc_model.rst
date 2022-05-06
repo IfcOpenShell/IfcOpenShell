@@ -192,12 +192,13 @@ of the **Viewport** panel.
 
 .. warning::
 
-   Not all IFC models use the correct **Class**. For example, a chair might be assigned
-   as the Wall **Class** instead the Furniture **Class**. There is a special
-   class known as **IfcBuildingElementProxy**, used when the user is unable to
-   find a more semantic **Class**. If you see many **IfcBuildingElementProxy**
-   **Classes**, it is likely a symptom of a low quality IFC model. If this is
-   the case, scold the project manager and ask them to do a better job.
+   Sometimes, an IFC model will use the wrong **Class**. For example, a chair might
+   be assigned as the Wall **Class** instead the Furniture **Class**. There is a
+   special class known as **IfcBuildingElementProxy**, used when the user is
+   unable to find a more semantic **Class**. If you see many
+   **IfcBuildingElementProxy** **Classes**, it is likely a symptom of a low
+   quality IFC model. If this is the case, scold the project manager and ask
+   them to do a better job.
 
 After **IfcSlab** it also says **ROOF**. This is known as the
 **Predefined Type** of the element. You can think of it as a further level of
@@ -230,7 +231,68 @@ out of 4 available objects. This is a great way of counting objects like toilets
 Viewing attributes and properties
 ---------------------------------
 
-TODO
+You can view the **Attributes**, **Properties**, and **Quantities** of the
+selected object in the **Object Properties** tab.
+
+Let's focus on **Attributes** first. Scroll down to the **IFC Attributes**
+subpanel. **Attributes** are a limited set of fundamental data (usually less
+than 10) associated with all IFC elements. These are fixed by the IFC standard.
+
+.. image:: attributes.png
+
+Here are some common attributes and what they mean:
+
+- **GlobalId**: a unique ID for the element useful for computer geeks
+- **Name**: a short name, code, number, or label to identify the object for a
+  human. Basically, if you had to annotate the object on a drawing or a
+  schedule, this is what you should see. For example, a pump **Name** might be
+  ``P-10-A``.
+- **Description**: typically the longer form of the name, written to be
+  descriptive and readable for humans. For example a pump **Description** might
+  be ``Water Suction Pump``.
+- **Tag**: this is an ID that may link it back to another BIM application. For
+  example if the IFC model was produced using Revit or ArchiCAD.
+- **Predefined Type**: basically a further level of classification to be read
+  in conjunction with the IFC class.
+
+.. warning::
+
+   Some IFC models have poor quality data. For example, if the **Name**
+   of a Window doesn't match the window code (e.g. ``W01``) you see on a
+   drawing, the project manager has clearly not put enough effort. Shame on
+   them.
+
+**Properties** are other data associated with the object. Every project will
+have different **Properties** depending on what information they want to store.
+Each **Property** has a name and a value, and are grouped into **Property
+Sets**. Each **Property Set** also has a name. 
+
+You can find **Properties** in the **IFC Property Sets** subpanel.
+
+.. image:: psets.png
+
+Some very common **Properties** are standardised by international BIM standards.
+For example, the load bearing **Property** of a beam should always be called
+``LoadBearing``. If a **Property Set** is part of the international standard, it
+has a prefix of ``Pset_``, like ``Pset_BeamCommon``.
+
+If you see a **Property Set** without the ``Pset_`` prefix, it is a custom
+property defined by the author of the IFC model.
+
+.. tip::
+
+   It's important to distinguish between **Properties** that are
+   part of the standard compared to custom ones. When **Properties** are
+   standardised, it means predictable digital workflows can be designed.
+
+**Quantities** are very similar to properties. They also have a name and a
+value, and are grouped into **Quantity Sets**. Similarly, there are also common
+quantities defined as part of the international standard, denoted by the prefix
+``Qto_``. This prefix is short for "Quantity Take-Off".
+
+You can find **Quantities** in the **IFC Quantity Sets** subpanel.
+
+.. image:: qtos.png
 
 Viewing construction types
 --------------------------
