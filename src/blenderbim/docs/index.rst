@@ -25,6 +25,7 @@ The BlenderBIM Add-on lets you analyse, create, and modify OpenBIM with Blender.
    devs/installation
    devs/hello_world
    devs/running_tests
+   devs/writing_docs
    devs/undo_system
    devs/ux_guidelines
    devs/georeferencing
