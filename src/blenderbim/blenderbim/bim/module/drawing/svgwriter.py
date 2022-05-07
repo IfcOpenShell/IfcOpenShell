@@ -56,7 +56,6 @@ class External(svgwrite.container.Group):
 class SvgWriter:
     def __init__(self):
         self.data_dir = None
-        self.vector_style = None
         self.human_scale = "NTS"
         self.metadata = []
         self.scale = 1 / 100  # 1:100
@@ -87,11 +86,11 @@ class SvgWriter:
         )
         return self
 
-    def define_boilerplate(self):
-        self.add_stylesheet()
-        self.add_markers()
-        self.add_symbols()
-        self.add_patterns()
+    def define_boilerplate(self, stylesheet=None, markers=None, symbols=None, patterns=None):
+        self.add_stylesheet(stylesheet)
+        self.add_markers(markers)
+        self.add_symbols(symbols)
+        self.add_patterns(patterns)
         return self
 
     def calculate_scale(self):
@@ -101,24 +100,25 @@ class SvgWriter:
         self.width = self.raw_width * self.svg_scale
         self.height = self.raw_height * self.svg_scale
 
-    def add_stylesheet(self):
-        with open(os.path.join(self.data_dir, "styles", f"{self.vector_style}.css"), "r") as stylesheet:
+    def add_stylesheet(self, uri):
+        default_stylesheet = os.path.join(self.data_dir, "styles", f"default.css")
+        with open(tool.Ifc.resolve_uri(uri) or default_stylesheet, "r") as stylesheet:
             self.svg.defs.add(self.svg.style(stylesheet.read()))
 
-    def add_markers(self):
-        tree = ET.parse(os.path.join(self.data_dir, "templates", "markers.svg"))
+    def add_markers(self, uri):
+        tree = ET.parse(tool.Ifc.resolve_uri(uri) or os.path.join(self.data_dir, "templates", "markers.svg"))
         root = tree.getroot()
         for child in root:
             self.svg.defs.add(External(child))
 
-    def add_symbols(self):
-        tree = ET.parse(os.path.join(self.data_dir, "templates", "symbols.svg"))
+    def add_symbols(self, uri):
+        tree = ET.parse(tool.Ifc.resolve_uri(uri) or os.path.join(self.data_dir, "templates", "symbols.svg"))
         root = tree.getroot()
         for child in root:
             self.svg.defs.add(External(child))
 
-    def add_patterns(self):
-        tree = ET.parse(os.path.join(self.data_dir, "templates", "patterns.svg"))
+    def add_patterns(self, uri):
+        tree = ET.parse(tool.Ifc.resolve_uri(uri) or os.path.join(self.data_dir, "templates", "patterns.svg"))
         root = tree.getroot()
         for child in root:
             self.svg.defs.add(External(child))
