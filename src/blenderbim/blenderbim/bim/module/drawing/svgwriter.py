@@ -36,14 +36,6 @@ from mathutils import geometry
 from blenderbim.bim.ifc import IfcStore
 
 
-def load_occ():
-    # Don't import until we really need to, as a temporary step before we can purge OCC
-    try:
-        from OCC.Core import BRep, BRepTools, TopExp, TopAbs
-    except ImportError:
-        from OCC import BRep, BRepTools, TopExp, TopAbs
-
-
 class External(svgwrite.container.Group):
     def __init__(self, xml, **extra):
         self.xml = xml
@@ -63,44 +55,51 @@ class External(svgwrite.container.Group):
 
 class SvgWriter:
     def __init__(self):
-        self.output = "out.svg"
         self.data_dir = None
         self.vector_style = None
         self.human_scale = "NTS"
-        self.annotations = []
         self.metadata = []
-        self.background_image = None
         self.scale = 1 / 100  # 1:100
+        self.camera_width = None
+        self.camera_height = None
 
-    def write(self, layer):
+    def create_blank_svg(self, output_path):
         self.calculate_scale()
         self.svg = svgwrite.Drawing(
-            self.output,
-            debug=False,
+            output_path,
             size=("{}mm".format(self.width), "{}mm".format(self.height)),
             viewBox=("0 0 {} {}".format(self.width, self.height)),
             id="root",
             data_scale=self.human_scale,
+            debug=False, # Disable validation so that we can insert the IFC namespace
         )
+        self.svg.attribs["xmlns:ifc"] = "http://www.ifcopenshell.org/ns"
+        return self
 
-        if layer == "underlay":
-            self.draw_background_image()
-        elif layer == "annotation":
-            self.add_stylesheet()
-            self.add_markers()
-            self.add_symbols()
-            self.add_patterns()
-            # self.draw_background_elements()
-            # self.draw_cut_polygons()
-            self.draw_annotations()
+    def save(self):
         self.svg.save(pretty=True)
 
+    def draw_underlay(self, image):
+        self.svg.add(
+            self.svg.image(
+                os.path.join("..", "diagrams", os.path.basename(image)), width=self.width, height=self.height,
+            )
+        )
+        return self
+
+    def define_boilerplate(self):
+        self.add_stylesheet()
+        self.add_markers()
+        self.add_symbols()
+        self.add_patterns()
+        return self
+
     def calculate_scale(self):
-        self.scale *= 1000  # IFC is in meters, SVG is in mm
+        self.svg_scale = self.scale * 1000  # IFC is in meters, SVG is in mm
         self.raw_width = self.camera_width
         self.raw_height = self.camera_height
-        self.width = self.raw_width * self.scale
-        self.height = self.raw_height * self.scale
+        self.width = self.raw_width * self.svg_scale
+        self.height = self.raw_height * self.svg_scale
 
     def add_stylesheet(self):
         with open(os.path.join(self.data_dir, "styles", f"{self.vector_style}.css"), "r") as stylesheet:
@@ -124,26 +123,8 @@ class SvgWriter:
         for child in root:
             self.svg.defs.add(External(child))
 
-    def draw_background_image(self):
-        self.svg.add(
-            self.svg.image(
-                os.path.join("..", "diagrams", os.path.basename(self.background_image)),
-                **{"width": self.width, "height": self.height},
-            )
-        )
-
-    def draw_background_elements(self):
-        return  # TODO purge?
-        for element in self.ifc_cutter.background_elements:
-            if element["type"] == "polygon":
-                self.draw_polygon(element, "background")
-            elif element["type"] == "polyline":
-                self.draw_polyline(element, "background")
-            elif element["type"] == "line":
-                self.draw_line(element, "background")
-
-    def draw_annotations(self):
-        for element in self.annotations:
+    def draw_annotations(self, annotations):
+        for element in annotations:
             obj = tool.Ifc.get_object(element)
             if not obj or element.ObjectType == "DRAWING":
                 continue
@@ -180,6 +161,7 @@ class SvgWriter:
 
         # Experimental integration with the MeasureIt-ARCH Add-on
         self.draw_measureit_arch_dimension_annotations()
+        return self
 
     def draw_section_level_annotation(self, obj):
         x_offset = self.raw_width / 2
@@ -194,7 +176,7 @@ class SvgWriter:
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
             d = " ".join(
                 [
-                    "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
                     for p in projected_points
                 ]
             )
@@ -202,8 +184,8 @@ class SvgWriter:
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
             text_position = Vector(
                 (
-                    (x_offset + projected_points[0].x) * self.scale,
-                    ((y_offset - projected_points[0].y) * self.scale) - 3.5,
+                    (x_offset + projected_points[0].x) * self.svg_scale,
+                    ((y_offset - projected_points[0].y) * self.svg_scale) - 3.5,
                 )
             )
             # TODO: allow metric to be configurable
@@ -233,14 +215,14 @@ class SvgWriter:
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
             d = " ".join(
                 [
-                    "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
                     for p in projected_points
                 ]
             )
             d = "M{}".format(d[1:])
             start = Vector(((x_offset + projected_points[0].x), (y_offset - projected_points[0].y)))
             next_point = Vector(((x_offset + projected_points[1].x), (y_offset - projected_points[1].y)))
-            text_position = (start * self.scale) - ((next_point - start).normalized() * 5)
+            text_position = (start * self.svg_scale) - ((next_point - start).normalized() * 5)
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
             self.svg.add(
                 self.svg.text(
@@ -270,14 +252,14 @@ class SvgWriter:
             end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
             vector = end - start
             line = self.svg.add(
-                self.svg.line(start=tuple(start * self.scale), end=tuple(end * self.scale), class_=" ".join(classes))
+                self.svg.line(start=tuple(start * self.svg_scale), end=tuple(end * self.svg_scale), class_=" ".join(classes))
             )
             line["stroke-dasharray"] = "12.5, 3, 3, 3"
             axis_tag = tool.Ifc.get_entity(obj).Name
             self.svg.add(
                 self.svg.text(
                     axis_tag,
-                    insert=tuple(start * self.scale),
+                    insert=tuple(start * self.svg_scale),
                     **{
                         "font-size": annotation.Annotator.get_svg_text_size(5.0),
                         "font-family": "OpenGost Type B TT",
@@ -290,7 +272,7 @@ class SvgWriter:
             self.svg.add(
                 self.svg.text(
                     axis_tag,
-                    insert=tuple(end * self.scale),
+                    insert=tuple(end * self.svg_scale),
                     **{
                         "font-size": annotation.Annotator.get_svg_text_size(5.0),
                         "font-family": "OpenGost Type B TT",
@@ -320,7 +302,7 @@ class SvgWriter:
             projected_points.append(projected_points[0])
             d = " ".join(
                 [
-                    "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
                     for p in projected_points
                 ]
             )
@@ -357,7 +339,7 @@ class SvgWriter:
                 projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
                 d = " ".join(
                     [
-                        "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                        "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
                         for p in projected_points
                     ]
                 )
@@ -379,7 +361,7 @@ class SvgWriter:
             end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
             vector = end - start
             line = self.svg.add(
-                self.svg.line(start=tuple(start * self.scale), end=tuple(end * self.scale), class_=" ".join(classes))
+                self.svg.line(start=tuple(start * self.svg_scale), end=tuple(end * self.svg_scale), class_=" ".join(classes))
             )
 
     def draw_leader_annotation(self, obj):
@@ -408,17 +390,17 @@ class SvgWriter:
             symbol_position = Vector(((x_offset + symbol_position.x), (y_offset - symbol_position.y)))
             transform = "rotate({}, {}, {})".format(
                 angle,
-                (symbol_position * self.scale)[0],
-                (symbol_position * self.scale)[1],
+                (symbol_position * self.svg_scale)[0],
+                (symbol_position * self.svg_scale)[1],
             )
 
             self.svg.add(
-                self.svg.use("#section-arrow", insert=tuple(symbol_position * self.scale), transform=transform)
+                self.svg.use("#section-arrow", insert=tuple(symbol_position * self.svg_scale), transform=transform)
             )
-            self.svg.add(self.svg.use("#section-tag", insert=tuple(symbol_position * self.scale)))
+            self.svg.add(self.svg.use("#section-tag", insert=tuple(symbol_position * self.svg_scale)))
 
             reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
-            text_position = list(symbol_position * self.scale)
+            text_position = list(symbol_position * self.svg_scale)
             text_style = {
                 "font-size": annotation.Annotator.get_svg_text_size(2.5),
                 "font-family": "OpenGost Type B TT",
@@ -441,15 +423,15 @@ class SvgWriter:
 
         transform = "rotate({}, {}, {})".format(
             angle,
-            (symbol_position * self.scale)[0],
-            (symbol_position * self.scale)[1],
+            (symbol_position * self.svg_scale)[0],
+            (symbol_position * self.svg_scale)[1],
         )
 
-        self.svg.add(self.svg.use("#elevation-arrow", insert=tuple(symbol_position * self.scale), transform=transform))
-        self.svg.add(self.svg.use("#elevation-tag", insert=tuple(symbol_position * self.scale)))
+        self.svg.add(self.svg.use("#elevation-arrow", insert=tuple(symbol_position * self.svg_scale), transform=transform))
+        self.svg.add(self.svg.use("#elevation-tag", insert=tuple(symbol_position * self.svg_scale)))
 
         reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
-        text_position = list(symbol_position * self.scale)
+        text_position = list(symbol_position * self.svg_scale)
         text_style = {
             "font-size": annotation.Annotator.get_svg_text_size(2.5),
             "font-family": "OpenGost Type B TT",
@@ -497,13 +479,13 @@ class SvgWriter:
 
         transform = "rotate({}, {}, {})".format(
             angle,
-            (text_position * self.scale)[0],
-            (text_position * self.scale)[1],
+            (text_position * self.svg_scale)[0],
+            (text_position * self.svg_scale)[1],
         )
 
         symbol = tool.Drawing.get_annotation_symbol(element)
         if symbol:
-            self.svg.add(self.svg.use(f"#{symbol}", insert=tuple(text_position * self.scale)))
+            self.svg.add(self.svg.use(f"#{symbol}", insert=tuple(text_position * self.svg_scale)))
 
         if text_literal.BoxAlignment == "top-left":
             alignment_baseline = "hanging"
@@ -535,7 +517,7 @@ class SvgWriter:
 
         literal = text_literal.Literal
 
-        product = tool.Drawing.get_text_product(element)
+        product = tool.Drawing.get_assigned_product(element)
         selector = ifcopenshell.util.selector.Selector
         variables = {}
         for variable in re.findall("{{.*?}}", literal):
@@ -545,7 +527,7 @@ class SvgWriter:
             self.svg.add(
                 self.svg.text(
                     text_line,
-                    insert=tuple((text_position * self.scale) + Vector((0, 3.5 * line_number))),
+                    insert=tuple((text_position * self.svg_scale) + Vector((0, 3.5 * line_number))),
                     class_=" ".join(self.get_attribute_classes(text_obj)),
                     **{
                         "font-size": annotation.Annotator.get_svg_text_size(text_obj.BIMTextProperties.font_size),
@@ -574,7 +556,7 @@ class SvgWriter:
             ]
             d = " ".join(
                 [
-                    "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
                     for p in projected_points
                 ]
             )
@@ -591,7 +573,7 @@ class SvgWriter:
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
             d = " ".join(
                 [
-                    "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
                     for p in projected_points
                 ]
             )
@@ -599,8 +581,8 @@ class SvgWriter:
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
             text_position = Vector(
                 (
-                    (x_offset + projected_points[0].x) * self.scale,
-                    ((y_offset - projected_points[0].y) * self.scale) - 2.5,
+                    (x_offset + projected_points[0].x) * self.svg_scale,
+                    ((y_offset - projected_points[0].y) * self.svg_scale) - 2.5,
                 )
             )
             # TODO: allow metric to be configurable
@@ -698,11 +680,11 @@ class SvgWriter:
         arc_midpoint = center + ((cog - center).normalized() * radius)
 
         text_position = self.project_point_onto_camera(arc_midpoint)
-        text_position = Vector(((x_offset + text_position.x) * self.scale, (y_offset - text_position.y) * self.scale))
+        text_position = Vector(((x_offset + text_position.x) * self.svg_scale, (y_offset - text_position.y) * self.svg_scale))
 
         center_projected = self.project_point_onto_camera(center)
         center_position = Vector(
-            ((x_offset + center_projected.x) * self.scale, (y_offset - center_projected.y) * self.scale)
+            ((x_offset + center_projected.x) * self.svg_scale, (y_offset - center_projected.y) * self.svg_scale)
         )
         text_offset = (text_position - center_position).xy.normalized() * 5
         text_position += text_offset
@@ -722,9 +704,9 @@ class SvgWriter:
 
         # Draw SVG arc, see for details: http://xahlee.info/js/svg_circle_arc.html
         arc_proj_end_pts = [self.project_point_onto_camera(v) for v in arc_end_pts]
-        p1 = Vector(((x_offset + arc_proj_end_pts[0].x) * self.scale, (y_offset - arc_proj_end_pts[0].y) * self.scale))
-        p2 = Vector(((x_offset + arc_proj_end_pts[1].x) * self.scale, (y_offset - arc_proj_end_pts[1].y) * self.scale))
-        r = radius * self.scale
+        p1 = Vector(((x_offset + arc_proj_end_pts[0].x) * self.svg_scale, (y_offset - arc_proj_end_pts[0].y) * self.svg_scale))
+        p2 = Vector(((x_offset + arc_proj_end_pts[1].x) * self.svg_scale, (y_offset - arc_proj_end_pts[1].y) * self.svg_scale))
+        r = radius * self.svg_scale
         # reflex = 1 if angle > math.pi else 0
         reflex = is_reflex
         if reflex:
@@ -745,7 +727,7 @@ class SvgWriter:
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
             d = " ".join(
                 [
-                    "L {} {}".format((x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    "L {} {}".format((x_offset + p.x) * self.svg_scale, (y_offset - p.y) * self.svg_scale)
                     for p in projected_points
                 ]
             )
@@ -753,15 +735,15 @@ class SvgWriter:
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
             p0 = Vector(
-                ((x_offset + projected_points[0].x) * self.scale, (y_offset - projected_points[0].y) * self.scale)
+                ((x_offset + projected_points[0].x) * self.svg_scale, (y_offset - projected_points[0].y) * self.svg_scale)
             )
             p1 = Vector(
-                ((x_offset + projected_points[1].x) * self.scale, (y_offset - projected_points[1].y) * self.scale)
+                ((x_offset + projected_points[1].x) * self.svg_scale, (y_offset - projected_points[1].y) * self.svg_scale)
             )
             text_offset = (p0 - p1).xy.normalized() * 5
             text_position = projected_points[0]
             text_position = Vector(
-                ((x_offset + text_position.x) * self.scale, (y_offset - text_position.y) * self.scale)
+                ((x_offset + text_position.x) * self.svg_scale, (y_offset - text_position.y) * self.svg_scale)
             )
             text_position += text_offset
 
@@ -833,15 +815,15 @@ class SvgWriter:
         perpendicular = Vector((vector.y, -vector.x)).normalized()
         dimension = (v1_global - v0_global).length
         dimension = helper.format_distance(dimension)
-        sheet_dimension = ((end * self.scale) - (start * self.scale)).length
+        sheet_dimension = ((end * self.svg_scale) - (start * self.svg_scale)).length
         if sheet_dimension < 5:  # annotation can't fit
             # offset text to right of marker
-            text_position = (end * self.scale) + perpendicular + (3 * vector.normalized())
+            text_position = (end * self.svg_scale) + perpendicular + (3 * vector.normalized())
         else:
-            text_position = (mid * self.scale) + perpendicular
+            text_position = (mid * self.svg_scale) + perpendicular
         rotation = math.degrees(vector.angle_signed(Vector((1, 0))))
         line = self.svg.add(
-            self.svg.line(start=tuple(start * self.scale), end=tuple(end * self.scale), class_=" ".join(classes))
+            self.svg.line(start=tuple(start * self.svg_scale), end=tuple(end * self.svg_scale), class_=" ".join(classes))
         )
         if text_override is not None:
             text = text_override
@@ -873,35 +855,8 @@ class SvgWriter:
     def get_spline_points(self, spline):
         return spline.bezier_points if spline.bezier_points else spline.points
 
-    def draw_cut_polygons(self):
-        return  # deprecate?
-        for polygon in self.ifc_cutter.cut_polygons:
-            self.draw_polygon(polygon, "cut")
-
-    def draw_polyline(self, element, position):
-        load_occ()
-        classes = self.get_classes(element["raw"], position)
-        exp = BRepTools.BRepTools_WireExplorer(element["geometry"])
-        points = []
-        while exp.More():
-            point = BRep.BRep_Tool.Pnt(exp.CurrentVertex())
-            points.append((point.X() * self.scale, -point.Y() * self.scale))
-            exp.Next()
-        self.svg.add(self.svg.polyline(points=points, class_=" ".join(classes)))
-
-    def draw_line(self, element, position):
-        load_occ()
-        classes = self.get_classes(element["raw"], position)
-        exp = TopExp.TopExp_Explorer(element["geometry"], TopAbs.TopAbs_VERTEX)
-        points = []
-        while exp.More():
-            point = BRep.BRep_Tool.Pnt(topods.Vertex(exp.Current()))
-            points.append((point.X() * self.scale, -point.Y() * self.scale))
-            exp.Next()
-        self.svg.add(self.svg.line(start=points[0], end=points[1], class_=" ".join(classes)))
-
     def draw_polygon(self, polygon, position):
-        points = [(p[0] * self.scale, p[1] * self.scale) for p in polygon["points"]]
+        points = [(p[0] * self.svg_scale, p[1] * self.svg_scale) for p in polygon["points"]]
         if "classes" in polygon["metadata"]:
             classes = " ".join(polygon["metadata"]["classes"])
         else:
