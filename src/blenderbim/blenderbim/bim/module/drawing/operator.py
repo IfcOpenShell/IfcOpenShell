@@ -124,6 +124,17 @@ class CreateDrawing(bpy.types.Operator):
         self.get_scale()
         if self.cprops.update_representation(self.camera):
             bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
+
+        self.svg_writer = svgwriter.SvgWriter()
+        self.svg_writer.human_scale = self.human_scale
+        self.svg_writer.scale = self.scale
+        self.svg_writer.data_dir = context.scene.BIMProperties.data_dir
+        drawing_style = context.scene.DocProperties.drawing_styles[self.cprops.active_drawing_style_index]
+        self.svg_writer.vector_style = drawing_style.vector_style
+        self.svg_writer.camera = self.camera
+        self.svg_writer.camera_width, self.svg_writer.camera_height = self.get_camera_dimensions()
+        self.svg_writer.camera_projection = tuple(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
+
         underlay_svg = self.generate_underlay(context)
         self.profile_code("Generate underlay")
         linework_svg = self.generate_linework(context)
@@ -136,6 +147,16 @@ class CreateDrawing(bpy.types.Operator):
         print("Total Time: {:.2f}".format(time.time() - start))
         return {"FINISHED"}
 
+    def get_camera_dimensions(self):
+        render = bpy.context.scene.render
+        if self.is_landscape(render):
+            width = self.camera.data.ortho_scale
+            height = width / render.resolution_x * render.resolution_y
+        else:
+            height = self.camera.data.ortho_scale
+            width = height / render.resolution_y * render.resolution_x
+        return width, height
+
     def profile_code(self, message):
         if not self.time:
             self.time = time.time()
@@ -146,22 +167,22 @@ class CreateDrawing(bpy.types.Operator):
         # Hacky :)
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "diagrams", self.drawing_name + ".svg")
         with open(svg_path, "w") as outfile:
-            has_boilerplate = False
+            boilerplate = self.svg_writer.create_blank_svg(svg_path).define_boilerplate().svg.tostring()
+            outfile.write(boilerplate.replace("</svg>", ""))
             if underlay:
                 with open(underlay) as infile:
-                    for line in infile:
-                        if "<svg " in line:
-                            line = line.replace('">', '" xmlns:ifc="http://www.ifcopenshell.org/ns">')
-                        if "</svg>" in line:
+                    for line in enumerate(infile):
+                        if i < 2:
+                            continue
+                        elif "</svg>" in line:
                             continue
                         outfile.write(line)
                 shutil.copyfile(underlay[0:-4] + ".png", svg_path[0:-4] + "-underlay.png")
-                has_boilerplate = True
             if linework:
                 with open(linework) as infile:
                     should_skip = False
                     for i, line in enumerate(infile):
-                        if has_boilerplate and i == 0:
+                        if i == 0:
                             continue
                         if "</svg>" in line:
                             continue
@@ -174,11 +195,10 @@ class CreateDrawing(bpy.types.Operator):
                         elif should_skip:
                             continue
                         outfile.write(line)
-                has_boilerplate = True
             if annotation:
                 with open(annotation) as infile:
                     for i, line in enumerate(infile):
-                        if has_boilerplate and i in [0, 1]:
+                        if i < 2:
                             continue
                         if "</svg>" in line:
                             continue
@@ -223,25 +243,7 @@ class CreateDrawing(bpy.types.Operator):
             for name, value in previous_visibility.items():
                 bpy.data.objects[name].hide_set(value)
 
-        svg_writer = svgwriter.SvgWriter()
-        render = context.scene.render
-        if self.is_landscape(render):
-            width = self.camera.data.ortho_scale
-            height = width / render.resolution_x * render.resolution_y
-        else:
-            height = self.camera.data.ortho_scale
-            width = height / render.resolution_y * render.resolution_x
-        svg_writer.human_scale = self.human_scale
-        svg_writer.scale = self.scale
-        svg_writer.output = svg_path
-        svg_writer.data_dir = context.scene.BIMProperties.data_dir
-        svg_writer.vector_style = drawing_style.vector_style
-        svg_writer.camera = self.camera
-        svg_writer.camera_width = width
-        svg_writer.camera_height = height
-        svg_writer.camera_projection = tuple(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
-        svg_writer.background_image = context.scene.render.filepath
-        svg_writer.write("underlay")
+        self.svg_writer.create_blank_svg(svg_path).draw_underlay(context.scene.render.filepath).save()
         return svg_path
 
     def generate_linework(self, context):
@@ -415,35 +417,13 @@ class CreateDrawing(bpy.types.Operator):
         if os.path.isfile(svg_path) and self.props.should_use_annotation_cache:
             return svg_path
 
-        camera = self.camera
-        svg_writer = svgwriter.SvgWriter()
-
-        drawing_style = context.scene.DocProperties.drawing_styles[self.cprops.active_drawing_style_index]
-
-        render = context.scene.render
-        if self.is_landscape(render):
-            width = camera.data.ortho_scale
-            height = width / render.resolution_x * render.resolution_y
-        else:
-            height = camera.data.ortho_scale
-            width = height / render.resolution_y * render.resolution_x
-
-        svg_writer.human_scale = self.human_scale
-        svg_writer.scale = self.scale
-        svg_writer.output = svg_path
-        svg_writer.data_dir = context.scene.BIMProperties.data_dir
-        svg_writer.vector_style = drawing_style.vector_style
-        svg_writer.camera = camera
-        svg_writer.camera_width = width
-        svg_writer.camera_height = height
-        svg_writer.camera_projection = tuple(camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
-
         elements = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(self.camera_element))
-        svg_writer.annotations = sorted(elements, key=lambda a: tool.Drawing.get_annotation_z_index(a))
-        svg_writer.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
+        annotations = sorted(elements, key=lambda a: tool.Drawing.get_annotation_z_index(a))
 
-        svg_writer.write("annotation")
-        return svg_writer.output
+        self.svg_writer.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
+        self.svg_writer.create_blank_svg(svg_path).draw_annotations(annotations).save()
+
+        return svg_path
 
     def get_scale(self):
         if self.camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
