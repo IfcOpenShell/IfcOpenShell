@@ -1,28 +1,12 @@
-.. _blenderbim/installation:
-
 Installation
 ============
 
 There are different methods of installation, depending on your situation.
 
-1. **Stable installation** is recommended for regular users.
-2. **Unstable installation** is recommended for power users helping with testing.
-3. **Building from source** is recommended for distributing a build from source.
-4. **Live development environment** is recommended for developers who are actively coding.
-5. **Distro installation** is recommended for those who use a Linux package manager.
-
-Stable installation
--------------------
-
-The BlenderBIM Add-on is packaged like a regular Blender add-on, so installation
-is the same as any other Blender add-on. The full instructions for end-user
-installation is available at the `Get BlenderBIM
-<https://blenderbim.org/download.html>`__ website. The latest release is
-typically updated every few weeks.
-
-Like all Blender add-ons, they can be installed using ``Edit > Preferences >
-Addons > Install > Choose Downloaded ZIP > Enable Add-on Checkbox``. You can
-enable add-ons permanently by using ``Save User Settings`` from the Addons menu.
+1. **Unstable installation** is recommended for power users helping with testing.
+2. **Building from source** is recommended for distributing a build from source.
+3. **Live development environment** is recommended for developers who are actively coding.
+4. **Distro installation** is recommended for those who use a Linux package manager.
 
 Unstable installation
 ---------------------
@@ -31,7 +15,7 @@ Unstable installation
 that they are typically updated every day. Simply download a daily build from
 the `Github releases page
 <https://github.com/IfcOpenShell/IfcOpenShell/releases>`__, then follow the same
-instructions as a packaged installation.
+instructions as the **Stable installation**.
 
 You will need to choose which build to download.
 
@@ -141,6 +125,7 @@ There is a useful Blender Addon that adds a Reboot button in File menù.
 In this way, it's possible to directly restart Blender and test the modified source code.
 The add on is available `here <https://blenderartists.org/uploads/short-url/yto1sjw7pqDRVNQzpVLmn51PEDN.zip>`__
 (check also the related forum discussion `here <https://blenderartists.org/t/reboot-blender-addon/640465/13>`__)
+There is also a VS Code called `Blender Development <https://marketplace.visualstudio.com/items?itemName=JacquesLucke.blender-development>`__ that has a similar functionality.
 
 
 Distro installation
@@ -225,65 +210,3 @@ Required static assets are:
 
     bim/data/gantt/jsgantt.js (from jsgantt-improved)
     bim/data/gantt/jsgantt.css (from jsgantt-improved)
-
-Where is the BlenderBIM Add-on installed?
------------------------------------------
-
-If you downloaded Blender as a ``.zip`` file without running an installer, you
-will find the BlenderBIM Add-on installed in the following directory, where
-``X.XX`` is the Blender version:
-::
-
-    /path/to/blender/X.XX/scripts/addons/
-
-Otherwise, if you installed Blender using an installation package, the add-ons
-folder depends on which operating system you use. On Linux:
-::
-
-    ~/.config/blender/X.XX/scripts/addons/
-
-On Mac:
-::
-
-    /Users/{YOUR_USER}/Library/Application Support/Blender/X.XX/
-
-On Windows:
-::
-
-    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\X.XX\scripts\addons
-
-Upon installation, the BlenderBIM Add-on is stored in the ``blenderbim/``
-directory.
-
-Updating
---------
-
-First uninstall the current BlenderBIM add-on, then install the latest version.
-
-Uninstalling
-------------
-
-Navigate to ``Edit > Preferences > Add-ons``. Due to a limitation in Blender,
-you have to first disable the BlenderBIM Add-on in your Blender preferences by
-pressing the checkbox next to the add-on, then restart Blender. After
-restarting, you can uninstall the BlenderBIM Add-on by pressing the ``Remove``
-button in the Blender preferences window.
-
-Alternatively, you may uninstall manually by deleting the ``blenderbim/``
-directory in your Blender add-ons directory.
-
-FAQ
----
-
-1. I get an error similar to "ImportError: IfcOpenShell not built for 'linux/64bit/python3.7'"
-
-Check which BlenderBIM Add-on build you are using. The zip will have either
-``py37``, ``py39``, or ``py310`` in the name. See the instructions in the
-**Unstable installation** section to check that you have installed the correct
-version.
-
-2. I am on Ubuntu and get an error similar to "ImportError: /lib/x86_64-linux-gnu/libm.so.6: version GLIBC_2.29 not found"
-
-Our latest package which uses IfcOpenShell v0.7.0 is built using Ubuntu 20 LTS.
-If you have an older Ubuntu version, you can either upgrade to 19.10 or above,
-or you'll need to compile IfcOpenShell yourself.

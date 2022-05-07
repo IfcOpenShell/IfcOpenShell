@@ -56,15 +56,16 @@ class Material(blenderbim.core.tool.Material):
     def import_material_definitions(cls, material_type):
         props = bpy.context.scene.BIMMaterialProperties
         props.materials.clear()
-        for material in tool.Ifc.get().by_type(material_type):
+        get_name = lambda x: x.Name or "Unnamed"
+        if material_type == "IfcMaterialLayerSet":
+            get_name = lambda x: x.LayerSetName or "Unnamed"
+        elif material_type == "IfcMaterialList":
+            get_name = lambda x: "Unnamed"
+        materials = sorted(tool.Ifc.get().by_type(material_type), key=get_name)
+        for material in materials:
             new = props.materials.add()
             new.ifc_definition_id = material.id()
-            if material.is_a("IfcMaterialLayerSet"):
-                new.name = material.LayerSetName or "Unnamed"
-            elif material.is_a("IfcMaterialList"):
-                new.name = "Unnamed"
-            else:
-                new.name = material.Name or "Unnamed"
+            new.name = get_name(material)
             new.total_elements = len(set(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)))
 
     @classmethod

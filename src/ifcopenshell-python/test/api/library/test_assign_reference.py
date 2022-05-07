@@ -38,7 +38,7 @@ class TestAssignReference(test.bootstrap.IFC4):
         assert reference.LibraryRefForObjects[0].RelatedObjects == (product,)
 
 
-class TestAssignReference(test.bootstrap.IFC2X3):
+class TestAssignReferenceIFC2X3(test.bootstrap.IFC2X3):
     def test_assigning_a_reference(self):
         reference = self.file.createIfcLibraryReference()
         product = self.file.createIfcWall()
