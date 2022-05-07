@@ -298,9 +298,57 @@ You can find **Quantities** in the **IFC Quantity Sets** subpanel.
 Viewing construction types
 --------------------------
 
-TODO
+Almost everything in the built environment will have a **Construction Type**.
+For example, an architect will specify a door type for every door in a project.
+
+You can see a list of **Construction Types** in the **Outliner** panel in the
+**Types** collection. For example, if the architect has a wall types schedule
+with the wall type names of ``WT01``, ``WT02``, and ``WT03``, you should see
+three **IfcWallType** objects with those same names in the **Outliner**.
+
+You can click on these types to see more details about them in the **Object
+Properties** panel.
+
+.. image:: outliner-types.png
+
+When selecting an object, you can also see its construction type in **Object
+Properties** under the **IFC Construction Type** subpanel. You can press the
+**Select Icon** to select all objects that are of the same **Construction
+Type**. You can use the hide and isolate hotkeys to quickly view them in the
+model.
+
+.. image:: properties-types.png
+
+A **Construction Type** defines properties that are common to all occurrences of
+that type. For example, if a wall type specifies a fire rating property, then
+all walls of that wall type will inherit that fire rating too.
+
+A **Construction Type** may also specify geometry or geometric rules that are
+common to all occurrences of the type. For example, a pump type will define the
+geometry of the pump, so all occurrences of that pump will have the same
+geometry.
+
+You can visually inspect types in isolation to the rest of the model. Types are
+hidden by default, so first enable the visibility of the **Types** collection in
+the **Outliner** by pressing the **Visibility Icon**. Then, select a type, and
+click on ``View > Local View > Toggle Local View`` (hotkey ``/``) in the
+**Viewport**. Toggle the view again to see the entire model again.
+
+.. image:: type-local-view.png
+
+.. note::
+
+   Only **Construction Types** where the geometry is exactly the same for all
+   occurrences will specify geometry. When the geometry varies based on the
+   occurrence (such as a wall, which varies based on the wall length), the
+   **Construction Type** will typically have no geometry.
 
 Viewing materials
 -----------------
+
+TODO
+
+Taking simple measurements
+--------------------------
 
 TODO
