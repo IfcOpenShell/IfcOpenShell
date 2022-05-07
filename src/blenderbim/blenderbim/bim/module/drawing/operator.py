@@ -129,8 +129,6 @@ class CreateDrawing(bpy.types.Operator):
         self.svg_writer.human_scale = self.human_scale
         self.svg_writer.scale = self.scale
         self.svg_writer.data_dir = context.scene.BIMProperties.data_dir
-        drawing_style = context.scene.DocProperties.drawing_styles[self.cprops.active_drawing_style_index]
-        self.svg_writer.vector_style = drawing_style.vector_style
         self.svg_writer.camera = self.camera
         self.svg_writer.camera_width, self.svg_writer.camera_height = self.get_camera_dimensions()
         self.svg_writer.camera_projection = tuple(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
@@ -167,7 +165,11 @@ class CreateDrawing(bpy.types.Operator):
         # Hacky :)
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "diagrams", self.drawing_name + ".svg")
         with open(svg_path, "w") as outfile:
-            boilerplate = self.svg_writer.create_blank_svg(svg_path).define_boilerplate().svg.tostring()
+            pset = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]
+            self.svg_writer.create_blank_svg(svg_path).define_boilerplate(
+                pset.get("Stylesheet"), pset.get("Markers"), pset.get("Symbols"), pset.get("Patterns")
+            )
+            boilerplate = self.svg_writer.svg.tostring()
             outfile.write(boilerplate.replace("</svg>", ""))
             if underlay:
                 with open(underlay) as infile:

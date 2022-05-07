@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import numpy as np
 import ifcopenshell.api
@@ -90,6 +91,10 @@ class Ifc(blenderbim.core.tool.Ifc):
     @classmethod
     def delete(cls, element):
         IfcStore.delete_element(element)
+
+    @classmethod
+    def resolve_uri(cls, uri):
+        return uri if not uri or os.path.isabs(uri) else os.path.join(os.path.dirname(cls.get_path()), uri)
 
     @classmethod
     def unlink(cls, element=None, obj=None):
