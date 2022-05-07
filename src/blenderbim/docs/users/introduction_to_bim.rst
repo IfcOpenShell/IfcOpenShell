@@ -15,7 +15,7 @@ described are:
 These objects may have lots of data and relationships. Examples of data might be
 classification systems, physical materials, associated documents, simulation
 results, and construction types. The data may be relevant to multiple
-disciplines, such a architecture, engineering, and construction.
+disciplines, such as architecture, engineering, and construction.
 
 .. note::
 
