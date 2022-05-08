@@ -534,11 +534,19 @@ test-core:
 
 .PHONY: test-bim
 test-bim:
+ifndef MODULE
 	pytest test/bim
+else
+	pytest test/bim -m "$(MODULE)" ./ --maxfail=1
+endif
 
 .PHONY: test-tool
 test-tool:
+ifndef MODULE
 	pytest test/tool
+else
+	pytest test/tool/test_$(MODULE).py
+endif
 
 .PHONY: qa
 qa:

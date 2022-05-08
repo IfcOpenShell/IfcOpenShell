@@ -11,7 +11,7 @@ smoke tests. These tests use ``pytest`` as the test framework and runner.
 All development is expected to use test driven development, and so we expect
 test coverage to be 100% where it is technically possible to test.
 
-When running tests, a Makefile target is provided for convenience so you can
+When running tests, Makefile targets are provided for convenience so you can
 type in a simple command without knowing the internals.
 
 Because the BlenderBIM Add-on depends on IfcOpenShell, it is advised to also run
@@ -57,13 +57,14 @@ of all concrete functions.
 .. code-block:: bash
 
     $ cd src/blenderbim/
-    $ make test-tool
+    $ make test-tool # Test everything
+    $ make test-tool MODULE=foo # Only test a single module
 
 BlenderBIM Add-on tests
 -----------------------
 
 The BIM layer acts as a full integration test. It is not possible to fully test
-the UI, as we cannot reliable emit interface signals, nor read the interface as
+the UI, as we cannot reliably emit interface signals, nor read the interface as
 a DOM of sorts. The best we can do is to call Blender operators as a smoke test,
 and also check simple property and scene changes. It has the same dependencies
 as the tool tests.
@@ -71,4 +72,5 @@ as the tool tests.
 .. code-block:: bash
 
     $ cd src/blenderbim/
-    $ make test-bim
+    $ make test-bim # Test everything
+    $ make test-bim MODULE=foo # Only test a single module
