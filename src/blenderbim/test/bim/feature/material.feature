@@ -118,3 +118,18 @@ Scenario: Select by material
     And the variable "material" is "{ifc}.by_type('IfcMaterial')[0].id()"
     When I press "bim.select_by_material(material={material})"
     Then nothing happens
+
+Scenario: Expand material category
+    Given an empty IFC project
+    And I press "bim.load_materials"
+    And I press "bim.add_material(obj='')"
+    When I press "bim.expand_material_category(category='')"
+    Then nothing happens
+
+Scenario: Contract material category
+    Given an empty IFC project
+    And I press "bim.load_materials"
+    And I press "bim.add_material(obj='')"
+    And I press "bim.expand_material_category(category='')"
+    When I press "bim.contract_material_category(category='')"
+    Then nothing happens

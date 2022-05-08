@@ -109,6 +109,8 @@ def get_material_types(self, context):
 class Material(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    is_category: BoolProperty(name="Is Category", default=False)
+    is_expanded: BoolProperty(name="Is Expanded", default=True)
     total_elements: IntProperty(name="Total Elements")
 
 

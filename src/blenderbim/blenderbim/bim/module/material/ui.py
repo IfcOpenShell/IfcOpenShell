@@ -61,16 +61,18 @@ class BIM_PT_materials(Panel):
             row.operator("bim.add_material", text="", icon="ADD")
             if self.props.materials and self.props.active_material_index < len(self.props.materials):
                 material = self.props.materials[self.props.active_material_index]
-                op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
-                op.material = material.ifc_definition_id
-                row.operator("bim.remove_material", text="", icon="X").material = material.ifc_definition_id
+                if material.ifc_definition_id:
+                    op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
+                    op.material = material.ifc_definition_id
+                    row.operator("bim.remove_material", text="", icon="X").material = material.ifc_definition_id
         else:
             row.operator("bim.add_material_set", text="", icon="ADD").set_type = self.props.material_type
             if self.props.materials and self.props.active_material_index < len(self.props.materials):
                 material = self.props.materials[self.props.active_material_index]
-                op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
-                op.material = material.ifc_definition_id
-                row.operator("bim.remove_material_set", text="", icon="X").material = material.ifc_definition_id
+                if material.ifc_definition_id:
+                    op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
+                    op.material = material.ifc_definition_id
+                    row.operator("bim.remove_material_set", text="", icon="X").material = material.ifc_definition_id
 
         self.layout.template_list("BIM_UL_materials", "", self.props, "materials", self.props, "active_material_index")
 
@@ -395,7 +397,21 @@ class BIM_UL_materials(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
-            row2 = row.row()
-            row2.alignment = "RIGHT"
-            row2.label(text=str(item.total_elements))
+
+            if item.is_category:
+                if item.is_expanded:
+                    row.operator(
+                        "bim.contract_material_category", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
+                    ).category = item.name
+                else:
+                    row.operator(
+                        "bim.expand_material_category", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
+                    ).category = item.name
+                row.label(text=item.name or "Uncategorised")
+            else:
+                row.label(text="", icon="BLANK1")
+                row.label(text=item.name, icon="MATERIAL")
+
+                row2 = row.row()
+                row2.alignment = "RIGHT"
+                row2.label(text=str(item.total_elements))
