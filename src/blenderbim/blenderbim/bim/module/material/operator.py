@@ -778,3 +778,31 @@ class CopyMaterial(bpy.types.Operator):
         if material.id() in object_material_ids:
             return
         obj.data.materials.append(IfcStore.get_element(material.id()))
+
+
+class ExpandMaterialCategory(bpy.types.Operator):
+    bl_idname = "bim.expand_material_category"
+    bl_label = "Expand Material Category"
+    bl_options = {"REGISTER", "UNDO"}
+    category: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMMaterialProperties
+        for category in [c for c in props.materials if c.is_category and c.name == self.category]:
+            category.is_expanded = True
+        core.load_materials(tool.Material, props.material_type)
+        return {"FINISHED"}
+
+
+class ContractMaterialCategory(bpy.types.Operator):
+    bl_idname = "bim.contract_material_category"
+    bl_label = "Contract Material Category"
+    bl_options = {"REGISTER", "UNDO"}
+    category: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMMaterialProperties
+        for category in [c for c in props.materials if c.is_category and c.name == self.category]:
+            category.is_expanded = False
+        core.load_materials(tool.Material, props.material_type)
+        return {"FINISHED"}
