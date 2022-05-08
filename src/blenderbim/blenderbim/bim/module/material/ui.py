@@ -141,6 +141,10 @@ class BIM_PT_object_material(Panel):
             row.operator("bim.add_material", icon="ADD", text="").obj = ""
             return
 
+        if ObjectMaterialData.data["type_material"]:
+            row = self.layout.row(align=True)
+            row.label(text="Inherited Material: " + ObjectMaterialData.data["type_material"], icon="FILE_PARENT")
+
         if self.product_data:
             if self.product_data["type"] == "IfcMaterialConstituentSet":
                 self.material_set_id = self.product_data["id"]

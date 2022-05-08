@@ -147,7 +147,7 @@ class BIM_PT_object_psets(Panel):
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Object")
 
         if ObjectPsetsData.data["inherited_psets"]:
-            self.layout.label(text="Inherited Psets:")
+            self.layout.label(text="Inherited Psets:", icon="FILE_PARENT")
             for pset in ObjectPsetsData.data["inherited_psets"]:
                 draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Object")
 
