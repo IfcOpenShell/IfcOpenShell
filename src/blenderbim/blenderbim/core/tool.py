@@ -443,6 +443,7 @@ class Style:
     def export_surface_attributes(cls, obj): pass
     def get_active_style_type(cls): pass
     def get_context(cls, obj): pass
+    def get_elements_by_style(cls, style): pass
     def get_name(cls, obj): pass
     def get_style(cls, obj): pass
     def get_surface_rendering_attributes(cls, obj): pass
@@ -454,6 +455,7 @@ class Style:
     def import_presentation_styles(cls, style_type): pass
     def import_surface_attributes(cls, style, obj): pass
     def is_editing_styles(cls): pass
+    def select_elements(cls, elements): pass
 
 
 @interface

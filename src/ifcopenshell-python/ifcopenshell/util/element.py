@@ -134,25 +134,65 @@ def get_material(element, should_skip_usage=False):
 
 
 def get_elements_by_material(ifc_file, material):
-    results = []
+    results = set()
     for inverse in ifc_file.get_inverse(material):
         if inverse.is_a("IfcRelAssociatesMaterial"):
-            results.extend(inverse.RelatedObjects)
+            results.update(inverse.RelatedObjects)
         elif inverse.is_a("IfcMaterialLayer"):
             for material_set in inverse.ToMaterialLayerSet:
-                results.extend(get_elements_by_material(ifc_file, material_set))
+                results.update(get_elements_by_material(ifc_file, material_set))
         elif inverse.is_a("IfcMaterialProfile"):
             for material_set in inverse.ToMaterialProfileSet:
-                results.extend(get_elements_by_material(ifc_file, material_set))
+                results.update(get_elements_by_material(ifc_file, material_set))
         elif inverse.is_a("IfcMaterialConstituent"):
             for material_set in inverse.ToMaterialConstituentSet:
-                results.extend(get_elements_by_material(ifc_file, material_set))
+                results.update(get_elements_by_material(ifc_file, material_set))
         elif inverse.is_a("IfcMaterialLayerSetUsage"):
-            results.extend(get_elements_by_material(ifc_file, inverse))
+            results.update(get_elements_by_material(ifc_file, inverse))
         elif inverse.is_a("IfcMaterialProfileSetUsage"):
-            results.extend(get_elements_by_material(ifc_file, inverse))
+            results.update(get_elements_by_material(ifc_file, inverse))
         elif inverse.is_a("IfcMaterialList"):
-            results.extend(get_elements_by_material(ifc_file, inverse))
+            results.update(get_elements_by_material(ifc_file, inverse))
+    return results
+
+
+def get_elements_by_style(ifc_file, style):
+    results = set()
+    inverses = list(ifc_file.get_inverse(style))
+    while inverses:
+        inverse = inverses.pop()
+        if inverse.is_a("IfcPresentationStyleAssignment"):
+            inverses.extend(ifc_file.get_inverse(inverse))
+            continue
+        if not inverse.is_a("IfcStyledItem"):
+            continue
+        if inverse.Item:
+            [
+                results.update(get_elements_by_representation(ifc_file, i))
+                for i in ifc_file.get_inverse(inverse.Item)
+                if i.is_a("IfcShapeRepresentation")
+            ]
+        else:
+            styled_reps = [i for i in ifc_file.get_inverse(inverse) if i.is_a("IfcStyledRepresentation")]
+            for styled_rep in styled_reps:
+                for material_def_rep in styled_rep.OfProductRepresentation:
+                    results.update(get_elements_by_material(ifc_file, material_def_rep.RepresentedMaterial))
+    return results
+
+
+def get_elements_by_representation(ifc_file, representation):
+    results = set()
+    [results.update(pr.ShapeOfProduct) for pr in representation.OfProductRepresentation]
+    for rep_map in representation.RepresentationMap:
+        for inverse in ifc_file.get_inverse(rep_map):
+            if inverse.is_a("IfcTypeProduct"):
+                results.add(inverse)
+            elif inverse.is_a("IfcMappedItem"):
+                [
+                    results.update(get_elements_by_representation(ifc_file, rep))
+                    for rep in ifc_file.get_inverse(inverse)
+                    if rep.is_a("IfcShapeRepresentation")
+                ]
     return results
 
 
