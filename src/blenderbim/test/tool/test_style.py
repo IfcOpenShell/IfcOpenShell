@@ -95,6 +95,20 @@ class TestGetContext(NewFile):
         assert subject.get_context("obj") == context
 
 
+class TestGetElementsByStyle(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        style = ifc.createIfcSurfaceStyle()
+        item = ifc.createIfcExtrudedAreaSolid()
+        ifc.createIfcStyledItem(Item=item, Styles=[style])
+        element.Representation = ifc.createIfcProductDefinitionShape(
+            Representations=[ifc.createIfcShapeRepresentation(Items=[item])]
+        )
+        assert subject.get_elements_by_style(style) == {element}
+
+
 class TestGetName(NewFile):
     def test_run(self):
         assert subject.get_name(bpy.data.materials.new("Material")) == "Material"
@@ -426,3 +440,15 @@ class TestIsEditingStyles(NewFile):
         subject.is_editing_styles() is False
         bpy.context.scene.BIMStylesProperties.is_editing = True
         subject.is_editing_styles() is True
+
+
+class TestSelectElements(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcPump")
+        obj = bpy.data.objects.new("Object", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(element, obj)
+        subject.select_elements([element])
+        assert obj in bpy.context.selected_objects

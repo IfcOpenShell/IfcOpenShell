@@ -92,8 +92,10 @@ class ObjectMaterialData:
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type != element:
             material = ifcopenshell.util.element.get_material(element_type)
+            if not material:
+                return
             if material.is_a() in ("IfcMaterialLayerSetUsage", "IfcMaterialLayerSet"):
                 name_attr = "LayerSetName"
             else:
                 name_attr = "Name"
-            return getattr(material, name_attr, "Unnamed")
+            return getattr(material, name_attr, "Unnamed") or "Unnamed"

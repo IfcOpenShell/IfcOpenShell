@@ -46,7 +46,7 @@ class Material(blenderbim.core.tool.Material):
 
     @classmethod
     def get_elements_by_material(cls, material):
-        return set(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+        return ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
 
     @classmethod
     def get_name(cls, obj):
@@ -75,13 +75,13 @@ class Material(blenderbim.core.tool.Material):
                     new = props.materials.add()
                     new.ifc_definition_id = material.id()
                     new.name = get_name(material)
-                    new.total_elements = len(set(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)))
-        else:
-            for material in materials:
-                new = props.materials.add()
-                new.ifc_definition_id = material.id()
-                new.name = get_name(material)
-                new.total_elements = len(set(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)))
+                    new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+            return
+        for material in materials:
+            new = props.materials.add()
+            new.ifc_definition_id = material.id()
+            new.name = get_name(material)
+            new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
 
     @classmethod
     def is_editing_materials(cls):

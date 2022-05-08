@@ -27,6 +27,7 @@ classes = (
     operator.EnableEditingStyle,
     operator.LoadStyles,
     operator.RemoveStyle,
+    operator.SelectByStyle,
     operator.UnlinkStyle,
     operator.UpdateStyleColours,
     operator.UpdateStyleTextures,
