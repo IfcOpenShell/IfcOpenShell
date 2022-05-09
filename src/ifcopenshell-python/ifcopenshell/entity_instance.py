@@ -88,7 +88,7 @@ for nm in ifcopenshell_wrapper.schema_names():
 
 
 class entity_instance(object):
-    """This is the base Python class for all IFC objects.
+    """Base class for all IFC objects.
 
     An instantiated entity_instance will have methods of Python and the IFC class itself.
 

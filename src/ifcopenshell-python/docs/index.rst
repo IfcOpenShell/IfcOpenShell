@@ -1,20 +1,20 @@
 Let's learn IfcOpenShell
 ========================
 
-IfcOpenShell is a 
+IfcOpenShell is a suite of developer libraries and utilities to manipulate OpenBIM data.
 
-A coloured icon: :octicon:`report;1em;sd-text-info`, some more text.
+.. note::
 
-:bdg:`plain badge`
+   This documentation is incomplete. Would you like to help write more? `Get in touch! <https://osarch.org/chat/>`__
 
 .. toctree::
+   :hidden:
    :maxdepth: 1
    :caption: Contents:
 
    ifcopenshell
    ifcopenshell-python
    ifcconvert
-   blenderbim
    bimtester
    ifcdiff
    ifcclash

@@ -29,7 +29,7 @@ The bottom right **Properties** panel shows data and relationships.
 
 The **Properties** panel has tabs to switch between different types of
 properties. Make sure you have the **Scene Properties** tab activated, and find
-the **IFC Project** subpanel. Click on the **Load Project** and browse to your
+the **IFC Project** subpanel. Click on **Load Project** and browse to your
 ``.ifc`` file.
 
 .. image:: properties-loadproject.png
@@ -210,7 +210,7 @@ Press the **Select Icon** to select all objects that are of the same
 **IfcSlab** **Class**. Then, you can isolate these elements by going to ``Object
 > Show/Hide > Hide Unselected`` (hotkey ``Shift-H``). To show all elements again, you can use
 ``Object > Show/Hide > Show Hidden Objects`` (hotkey ``Alt-H``). If you want to
-hide elements instead, you can use ``Object > Show/Hiden > Hide Selected``
+hide elements instead, you can use ``Object > Show/Hidden > Hide Selected``
 (hotkey ``H``).
 
 .. image:: element-class-select.png
@@ -295,8 +295,13 @@ You can find **Quantities** in the **IFC Quantity Sets** subpanel.
 
 .. image:: qtos.png
 
-Viewing construction types
---------------------------
+Finding the location of objects
+-------------------------------
+
+TODO
+
+Checking construction types
+---------------------------
 
 Almost everything in the built environment will have a **Construction Type**.
 For example, an architect will specify a door type for every door in a project.
@@ -332,7 +337,7 @@ You can visually inspect types in isolation to the rest of the model. Types are
 hidden by default, so first enable the visibility of the **Types** collection in
 the **Outliner** by pressing the **Visibility Icon**. Then, select a type, and
 click on ``View > Local View > Toggle Local View`` (hotkey ``/``) in the
-**Viewport**. Toggle the view again to see the entire model again.
+**Viewport**. Toggle the view to see the entire model again.
 
 .. image:: type-local-view.png
 
@@ -343,12 +348,25 @@ click on ``View > Local View > Toggle Local View`` (hotkey ``/``) in the
    occurrence (such as a wall, which varies based on the wall length), the
    **Construction Type** will typically have no geometry.
 
-Viewing materials
------------------
+Filtering by materials
+----------------------
+
+Everything in the built environment is made from a physical raw **Material**
+resources. For example, a **Material** might be a 140mm core filled block.
+Another **Material** might be a 190mm hollowcore block. **Materials** are
+grouped into categories like steel, concrete, brick, block, and so on.
+
+We can see a list of **Materials** used in the project in the **IFC Materials**
+subpanel in the **Scene Properties** tab.
 
 TODO
 
 Taking simple measurements
 --------------------------
+
+TODO
+
+What else is there?
+-------------------
 
 TODO

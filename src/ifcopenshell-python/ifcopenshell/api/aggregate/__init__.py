@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -16,34 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Geometry processing and analysis"""
+"""Aggregates are the concept of breaking down larger wholes into smaller parts.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-
-def _has_occ():
-    try:
-        import OCC.Core.BRepTools
-
-        return True
-    except ImportError:
-        pass
-
-    try:
-        import OCC.BRepTools
-
-        return True
-    except ImportError:
-        pass
-
-    return False
-
-
-has_occ = _has_occ()
-
-if has_occ:
-    from . import occ_utils as utils
-
-from .main import *
+One common use is spatial elements, such as how a site has multiple buildings,
+and a building has multiple storeys. Another is for regular elements, such as
+how a wall is made out of members and coverings.
+"""

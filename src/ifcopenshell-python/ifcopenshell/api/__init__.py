@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+"""High level user-oriented IFC authoring capabilities"""
+
 import json
 import numpy
 import importlib

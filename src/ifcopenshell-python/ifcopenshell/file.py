@@ -180,14 +180,12 @@ class file(object):
 
         ifc_file = ifcopenshell.open(file_path)
         products = ifc_file.by_type("IfcProduct")
-        print(products[0].id(), products[0].GlobalId)
-        >>> 122 2XQ$n5SLP5MBLyL442paFx
-        # Subscripting
-        print(products[0] == ifc_file[122] == ifc_file['2XQ$n5SLP5MBLyL442paFx'])
-        >>> True
+        print(products[0].id(), products[0].GlobalId) # 122 2XQ$n5SLP5MBLyL442paFx
+        print(products[0] == ifc_file[122] == ifc_file["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
 
     def __init__(self, f=None, schema=None):
+        """Create a new file object"""
         if f is not None:
             self.wrapped_data = f
         else:
@@ -247,12 +245,12 @@ class file(object):
         Example::
 
             f = ifcopenshell.file()
-            f.create_entity('IfcPerson')
-            >>> #1=IfcPerson($,$,$,$,$,$,$,$)
-            f.create_entity('IfcPerson', 'Foobar')
-            >>> #2=IfcPerson('Foobar',$,$,$,$,$,$,$)
-            f.create_entity('IfcPerson', Identification='Foobar')
-            >>> #3=IfcPerson('Foobar',$,$,$,$,$,$,$)
+            f.create_entity("IfcPerson")
+            # >>> #1=IfcPerson($,$,$,$,$,$,$,$)
+            f.create_entity("IfcPerson", "Foobar")
+            # >>> #2=IfcPerson('Foobar',$,$,$,$,$,$,$)
+            f.create_entity("IfcPerson", Identification="Foobar")
+            # >>> #3=IfcPerson('Foobar',$,$,$,$,$,$,$)
         """
         eid = kwargs.pop("id", -1)
 

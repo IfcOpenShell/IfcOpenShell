@@ -8,8 +8,8 @@ this document.
    :maxdepth: 1
    :caption: Contents:
 
-   ifcopenshell-python/quickstart
-   ifcopenshell-python/api-documentation
+   ifcopenshell-python/hello_world
+   ifcopenshell-python/developer_guide
 
 Indices and tables
 ------------------
