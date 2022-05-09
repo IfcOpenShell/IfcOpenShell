@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -16,34 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Geometry processing and analysis"""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-
-def _has_occ():
-    try:
-        import OCC.Core.BRepTools
-
-        return True
-    except ImportError:
-        pass
-
-    try:
-        import OCC.BRepTools
-
-        return True
-    except ImportError:
-        pass
-
-    return False
-
-
-has_occ = _has_occ()
-
-if has_occ:
-    from . import occ_utils as utils
-
-from .main import *
+"""Boundaries are primarily used for representing virtual interfaces between
+spaces for energy analysis.
+"""
