@@ -72,11 +72,54 @@ simple_type_python_mapping = {
 }
 
 
+def annotate_inst_attr_pos(inst, pos):
+    def get_pos():
+        depth=0
+        idx=-1
+        for c in str(inst):
+            if c == '(':
+                depth += 1
+                if depth == 1:
+                    idx = 0
+                    yield -1
+                else:
+                    yield idx
+            elif c == ')':
+                depth -= 1
+                if depth == 0:
+                    idx = -1
+                    yield -1
+                else:
+                    yield idx
+            elif depth == 1 and c == ',':
+                idx += 1
+                yield -1
+            else:
+                yield idx
+    return "".join(" ^"[i == pos] for i in get_pos())
+
+
+def format(val):
+    if isinstance(val, tuple) and val and isinstance(val[0], ifcopenshell.entity_instance):
+        return "[\n%s\n    ]" % "\n".join("      {}. {}".format(*x) for x in enumerate(val, start=1))
+    else:
+        return repr(val)
+
+
 def assert_valid_inverse(attr, val, schema):
     b1, b2 = attr.bound1(), attr.bound2()
     invalid = len(val) < b1 or (b2 != -1 and len(val) > b2)
     if invalid:
-        raise ValidationError("%r not valid for %s" % (val, attr))
+        
+        ent_ref = attr.entity_reference().name()
+        attr_ref = attr.attribute_reference().name()
+        aggr = attr.type_of_aggregation_string().upper()
+        b1 = attr.bound1()
+        b2 = attr.bound2()
+        
+        attr_formatted = f"{attr.name()} : {aggr} [{b1}:{b2}] OF {ent_ref} FOR {attr_ref}"
+        
+        raise ValidationError(f"With inverse:\n    {attr_formatted}\nValue:\n    {format(val)}\nNot valid\n")
     return True
 
 
@@ -125,7 +168,7 @@ def assert_valid(attr, val, schema):
         raise NotImplementedError("Not impl %s %s" % (type(attr_type), attr_type))
 
     if invalid:
-        raise ValidationError("%r not valid for %s" % (val, attr))
+        raise ValidationError(f"With attribute:\n    {attr}\nValue:\n    {val}\nNot valid\n")
 
     return True
 
@@ -166,7 +209,7 @@ def validate(f, logger):
             if hasattr(logger, "set_instance"):
                 logger.error(e)
             else:
-                logger.error("In %s\n%s", inst, e)
+                logger.error("For instance:\n    %s\n%s", inst, e)
 
         has_invalid_value = False
         for i in range(len(attrs)):
@@ -178,18 +221,27 @@ def validate(f, logger):
                     logger.error("Invalid attribute value for %s.%s", entity, attrs[i])
                 else:
                     logger.error(
-                        "In %s\nInvalid attribute value for %s.%s",
+                        "For instance:\n    %s\n    %s\nInvalid attribute value for %s.%s",
                         inst,
+                        annotate_inst_attr_pos(inst, i),
                         entity,
                         attrs[i],
                     )
                 has_invalid_value = True
 
         if not has_invalid_value:
-            for attr, val, is_derived in zip(attrs, inst, entity.derived()):
+            for i, (attr, val, is_derived) in enumerate(zip(attrs, inst, entity.derived())):
 
                 if val is None and not (is_derived or attr.optional()):
-                    logger.error("Attribute %s.%s not optional", entity, attr)
+                    if hasattr(logger, "set_instance"):
+                        logger.error("Attribute %s.%s not optional", entity, attr)
+                    else:
+                        logger.error(
+                            "For instance:\n    %s\n    %s\nWith attribute:\n    %s\nNot optional\n",
+                            inst,
+                            annotate_inst_attr_pos(inst, i),
+                            attr
+                        )
 
                 if val is not None:
                     attr_type = attr.type_of_attribute()
@@ -199,7 +251,10 @@ def validate(f, logger):
                         if hasattr(logger, "set_instance"):
                             logger.error(str(e))
                         else:
-                            logger.error("In %s\n%s", inst, e)
+                            logger.error("For instance:\n    %s\n    %s\n%s",
+                                inst,
+                                annotate_inst_attr_pos(inst, i),
+                                e)
 
         for attr in entity.all_inverse_attributes():
             val = getattr(inst, attr.name())
@@ -209,7 +264,7 @@ def validate(f, logger):
                 if hasattr(logger, "set_instance"):
                     logger.error(str(e))
                 else:
-                    logger.error("In %s\n%s", inst, e)
+                    logger.error("For instance:\n    %s\n%s", inst, e)
 
 
 if __name__ == "__main__":
