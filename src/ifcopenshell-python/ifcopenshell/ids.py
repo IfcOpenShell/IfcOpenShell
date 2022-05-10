@@ -177,7 +177,7 @@ class ids:
         for spec in self.specifications:
             self.ifc_applicable = 0
             self.ifc_passed = 0
-            for elem in ifc_file.by_type("IfcObject"):
+            for elem in ifc_file:
                 apply, comply = spec(elem, logger)
                 if apply:
                     self.ifc_applicable += 1
@@ -211,7 +211,7 @@ class specification:
     """Represents the XML <specification> node and its two children <applicability> and <requirements>"""
 
     def __init__(
-        self, name="Unnamed", use="required", ifcVersion="IFC2X3", identifier=None, description=None, instructions=None
+        self, name="Unnamed", use="required", ifcVersion=["IFC2X3", "IFC4"], identifier=None, description=None, instructions=None
     ):
         """Create a specification to be added in ids.
 

@@ -224,7 +224,7 @@ class TestIdsAuthoring(unittest.TestCase):
         assert spec.asdict() == {
             "@name": "Unnamed",
             "@use": "required",
-            "@ifcVersion": "IFC2X3",  # :(
+            "@ifcVersion": ["IFC2X3", "IFC4"],
             "applicability": {},
             "requirements": {},
         }
@@ -233,7 +233,7 @@ class TestIdsAuthoring(unittest.TestCase):
         spec = ids.specification(
             name="name",
             use="use",
-            ifcVersion="version",
+            ifcVersion="IFC4",
             identifier="identifier",
             description="description",
             instructions="instructions",
@@ -241,7 +241,7 @@ class TestIdsAuthoring(unittest.TestCase):
         assert spec.asdict() == {
             "@name": "name",
             "@use": "use",
-            "@ifcVersion": "version",
+            "@ifcVersion": "IFC4",
             "@identifier": "identifier",
             "@description": "description",
             "@instructions": "instructions",
