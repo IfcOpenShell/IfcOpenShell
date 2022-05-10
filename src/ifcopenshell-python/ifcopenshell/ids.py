@@ -556,7 +556,7 @@ class classification(facet):
     def create(location="any", value=None, system=None):
         """Create a classification facet that can be added to applicability or requirements of IDS specification.
 
-        :param location: Define where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
+        :param location: Where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
         :type location: str, optional
         :param value: Value that is required. Could be alphanumeric or restriction object, defaults to None
         :type value: restriction|alphanumeric, optional
@@ -741,7 +741,7 @@ class property(facet):
     def create(location="any", propertySet=None, name=None, value=None):
         """Create a property facet that can be added to applicability or requirements of IDS specification.
 
-        :param location: Define where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
+        :param location: Where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
         :type location: str, optional
         :param propertySet: Propertyset that is required. Could be alphanumeric or restriction object, defaults to None
         :type propertySet: restriction|alphanumeric, optional
@@ -857,7 +857,7 @@ class material(facet):
     def create(location="any", value=None):
         """Create a material facet that can be added to applicability or requirements of IDS specification.
 
-        :param location: Define where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
+        :param location: Where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
         :type location: str, optional
         :param value: Value that is required. Could be alphanumeric or restriction object, defaults to None
         :type value: restriction|alphanumeric, optional
@@ -1249,7 +1249,7 @@ class BcfHandler(logging.StreamHandler):
         bcf_handler = BcfHandler(
             project_name="Default IDS Project",
             author="your@email.com",
-            filepath=r".\example.bcf",
+            filepath="example.bcf",
         )
         logger = logging.getLogger("IDS_Logger")
         logging.basicConfig(level=logging.INFO, format="%(message)s")
