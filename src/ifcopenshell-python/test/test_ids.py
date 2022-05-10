@@ -279,6 +279,7 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(ifc.createIfcWall())) is True
         assert bool(facet(ifc.createIfcWall(PredefinedType="SOLIDWALL"))) is True
         assert bool(facet(ifc.createIfcSlab())) is False
+        assert bool(facet(ifc.createIfcWallStandardCase())) is False
 
         facet = ids.entity.create(name="IFCWALL")
         assert bool(facet(ifc.createIfcWall())) is True
