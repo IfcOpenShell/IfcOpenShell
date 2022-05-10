@@ -263,10 +263,33 @@ class TestIdsAuthoring(unittest.TestCase):
         i.specifications[0].add_requirement(m)
         self.assertEqual(i.specifications[0].requirements.terms[1].value, "Test_Value")
 
-    def test_entity_create(self):
-        e = ids.entity.create(name="Test_Name", predefinedType="Test_PredefinedType")
-        self.assertEqual(e.name, "Test_Name")
-        self.assertEqual(e.predefinedType, "Test_PredefinedType")
+    def test_create_an_entity_facet(self):
+        facet = ids.entity.create(name="IfcName")
+        assert facet.asdict() == {"name": {"simpleValue": "IfcName"}}
+        facet = ids.entity.create(name="IfcName", predefinedType="predefinedType")
+        assert facet.asdict() == {
+            "name": {"simpleValue": "IfcName"},
+            "predefinedType": {"simpleValue": "predefinedType"},
+        }
+
+    def test_filtering_using_an_entity_facet(self):
+        ifc = ifcopenshell.file()
+
+        facet = ids.entity.create(name="IfcWall")
+        assert bool(facet(ifc.createIfcWall())) is True
+        assert bool(facet(ifc.createIfcWall(PredefinedType="SOLIDWALL"))) is True
+        assert bool(facet(ifc.createIfcSlab())) is False
+
+        facet = ids.entity.create(name="IfcWall", predefinedType="SOLIDWALL")
+        assert bool(facet(ifc.createIfcWall())) is False
+        assert bool(facet(ifc.createIfcWall(PredefinedType="SOLIDWALL"))) is True
+        assert bool(facet(ifc.createIfcWall(PredefinedType="PARTITIONING"))) is False
+
+        facet = ids.entity.create(name="IfcWall", predefinedType="WALDO")
+        assert bool(facet(ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="WALDO"))) is True
+
+        facet = ids.entity.create(name="IfcWallType", predefinedType="WALDO")
+        assert bool(facet(ifc.createIfcWallType(PredefinedType="USERDEFINED", ElementType="WALDO"))) is True
 
     def test_attribute_create(self):
         attribute = ids.attribute.create(name="Name", value="Value")
