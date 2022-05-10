@@ -173,7 +173,6 @@ class ids:
             logging.basicConfig(level=logging.INFO, format="%(message)s")
             logger.setLevel(logging.INFO)
 
-
         # Consider other way around: for elem, for spec so we can see if an element pass all IDSes?
         for spec in self.specifications:
             self.ifc_applicable = 0
@@ -216,8 +215,8 @@ class specification:
     ):
         """Create a specification to be added in ids.
 
-        :param name:, defaults to "Specification"
-        :type name: str, optional
+        :param name: Name describing the specification to a contract reader
+        :type name: str
         :param use: 'required'|'optional', defaults to "required"
         :type use: str, optional
         """
@@ -287,17 +286,19 @@ class specification:
         return spec
 
     def add_applicability(self, facet):
-        """Applicability specifies what conditions must be meet for an IFC object to be used for validation. Note, that at least one entity facet is required.
+        """Applicability specifies a filter for IFC entities are to be validated.
 
-        :param facet: any of entity|classification|property|material
+        At least one filter must be added.
+
+        :param facet: any of entity|attribute|classification|property|material
         :type facet: facet
 
         Example::
 
-            i = ids.ids()
-            i.specifications.append(ids.specification(name="Test_Specification"))
-            e = ids.entity.create(name="Test_Name", predefinedType="Test_PredefinedType")
-            i.specifications[0].add_applicability(e)
+            specs = ids.ids()
+            spec = ids.specification(name="Test_Specification")
+            spec.add_applicability(ids.entity.create(name="IfcWall"))
+            specs.specifications.append(spec)
         """
         if self.applicability:
             self.applicability = boolean_and(self.applicability.terms + [facet])
@@ -305,9 +306,11 @@ class specification:
             self.applicability = boolean_and([facet])
 
     def add_requirement(self, facet):
-        """Requirement is validated on all applicable IFC elements. Note, that at least one facet of any type is required.
+        """A requirement specifies data to be checked for all applicable entities.
 
-        :param facet: any of entity|classification|property|material
+        At least one requirement must be added.
+
+        :param facet: any of entity|attribute|classification|property|material|partOf
         :type facet: facet
         """
         if self.requirements:
@@ -487,18 +490,17 @@ class entity(facet):
         :return: Xmlschema compliant dictionary.
         :rtype: dict
         """
-        fac_dict = {"name": parameter_asdict(self.name)}
-        if "predefinedType" in self:
-            if self.predefinedType:
-                fac_dict["predefinedType"] = parameter_asdict(self.predefinedType)
-        # try:
-        #     fac_dict["predefinedType"] = parameter_asdict(self.predefinedType)
-        # except (RecursionError, UnboundLocalError) as e:
-        #     print(e)
-        return fac_dict
+        results = {"name": parameter_asdict(self.name)}
+        if self.predefinedType:
+            results["predefinedType"] = parameter_asdict(self.predefinedType)
+        return results
 
-    def __call__(self, inst, logger):
-        """Validate an ifc instance against that entity facet.
+    def __call__(self, inst, logger=None):
+        """Validate an entity.
+
+        When a simple value is provided for the name, subclasses are also
+        treated as valid. PredefinedType checks support userdefined types for
+        both element and type elements.
 
         :param inst: IFC entity element
         :type inst: IFC entity
@@ -507,13 +509,12 @@ class entity(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
-
-        # @nb with inheritance
-        if self.predefinedType and hasattr(inst, "PredefinedType"):
+        if self.predefinedType:
+            predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
             self.message = "an entity name '%(name)s' of predefined type '%(predefinedType)s'"
             return facet_evaluation(
-                inst.is_a(self.name) and inst.PredefinedType == self.predefinedType,
-                self.message % {"name": inst.is_a(), "predefinedType": inst.PredefinedType},
+                inst.is_a(self.name) and predefined_type == self.predefinedType,
+                self.message % {"name": inst.is_a(), "predefinedType": predefined_type},
             )
         else:
             self.message = "an entity name '%(name)s'"
@@ -558,7 +559,7 @@ class attribute(facet):
             fac_dict["@location"] = self.location
         return fac_dict
 
-    def __call__(self, inst, logger):
+    def __call__(self, inst, logger=None):
         """Validate an ifc instance against that entity facet.
 
         :param inst: IFC entity element
