@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import pytest
 import logging
 import unittest
 import tempfile
-import requests
+import xmlschema
 from bcf import bcfxml
 import ifcopenshell
 from ifcopenshell import ids
@@ -163,8 +164,15 @@ class TestIdsAuthoring(unittest.TestCase):
         # TODO test this without resorting to hooking into logger output
 
     def test_create_an_ids_with_minimal_information(self):
-        specs = ids.ids(title="title")
-        assert specs.info == {"title": "title"}
+        specs = ids.ids()
+        assert specs.asdict() == {
+            "@xmlns": "http://standards.buildingsmart.org/IDS",
+            "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
+            "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_05.xsd",
+            "info": {"title": "Untitled"},
+            "specifications": [],
+        }
 
     def test_create_an_ids_with_all_possible_information(self):
         specs = ids.ids(
@@ -177,22 +185,83 @@ class TestIdsAuthoring(unittest.TestCase):
             purpose="purpose",
             milestone="milestone",
         )
-        assert specs.info["title"] == "title"
-        assert specs.info["copyright"] == "copyright"
-        assert specs.info["version"] == "version"
-        assert specs.info["description"] == "description"
-        assert specs.info["author"] == "author@test.com"
-        assert specs.info["date"] == "2020-01-01"
-        assert specs.info["purpose"] == "purpose"
-        assert specs.info["milestone"] == "milestone"
+        assert specs.asdict() == {
+            "@xmlns": "http://standards.buildingsmart.org/IDS",
+            "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
+            "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_05.xsd",
+            "info": {
+                "title": "title",
+                "copyright": "copyright",
+                "version": "version",
+                "description": "description",
+                "author": "author@test.com",
+                "date": "2020-01-01",
+                "purpose": "purpose",
+                "milestone": "milestone",
+            },
+            "specifications": [],
+        }
 
     def test_check_invalid_ids_information(self):
-        specs = ids.ids(title=None)
-        assert specs.info["title"] == "Unnamed"
-        specs = ids.ids(author="author")
-        assert not specs.info.get("author")
-        specs = ids.ids(date="9999-99-99")
-        assert not specs.info.get("date")
+        specs = ids.ids(title=None, author="author", date="9999-99-99")
+        assert specs.asdict() == {
+            "@xmlns": "http://standards.buildingsmart.org/IDS",
+            "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
+            "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_05.xsd",
+            "info": {"title": "Untitled"},
+            "specifications": [],
+        }
+
+    def test_authoring_an_ids_with_no_specifications_is_invalid(self):
+        specs = ids.ids()
+        with pytest.raises(xmlschema.validators.exceptions.XMLSchemaChildrenValidationError):
+            specs.to_string()
+
+    def test_create_specification_with_minimal_information(self):
+        spec = ids.specification()
+        assert spec.asdict() == {
+            "@name": "Unnamed",
+            "@use": "required",
+            "@ifcVersion": "IFC2X3",  # :(
+            "applicability": {},
+            "requirements": {},
+        }
+
+    def test_create_specification_with_all_possible_information(self):
+        spec = ids.specification(
+            name="name",
+            use="use",
+            ifcVersion="version",
+            identifier="identifier",
+            description="description",
+            instructions="instructions",
+        )
+        assert spec.asdict() == {
+            "@name": "name",
+            "@use": "use",
+            "@ifcVersion": "version",
+            "@identifier": "identifier",
+            "@description": "description",
+            "@instructions": "instructions",
+            "applicability": {},
+            "requirements": {},
+        }
+
+    def test_ids_add_content(self):
+        i = ids.ids(title="My IDS")
+        i.specifications.append(ids.specification(name="Test_Specification"))
+        self.assertEqual(i.specifications[0].name, "Test_Specification")
+        m = ids.material.create(location="any", value="Test_Value")
+        i.specifications[0].add_applicability(m)
+        self.assertEqual(i.specifications[0].applicability.terms[0].value, "Test_Value")
+        i.specifications[0].add_applicability(m)
+        self.assertEqual(i.specifications[0].applicability.terms[1].value, "Test_Value")
+        i.specifications[0].add_requirement(m)
+        self.assertEqual(i.specifications[0].requirements.terms[0].value, "Test_Value")
+        i.specifications[0].add_requirement(m)
+        self.assertEqual(i.specifications[0].requirements.terms[1].value, "Test_Value")
 
     def test_entity_create(self):
         e = ids.entity.create(name="Test_Name", predefinedType="Test_PredefinedType")
@@ -228,24 +297,6 @@ class TestIdsAuthoring(unittest.TestCase):
         m = ids.material.create(location="any", value="Test_Value")
         self.assertEqual(m.location, "any")
         self.assertEqual(m.value, "Test_Value")
-
-    def test_specification_create(self):
-        s = ids.specification(name="Test_Specification")
-        self.assertEqual(s.name, "Test_Specification")
-
-    def test_ids_add_content(self):
-        i = ids.ids(title="My IDS")
-        i.specifications.append(ids.specification(name="Test_Specification"))
-        self.assertEqual(i.specifications[0].name, "Test_Specification")
-        m = ids.material.create(location="any", value="Test_Value")
-        i.specifications[0].add_applicability(m)
-        self.assertEqual(i.specifications[0].applicability.terms[0].value, "Test_Value")
-        i.specifications[0].add_applicability(m)
-        self.assertEqual(i.specifications[0].applicability.terms[1].value, "Test_Value")
-        i.specifications[0].add_requirement(m)
-        self.assertEqual(i.specifications[0].requirements.terms[0].value, "Test_Value")
-        i.specifications[0].add_requirement(m)
-        self.assertEqual(i.specifications[0].requirements.terms[1].value, "Test_Value")
 
     """ Creating IDS with restrictions """
 

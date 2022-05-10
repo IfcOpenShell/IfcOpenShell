@@ -49,7 +49,7 @@ class ids:
 
     def __init__(
         self,
-        title="Title",
+        title="Untitled",
         copyright=None,
         version=None,
         description=None,
@@ -79,7 +79,7 @@ class ids:
         """
         self.specifications = []
         self.info = {}
-        self.info["title"] = title or "Unnamed"
+        self.info["title"] = title or "Untitled"
         if copyright:
             self.info["copyright"] = copyright
         if version:
@@ -113,7 +113,7 @@ class ids:
             "specifications": [],
         }
         for spec in self.specifications:
-            ids_dict["specifications"].append({"specification": spec.asdict()})  #TEST!
+            ids_dict["specifications"].append({"specification": spec.asdict()})  # TEST!
         return ids_dict
 
     def to_string(self, ids_schema=ids_schema):
@@ -211,7 +211,9 @@ class ids:
 class specification:
     """Represents the XML <specification> node and its two children <applicability> and <requirements>"""
 
-    def __init__(self, name="Specification", use="required", ifcVersion="IFC2X3"):
+    def __init__(
+        self, name="Unnamed", use="required", ifcVersion="IFC2X3", identifier=None, description=None, instructions=None
+    ):
         """Create a specification to be added in ids.
 
         :param name:, defaults to "Specification"
@@ -219,11 +221,14 @@ class specification:
         :param use: 'required'|'optional', defaults to "required"
         :type use: str, optional
         """
-        self.name = name
+        self.name = name or "Unnamed"
         self.applicability = None
         self.requirements = None
-        self.ifcVersion = ifcVersion
         self.use = use
+        self.ifcVersion = ifcVersion
+        self.identifier = identifier
+        self.description = description
+        self.instructions = instructions
 
     def asdict(self):
         """Converts object to a dictionary, adding required attributes.
@@ -232,21 +237,28 @@ class specification:
         :rtype: dict
         """
         # if older python collections.OrderedDict()
-        spec_dict = {
+        results = {
             "@name": self.name,
             "@use": self.use,
             "@ifcVersion": self.ifcVersion,
             "applicability": {},
             "requirements": {},
         }
-        for x in ["applicability", "requirements"]:
-            for fac in (getattr(self, x)).terms:
+        for attribute in ["identifier", "description", "instructions"]:
+            value = getattr(self, attribute)
+            if value:
+                results[f"@{attribute}"] = value
+        for clause_type in ["applicability", "requirements"]:
+            clause = getattr(self, clause_type)
+            if not clause:
+                continue
+            for fac in clause.terms:
                 fclass = type(fac).__name__
-                if fclass in spec_dict[x]:
-                    spec_dict[x][fclass].append(fac.asdict())
+                if fclass in results[clause_type]:
+                    results[clause_type][fclass].append(fac.asdict())
                 else:
-                    spec_dict[x][fclass] = [fac.asdict()]
-        return spec_dict
+                    results[clause_type][fclass] = [fac.asdict()]
+        return results
 
     @staticmethod
     def parse(ids_dict):
@@ -266,7 +278,7 @@ class specification:
         spec = specification()
         try:
             spec.name = ids_dict["@name"]
-        except KeyError: 
+        except KeyError:
             spec.name = ""
         spec.use = ids_dict["@use"]
         spec.ifcVersion = ids_dict["@ifcVersion"]
@@ -416,10 +428,10 @@ class facet(metaclass=meta_facet):
             self.location = "any"
 
     def __getattr__(self, attr):
-        
-        if attr in getattr(self, 'node', None):
+
+        if attr in getattr(self, "node", None):
             v = self.node[attr]
-            
+
             # BUG list of dictionaries should not happen
             if isinstance(v, list):
                 v = v[0]
@@ -671,11 +683,11 @@ class partOf(facet):
 
     parameters = ["entity"]
     message = "relation as part of %(entity)s"
-    #TODO temp default
+    # TODO temp default
     entity = "IfcElementAssembly"
 
     @staticmethod
-    #TODO should not assume IfcElementAssembly
+    # TODO should not assume IfcElementAssembly
     # def create(entity=None):
     def create(entity="IfcElementAssembly"):
         """Create a partOf facet that can be added to applicability or requirements of IDS specification.
@@ -713,33 +725,33 @@ class partOf(facet):
         :rtype: facet_evaluation(bool, str)
         """
 
-        #TODO handle partOf facet
+        # TODO handle partOf facet
 
-#         instance_classiciations = inst.HasAssociations
-#         if ifcopenshell.util.element.get_type(inst):
-#             type_classifications = ifcopenshell.util.element.get_type(inst).HasAssociations
-#         else:
-#             type_classifications = ()
+        #         instance_classiciations = inst.HasAssociations
+        #         if ifcopenshell.util.element.get_type(inst):
+        #             type_classifications = ifcopenshell.util.element.get_type(inst).HasAssociations
+        #         else:
+        #             type_classifications = ()
 
-#         if self.location == "instance" and instance_classiciations:
-#             associations = instance_classiciations
-#         elif self.location == "type" and type_classifications:
-#             associations = type_classifications
-#         elif self.location == "any" and (instance_classiciations or type_classifications):
-#             associations = instance_classiciations + type_classifications
-#         else:
-#             associations = ()
+        #         if self.location == "instance" and instance_classiciations:
+        #             associations = instance_classiciations
+        #         elif self.location == "type" and type_classifications:
+        #             associations = type_classifications
+        #         elif self.location == "any" and (instance_classiciations or type_classifications):
+        #             associations = instance_classiciations + type_classifications
+        #         else:
+        #             associations = ()
 
         refs = []
-#         for association in associations:
-#             if association.is_a("IfcRelAssociatesClassification"):
-#                 cref = association.RelatingClassification
-#                 if hasattr(cref, "ItemReference"):  # IFC2x3
-#                     refs.append((cref.ReferencedSource.Name, cref.ItemReference))
-#                 elif hasattr(cref, "Identification"):  # IFC4
-#                     refs.append((cref.ReferencedSource.Name, cref.Identification))
+        #         for association in associations:
+        #             if association.is_a("IfcRelAssociatesClassification"):
+        #                 cref = association.RelatingClassification
+        #                 if hasattr(cref, "ItemReference"):  # IFC2x3
+        #                     refs.append((cref.ReferencedSource.Name, cref.ItemReference))
+        #                 elif hasattr(cref, "Identification"):  # IFC4
+        #                     refs.append((cref.ReferencedSource.Name, cref.Identification))
 
-#         self.location_msg = location[self.location]
+        #         self.location_msg = location[self.location]
 
         if refs:
             pass
@@ -753,7 +765,7 @@ class partOf(facet):
             #     },  # what if not first item of refs?
             # )
         else:
-            return facet_evaluation(False, "is not a part of %s" % self.node['@entity'])
+            return facet_evaluation(False, "is not a part of %s" % self.node["@entity"])
 
 
 class property(facet):
@@ -818,7 +830,7 @@ class property(facet):
 
         # self.location = self.node["@location"]
 
-        #TODO add documentation that attributes should have "attribute" as propertySets
+        # TODO add documentation that attributes should have "attribute" as propertySets
         if self.propertySet == "attribute":
             val = {k.lower(): v for k, v in inst.get_info().items()}.get(self.name, None)
         else:
@@ -1035,17 +1047,17 @@ class restriction:
     @staticmethod
     def parse(ids_dict):
         """Parse xml restriction to python object.
-  
+
         :param ids_dict:
         :type ids_dict: dict
         """
         r = restriction()
         if ids_dict:
             # TODO 'base' missing in some IDS?!
-            
+
             try:
                 r.base = ids_dict["@base"][3:]
-            except KeyError: 
+            except KeyError:
                 r.base = "String"
 
             for n in ids_dict:
@@ -1168,7 +1180,7 @@ class restriction:
                         result = True
             elif self.type == "pattern":
                 if isinstance(self.options, list):
-                    #TODO handle case with multiple pattern options
+                    # TODO handle case with multiple pattern options
                     translated_pattern = identities.translate_pattern(self.options[0])
                 else:
                     translated_pattern = identities.translate_pattern(self.options)
