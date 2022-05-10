@@ -33,6 +33,7 @@ from bcf.v2 import data as bcf
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xmlschema.validators import identities
+from xml.etree import ElementTree as ET
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -117,50 +118,28 @@ class ids:
             ids_dict["specifications"].append({"specification": spec.asdict()})  #TEST!
         return ids_dict
 
-    def to_xml(self, filepath="./", ids_schema=ids_schema):
-        """Save IDS object as .xml file.
+    def to_string(self, ids_schema=ids_schema):
+        """Convert IDS object to XML string
 
-        :param filepath: Path for the new file, defaults to "./"
+        :param ids_schema: XML Schema for an IDS file, defaults to ids_schema object from buildingSMART
+        :type ids_schema: XMLschema, optional
+        :return: The contents of the XML data in string form
+        :rtype: string
+        """
+        ns = {"": "http://standards.buildingsmart.org/IDS"}
+        return etree_tostring(ids_schema.encode(self.asdict()), namespaces=ns)
+
+    def to_xml(self, filepath="output.xml", ids_schema=ids_schema):
+        """Writes IDS object to an XML file.
+
+        :param filepath: Path to the file, defaults to "output.xml"
         :type filepath: str, optional
         :param ids_schema: XML Schema for an IDS file, defaults to ids_schema object from buildingSMART
         :type ids_schema: XMLschema, optional
         :return: Result of the newly created file validation against the schema.
         :rtype: bool
         """
-
-        if filepath.endswith("/"):
-            filepath = filepath + "IDS"
-        if not filepath.endswith(".xml"):
-            filepath = filepath + ".xml"
-
-        ids_dict = self.asdict()
-
-        ids_xml = ids_schema.encode(
-            ids_dict,
-            namespaces={
-                "": "http://standards.buildingsmart.org/IDS",
-                "xs": "http://www.w3.org/2001/XMLSchema",
-                "xsi": "http://www.w3.org/2001/XMLSchema-instance",
-                "xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_05.xsd",
-            },
-        )  # validation='skip',
-
-        ids_str = etree_tostring(
-            ids_xml,
-            namespaces={
-                "": "http://standards.buildingsmart.org/IDS",
-                # 'xs': 'http://www.w3.org/2001/XMLSchema',
-                # 'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-                # 'xsi:schemaLocation': "http://standards.buildingsmart.org/IDS/ids_05.xsd"
-            },
-        )
-
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-            f.write("<!-- IDS (INFORMATION DELIVERY SPECIFICATION) CREATED USING IFCOPENSHELL -->\n")
-            f.write(ids_str)
-            f.close()
-
+        ET.ElementTree(ids_schema.encode(self.asdict())).write(filepath, encoding="utf-8", xml_declaration=True)
         return ids_schema.is_valid(filepath)
 
     @staticmethod

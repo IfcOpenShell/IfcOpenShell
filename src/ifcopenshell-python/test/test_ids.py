@@ -95,10 +95,17 @@ class TestIdsParsing(unittest.TestCase):
     def test_parsed_ids_to_xml(self):
         IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files", "IDS", "IDS_Wall_needs_all_fields.xml")
         ids_file = ids.ids.open(IDS_URL)
-        fn = "TEST_FILE.xml"
+        fn = "output.xml"
         result = ids_file.to_xml(fn)
+        assert os.path.isfile(fn)
         os.remove(fn)
         self.assertTrue(result)
+
+    def test_parsed_ids_to_string(self):
+        IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files", "IDS", "IDS_Wall_needs_all_fields.xml")
+        ids_file = ids.ids.open(IDS_URL)
+        output = ids_file.to_string()
+        assert output and "http://standards.buildingsmart.org/IDS" in output
 
     """ Parsing IDS files with restrictions """
 
