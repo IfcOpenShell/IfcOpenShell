@@ -584,7 +584,7 @@ class attribute(facet):
             self.message = "foo"
             return facet_evaluation(value == self.value, f"an entity with {self.name} set to '{value}'")
         else:
-            return facet_evaluation(value, f"an entity with {self.name}")
+            return facet_evaluation(value is not None and value != "", f"an entity with {self.name}")
 
 
 class classification(facet):
@@ -834,36 +834,32 @@ class property(facet):
 
         # self.location = self.node["@location"]
 
-        # TODO add documentation that attributes should have "attribute" as propertySets
-        if self.propertySet == "attribute":
-            val = {k.lower(): v for k, v in inst.get_info().items()}.get(self.name, None)
-        else:
+        # TODO sometimes AttributeError: 'str' object has no attribute 'wrappedValue'
+        try:
+            instance_props = ifcopenshell.util.element.get_psets(inst)
+        except AttributeError:
+            instance_props = {}
+
+        if ifcopenshell.util.element.get_type(inst):
             # TODO sometimes AttributeError: 'str' object has no attribute 'wrappedValue'
             try:
-                instance_props = ifcopenshell.util.element.get_psets(inst)
+                type_props = ifcopenshell.util.element.get_psets(ifcopenshell.util.element.get_type(inst))
             except AttributeError:
-                instance_props = {}
-
-            if ifcopenshell.util.element.get_type(inst):
-                # TODO sometimes AttributeError: 'str' object has no attribute 'wrappedValue'
-                try:
-                    type_props = ifcopenshell.util.element.get_psets(ifcopenshell.util.element.get_type(inst))
-                except AttributeError:
-                    type_props = {}
-            else:
                 type_props = {}
+        else:
+            type_props = {}
 
-            if self.location == "instance":
-                props = instance_props
-            elif self.location == "type" and type_props:
-                props = type_props
-            elif self.location == "any" and (instance_props or type_props):
-                props = {**instance_props, **type_props}
-            else:
-                props = {}
+        if self.location == "instance":
+            props = instance_props
+        elif self.location == "type" and type_props:
+            props = type_props
+        elif self.location == "any" and (instance_props or type_props):
+            props = {**instance_props, **type_props}
+        else:
+            props = {}
 
-            pset = props.get(self.propertySet)
-            val = pset.get(self.name) if pset else None
+        pset = props.get(self.propertySet)
+        val = pset.get(self.name) if pset else None
 
         self.location_msg = location[self.location]
         di = {"name": self.name, "propertySet": self.propertySet, "value": "'%s'" % val, "location": self.location_msg}

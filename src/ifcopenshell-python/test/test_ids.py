@@ -307,7 +307,7 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(ifc.createIfcWall())) is False
         assert bool(facet(ifc.createIfcWallType())) is True
 
-    def test_attribute_create(self):
+    def test_creating_an_attribute_facet(self):
         attribute = ids.attribute.create(name="Name", value="Value")
         assert attribute.name == "Name"
         assert attribute.value == "Value"
@@ -316,6 +316,34 @@ class TestIdsAuthoring(unittest.TestCase):
             "value": {"simpleValue": "Value"},
             "@location": "any",
         }
+
+    def test_filtering_using_an_attribute_facet(self):
+        ifc = ifcopenshell.file()
+
+        facet = ids.attribute.create(name="Foobar")
+        assert bool(facet(ifc.createIfcWall())) is False
+
+        facet = ids.attribute.create(name="Name")
+        assert bool(facet(ifc.createIfcWall())) is False
+        assert bool(facet(ifc.createIfcWall(Name=""))) is False
+        assert bool(facet(ifc.createIfcWall(Name="Foobar"))) is True
+
+        facet = ids.attribute.create(name="Name", value="Foobar")
+        assert bool(facet(ifc.createIfcWall(Name="Foobar"))) is True
+        assert bool(facet(ifc.createIfcWall(Name="Foobaz"))) is False
+
+        facet = ids.attribute.create(name="Eastings")
+        assert bool(facet(ifc.createIfcMapConversion(Eastings=0))) is True
+
+        facet = ids.attribute.create(name="Eastings", value=42)
+        assert bool(facet(ifc.createIfcMapConversion(Eastings=0))) is False
+        assert bool(facet(ifc.createIfcMapConversion(Eastings=42))) is True
+
+        restriction = ids.restriction.create(options=["Foo", "Bar"], type="enumeration", base="string")
+        facet = ids.attribute.create(name="Name", value=restriction)
+        assert bool(facet(ifc.createIfcWall(Name="Foo"))) is True
+        assert bool(facet(ifc.createIfcWall(Name="Bar"))) is True
+        assert bool(facet(ifc.createIfcWall(Name="Foobar"))) is False
 
     def test_classification_create(self):
         c = ids.classification.create(location="any", value="Test_Value", system="Test_System")
