@@ -20,7 +20,6 @@ import os
 import re
 import logging
 import operator
-import os
 import numpy as np
 import datetime
 
@@ -36,8 +35,9 @@ from xmlschema.validators import identities
 from xml.etree import ElementTree as ET
 
 
+# http://standards.buildingsmart.org/IDS/ids_05.xsd
 cwd = os.path.dirname(os.path.realpath(__file__))
-ids_schema = XMLSchema(os.path.join(cwd, "ids.xsd"))  # source: "http://standards.buildingsmart.org/IDS/ids_05.xsd"
+ids_schema = XMLSchema(os.path.join(cwd, "ids.xsd"))
 
 
 def error(msg):
@@ -49,7 +49,7 @@ class ids:
 
     def __init__(
         self,
-        title="Name",
+        title="Title",
         copyright=None,
         version=None,
         description=None,
@@ -79,22 +79,20 @@ class ids:
         """
         self.specifications = []
         self.info = {}
-        if title:
-            self.info["title"] = title
+        self.info["title"] = title or "Unnamed"
         if copyright:
             self.info["copyright"] = copyright
         if version:
             self.info["version"] = version
         if description:
             self.info["description"] = description
-        if author:
-            if "@" in author:
-                self.info["author"] = author
+        if author and "@" in author:
+            self.info["author"] = author
         if date:
-            if re.match(r"\d\d\d\d-\d\d-\d\d", date):
-                self.info["date"] = date  # date.fromisoformat(creation_date).isoformat()
-        if "date" not in self.info:
-            self.info["date"] = datetime.date.today().isoformat()
+            try:
+                self.info["date"] = datetime.date.fromisoformat(date).isoformat()
+            except ValueError:
+                pass
         if purpose:
             self.info["purpose"] = purpose
         if milestone:
@@ -175,19 +173,6 @@ class ids:
             logging.basicConfig(level=logging.INFO, format="%(message)s")
             logger.setLevel(logging.INFO)
 
-        # if "ifcversion" in self.info.keys():
-        #     if self.info["ifcversion"] in ["2.3.0.1", "4.0.2.1", "4.3.0.0"]:
-        #         if self.info["ifcversion"][0:3] == "2.3":
-        #             if not ifc_file.schema.startswith("IFC2x3"):
-        #                 logger.error("IFC file is of %s not of %s schema." % (ifc_file.schema, self.info["ifcversion"]))
-        #         elif self.info["ifcversion"][0:3] == "4.0":
-        #             if not ifc_file.schema == "IFC4":
-        #                 logger.error("IFC file is of %s not of %s schema." % (ifc_file.schema, self.info["ifcversion"]))
-        #         elif self.info["ifcversion"][0:3] == "4.3":
-        #             if not ifc_file.schema.startswith("IFC4x3"):
-        #                 logger.error("IFC file is of %s not of %s schema." % (ifc_file.schema, self.info["ifcversion"]))
-        #         else:
-        #             logger.error("IFC version not recognized")
 
         # Consider other way around: for elem, for spec so we can see if an element pass all IDSes?
         for spec in self.specifications:
@@ -1362,8 +1347,6 @@ class BcfHandler(logging.StreamHandler):
         viewpoint.components.visibility.default_visibility = True
         viewpoint.snapshot = None
         self.bcf.add_viewpoint(topic, viewpoint)
-        # except:
-        #     pass
 
     def flush(self):
         """Saves the BCF report to file. Triggered at the end of the validation process."""

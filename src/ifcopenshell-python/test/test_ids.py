@@ -149,9 +149,6 @@ class TestIdsParsing(unittest.TestCase):
 
 
 class TestIdsAuthoring(unittest.TestCase):
-
-    """Creating basic IDS"""
-
     def test_creating_a_minimal_ids_and_validating(self):
         specs = ids.ids(title="Title")
         spec = ids.specification(name="Name")
@@ -164,6 +161,38 @@ class TestIdsAuthoring(unittest.TestCase):
         model.createIfcWall(Name="Waldo")
         specs.validate(model)
         # TODO test this without resorting to hooking into logger output
+
+    def test_create_an_ids_with_minimal_information(self):
+        specs = ids.ids(title="title")
+        assert specs.info == {"title": "title"}
+
+    def test_create_an_ids_with_all_possible_information(self):
+        specs = ids.ids(
+            title="title",
+            copyright="copyright",
+            version="version",
+            description="description",
+            author="author@test.com",
+            date="2020-01-01",
+            purpose="purpose",
+            milestone="milestone",
+        )
+        assert specs.info["title"] == "title"
+        assert specs.info["copyright"] == "copyright"
+        assert specs.info["version"] == "version"
+        assert specs.info["description"] == "description"
+        assert specs.info["author"] == "author@test.com"
+        assert specs.info["date"] == "2020-01-01"
+        assert specs.info["purpose"] == "purpose"
+        assert specs.info["milestone"] == "milestone"
+
+    def test_check_invalid_ids_information(self):
+        specs = ids.ids(title=None)
+        assert specs.info["title"] == "Unnamed"
+        specs = ids.ids(author="author")
+        assert not specs.info.get("author")
+        specs = ids.ids(date="9999-99-99")
+        assert not specs.info.get("date")
 
     def test_entity_create(self):
         e = ids.entity.create(name="Test_Name", predefinedType="Test_PredefinedType")
@@ -306,21 +335,6 @@ class TestIdsAuthoring(unittest.TestCase):
         result = i.to_xml(fn)
         os.remove(fn)
         self.assertTrue(result)
-
-    """ IDS information """
-
-    def test_create_full_information(self):
-        i = ids.ids(
-            title="Test IDS",
-            description="test",
-            author="test@test.com",
-            copyright="test",
-            version=1.23,
-            date="2021-01-01",
-            purpose="test",
-            milestone="test",
-        )
-        self.assertEqual(i.info["version"], 1.23)
 
 
 class TestIfcValidation(unittest.TestCase):
