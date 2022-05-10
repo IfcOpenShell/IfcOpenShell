@@ -152,10 +152,33 @@ class TestIdsAuthoring(unittest.TestCase):
 
     """Creating basic IDS"""
 
+    def test_creating_a_minimal_ids_and_validating(self):
+        specs = ids.ids(title="Title")
+        spec = ids.specification(name="Name")
+        spec.add_applicability(ids.entity.create(name="IfcWall"))
+        spec.add_requirement(ids.attribute.create(name="Name", value="Waldo"))
+        specs.specifications.append(spec)
+        assert "http://standards.buildingsmart.org/IDS" in specs.to_string()
+
+        model = ifcopenshell.file()
+        model.createIfcWall(Name="Waldo")
+        specs.validate(model)
+        # TODO test this without resorting to hooking into logger output
+
     def test_entity_create(self):
         e = ids.entity.create(name="Test_Name", predefinedType="Test_PredefinedType")
         self.assertEqual(e.name, "Test_Name")
         self.assertEqual(e.predefinedType, "Test_PredefinedType")
+
+    def test_attribute_create(self):
+        attribute = ids.attribute.create(name="Name", value="Value")
+        assert attribute.name == "Name"
+        assert attribute.value == "Value"
+        assert attribute.asdict() == {
+            "name": {"simpleValue": "Name"},
+            "value": {"simpleValue": "Value"},
+            "@location": "any",
+        }
 
     def test_classification_create(self):
         c = ids.classification.create(location="any", value="Test_Value", system="Test_System")
