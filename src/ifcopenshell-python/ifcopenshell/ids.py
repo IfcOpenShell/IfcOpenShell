@@ -498,9 +498,8 @@ class entity(facet):
     def __call__(self, inst, logger=None):
         """Validate an entity.
 
-        When a simple value is provided for the name, subclasses are also
-        treated as valid. PredefinedType checks support userdefined types for
-        both element and type elements.
+        Subclasses are not considered to pass the requirements. PredefinedType
+        checks support userdefined types for both element and type elements.
 
         :param inst: IFC entity element
         :type inst: IFC entity
@@ -509,16 +508,20 @@ class entity(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
+        if isinstance(self.name, str):
+            is_class = inst.is_a().lower() == self.name.lower()
+        else:
+            is_class = inst.is_a() == self.name
         if self.predefinedType:
             predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
             self.message = "an entity name '%(name)s' of predefined type '%(predefinedType)s'"
             return facet_evaluation(
-                inst.is_a(self.name) and predefined_type == self.predefinedType,
+                is_class and predefined_type == self.predefinedType,
                 self.message % {"name": inst.is_a(), "predefinedType": predefined_type},
             )
         else:
             self.message = "an entity name '%(name)s'"
-            return facet_evaluation(inst.is_a(self.name), self.message % {"name": inst.is_a()})
+            return facet_evaluation(is_class, self.message % {"name": inst.is_a()})
 
 
 class attribute(facet):

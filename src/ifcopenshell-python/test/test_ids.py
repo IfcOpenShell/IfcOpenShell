@@ -280,6 +280,11 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(ifc.createIfcWall(PredefinedType="SOLIDWALL"))) is True
         assert bool(facet(ifc.createIfcSlab())) is False
 
+        facet = ids.entity.create(name="IFCWALL")
+        assert bool(facet(ifc.createIfcWall())) is True
+        assert bool(facet(ifc.createIfcWall(PredefinedType="SOLIDWALL"))) is True
+        assert bool(facet(ifc.createIfcSlab())) is False
+
         facet = ids.entity.create(name="IfcWall", predefinedType="SOLIDWALL")
         assert bool(facet(ifc.createIfcWall())) is False
         assert bool(facet(ifc.createIfcWall(PredefinedType="SOLIDWALL"))) is True
@@ -290,6 +295,17 @@ class TestIdsAuthoring(unittest.TestCase):
 
         facet = ids.entity.create(name="IfcWallType", predefinedType="WALDO")
         assert bool(facet(ifc.createIfcWallType(PredefinedType="USERDEFINED", ElementType="WALDO"))) is True
+
+        restriction = ids.restriction.create(options=["IfcWall", "IfcSlab"], type="enumeration", base="string")
+        facet = ids.entity.create(name=restriction)
+        assert bool(facet(ifc.createIfcWall())) is True
+        assert bool(facet(ifc.createIfcSlab())) is True
+        assert bool(facet(ifc.createIfcBeam())) is False
+
+        restriction = ids.restriction.create(options="Ifc.*Type", type="pattern", base="string")
+        facet = ids.entity.create(name=restriction)
+        assert bool(facet(ifc.createIfcWall())) is False
+        assert bool(facet(ifc.createIfcWallType())) is True
 
     def test_attribute_create(self):
         attribute = ids.attribute.create(name="Name", value="Value")
