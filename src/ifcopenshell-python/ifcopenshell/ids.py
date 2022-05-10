@@ -523,6 +523,69 @@ class entity(facet):
             return facet_evaluation(inst.is_a(self.name), self.message % {"name": inst.is_a()})
 
 
+class attribute(facet):
+    """The IDS attribute facet"""
+
+    parameters = ["name", "value", "location"]
+
+    @staticmethod
+    def create(name=None, value=None, location="any"):
+        """Create an attribute facet that can be added to applicability or requirements of IDS specification.
+
+        :param name: Attribute name, such as "Description"
+        :type name: str
+        :param value: Attribute value
+        :type value: str, optional
+        :param location: Where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
+        :type location: str, optional
+        :return: entity object
+        :rtype: entity
+        """
+
+        inst = attribute()
+        inst.name = name
+        inst.value = value
+        inst.location = location
+        return inst
+
+    def asdict(self):
+        """Converts object to a dictionary, adding required attributes.
+
+        :return: Xmlschema compliant dictionary.
+        :rtype: dict
+        """
+        fac_dict = {"name": parameter_asdict(self.name)}
+        if self.value:
+            fac_dict["value"] = parameter_asdict(self.value)
+        if self.location:
+            fac_dict["@location"] = self.location
+        return fac_dict
+
+    def __call__(self, inst, logger):
+        """Validate an ifc instance against that entity facet.
+
+        :param inst: IFC entity element
+        :type inst: IFC entity
+        :param logger: Logging object
+        :type logger: logging
+        :return: result of the validation as bool and message
+        :rtype: facet_evaluation(bool, str)
+        """
+        element_type = ifcopenshell.util.element.get_type(inst)
+        if self.location == "instance":
+            value = getattr(inst, self.name, None)
+        elif self.location == "type":
+            value = getattr(element_type, self.name, None) if element_type else None
+        elif self.location == "any":
+            value = getattr(element_type, self.name, None) if element_type else None
+            value = getattr(inst, self.name, value)
+        if self.value:
+            self.message = "foo"
+            return facet_evaluation(value == self.value, f"an entity with {self.name} set to '{value}'")
+        else:
+            return facet_evaluation(value, f"an entity with {self.name}")
+
+
 class classification(facet):
     """
     The IDS classification facet by traversing the HasAssociations inverse attribute
