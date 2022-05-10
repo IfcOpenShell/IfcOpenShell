@@ -37,6 +37,20 @@ class TestGetPsetsIFC4(test.bootstrap.IFC4):
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"x": "y"})
         assert subject.get_psets(type_element) == {"name": {"x": "y", "id": pset.id()}}
 
+    def test_getting_inherited_psets(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        type_element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=type_element)
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=type_element, name="name")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": 1, "x": 1})
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="name")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a": 2, "b": 3})
+        psets = subject.get_psets(element)
+        assert psets["name"]["id"] == pset.id()
+        assert psets["name"]["a"] == 2
+        assert psets["name"]["x"] == 1
+        assert psets["name"]["b"] == 3
+
     def test_getting_the_psets_of_a_material_as_a_dictionary(self):
         material = self.file.createIfcMaterial()
         assert subject.get_psets(material) == {}
