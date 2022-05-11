@@ -1,5 +1,5 @@
 # IDS - Information Delivery Specification.
-# Copyright (C) 2021 Artur Tomczak <artomczak@gmail.com>, Thomas Krijnen <mail@thomaskrijnen.com>
+# Copyright (C) 2021 Artur Tomczak <artomczak@gmail.com>, Thomas Krijnen <mail@thomaskrijnen.com>, Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -211,7 +211,13 @@ class specification:
     """Represents the XML <specification> node and its two children <applicability> and <requirements>"""
 
     def __init__(
-        self, name="Unnamed", use="required", ifcVersion=["IFC2X3", "IFC4"], identifier=None, description=None, instructions=None
+        self,
+        name="Unnamed",
+        use="required",
+        ifcVersion=["IFC2X3", "IFC4"],
+        identifier=None,
+        description=None,
+        instructions=None,
     ):
         """Create a specification to be added in ids.
 
@@ -509,19 +515,21 @@ class entity(facet):
         :rtype: facet_evaluation(bool, str)
         """
         if isinstance(self.name, str):
-            is_class = inst.is_a().lower() == self.name.lower()
+            is_pass = inst.is_a().lower() == self.name.lower()
         else:
-            is_class = inst.is_a() == self.name
-        if self.predefinedType:
+            is_pass = inst.is_a() == self.name
+        if is_pass and self.predefinedType:
             predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
+            is_pass = predefined_type == self.predefinedType
+
+        if self.predefinedType:
             self.message = "an entity name '%(name)s' of predefined type '%(predefinedType)s'"
             return facet_evaluation(
-                is_class and predefined_type == self.predefinedType,
-                self.message % {"name": inst.is_a(), "predefinedType": predefined_type},
+                is_pass, self.message % {"name": inst.is_a(), "predefinedType": predefined_type}
             )
         else:
             self.message = "an entity name '%(name)s'"
-            return facet_evaluation(is_class, self.message % {"name": inst.is_a()})
+            return facet_evaluation(is_pass, self.message % {"name": inst.is_a()})
 
 
 class attribute(facet):
@@ -573,7 +581,7 @@ class attribute(facet):
         return fac_dict
 
     def __call__(self, inst, logger=None):
-        """Validate an ifc instance against that entity facet.
+        """Validate an ifc instance.
 
         :param inst: IFC entity element
         :type inst: IFC entity
@@ -582,19 +590,40 @@ class attribute(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
-        element_type = ifcopenshell.util.element.get_type(inst)
+        def get_values(element, name):
+            if isinstance(name, str):
+                return [getattr(element, name, None)]
+            return [v for k, v in element.get_info().items() if k == name]
+
         if self.location == "instance":
-            value = getattr(inst, self.name, None)
+            values = get_values(inst, self.name)
         elif self.location == "type":
-            value = getattr(element_type, self.name, None) if element_type else None
+            element_type = ifcopenshell.util.element.get_type(inst)
+            values = get_values(element_type, self.name) if element_type else []
         elif self.location == "any":
-            value = getattr(element_type, self.name, None) if element_type else None
-            value = getattr(inst, self.name, value)
+            element_type = ifcopenshell.util.element.get_type(inst)
+
+            if isinstance(self.name, str):
+                type_value = getattr(element_type, self.name, None) if element_type else None
+                occurrence_value = getattr(inst, self.name, None)
+                values = [occurrence_value if occurrence_value is not None else type_value]
+            else:
+                if element_type:
+                    info = element_type.get_info()
+                    info.update({k: v for k, v in inst.get_info().items() if v is not None})
+                else:
+                    info = inst.get_info()
+                values = [v for k, v in info.items() if k == self.name]
+
+        is_pass = bool(values) and all([v is not None and v != "" for v in values])
+        if is_pass and self.value:
+            is_pass = all([v == self.value for v in values])
+
         if self.value:
             self.message = "foo"
-            return facet_evaluation(value == self.value, f"an entity with {self.name} set to '{value}'")
+            return facet_evaluation(is_pass, f"an entity with {self.name} set to something wrong")
         else:
-            return facet_evaluation(value is not None and value != "", f"an entity with {self.name}")
+            return facet_evaluation(is_pass, f"an entity with {self.name}")
 
 
 class classification(facet):

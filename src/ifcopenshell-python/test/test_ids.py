@@ -22,8 +22,9 @@ import logging
 import unittest
 import tempfile
 import xmlschema
-from bcf import bcfxml
 import ifcopenshell
+import ifcopenshell.api
+from bcf import bcfxml
 from ifcopenshell import ids
 
 
@@ -275,41 +276,76 @@ class TestIdsAuthoring(unittest.TestCase):
     def test_filtering_using_an_entity_facet(self):
         ifc = ifcopenshell.file()
 
+        # Wrong IFC classes are never matched.
+        facet = ids.entity.create(name="IfcRabbit")
+        assert bool(facet(ifc.createIfcWall())) is False
+
+        # IFC class is checked for an exact match. Subclasses should not match.
         facet = ids.entity.create(name="IfcWall")
         assert bool(facet(ifc.createIfcWall())) is True
         assert bool(facet(ifc.createIfcWall(PredefinedType="SOLIDWALL"))) is True
         assert bool(facet(ifc.createIfcSlab())) is False
         assert bool(facet(ifc.createIfcWallStandardCase())) is False
 
+        # IFC class is case insensitive.
         facet = ids.entity.create(name="IFCWALL")
         assert bool(facet(ifc.createIfcWall())) is True
         assert bool(facet(ifc.createIfcWall(PredefinedType="SOLIDWALL"))) is True
         assert bool(facet(ifc.createIfcSlab())) is False
 
+        # Predefined types are checked from standard enumeration values
         facet = ids.entity.create(name="IfcWall", predefinedType="SOLIDWALL")
         assert bool(facet(ifc.createIfcWall())) is False
         assert bool(facet(ifc.createIfcWall(PredefinedType="SOLIDWALL"))) is True
         assert bool(facet(ifc.createIfcWall(PredefinedType="PARTITIONING"))) is False
 
+        # Predefined types are checked from the object type field if not standard
         facet = ids.entity.create(name="IfcWall", predefinedType="WALDO")
         assert bool(facet(ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="WALDO"))) is True
 
+        # Predefined types are checked from the element type field if not standard for types
         facet = ids.entity.create(name="IfcWallType", predefinedType="WALDO")
         assert bool(facet(ifc.createIfcWallType(PredefinedType="USERDEFINED", ElementType="WALDO"))) is True
 
+        # Userdefined is not an allowed filter because userdefined implies a specified object or element type
         facet = ids.entity.create(name="IfcWall", predefinedType="USERDEFINED")
         assert bool(facet(ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="WALDO"))) is False
 
+        # Predefined types should match inherited predefined types from the element type
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType", predefined_type="X")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        facet = ids.entity.create(name="IfcWall", predefinedType="X")
+        assert bool(facet(wall)) is True
+
+        # Predefined types should match overridden predefined types from the element type
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="X")
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType", predefined_type="NOTDEFINED")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        facet = ids.entity.create(name="IfcWall", predefinedType="X")
+        assert bool(facet(wall)) is True
+
+        # Restrictions are allowed when matching the IFC class
         restriction = ids.restriction.create(options=["IfcWall", "IfcSlab"], type="enumeration", base="string")
         facet = ids.entity.create(name=restriction)
         assert bool(facet(ifc.createIfcWall())) is True
         assert bool(facet(ifc.createIfcSlab())) is True
         assert bool(facet(ifc.createIfcBeam())) is False
 
+        # Another example of how restrictions are allowed when matching the IFC class
         restriction = ids.restriction.create(options="Ifc.*Type", type="pattern", base="string")
         facet = ids.entity.create(name=restriction)
         assert bool(facet(ifc.createIfcWall())) is False
         assert bool(facet(ifc.createIfcWallType())) is True
+
+        # Restrictions are allowed when matching the predefined type
+        restriction = ids.restriction.create(options="FOO.*", type="pattern", base="string")
+        facet = ids.entity.create(name="IfcWall", predefinedType=restriction)
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAR")
+        wall2 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAZ")
+        assert bool(facet(wall)) is True
+        assert bool(facet(wall2)) is True
+
 
     def test_creating_an_attribute_facet(self):
         attribute = ids.attribute.create(name="name")
@@ -332,32 +368,90 @@ class TestIdsAuthoring(unittest.TestCase):
     def test_filtering_using_an_attribute_facet(self):
         ifc = ifcopenshell.file()
 
+        # Attribute names that don't exist are never matched
         facet = ids.attribute.create(name="Foobar")
         assert bool(facet(ifc.createIfcWall())) is False
 
+        # Attribute names that are either null or empty string are not matched.
+        # The logic is that unfortunately most BIM users cannot differentiate between the two.
         facet = ids.attribute.create(name="Name")
         assert bool(facet(ifc.createIfcWall())) is False
         assert bool(facet(ifc.createIfcWall(Name=""))) is False
         assert bool(facet(ifc.createIfcWall(Name="Foobar"))) is True
 
+        # When a value is specified, the value shall match case sensitively
         facet = ids.attribute.create(name="Name", value="Foobar")
         assert bool(facet(ifc.createIfcWall(Name="Foobar"))) is True
         assert bool(facet(ifc.createIfcWall(Name="Foobaz"))) is False
 
+        # A value that is 0 is still considered a value, not "null-like", so it is matched
         facet = ids.attribute.create(name="Eastings")
         assert bool(facet(ifc.createIfcMapConversion(Eastings=0))) is True
 
+        # Values are checked with strict typing. No type casting shall occur.
         facet = ids.attribute.create(name="Eastings", value=42)
         assert bool(facet(ifc.createIfcMapConversion(Eastings=0))) is False
         assert bool(facet(ifc.createIfcMapConversion(Eastings=42))) is True
+        facet = ids.attribute.create(name="Eastings", value="42")
+        assert bool(facet(ifc.createIfcMapConversion(Eastings=42))) is False
 
+        # Restrictions are allowed for the name
+        restriction = ids.restriction.create(options=".*Name.*", type="pattern", base="string")
+        facet = ids.attribute.create(name=restriction)
+        assert bool(facet(ifc.createIfcMaterialLayerSet(LayerSetName="Foo"))) is True
+        assert bool(facet(ifc.createIfcMaterialConstituentSet(Name="Foo"))) is True
+
+        # Restrictions for the name imply that multiple names may be matched. All, not any, must pass the checks.
+        restriction = ids.restriction.create(options=["Name", "Description"], type="enumeration", base="string")
+        facet = ids.attribute.create(name=restriction)
+        assert bool(facet(ifc.createIfcWall(Name="Foo"))) is False
+        assert bool(facet(ifc.createIfcWall(Name="Foo", Description="Bar"))) is True
+
+        # Restrictions are allowed for the value
         restriction = ids.restriction.create(options=["Foo", "Bar"], type="enumeration", base="string")
         facet = ids.attribute.create(name="Name", value=restriction)
         assert bool(facet(ifc.createIfcWall(Name="Foo"))) is True
         assert bool(facet(ifc.createIfcWall(Name="Bar"))) is True
         assert bool(facet(ifc.createIfcWall(Name="Foobar"))) is False
 
-    def test_classification_create(self):
+        # Location instance only checks on the instance, this seems like intuitive behaviour
+        facet = ids.attribute.create(name="Name", value="Foobar", location="instance")
+        assert bool(facet(ifc.createIfcWall(Name="Foobar"))) is True
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        wall_type.Name = "Foobar"
+        assert bool(facet(wall)) is False
+
+        # Location type only checks on the type. This seems a bit weird honestly.
+        facet = ids.attribute.create(name="Name", value="Foobar", location="type")
+        assert bool(facet(ifc.createIfcWall(Name="Foobar"))) is False
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        wall_type.Name = "Foobar"
+        assert bool(facet(wall)) is True
+
+        # Location any checks on attributes on the type, which may be inherited by the occurence
+        facet = ids.attribute.create(name="Description", value="Foobar", location="any")
+        assert bool(facet(ifc.createIfcWall(Description="Foobar"))) is True
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        wall_type.Description = "Foobar"
+        assert bool(facet(wall)) is True
+
+        # Location any checks on attributes on the type, which may be overriden by attributes on the occurence
+        facet = ids.attribute.create(name="Description", value="Foobar", location="any")
+        assert bool(facet(ifc.createIfcWall(Description="Foobar"))) is True
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        wall_type.Description = "Foobaz"
+        wall.Description = "Foobar"
+        assert bool(facet(wall)) is True
+
+    def test_creating_a_classification_facet(self):
         c = ids.classification.create(location="any", value="Test_Value", system="Test_System")
         self.assertEqual(c.location, "any")
         self.assertEqual(c.value, "Test_Value")
