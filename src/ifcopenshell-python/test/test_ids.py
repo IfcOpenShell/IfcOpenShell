@@ -636,8 +636,12 @@ class TestIdsAuthoring(unittest.TestCase):
         ifc.createIfcProject()
         # Milli prefix used to check measurement conversions
         lengthunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
-        areaunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="AREAUNIT", name="SQUARE_METRE", prefix="MILLI")
-        volumeunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="VOLUMEUNIT", name="CUBIC_METRE", prefix="MILLI")
+        areaunit = ifcopenshell.api.run(
+            "unit.add_si_unit", ifc, unit_type="AREAUNIT", name="SQUARE_METRE", prefix="MILLI"
+        )
+        volumeunit = ifcopenshell.api.run(
+            "unit.add_si_unit", ifc, unit_type="VOLUMEUNIT", name="CUBIC_METRE", prefix="MILLI"
+        )
         timeunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="TIMEUNIT", name="SECOND")
         ifcopenshell.api.run("unit.assign_unit", ifc, units=[lengthunit, areaunit, volumeunit, timeunit])
 
@@ -797,9 +801,17 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(wall_type)) is False
 
     def test_material_create(self):
-        m = ids.material.create(location="any", value="Test_Value")
-        self.assertEqual(m.location, "any")
-        self.assertEqual(m.value, "Test_Value")
+        facet = ids.material.create()
+        assert facet.asdict() == {"@location": "any"}
+        facet = ids.material.create(value="value", location="instance", uri="https://test.com", use="required", instructions="instructions")
+        assert facet.asdict() == {
+            "value": {"simpleValue": "value"},
+            "@location": "instance",
+            "@uri": "https://test.com",
+            "@use": "required",
+            "@instructions": "instructions",
+        }
+
 
     """ Creating IDS with restrictions """
 

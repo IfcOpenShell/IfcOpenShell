@@ -979,7 +979,7 @@ class material(facet):
     message = "%(location)smaterial '%(value)s'"
 
     @staticmethod
-    def create(location="any", value=None):
+    def create(value=None, location="any", uri=None, use=None, instructions=None):
         """Create a material facet that can be added to applicability or requirements of IDS specification.
 
         :param location: Where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
@@ -990,11 +990,11 @@ class material(facet):
         :rtype: material
         """
         inst = material()
-        inst.location = location
         inst.value = value
-        # TODO '@use': 'optional'
-        # TODO '@href': 'https://identifier.buildingsmart.org/uri/something',
-        # TODO 'instructions': 'Please add the desired...',
+        inst.location = location
+        inst.uri = uri
+        inst.use = use
+        inst.instructions = instructions
         return inst
 
     def asdict(self):
@@ -1003,14 +1003,16 @@ class material(facet):
         :return: Xmlschema compliant dictionary.
         :rtype: dict
         """
-        fac_dict = {
-            "value": parameter_asdict(self.value),
-            "@location": self.location,
-            # TODO "instructions": "SAMPLE_INSTRUCTIONS",
-            # TODO '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
-            # TODO '@use': 'optional'
-        }
-        return fac_dict
+        results = { "@location": self.location }
+        if self.value:
+            results["value"] = parameter_asdict(self.value)
+        if self.uri:
+            results["@uri"] = self.uri
+        if self.use:
+            results["@use"] = self.use
+        if self.instructions:
+            results["@instructions"] = self.instructions
+        return results
 
     def __call__(self, inst, logger):
         """Validate an ifc instance against that material facet.
