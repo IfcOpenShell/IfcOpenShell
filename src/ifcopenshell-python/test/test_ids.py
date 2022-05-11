@@ -621,6 +621,116 @@ class TestIdsAuthoring(unittest.TestCase):
             "@instructions": "instructions",
         }
 
+    def test_filtering_using_a_property_facet(self):
+        ifc = ifcopenshell.file()
+
+        # A name check by itself only checks that a property is non-null and non empty string
+        # The logic is that unfortunately most BIM users cannot differentiate between the two.
+        facet = ids.property.create(propertySet="Foo_Bar", name="Foo")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        assert bool(facet(element)) is False
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
+        assert bool(facet(element)) is False
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": None})
+        assert bool(facet(element)) is False
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
+        assert bool(facet(element)) is True
+
+        # A simple value checks an exact case-sensitive match
+        facet = ids.property.create(propertySet="Foo_Bar", name="Foo", value="Bar")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
+        assert bool(facet(element)) is True
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Baz"})
+        assert bool(facet(element)) is False
+
+        # Simple values only check string matches
+        facet = ids.property.create(propertySet="Foo_Bar", name="Foo", value="1")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "1"})
+        assert bool(facet(element)) is True
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcInteger(1)})
+        assert bool(facet(element)) is False
+
+        # Restrictions are supported for property sets. If multiple are matched, all must satisfy requirements.
+        restriction = ids.restriction.create(options="Foo_.*", type="pattern", base="string")
+        facet = ids.property.create(propertySet=restriction, name="Foo")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
+        assert bool(facet(element)) is True
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Baz")
+        assert bool(facet(element)) is False
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
+        assert bool(facet(element)) is True
+
+        # Restrictions are supported for names. If multiple are matched, all must satisfy requirements.
+        restriction = ids.restriction.create(options="Foo.*", type="pattern", base="string")
+        facet = ids.property.create(propertySet="Foo_Bar", name=restriction, value="x")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x"})
+        assert bool(facet(element)) is True
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "x"})
+        assert bool(facet(element)) is True
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "y"})
+        assert bool(facet(element)) is False
+
+        # Restrictions are supported for values. If multiple are matched, all must satisfy requirements.
+        restriction1 = ids.restriction.create(options="Foo.*", type="pattern", base="string")
+        restriction2 = ids.restriction.create(options=["x", "y"], type="enumeration", base="string")
+        facet = ids.property.create(propertySet="Foo_Bar", name=restriction1, value=restriction2)
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "y"})
+        assert bool(facet(element)) is True
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "z"})
+        assert bool(facet(element)) is False
+
+        # Location instance only checks on the instance, even if the instance is a type. Yes, weird, I know.
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall_type, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
+        facet = ids.property.create(propertySet="Foo_Bar", name="Foo", location="instance")
+        assert bool(facet(wall)) is False
+        assert bool(facet(wall_type)) is True
+
+        # Location type only checks the type
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall_type, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
+        facet = ids.property.create(propertySet="Foo_Bar", name="Foo", location="type")
+        assert bool(facet(wall)) is True
+        assert bool(facet(wall_type)) is True
+
+        # Location any checks inherited properties from the type
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall_type, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
+        facet = ids.property.create(propertySet="Foo_Bar", name="Foo", location="any")
+        assert bool(facet(wall)) is True
+        assert bool(facet(wall_type)) is True
+
+        # Location any checks overriden properties from the occurrence
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall_type, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Baz"})
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
+        facet = ids.property.create(propertySet="Foo_Bar", name="Foo", value="Bar", location="any")
+        assert bool(facet(wall)) is True
+        assert bool(facet(wall_type)) is False
+
     def test_material_create(self):
         m = ids.material.create(location="any", value="Test_Value")
         self.assertEqual(m.location, "any")

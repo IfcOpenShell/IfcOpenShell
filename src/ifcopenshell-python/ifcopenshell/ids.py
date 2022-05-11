@@ -873,7 +873,7 @@ class property(facet):
         # TODO '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
         return results
 
-    def __call__(self, inst, logger):
+    def __call__(self, inst, logger=None):
         """Validate an ifc instance against that property facet.
 
         :param inst: IFC entity element
@@ -883,46 +883,41 @@ class property(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
-
-        # self.location = self.node["@location"]
-
-        # TODO sometimes AttributeError: 'str' object has no attribute 'wrappedValue'
-        try:
-            instance_props = ifcopenshell.util.element.get_psets(inst)
-        except AttributeError:
-            instance_props = {}
-
-        if ifcopenshell.util.element.get_type(inst):
-            # TODO sometimes AttributeError: 'str' object has no attribute 'wrappedValue'
-            try:
-                type_props = ifcopenshell.util.element.get_psets(ifcopenshell.util.element.get_type(inst))
-            except AttributeError:
-                type_props = {}
-        else:
-            type_props = {}
-
         if self.location == "instance":
-            props = instance_props
-        elif self.location == "type" and type_props:
-            props = type_props
-        elif self.location == "any" and (instance_props or type_props):
-            props = {**instance_props, **type_props}
+            all_psets = ifcopenshell.util.element.get_psets(inst, should_inherit=False)
+        elif self.location == "type":
+            element_type = ifcopenshell.util.element.get_type(inst)
+            all_psets = ifcopenshell.util.element.get_psets(element_type, should_inherit=False)
+        elif self.location == "any":
+            all_psets = ifcopenshell.util.element.get_psets(inst)
+
+        if isinstance(self.propertySet, str):
+            pset = all_psets.get(self.propertySet, None)
+            psets = {self.propertySet: pset} if pset else {}
         else:
+            psets = {k: v for k, v in all_psets.items() if k == self.propertySet}
+
+        is_pass = bool(psets)
+
+        if is_pass:
             props = {}
+            for pset_name, pset_props in psets.items():
+                props[pset_name] = {}
+                if isinstance(self.name, str):
+                    prop = pset_props.get(self.name)
+                    if prop:
+                        props[pset_name][self.name] = prop
+                else:
+                    props[pset_name] = {k: v for k, v in pset_props.items() if k == self.name}
 
-        pset = props.get(self.propertySet)
-        val = pset.get(self.name) if pset else None
+                if not bool(props[pset_name]):
+                    is_pass = False
+                    break
 
-        self.location_msg = location[self.location]
-        di = {"name": self.name, "propertySet": self.propertySet, "value": "'%s'" % val, "location": self.location_msg}
-
-        if val is not None:
-            msg = self.message % di
-        else:
-            if pset:
-                msg = "does not have %(location)sproperty '%(name)s' in a set '%(propertySet)s'" % di
-            else:
-                msg = "does not have %(location)sset '%(propertySet)s'" % di
+                if self.value:
+                    if any([v != self.value for v in props[pset_name].values()]):
+                        is_pass = False
+                        break
 
         # TODO implement data type comparison
         # xs:string
@@ -935,7 +930,7 @@ class property(facet):
         # xs:dateTime 	YYYY-MM-DDThh:mm:ss
         # xs:duration	PnYnMnDTnHnMnS
 
-        return facet_evaluation(val == self.value, msg)
+        return facet_evaluation(is_pass, "todo")
 
 
 class material(facet):
