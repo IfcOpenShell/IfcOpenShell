@@ -602,14 +602,24 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(wall)) is True
         assert bool(facet(wall_type)) is True
 
-    def test_property_create(self):
-        p = ids.property.create(
-            location="any", propertySet="Test_PropertySet", name="Test_Parameter", value="Test_Value"
-        )
-        self.assertEqual(p.location, "any")
-        self.assertEqual(p.propertySet, "Test_PropertySet")
-        self.assertEqual(p.name, "Test_Parameter")
-        self.assertEqual(p.value, "Test_Value")
+    def test_creating_a_property_facet(self):
+        facet = ids.property.create()
+        assert facet.asdict() == {
+            "propertySet": {"simpleValue": "Property_Set"},
+            "name": {"simpleValue": "PropertyName"},
+            "@location": "any",
+        }
+        facet = ids.property.create(propertySet="propertySet", name="name", value="value", location="instance", measure="String", uri="https://test.com", use="required", instructions="instructions")
+        assert facet.asdict() == {
+            "propertySet": {"simpleValue": "propertySet"},
+            "name": {"simpleValue": "name"},
+            "value": {"simpleValue": "value"},
+            "@location": "instance",
+            "@measure": "String",
+            "@uri": "https://test.com",
+            "@use": "required",
+            "@instructions": "instructions",
+        }
 
     def test_material_create(self):
         m = ids.material.create(location="any", value="Test_Value")
