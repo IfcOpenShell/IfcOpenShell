@@ -23,6 +23,7 @@ import operator
 import numpy as np
 import datetime
 
+import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.classification
@@ -824,7 +825,16 @@ class property(facet):
     message = "%(location)sproperty '%(name)s' in '%(propertySet)s' with a value %(value)s"
 
     @staticmethod
-    def create(propertySet="Property_Set", name="PropertyName", value=None, location="any", measure=None, uri=None, use=None, instructions=None):
+    def create(
+        propertySet="Property_Set",
+        name="PropertyName",
+        value=None,
+        location="any",
+        measure=None,
+        uri=None,
+        use=None,
+        instructions=None,
+    ):
         """Create a property facet that can be added to applicability or requirements of IDS specification.
 
         :param location: Where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
@@ -912,6 +922,35 @@ class property(facet):
 
                 if not bool(props[pset_name]):
                     is_pass = False
+                    break
+
+                if self.measure:
+                    pset_entity = inst.wrapped_data.file.by_id(pset_props["id"])
+                    for prop_entity in pset_entity.HasProperties:
+                        if (
+                            prop_entity.Name not in props[pset_name].keys()
+                            or not prop_entity.is_a("IfcPropertySingleValue")
+                            or prop_entity.NominalValue is None
+                        ):
+                            continue
+
+                        data_type = prop_entity.NominalValue.is_a().replace("Ifc", "").replace("Measure", "")
+
+                        if data_type != self.measure:
+                            is_pass = False
+                            break
+
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+
+                        props[pset_name][prop_entity.Name] = ifcopenshell.util.unit.convert(
+                            prop_entity.NominalValue.wrappedValue,
+                            getattr(unit, "Prefix", None),
+                            unit.Name,
+                            None,
+                            ifcopenshell.util.unit.si_type_names[unit.UnitType],
+                        )
+
+                if not is_pass:
                     break
 
                 if self.value:
