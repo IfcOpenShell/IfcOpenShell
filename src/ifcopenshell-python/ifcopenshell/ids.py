@@ -25,6 +25,7 @@ import datetime
 
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import ifcopenshell.util.classification
 
 from bcf.v2.bcfxml import BcfXml
 from bcf.v2 import data as bcf
@@ -524,9 +525,7 @@ class entity(facet):
 
         if self.predefinedType:
             self.message = "an entity name '%(name)s' of predefined type '%(predefinedType)s'"
-            return facet_evaluation(
-                is_pass, self.message % {"name": inst.is_a(), "predefinedType": predefined_type}
-            )
+            return facet_evaluation(is_pass, self.message % {"name": inst.is_a(), "predefinedType": predefined_type})
         else:
             self.message = "an entity name '%(name)s'"
             return facet_evaluation(is_pass, self.message % {"name": inst.is_a()})
@@ -590,6 +589,7 @@ class attribute(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
+
         def get_values(element, name):
             if isinstance(name, str):
                 return [getattr(element, name, None)]
@@ -675,7 +675,7 @@ class classification(facet):
             results["@instructions"] = self.instructions
         return results
 
-    def __call__(self, inst, logger):
+    def __call__(self, inst, logger=None):
         """Validate an ifc instance against that classification facet.
 
         :param inst: IFC entity element
@@ -685,42 +685,39 @@ class classification(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
+        if self.location == "instance":
+            leaf_references = ifcopenshell.util.classification.get_references(inst, should_inherit=False)
+        elif self.location == "type":
+            element_type = ifcopenshell.util.element.get_type(inst)
+            leaf_references = ifcopenshell.util.classification.get_references(element_type) if element_type else set()
+        elif self.location == "any":
+            leaf_references = ifcopenshell.util.classification.get_references(inst)
 
-        instance_classiciations = inst.HasAssociations
-        if ifcopenshell.util.element.get_type(inst):
-            type_classifications = ifcopenshell.util.element.get_type(inst).HasAssociations
-        else:
-            type_classifications = ()
+        references = leaf_references.copy()
+        for leaf_reference in leaf_references:
+            references.update(ifcopenshell.util.classification.get_inherited_references(leaf_reference))
 
-        if self.location == "instance" and instance_classiciations:
-            associations = instance_classiciations
-        elif self.location == "type" and type_classifications:
-            associations = type_classifications
-        elif self.location == "any" and (instance_classiciations or type_classifications):
-            associations = instance_classiciations + type_classifications
-        else:
-            associations = ()
-
-        refs = []
-        for association in associations:
-            if association.is_a("IfcRelAssociatesClassification"):
-                cref = association.RelatingClassification
-                if hasattr(cref, "ItemReference"):  # IFC2x3
-                    refs.append((cref.ReferencedSource.Name, cref.ItemReference))
-                elif hasattr(cref, "Identification"):  # IFC4
-                    refs.append((cref.ReferencedSource.Name, cref.Identification))
+        is_pass = bool(references)
+        if is_pass and self.value:
+            is_pass = any(
+                [self.value == getattr(r, "Identification", getattr(r, "ItemReference", None)) for r in references]
+            )
+        if is_pass and self.system:
+            is_pass = any(
+                [self.system == ifcopenshell.util.classification.get_classification(r).Name for r in references]
+            )
 
         self.location_msg = location[self.location]
 
-        if refs:
+        if references:
             return facet_evaluation(
-                (self.system, self.value) in refs,
+                is_pass,
                 self.message
                 % {
-                    "system": refs[0][0],
-                    "value": "'" + refs[0][1] + "'",
+                    "system": list(references)[0][0],
+                    "value": list(references)[0][1],
                     "location": self.location_msg,
-                },  # what if not first item of refs?
+                },  # TODO Fix this 0 index reference assumption when I refactor out the messages
             )
         else:
             return facet_evaluation(False, "does not have %sclassification reference" % self.location_msg)
