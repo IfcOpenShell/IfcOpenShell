@@ -232,7 +232,7 @@ class TestIdsAuthoring(unittest.TestCase):
     def test_create_specification_with_all_possible_information(self):
         spec = ids.specification(
             name="name",
-            use="use",
+            use="required",
             ifcVersion="IFC4",
             identifier="identifier",
             description="description",
@@ -240,7 +240,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
         assert spec.asdict() == {
             "@name": "name",
-            "@use": "use",
+            "@use": "required",
             "@ifcVersion": "IFC4",
             "@identifier": "identifier",
             "@description": "description",
@@ -297,6 +297,9 @@ class TestIdsAuthoring(unittest.TestCase):
         facet = ids.entity.create(name="IfcWallType", predefinedType="WALDO")
         assert bool(facet(ifc.createIfcWallType(PredefinedType="USERDEFINED", ElementType="WALDO"))) is True
 
+        facet = ids.entity.create(name="IfcWall", predefinedType="USERDEFINED")
+        assert bool(facet(ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="WALDO"))) is False
+
         restriction = ids.restriction.create(options=["IfcWall", "IfcSlab"], type="enumeration", base="string")
         facet = ids.entity.create(name=restriction)
         assert bool(facet(ifc.createIfcWall())) is True
@@ -309,13 +312,21 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(ifc.createIfcWallType())) is True
 
     def test_creating_an_attribute_facet(self):
-        attribute = ids.attribute.create(name="Name", value="Value")
-        assert attribute.name == "Name"
-        assert attribute.value == "Value"
+        attribute = ids.attribute.create(name="name")
+        assert attribute.asdict() == {"name": {"simpleValue": "name"}, "@location": "any"}
+        attribute = ids.attribute.create(name="name", value="value")
         assert attribute.asdict() == {
-            "name": {"simpleValue": "Name"},
-            "value": {"simpleValue": "Value"},
+            "name": {"simpleValue": "name"},
+            "value": {"simpleValue": "value"},
             "@location": "any",
+        }
+        attribute = ids.attribute.create(name="name", value="value", use="required", instructions="instructions")
+        assert attribute.asdict() == {
+            "name": {"simpleValue": "name"},
+            "value": {"simpleValue": "value"},
+            "@location": "any",
+            "@use": "required",
+            "@instructions": "instructions",
         }
 
     def test_filtering_using_an_attribute_facet(self):
