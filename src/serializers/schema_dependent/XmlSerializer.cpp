@@ -675,11 +675,9 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 		ptree nrelatedElement;
 		ptree nrelatingElement;
 
-		nrelatedElement.put("<xmlattr>.id",    connection->RelatedElement()->GlobalId());
-		nrelatedElement.put("<xmlattr>.type",  connection->RelatedElement()->declaration().name());
-		nrelatingElement.put("<xmlattr>.id",   connection->RelatingElement()->GlobalId());
-		nrelatingElement.put("<xmlattr>.type", connection->RelatingElement()->declaration().name());
-
+		format_entity_instance(connection->RelatedElement(), nrelatedElement, true);
+		format_entity_instance(connection->RelatingElement(), nrelatingElement, true);
+		
 		nconnection->add_child("RelatedElement",  nrelatedElement);
 		nconnection->add_child("RelatingElement", nrelatingElement);
 	}
