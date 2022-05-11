@@ -633,6 +633,13 @@ class TestIdsAuthoring(unittest.TestCase):
 
     def test_filtering_using_a_property_facet(self):
         ifc = ifcopenshell.file()
+        ifc.createIfcProject()
+        # Milli prefix used to check measurement conversions
+        lengthunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
+        areaunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="AREAUNIT", name="SQUARE_METRE", prefix="MILLI")
+        volumeunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="VOLUMEUNIT", name="CUBIC_METRE", prefix="MILLI")
+        timeunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="TIMEUNIT", name="SECOND")
+        ifcopenshell.api.run("unit.assign_unit", ifc, units=[lengthunit, areaunit, volumeunit, timeunit])
 
         # A name check by itself only checks that a property is non-null and non empty string
         # The logic is that unfortunately most BIM users cannot differentiate between the two.
@@ -718,6 +725,34 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(element)) is True
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": False})
         assert bool(facet(element)) is False
+
+        # When measure is not specified, no unit conversion is done and only primitives are checked
+        restriction = ids.restriction.create(options=[42.12], type="enumeration", base="decimal")
+        facet = ids.property.create(propertySet="Foo_Bar", name="Foobar", value=restriction)
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": 42.12})
+        assert bool(facet(element)) is True
+
+        # Measure may be used to specify an IFC data type
+        restriction = ids.restriction.create(options=[2], type="enumeration", base="decimal")
+        facet = ids.property.create(propertySet="Foo_Bar", name="Foo", value=restriction, measure="Time")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcMassMeasure(2)})
+        assert bool(facet(element)) is False
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcTimeMeasure(2)})
+        assert bool(facet(element)) is True
+
+        # Measure also implies that a unit matters, and so a conversion shall take place to SI units
+        restriction = ids.restriction.create(options=[2], type="enumeration", base="decimal")
+        facet = ids.property.create(propertySet="Foo_Bar", name="Foo", value=restriction, measure="Length")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcLengthMeasure(2)})
+        assert bool(facet(element)) is False
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcLengthMeasure(2000)})
+        assert bool(facet(element)) is True
 
         # Location instance only checks on the instance, even if the instance is a type. Yes, weird, I know.
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
