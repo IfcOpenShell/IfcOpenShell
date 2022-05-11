@@ -480,6 +480,128 @@ class TestIdsAuthoring(unittest.TestCase):
             "@instructions": "instructions",
         }
 
+    def test_filtering_using_a_classification_facet(self):
+        library = ifcopenshell.file()
+        system = library.createIfcClassification(Name="Foobar")
+        ref1 = library.createIfcClassificationReference(Identification="1", ReferencedSource=system)
+        ref11 = library.createIfcClassificationReference(Identification="11", ReferencedSource=ref1)
+        ref2 = library.createIfcClassificationReference(Identification="2", ReferencedSource=system)
+        ref22 = library.createIfcClassificationReference(Identification="22", ReferencedSource=ref2)
+
+        ifc = ifcopenshell.file()
+        project = ifc.createIfcProject()
+        ifcopenshell.api.run("classification.add_classification", ifc, classification=system)
+        element0 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element1 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "classification.add_reference", ifc, product=element1, reference=ref1, classification=system
+        )
+        element11 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "classification.add_reference", ifc, product=element11, reference=ref11, classification=system
+        )
+        element22 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "classification.add_reference",
+            ifc,
+            product=element22,
+            reference=ref22,
+            classification=system,
+            is_lightweight=False,
+        )
+
+        # A classification facet with no data matches any present classification
+        facet = ids.classification.create()
+        assert bool(facet(element0)) is False
+        assert bool(facet(element1)) is True
+
+        # Values should match exactly if lightweight classifications are used.
+        facet = ids.classification.create(value="1")
+        assert bool(facet(element1)) is True
+
+        # Values should match subreferences if full classifications are used.
+        # E.g. a facet searching for Uniclass EF_25_10 Walls will match Uniclass EF_25_10_25, EF_25_10_30, etc
+        facet = ids.classification.create(value="2")
+        assert bool(facet(element22)) is True
+
+        # Systems should match exactly regardless of lightweight or full classifications
+        facet = ids.classification.create(system="Foobar")
+        assert bool(facet(project)) is True
+        assert bool(facet(element0)) is False
+        assert bool(facet(element1)) is True
+        assert bool(facet(element11)) is True
+        assert bool(facet(element22)) is True
+
+        # Restrictions can be used for values
+        restriction = ids.restriction.create(options="1.*", type="pattern", base="string")
+        facet = ids.classification.create(value=restriction)
+        assert bool(facet(element1)) is True
+        assert bool(facet(element11)) is True
+        assert bool(facet(element22)) is False
+
+        # Restrictions can be used for systems
+        restriction = ids.restriction.create(options="Foo.*", type="pattern", base="string")
+        facet = ids.classification.create(system=restriction)
+        assert bool(facet(element0)) is False
+        assert bool(facet(element1)) is True
+
+        # Specifying both a value and a system means that both (as opposed to either) requirements must be met
+        facet = ids.classification.create(system="Foobar", value="1")
+        assert bool(facet(element1)) is True
+        assert bool(facet(element11)) is False
+
+        # Location instance only checks on the instance (even if it's a type), this seems strange though
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        ifcopenshell.api.run(
+            "classification.add_reference", ifc, product=wall_type, reference=ref1, classification=system
+        )
+        facet = ids.classification.create(value="1", location="instance")
+        assert bool(facet(wall_type)) is True
+        assert bool(facet(wall)) is False
+        ifcopenshell.api.run(
+            "classification.add_reference", ifc, product=wall, reference=ref1, classification=system
+        )
+        assert bool(facet(wall)) is True
+
+        # Location type only checks on the type
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        ifcopenshell.api.run(
+            "classification.add_reference", ifc, product=wall, reference=ref1, classification=system
+        )
+        facet = ids.classification.create(value="1", location="type")
+        assert bool(facet(wall)) is False
+        assert bool(facet(wall_type)) is False
+        ifcopenshell.api.run(
+            "classification.add_reference", ifc, product=wall_type, reference=ref1, classification=system
+        )
+        assert bool(facet(wall)) is True
+        assert bool(facet(wall_type)) is True
+
+        # Location any checks on either the type or instance.
+        # IFC doesn't specify how inheritance and overrides work here. Two options:
+        # Option 1) Occurrences replace inherited type references
+        # Option 2) Occurrences union with inherited type references
+        # Option 2 is followed here.
+        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        ifcopenshell.api.run(
+            "classification.add_reference", ifc, product=wall, reference=ref11, classification=system
+        )
+        ifcopenshell.api.run(
+            "classification.add_reference", ifc, product=wall_type, reference=ref22, classification=system
+        )
+        facet = ids.classification.create(value="11", location="any")
+        assert bool(facet(wall)) is True
+        assert bool(facet(wall_type)) is False
+        facet = ids.classification.create(value="22", location="any")
+        assert bool(facet(wall)) is True
+        assert bool(facet(wall_type)) is True
+
     def test_property_create(self):
         p = ids.property.create(
             location="any", propertySet="Test_PropertySet", name="Test_Parameter", value="Test_Value"
