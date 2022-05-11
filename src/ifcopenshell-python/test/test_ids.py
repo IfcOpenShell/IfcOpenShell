@@ -328,20 +328,20 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(wall)) is True
 
         # Restrictions are allowed when matching the IFC class
-        restriction = ids.restriction.create(options=["IfcWall", "IfcSlab"], type="enumeration", base="string")
+        restriction = ids.restriction.create(options=["IfcWall", "IfcSlab"], type="enumeration")
         facet = ids.entity.create(name=restriction)
         assert bool(facet(ifc.createIfcWall())) is True
         assert bool(facet(ifc.createIfcSlab())) is True
         assert bool(facet(ifc.createIfcBeam())) is False
 
         # Another example of how restrictions are allowed when matching the IFC class
-        restriction = ids.restriction.create(options="Ifc.*Type", type="pattern", base="string")
+        restriction = ids.restriction.create(options="Ifc.*Type", type="pattern")
         facet = ids.entity.create(name=restriction)
         assert bool(facet(ifc.createIfcWall())) is False
         assert bool(facet(ifc.createIfcWallType())) is True
 
         # Restrictions are allowed when matching the predefined type
-        restriction = ids.restriction.create(options="FOO.*", type="pattern", base="string")
+        restriction = ids.restriction.create(options="FOO.*", type="pattern")
         facet = ids.entity.create(name="IfcWall", predefinedType=restriction)
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAR")
         wall2 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAZ")
@@ -391,27 +391,34 @@ class TestIdsAuthoring(unittest.TestCase):
         facet = ids.attribute.create(name="Eastings")
         assert bool(facet(ifc.createIfcMapConversion(Eastings=0))) is True
 
-        # Values are checked with strict typing. No type casting shall occur.
-        facet = ids.attribute.create(name="Eastings", value=42)
-        assert bool(facet(ifc.createIfcMapConversion(Eastings=0))) is False
-        assert bool(facet(ifc.createIfcMapConversion(Eastings=42))) is True
+        # Simple values which must be strings are checked with strict typing. No type casting shall occur.
         facet = ids.attribute.create(name="Eastings", value="42")
+        assert bool(facet(ifc.createIfcMapConversion(Eastings=0))) is False
         assert bool(facet(ifc.createIfcMapConversion(Eastings=42))) is False
 
+        # Strict type checking is done with restrictions. This is really ugly, but hopefully hidden to a user.
+        restriction = ids.restriction.create(options=[42], type="enumeration", base="decimal")
+        # Here is another uglier option:
+        # restriction = ids.restriction.create(
+        #     options={"minInclusive": 42, "maxInclusive": 42}, type="bounds", base="decimal"
+        # )
+        facet = ids.attribute.create(name="Eastings", value=restriction)
+        assert bool(facet(ifc.createIfcMapConversion(Eastings=42))) is True
+
         # Restrictions are allowed for the name
-        restriction = ids.restriction.create(options=".*Name.*", type="pattern", base="string")
+        restriction = ids.restriction.create(options=".*Name.*", type="pattern")
         facet = ids.attribute.create(name=restriction)
         assert bool(facet(ifc.createIfcMaterialLayerSet(LayerSetName="Foo"))) is True
         assert bool(facet(ifc.createIfcMaterialConstituentSet(Name="Foo"))) is True
 
         # Restrictions for the name imply that multiple names may be matched. All, not any, must pass the checks.
-        restriction = ids.restriction.create(options=["Name", "Description"], type="enumeration", base="string")
+        restriction = ids.restriction.create(options=["Name", "Description"], type="enumeration")
         facet = ids.attribute.create(name=restriction)
         assert bool(facet(ifc.createIfcWall(Name="Foo"))) is False
         assert bool(facet(ifc.createIfcWall(Name="Foo", Description="Bar"))) is True
 
         # Restrictions are allowed for the value
-        restriction = ids.restriction.create(options=["Foo", "Bar"], type="enumeration", base="string")
+        restriction = ids.restriction.create(options=["Foo", "Bar"], type="enumeration")
         facet = ids.attribute.create(name="Name", value=restriction)
         assert bool(facet(ifc.createIfcWall(Name="Foo"))) is True
         assert bool(facet(ifc.createIfcWall(Name="Bar"))) is True
@@ -533,14 +540,14 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(element22)) is True
 
         # Restrictions can be used for values
-        restriction = ids.restriction.create(options="1.*", type="pattern", base="string")
+        restriction = ids.restriction.create(options="1.*", type="pattern")
         facet = ids.classification.create(value=restriction)
         assert bool(facet(element1)) is True
         assert bool(facet(element11)) is True
         assert bool(facet(element22)) is False
 
         # Restrictions can be used for systems
-        restriction = ids.restriction.create(options="Foo.*", type="pattern", base="string")
+        restriction = ids.restriction.create(options="Foo.*", type="pattern")
         facet = ids.classification.create(system=restriction)
         assert bool(facet(element0)) is False
         assert bool(facet(element1)) is True
@@ -560,18 +567,14 @@ class TestIdsAuthoring(unittest.TestCase):
         facet = ids.classification.create(value="1", location="instance")
         assert bool(facet(wall_type)) is True
         assert bool(facet(wall)) is False
-        ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=wall, reference=ref1, classification=system
-        )
+        ifcopenshell.api.run("classification.add_reference", ifc, product=wall, reference=ref1, classification=system)
         assert bool(facet(wall)) is True
 
         # Location type only checks on the type
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
-        ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=wall, reference=ref1, classification=system
-        )
+        ifcopenshell.api.run("classification.add_reference", ifc, product=wall, reference=ref1, classification=system)
         facet = ids.classification.create(value="1", location="type")
         assert bool(facet(wall)) is False
         assert bool(facet(wall_type)) is False
@@ -589,9 +592,7 @@ class TestIdsAuthoring(unittest.TestCase):
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
-        ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=wall, reference=ref11, classification=system
-        )
+        ifcopenshell.api.run("classification.add_reference", ifc, product=wall, reference=ref11, classification=system)
         ifcopenshell.api.run(
             "classification.add_reference", ifc, product=wall_type, reference=ref22, classification=system
         )
@@ -609,7 +610,16 @@ class TestIdsAuthoring(unittest.TestCase):
             "name": {"simpleValue": "PropertyName"},
             "@location": "any",
         }
-        facet = ids.property.create(propertySet="propertySet", name="name", value="value", location="instance", measure="String", uri="https://test.com", use="required", instructions="instructions")
+        facet = ids.property.create(
+            propertySet="propertySet",
+            name="name",
+            value="value",
+            location="instance",
+            measure="String",
+            uri="https://test.com",
+            use="required",
+            instructions="instructions",
+        )
         assert facet.asdict() == {
             "propertySet": {"simpleValue": "propertySet"},
             "name": {"simpleValue": "name"},
@@ -655,7 +665,7 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(element)) is False
 
         # Restrictions are supported for property sets. If multiple are matched, all must satisfy requirements.
-        restriction = ids.restriction.create(options="Foo_.*", type="pattern", base="string")
+        restriction = ids.restriction.create(options="Foo_.*", type="pattern")
         facet = ids.property.create(propertySet=restriction, name="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
@@ -667,7 +677,7 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(element)) is True
 
         # Restrictions are supported for names. If multiple are matched, all must satisfy requirements.
-        restriction = ids.restriction.create(options="Foo.*", type="pattern", base="string")
+        restriction = ids.restriction.create(options="Foo.*", type="pattern")
         facet = ids.property.create(propertySet="Foo_Bar", name=restriction, value="x")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
@@ -679,14 +689,34 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(element)) is False
 
         # Restrictions are supported for values. If multiple are matched, all must satisfy requirements.
-        restriction1 = ids.restriction.create(options="Foo.*", type="pattern", base="string")
-        restriction2 = ids.restriction.create(options=["x", "y"], type="enumeration", base="string")
+        restriction1 = ids.restriction.create(options="Foo.*", type="pattern")
+        restriction2 = ids.restriction.create(options=["x", "y"], type="enumeration")
         facet = ids.property.create(propertySet="Foo_Bar", name=restriction1, value=restriction2)
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "y"})
         assert bool(facet(element)) is True
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "z"})
+        assert bool(facet(element)) is False
+
+        # Restrictions may be used to check basic data primitives
+        restriction = ids.restriction.create(options=[42.12], type="enumeration", base="decimal")
+        facet = ids.property.create(propertySet="Foo_Bar", name="Foobar", value=restriction)
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": 42.12})
+        assert bool(facet(element)) is True
+        restriction = ids.restriction.create(options=[42], type="enumeration", base="integer")
+        facet = ids.property.create(propertySet="Foo_Bar", name="Foobar", value=restriction)
+        assert bool(facet(element)) is False
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": 42})
+        assert bool(facet(element)) is True
+        restriction = ids.restriction.create(options=[True], type="enumeration", base="boolean")
+        facet = ids.property.create(propertySet="Foo_Bar", name="Foobar", value=restriction)
+        assert bool(facet(element)) is False
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": True})
+        assert bool(facet(element)) is True
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": False})
         assert bool(facet(element)) is False
 
         # Location instance only checks on the instance, even if the instance is a type. Yes, weird, I know.
@@ -742,7 +772,7 @@ class TestIdsAuthoring(unittest.TestCase):
         i = ids.ids(title="My IDS")
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
-        r = ids.restriction.create(options=["testA", "testB"], type="enumeration", base="string")
+        r = ids.restriction.create(options=["testA", "testB"], type="enumeration")
         m = ids.material.create(location="any", value=r)
         i.specifications[0].add_requirement(m)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "testA")
@@ -765,7 +795,7 @@ class TestIdsAuthoring(unittest.TestCase):
         i = ids.ids(title="My IDS")
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
-        r = ids.restriction.create(options="[A-Z]{2,4}", type="pattern", base="string")
+        r = ids.restriction.create(options="[A-Z]{2,4}", type="pattern")
         p = ids.property.create(location="any", propertySet="Test", name="Test", value=r)
         i.specifications[0].add_requirement(p)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "XYZ")
@@ -777,7 +807,7 @@ class TestIdsAuthoring(unittest.TestCase):
         i = ids.ids(title="My IDS")
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
-        r = ids.restriction.create(options="(Wanddurchbruch|Deckendurchbruch).*", type="pattern", base="string")
+        r = ids.restriction.create(options="(Wanddurchbruch|Deckendurchbruch).*", type="pattern")
         p = ids.property.create(location="any", propertySet="Test", name="Test", value=r)
         i.specifications[0].add_requirement(p)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "Wanddurchbruch")
@@ -788,7 +818,7 @@ class TestIdsAuthoring(unittest.TestCase):
         i = ids.ids(title="My IDS")
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
-        r = ids.restriction.create(options="èêóòâôæøåążźćęóʑʒʓʔʕʗʘʙʚʛʜʝʞ", type="pattern", base="string")
+        r = ids.restriction.create(options="èêóòâôæøåążźćęóʑʒʓʔʕʗʘʙʚʛʜʝʞ", type="pattern")
         p = ids.property.create(location="any", propertySet="Test", name="Test", value=r)
         i.specifications[0].add_requirement(p)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "èêóòâôæøåążźćęóʑʒʓʔʕʗʘʙʚʛʜʝʞ")
@@ -801,10 +831,10 @@ class TestIdsAuthoring(unittest.TestCase):
         e = ids.entity.create(name="Test_Name", predefinedType="Test_PredefinedType")
         c = ids.classification.create(location="any", value="Test_Value", system="Test_System")
         m = ids.material.create(location="any", value="Test_Value")
-        re = ids.restriction.create(options=["testA", "testB"], type="enumeration", base="string")
+        re = ids.restriction.create(options=["testA", "testB"], type="enumeration")
         rb = ids.restriction.create(options={"minInclusive": 0, "maxExclusive": 10}, type="bounds", base="integer")
-        rp1 = ids.restriction.create(options="[A-Z]{2,4}", type="pattern", base="string")
-        rp2 = ids.restriction.create(options="èêóòâôæøåążźćęóʑʒʓʔʕʗʘʙʚʛʜʝʞ", type="pattern", base="string")
+        rp1 = ids.restriction.create(options="[A-Z]{2,4}", type="pattern")
+        rp2 = ids.restriction.create(options="èêóòâôæøåążźćęóʑʒʓʔʕʗʘʙʚʛʜʝʞ", type="pattern")
         p1 = ids.property.create(location="any", propertySet="Test_PropertySet", name="Test_Parameter", value=re)
         p2 = ids.property.create(location="any", propertySet="Test_PropertySet", name="Test_Parameter", value=rb)
         p3 = ids.property.create(location="any", propertySet="Test_PropertySet", name="Test_Parameter", value=rp1)
