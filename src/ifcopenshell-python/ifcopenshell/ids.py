@@ -530,15 +530,19 @@ class attribute(facet):
     parameters = ["name", "value", "location"]
 
     @staticmethod
-    def create(name=None, value=None, location="any"):
+    def create(name="Name", value=None, location="any", use=None, instructions=None):
         """Create an attribute facet that can be added to applicability or requirements of IDS specification.
 
         :param name: Attribute name, such as "Description"
         :type name: str
-        :param value: Attribute value
+        :param value: Attribute value, with type being strictly checked
         :type value: str, optional
         :param location: Where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
         :type location: str, optional
+        :param use: 'required'|'optional', defaults to "required"
+        :type use: str, optional
+        :param instructions: Instructions as a guide for model authors when reading the requirements
+        :type instructions: str, optional
         :return: entity object
         :rtype: entity
         """
@@ -547,6 +551,8 @@ class attribute(facet):
         inst.name = name
         inst.value = value
         inst.location = location
+        inst.use = use
+        inst.instructions = instructions
         return inst
 
     def asdict(self):
@@ -560,6 +566,10 @@ class attribute(facet):
             fac_dict["value"] = parameter_asdict(self.value)
         if self.location:
             fac_dict["@location"] = self.location
+        if self.use:
+            fac_dict["@use"] = self.use
+        if self.instructions:
+            fac_dict["@instructions"] = self.instructions
         return fac_dict
 
     def __call__(self, inst, logger=None):
@@ -608,7 +618,6 @@ class classification(facet):
         :return: classification object
         :rtype: classification
         """
-
         inst = classification()
         inst.location = location
         inst.value = value
