@@ -320,7 +320,9 @@ class TestIdsAuthoring(unittest.TestCase):
 
         # Predefined types should match overridden predefined types from the element type
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="X")
-        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType", predefined_type="NOTDEFINED")
+        wall_type = ifcopenshell.api.run(
+            "root.create_entity", ifc, ifc_class="IfcWallType", predefined_type="NOTDEFINED"
+        )
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
         facet = ids.entity.create(name="IfcWall", predefinedType="X")
         assert bool(facet(wall)) is True
@@ -346,21 +348,22 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(wall)) is True
         assert bool(facet(wall2)) is True
 
-
     def test_creating_an_attribute_facet(self):
         attribute = ids.attribute.create(name="name")
         assert attribute.asdict() == {"name": {"simpleValue": "name"}, "@location": "any"}
-        attribute = ids.attribute.create(name="name", value="value")
+        attribute = ids.attribute.create(name="name", value="value", location="instance")
         assert attribute.asdict() == {
             "name": {"simpleValue": "name"},
             "value": {"simpleValue": "value"},
-            "@location": "any",
+            "@location": "instance",
         }
-        attribute = ids.attribute.create(name="name", value="value", use="required", instructions="instructions")
+        attribute = ids.attribute.create(
+            name="name", value="value", location="instance", use="required", instructions="instructions"
+        )
         assert attribute.asdict() == {
             "name": {"simpleValue": "name"},
             "value": {"simpleValue": "value"},
-            "@location": "any",
+            "@location": "instance",
             "@use": "required",
             "@instructions": "instructions",
         }
@@ -452,10 +455,30 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(wall)) is True
 
     def test_creating_a_classification_facet(self):
-        c = ids.classification.create(location="any", value="Test_Value", system="Test_System")
-        self.assertEqual(c.location, "any")
-        self.assertEqual(c.value, "Test_Value")
-        self.assertEqual(c.system, "Test_System")
+        facet = ids.classification.create()
+        assert facet.asdict() == {"@location": "any"}
+        facet = ids.classification.create(value="value", system="system", location="instance")
+        assert facet.asdict() == {
+            "value": {"simpleValue": "value"},
+            "system": {"simpleValue": "system"},
+            "@location": "instance",
+        }
+        facet = ids.classification.create(
+            value="value",
+            system="system",
+            location="instance",
+            uri="https://test.com",
+            use="required",
+            instructions="instructions",
+        )
+        assert facet.asdict() == {
+            "value": {"simpleValue": "value"},
+            "system": {"simpleValue": "system"},
+            "@location": "instance",
+            "@uri": "https://test.com",
+            "@use": "required",
+            "@instructions": "instructions",
+        }
 
     def test_property_create(self):
         p = ids.property.create(

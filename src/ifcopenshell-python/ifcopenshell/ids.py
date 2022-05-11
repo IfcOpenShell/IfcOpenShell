@@ -535,7 +535,7 @@ class entity(facet):
 class attribute(facet):
     """The IDS attribute facet"""
 
-    parameters = ["name", "value", "location"]
+    parameters = ["name", "value", "location", "use", "instructions"]
 
     @staticmethod
     def create(name="Name", value=None, location="any", use=None, instructions=None):
@@ -631,11 +631,11 @@ class classification(facet):
     The IDS classification facet by traversing the HasAssociations inverse attribute
     """
 
-    parameters = ["system", "value", "location"]
+    parameters = ["system", "value", "location", "uri", "use", "instructions"]
     message = "%(location)sclassification reference %(value)s from '%(system)s'"
 
     @staticmethod
-    def create(location="any", value=None, system=None):
+    def create(value=None, system=None, location="any", uri=None, use=None, instructions=None):
         """Create a classification facet that can be added to applicability or requirements of IDS specification.
 
         :param location: Where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
@@ -648,9 +648,12 @@ class classification(facet):
         :rtype: classification
         """
         inst = classification()
-        inst.location = location
         inst.value = value
         inst.system = system
+        inst.location = location
+        inst.uri = uri
+        inst.use = use
+        inst.instructions = instructions
         return inst
 
     def asdict(self):
@@ -659,13 +662,18 @@ class classification(facet):
         :return: Xmlschema compliant dictionary.
         :rtype: dict
         """
-        fac_dict = {
-            "value": parameter_asdict(self.value),
-            "system": parameter_asdict(self.system),
-            "@location": self.location,
-            # "instructions": "SAMPLE_INSTRUCTIONS",
-        }
-        return fac_dict
+        results = {"@location": self.location}
+        if self.value:
+            results["value"] = parameter_asdict(self.value)
+        if self.system:
+            results["system"] = parameter_asdict(self.system)
+        if self.uri:
+            results["@uri"] = self.uri
+        if self.use:
+            results["@use"] = self.use
+        if self.instructions:
+            results["@instructions"] = self.instructions
+        return results
 
     def __call__(self, inst, logger):
         """Validate an ifc instance against that classification facet.
