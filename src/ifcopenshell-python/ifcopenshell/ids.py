@@ -824,7 +824,7 @@ class property(facet):
     message = "%(location)sproperty '%(name)s' in '%(propertySet)s' with a value %(value)s"
 
     @staticmethod
-    def create(location="any", propertySet=None, name=None, value=None):
+    def create(propertySet="Property_Set", name="PropertyName", value=None, location="any", measure=None, uri=None, use=None, instructions=None):
         """Create a property facet that can be added to applicability or requirements of IDS specification.
 
         :param location: Where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
@@ -839,13 +839,14 @@ class property(facet):
         :rtype: property
         """
         inst = property()
-        inst.location = location
         inst.propertySet = propertySet
         inst.name = name
         inst.value = value
-        # cls.attributes = {'@location': location} # 'type', 'instance', 'any'
-        # BUG '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
-        # BUG 'instructions': 'Please add the desired rating.',
+        inst.location = location
+        inst.measure = measure
+        inst.uri = uri
+        inst.use = use
+        inst.instructions = instructions
         return inst
 
     def asdict(self):
@@ -854,15 +855,23 @@ class property(facet):
         :return: Xmlschema compliant dictionary.
         :rtype: dict
         """
-        fac_dict = {
+        results = {
             "@location": self.location,
             "propertySet": parameter_asdict(self.propertySet),
             "name": parameter_asdict(self.name),
-            "value": parameter_asdict(self.value),
-            # "instructions": "SAMPLE_INSTRUCTIONS",
-            # TODO '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
         }
-        return fac_dict
+        if self.value:
+            results["value"] = parameter_asdict(self.value)
+        if self.measure:
+            results["@measure"] = self.measure
+        if self.uri:
+            results["@uri"] = self.uri
+        if self.use:
+            results["@use"] = self.use
+        if self.instructions:
+            results["@instructions"] = self.instructions
+        # TODO '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
+        return results
 
     def __call__(self, inst, logger):
         """Validate an ifc instance against that property facet.
