@@ -893,11 +893,13 @@ class property(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
+        all_psets = {}
         if self.location == "instance":
             all_psets = ifcopenshell.util.element.get_psets(inst, should_inherit=False)
         elif self.location == "type":
             element_type = ifcopenshell.util.element.get_type(inst)
-            all_psets = ifcopenshell.util.element.get_psets(element_type, should_inherit=False)
+            if element_type:
+                all_psets = ifcopenshell.util.element.get_psets(element_type, should_inherit=False)
         elif self.location == "any":
             all_psets = ifcopenshell.util.element.get_psets(inst)
 
@@ -1003,7 +1005,7 @@ class material(facet):
         :return: Xmlschema compliant dictionary.
         :rtype: dict
         """
-        results = { "@location": self.location }
+        results = {"@location": self.location}
         if self.value:
             results["value"] = parameter_asdict(self.value)
         if self.uri:
@@ -1014,7 +1016,7 @@ class material(facet):
             results["@instructions"] = self.instructions
         return results
 
-    def __call__(self, inst, logger):
+    def __call__(self, inst, logger=None):
         """Validate an ifc instance against that material facet.
 
         :param inst: IFC entity element
@@ -1024,57 +1026,47 @@ class material(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
-
-        # self.location = self.node["@location"]
-
-        instance_material_rel = [rel for rel in inst.HasAssociations if rel.is_a("IfcRelAssociatesMaterial")]
-        if ifcopenshell.util.element.get_type(inst):
-            type_material_rel = [
-                rel
-                for rel in ifcopenshell.util.element.get_type(inst).HasAssociations
-                if rel.is_a("IfcRelAssociatesMaterial")
-            ]
-        else:
-            type_material_rel = []
-
+        material = None
         if self.location == "instance":
-            material_relations = list(instance_material_rel)
-        elif self.location == "type" and type_material_rel:
-            material_relations = list(type_material_rel)
-        elif self.location == "any" and (instance_material_rel or type_material_rel):
-            material_relations = instance_material_rel + type_material_rel
-        else:
-            material_relations = []
+            material = ifcopenshell.util.element.get_material(inst, should_skip_usage=True, should_inherit=False)
+        elif self.location == "type":
+            element_type = ifcopenshell.util.element.get_type(inst)
+            if element_type:
+                material = ifcopenshell.util.element.get_material(element_type, should_skip_usage=True)
+        elif self.location == "any":
+            material = ifcopenshell.util.element.get_material(inst, should_skip_usage=True)
 
-        materials = []
-        for rel in material_relations:
-            if rel.RelatingMaterial.is_a() == "IfcMaterial":
-                materials.append(rel.RelatingMaterial.Name)
-            elif rel.RelatingMaterial.is_a() == "IfcMaterialList":  # DEPRECATED in IFC4
-                [materials.append(mat.Name) for mat in rel.RelatingMaterial.Materials]
-            elif rel.RelatingMaterial.is_a() == "IfcMaterialConstituentSet":
-                [materials.append(mat.Material.Name) for mat in rel.RelatingMaterial.MaterialConstituents]
-            elif rel.RelatingMaterial.is_a() == "IfcMaterialLayerSet":
-                [materials.append(mat.Name) for mat in rel.RelatingMaterial.MaterialLayers]
-            elif rel.RelatingMaterial.is_a() == "IfcMaterialLayerSetUsage":
-                layers = rel.RelatingMaterial.ForLayerSet.MaterialLayers
-                [materials.append(layer.Material.Name) for layer in layers]
-            elif rel.RelatingMaterial.is_a() == "IfcMaterialProfileSet":
-                [materials.append(mat.Material.Name) for mat in rel.RelatingMaterial.MaterialProfiles]
-            elif rel.RelatingMaterial.is_a() == "IfcMaterialProfileSetUsage":
-                profileSets = rel.RelatingMaterial.ForProfileSet.MaterialProfiles
-                [materials.append(pset.Material.Name) for pset in profileSets]
-            else:
-                raise Exception("IfcRelAssociatesMaterial not implemented")
+        is_pass = material is not None
 
-        if not materials:
-            materials.append("UNDEFINED")
+        if is_pass and self.value:
+            if material.is_a("IfcMaterial"):
+                values = {material.Name, getattr(material, "Category")}
+            elif material.is_a("IfcMaterialList"):
+                values = set()
+                for mat in material.Materials or []:
+                    values.update([mat.Name, getattr(mat, "Category")])
+            elif material.is_a("IfcMaterialLayerSet"):
+                values = {material.LayerSetName}
+                for item in material.MaterialLayers or []:
+                    values.update([item.Name, item.Category, item.Material.Name, getattr(item.Material, "Category")])
+            elif material.is_a("IfcMaterialProfileSet"):
+                values = {material.Name}
+                for item in material.MaterialProfiles or []:
+                    values.update([item.Name, item.Category, item.Material.Name, getattr(item.Material, "Category")])
+            elif material.is_a("IfcMaterialConstituentSet"):
+                values = {material.Name}
+                for item in material.MaterialConstituents or []:
+                    values.update([item.Name, item.Category, item.Material.Name, getattr(item.Material, "Category")])
 
-        self.location_msg = location[self.location]
+            is_pass = False
+            for value in values:
+                if value == self.value:
+                    is_pass = True
+                    break
 
         return facet_evaluation(
-            self.value in materials,
-            self.message % {"value": "'/'".join(materials), "location": self.location_msg},
+            is_pass,
+            self.message % {"value": "todo", "location": "todo"},
         )
 
 

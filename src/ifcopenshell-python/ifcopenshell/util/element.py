@@ -121,7 +121,7 @@ def get_types(type):
     return []
 
 
-def get_material(element, should_skip_usage=False):
+def get_material(element, should_skip_usage=False, should_inherit=True):
     if hasattr(element, "HasAssociations") and element.HasAssociations:
         for relationship in element.HasAssociations:
             if relationship.is_a("IfcRelAssociatesMaterial"):
@@ -131,9 +131,10 @@ def get_material(element, should_skip_usage=False):
                     elif relationship.RelatingMaterial.is_a("IfcMaterialProfileSetUsage"):
                         return relationship.RelatingMaterial.ForProfileSet
                 return relationship.RelatingMaterial
-    relating_type = get_type(element)
-    if relating_type != element and hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
-        return get_material(relating_type, should_skip_usage)
+    if should_inherit:
+        relating_type = get_type(element)
+        if relating_type != element and hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
+            return get_material(relating_type, should_skip_usage)
 
 
 def get_elements_by_material(ifc_file, material):
