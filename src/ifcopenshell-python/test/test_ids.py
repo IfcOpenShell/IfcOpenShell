@@ -803,7 +803,9 @@ class TestIdsAuthoring(unittest.TestCase):
     def test_material_create(self):
         facet = ids.material.create()
         assert facet.asdict() == {"@location": "any"}
-        facet = ids.material.create(value="value", location="instance", uri="https://test.com", use="required", instructions="instructions")
+        facet = ids.material.create(
+            value="value", location="instance", uri="https://test.com", use="required", instructions="instructions"
+        )
         assert facet.asdict() == {
             "value": {"simpleValue": "value"},
             "@location": "instance",
@@ -812,6 +814,152 @@ class TestIdsAuthoring(unittest.TestCase):
             "@instructions": "instructions",
         }
 
+    def test_filtering_using_a_material_facet(self):
+        ifc = ifcopenshell.file()
+
+        # A material facet with no data matches any present material
+        facet = ids.material.create()
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        assert bool(facet(element)) is False
+        material = ifcopenshell.api.run("material.add_material", ifc)
+        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material)
+        assert bool(facet(element)) is True
+
+        # A value will match a material name or category
+        facet = ids.material.create(value="Foo")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        material = ifcopenshell.api.run("material.add_material", ifc)
+        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material)
+        assert bool(facet(element)) is False
+        material.Name = "Foo"
+        assert bool(facet(element)) is True
+        material.Name = "Bar"
+        material.Category = "Foo"
+        assert bool(facet(element)) is True
+
+        # A value will match any material name or category in a material list
+        facet = ids.material.create(value="Foo")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        material_set = ifcopenshell.api.run("material.add_material_set", ifc, set_type="IfcMaterialList")
+        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material_set)
+        assert bool(facet(element)) is False
+        material = ifcopenshell.api.run("material.add_material", ifc)
+        ifcopenshell.api.run("material.add_list_item", ifc, material_list=material_set, material=material)
+        material.Name = "Foo"
+        assert bool(facet(element)) is True
+        material.Name = "Bar"
+        material.Category = "Foo"
+        assert bool(facet(element)) is True
+
+        # A value will match any material name or category, or layer name or category in a layer set
+        facet = ids.material.create(value="Foo")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        material_set = ifcopenshell.api.run("material.add_material_set", ifc, set_type="IfcMaterialLayerSet")
+        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material_set)
+        assert bool(facet(element)) is False
+        material = ifcopenshell.api.run("material.add_material", ifc)
+        layer = ifcopenshell.api.run("material.add_layer", ifc, layer_set=material_set, material=material)
+        layer.Name = "Foo"
+        assert bool(facet(element)) is True
+        layer.Name = "Bar"
+        layer.Category = "Foo"
+        assert bool(facet(element)) is True
+        layer.Category = "Bar"
+        material.Name = "Foo"
+        assert bool(facet(element)) is True
+        material.Name = "Bar"
+        material.Category = "Foo"
+        assert bool(facet(element)) is True
+
+        # A value will match any material name or category, or profile name or category in a profile set
+        facet = ids.material.create(value="Foo")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        material_set = ifcopenshell.api.run("material.add_material_set", ifc, set_type="IfcMaterialProfileSet")
+        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material_set)
+        assert bool(facet(element)) is False
+        material = ifcopenshell.api.run("material.add_material", ifc)
+        profile = ifcopenshell.api.run("material.add_profile", ifc, profile_set=material_set, material=material)
+        profile.Name = "Foo"
+        assert bool(facet(element)) is True
+        profile.Name = "Bar"
+        profile.Category = "Foo"
+        assert bool(facet(element)) is True
+        profile.Category = "Bar"
+        material.Name = "Foo"
+        assert bool(facet(element)) is True
+        material.Name = "Bar"
+        material.Category = "Foo"
+        assert bool(facet(element)) is True
+
+        # A value will match any material name or category, or constituent name or category in a constituent set
+        facet = ids.material.create(value="Foo")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        material_set = ifcopenshell.api.run("material.add_material_set", ifc, set_type="IfcMaterialConstituentSet")
+        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material_set)
+        assert bool(facet(element)) is False
+        material = ifcopenshell.api.run("material.add_material", ifc)
+        constituent = ifcopenshell.api.run(
+            "material.add_constituent", ifc, constituent_set=material_set, material=material
+        )
+        constituent.Name = "Foo"
+        assert bool(facet(element)) is True
+        constituent.Name = "Bar"
+        constituent.Category = "Foo"
+        assert bool(facet(element)) is True
+        constituent.Category = "Bar"
+        material.Name = "Foo"
+        assert bool(facet(element)) is True
+        material.Name = "Bar"
+        material.Category = "Foo"
+        assert bool(facet(element)) is True
+
+        # Location instance will only check instances
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=element, relating_type=element_type)
+        material = ifcopenshell.api.run("material.add_material", ifc)
+        ifcopenshell.api.run("material.assign_material", ifc, product=element_type, material=material)
+        facet = ids.material.create(location="instance")
+        assert bool(facet(element)) is False
+        assert bool(facet(element_type)) is True
+
+        # Location type will only check types
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=element, relating_type=element_type)
+        material = ifcopenshell.api.run("material.add_material", ifc)
+        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material)
+        facet = ids.material.create(location="type")
+        assert bool(facet(element)) is False
+        assert bool(facet(element_type)) is False
+        ifcopenshell.api.run("material.assign_material", ifc, product=element_type, material=material)
+        assert bool(facet(element)) is True
+        assert bool(facet(element_type)) is True
+
+        # Location any will check for inherited materials
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=element, relating_type=element_type)
+        material = ifcopenshell.api.run("material.add_material", ifc)
+        ifcopenshell.api.run("material.assign_material", ifc, product=element_type, material=material)
+        material.Name = "Foo"
+        facet = ids.material.create(value="Foo", location="any")
+        assert bool(facet(element)) is True
+        assert bool(facet(element_type)) is True
+
+        # Location any will check for overriden materials
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", ifc, related_object=element, relating_type=element_type)
+        material = ifcopenshell.api.run("material.add_material", ifc)
+        ifcopenshell.api.run("material.assign_material", ifc, product=element_type, material=material)
+        material.Name = "Bar"
+        material = ifcopenshell.api.run("material.add_material", ifc)
+        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material)
+        material.Name = "Foo"
+        facet = ids.material.create(value="Foo", location="any")
+        assert bool(facet(element)) is True
+        assert bool(facet(element_type)) is False
 
     """ Creating IDS with restrictions """
 

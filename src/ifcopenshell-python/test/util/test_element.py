@@ -286,6 +286,24 @@ class TestGetMaterial(test.bootstrap.IFC4):
         ifcopenshell.api.run("material.assign_material", self.file, product=element_type, material=material)
         assert subject.get_material(element) == material
 
+    def test_getting_an_overridden_material_from_the_elements_occurrence(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        material = ifcopenshell.api.run("material.add_material", self.file)
+        ifcopenshell.api.run("material.assign_material", self.file, product=element_type, material=material)
+        material = ifcopenshell.api.run("material.add_material", self.file)
+        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material)
+        assert subject.get_material(element) == material
+
+    def test_getting_direct_materials_without_checking_inheritance(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        material = ifcopenshell.api.run("material.add_material", self.file)
+        ifcopenshell.api.run("material.assign_material", self.file, product=element_type, material=material)
+        assert subject.get_material(element, should_inherit=False) is None
+
 
 class TestGetElementsByMaterial(test.bootstrap.IFC4):
     def test_getting_elements_of_a_material(self):
