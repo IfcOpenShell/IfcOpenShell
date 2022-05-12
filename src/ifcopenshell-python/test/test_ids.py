@@ -961,6 +961,70 @@ class TestIdsAuthoring(unittest.TestCase):
         assert bool(facet(element)) is True
         assert bool(facet(element_type)) is False
 
+    def test_creating_a_partof_facet(self):
+        facet = ids.partOf.create()
+        assert facet.asdict() == {"@entity": {"simpleValue": "IfcSystem"}}
+        facet = ids.partOf.create(entity="IfcGroup")
+        assert facet.asdict() == {"@entity": {"simpleValue": "IfcGroup"}}
+
+    def test_filtering_using_a_partof_facet(self):
+        ifc = ifcopenshell.file()
+
+        # An IfcElementAssembly entity only passes those who are part of an assembly
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
+        facet = ids.partOf.create(entity="IfcElementAssembly")
+        assert bool(facet(element)) is False
+        assert bool(facet(subelement)) is True
+
+        # An IfcElementAssembly strictly checks that the whole is an IfcElementAssembly class
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
+        subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
+        ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
+        facet = ids.partOf.create(entity="IfcElementAssembly")
+        assert bool(facet(subelement)) is False
+
+        # A nested subelement still passes so long as one of its parents is an IfcElementAssembly
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
+        subsubelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
+        ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", ifc, product=subsubelement, relating_object=subelement)
+        facet = ids.partOf.create(entity="IfcElementAssembly")
+        assert bool(facet(subsubelement)) is True
+
+        # An IfcGroup only checks that a group is assigned without any other logic
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
+        group = ifcopenshell.api.run("group.add_group", ifc)
+        facet = ids.partOf.create(entity="IfcGroup")
+        assert bool(facet(element)) is False
+        ifcopenshell.api.run("group.assign_group", ifc, product=element, group=group)
+        assert bool(facet(element)) is True
+
+        # An IfcGroup can be passed by subtypes
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
+        group = ifc.createIfcInventory()
+        facet = ids.partOf.create(entity="IfcGroup")
+        ifcopenshell.api.run("group.assign_group", ifc, product=element, group=group)
+        assert bool(facet(element)) is True
+
+        # An IfcSystem only checks that a system is assigned without any other logic
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
+        system = ifcopenshell.api.run("system.add_system", ifc)
+        facet = ids.partOf.create(entity="IfcSystem")
+        assert bool(facet(element)) is False
+        ifcopenshell.api.run("system.assign_system", ifc, product=element, system=system)
+        assert bool(facet(element)) is True
+
+        # An IfcSystem allows subtypes
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
+        system = ifcopenshell.api.run("system.add_system", ifc, ifc_class="IfcDistributionSystem")
+        ifcopenshell.api.run("system.assign_system", ifc, product=element, system=system)
+        facet = ids.partOf.create(entity="IfcSystem")
+        assert bool(facet(element)) is True
+
+
     """ Creating IDS with restrictions """
 
     def test_create_restrictions_enumeration(self):

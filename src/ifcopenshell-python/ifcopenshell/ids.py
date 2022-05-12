@@ -731,13 +731,9 @@ class partOf(facet):
 
     parameters = ["entity"]
     message = "relation as part of %(entity)s"
-    # TODO temp default
-    entity = "IfcElementAssembly"
 
     @staticmethod
-    # TODO should not assume IfcElementAssembly
-    # def create(entity=None):
-    def create(entity="IfcElementAssembly"):
+    def create(entity="IfcSystem"):
         """Create a partOf facet that can be added to applicability or requirements of IDS specification.
 
         :param entity: Entity that should contain this object. Could be alphanumeric or restriction object, defaults to None
@@ -756,13 +752,9 @@ class partOf(facet):
         :return: Xmlschema compliant dictionary.
         :rtype: dict
         """
-        fac_dict = {
-            "@entity": parameter_asdict(self.entity),
-            # "instructions": "SAMPLE_INSTRUCTIONS",
-        }
-        return fac_dict
+        return {"@entity": parameter_asdict(self.entity)}
 
-    def __call__(self, inst, logger):
+    def __call__(self, inst, logger=None):
         """Validate an ifc instance against that partOf facet.
 
         :param inst: IFC entity element
@@ -772,48 +764,21 @@ class partOf(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
-
-        # TODO handle partOf facet
-
-        #         instance_classiciations = inst.HasAssociations
-        #         if ifcopenshell.util.element.get_type(inst):
-        #             type_classifications = ifcopenshell.util.element.get_type(inst).HasAssociations
-        #         else:
-        #             type_classifications = ()
-
-        #         if self.location == "instance" and instance_classiciations:
-        #             associations = instance_classiciations
-        #         elif self.location == "type" and type_classifications:
-        #             associations = type_classifications
-        #         elif self.location == "any" and (instance_classiciations or type_classifications):
-        #             associations = instance_classiciations + type_classifications
-        #         else:
-        #             associations = ()
-
-        refs = []
-        #         for association in associations:
-        #             if association.is_a("IfcRelAssociatesClassification"):
-        #                 cref = association.RelatingClassification
-        #                 if hasattr(cref, "ItemReference"):  # IFC2x3
-        #                     refs.append((cref.ReferencedSource.Name, cref.ItemReference))
-        #                 elif hasattr(cref, "Identification"):  # IFC4
-        #                     refs.append((cref.ReferencedSource.Name, cref.Identification))
-
-        #         self.location_msg = location[self.location]
-
-        if refs:
-            pass
-            # return facet_evaluation(
-            #     (self.system, self.value) in refs,
-            #     self.message
-            #     % {
-            #         "system": refs[0][0],
-            #         "value": "'" + refs[0][1] + "'",
-            #         "location": self.location_msg,
-            #     },  # what if not first item of refs?
-            # )
+        if self.entity == "IfcElementAssembly":
+            is_pass = False
+            aggregate = ifcopenshell.util.element.get_aggregate(inst)
+            while aggregate is not None:
+                if aggregate.is_a() == "IfcElementAssembly":
+                    is_pass = True
+                    break
+                aggregate = ifcopenshell.util.element.get_aggregate(aggregate)
         else:
-            return facet_evaluation(False, "is not a part of %s" % self.node["@entity"])
+            is_pass = False
+            for rel in getattr(inst, "HasAssignments", []) or []:
+                if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a(self.entity):
+                    is_pass = True
+
+        return facet_evaluation(is_pass, "is not a part of")
 
 
 class property(facet):
