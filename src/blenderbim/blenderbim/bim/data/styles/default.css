@@ -35,7 +35,7 @@ text { fill: black; stroke: none; }
 .PredefinedType-RADIUS { marker-end: url(#radius-marker-end); }
 .PredefinedType-DIAMETER { marker-start: url(#diameter-marker-start); marker-end: url(#diameter-marker-end); }
 .PredefinedType-HIDDENLINE { stroke-dasharray: 3, 2; }
-.PredefinedType-STAIR { marker-start: url(#stair-marker-start); marker-end: url(#stair-marker-end); }
+.PredefinedType-STAIRARROW { marker-start: url(#stair-marker-start); marker-end: url(#stair-marker-end); }
 .PredefinedType-BOUNDARY { fill: none; stroke: red; stroke-width: 1; stroke-dasharray: 12, 4, 3, 4, 3, 4; }
 .PredefinedType-BATTING { marker-start: url(#batting); stroke: none; }
 .PredefinedType-SEALANT { fill: url(#crosshatch1); stroke-width: 0.25; }

@@ -281,7 +281,7 @@ class TestAddAnnotation:
         drawing.show_decorations().should_be_called()
         drawing.get_drawing_target_view("drawing").should_be_called().will_return("target_view")
         drawing.get_annotation_context("target_view").should_be_called().will_return("context")
-        drawing.create_annotation_object("object_type").should_be_called().will_return("obj")
+        drawing.create_annotation_object("drawing", "object_type").should_be_called().will_return("obj")
         ifc.get_entity("obj").should_be_called().will_return(None)
         drawing.get_ifc_representation_class("object_type").should_be_called().will_return("ifc_representation_class")
         drawing.run_root_assign_class(

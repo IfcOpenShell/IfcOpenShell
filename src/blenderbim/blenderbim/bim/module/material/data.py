@@ -90,7 +90,7 @@ class ObjectMaterialData:
     def type_material(cls):
         element = tool.Ifc.get_entity(bpy.context.active_object)
         element_type = ifcopenshell.util.element.get_type(element)
-        if element_type != element:
+        if element_type and element_type != element:
             material = ifcopenshell.util.element.get_material(element_type)
             if not material:
                 return
