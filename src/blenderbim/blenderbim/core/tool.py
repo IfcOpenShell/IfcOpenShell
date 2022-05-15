@@ -154,7 +154,7 @@ class Document:
 
 @interface
 class Drawing:
-    def create_annotation_object(cls, object_type): pass
+    def create_annotation_object(cls, drawing, object_type): pass
     def create_camera(cls, name, matrix): pass
     def create_svg_schedule(cls, schedule): pass
     def create_svg_sheet(cls, document, titleblock): pass

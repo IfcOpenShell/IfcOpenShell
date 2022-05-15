@@ -36,7 +36,7 @@ import blenderbim.bim.module.drawing.helper as helper
 
 class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
-    def create_annotation_object(cls, object_type):
+    def create_annotation_object(cls, drawing, object_type):
         data_type = {
             "ANGLE": "mesh",
             "BREAKLINE": "mesh",
@@ -52,7 +52,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             "TEXT": "empty",
             "TEXT_LEADER": "curve",
         }[object_type]
-        obj = annotation.Annotator.get_annotation_obj(object_type, data_type)
+        obj = annotation.Annotator.get_annotation_obj(drawing, object_type, data_type)
         if object_type == "FILL_AREA":
             obj = annotation.Annotator.add_plane_to_annotation(obj)
         elif object_type != "TEXT":
