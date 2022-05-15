@@ -300,8 +300,9 @@ class IfcStore:
 
     @staticmethod
     def rollback_link_element(data):
-        del IfcStore.id_map[data["id"]]
-        if data["guid"]:
+        if data["id"] in IfcStore.id_map:
+            del IfcStore.id_map[data["id"]]
+        if data["guid"] and data["guid"] in IfcStore.guid_map:
             del IfcStore.guid_map[data["guid"]]
 
     @staticmethod
