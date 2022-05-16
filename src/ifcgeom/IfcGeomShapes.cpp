@@ -541,6 +541,24 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, Ifc
 	return true;
 }
 
+namespace {
+	bool is_nested_compound_of_solid(const TopoDS_Shape& s, int depth=0) {
+		if (s.ShapeType() == TopAbs_COMPOUND) {
+			TopoDS_Iterator it(s);
+			for (; it.More(); it.Next()) {
+				if (!is_nested_compound_of_solid(it.Value(), depth + 1)) {
+					return false;
+				}
+			}
+			return true;
+		} else if (s.ShapeType() == TopAbs_SOLID) {
+			return depth > 0;
+		} else {
+			return false;
+		}
+	}
+}
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape& shape) {
 
 	TopoDS_Shape s1;
@@ -697,7 +715,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	
 	bool valid_result;
 
-	if (s1.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(s1).More() && TopoDS_Iterator(s1).Value().ShapeType() == TopAbs_SOLID) {
+	if (s1.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(s1).More() && is_nested_compound_of_solid(s1)) {
 		TopoDS_Compound C;
 		BRep_Builder B;
 		B.MakeCompound(C);
