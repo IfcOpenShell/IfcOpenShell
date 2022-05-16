@@ -11,6 +11,8 @@ For more information, see
 
 [![Build Status](https://travis-ci.org/IfcOpenShell/IfcOpenShell.svg?branch=v0.6.0)](https://travis-ci.org/IfcOpenShell/IfcOpenShell)
 
+[![Financial Contributors](https://opencollective.com/opensourcebim/tiers/badge.svg)](https://opencollective.com/opensourcebim/)
+
 Prerequisites
 -------------
 * Git
