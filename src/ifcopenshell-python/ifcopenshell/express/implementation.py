@@ -159,6 +159,8 @@ class Implementation(codegen.Base):
                             "type": arg["full_type"].replace("::Value", ""),
                             "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
                             "star_if_optional": "*" if "boost::optional" in arg["full_type"] else "",
+                            "check_optional_set_begin": "if (v) {" if "boost::optional" in arg["full_type"] else "",
+                            "check_optional_set_end": "}" if "boost::optional" in arg["full_type"] else "",
                         },
                     )
 
