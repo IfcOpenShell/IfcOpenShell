@@ -32,7 +32,6 @@ from dataclasses import dataclass
 from ifcopenshell import ids, template, validate
 from xml.dom.minidom import parseString
 
-TEST_PATH = os.path.join(tempfile.gettempdir(), "test.ifc")
 IFC_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IFC/", "IFC4_Wall_3_with_properties.ifc")
 IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_all_fields.xml")
 
@@ -48,9 +47,6 @@ os.remove(os.path.join(tempfile.gettempdir(), "test.ifc"))
 
 
 class TestIdsParsing(unittest.TestCase):
-
-    """Parsing basic IDS files"""
-
     def test_parse_basic_ids(self):
         IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_all_fields.xml")
         ids_file = ids.ids.open(IDS_URL)
@@ -90,11 +86,9 @@ class TestIdsParsing(unittest.TestCase):
         )
         self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["system"]["simpleValue"], "Test_System")
 
-    """ Parsing invalid IDS.xml """
-    # TODO
-    # def test_invalid_classification_facet(self):
-    #     IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "Invalid_IDS_Wall_needs_classification.xml")
-    #     self.assertRaises( XMLSchemaChildrenValidationError, ids.open(IDS_URL) )
+    def test_failing_on_opening_invalid_ids_data(self):
+        with pytest.raises(xmlschema.validators.exceptions.XMLSchemaValidationError):
+            ids.ids.open("""<?xml version="1.0" encoding="UTF-8"?><clearly_not_an_ids/>""")
 
     """ Saving parsed IDS to IDS.xml """
 
@@ -238,19 +232,6 @@ case = spec_generator()
 
 
 class TestIdsAuthoring(unittest.TestCase):
-    def test_creating_a_minimal_ids_and_validating(self):
-        specs = ids.ids(title="Title")
-        spec = ids.specification(name="Name")
-        spec.add_applicability(ids.entity.create(name="IfcWall"))
-        spec.add_requirement(ids.attribute.create(name="Name", value="Waldo"))
-        specs.specifications.append(spec)
-        assert "http://standards.buildingsmart.org/IDS" in specs.to_string()
-
-        model = ifcopenshell.file()
-        model.createIfcWall(Name="Waldo")
-        specs.validate(model)
-        # TODO test this without resorting to hooking into logger output
-
     def test_create_an_ids_with_minimal_information(self):
         specs = ids.ids()
         assert specs.asdict() == {
@@ -351,23 +332,27 @@ class TestIdsAuthoring(unittest.TestCase):
         i.specifications[0].add_requirement(m)
         self.assertEqual(i.specifications[0].requirements.terms[1].value, "Test_Value")
 
-    def test_create_an_entity_facet(self):
+    def test_creating_an_entity_facet(self):
         facet = ids.entity.create(name="IfcName")
         assert facet.asdict() == {"name": {"simpleValue": "IfcName"}}
-        facet = ids.entity.create(name="IfcName", predefinedType="predefinedType")
+        facet = ids.entity.create(name="IfcName", predefinedType="predefinedType", instructions="instructions")
         assert facet.asdict() == {
             "name": {"simpleValue": "IfcName"},
             "predefinedType": {"simpleValue": "predefinedType"},
+            "@instructions": "instructions",
         }
 
     def test_filtering_using_an_entity_facet(self):
         ifc = ifcopenshell.file()
 
         # Wrong IFC classes are never matched.
+        # TODO: Discuss about potential schema error checking
         facet = ids.entity.create(name="IfcRabbit")
         case("Non-existent entity name", facet=facet, inst=ifc.createIfcWall(), expected=False)
 
         # IFC class is checked for an exact match. Subclasses should not match.
+        # TODO: Some votes to prefer inheritance (For: Moult, Evandro, Artur)
+        # Possible argument: CAD tools don't understand IFC
         facet = ids.entity.create(name="IfcWall")
         case("Entity matching", facet=facet, inst=ifc.createIfcWall(), expected=True)
         case(
@@ -377,6 +362,7 @@ class TestIdsAuthoring(unittest.TestCase):
         case("Entity subtype", facet=facet, inst=ifc.createIfcWallStandardCase(), expected=False)
 
         # IFC class is case insensitive.
+        # WRONG WRONG WRONG should be UPPERCASE
         facet = ids.entity.create(name="IFCWALL")
         case("Entity case 0", facet=facet, inst=ifc.createIfcWall(), expected=True)
         case("Entity case 1", facet=facet, inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"), expected=True)
@@ -392,6 +378,10 @@ class TestIdsAuthoring(unittest.TestCase):
             inst=ifc.createIfcWall(PredefinedType="PARTITIONING"),
             expected=False,
         )
+
+        # Predefined Type must be uppercase, exactly the same as defined in the enumeration
+        facet = ids.entity.create(name="IfcWall", predefinedType="solidwall")
+        assert bool(facet(ifc.createIfcWall(PredefinedType="SOLIDWALL"))) is False
 
         # Predefined types are checked from the object type field if not standard
         facet = ids.entity.create(name="IfcWall", predefinedType="WALDO")
@@ -410,6 +400,9 @@ class TestIdsAuthoring(unittest.TestCase):
             inst=ifc.createIfcWallType(PredefinedType="USERDEFINED", ElementType="WALDO"),
             expected=True,
         )
+
+        # Predefined types are checked from the process type field if not standard for processes
+        # TODO
 
         # Userdefined is not an allowed filter because userdefined implies a specified object or element type
         facet = ids.entity.create(name="IfcWall", predefinedType="USERDEFINED")
@@ -444,6 +437,7 @@ class TestIdsAuthoring(unittest.TestCase):
         case("Entity enumeration 2", facet=facet, inst=ifc.createIfcBeam(), expected=False)
 
         # Another example of how restrictions are allowed when matching the IFC class
+        # Note: Regex patterns follow the XSD flavour
         restriction = ids.restriction.create(options="Ifc.*Type", type="pattern")
         facet = ids.entity.create(name=restriction)
         case("Entity pattern 0", facet=facet, inst=ifc.createIfcWall(), expected=False)
@@ -454,8 +448,10 @@ class TestIdsAuthoring(unittest.TestCase):
         facet = ids.entity.create(name="IfcWall", predefinedType=restriction)
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAR")
         wall2 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAZ")
+        wall3 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="BAZFOO")
         case("", facet=facet, inst=wall, expected=True)
         case("", facet=facet, inst=wall2, expected=True)
+        case("", facet=facet, inst=wall3, expected=False)
 
     def test_creating_an_attribute_facet(self):
         attribute = ids.attribute.create(name="name")
@@ -490,15 +486,50 @@ class TestIdsAuthoring(unittest.TestCase):
         case("", facet=facet, inst=ifc.createIfcWall(), expected=False)
         case("", facet=facet, inst=ifc.createIfcWall(Name=""), expected=False)
         case("", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=True)
+        # TODO write test case that evaluates empty list / set as False
+        # TODO write test case that evaluates logical UNKNOWN as False
+        # TODO write test case that evaluates any bool as True
+
+        # An object value is truthy
+        facet = ids.attribute.create(name="OwnerHistory")
+        assert bool(facet(ifc.createIfcWall())) is False
+        assert bool(facet(ifc.createIfcWall(OwnerHistory=ifc.createIfcOwnerHistory()))) is True
+
+        # Selects are only considered for truthy or falsey
+        facet = ids.attribute.create(name="DiffuseColour")
+        element = ifc.createIfcSurfaceStyleRendering()
+        assert bool(facet(element)) is False
+        assert bool(facet(ifc.createIfcSurfaceStyleRendering(DiffuseColour=ifc.createIfcColourRgb()))) is True
+        assert (
+            bool(facet(ifc.createIfcSurfaceStyleRendering(DiffuseColour=ifc.createIfcNormalisedRatioMeasure(0.5))))
+            is True
+        )
 
         # When a value is specified, the value shall match case sensitively
         facet = ids.attribute.create(name="Name", value="Foobar")
         case("", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=True)
+        case("", facet=facet, inst=ifc.createIfcWall(Name="foobar"), expected=False)
         case("", facet=facet, inst=ifc.createIfcWall(Name="Foobaz"), expected=False)
 
         # A value that is 0 is still considered a value, not "null-like", so it is matched
         facet = ids.attribute.create(name="Eastings")
         case("", facet=facet, inst=ifc.createIfcMapConversion(Eastings=0), expected=True)
+
+        # Value checks are meaningless for checking objects, selects, and lists so it always fails
+        facet = ids.attribute.create(name="OwnerHistory", value="Foobar")
+        assert bool(facet(ifc.createIfcWall(OwnerHistory=ifc.createIfcOwnerHistory()))) is False
+
+        # Selects
+
+        # Lists
+
+        # TODO continue from here
+
+        # TODO should we be allowed to check inverse attributes?
+        # Nope - always false
+
+        # TODO should we be allowed to check derived attributes?
+        # Nope - always false
 
         # Simple values which must be strings are checked with strict typing. No type casting shall occur.
         facet = ids.attribute.create(name="Eastings", value="42")
@@ -909,7 +940,7 @@ class TestIdsAuthoring(unittest.TestCase):
         case("", facet=facet, inst=wall, expected=True)
         case("", facet=facet, inst=wall_type, expected=False)
 
-    def test_material_create(self):
+    def test_creating_a_material_facet(self):
         facet = ids.material.create()
         assert facet.asdict() == {"@location": "any"}
         facet = ids.material.create(
@@ -1095,6 +1126,7 @@ class TestIdsAuthoring(unittest.TestCase):
         case("", facet=facet, inst=subelement, expected=False)
 
         # A nested subelement still passes so long as one of its parents is an IfcElementAssembly
+        # TODO nononono
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
         subsubelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
@@ -1112,6 +1144,7 @@ class TestIdsAuthoring(unittest.TestCase):
         case("", facet=facet, inst=element, expected=True)
 
         # An IfcGroup can be passed by subtypes
+        # TODO: wrong, subtypes should not be matched
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         group = ifc.createIfcInventory()
         facet = ids.partOf.create(entity="IfcGroup")
@@ -1127,6 +1160,7 @@ class TestIdsAuthoring(unittest.TestCase):
         case("", facet=facet, inst=element, expected=True)
 
         # An IfcSystem allows subtypes
+        # TODO: wrong, subtypes should not be matched
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         system = ifcopenshell.api.run("system.add_system", ifc, ifc_class="IfcDistributionSystem")
         ifcopenshell.api.run("system.assign_system", ifc, product=element, system=system)
@@ -1190,8 +1224,6 @@ class TestIdsAuthoring(unittest.TestCase):
         i.specifications[0].add_requirement(p)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "èêóòâôæøåążźćęóʑʒʓʔʕʗʘʙʚʛʜʝʞ")
 
-    """ Saving created IDS to IDS.xml """
-
     def test_created_ids_to_xml(self):
         i = ids.ids(title="My IDS")
         i.specifications.append(ids.specification(name="Test_Specification"))
@@ -1213,10 +1245,10 @@ class TestIdsAuthoring(unittest.TestCase):
         i.specifications[0].add_applicability(m)
         i.specifications[0].add_requirement(c)
         i.specifications[0].add_requirement(p1)
-        # TODO i.specifications[0].add_requirement(p2)
+        i.specifications[0].add_requirement(p2)
         i.specifications[0].add_requirement(p3)
         i.specifications[0].add_requirement(p4)
-        # TODO i.specifications[0].add_requirement(p5)
+        i.specifications[0].add_requirement(p5)
         fn = "TEST_FILE.xml"
         result = i.to_xml(fn)
         os.remove(fn)
@@ -1224,6 +1256,24 @@ class TestIdsAuthoring(unittest.TestCase):
 
 
 class TestIfcValidation(unittest.TestCase):
+    def test_creating_a_minimal_ids_and_validating(self):
+        specs = ids.ids(title="Title")
+        spec = ids.specification(name="Name")
+        spec.add_applicability(ids.entity.create(name="IfcWall"))
+        spec.add_requirement(ids.attribute.create(name="Name", value="Waldo"))
+        specs.specifications.append(spec)
+        assert "http://standards.buildingsmart.org/IDS" in specs.to_string()
+        assert spec.status == None
+
+        model = ifcopenshell.file()
+        wall = model.createIfcWall()
+        waldo = model.createIfcWall(Name="Waldo")
+        specs.validate2(model)
+
+        assert spec.status == False
+        assert set(spec.applicable_entities) == {wall, waldo}
+        assert spec.failed_entities == [wall]
+
     def test_validate_simple(self):
         # Same test as in reporting...
         ids_file = ids.ids.open(IDS_URL)
