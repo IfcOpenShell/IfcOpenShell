@@ -646,7 +646,7 @@ class BcfXml:
     def get_comments(self, guid):
         comments = {}
         data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
-        if "Comments" not in data["Topics"]:
+        if "Comments" not in data["Topic"]:
             return comments
 
         for item in data["Topic"]["Comments"].get("Comment", []):
