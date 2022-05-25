@@ -19,18 +19,14 @@
 import os
 import re
 import logging
-import operator
 import numpy as np
 import datetime
-
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.classification
-
 from bcf.v2.bcfxml import BcfXml
 from bcf.v2 import data as bcf
-
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xmlschema.validators import identities
@@ -112,10 +108,10 @@ class ids:
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
             "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_05.xsd",
             "info": self.info,
-            "specifications": [],
+            "specifications": {"specification": []},
         }
         for spec in self.specifications:
-            ids_dict["specifications"].append({"specification": spec.asdict()})  # TEST!
+            ids_dict["specifications"]["specification"].append(spec.asdict())
         return ids_dict
 
     def to_string(self, ids_schema=ids_schema):
@@ -139,6 +135,7 @@ class ids:
         :return: Result of the newly created file validation against the schema.
         :rtype: bool
         """
+        ET.register_namespace("", "http://standards.buildingsmart.org/IDS")
         ET.ElementTree(ids_schema.encode(self.asdict())).write(filepath, encoding="utf-8", xml_declaration=True)
         return ids_schema.is_valid(filepath)
 
@@ -161,6 +158,29 @@ class ids:
         ids_file = ids()
         ids_file.specifications = [specification.parse(s) for s in ids_content["specifications"]["specification"]]
         return ids_file
+
+    def validate2(self, ifc_file):
+        """Use to validate IFC model against IDS specifications.
+
+        :param ifc_file: path to ifc file
+        :type ifc_file: str
+        :param logger: Logging object with handlers, defaults to None
+        :type logger: logging, optional
+        """
+        for specification in self.specifications:
+            specification.applicable_entities.clear()
+            specification.failed_entities.clear()
+            specification.status = None
+        for element in ifc_file:
+            for specification in self.specifications:
+                if not specification.applicability(element, None):
+                    continue
+                specification.applicable_entities.append(element)
+                if specification.requirements(element, None):
+                    specification.status = True
+                else:
+                    specification.status = False
+                    specification.failed_entities.append(element)
 
     def validate(self, ifc_file, logger=None):
         """Use to validate IFC model against IDS specifications.
@@ -236,6 +256,10 @@ class specification:
         self.identifier = identifier
         self.description = description
         self.instructions = instructions
+
+        self.applicable_entities = []
+        self.failed_entities = []
+        self.status = None
 
     def asdict(self):
         """Converts object to a dictionary, adding required attributes.
@@ -337,7 +361,6 @@ class specification:
         :rtype: [bool,bool]
         """
         if self.applicability(inst, logger):
-
             valid = self.requirements(inst, logger)
 
             if valid:
@@ -473,10 +496,10 @@ class facet(metaclass=meta_facet):
 class entity(facet):
     """The IDS entity facet currently *with* inheritance"""
 
-    parameters = ["name", "predefinedType"]
+    parameters = ["name", "predefinedType", "instructions"]
 
     @staticmethod
-    def create(name=None, predefinedType=None):
+    def create(name=None, predefinedType=None, instructions=None):
         """Create an entity facet that can be added to applicability or requirements of IDS specification.
 
         :param name: IFC entity name that is required. e.g. IfcWall, defaults to None
@@ -490,6 +513,7 @@ class entity(facet):
         inst = entity()
         inst.name = name
         inst.predefinedType = predefinedType
+        inst.instructions = instructions
         return inst
 
     def asdict(self):
@@ -501,6 +525,8 @@ class entity(facet):
         results = {"name": parameter_asdict(self.name)}
         if self.predefinedType:
             results["predefinedType"] = parameter_asdict(self.predefinedType)
+        if self.instructions:
+            results["@instructions"] = self.instructions
         return results
 
     def __call__(self, inst, logger=None):
@@ -569,16 +595,16 @@ class attribute(facet):
         :return: Xmlschema compliant dictionary.
         :rtype: dict
         """
-        fac_dict = {"name": parameter_asdict(self.name)}
+        results = {"name": parameter_asdict(self.name)}
         if self.value:
-            fac_dict["value"] = parameter_asdict(self.value)
+            results["value"] = parameter_asdict(self.value)
         if self.location:
-            fac_dict["@location"] = self.location
+            results["@location"] = self.location
         if self.use:
-            fac_dict["@use"] = self.use
+            results["@use"] = self.use
         if self.instructions:
-            fac_dict["@instructions"] = self.instructions
-        return fac_dict
+            results["@instructions"] = self.instructions
+        return results
 
     def __call__(self, inst, logger=None):
         """Validate an ifc instance.
@@ -752,7 +778,7 @@ class partOf(facet):
         :return: Xmlschema compliant dictionary.
         :rtype: dict
         """
-        return {"@entity": parameter_asdict(self.entity)}
+        return {"@entity": self.entity}
 
     def __call__(self, inst, logger=None):
         """Validate an ifc instance against that partOf facet.
@@ -1149,7 +1175,7 @@ class restriction:
                     rest_dict["xs:enumeration"].append({"@value": option})
         elif self.type == "bounds":
             for option in self.options:
-                rest_dict["xs:" + option] = [{"@value": self.options[option], "@fixed": False}]
+                rest_dict["xs:" + option] = [{"@value": str(self.options[option]), "@fixed": False}]
         elif self.type == "pattern":
             if "xs:pattern" not in rest_dict:
                 rest_dict["xs:pattern"] = [{"@value": self.options}]
