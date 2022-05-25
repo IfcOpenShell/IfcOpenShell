@@ -240,7 +240,7 @@ class TestIdsAuthoring(unittest.TestCase):
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
             "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_05.xsd",
             "info": {"title": "Untitled"},
-            "specifications": [],
+            "specifications": {'specification': []},
         }
 
     def test_create_an_ids_with_all_possible_information(self):
@@ -269,7 +269,7 @@ class TestIdsAuthoring(unittest.TestCase):
                 "purpose": "purpose",
                 "milestone": "milestone",
             },
-            "specifications": [],
+            "specifications": {'specification': []},
         }
 
     def test_check_invalid_ids_information(self):
@@ -280,7 +280,7 @@ class TestIdsAuthoring(unittest.TestCase):
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
             "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_05.xsd",
             "info": {"title": "Untitled"},
-            "specifications": [],
+            "specifications": {'specification': []},
         }
 
     def test_authoring_an_ids_with_no_specifications_is_invalid(self):
@@ -363,6 +363,7 @@ class TestIdsAuthoring(unittest.TestCase):
 
         # IFC class is case insensitive.
         # WRONG WRONG WRONG should be UPPERCASE
+        # But in that case why are the enumerations for things like partOf using the IFC capitalisation?
         facet = ids.entity.create(name="IFCWALL")
         case("Entity case 0", facet=facet, inst=ifc.createIfcWall(), expected=True)
         case("Entity case 1", facet=facet, inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"), expected=True)
@@ -1103,9 +1104,9 @@ class TestIdsAuthoring(unittest.TestCase):
 
     def test_creating_a_partof_facet(self):
         facet = ids.partOf.create()
-        assert facet.asdict() == {"@entity": {"simpleValue": "IfcSystem"}}
+        assert facet.asdict() == {"@entity": "IfcSystem"}
         facet = ids.partOf.create(entity="IfcGroup")
-        assert facet.asdict() == {"@entity": {"simpleValue": "IfcGroup"}}
+        assert facet.asdict() == {"@entity": "IfcGroup"}
 
     def test_filtering_using_a_partof_facet(self):
         ifc = ifcopenshell.file()
@@ -1273,6 +1274,28 @@ class TestIfcValidation(unittest.TestCase):
         assert spec.status == False
         assert set(spec.applicable_entities) == {wall, waldo}
         assert spec.failed_entities == [wall]
+
+    def test_creating_multiple_specifications(self):
+        specs = ids.ids(title="Title")
+        spec = ids.specification(name="Name")
+        spec.add_applicability(ids.entity.create(name="IfcWall"))
+        spec.add_requirement(ids.attribute.create(name="Name", value="Waldo"))
+        specs.specifications.append(spec)
+
+        spec2 = ids.specification(name="Name")
+        spec2.add_applicability(ids.entity.create(name="IfcWall"))
+        spec2.add_requirement(ids.attribute.create(name="Name", value="Waldo"))
+        specs.specifications.append(spec2)
+
+        model = ifcopenshell.file()
+        wall = model.createIfcWall()
+        waldo = model.createIfcWall(Name="Waldo")
+        specs.validate2(model)
+
+        assert spec.status == False
+        assert set(spec.applicable_entities) == {wall, waldo}
+        assert spec.failed_entities == [wall]
+        assert spec2.failed_entities == [wall]
 
     def test_validate_simple(self):
         # Same test as in reporting...
