@@ -72,6 +72,8 @@
 	}
 }
 
+%include "../serializers/serializers_api.h"
+
 // Include headers for the typemaps to function. This set of includes,
 // can probably be reduced, but for now it's identical to the includes
 // of the module definition below.

@@ -173,7 +173,7 @@ class CreateDrawing(bpy.types.Operator):
             outfile.write(boilerplate.replace("</svg>", ""))
             if underlay:
                 with open(underlay) as infile:
-                    for line in enumerate(infile):
+                    for i, line in enumerate(infile):
                         if i < 2:
                             continue
                         elif "</svg>" in line:

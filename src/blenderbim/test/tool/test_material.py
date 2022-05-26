@@ -84,15 +84,30 @@ class TestGetName(NewFile):
 
 
 class TestImportMaterialDefinitions(NewFile):
-    def test_import_materials(self):
+    def test_import_materials_grouped_by_categories(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        material = ifc.createIfcMaterial(Name="Name")
+        material = ifc.createIfcMaterial(Name="Name", Category="Category")
         subject.import_material_definitions("IfcMaterial")
         props = bpy.context.scene.BIMMaterialProperties
-        assert props.materials[0].ifc_definition_id == material.id()
-        assert props.materials[0].name == "Name"
-        assert props.materials[0].total_elements == 0
+        assert props.materials[0].ifc_definition_id == 0
+        assert props.materials[0].name == "Category"
+        assert props.materials[0].is_category is True
+        assert props.materials[0].is_expanded is False
+        assert len(props.materials) == 1
+
+    def test_importing_expanded_material_categories(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material = ifc.createIfcMaterial(Name="Name", Category="Category")
+        subject.import_material_definitions("IfcMaterial")
+        props = bpy.context.scene.BIMMaterialProperties
+        props.materials[0].is_expanded = True
+        subject.import_material_definitions("IfcMaterial")
+        assert len(props.materials) == 2
+        assert props.materials[1].ifc_definition_id == material.id()
+        assert props.materials[1].name == "Name"
+        assert props.materials[1].total_elements == 0
 
     def test_import_material_layer_sets(self):
         ifc = ifcopenshell.file()

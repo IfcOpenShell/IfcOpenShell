@@ -29,7 +29,7 @@ The bottom right **Properties** panel shows data and relationships.
 
 The **Properties** panel has tabs to switch between different types of
 properties. Make sure you have the **Scene Properties** tab activated, and find
-the **IFC Project** subpanel. Click on the **Load Project** and browse to your
+the **IFC Project** subpanel. Click on **Load Project** and browse to your
 ``.ifc`` file.
 
 .. image:: properties-loadproject.png
@@ -206,11 +206,17 @@ classification. In this case, it distinguishes our object as a roof slab,
 compared to other types of slabs. The **Predefined Type** is optional so you may
 not see it all the time.
 
+.. seealso::
+
+    You can use the `Search IFC Class
+    <https://blenderbim.org/search-ifc-class.html>`__ tool to learn the correct
+    classes and predefined types you should see.
+
 Press the **Select Icon** to select all objects that are of the same
 **IfcSlab** **Class**. Then, you can isolate these elements by going to ``Object
 > Show/Hide > Hide Unselected`` (hotkey ``Shift-H``). To show all elements again, you can use
 ``Object > Show/Hide > Show Hidden Objects`` (hotkey ``Alt-H``). If you want to
-hide elements instead, you can use ``Object > Show/Hiden > Hide Selected``
+hide elements instead, you can use ``Object > Show/Hidden > Hide Selected``
 (hotkey ``H``).
 
 .. image:: element-class-select.png
@@ -295,8 +301,29 @@ You can find **Quantities** in the **IFC Quantity Sets** subpanel.
 
 .. image:: qtos.png
 
-Viewing construction types
---------------------------
+Finding the location of objects
+-------------------------------
+
+Every object in the built environment has a location in the world. For example,
+a chair will be located in a space, and a wall is typically located in a
+building storey. You've already seen this hierarchy of spaces in the
+**Outliner** panel, where an IFC project is broken down into site, building,
+storeys, and spaces.
+
+Sometimes, objects may have multiple relevant locations, such
+as a multi-storey column which can be related to multiple building storeys.
+Even in these cases, IFC enforces one location to be its primary
+location, known as its **Spatial Container**.
+
+If you click on any object, you can see its location in the **IFC Spatial
+Container** subpanel in the **Object Properties** tab.
+
+Press the **Select Icon** to select all objects that are in the same location.
+
+.. image:: spatial-container.png
+
+Checking construction types
+---------------------------
 
 Almost everything in the built environment will have a **Construction Type**.
 For example, an architect will specify a door type for every door in a project.
@@ -332,7 +359,7 @@ You can visually inspect types in isolation to the rest of the model. Types are
 hidden by default, so first enable the visibility of the **Types** collection in
 the **Outliner** by pressing the **Visibility Icon**. Then, select a type, and
 click on ``View > Local View > Toggle Local View`` (hotkey ``/``) in the
-**Viewport**. Toggle the view again to see the entire model again.
+**Viewport**. Toggle the view to see the entire model again.
 
 .. image:: type-local-view.png
 
@@ -343,12 +370,80 @@ click on ``View > Local View > Toggle Local View`` (hotkey ``/``) in the
    occurrence (such as a wall, which varies based on the wall length), the
    **Construction Type** will typically have no geometry.
 
-Viewing materials
------------------
+Filtering by materials
+----------------------
 
-TODO
+Everything in the built environment is made from a physical raw **Material**
+resources. For example, a **Material** might be a 140mm core filled block.
+Another **Material** might be a 190mm hollowcore block. **Materials** are
+grouped into categories like steel, concrete, brick, block, and so on.
+
+We can see a list of **Materials** used in the project in the **IFC Materials**
+subpanel in the **Scene Properties** tab.
+
+Press the **Select Icon** to select all objects that are of the selected
+material.
+
+.. image:: materials.png
 
 Taking simple measurements
 --------------------------
 
-TODO
+The simplest form of measurement is the one that's already taken for you. The
+**Viewing attributes and properties** section describes how to view
+pre-calculated **Quantities**.
+
+Sometimes, you may wish to take manual measurements yourself. To view the
+overall dimensions of an object, first select an object, then expand out the
+viewport **Sidebar**.
+
+.. image:: viewport-sidebar.png
+
+In the **Item** tab, you can find the X, Y, and Z overall **Dimensions** of the
+currently selected object.
+
+.. image:: viewport-dimensions.png
+
+Another way to manually measure from two points is to use the **Measure** tool.
+First, press the **Snap Icon** to enable snapping. Then choose snap targets in
+the **Snap Menu** in the top middle section of the **Viewport** panel.
+
+.. image:: snap-targets.png
+
+.. tip::
+
+   It is recommended to choose multiple snap targets, like **Vertex**, **Edge**, and
+   **Face**, and **Edge Center**. You can use the ``Shift`` key to select
+   multiple snap targets. For example, the **Face** snap target means that your
+   measurements will automatically snap to the nearest object's surface.
+
+Now that you have configured snapping, press the **Measure Tool Icon** on the
+left of the **Viewport** panel. **Click** and **Drag** in the 3D viewport to
+take a measurement. A circle will appear guiding the first point of your
+measurement. While **Dragging**, press the ``X`` key to lock the measurement
+line along the X axis. Alternatively, press the ``Y`` or ``Z`` key to lock the
+measurement line along the Y or Z axis. Let go of the mouse to finish your
+measurement.
+
+.. image:: measure-tool.png
+
+To delete a measurement, just click on one point of the measurement, and press
+the ``Delete`` key. You can also click and drag the ends of your measurement
+lines to measure to another location.
+
+What else is there?
+-------------------
+
+Congratulations, and welcome to the digital built environment!
+
+We've barely scratched the surface of the data and relationships available in an
+IFC model. We've yet to cover documents and drawings, clearance zones, tasks,
+cost items, structural loads and forces, analytical models, distribution system
+connectivity, energy analysis, rendering textures, and so much more. Our built
+environment and its relationships are vast and complex and it is exciting that
+you can join us on its digital journey!
+
+Please do not hesitate to reach out with any questions.
+
+- `OSArch live chat <https://osarch.org/chat>`__
+- `OSArch community forum <https://community.osarch.org>`__

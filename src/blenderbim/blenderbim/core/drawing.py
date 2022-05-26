@@ -192,7 +192,7 @@ def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None)
     if not context:
         return
     drawing_tool.show_decorations()
-    obj = drawing_tool.create_annotation_object(object_type)
+    obj = drawing_tool.create_annotation_object(drawing, object_type)
     element = ifc.get_entity(obj)
     if not element:
         element = drawing_tool.run_root_assign_class(

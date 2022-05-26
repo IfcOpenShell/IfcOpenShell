@@ -1,19 +1,15 @@
 IfcOpenShell-Python
 ===================
 
-This documentation is free software! You are free to contribute and help write
-this document.
+IfcOpenShell-Python provides Python bindings to the core IfcOpenShell C++
+system, as well as high level analysis and authoring functions.
 
 .. toctree::
+   :hidden:
    :maxdepth: 1
    :caption: Contents:
 
-   ifcopenshell-python/quickstart
-   ifcopenshell-python/api-documentation
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   ifcopenshell-python/installation
+   ifcopenshell-python/hello_world
+   ifcopenshell-python/code_examples
+   ifcopenshell-python/developer_guide
