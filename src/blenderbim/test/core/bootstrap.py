@@ -99,6 +99,13 @@ def geometry():
 
 
 @pytest.fixture
+def georeference():
+    prophet = Prophecy(blenderbim.core.tool.Georeference)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def library():
     prophet = Prophecy(blenderbim.core.tool.Library)
     yield prophet

@@ -247,41 +247,29 @@ class Geometry:
     def should_generate_uvs(cls, obj): pass
     def should_use_presentation_style_assignment(cls): pass
 
+
 @interface
 class Georeference:
-    def clear_projected_crs(cls): pass
-    def clear_map_conversion(cls): pass
-    def import_projected_crs(cls): pass
-    def import_map_conversion(cls): pass
-    def set_has_true_north_prop(cls): pass
-    def set_true_north_props(cls): pass
-    def enable_editing(cls): pass
     def disable_editing(cls): pass
-    def get_projected_crs_attributes(cls): pass
-    def get_map_conversion_attributes(cls): pass
-    def get_true_north_attributes(cls): pass
-    def edit_georeferencing(cls, projected_crs, map_conversion, true_north): pass
-    def get_file(cls): pass
-    def import_projected_crs_attributes(cls, name, prop, data): pass
-    def import_map_conversion_attributes(cls, name, prop, data): pass
-    def export_crs_attributes(cls, attributes, prop): pass
-    def export_map_attributes(cls, attributes, prop): pass
-    def set_ifc_grid_north(cls): pass
-    def set_blender_grid_north(cls): pass
+    def enable_editing(cls): pass
+    def enh2xyz(cls, map_conversion, coordinates): pass
+    def get_coordinates(cls, io): pass
     def get_cursor_location(cls): pass
-    def set_cursor_location(cls, coordinates, scale): pass
-    def get_scale(cls): pass
-    def get_coordinates_from_coordinate_output_prop(cls): pass
-    def set_ifc_true_north(cls): pass
-    def set_blender_true_north(cls): pass
     def get_map_conversion(cls): pass
-    def get_easting_northing_height_from_xyz(cls, map_conversion): pass
-    def get_xyz_from_easting_northig_height(cls, map_conversion): pass
-    def set_coordinate_output_prop(cls, coordinates): pass
-    def get_x_angle_from_sun_position(cls): pass
-    def set_xaxis_vector_from_angle(cls, x_angle): pass
-    def get_angle_from_xaxis(cls): pass
-    def set_sun_pos_north_offset(cls, angle): pass
+    def get_map_conversion_attributes(cls): pass
+    def get_projected_crs_attributes(cls): pass
+    def get_true_north_attributes(cls): pass
+    def import_map_conversion(cls): pass
+    def import_projected_crs(cls): pass
+    def import_true_north(cls): pass
+    def set_blender_grid_north(cls): pass
+    def set_blender_true_north(cls): pass
+    def set_coordinates(cls, io, coordinates): pass
+    def set_cursor_location(cls, coordinates): pass
+    def set_ifc_grid_north(cls): pass
+    def set_ifc_true_north(cls): pass
+    def xyz2enh(cls, map_conversion, coordinates): pass
+
 
 @interface
 class Ifc:
@@ -543,10 +531,10 @@ class Unit:
     def get_scene_unit_name(cls, unit_type): pass
     def get_scene_unit_si_prefix(cls): pass
     def get_si_name_from_unit_type(cls, unit_type): pass
-    def get_unit_class(cls, unit): pass
     def import_unit_attributes(cls, unit): pass
     def import_units(cls): pass
     def is_scene_unit_metric(cls): pass
+    def is_unit_class(cls, unit, ifc_class): pass
     def set_active_unit(cls, unit): pass
 
 
