@@ -111,7 +111,7 @@ class BIM_UL_units(UIList):
                 op.unit = item.ifc_definition_id
 
             if props.active_unit_id == item.ifc_definition_id:
-                row.operator("bim.edit_unit", text="", icon="CHECKMARK")
+                row.operator("bim.edit_unit", text="", icon="CHECKMARK").unit = item.ifc_definition_id
                 row.operator("bim.disable_editing_unit", text="", icon="CANCEL")
             elif props.active_unit_id:
                 row.operator("bim.remove_unit", text="", icon="X").unit = item.ifc_definition_id

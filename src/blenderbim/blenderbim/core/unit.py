@@ -96,12 +96,11 @@ def disable_editing_unit(unit):
 
 def edit_unit(ifc, unit_tool, unit=None):
     attributes = unit_tool.export_unit_attributes()
-    unit_class = unit_tool.get_unit_class(unit)
-    if unit_class == "IfcMonetaryUnit":
+    if unit_tool.is_unit_class(unit, "IfcMonetaryUnit"):
         ifc.run("unit.edit_monetary_unit", unit=unit, attributes=attributes)
-    elif unit_class == "IfcDerivedUnit":
+    elif unit_tool.is_unit_class(unit, "IfcDerivedUnit"):
         ifc.run("unit.edit_derived_unit", unit=unit, attributes=attributes)
-    elif unit_class == "IfcNamedUnit":
+    elif unit_tool.is_unit_class(unit, "IfcNamedUnit"):
         ifc.run("unit.edit_named_unit", unit=unit, attributes=attributes)
     unit_tool.import_units()
     unit_tool.clear_active_unit()
