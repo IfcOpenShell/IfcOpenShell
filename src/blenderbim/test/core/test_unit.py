@@ -142,7 +142,7 @@ class TestDisableEditingUnit:
 class TestEditUnit:
     def test_editing_monetary_units(self, ifc, unit):
         unit.export_unit_attributes().should_be_called().will_return("attributes")
-        unit.get_unit_class("unit").should_be_called().will_return("IfcMonetaryUnit")
+        unit.is_unit_class("unit", "IfcMonetaryUnit").should_be_called().will_return(True)
         ifc.run("unit.edit_monetary_unit", unit="unit", attributes="attributes").should_be_called()
         unit.import_units().should_be_called()
         unit.clear_active_unit().should_be_called()
@@ -150,7 +150,8 @@ class TestEditUnit:
 
     def test_editing_derived_units(self, ifc, unit):
         unit.export_unit_attributes().should_be_called().will_return("attributes")
-        unit.get_unit_class("unit").should_be_called().will_return("IfcDerivedUnit")
+        unit.is_unit_class("unit", "IfcMonetaryUnit").should_be_called().will_return(False)
+        unit.is_unit_class("unit", "IfcDerivedUnit").should_be_called().will_return(True)
         ifc.run("unit.edit_derived_unit", unit="unit", attributes="attributes").should_be_called()
         unit.import_units().should_be_called()
         unit.clear_active_unit().should_be_called()
@@ -158,7 +159,9 @@ class TestEditUnit:
 
     def test_editing_named_units(self, ifc, unit):
         unit.export_unit_attributes().should_be_called().will_return("attributes")
-        unit.get_unit_class("unit").should_be_called().will_return("IfcNamedUnit")
+        unit.is_unit_class("unit", "IfcMonetaryUnit").should_be_called().will_return(False)
+        unit.is_unit_class("unit", "IfcDerivedUnit").should_be_called().will_return(False)
+        unit.is_unit_class("unit", "IfcNamedUnit").should_be_called().will_return(True)
         ifc.run("unit.edit_named_unit", unit="unit", attributes="attributes").should_be_called()
         unit.import_units().should_be_called()
         unit.clear_active_unit().should_be_called()
