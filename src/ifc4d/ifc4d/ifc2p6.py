@@ -125,7 +125,7 @@ class Ifc2P6:
             6: "Saturday",
             7: "Sunday",
         }
-        for working_time in calendar.WorkingTimes:
+        for working_time in calendar.WorkingTimes or []:
             if not working_time.RecurrencePattern or working_time.RecurrencePattern.RecurrenceType != "WEEKLY":
                 continue
 
@@ -211,8 +211,6 @@ class Ifc2P6:
             self.create_activity(activity["task"], activity["work_schedule"], parent=activity["parent"])
 
     def create_activity(self, task, work_schedule, parent=None):
-        if not parent:
-            return
         activity = ET.SubElement(self.element_map[work_schedule], "Activity")
         self.link_element(task, activity)
         ET.SubElement(activity, "Id").text = task.Identification or "X"
