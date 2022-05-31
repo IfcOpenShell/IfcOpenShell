@@ -19,12 +19,22 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: recursive
-      - 
-        name: Update ubuntu
+      - name: Install C++ dependencies
         run: |
           sudo apt update
-          sudo apt-get install git cmake gcc g++ libboost1.67-all-dev python3-all-dev swig libpcre3-dev libxml2-dev
-          sudo apt-get install libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
+          sudo apt-get install --no-install-recommends \
+          git cmake gcc g++ \
+          libboost-date-time-dev \
+          libboost-filesystem-dev \
+          libboost-iostreams-dev \
+          libboost-program-options-dev \
+          libboost-regex-dev \
+          libboost-system-dev \
+          libboost-thread-dev \
+          python3-all-dev python3-pip \
+          swig libpcre3-dev libxml2-dev \
+          libtbb-dev nlohmann-json3-dev \
+          libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
           libhdf5-dev libcgal-dev
           
       - name: Build
