@@ -536,10 +536,7 @@ class entity(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
-        if isinstance(self.name, str):
-            is_pass = inst.is_a().lower() == self.name.lower()
-        else:
-            is_pass = inst.is_a() == self.name
+        is_pass = inst.is_a().upper() == self.name
         if is_pass and self.predefinedType:
             predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
             is_pass = predefined_type == self.predefinedType

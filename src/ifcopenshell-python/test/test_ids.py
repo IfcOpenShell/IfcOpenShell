@@ -344,13 +344,13 @@ class TestIdsAuthoring(unittest.TestCase):
         ifc = ifcopenshell.file()
 
         # Wrong IFC classes are never matched.
-        facet = ids.entity.create(name="IfcRabbit")
+        facet = ids.entity.create(name="IFCRABBIT")
         case("Non-existent entity name", facet=facet, inst=ifc.createIfcWall(), expected=False)
 
         # IFC class is checked for an exact match. Subclasses should not match.
         # TODO: Some votes to prefer inheritance (For: Moult, Evandro, Artur)
         # Possible argument: CAD tools don't understand IFC
-        facet = ids.entity.create(name="IfcWall")
+        facet = ids.entity.create(name="IFCWALL")
         case("Entity matching", facet=facet, inst=ifc.createIfcWall(), expected=True)
         case(
             "Entity with PredefinedType", facet=facet, inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"), expected=True
@@ -358,16 +358,13 @@ class TestIdsAuthoring(unittest.TestCase):
         case("Entity matching", facet=facet, inst=ifc.createIfcSlab(), expected=False)
         case("Entity subtype", facet=facet, inst=ifc.createIfcWallStandardCase(), expected=False)
 
-        # IFC class is case insensitive.
-        # WRONG WRONG WRONG should be UPPERCASE
-        # But in that case why are the enumerations for things like partOf using the IFC capitalisation?
-        facet = ids.entity.create(name="IFCWALL")
-        case("Entity case 0", facet=facet, inst=ifc.createIfcWall(), expected=True)
-        case("Entity case 1", facet=facet, inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"), expected=True)
-        case("Entity case 2", facet=facet, inst=ifc.createIfcSlab(), expected=False)
+        # IFC class is case sensitive and has to be uppercase.
+        # TODO But in that case why are the enumerations for things like partOf using the IFC capitalisation?
+        facet = ids.entity.create(name="IfcWall")
+        case("Entity case", facet=facet, inst=ifc.createIfcWall(), expected=False)
 
         # Predefined types are checked from standard enumeration values
-        facet = ids.entity.create(name="IfcWall", predefinedType="SOLIDWALL")
+        facet = ids.entity.create(name="IFCWALL", predefinedType="SOLIDWALL")
         case("Entity PredefinedType 0", facet=facet, inst=ifc.createIfcWall(), expected=False)
         case("Entity PredefinedType 1", facet=facet, inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"), expected=True)
         case(
@@ -378,11 +375,11 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         # Predefined Type must be uppercase, exactly the same as defined in the enumeration
-        facet = ids.entity.create(name="IfcWall", predefinedType="solidwall")
+        facet = ids.entity.create(name="IFCWALL", predefinedType="solidwall")
         assert bool(facet(ifc.createIfcWall(PredefinedType="SOLIDWALL"))) is False
 
         # Predefined types are checked from the object type field if not standard
-        facet = ids.entity.create(name="IfcWall", predefinedType="WALDO")
+        facet = ids.entity.create(name="IFCWALL", predefinedType="WALDO")
         case(
             "Entity user-defined type",
             facet=facet,
@@ -391,7 +388,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         # Predefined types are checked from the element type field if not standard for types
-        facet = ids.entity.create(name="IfcWallType", predefinedType="WALDO")
+        facet = ids.entity.create(name="IFCWALLTYPE", predefinedType="WALDO")
         case(
             "Entity ElementType",
             facet=facet,
@@ -400,10 +397,16 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         # Predefined types are checked from the process type field if not standard for processes
-        # TODO
+        facet = ids.entity.create(name="IFCTASKTYPE", predefinedType="TASKY")
+        case(
+            "Entity ProcessType",
+            facet=facet,
+            inst=ifc.createIfcTaskType(PredefinedType="USERDEFINED", ProcessType="TASKY"),
+            expected=True,
+        )
 
         # Userdefined is not an allowed filter because userdefined implies a specified object or element type
-        facet = ids.entity.create(name="IfcWall", predefinedType="USERDEFINED")
+        facet = ids.entity.create(name="IFCWALL", predefinedType="USERDEFINED")
         case(
             "Entity no USERDEFINED",
             facet=facet,
@@ -415,7 +418,7 @@ class TestIdsAuthoring(unittest.TestCase):
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType", predefined_type="X")
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
-        facet = ids.entity.create(name="IfcWall", predefinedType="X")
+        facet = ids.entity.create(name="IFCWALL", predefinedType="X")
         case("Entity PredefinedType inheritance 0", facet=facet, inst=wall, expected=True)
 
         # Predefined types should match overridden predefined types from the element type
@@ -424,11 +427,11 @@ class TestIdsAuthoring(unittest.TestCase):
             "root.create_entity", ifc, ifc_class="IfcWallType", predefined_type="NOTDEFINED"
         )
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
-        facet = ids.entity.create(name="IfcWall", predefinedType="X")
+        facet = ids.entity.create(name="IFCWALL", predefinedType="X")
         case("Entity PredefinedType inheritance 1", facet=facet, inst=wall, expected=True)
 
         # Restrictions are allowed when matching the IFC class
-        restriction = ids.restriction.create(options=["IfcWall", "IfcSlab"], type="enumeration")
+        restriction = ids.restriction.create(options=["IFCWALL", "IFCSLAB"], type="enumeration")
         facet = ids.entity.create(name=restriction)
         case("Entity enumeration 0", facet=facet, inst=ifc.createIfcWall(), expected=True)
         case("Entity enumeration 1", facet=facet, inst=ifc.createIfcSlab(), expected=True)
@@ -436,14 +439,14 @@ class TestIdsAuthoring(unittest.TestCase):
 
         # Another example of how restrictions are allowed when matching the IFC class
         # Note: Regex patterns follow the XSD flavour
-        restriction = ids.restriction.create(options="Ifc.*Type", type="pattern")
+        restriction = ids.restriction.create(options="IFC.*TYPE", type="pattern")
         facet = ids.entity.create(name=restriction)
         case("Entity pattern 0", facet=facet, inst=ifc.createIfcWall(), expected=False)
         case("Entity pattern 1", facet=facet, inst=ifc.createIfcWallType(), expected=True)
 
         # Restrictions are allowed when matching the predefined type
         restriction = ids.restriction.create(options="FOO.*", type="pattern")
-        facet = ids.entity.create(name="IfcWall", predefinedType=restriction)
+        facet = ids.entity.create(name="IFCWALL", predefinedType=restriction)
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAR")
         wall2 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAZ")
         wall3 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="BAZFOO")
@@ -1160,7 +1163,7 @@ class TestIfcValidation(unittest.TestCase):
     def test_creating_a_minimal_ids_and_validating(self):
         specs = ids.ids(title="Title")
         spec = ids.specification(name="Name")
-        spec.add_applicability(ids.entity.create(name="IfcWall"))
+        spec.add_applicability(ids.entity.create(name="IFCWALL"))
         spec.add_requirement(ids.attribute.create(name="Name", value="Waldo"))
         specs.specifications.append(spec)
         assert "http://standards.buildingsmart.org/IDS" in specs.to_string()
@@ -1178,12 +1181,12 @@ class TestIfcValidation(unittest.TestCase):
     def test_creating_multiple_specifications(self):
         specs = ids.ids(title="Title")
         spec = ids.specification(name="Name")
-        spec.add_applicability(ids.entity.create(name="IfcWall"))
+        spec.add_applicability(ids.entity.create(name="IFCWALL"))
         spec.add_requirement(ids.attribute.create(name="Name", value="Waldo"))
         specs.specifications.append(spec)
 
         spec2 = ids.specification(name="Name")
-        spec2.add_applicability(ids.entity.create(name="IfcWall"))
+        spec2.add_applicability(ids.entity.create(name="IFCWALL"))
         spec2.add_requirement(ids.attribute.create(name="Name", value="Waldo"))
         specs.specifications.append(spec2)
 
