@@ -618,6 +618,7 @@ class attribute(facet):
         if isinstance(self.name, str):
             type_value = getattr(element_type, self.name, None) if element_type else None
             occurrence_value = getattr(inst, self.name, None)
+            names = [self.name]
             values = [occurrence_value if occurrence_value is not None else type_value]
         else:
             if element_type:
@@ -625,9 +626,31 @@ class attribute(facet):
                 info.update({k: v for k, v in inst.get_info().items() if v is not None})
             else:
                 info = inst.get_info()
-            values = [v for k, v in info.items() if k == self.name]
+            names = []
+            values = []
+            for k, v in info.items():
+                if k == self.name:
+                    names.append(k)
+                    values.append(v)
 
-        is_pass = bool(values) and all([v is not None and v != "" for v in values])
+        is_pass = bool(values)
+
+        if is_pass:
+            for i, value in enumerate(values):
+                if value is None:
+                    is_pass = False
+                elif value == "":
+                    is_pass = False
+                elif value == tuple():
+                    is_pass = False
+                elif (
+                    inst.attribute_type(inst.wrapped_data.get_argument_index(names[i])) == "LOGICAL"
+                    and value == "UNKNOWN"
+                ):
+                    is_pass = False
+                if not is_pass:
+                    break
+
         if is_pass and self.value:
             is_pass = all([v == self.value for v in values])
 

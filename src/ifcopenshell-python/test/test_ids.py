@@ -41,7 +41,10 @@ ifc_file = ifcopenshell.open(IFC_URL)
 os.remove(os.path.join(tempfile.gettempdir(), "test.ifc"))
 
 
-def case(name, *, facet, inst, expected):
+def set_facet(facet):
+    pass
+
+def run(name, *, facet, inst, expected):
     assert bool(facet(inst)) is expected
 
 
@@ -257,20 +260,22 @@ class TestIdsAuthoring(unittest.TestCase):
         }
 
     def test_filtering_using_an_entity_facet(self):
+        set_facet("entity")
+
         ifc = ifcopenshell.file()
 
         facet = ids.entity.create(name="IFCRABBIT")
-        case("Invalid entities always fail", facet=facet, inst=ifc.createIfcWall(), expected=False)
+        run("Invalid entities always fail", facet=facet, inst=ifc.createIfcWall(), expected=False)
 
         facet = ids.entity.create(name="IFCWALL")
-        case("A matching entity should pass", facet=facet, inst=ifc.createIfcWall(), expected=True)
-        case(
+        run("A matching entity should pass", facet=facet, inst=ifc.createIfcWall(), expected=True)
+        run(
             "An matching entity should pass regardless of predefined type",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"),
             expected=True,
         )
-        case(
+        run(
             "An entity not matching the specified class should fail",
             facet=facet,
             inst=ifc.createIfcSlab(),
@@ -278,7 +283,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
         # TODO: Some votes to prefer inheritance (For: Moult, Evandro, Artur)
         # Possible argument: CAD tools don't understand IFC
-        case(
+        run(
             "Subclasses are not considered as matching",
             facet=facet,
             inst=ifc.createIfcWallStandardCase(),
@@ -287,7 +292,7 @@ class TestIdsAuthoring(unittest.TestCase):
 
         # TODO But in that case why are the enumerations for things like partOf using the IFC capitalisation?
         facet = ids.entity.create(name="IfcWall")
-        case(
+        run(
             "Entities must be specified as uppercase strings",
             facet=facet,
             inst=ifc.createIfcWall(),
@@ -295,19 +300,19 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCWALL", predefinedType="SOLIDWALL")
-        case(
+        run(
             "A matching predefined type should pass",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"),
             expected=True,
         )
-        case(
+        run(
             "A null predefined type should always fail a specified predefined types",
             facet=facet,
             inst=ifc.createIfcWall(),
             expected=False,
         )
-        case(
+        run(
             "An entity not matching a specified predefined type will fail",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="PARTITIONING"),
@@ -315,7 +320,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCWALL", predefinedType="solidwall")
-        case(
+        run(
             "A predefined type from an enumeration must be uppercase",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"),
@@ -323,7 +328,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCWALL", predefinedType="WALDO")
-        case(
+        run(
             "A predefined type may specify a user-defined object type",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="WALDO"),
@@ -331,7 +336,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCWALL", predefinedType="WALDO")
-        case(
+        run(
             "User-defined types are checked case sensitively",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="waldo"),
@@ -339,7 +344,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCWALLTYPE", predefinedType="WALDO")
-        case(
+        run(
             "A predefined type may specify a user-defined element type",
             facet=facet,
             inst=ifc.createIfcWallType(PredefinedType="USERDEFINED", ElementType="WALDO"),
@@ -347,7 +352,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCTASKTYPE", predefinedType="TASKY")
-        case(
+        run(
             "A predefined type may specify a user-defined process type",
             facet=facet,
             inst=ifc.createIfcTaskType(PredefinedType="USERDEFINED", ProcessType="TASKY"),
@@ -355,7 +360,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCWALL", predefinedType="USERDEFINED")
-        case(
+        run(
             "A predefined type must always specify a meaningful type, not USERDEFINED itself",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="WALDO"),
@@ -366,7 +371,7 @@ class TestIdsAuthoring(unittest.TestCase):
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType", predefined_type="X")
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
         facet = ids.entity.create(name="IFCWALL", predefinedType="X")
-        case("Inherited predefined types should pass", facet=facet, inst=wall, expected=True)
+        run("Inherited predefined types should pass", facet=facet, inst=wall, expected=True)
 
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="X")
         wall_type = ifcopenshell.api.run(
@@ -374,30 +379,30 @@ class TestIdsAuthoring(unittest.TestCase):
         )
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
         facet = ids.entity.create(name="IFCWALL", predefinedType="X")
-        case("Overridden predefined types should pass", facet=facet, inst=wall, expected=True)
+        run("Overridden predefined types should pass", facet=facet, inst=wall, expected=True)
 
         # Restrictions are allowed when matching the IFC class
         restriction = ids.restriction.create(options=["IFCWALL", "IFCSLAB"], type="enumeration")
         facet = ids.entity.create(name=restriction)
-        case("Entities can be specified as an enumeration 1/3", facet=facet, inst=ifc.createIfcWall(), expected=True)
-        case("Entities can be specified as an enumeration 2/3", facet=facet, inst=ifc.createIfcSlab(), expected=True)
-        case("Entities can be specified as an enumeration 3/3", facet=facet, inst=ifc.createIfcBeam(), expected=False)
+        run("Entities can be specified as an enumeration 1/3", facet=facet, inst=ifc.createIfcWall(), expected=True)
+        run("Entities can be specified as an enumeration 2/3", facet=facet, inst=ifc.createIfcSlab(), expected=True)
+        run("Entities can be specified as an enumeration 3/3", facet=facet, inst=ifc.createIfcBeam(), expected=False)
 
         # Another example of how restrictions are allowed when matching the IFC class
         # Note: Regex patterns follow the XSD flavour
         restriction = ids.restriction.create(options="IFC.*TYPE", type="pattern")
         facet = ids.entity.create(name=restriction)
-        case("Entities can be specified as a pattern 1/2", facet=facet, inst=ifc.createIfcWall(), expected=False)
-        case("Entities can be specified as a pattern 2/2", facet=facet, inst=ifc.createIfcWallType(), expected=True)
+        run("Entities can be specified as a pattern 1/2", facet=facet, inst=ifc.createIfcWall(), expected=False)
+        run("Entities can be specified as a pattern 2/2", facet=facet, inst=ifc.createIfcWallType(), expected=True)
 
         restriction = ids.restriction.create(options="FOO.*", type="pattern")
         facet = ids.entity.create(name="IFCWALL", predefinedType=restriction)
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAR")
         wall2 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAZ")
         wall3 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="BAZFOO")
-        case("Restrictions an be specified for the predefined type 1/3", facet=facet, inst=wall, expected=True)
-        case("Restrictions an be specified for the predefined type 2/3", facet=facet, inst=wall2, expected=True)
-        case("Restrictions an be specified for the predefined type 3/3", facet=facet, inst=wall3, expected=False)
+        run("Restrictions an be specified for the predefined type 1/3", facet=facet, inst=wall, expected=True)
+        run("Restrictions an be specified for the predefined type 2/3", facet=facet, inst=wall2, expected=True)
+        run("Restrictions an be specified for the predefined type 3/3", facet=facet, inst=wall3, expected=False)
 
     def test_creating_an_attribute_facet(self):
         attribute = ids.attribute.create(name="name")
@@ -416,46 +421,58 @@ class TestIdsAuthoring(unittest.TestCase):
         }
 
     def test_filtering_using_an_attribute_facet(self):
+        set_facet("attribute")
+
         ifc = ifcopenshell.file()
 
-        # Attribute names that don't exist are never matched
         facet = ids.attribute.create(name="Foobar")
-        case("", facet=facet, inst=ifc.createIfcWall(), expected=False)
+        run("Invalid attribute names always fail", facet=facet, inst=ifc.createIfcWall(), expected=False)
 
-        # Attribute names that are either null or empty string are not matched.
-        # The logic is that unfortunately most BIM users cannot differentiate between the two.
         facet = ids.attribute.create(name="Name")
-        case("", facet=facet, inst=ifc.createIfcWall(), expected=False)
-        case("", facet=facet, inst=ifc.createIfcWall(Name=""), expected=False)
-        case("", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=True)
-        # TODO write test case that evaluates empty list / set as False
-        # TODO write test case that evaluates logical UNKNOWN as False
-        # TODO write test case that evaluates any bool as True
+        run("Attributes with a string value should pass", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=True)
+        run("Attributes with null values always fail", facet=facet, inst=ifc.createIfcWall(), expected=False)
+        # The logic is that unfortunately most BIM users cannot differentiate between the two.
+        run("Attributes with empty strings always fail", facet=facet, inst=ifc.createIfcWall(Name=""), expected=False)
+        facet = ids.attribute.create(name="CountValue")
+        run("Attributes with a zero number have meaning and should pass", facet=facet, inst=ifc.createIfcQuantityCount(Name="Foobar", CountValue=0), expected=True)
 
-        # An object value is truthy
-        facet = ids.attribute.create(name="OwnerHistory")
-        assert bool(facet(ifc.createIfcWall())) is False
-        assert bool(facet(ifc.createIfcWall(OwnerHistory=ifc.createIfcOwnerHistory()))) is True
+        facet = ids.attribute.create(name="IsCritical")
+        element = ifc.createIfcTaskTime(IsCritical=True)
+        run("Attributes with a boolean true should pass", facet=facet, inst=element, expected=True)
+        element.IsCritical = False
+        run("Attributes with a boolean false should pass", facet=facet, inst=element, expected=True)
+
+        facet = ids.attribute.create(name="RelatingPriorities")
+        run("Attributes with an empty list always fail", facet=facet, inst=ifc.createIfcRelConnectsPathElements(RelatingElement=ifc.createIfcWall(), RelatedElement=ifc.createIfcWall(), RelatingPriorities=[], RelatedPriorities=[], RelatedConnectionType="ATSTART", RelatingConnectionType="ATEND"), expected=False)
+
+        facet = ids.attribute.create(name="LayerStyles")
+        item = ifc.createIfcCartesianPoint([0., 0., 0.])
+        layer = ifc.createIfcPresentationLayerWithStyle("Foo", None, [item], None, True, False, False, [])
+        run("Attributes with an empty set always fail", facet=facet, inst=layer, expected=False)
+
+        layer.LayerOn = "UNKNOWN"
+        facet = ids.attribute.create(name="LayerOn")
+        run("Attributes with a logical unknown always fail", facet=facet, inst=layer, expected=False)
+
+        facet = ids.attribute.create(name="ScheduleDuration")
+        element = ifc.createIfcTaskTime(ScheduleDuration="P0D")
+        run("Attributes with a zero duration should pass", facet=facet, inst=element, expected=True)
+
+        facet = ids.attribute.create(name="TaskTime")
+        element = ifc.createIfcTask(IsMilestone=True, TaskTime=ifc.createIfcTaskTime())
+        run("Attributes referencing an object should pass", facet=facet, inst=element, expected=True)
 
         # Selects are only considered for truthy or falsey
         facet = ids.attribute.create(name="DiffuseColour")
         element = ifc.createIfcSurfaceStyleRendering()
-        assert bool(facet(element)) is False
-        assert bool(facet(ifc.createIfcSurfaceStyleRendering(DiffuseColour=ifc.createIfcColourRgb()))) is True
-        assert (
-            bool(facet(ifc.createIfcSurfaceStyleRendering(DiffuseColour=ifc.createIfcNormalisedRatioMeasure(0.5))))
-            is True
-        )
+        rgb = ifc.createIfcColourRgb(None, 1, 1, 1)
+        run("Attributes with a select referencing an object should pass", facet=facet, inst=ifc.createIfcSurfaceStyleRendering(SurfaceColour=rgb, ReflectanceMethod="FLAT", DiffuseColour=ifc.createIfcColourRgb(None, 1, 1, 1)), expected=True)
+        run("Attributes with a select referencing a primitive should pass", facet=facet, inst=ifc.createIfcSurfaceStyleRendering(SurfaceColour=rgb, ReflectanceMethod="FLAT", DiffuseColour=ifc.createIfcNormalisedRatioMeasure(0.5)), expected=True)
 
         # When a value is specified, the value shall match case sensitively
         facet = ids.attribute.create(name="Name", value="Foobar")
-        case("", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=True)
-        case("", facet=facet, inst=ifc.createIfcWall(Name="foobar"), expected=False)
-        case("", facet=facet, inst=ifc.createIfcWall(Name="Foobaz"), expected=False)
-
-        # A value that is 0 is still considered a value, not "null-like", so it is matched
-        facet = ids.attribute.create(name="Eastings")
-        case("", facet=facet, inst=ifc.createIfcMapConversion(Eastings=0), expected=True)
+        run("Attributes should check strings case sensitively 1/2", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=True)
+        run("Attributes should check strings case sensitively 2/2", facet=facet, inst=ifc.createIfcWall(Name="foobar"), expected=False)
 
         # Value checks are meaningless for checking objects, selects, and lists so it always fails
         facet = ids.attribute.create(name="OwnerHistory", value="Foobar")
@@ -475,8 +492,8 @@ class TestIdsAuthoring(unittest.TestCase):
 
         # Simple values which must be strings are checked with strict typing. No type casting shall occur.
         facet = ids.attribute.create(name="Eastings", value="42")
-        case("", facet=facet, inst=ifc.createIfcMapConversion(Eastings=0), expected=False)
-        case("", facet=facet, inst=ifc.createIfcMapConversion(Eastings=42), expected=False)
+        run("", facet=facet, inst=ifc.createIfcMapConversion(Eastings=0), expected=False)
+        run("", facet=facet, inst=ifc.createIfcMapConversion(Eastings=42), expected=False)
 
         # Strict type checking is done with restrictions. This is really ugly, but hopefully hidden to a user.
         restriction = ids.restriction.create(options=[42], type="enumeration", base="decimal")
@@ -485,47 +502,47 @@ class TestIdsAuthoring(unittest.TestCase):
         #     options={"minInclusive": 42, "maxInclusive": 42}, type="bounds", base="decimal"
         # )
         facet = ids.attribute.create(name="Eastings", value=restriction)
-        case("", facet=facet, inst=ifc.createIfcMapConversion(Eastings=42), expected=True)
+        run("", facet=facet, inst=ifc.createIfcMapConversion(Eastings=42), expected=True)
 
         # Restrictions are allowed for the name
         restriction = ids.restriction.create(options=".*Name.*", type="pattern")
         facet = ids.attribute.create(name=restriction)
-        case("", facet=facet, inst=ifc.createIfcMaterialLayerSet(LayerSetName="Foo"), expected=True)
-        case("", facet=facet, inst=ifc.createIfcMaterialConstituentSet(Name="Foo"), expected=True)
+        run("", facet=facet, inst=ifc.createIfcMaterialLayerSet(LayerSetName="Foo"), expected=True)
+        run("", facet=facet, inst=ifc.createIfcMaterialConstituentSet(Name="Foo"), expected=True)
 
         # Restrictions for the name imply that multiple names may be matched. All, not any, must pass the checks.
         restriction = ids.restriction.create(options=["Name", "Description"], type="enumeration")
         facet = ids.attribute.create(name=restriction)
-        case("", facet=facet, inst=ifc.createIfcWall(Name="Foo"), expected=False)
-        case("", facet=facet, inst=ifc.createIfcWall(Name="Foo", Description="Bar"), expected=True)
+        run("", facet=facet, inst=ifc.createIfcWall(Name="Foo"), expected=False)
+        run("", facet=facet, inst=ifc.createIfcWall(Name="Foo", Description="Bar"), expected=True)
 
         # Restrictions are allowed for the value
         restriction = ids.restriction.create(options=["Foo", "Bar"], type="enumeration")
         facet = ids.attribute.create(name="Name", value=restriction)
-        case("", facet=facet, inst=ifc.createIfcWall(Name="Foo"), expected=True)
-        case("", facet=facet, inst=ifc.createIfcWall(Name="Bar"), expected=True)
-        case("", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=False)
+        run("", facet=facet, inst=ifc.createIfcWall(Name="Foo"), expected=True)
+        run("", facet=facet, inst=ifc.createIfcWall(Name="Bar"), expected=True)
+        run("", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=False)
 
         # The facet checks on attributes on the type, which may be inherited by the occurence
         # TODO attribute inheritance is not defined IFC behaviour
         facet = ids.attribute.create(name="Description", value="Foobar")
-        case("", facet=facet, inst=ifc.createIfcWall(Description="Foobar"), expected=True)
+        run("", facet=facet, inst=ifc.createIfcWall(Description="Foobar"), expected=True)
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
         wall_type.Description = "Foobar"
-        case("", facet=facet, inst=wall, expected=True)
+        run("", facet=facet, inst=wall, expected=True)
 
         # The facet checks on attributes on the type, which may be overriden by attributes on the occurence
         # TODO attribute overriding is not defined IFC behaviour
         facet = ids.attribute.create(name="Description", value="Foobar")
-        case("", facet=facet, inst=ifc.createIfcWall(Description="Foobar"), expected=True)
+        run("", facet=facet, inst=ifc.createIfcWall(Description="Foobar"), expected=True)
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
         wall_type.Description = "Foobaz"
         wall.Description = "Foobar"
-        case("", facet=facet, inst=wall, expected=True)
+        run("", facet=facet, inst=wall, expected=True)
 
     def test_creating_a_classification_facet(self):
         facet = ids.classification.create()
@@ -581,43 +598,43 @@ class TestIdsAuthoring(unittest.TestCase):
 
         # A classification facet with no data matches any present classification
         facet = ids.classification.create()
-        case("", facet=facet, inst=element0, expected=False)
-        case("", facet=facet, inst=element1, expected=True)
+        run("", facet=facet, inst=element0, expected=False)
+        run("", facet=facet, inst=element1, expected=True)
 
         # Values should match exactly if lightweight classifications are used.
         facet = ids.classification.create(value="1")
-        case("", facet=facet, inst=element1, expected=True)
+        run("", facet=facet, inst=element1, expected=True)
 
         # Values should match subreferences if full classifications are used.
         # E.g. a facet searching for Uniclass EF_25_10 Walls will match Uniclass EF_25_10_25, EF_25_10_30, etc
         facet = ids.classification.create(value="2")
-        case("", facet=facet, inst=element22, expected=True)
+        run("", facet=facet, inst=element22, expected=True)
 
         # Systems should match exactly regardless of lightweight or full classifications
         facet = ids.classification.create(system="Foobar")
-        case("", facet=facet, inst=project, expected=True)
-        case("", facet=facet, inst=element0, expected=False)
-        case("", facet=facet, inst=element1, expected=True)
-        case("", facet=facet, inst=element11, expected=True)
-        case("", facet=facet, inst=element22, expected=True)
+        run("", facet=facet, inst=project, expected=True)
+        run("", facet=facet, inst=element0, expected=False)
+        run("", facet=facet, inst=element1, expected=True)
+        run("", facet=facet, inst=element11, expected=True)
+        run("", facet=facet, inst=element22, expected=True)
 
         # Restrictions can be used for values
         restriction = ids.restriction.create(options="1.*", type="pattern")
         facet = ids.classification.create(value=restriction)
-        case("", facet=facet, inst=element1, expected=True)
-        case("", facet=facet, inst=element11, expected=True)
-        case("", facet=facet, inst=element22, expected=False)
+        run("", facet=facet, inst=element1, expected=True)
+        run("", facet=facet, inst=element11, expected=True)
+        run("", facet=facet, inst=element22, expected=False)
 
         # Restrictions can be used for systems
         restriction = ids.restriction.create(options="Foo.*", type="pattern")
         facet = ids.classification.create(system=restriction)
-        case("", facet=facet, inst=element0, expected=False)
-        case("", facet=facet, inst=element1, expected=True)
+        run("", facet=facet, inst=element0, expected=False)
+        run("", facet=facet, inst=element1, expected=True)
 
         # Specifying both a value and a system means that both (as opposed to either) requirements must be met
         facet = ids.classification.create(system="Foobar", value="1")
-        case("", facet=facet, inst=element1, expected=True)
-        case("", facet=facet, inst=element11, expected=False)
+        run("", facet=facet, inst=element1, expected=True)
+        run("", facet=facet, inst=element11, expected=False)
 
         # The facet checks on either the type or instance.
         # IFC doesn't specify how inheritance and overrides work here. Two options:
@@ -632,11 +649,11 @@ class TestIdsAuthoring(unittest.TestCase):
             "classification.add_reference", ifc, product=wall_type, reference=ref22, classification=system
         )
         facet = ids.classification.create(value="11")
-        case("", facet=facet, inst=wall, expected=True)
-        case("", facet=facet, inst=wall_type, expected=False)
+        run("", facet=facet, inst=wall, expected=True)
+        run("", facet=facet, inst=wall_type, expected=False)
         facet = ids.classification.create(value="22")
-        case("", facet=facet, inst=wall, expected=True)
-        case("", facet=facet, inst=wall_type, expected=True)
+        run("", facet=facet, inst=wall, expected=True)
+        run("", facet=facet, inst=wall_type, expected=True)
 
     def test_creating_a_property_facet(self):
         facet = ids.property.create()
@@ -683,31 +700,31 @@ class TestIdsAuthoring(unittest.TestCase):
         # The logic is that unfortunately most BIM users cannot differentiate between the two.
         facet = ids.property.create(propertySet="Foo_Bar", name="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": None})
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # A simple value checks an exact case-sensitive match
         facet = ids.property.create(propertySet="Foo_Bar", name="Foo", value="Bar")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Baz"})
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
 
         # Simple values only check string matches
         facet = ids.property.create(propertySet="Foo_Bar", name="Foo", value="1")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "1"})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcInteger(1)})
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
 
         # Restrictions are supported for property sets. If multiple are matched, all must satisfy requirements.
         restriction = ids.restriction.create(options="Foo_.*", type="pattern")
@@ -715,11 +732,11 @@ class TestIdsAuthoring(unittest.TestCase):
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Baz")
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # Restrictions are supported for names. If multiple are matched, all must satisfy requirements.
         restriction = ids.restriction.create(options="Foo.*", type="pattern")
@@ -727,11 +744,11 @@ class TestIdsAuthoring(unittest.TestCase):
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x"})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "x"})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "y"})
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
 
         # Restrictions are supported for values. If multiple are matched, all must satisfy requirements.
         restriction1 = ids.restriction.create(options="Foo.*", type="pattern")
@@ -740,9 +757,9 @@ class TestIdsAuthoring(unittest.TestCase):
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "y"})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "z"})
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
 
         # Restrictions may be used to check basic data primitives
         restriction = ids.restriction.create(options=[42.12], type="enumeration", base="decimal")
@@ -750,19 +767,19 @@ class TestIdsAuthoring(unittest.TestCase):
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": 42.12})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         restriction = ids.restriction.create(options=[42], type="enumeration", base="integer")
         facet = ids.property.create(propertySet="Foo_Bar", name="Foobar", value=restriction)
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": 42})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         restriction = ids.restriction.create(options=[True], type="enumeration", base="boolean")
         facet = ids.property.create(propertySet="Foo_Bar", name="Foobar", value=restriction)
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": True})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": False})
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
 
         # When measure is not specified, no unit conversion is done and only primitives are checked
         restriction = ids.restriction.create(options=[42.12], type="enumeration", base="decimal")
@@ -770,7 +787,7 @@ class TestIdsAuthoring(unittest.TestCase):
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": 42.12})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # Measure may be used to specify an IFC data type
         restriction = ids.restriction.create(options=[2], type="enumeration", base="decimal")
@@ -778,9 +795,9 @@ class TestIdsAuthoring(unittest.TestCase):
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcMassMeasure(2)})
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcTimeMeasure(2)})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # Measure also implies that a unit matters, and so a conversion shall take place to SI units
         restriction = ids.restriction.create(options=[2], type="enumeration", base="decimal")
@@ -788,9 +805,9 @@ class TestIdsAuthoring(unittest.TestCase):
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcLengthMeasure(2)})
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcLengthMeasure(2000)})
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # The facet checks inherited properties from the type
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
@@ -799,8 +816,8 @@ class TestIdsAuthoring(unittest.TestCase):
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall_type, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
         facet = ids.property.create(propertySet="Foo_Bar", name="Foo")
-        case("", facet=facet, inst=wall, expected=True)
-        case("", facet=facet, inst=wall_type, expected=True)
+        run("", facet=facet, inst=wall, expected=True)
+        run("", facet=facet, inst=wall_type, expected=True)
 
         # The facet checks overriden properties from the occurrence
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
@@ -811,8 +828,8 @@ class TestIdsAuthoring(unittest.TestCase):
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
         facet = ids.property.create(propertySet="Foo_Bar", name="Foo", value="Bar")
-        case("", facet=facet, inst=wall, expected=True)
-        case("", facet=facet, inst=wall_type, expected=False)
+        run("", facet=facet, inst=wall, expected=True)
+        run("", facet=facet, inst=wall_type, expected=False)
 
     def test_creating_a_material_facet(self):
         facet = ids.material.create()
@@ -834,98 +851,98 @@ class TestIdsAuthoring(unittest.TestCase):
         # A material facet with no data matches any present material
         facet = ids.material.create()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         material = ifcopenshell.api.run("material.add_material", ifc)
         ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material)
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # A value will match a material name or category
         facet = ids.material.create(value="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         material = ifcopenshell.api.run("material.add_material", ifc)
         ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material)
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         material.Name = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         material.Name = "Bar"
         material.Category = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # A value will match any material name or category in a material list
         facet = ids.material.create(value="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         material_set = ifcopenshell.api.run("material.add_material_set", ifc, set_type="IfcMaterialList")
         ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material_set)
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         material = ifcopenshell.api.run("material.add_material", ifc)
         ifcopenshell.api.run("material.add_list_item", ifc, material_list=material_set, material=material)
         material.Name = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         material.Name = "Bar"
         material.Category = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # A value will match any material name or category, or layer name or category in a layer set
         facet = ids.material.create(value="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         material_set = ifcopenshell.api.run("material.add_material_set", ifc, set_type="IfcMaterialLayerSet")
         ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material_set)
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         material = ifcopenshell.api.run("material.add_material", ifc)
         layer = ifcopenshell.api.run("material.add_layer", ifc, layer_set=material_set, material=material)
         layer.Name = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         layer.Name = "Bar"
         layer.Category = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         layer.Category = "Bar"
         material.Name = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         material.Name = "Bar"
         material.Category = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # A value will match any material name or category, or profile name or category in a profile set
         facet = ids.material.create(value="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         material_set = ifcopenshell.api.run("material.add_material_set", ifc, set_type="IfcMaterialProfileSet")
         ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material_set)
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         material = ifcopenshell.api.run("material.add_material", ifc)
         profile = ifcopenshell.api.run("material.add_profile", ifc, profile_set=material_set, material=material)
         profile.Name = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         profile.Name = "Bar"
         profile.Category = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         profile.Category = "Bar"
         material.Name = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         material.Name = "Bar"
         material.Category = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # A value will match any material name or category, or constituent name or category in a constituent set
         facet = ids.material.create(value="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         material_set = ifcopenshell.api.run("material.add_material_set", ifc, set_type="IfcMaterialConstituentSet")
         ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material_set)
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         material = ifcopenshell.api.run("material.add_material", ifc)
         constituent = ifcopenshell.api.run(
             "material.add_constituent", ifc, constituent_set=material_set, material=material
         )
         constituent.Name = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         constituent.Name = "Bar"
         constituent.Category = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         constituent.Category = "Bar"
         material.Name = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
         material.Name = "Bar"
         material.Category = "Foo"
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # The facet will check for inherited materials
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
@@ -935,8 +952,8 @@ class TestIdsAuthoring(unittest.TestCase):
         ifcopenshell.api.run("material.assign_material", ifc, product=element_type, material=material)
         material.Name = "Foo"
         facet = ids.material.create(value="Foo")
-        case("", facet=facet, inst=element, expected=True)
-        case("", facet=facet, inst=element_type, expected=True)
+        run("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element_type, expected=True)
 
         # The facet will check for overriden materials
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
@@ -949,8 +966,8 @@ class TestIdsAuthoring(unittest.TestCase):
         ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material)
         material.Name = "Foo"
         facet = ids.material.create(value="Foo")
-        case("", facet=facet, inst=element, expected=True)
-        case("", facet=facet, inst=element_type, expected=False)
+        run("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element_type, expected=False)
 
     def test_creating_a_partof_facet(self):
         facet = ids.partOf.create()
@@ -966,15 +983,15 @@ class TestIdsAuthoring(unittest.TestCase):
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
         facet = ids.partOf.create(entity="IfcElementAssembly")
-        case("", facet=facet, inst=element, expected=False)
-        case("", facet=facet, inst=subelement, expected=True)
+        run("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=subelement, expected=True)
 
         # An IfcElementAssembly strictly checks that the whole is an IfcElementAssembly class
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
         facet = ids.partOf.create(entity="IfcElementAssembly")
-        case("", facet=facet, inst=subelement, expected=False)
+        run("", facet=facet, inst=subelement, expected=False)
 
         # A nested subelement still passes so long as one of its parents is an IfcElementAssembly
         # TODO nononono
@@ -984,15 +1001,15 @@ class TestIdsAuthoring(unittest.TestCase):
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subsubelement, relating_object=subelement)
         facet = ids.partOf.create(entity="IfcElementAssembly")
-        case("", facet=facet, inst=subsubelement, expected=True)
+        run("", facet=facet, inst=subsubelement, expected=True)
 
         # An IfcGroup only checks that a group is assigned without any other logic
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         group = ifcopenshell.api.run("group.add_group", ifc)
         facet = ids.partOf.create(entity="IfcGroup")
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("group.assign_group", ifc, product=element, group=group)
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # An IfcGroup can be passed by subtypes
         # TODO: wrong, subtypes should not be matched
@@ -1000,15 +1017,15 @@ class TestIdsAuthoring(unittest.TestCase):
         group = ifc.createIfcInventory()
         facet = ids.partOf.create(entity="IfcGroup")
         ifcopenshell.api.run("group.assign_group", ifc, product=element, group=group)
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # An IfcSystem only checks that a system is assigned without any other logic
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         system = ifcopenshell.api.run("system.add_system", ifc)
         facet = ids.partOf.create(entity="IfcSystem")
-        case("", facet=facet, inst=element, expected=False)
+        run("", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("system.assign_system", ifc, product=element, system=system)
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
         # An IfcSystem allows subtypes
         # TODO: wrong, subtypes should not be matched
@@ -1016,7 +1033,7 @@ class TestIdsAuthoring(unittest.TestCase):
         system = ifcopenshell.api.run("system.add_system", ifc, ifc_class="IfcDistributionSystem")
         ifcopenshell.api.run("system.assign_system", ifc, product=element, system=system)
         facet = ids.partOf.create(entity="IfcSystem")
-        case("", facet=facet, inst=element, expected=True)
+        run("", facet=facet, inst=element, expected=True)
 
     """ Creating IDS with restrictions """
 
