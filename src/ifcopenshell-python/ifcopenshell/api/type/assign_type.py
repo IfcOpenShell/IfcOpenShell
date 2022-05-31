@@ -72,7 +72,7 @@ class Usecase:
                 }
             )
 
-        if self.settings["relating_type"].RepresentationMaps:
+        if getattr(self.settings["relating_type"], "RepresentationMaps", None):
             ifcopenshell.api.run(
                 "type.map_type_representations",
                 self.file,
