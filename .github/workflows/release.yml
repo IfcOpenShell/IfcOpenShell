@@ -52,9 +52,15 @@ jobs:
            -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
            -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \
            -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.8.so \
-           -DCOLLADA_SUPPORT=Off \
            -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2 \
            -DLIBXML2_LIBRARIES=/usr/lib/x86_64-linux-gnu/libxml2.so \
+           -DGLTF_SUPPORT=On \
+           -DJSON_INCLUDE_DIR=/usr/include \
+           -DCGAL_INCLUDE_DIR=/usr/include \
+           -DGMP_INCLUDE_DIR=/usr/include \
+           -DMPFR_INCLUDE_DIR=/usr/include \
+           -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
+           -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
            -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
            ../cmake
           make -j $(nproc)
