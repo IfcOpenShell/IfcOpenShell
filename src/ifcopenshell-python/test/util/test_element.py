@@ -174,7 +174,7 @@ class TestGetPredefinedTypeIFC4(test.bootstrap.IFC4):
         element_type.PredefinedType = "PARTITIONING"
         assert subject.get_predefined_type(element) == "PARTITIONING"
 
-    def test_getting_an_inherited_userdefined_type(self):
+    def test_getting_an_inherited_userdefined_type_for_an_element_type(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
@@ -189,6 +189,14 @@ class TestGetPredefinedTypeIFC4(test.bootstrap.IFC4):
         element_type.PredefinedType = "NOTDEFINED"
         element.PredefinedType = "PARTITIONING"
         assert subject.get_predefined_type(element) == "PARTITIONING"
+
+    def test_getting_an_inherited_userdefined_type_for_a_process_type(self):
+        element = ifcopenshell.api.run("sequence.add_task", self.file)
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTaskType")
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        element_type.PredefinedType = "USERDEFINED"
+        element_type.ProcessType = "FOOBAR"
+        assert subject.get_predefined_type(element) == "FOOBAR"
 
 
 class TestGetTypeIFC4(test.bootstrap.IFC4):
