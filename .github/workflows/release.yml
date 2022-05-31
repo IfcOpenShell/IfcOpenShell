@@ -33,7 +33,7 @@ jobs:
           swig libpcre3-dev libxml2-dev \
           libtbb-dev nlohmann-json3-dev \
           libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
-          libhdf5-dev libcgal-dev
+          libhdf5-dev libcgal-dev opencollada-dev
           
       - name: Build
         env:
@@ -62,6 +62,8 @@ jobs:
            -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
            -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
            -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
+           -DOPENCOLLADA_INCLUDE_DIR=/usr/include/opencollada \
+           -DOPENCOLLADA_LIBRARY_DIR=/usr/lib/opencollada/ \
            ../cmake
           make -j $(nproc)
           make install
