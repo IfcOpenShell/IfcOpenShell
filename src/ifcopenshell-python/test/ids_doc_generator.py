@@ -28,14 +28,17 @@ from ifcopenshell import ids, template, validate
 
 outdir = "build"
 
-class spec_generator:
-    cases = []
+
+class DocGenerator:
+    def __init__(self):
+        self.facet = None
+        self.testcases = {}
 
     def __call__(self, name, *, facet, inst, expected):
         if not name:
             return
 
-        fail_or_pass = "pass" if expected is True else "fail"
+        result = "pass" if expected is True else "fail"
 
         # Create an IFC file with the instance in `inst` passed to us
         # based on an IFC file template with project and units.
@@ -61,11 +64,11 @@ class spec_generator:
             else:
                 raise Exception("About to emit invalid example data")
 
-        ifc_text = "\n".join(
-            map(str, {inst: None for inst in itertools.chain.from_iterable(map(f.traverse, instances))}.keys())
-        )
+        ifc_lines = list(map(str, {i: None for i in itertools.chain.from_iterable(map(f.traverse, instances))}.keys()))
+        ifc_id = ifc_lines[0].split("=")[0]
+        ifc_text = "\n".join(ifc_lines)
 
-        basename = f"{fail_or_pass}-" + re.sub("[^0-9a-zA-Z]", "_", name.lower())
+        basename = f"{result}-" + re.sub("[^0-9a-zA-Z]", "_", name.lower())
 
         # Write IFC to disk
         f.write(os.path.join(outdir, f"{basename}.ifc"))
@@ -92,30 +95,39 @@ class spec_generator:
             if l.strip()
         ).replace("\t", "  ")
 
-        self.cases.append({
-            "name": name, "ids": xml_text, "ifc": ifc_text, "basename": basename, "result": fail_or_pass
-        })
+        self.testcases.setdefault(self.facet, []).append(
+            {"name": name, "ids": xml_text, "ifc": ifc_text, "basename": basename, "result": result, "id": ifc_id}
+        )
 
         assert bool(facet(inst)) is expected
 
+    def set_facet(self, facet):
+        self.facet = facet
 
-test_ids.case = spec_generator()
 
-suite = unittest.TestLoader().discover('.', pattern='test_ids.py')
+test_ids.run = DocGenerator()
+test_ids.set_facet = test_ids.run.set_facet
+
+suite = unittest.TestLoader().discover(".", pattern="test_ids.py")
 result = unittest.TextTestRunner(verbosity=2).run(suite)
 
-with open(os.path.join(outdir, "spec.md"), "w") as f:
-    for c in test_ids.case.cases:
+for facet, testcases in test_ids.run.testcases.items():
+    with open(os.path.join(outdir, f"testcases-{facet}.md"), "w") as f:
         write = functools.partial(print, file=f)
-        write(f"## [{c['result'].upper()}] {c['name']}")
+        write(f"# {facet.capitalize()} testcases")
         write()
-        write("~~~xml")
-        write(c['ids'])
-        write("~~~")
+        write("These testcases are designed to help describe behaviour in edge cases and ambiguities. All valid IDS implementations must demonstrate identical behaviour to these test cases.")
         write()
-        write("~~~lua")
-        write(c['ifc'])
-        write("~~~")
-        write()
-        write(f"[Sample IDS]({c['basename']}.ids) - [Sample IFC]({c['basename']}.ifc)")
-        write()
+        for testcase in testcases:
+            write(f"## [{testcase['result'].upper()}] {testcase['name']}")
+            write()
+            write("~~~xml")
+            write(testcase["ids"])
+            write("~~~")
+            write()
+            write("~~~lua")
+            write(testcase["ifc"])
+            write("~~~")
+            write()
+            write(f"[Sample IDS]({testcase['basename']}.ids) - [Sample IFC: {testcase['id']}]({testcase['basename']}.ifc)")
+            write()
