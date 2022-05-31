@@ -193,7 +193,7 @@ class Ifc2P6:
         self.project_tasks.extend(tasks)
         for task in tasks:
             subtasks = self.get_subtasks(task)
-            if not subtasks:
+            if not subtasks and task.TaskTime:
                 self.activities.append({"task": task, "work_schedule": work_schedule, "parent": parent})
                 continue
             wbs = ET.SubElement(self.element_map[work_schedule], "WBS")
@@ -217,29 +217,18 @@ class Ifc2P6:
         ET.SubElement(activity, "Name").text = task.Name or "Unnamed"
         if parent:
             ET.SubElement(activity, "WBSObjectId").text = self.id_map[parent]
-        if task.TaskTime:
-            if task.TaskTime.ScheduleDuration:
-                duration = ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleDuration)
-                ET.SubElement(activity, "PlannedDuration").text = str(duration.days * self.hours_per_day)
-                ET.SubElement(activity, "RemainingDuration").text = str(duration.days * self.hours_per_day)
-            if task.TaskTime.ScheduleStart:
-                ET.SubElement(activity, "PlannedStartDate").text = task.TaskTime.ScheduleStart
-                ET.SubElement(activity, "StartDate").text = task.TaskTime.ScheduleStart
-                self.starts.append(task.TaskTime.ScheduleStart)
-            if task.TaskTime.ScheduleFinish:
-                ET.SubElement(activity, "PlannedFinishDate").text = task.TaskTime.ScheduleFinish
-                ET.SubElement(activity, "FinishDate").text = task.TaskTime.ScheduleFinish
-                self.finishes.append(task.TaskTime.ScheduleFinish)
-        ET.SubElement(activity, "ProjectObjectId").text = self.id_map[work_schedule]
-        ET.SubElement(activity, "ActualDuration").text = "0"
-        ET.SubElement(activity, "ActualFinishDate")
-        ET.SubElement(activity, "ActualStartDate")
-        calendar = ifcopenshell.util.sequence.derive_calendar(task)
-        ET.SubElement(activity, "CalendarObjectId").text = self.id_map[calendar]
-        ET.SubElement(activity, "DurationPercentComplete").text = "0"
-        ET.SubElement(activity, "Type").text = "Task Dependent"
-        ET.SubElement(activity, "Status").text = "Not Started"
-
+        if task.TaskTime.ScheduleDuration:
+            duration = ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleDuration)
+            ET.SubElement(activity, "PlannedDuration").text = str(duration.days * self.hours_per_day)
+            ET.SubElement(activity, "RemainingDuration").text = str(duration.days * self.hours_per_day)
+        if task.TaskTime.ScheduleStart:
+            ET.SubElement(activity, "PlannedStartDate").text = task.TaskTime.ScheduleStart
+            ET.SubElement(activity, "StartDate").text = task.TaskTime.ScheduleStart
+            self.starts.append(task.TaskTime.ScheduleStart)
+        if task.TaskTime.ScheduleFinish:
+            ET.SubElement(activity, "PlannedFinishDate").text = task.TaskTime.ScheduleFinish
+            ET.SubElement(activity, "FinishDate").text = task.TaskTime.ScheduleFinish
+            self.finishes.append(task.TaskTime.ScheduleFinish)
         data_map = {
             "RemainingEarlyStartDate": task.TaskTime.EarlyStart,
             "RemainingEarlyFinishDate": task.TaskTime.EarlyFinish,
@@ -250,6 +239,16 @@ class Ifc2P6:
             el = ET.SubElement(activity, key)
             if value:
                 el.text = value
+        ET.SubElement(activity, "ProjectObjectId").text = self.id_map[work_schedule]
+        ET.SubElement(activity, "ActualDuration").text = "0"
+        ET.SubElement(activity, "ActualFinishDate")
+        ET.SubElement(activity, "ActualStartDate")
+        calendar = ifcopenshell.util.sequence.derive_calendar(task)
+        if calendar:
+            ET.SubElement(activity, "CalendarObjectId").text = self.id_map[calendar]
+        ET.SubElement(activity, "DurationPercentComplete").text = "0"
+        ET.SubElement(activity, "Type").text = "Task Dependent"
+        ET.SubElement(activity, "Status").text = "Not Started"
 
     def create_relationships(self, tasks, work_schedule):
         for task in tasks:
