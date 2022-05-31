@@ -560,13 +560,14 @@ namespace {
 				continue;
 			}
 
+			// @todo use a linear tolernace and the face extrimities, see #2218
 			const TopoDS_Edge& e = TopoDS::Edge(s);
 			if (!get_edge_axis(e, ax)) {
 				// curved
 				curved_orthogonal.Add(e);
-			} else if (ax.IsParallel(V, 1.e-5)) {
+			} else if (ax.IsParallel(V, 1.e-7)) {
 				parallel.Append(e);
-			} else if (ax.IsNormal(V, 1.e-5)) {
+			} else if (ax.IsNormal(V, 1.e-7)) {
 				// ortho
 				curved_orthogonal.Add(e);
 			} else {
