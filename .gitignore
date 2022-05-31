@@ -70,3 +70,6 @@ htmlcov
 
 # Sphinx
 _build/
+
+# IDS Docs
+src/ifcopenshell-python/test/build

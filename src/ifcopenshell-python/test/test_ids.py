@@ -17,20 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import re
 import pytest
 import logging
 import unittest
 import tempfile
 import xmlschema
-import functools
-import itertools
 import ifcopenshell
 import ifcopenshell.api
 from bcf import bcfxml
-from dataclasses import dataclass
-from ifcopenshell import ids, template, validate
-from xml.dom.minidom import parseString
+from ifcopenshell import ids
 
 IFC_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IFC/", "IFC4_Wall_3_with_properties.ifc")
 IDS_URL = os.path.join(os.path.dirname(__file__), "Sample-BIM-Files/IDS/", "IDS_Wall_needs_all_fields.xml")
@@ -44,6 +39,10 @@ file.write(IFC_URL)
 file.close()
 ifc_file = ifcopenshell.open(IFC_URL)
 os.remove(os.path.join(tempfile.gettempdir(), "test.ifc"))
+
+
+def case(name, *, facet, inst, expected):
+    assert bool(facet(inst)) is expected
 
 
 class TestIdsParsing(unittest.TestCase):
@@ -159,89 +158,6 @@ class TestIdsParsing(unittest.TestCase):
         )
 
 
-@dataclass
-class doc_test_case:
-    name: str
-    ids_content: str
-    ids_filename: str
-    ifc_content: str
-    ifc_filename: str
-    expected_result: str
-
-
-class spec_generator:
-    cases = []
-
-    def __call__(self, name, *, facet, inst, expected):
-
-        if not name:
-            return
-
-        fail_or_pass = "pass" if expected is True else "fail"
-
-        # Create an IFC file with the instance in `inst` passed to us
-        # based on an IFC file template with project and units.
-        f = template.create()
-        instances = [f.add(inst)]
-        for nm in inst.wrapped_data.get_inverse_attribute_names():
-            for v in getattr(inst, nm):
-                instances.append(f.add(v))
-
-        # Validate the file created and loop over the issues, fixing them
-        # one by one.
-        l = validate.json_logger()
-        validate.validate(f, l)
-        for issue in l.statements:
-            if "GlobalId" in issue["message"]:
-                issue["instance"].GlobalId = ifcopenshell.guid.new()
-
-            elif "PredefinedType" in issue["message"]:
-                ty = re.findall("\\(.+?\\)", issue["message"])[0][1:-1].split(", ")[0]
-                issue["instance"].PredefinedType = ty
-            elif "IfcMaterialList" in issue["message"]:
-                issue["instance"].Materials = [f.createIfcMaterial("Concrete", None, "CONCRETE")]
-            else:
-                raise Exception("About to emit invalid example data")
-
-        ifc_text = "\n".join(
-            map(str, {inst: None for inst in itertools.chain.from_iterable(map(f.traverse, instances))}.keys())
-        )
-
-        basename = f"{fail_or_pass}_{name.lower().replace(' ', '_')}"
-
-        # Write IFC to disk
-        f.write(f"{basename}.ifc")
-
-        # Create an IDS with the applicability selecting exactly
-        # the entity type passed to us in `inst`.
-        specs = ids.ids(title=name)
-        spec = ids.specification(name=name)
-        spec.add_applicability(ids.entity.create(name=inst.is_a()))
-        spec.add_requirement(facet)
-        specs.specifications.append(spec)
-
-        # Write IDS to disk
-        with open(f"{basename}.ids", "w", encoding="utf-8") as ids_file:
-            ids_file.write(specs.to_string())
-
-        xml_text = "\n".join(
-            l
-            for l in parseString(specs.to_string())
-            .getElementsByTagName("requirements")[0]
-            .childNodes[1]
-            .toprettyxml()
-            .split("\n")
-            if l.strip()
-        ).replace("\t", "  ")
-
-        self.cases.append(doc_test_case(name, xml_text, f"{basename}.ids", ifc_text, f"{basename}.ifc", fail_or_pass))
-
-        assert bool(facet(inst)) is expected
-
-
-case = spec_generator()
-
-
 class TestIdsAuthoring(unittest.TestCase):
     def test_create_an_ids_with_minimal_information(self):
         specs = ids.ids()
@@ -343,116 +259,145 @@ class TestIdsAuthoring(unittest.TestCase):
     def test_filtering_using_an_entity_facet(self):
         ifc = ifcopenshell.file()
 
-        # Wrong IFC classes are never matched.
         facet = ids.entity.create(name="IFCRABBIT")
-        case("Non-existent entity name", facet=facet, inst=ifc.createIfcWall(), expected=False)
+        case("Invalid entities always fail", facet=facet, inst=ifc.createIfcWall(), expected=False)
 
-        # IFC class is checked for an exact match. Subclasses should not match.
+        facet = ids.entity.create(name="IFCWALL")
+        case("A matching entity should pass", facet=facet, inst=ifc.createIfcWall(), expected=True)
+        case(
+            "An matching entity should pass regardless of predefined type",
+            facet=facet,
+            inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"),
+            expected=True,
+        )
+        case(
+            "An entity not matching the specified class should fail",
+            facet=facet,
+            inst=ifc.createIfcSlab(),
+            expected=False,
+        )
         # TODO: Some votes to prefer inheritance (For: Moult, Evandro, Artur)
         # Possible argument: CAD tools don't understand IFC
-        facet = ids.entity.create(name="IFCWALL")
-        case("Entity matching", facet=facet, inst=ifc.createIfcWall(), expected=True)
         case(
-            "Entity with PredefinedType", facet=facet, inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"), expected=True
+            "Subclasses are not considered as matching",
+            facet=facet,
+            inst=ifc.createIfcWallStandardCase(),
+            expected=False,
         )
-        case("Entity matching", facet=facet, inst=ifc.createIfcSlab(), expected=False)
-        case("Entity subtype", facet=facet, inst=ifc.createIfcWallStandardCase(), expected=False)
 
-        # IFC class is case sensitive and has to be uppercase.
         # TODO But in that case why are the enumerations for things like partOf using the IFC capitalisation?
         facet = ids.entity.create(name="IfcWall")
-        case("Entity case", facet=facet, inst=ifc.createIfcWall(), expected=False)
-
-        # Predefined types are checked from standard enumeration values
-        facet = ids.entity.create(name="IFCWALL", predefinedType="SOLIDWALL")
-        case("Entity PredefinedType 0", facet=facet, inst=ifc.createIfcWall(), expected=False)
-        case("Entity PredefinedType 1", facet=facet, inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"), expected=True)
         case(
-            "Entity PredefinedType 2",
+            "Entities must be specified as uppercase strings",
+            facet=facet,
+            inst=ifc.createIfcWall(),
+            expected=False,
+        )
+
+        facet = ids.entity.create(name="IFCWALL", predefinedType="SOLIDWALL")
+        case(
+            "A matching predefined type should pass",
+            facet=facet,
+            inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"),
+            expected=True,
+        )
+        case(
+            "A null predefined type should always fail a specified predefined types",
+            facet=facet,
+            inst=ifc.createIfcWall(),
+            expected=False,
+        )
+        case(
+            "An entity not matching a specified predefined type will fail",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="PARTITIONING"),
             expected=False,
         )
 
-        # Predefined Type must be uppercase, exactly the same as defined in the enumeration
         facet = ids.entity.create(name="IFCWALL", predefinedType="solidwall")
-        assert bool(facet(ifc.createIfcWall(PredefinedType="SOLIDWALL"))) is False
+        case(
+            "A predefined type from an enumeration must be uppercase",
+            facet=facet,
+            inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"),
+            expected=False,
+        )
 
-        # Predefined types are checked from the object type field if not standard
         facet = ids.entity.create(name="IFCWALL", predefinedType="WALDO")
         case(
-            "Entity user-defined type",
+            "A predefined type may specify a user-defined object type",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="WALDO"),
             expected=True,
         )
 
-        # Predefined types are checked from the element type field if not standard for types
+        facet = ids.entity.create(name="IFCWALL", predefinedType="WALDO")
+        case(
+            "User-defined types are checked case sensitively",
+            facet=facet,
+            inst=ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="waldo"),
+            expected=False,
+        )
+
         facet = ids.entity.create(name="IFCWALLTYPE", predefinedType="WALDO")
         case(
-            "Entity ElementType",
+            "A predefined type may specify a user-defined element type",
             facet=facet,
             inst=ifc.createIfcWallType(PredefinedType="USERDEFINED", ElementType="WALDO"),
             expected=True,
         )
 
-        # Predefined types are checked from the process type field if not standard for processes
         facet = ids.entity.create(name="IFCTASKTYPE", predefinedType="TASKY")
         case(
-            "Entity ProcessType",
+            "A predefined type may specify a user-defined process type",
             facet=facet,
             inst=ifc.createIfcTaskType(PredefinedType="USERDEFINED", ProcessType="TASKY"),
             expected=True,
         )
 
-        # Userdefined is not an allowed filter because userdefined implies a specified object or element type
         facet = ids.entity.create(name="IFCWALL", predefinedType="USERDEFINED")
         case(
-            "Entity no USERDEFINED",
+            "A predefined type must always specify a meaningful type, not USERDEFINED itself",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="WALDO"),
             expected=False,
         )
 
-        # Predefined types should match inherited predefined types from the element type
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType", predefined_type="X")
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
         facet = ids.entity.create(name="IFCWALL", predefinedType="X")
-        case("Entity PredefinedType inheritance 0", facet=facet, inst=wall, expected=True)
+        case("Inherited predefined types should pass", facet=facet, inst=wall, expected=True)
 
-        # Predefined types should match overridden predefined types from the element type
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="X")
         wall_type = ifcopenshell.api.run(
             "root.create_entity", ifc, ifc_class="IfcWallType", predefined_type="NOTDEFINED"
         )
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
         facet = ids.entity.create(name="IFCWALL", predefinedType="X")
-        case("Entity PredefinedType inheritance 1", facet=facet, inst=wall, expected=True)
+        case("Overridden predefined types should pass", facet=facet, inst=wall, expected=True)
 
         # Restrictions are allowed when matching the IFC class
         restriction = ids.restriction.create(options=["IFCWALL", "IFCSLAB"], type="enumeration")
         facet = ids.entity.create(name=restriction)
-        case("Entity enumeration 0", facet=facet, inst=ifc.createIfcWall(), expected=True)
-        case("Entity enumeration 1", facet=facet, inst=ifc.createIfcSlab(), expected=True)
-        case("Entity enumeration 2", facet=facet, inst=ifc.createIfcBeam(), expected=False)
+        case("Entities can be specified as an enumeration 1/3", facet=facet, inst=ifc.createIfcWall(), expected=True)
+        case("Entities can be specified as an enumeration 2/3", facet=facet, inst=ifc.createIfcSlab(), expected=True)
+        case("Entities can be specified as an enumeration 3/3", facet=facet, inst=ifc.createIfcBeam(), expected=False)
 
         # Another example of how restrictions are allowed when matching the IFC class
         # Note: Regex patterns follow the XSD flavour
         restriction = ids.restriction.create(options="IFC.*TYPE", type="pattern")
         facet = ids.entity.create(name=restriction)
-        case("Entity pattern 0", facet=facet, inst=ifc.createIfcWall(), expected=False)
-        case("Entity pattern 1", facet=facet, inst=ifc.createIfcWallType(), expected=True)
+        case("Entities can be specified as a pattern 1/2", facet=facet, inst=ifc.createIfcWall(), expected=False)
+        case("Entities can be specified as a pattern 2/2", facet=facet, inst=ifc.createIfcWallType(), expected=True)
 
-        # Restrictions are allowed when matching the predefined type
         restriction = ids.restriction.create(options="FOO.*", type="pattern")
         facet = ids.entity.create(name="IFCWALL", predefinedType=restriction)
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAR")
         wall2 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAZ")
         wall3 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="BAZFOO")
-        case("", facet=facet, inst=wall, expected=True)
-        case("", facet=facet, inst=wall2, expected=True)
-        case("", facet=facet, inst=wall3, expected=False)
+        case("Restrictions an be specified for the predefined type 1/3", facet=facet, inst=wall, expected=True)
+        case("Restrictions an be specified for the predefined type 2/3", facet=facet, inst=wall2, expected=True)
+        case("Restrictions an be specified for the predefined type 3/3", facet=facet, inst=wall3, expected=False)
 
     def test_creating_an_attribute_facet(self):
         attribute = ids.attribute.create(name="name")
@@ -1314,29 +1259,3 @@ class TestIdsReporting(unittest.TestCase):
         topics = my_bcfxml.get_topics()
         self.assertEqual(len(topics), 5)
         logger.handlers.pop()
-
-
-if __name__ == "__main__":
-    try:
-        unittest.main()
-    except:
-        pass
-    with open("spec.md", "w") as f:
-        for c in case.cases:
-            write = functools.partial(print, file=f)
-            write("##", c.name)
-            write()
-            write("~~~xml")
-            write(c.ids_content)
-            write("~~~")
-            write()
-            write(f"[{c.ids_filename}]({c.ids_filename})")
-            write()
-            write("~~~lua")
-            write(c.ifc_content)
-            write("~~~")
-            write()
-            write(f"[{c.ifc_filename}]({c.ifc_filename})")
-            write()
-            write("Expected result:", c.expected_result)
-            write()
