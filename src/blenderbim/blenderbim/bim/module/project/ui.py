@@ -82,9 +82,9 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "angular_tolerance")
         row = self.layout.row()
-        row.prop(pprops, "should_offset_model")
+        row.prop(pprops, "distance_limit")
         row = self.layout.row()
-        row.prop(pprops, "model_offset_coordinates")
+        row.prop(pprops, "false_origin")
 
         row = self.layout.row(align=True)
         row.operator("bim.load_project_elements")

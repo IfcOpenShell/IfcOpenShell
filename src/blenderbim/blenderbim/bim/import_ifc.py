@@ -270,7 +270,9 @@ class IfcImporter:
 
     def is_point_far_away(self, point, is_meters=True):
         # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
-        limit = 1000 if is_meters else (1000 / self.unit_scale)
+        # Users can configure this if they have to handle larger sites but beware of surveying precision
+        limit = self.ifc_import_settings.distance_limit
+        limit = limit if is_meters else (limit / self.unit_scale)
         coords = point
         if hasattr(point, "Coordinates"):
             coords = point.Coordinates
@@ -392,7 +394,7 @@ class IfcImporter:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             return
-        if self.ifc_import_settings.should_offset_model:
+        if self.ifc_import_settings.false_origin:
             return self.set_manual_blender_offset()
         if self.file.schema == "IFC2X3":
             project = self.file.by_type("IfcProject")[0]
@@ -408,9 +410,9 @@ class IfcImporter:
 
     def set_manual_blender_offset(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
-        props.blender_eastings = str(self.ifc_import_settings.model_offset_coordinates[0])
-        props.blender_northings = str(self.ifc_import_settings.model_offset_coordinates[1])
-        props.blender_orthogonal_height = str(self.ifc_import_settings.model_offset_coordinates[2])
+        props.blender_eastings = str(self.ifc_import_settings.false_origin[0])
+        props.blender_northings = str(self.ifc_import_settings.false_origin[1])
+        props.blender_orthogonal_height = str(self.ifc_import_settings.false_origin[2])
         props.has_blender_offset = True
 
     def guess_georeferencing(self, element):
@@ -1868,8 +1870,8 @@ class IfcImportSettings:
         self.should_clean_mesh = True
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
-        self.should_offset_model = False
-        self.model_offset_coordinates = (0, 0, 0)
+        self.distance_limit = 1000
+        self.false_origin = None
         self.has_filter = None
         self.should_filter_spatial_elements = True
         self.elements = set()
@@ -1893,10 +1895,12 @@ class IfcImportSettings:
         settings.should_clean_mesh = props.should_clean_mesh
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
-        settings.should_offset_model = props.should_offset_model
-        settings.model_offset_coordinates = (
-            [float(o) for o in props.model_offset_coordinates.split(",")]
-            if props.model_offset_coordinates
-            else (0, 0, 0)
+        settings.distance_limit = props.distance_limit
+        settings.false_origin = (
+            [float(o) for o in props.false_origin.split(",")]
+            if props.false_origin
+            else None
         )
+        if settings.false_origin == [0, 0, 0]:
+            settings.false_origin = None
         return settings

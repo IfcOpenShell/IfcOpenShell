@@ -269,16 +269,14 @@ Scenario: Load project elements - load with the spatial decomposition collection
 Scenario: Load project elements - manual offset of object placements
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/manual-geolocation.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.should_offset_model" to "True"
-    And I set "scene.BIMProjectProperties.model_offset_coordinates" to "268388500, 5774506000, 21900"
+    When I set "scene.BIMProjectProperties.false_origin" to "268388500, 5774506000, 21900"
     And I press "bim.load_project_elements"
     Then the object "IfcPlate/1780 x 270 PRECAST WALL" is at "0,0,0"
 
 Scenario: Load project elements - manual offset of cartesian points
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/manual-geolocation-coords.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.should_offset_model" to "True"
-    And I set "scene.BIMProjectProperties.model_offset_coordinates" to "1990711,5971553,22700"
+    When I set "scene.BIMProjectProperties.false_origin" to "1990711,5971553,22700"
     And I press "bim.load_project_elements"
     Then the object "IfcBuildingElementProxy/NAME" is at "0,0,0"
 
