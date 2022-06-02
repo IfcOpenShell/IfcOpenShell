@@ -93,7 +93,7 @@ def get_predefined_type(element):
     if element_type:
         predefined_type = getattr(element_type, "PredefinedType", None)
         if predefined_type == "USERDEFINED" or not predefined_type:
-            predefined_type = getattr(element_type, "ElementType", None)
+            predefined_type = getattr(element_type, "ElementType", getattr(element_type, "ProcessType", None))
         if predefined_type and predefined_type != "NOTDEFINED":
             return predefined_type
     predefined_type = getattr(element, "PredefinedType", None)
