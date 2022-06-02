@@ -16,7 +16,7 @@ For more information, see
 Prerequisites
 -------------
 * Git
-* CMake (2.6 or newer)
+* CMake (3.1.3 or newer)
 * Windows: [Visual Studio] 2008 to 2019 (2022 not yet supported by dependency CMake) with C++ toolset (or [Visual C++ Build Tools]) or [MSYS2] + MinGW
 * *nix: GCC 4.7 or newer, or Clang (any version)
 
