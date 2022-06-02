@@ -141,7 +141,7 @@ def get_os():
     return ret_value
 
 def to_pystring(x):
-    """ Python 2 & 3 compatibility function for strings handling 
+    """ Python 2 & 3 compatibility function for strings handling
     (to solve TypeError "Can't mix strings and bytes in path components" for Python 3).
     Reference https://github.com/hugsy/gef/issues/382 """
     res = str(x, encoding="utf-8") if PYTHON_MAJOR == 3 else x
@@ -164,7 +164,7 @@ if get_os() == "Darwin":
         PYTHON_VERSIONS.remove("3.4.6")
     except ValueError as e:
         pass
-   
+
 try:
     IFCOS_NUM_BUILD_PROCS = os.environ["IFCOS_NUM_BUILD_PROCS"]
 except KeyError:
@@ -183,7 +183,7 @@ except KeyError:
     path = [b"..", b"build", sp.check_output(uname).strip(), TARGET_ARCH]
     if TOOLSET:
         path.append(TOOLSET)
-        
+
     DEPS_DIR = to_pystring(os.path.realpath(os.path.join(*path)))
 
 if not os.path.exists(DEPS_DIR):
@@ -310,7 +310,7 @@ def run(cmds, cwd=None):
 BOOST_VERSION_UNDERSCORE=BOOST_VERSION.replace(".", "_")
 
 OCE_LOCATION="https://github.com/tpaviot/oce/archive/OCE-%s.tar.gz" % (OCE_VERSION,)
-BOOST_LOCATION="https://dl.bintray.com/boostorg/release/%s/source/" % (BOOST_VERSION,)
+BOOST_LOCATION="https://boostorg.jfrog.io/artifactory/main/release/%s/source/" % (BOOST_VERSION,)
 
 # Helper functions
 
@@ -318,7 +318,7 @@ def run_autoconf(arg1, configure_args, cwd):
     configure_path = os.path.realpath(os.path.join(cwd, "..", "configure"))
     if not os.path.exists(configure_path):
         run([bash, "./autogen.sh"], cwd=os.path.realpath(os.path.join(cwd, ".."))) # only run autogen.sh in the directory it is located and use cwd to achieve that in order to not mess up things
-    # Using `sh` over `bash` fixes issues with building swig 
+    # Using `sh` over `bash` fixes issues with building swig
     run(["/bin/sh", "../configure"]+configure_args+["--prefix=%s" % (os.path.realpath("%s/install/%s" % (DEPS_DIR, arg1)),)], cwd=cwd)
 
 def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
@@ -360,15 +360,15 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
     build_dir = os.path.join(DEPS_DIR, "build")
     if not os.path.exists(build_dir):
         os.makedirs(build_dir)
-        
+
     logger.info("\rFetching %s...   " % (name,))
-    
+
     if download_tool == download_tool_py:
         if no_append_name:
             url = download_url
         else:
             url = os.path.join(download_url, download_name)
-            
+
         download_path = os.path.join(build_dir, download_name)
         if not os.path.exists(download_path):
             urlretrieve(url, os.path.join(build_dir, download_path))
@@ -380,7 +380,7 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
     else:
         raise ValueError("download tool '%s' is not supported" % (download_tool,))
     download_dir = os.path.join(build_dir, download_name)
-    
+
     if os.path.isdir(download_dir):
         extract_dir_name=download_name
         extract_dir = os.path.join(build_dir, extract_dir_name)
@@ -400,11 +400,11 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         extract_dir = os.path.join(build_dir, extract_dir_name)
         if not os.path.exists(extract_dir):
             run([tar, "-xf", download_name], cwd=build_dir)
-    
+
     for path, url in additional_files.items():
         if not os.path.exists(path):
             urlretrieve(url, os.path.join(extract_dir, path))
-            
+
     if patch is not None:
         patch_abs = os.path.abspath(os.path.join(os.path.dirname(__file__), patch))
         if os.path.exists(patch_abs):
@@ -412,7 +412,7 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
             except Exception as e:
                 # Assert that the patch has already been applied
                 run(["patch", "-p1", "--batch", "--reverse", "--dry-run", "-i", patch_abs], cwd=extract_dir)
-            
+
     if mode != "bjam":
         extract_build_dir = os.path.join(extract_dir, "build")
         if os.path.exists(extract_build_dir):
@@ -484,7 +484,7 @@ else:
         CXXFLAGS=CXXFLAGS_MINIMAL
         CFLAGS=CFLAGS_MINIMAL
     LDFLAGS="%s %s" % (LDFLAGS, str.join(" ", ADDITIONAL_ARGS))
-    
+
 os.environ["CXXFLAGS"] = CXXFLAGS
 os.environ["CFLAGS"] = CFLAGS
 os.environ["LDFLAGS"] = LDFLAGS
@@ -557,7 +557,7 @@ elif "occ" in targets:
         download_url="https://github.com/tpaviot/oce/archive/",
         download_name="OCE-{OCE_VERSION}.tar.gz".format(**locals())
     )
-        
+
 if "libxml2" in targets:
     build_dependency(
         "libxml2-{LIBXML2_VERSION}".format(**locals()),
@@ -573,7 +573,7 @@ if "libxml2" in targets:
         download_url="http://xmlsoft.org/download/",
         download_name="libxml2-{LIBXML2_VERSION}.tar.gz".format(**locals())
     )
-    
+
 if "OpenCOLLADA" in targets:
     build_dependency(
         "OpenCOLLADA",
@@ -656,7 +656,7 @@ if "boost" in targets:
         download_url=BOOST_LOCATION,
         download_name="boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2".format(**locals())
     )
-    
+
 cecho("Building IfcOpenShell:", GREEN)
 
 IFCOS_DIR=os.path.join(DEPS_DIR, "build", "ifcopenshell")
@@ -769,7 +769,7 @@ if "IfcOpenShell-Python" in targets:
                 "-DLIBXML2_LIBRARIES="       "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
                 "-DCOLLADA_SUPPORT=OFF"
             ], cmake_dir=CMAKE_DIR, cwd=python_dir)
-        
+
         logger.info("\rBuilding python %s%s wrapper...   " % (PYTHON_VERSION, TAG))
 
         run([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,), "_ifcopenshell_wrapper"], cwd=python_dir)
