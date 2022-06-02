@@ -309,7 +309,11 @@ namespace {
 
         for (typename U::list::it it = li->begin(); it != li->end(); ++it) {
             U* u = *it;
-            acc->push((*u.*g)()->template as<V>());
+            try {
+                acc->push((*u.*g)()->template as<V>());
+            } catch (IfcParse::IfcException& e) {
+                Logger::Error(e);
+            }
         }
 
         return acc;
@@ -632,7 +636,11 @@ void MAKE_TYPE_NAME(JsonSerializer)::finalize() {
         json::reference quantityObject = getEmptyObjectReferenceInArray(qto->declaration().name(), quantities);
 
         format_entity_instance(qto, quantityObject);
-        format_quantities(qto->Quantities(), quantityObject);
+        try {
+            format_quantities(qto->Quantities(), quantityObject);
+        } catch (const std::exception& e) {
+            Logger::Error(e);
+        }
     }
 
     // Write all type objects
