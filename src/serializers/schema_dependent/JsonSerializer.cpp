@@ -273,7 +273,7 @@ namespace {
 
 
 
-    // A function to be called recursively. Template specialization is used 
+    // A function to be called recursively. Template specialization is used
     // to descend into decomposition, containment and property relationships.
     template <typename A>
     void descend(A* instance, json::reference jsonObject, IfcUtil::IfcBaseClass* parent = nullptr) {
@@ -356,7 +356,7 @@ namespace {
                     (structure, &IfcSchema::IfcSpatialStructureElement::ContainsElements, &IfcSchema::IfcRelContainedInSpatialStructure::RelatedElements);
 
             for (IfcSchema::IfcObjectDefinition::list::it it = elements->begin(); it != elements->end(); ++it) {
-                descend(*it, targetObject);
+                descend(*it, targetObject, nullptr);
             }
         }
 
@@ -368,7 +368,7 @@ namespace {
                     (element, &IfcSchema::IfcElement::HasOpenings, &IfcSchema::IfcRelVoidsElement::RelatedOpeningElement);
 
             for (IfcSchema::IfcOpeningElement::list::it it = openings->begin(); it != openings->end(); ++it) {
-                descend(*it, targetObject);
+                descend(*it, targetObject, nullptr);
             }
         }
 
@@ -406,7 +406,7 @@ namespace {
         // Descend into IfcObjectDefinitions under this element
         for (IfcSchema::IfcObjectDefinition::list::it it = structures->begin(); it != structures->end(); ++it) {
             IfcSchema::IfcObjectDefinition* ob = *it;
-            descend(ob, targetObject);
+            descend(ob, targetObject, nullptr);
         }
 
         // Format property sets, quantities and the object type under this IfcObject
@@ -524,7 +524,7 @@ namespace {
     void add_string_vector(json::reference ref, const std::vector<std::string>& vectorToAdd) {
         ref = filter_empty_strings(vectorToAdd);
     }
-    
+
     void log_error(const char *error) {
         std::stringstream ss;
         ss << "Failed to get ifc file header data, error: '" << error << "'";
@@ -663,7 +663,7 @@ void MAKE_TYPE_NAME(JsonSerializer)::finalize() {
         }
     }
 
-    // Write presentation layers 
+    // Write presentation layers
     // IfcPresentationLayerAssignments don't have GUIDs (only optional Identifier)
     // so use names as the IDs and only insert those with unique names. In case of possible duplicate names/IDs
     // the first IfcPresentationLayerAssignment occurrence takes precedence.
@@ -718,7 +718,7 @@ void MAKE_TYPE_NAME(JsonSerializer)::finalize() {
                     if ((*jt)->hasMaterial()) {
                         subMaterialObject["@Name"] = (*jt)->Material()->Name();
                     }
-                    
+
                     format_entity_instance(*jt, subMaterialObject);
                 }
 
