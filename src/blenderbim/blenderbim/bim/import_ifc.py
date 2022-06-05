@@ -592,12 +592,13 @@ class IfcImporter:
                 return representation_map
 
     def create_native_elements(self):
-        total = 0
+        progress = 0
         checkpoint = time.time()
+        total = len(self.native_elements)
         for element in self.native_elements:
-            total += 1
-            if total % 250 == 0:
-                print("{} elements processed in {:.2f}s ...".format(total, time.time() - checkpoint))
+            progress += 1
+            if progress % 250 == 0:
+                print("{} / {} elements processed in {:.2f}s ...".format(progress, total, time.time() - checkpoint))
                 checkpoint = time.time()
             native_data = self.native_data[element.GlobalId]
             representation = native_data["representation"]
@@ -657,15 +658,16 @@ class IfcImporter:
         if not valid_file:
             return results
         checkpoint = time.time()
-        total = 0
+        progress = 0
+        total = len(products)
         start_progress = self.progress
         progress_range = 85 - start_progress
         while True:
-            total += 1
-            if total % 250 == 0:
+            progress += 1
+            if progress % 250 == 0:
                 print(
-                    "{} ({}%) elements processed in {:.2f}s ...".format(
-                        total, iterator.progress(), time.time() - checkpoint
+                    "{} / {} ({}% preprocessed) elements processed in {:.2f}s ...".format(
+                        progress, total, iterator.progress(), time.time() - checkpoint
                     )
                 )
                 checkpoint = time.time()
