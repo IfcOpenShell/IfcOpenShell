@@ -4782,6 +4782,7 @@ namespace {
 }
 
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTools_ListOfShape& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+	using namespace std::string_literals;
 
 	const bool do_unify = true;
 	const bool do_subtraction_eliminate_disjoint_bbox = true;
@@ -4809,11 +4810,25 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTo
 	if (do_unify) {
 		PERF("boolean operation: unifying operands");
 
-		a = unify(a_input, fuzziness);
+		a = unify(a_input, fuzziness * 1000.);
+
+		Logger::Notice(
+			"Simplified operand A from "s +
+			std::to_string(count(a_input, TopAbs_FACE)) +
+			" to "s +
+			std::to_string(count(a, TopAbs_FACE))
+		);
+
 		{
 			TopTools_ListIteratorOfListOfShape it(b_input);
 			for (; it.More(); it.Next()) {
 				b.Append(unify(it.Value(), fuzziness));
+				Logger::Notice(
+					"Simplified operand B from "s +
+					std::to_string(count(it.Value(), TopAbs_FACE)) +
+					" to "s +
+					std::to_string(count(b.Last(), TopAbs_FACE))
+				);
 			}
 		}
 	} else {
