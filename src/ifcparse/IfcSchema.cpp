@@ -4,7 +4,14 @@
 #include <map>
 
 bool IfcParse::declaration::is(const std::string& name) const {
-	if (name_lower_ == boost::to_lower_copy(name)) return true;
+	const std::string* name_ptr = &name;
+	if (std::any_of(name.begin(), name.end(), [](char c) { return std::islower(c); })) {
+		temp_string_() = name;
+		boost::to_upper(temp_string_());
+		name_ptr = &temp_string_();
+	}
+
+	if (name_upper_ == *name_ptr) return true;
 
 	if (this->as_entity()) {
 		return this->as_entity()->is(name);
