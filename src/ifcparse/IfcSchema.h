@@ -24,6 +24,7 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
+#include <cctype>
 
 #include <boost/algorithm/string.hpp>
 
@@ -123,14 +124,19 @@ namespace IfcParse {
 		friend class schema_definition;
 
 	protected:
-		std::string name_, name_lower_;
+		std::string name_, name_upper_;
 		int index_in_schema_;
 		mutable const schema_definition* schema_;
+
+		std::string& temp_string_() const {
+			static my_thread_local std::string s;
+			return s;
+		}
 
 	public:
 		declaration(const std::string& name, int index_in_schema)
 			: name_(name)
-			, name_lower_(boost::to_lower_copy(name))
+			, name_upper_(boost::to_upper_copy(name))
 			, index_in_schema_(index_in_schema)
 			, schema_(0)
 		{}
@@ -138,7 +144,7 @@ namespace IfcParse {
 		virtual ~declaration() {}
 
 		const std::string& name() const { return name_; }
-		const std::string& name_lc() const { return name_lower_; }
+		const std::string& name_uc() const { return name_upper_; }
 
 		virtual const type_declaration* as_type_declaration() const { return static_cast<type_declaration*>(0); }
 		virtual const select_type* as_select_type() const { return static_cast<select_type*>(0); }
@@ -416,7 +422,7 @@ namespace IfcParse {
 		class declaration_by_name_cmp {
 		public:
 			bool operator()(const declaration* decl, const std::string& name) {
-				return decl->name_lc() < name;
+				return decl->name_uc() < name;
 			}
 		};
 
@@ -429,6 +435,11 @@ namespace IfcParse {
 
 		instance_factory* factory_;
 
+		std::string& temp_string_() const {
+			static my_thread_local std::string s;
+			return s;
+		}
+
 	public:
 
 		schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, instance_factory* factory);
@@ -436,9 +447,14 @@ namespace IfcParse {
 		~schema_definition();
 
 		const declaration* declaration_by_name(const std::string& name) const {
-			const std::string name_lower = boost::to_lower_copy(name);
-			std::vector<const declaration*>::const_iterator it = std::lower_bound(declarations_.begin(), declarations_.end(), name_lower, declaration_by_name_cmp());
-			if (it == declarations_.end() || (**it).name_lc() != name_lower) {
+			const std::string* name_ptr = &name;
+			if (std::any_of(name.begin(), name.end(), [](char c) { return std::islower(c); })) {
+				temp_string_() = name;
+				boost::to_upper(temp_string_());
+				name_ptr = &temp_string_();
+			}
+			std::vector<const declaration*>::const_iterator it = std::lower_bound(declarations_.begin(), declarations_.end(), *name_ptr, declaration_by_name_cmp());
+			if (it == declarations_.end() || (**it).name_uc() != *name_ptr) {
 				throw IfcParse::IfcException("Entity with '" + name + "' not found");
 			} else {
 				return *it;
