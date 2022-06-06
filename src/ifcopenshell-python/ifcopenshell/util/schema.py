@@ -28,8 +28,8 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 
 
 def is_a(entity, ifc_class):
-    ifc_class = ifc_class.lower()
-    if entity.name_lc() == ifc_class:
+    ifc_class = ifc_class.upper()
+    if entity.name_uc() == ifc_class:
         return True
     if entity.supertype():
         return is_a(entity.supertype(), ifc_class)
