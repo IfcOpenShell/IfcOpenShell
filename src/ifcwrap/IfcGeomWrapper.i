@@ -381,35 +381,35 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			: -1.0
 		);
 		kernel.setValue(IfcGeom::Kernel::GV_NO_WIRE_INTERSECTION_CHECK,
-			settings.get(IteratorSettings::NO_WIRE_INTERSECTION_CHECK)
+			settings.get(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_CHECK)
 			? +1.0
 			: -1.0
 		);
 		kernel.setValue(IfcGeom::Kernel::GV_NO_WIRE_INTERSECTION_TOLERANCE,
-			settings.get(IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE)
+			settings.get(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE)
 			? +1.0
 			: -1.0
 		);
 		kernel.setValue(IfcGeom::Kernel::GV_PRECISION_FACTOR,
-			settings.get(IteratorSettings::STRICT_TOLERANCE)
+			settings.get(IfcGeom::IteratorSettings::STRICT_TOLERANCE)
 			? 1.0
 			: 10.0
 		);
 
 		kernel.setValue(IfcGeom::Kernel::GV_DISABLE_BOOLEAN_RESULT,
-			settings.get(IteratorSettings::DISABLE_BOOLEAN_RESULT)
+			settings.get(IfcGeom::IteratorSettings::DISABLE_BOOLEAN_RESULT)
 			? +1.0
 			: -1.0
 		);
 
 		kernel.setValue(IfcGeom::Kernel::GV_DEBUG_BOOLEAN,
-			settings.get(IteratorSettings::DEBUG_BOOLEAN)
+			settings.get(IfcGeom::IteratorSettings::DEBUG_BOOLEAN)
 			? +1.0
 			: -1.0
 		);
 
 		kernel.setValue(IfcGeom::Kernel::GV_BOOLEAN_ATTEMPT_2D,
-			settings.get(IteratorSettings::BOOLEAN_ATTEMPT_2D)
+			settings.get(IfcGeom::IteratorSettings::BOOLEAN_ATTEMPT_2D)
 			? +1.0
 			: -1.0
 		);
