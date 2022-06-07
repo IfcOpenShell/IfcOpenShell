@@ -121,7 +121,14 @@ class MaterialCreator:
     def parse_representation_item(self, item):
         if not item.StyledByItem:
             return
-        style_ids = [e.id() for e in self.ifc_importer.file.traverse(item.StyledByItem[0]) if e.is_a("IfcSurfaceStyle")]
+        style_ids = []
+        styles = list(item.StyledByItem[0].Styles)
+        while styles:
+            style = styles.pop()
+            if style.is_a("IfcSurfaceStyle"):
+                style_ids.append(style.id())
+            elif style.is_a("IfcPresentationStyleAssignment"):
+                styles.extend(style.Styles)
         if not style_ids:
             return
         for style_id in style_ids:
@@ -873,8 +880,13 @@ class IfcImporter:
     def get_representation_item_material_name(self, item):
         if not item.StyledByItem:
             return
-        style_ids = [e.id() for e in self.file.traverse(item.StyledByItem[0]) if e.is_a("IfcSurfaceStyle")]
-        return style_ids[0] if style_ids else None
+        styles = list(item.StyledByItem[0].Styles)
+        while styles:
+            style = styles.pop()
+            if style.is_a("IfcSurfaceStyle"):
+                return style.id()
+            elif style.is_a("IfcPresentationStyleAssignment"):
+                styles.extend(style.Styles)
 
     def create_native_faceted_brep(self, element, mesh_name):
         # TODO: georeferencing?
@@ -1304,11 +1316,18 @@ class IfcImporter:
 
         for material_definition_representation in self.file.by_type("IfcMaterialDefinitionRepresentation"):
             material = material_definition_representation.RepresentedMaterial
+            blender_material = self.material_creator.materials[material.id()]
             for representation in material_definition_representation.Representations:
-                for style in [e for e in self.file.traverse(representation) if e.is_a("IfcSurfaceStyle")]:
-                    blender_material = self.material_creator.materials[material.id()]
-                    self.create_style(style, blender_material)
-                    parsed_styles.add(style.id())
+                styles = []
+                for styled_item in representation.Items:
+                    styles.extend(styled_item.Styles)
+                while styles:
+                    style = styles.pop()
+                    if style.is_a("IfcSurfaceStyle"):
+                        self.create_style(style, blender_material)
+                        parsed_styles.add(style.id())
+                    elif style.is_a("IfcPresentationStyleAssignment"):
+                        styles.extend(style.Styles)
 
         for style in self.file.by_type("IfcSurfaceStyle"):
             if style.id() in parsed_styles:
