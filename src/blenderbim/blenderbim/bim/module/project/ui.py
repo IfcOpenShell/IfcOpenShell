@@ -53,6 +53,10 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "filter_mode")
         if pprops.filter_mode in ["DECOMPOSITION", "IFC_CLASS"]:
+            row = self.layout.row(align=True)
+            row.alignment = "RIGHT"
+            row.operator("bim.toggle_filter_categories", text="", icon="CHECKBOX_HLT").should_select = True
+            row.operator("bim.toggle_filter_categories", text="", icon="CHECKBOX_DEHLT").should_select = False
             self.layout.template_list(
                 "BIM_UL_filter_categories",
                 "",
