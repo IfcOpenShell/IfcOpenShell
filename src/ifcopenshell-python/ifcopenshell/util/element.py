@@ -36,7 +36,7 @@ def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
     elif hasattr(element, "IsDefinedBy"):
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type and should_inherit:
-            psets = get_psets(element_type)
+            psets = get_psets(element_type, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False)
         for relationship in element.IsDefinedBy:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
