@@ -175,6 +175,7 @@ public:
 	IfcFile(IfcParse::IfcSpfStream* f);
 	IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"));
 
+	/// Deleting the file will also delete all new instances that were added to the file (via memory allocation)
 	virtual ~IfcFile();
 
 	file_open_status good() const { return good_; }
