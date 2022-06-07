@@ -827,8 +827,12 @@ ArgumentList::operator aggregate_of_instance::ptr() const {
 	aggregate_of_instance::ptr l ( new aggregate_of_instance() );
 	for (size_t i = 0; i < size_; ++i) {
 		// FIXME: account for $
-		IfcUtil::IfcBaseClass* entity = *list_[i];
-		l->push(entity);
+        try {
+            IfcUtil::IfcBaseClass *entity = *list_[i];
+            l->push(entity);
+        } catch (IfcException e) {
+            Logger::Error(e);
+        }
 	}
 	return l;
 }
