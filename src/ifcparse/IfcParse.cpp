@@ -756,8 +756,12 @@ ArgumentList::operator IfcEntityList::ptr() const {
 	IfcEntityList::ptr l ( new IfcEntityList() );
 	for (size_t i = 0; i < size_; ++i) {
 		// FIXME: account for $
-		IfcUtil::IfcBaseClass* entity = *list_[i];
-		l->push(entity);
+        try {
+            IfcUtil::IfcBaseClass *entity = *list_[i];
+            l->push(entity);
+        } catch (IfcException e) {
+            Logger::Error(e);
+        }
 	}
 	return l;
 }
