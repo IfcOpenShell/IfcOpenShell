@@ -604,6 +604,18 @@ class LoadProjectElements(bpy.types.Operator):
         return set(self.file.by_type("IfcElement")) - set(selector.parse(self.file, self.props.filter_query))
 
 
+class ToggleFilterCategories(bpy.types.Operator):
+    bl_idname = "bim.toggle_filter_categories"
+    bl_label = "Toggle Filter Categories"
+    bl_options = {"REGISTER", "UNDO"}
+    should_select: bpy.props.BoolProperty(name="Should Select", default=True)
+
+    def execute(self, context):
+        for filter_category in context.scene.BIMProjectProperties.filter_categories:
+            filter_category.is_selected = self.should_select
+        return {"FINISHED"}
+
+
 class LinkIfc(bpy.types.Operator):
     bl_idname = "bim.link_ifc"
     bl_label = "Link IFC"
