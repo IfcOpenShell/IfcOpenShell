@@ -508,7 +508,7 @@ if USE_OCCT and "occ" in targets:
             "-DBUILD_MODULE_Draw=0",
             "-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off"
         ],
-        download_url = "https://git.dev.opencascade.org/repos/occt.git",
+        download_url = "https://github.com/Open-Cascade-SAS/OCCT",
         download_name = "occt",
         download_tool=download_tool_git,
         patch=None if OCCT_VERSION >= "7.4" else "./patches/occt/enable-exception-handling.patch",
