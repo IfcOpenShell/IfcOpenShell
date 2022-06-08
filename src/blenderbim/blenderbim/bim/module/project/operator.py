@@ -545,6 +545,8 @@ class LoadProjectElements(bpy.types.Operator):
             settings.elements = self.get_decomposition_elements()
         elif self.props.filter_mode == "IFC_CLASS":
             settings.elements = self.get_ifc_class_elements()
+        elif self.props.filter_mode == "IFC_TYPE":
+            settings.elements = self.get_ifc_type_elements()
         elif self.props.filter_mode == "WHITELIST":
             settings.elements = self.get_whitelist_elements()
         elif self.props.filter_mode == "BLACKLIST":
@@ -593,6 +595,14 @@ class LoadProjectElements(bpy.types.Operator):
             if not filter_category.is_selected:
                 continue
             elements.update(self.file.by_type(filter_category.name, include_subtypes=False))
+        return elements
+
+    def get_ifc_type_elements(self):
+        elements = set()
+        for filter_category in self.props.filter_categories:
+            if not filter_category.is_selected:
+                continue
+            elements.update(ifcopenshell.util.element.get_types(self.file.by_id(filter_category.ifc_definition_id)))
         return elements
 
     def get_whitelist_elements(self):

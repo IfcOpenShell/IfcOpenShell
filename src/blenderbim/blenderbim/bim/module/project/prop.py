@@ -63,10 +63,16 @@ def update_filter_mode(self, context):
             new.ifc_definition_id = element.id()
             new.total_elements = sum([len(r.RelatedElements) for r in element.ContainsElements])
     elif self.filter_mode == "IFC_CLASS":
-        for ifc_class in sorted(list(set([e.is_a() for e in file.by_type("IfcElement")]))):
+        for ifc_class in sorted(list({e.is_a() for e in file.by_type("IfcElement")})):
             new = self.filter_categories.add()
             new.name = ifc_class
             new.total_elements = len(file.by_type(ifc_class, include_subtypes=False))
+    elif self.filter_mode == "IFC_TYPE":
+        for ifc_type in sorted(file.by_type("IfcElementType"), key=lambda e: e.Name or "Unnamed"):
+            new = self.filter_categories.add()
+            new.name = ifc_type.is_a() + "/" + (ifc_type.Name or "Unnamed")
+            new.ifc_definition_id = ifc_type.id()
+            new.total_elements = len(ifcopenshell.util.element.get_types(ifc_type))
 
 
 class LibraryElement(PropertyGroup):
@@ -117,6 +123,7 @@ class BIMProjectProperties(PropertyGroup):
             ("NONE", "None", "No filtering is performed"),
             ("DECOMPOSITION", "Decomposition", "Filter objects by decomposition"),
             ("IFC_CLASS", "IFC Class", "Filter objects by class"),
+            ("IFC_TYPE", "IFC Type", "Filter objects by type"),
             ("WHITELIST", "Whitelist", "Filter objects using a custom whitelist query"),
             ("BLACKLIST", "Blacklist", "Filter objects using a custom blacklist query"),
         ],
