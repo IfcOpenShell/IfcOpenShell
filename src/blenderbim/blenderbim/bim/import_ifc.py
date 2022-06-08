@@ -244,8 +244,9 @@ class IfcImporter:
         self.profile_code("Create spatial elements")
         self.create_structural_items()
         self.profile_code("Create structural items")
-        self.create_type_products()
-        self.profile_code("Create type products")
+        if not self.ifc_import_settings.is_coordinating:
+            self.create_type_products()
+            self.profile_code("Create type products")
         self.place_objects_in_collections()
         self.profile_code("Place objects in collections")
         if self.ifc_import_settings.should_merge_by_class:
@@ -324,6 +325,9 @@ class IfcImporter:
         else:
             self.elements = self.file.by_type("IfcElement")
             self.annotations = set(self.file.by_type("IfcAnnotation"))
+
+        if self.ifc_import_settings.is_coordinating:
+            self.elements = [e for e in self.elements if e.Representation and not e.is_a("IfcFeatureElement")]
 
         self.elements = set(self.elements[offset:offset_limit])
 
@@ -850,7 +854,7 @@ class IfcImporter:
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.guid)
-                self.create_product(self.file.by_id(shape.guid), shape)
+                self.create_product(product, shape)
                 results.add(product)
             if not iterator.next():
                 break
@@ -1928,6 +1932,7 @@ class IfcImportSettings:
         self.should_use_native_meshes = False
         self.should_clean_mesh = True
         self.should_cache = True
+        self.is_coordinating = True
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
         self.distance_limit = 1000
@@ -1957,6 +1962,7 @@ class IfcImportSettings:
         settings.should_use_native_meshes = props.should_use_native_meshes
         settings.should_clean_mesh = props.should_clean_mesh
         settings.should_cache = props.should_cache
+        settings.is_coordinating = props.is_coordinating
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
         settings.distance_limit = props.distance_limit
