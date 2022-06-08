@@ -48,8 +48,7 @@ props.element_limit = 30000
 bpy.ops.bim.load_project(filepath="/path/to/your/model/input.ifc")
 
 # In coordination mode, it is unnecessary to maintain a link to the IFC
-bpy.context.scene.BIMProperties.ifc_file = ""
-IfcStore.file = None
+bpy.ops.bim.unload_project()
 
 # Save the processed file here
 bpy.ops.wm.save_mainfile(filepath="/path/to/your/model/output.blend")
