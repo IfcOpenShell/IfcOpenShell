@@ -45,8 +45,14 @@ def create_project(ifc, project, schema=None, template=None):
         context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent=model
     )
     plan = project.run_context_add_context(context_type="Plan", context_identifier="", target_view="", parent=0)
-    annotation = project.run_context_add_context(
+    project.run_context_add_context(
         context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan
+    )
+    project.run_context_add_context(
+        context_type="Plan", context_identifier="Annotation", target_view="SECTION_VIEW", parent=plan
+    )
+    project.run_context_add_context(
+        context_type="Plan", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent=plan
     )
 
     project.run_root_assign_class(obj=site, ifc_class="IfcSite", context=body)

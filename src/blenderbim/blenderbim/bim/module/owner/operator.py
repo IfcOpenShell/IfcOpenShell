@@ -315,8 +315,8 @@ class AddActor(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         props = bpy.context.scene.BIMOwnerProperties
-        if props.actor:
-            core.add_actor(tool.Ifc, ifc_class=props.actor_class, actor=tool.Ifc.get().by_id(int(props.actor)))
+        if props.the_actor:
+            core.add_actor(tool.Ifc, ifc_class=props.actor_class, actor=tool.Ifc.get().by_id(int(props.the_actor)))
 
 
 class EnableEditingActor(bpy.types.Operator, Operator):
@@ -355,3 +355,27 @@ class RemoveActor(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.remove_actor(tool.Ifc, actor=tool.Ifc.get().by_id(self.actor))
+
+
+class AssignActor(bpy.types.Operator, Operator):
+    bl_idname = "bim.assign_actor"
+    bl_label = "Assign Actor"
+    bl_options = {"REGISTER", "UNDO"}
+    actor: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.assign_actor(
+            tool.Ifc, actor=tool.Ifc.get().by_id(self.actor), element=tool.Ifc.get_entity(context.active_object)
+        )
+
+
+class UnassignActor(bpy.types.Operator, Operator):
+    bl_idname = "bim.unassign_actor"
+    bl_label = "Unassign Actor"
+    bl_options = {"REGISTER", "UNDO"}
+    actor: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.unassign_actor(
+            tool.Ifc, actor=tool.Ifc.get().by_id(self.actor), element=tool.Ifc.get_entity(context.active_object)
+        )

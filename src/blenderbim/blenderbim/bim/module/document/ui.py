@@ -19,7 +19,7 @@
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
-from ifcopenshell.api.document.data import Data
+from blenderbim.bim.module.document.data import DocumentData, ObjectDocumentData
 
 
 class BIM_PT_documents(Panel):
@@ -29,46 +29,50 @@ class BIM_PT_documents(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_collaboration"
+    bl_parent_id = "BIM_PT_project_setup"
 
     @classmethod
     def poll(cls, context):
         return IfcStore.get_file()
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not DocumentData.is_loaded:
+            DocumentData.load()
 
         self.props = context.scene.BIMDocumentProperties
 
-        if not self.props.is_editing or self.props.is_editing == "information":
-            row = self.layout.row(align=True)
-            row.label(text="{} Documents Found".format(len(Data.information)), icon="FILE")
-            if self.props.is_editing == "information":
-                row.operator("bim.add_information", text="", icon="ADD")
-                row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
-            else:
-                row.operator("bim.load_information", text="", icon="IMPORT")
-
-        if not self.props.is_editing or self.props.is_editing == "reference":
-            row = self.layout.row(align=True)
-            row.label(text="{} References Found".format(len(Data.references)), icon="FILE_HIDDEN")
-            if self.props.is_editing == "reference":
-                row.operator("bim.add_document_reference", text="", icon="ADD")
-                row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
-            else:
-                row.operator("bim.load_document_references", text="", icon="IMPORT")
-
+        row = self.layout.row(align=True)
+        row.label(text="{} Documents Found".format(DocumentData.data["total_information"]), icon="FILE")
         if self.props.is_editing:
-            self.layout.template_list(
-                "BIM_UL_documents", "", self.props, "documents", self.props, "active_document_index"
-            )
+            row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
+        else:
+            row.operator("bim.load_project_documents", text="", icon="IMPORT")
+
+        if not self.props.is_editing:
+            return
+
+        row = self.layout.row(align=True)
+        if self.props.breadcrumbs:
+            row.operator("bim.load_parent_document", text="", icon="FRAME_PREV")
+            row.label(text=DocumentData.data["parent_document"])
+        else:
+            row.alignment = "RIGHT"
+        row.operator("bim.add_information", text="", icon="ADD")
+        if self.props.breadcrumbs:
+            row.operator("bim.add_document_reference", text="", icon="FILE_HIDDEN")
 
         if self.props.active_document_id:
-            self.draw_editable_ui(context)
+            row.operator("bim.edit_document", text="", icon="CHECKMARK")
+            row.operator("bim.disable_editing_document", text="", icon="CANCEL")
+        elif self.props.documents and self.props.active_document_index < len(self.props.documents):
+            ifc_definition_id = self.props.documents[self.props.active_document_index].ifc_definition_id
+            row.operator("bim.enable_editing_document", text="", icon="GREASEPENCIL").document = ifc_definition_id
+            row.operator("bim.remove_document", text="", icon="X").document = ifc_definition_id
 
-    def draw_editable_ui(self, context):
-        draw_attributes(self.props.document_attributes, self.layout)
+        self.layout.template_list("BIM_UL_documents", "", self.props, "documents", self.props, "active_document_index")
+
+        if self.props.active_document_id:
+            draw_attributes(self.props.document_attributes, self.layout)
 
 
 class BIM_PT_object_documents(Panel):
@@ -89,88 +93,64 @@ class BIM_PT_object_documents(Panel):
         return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
 
     def draw(self, context):
+        if not ObjectDocumentData.is_loaded:
+            ObjectDocumentData.load()
+
         obj = context.active_object
         self.oprops = obj.BIMObjectProperties
-        self.sprops = context.scene.BIMDocumentProperties
-        self.props = obj.BIMObjectDocumentProperties
+        self.props = context.scene.BIMDocumentProperties
         self.file = IfcStore.get_file()
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
-        if self.oprops.ifc_definition_id not in Data.products:
-            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
 
         self.draw_add_ui()
 
-        document_ids = Data.products[self.oprops.ifc_definition_id]
-
-        if not document_ids:
+        if not ObjectDocumentData.data["documents"]:
             row = self.layout.row(align=True)
             row.label(text="No Documents", icon="FILE")
 
-        for document_id in document_ids:
-            try:
-                document = Data.information[document_id]
-                document_type = "IfcDocumentInformation"
-                icon = "FILE"
-            except:
-                document = Data.references[document_id]
-                document_type = "IfcDocumentReference"
-                icon = "FILE_HIDDEN"
+        for document in ObjectDocumentData.data["documents"]:
             row = self.layout.row(align=True)
-            if self.file.schema == "IFC2X3":
-                if document_type == "IfcDocumentInformation":
-                    row.label(text=document.get("DocumentId") or "*", icon=icon)
-                elif document_type == "IfcDocumentReference":
-                    row.label(text=document.get("ItemReference") or "*", icon=icon)
-            else:
-                row.label(text=document.get("Identification") or "*", icon=icon)
-            row.label(text=document.get("Name") or "Unnamed")
-            row.operator("bim.unassign_document", text="", icon="X").document = document_id
+            row.label(text=document["identification"] or "*", icon="FILE")
+            row.label(text=document["name"] or "Unnamed")
+            if document["location"]:
+                row.operator("bim.open_uri", icon="URL", text="").uri = document["location"]
+            row.operator("bim.unassign_document", text="", icon="X").document = document["id"]
 
     def draw_add_ui(self):
-        if self.props.is_adding:
+        if not self.props.is_editing:
             row = self.layout.row(align=True)
-            icon = "FILE" if self.props.is_adding == "IfcDocumentInformation" else "FILE_HIDDEN"
-            row.label(text="Adding {}".format(self.props.is_adding), icon=icon)
-            row.operator("bim.disable_assigning_document", text="", icon="CANCEL")
-            self.layout.template_list(
-                "BIM_UL_object_documents",
-                "",
-                self.sprops,
-                "documents",
-                self.sprops,
-                "active_document_index",
-            )
+            row.operator("bim.load_project_documents", text="Assign Document References", icon="ADD")
+            return
+
+        row = self.layout.row(align=True)
+        if self.props.breadcrumbs:
+            row.operator("bim.load_parent_document", text="", icon="FRAME_PREV")
+            row.label(text=DocumentData.data["parent_document"])
         else:
-            row = self.layout.row(align=True)
-            row.prop(self.props, "available_document_types", text="")
-            row.operator("bim.enable_assigning_document", text="", icon="ADD")
+            row.alignment = "RIGHT"
+
+        if self.props.documents and self.props.active_document_index < len(self.props.documents):
+            document = self.props.documents[self.props.active_document_index]
+            if not document.is_information:
+                row.operator("bim.assign_document", text="", icon="ADD").document = document.ifc_definition_id
+        row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
+
+        self.layout.template_list("BIM_UL_documents", "", self.props, "documents", self.props, "active_document_index")
 
 
 class BIM_UL_documents(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.identification)
-            row.label(text=item.name)
-            if context.scene.BIMDocumentProperties.active_document_id == item.ifc_definition_id:
-                if context.scene.BIMDocumentProperties.is_editing == "information":
-                    row.operator("bim.edit_information", text="", icon="CHECKMARK")
-                elif context.scene.BIMDocumentProperties.is_editing == "reference":
-                    row.operator("bim.edit_document_reference", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_document", text="", icon="CANCEL")
-            elif context.scene.BIMDocumentProperties.active_document_id:
-                row.operator("bim.remove_document", text="", icon="X").document = item.ifc_definition_id
-            else:
-                op = row.operator("bim.enable_editing_document", text="", icon="GREASEPENCIL")
+
+            if item.is_information:
+                op = row.operator("bim.load_document", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT")
                 op.document = item.ifc_definition_id
-                row.operator("bim.remove_document", text="", icon="X").document = item.ifc_definition_id
+                row.label(text="", icon="FILE")
+            else:
+                row.label(text="", icon="BLANK1")
+                row.label(text="", icon="FILE_HIDDEN")
 
-
-class BIM_UL_object_documents(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            row = layout.row(align=True)
-            row.label(text=item.identification)
-            row.label(text=item.name)
-            row.operator("bim.assign_document", text="", icon="ADD").document = item.ifc_definition_id
+            split1 = row.split(factor=0.1)
+            split1.label(text=item.identification)
+            split2 = split1.split(factor=0.9)
+            split2.label(text=item.name)

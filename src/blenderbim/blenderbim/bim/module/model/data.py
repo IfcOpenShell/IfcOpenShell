@@ -39,7 +39,12 @@ class AuthoringData:
     @classmethod
     def ifc_classes(cls):
         results = []
-        classes = {e.is_a() for e in tool.Ifc.get().by_type("IfcElementType")}
+        classes = {
+            e.is_a()
+            for e in tool.Ifc.get().by_type("IfcElementType")
+            + tool.Ifc.get().by_type("IfcDoorStyle")
+            + tool.Ifc.get().by_type("IfcWindowStyle")
+        }
         results.extend([(c, c, "") for c in sorted(classes)])
         return results
 
@@ -53,7 +58,7 @@ class AuthoringData:
         if not ifc_class and ifc_classes:
             ifc_class = ifc_classes[0][0]
         if ifc_class:
-            elements = [(str(e.id()), e.Name, "") for e in tool.Ifc.get().by_type(ifc_class)]
+            elements = [(str(e.id()), e.Name, e.Description or "") for e in tool.Ifc.get().by_type(ifc_class)]
             results.extend(sorted(elements, key=lambda s: s[1]))
             return results
         return []

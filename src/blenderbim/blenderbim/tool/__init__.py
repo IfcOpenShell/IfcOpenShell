@@ -20,12 +20,15 @@ from blenderbim.tool.aggregate import Aggregate
 from blenderbim.tool.blender import Blender
 from blenderbim.tool.boundary import Boundary
 from blenderbim.tool.brick import Brick
+from blenderbim.tool.cad import Cad
 from blenderbim.tool.collector import Collector
 from blenderbim.tool.context import Context
 from blenderbim.tool.debug import Debug
 from blenderbim.tool.demo import Demo
+from blenderbim.tool.document import Document
 from blenderbim.tool.drawing import Drawing
 from blenderbim.tool.geometry import Geometry
+from blenderbim.tool.georeference import Georeference
 from blenderbim.tool.ifc import Ifc
 from blenderbim.tool.library import Library
 from blenderbim.tool.material import Material

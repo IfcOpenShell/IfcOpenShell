@@ -72,6 +72,8 @@
 	}
 }
 
+%include "../serializers/serializers_api.h"
+
 // Include headers for the typemaps to function. This set of includes,
 // can probably be reduced, but for now it's identical to the includes
 // of the module definition below.
@@ -136,6 +138,8 @@
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"
 	#include "../serializers/HdfSerializer.h"
+	#include "../serializers/XmlSerializer.h"
+	#include "../serializers/GltfSerializer.h"
 	
 #ifdef HAS_SCHEMA_2x3
 	#include "../ifcparse/Ifc2x3.h"

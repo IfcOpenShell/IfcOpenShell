@@ -24,14 +24,7 @@ import ifcopenshell.util.representation
 from blenderbim.bim.ifc import IfcStore
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
-class UpdateStyleColours(bpy.types.Operator, Operator):
+class UpdateStyleColours(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_style_colours"
     bl_label = "Update Style Colours"
     bl_options = {"REGISTER", "UNDO"}
@@ -40,7 +33,7 @@ class UpdateStyleColours(bpy.types.Operator, Operator):
         core.update_style_colours(tool.Ifc, tool.Style, obj=context.active_object.active_material)
 
 
-class UpdateStyleTextures(bpy.types.Operator, Operator):
+class UpdateStyleTextures(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_style_textures"
     bl_label = "Update Style Textures"
     bl_options = {"REGISTER", "UNDO"}
@@ -55,16 +48,17 @@ class UpdateStyleTextures(bpy.types.Operator, Operator):
             )
 
 
-class RemoveStyle(bpy.types.Operator, Operator):
+class RemoveStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_style"
     bl_label = "Remove Style"
     bl_options = {"REGISTER", "UNDO"}
+    style: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
+        core.remove_style(tool.Ifc, tool.Material, tool.Style, style=tool.Ifc.get().by_id(self.style))
 
 
-class AddStyle(bpy.types.Operator, Operator):
+class AddStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_style"
     bl_label = "Add Style"
     bl_options = {"REGISTER", "UNDO"}
@@ -73,7 +67,7 @@ class AddStyle(bpy.types.Operator, Operator):
         core.add_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
 
 
-class UnlinkStyle(bpy.types.Operator, Operator):
+class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unlink_style"
     bl_label = "Unlink Style"
     bl_options = {"REGISTER", "UNDO"}
@@ -82,7 +76,7 @@ class UnlinkStyle(bpy.types.Operator, Operator):
         core.unlink_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
 
 
-class EnableEditingStyle(bpy.types.Operator, Operator):
+class EnableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_style"
     bl_label = "Enable Editing Style"
     bl_options = {"REGISTER", "UNDO"}
@@ -91,7 +85,7 @@ class EnableEditingStyle(bpy.types.Operator, Operator):
         core.enable_editing_style(tool.Style, obj=context.active_object.active_material)
 
 
-class DisableEditingStyle(bpy.types.Operator, Operator):
+class DisableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_style"
     bl_options = {"REGISTER", "UNDO"}
     bl_label = "Disable Editing Style"
@@ -100,10 +94,39 @@ class DisableEditingStyle(bpy.types.Operator, Operator):
         core.disable_editing_style(tool.Style, obj=context.active_object.active_material)
 
 
-class EditStyle(bpy.types.Operator, Operator):
+class EditStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_style"
     bl_label = "Edit Style"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         core.edit_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
+
+
+class DisableEditingStyles(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_editing_styles"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_label = "Disable Editing Styles"
+
+    def _execute(self, context):
+        core.disable_editing_styles(tool.Style)
+
+
+class LoadStyles(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.load_styles"
+    bl_label = "Load Styles"
+    bl_options = {"REGISTER", "UNDO"}
+    style_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.load_styles(tool.Style, style_type=self.style_type)
+
+
+class SelectByStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.select_by_style"
+    bl_label = "Select By Material"
+    bl_options = {"REGISTER", "UNDO"}
+    style: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.select_by_style(tool.Style, style=tool.Ifc.get().by_id(self.style))

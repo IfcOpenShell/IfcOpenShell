@@ -55,18 +55,6 @@
 
 #include "../ifcparse/IfcSpfStream.h"
 
-#if defined(__clang__)
-# define my_thread_local thread_local
-#elif defined(__GNUC__)
-# define my_thread_local __thread
-#elif __STDC_VERSION__ >= 201112L
-# define my_thread_local _Thread_local
-#elif defined(_MSC_VER)
-# define my_thread_local __declspec(thread)
-#else
-# error Cannot define thread_local
-#endif
-
 namespace IfcParse {
 
 	class IfcFile;

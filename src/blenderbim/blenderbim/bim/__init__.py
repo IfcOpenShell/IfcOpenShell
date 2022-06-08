@@ -27,6 +27,7 @@ modules = {
     "root": None,
     "unit": None,
     "model": None,
+    "cad": None,
     "georeference": None,
     "context": None,
     "drawing": None,
@@ -79,17 +80,18 @@ for name in modules.keys():
 
 
 classes = [
-    operator.OpenUri,
-    operator.SelectDataDir,
-    operator.SelectSchemaDir,
-    operator.SelectIfcFile,
-    operator.OpenUpstream,
+    operator.AddIfcFile,
     operator.BIM_OT_add_section_plane,
     operator.BIM_OT_remove_section_plane,
-    operator.ReloadIfcFile,
-    operator.AddIfcFile,
-    operator.RemoveIfcFile,
     operator.ConfigureVisibility,
+    operator.OpenUpstream,
+    operator.OpenUri,
+    operator.ReloadIfcFile,
+    operator.RemoveIfcFile,
+    operator.SelectDataDir,
+    operator.SelectIfcFile,
+    operator.SelectSchemaDir,
+    operator.SelectURIAttribute,
     prop.StrProperty,
     prop.ObjProperty,
     prop.Attribute,
@@ -129,7 +131,8 @@ for mod in modules.values():
 
 def on_register(scene):
     handler.setDefaultProperties(scene)
-    bpy.app.handlers.depsgraph_update_post.remove(on_register)
+    if not bpy.app.background:
+        bpy.app.handlers.depsgraph_update_post.remove(on_register)
 
 
 def register():

@@ -560,13 +560,14 @@ namespace {
 				continue;
 			}
 
+			// @todo use a linear tolernace and the face extrimities, see #2218
 			const TopoDS_Edge& e = TopoDS::Edge(s);
 			if (!get_edge_axis(e, ax)) {
 				// curved
 				curved_orthogonal.Add(e);
-			} else if (ax.IsParallel(V, 1.e-5)) {
+			} else if (ax.IsParallel(V, 1.e-7)) {
 				parallel.Append(e);
-			} else if (ax.IsNormal(V, 1.e-5)) {
+			} else if (ax.IsNormal(V, 1.e-7)) {
 				// ortho
 				curved_orthogonal.Add(e);
 			} else {
@@ -4240,6 +4241,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 			  : (std::min)(min_edge_length(wire) / 2., getValue(GV_PRECISION) * 10.);
 	}
 
+	// @todo: should this start from 0 in case of n > 64?
 	for (int i = 2; i < n; ++i) {
 
 		std::vector<int> js;
@@ -4598,6 +4600,13 @@ namespace {
 
 				if (outer_wire.IsNull() || !it2.Value().IsSame(outer_wire)) {
 					wires.push_back(TopoDS::Wire(it2.Value()));
+
+					if (shape_index == 0 && num_wires > 0) {
+						// An inner wire on the first operand face: reverse, because
+						// MakeFace expects inner boundaries to be added as bounded
+						// areas.
+						wires.back().Reverse();
+					}
 				}
 			}
 
@@ -4773,6 +4782,7 @@ namespace {
 }
 
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTools_ListOfShape& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+	using namespace std::string_literals;
 
 	const bool do_unify = true;
 	const bool do_subtraction_eliminate_disjoint_bbox = true;
@@ -4800,11 +4810,25 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTo
 	if (do_unify) {
 		PERF("boolean operation: unifying operands");
 
-		a = unify(a_input, fuzziness);
+		a = unify(a_input, fuzziness * 1000.);
+
+		Logger::Notice(
+			"Simplified operand A from "s +
+			std::to_string(count(a_input, TopAbs_FACE)) +
+			" to "s +
+			std::to_string(count(a, TopAbs_FACE))
+		);
+
 		{
 			TopTools_ListIteratorOfListOfShape it(b_input);
 			for (; it.More(); it.Next()) {
 				b.Append(unify(it.Value(), fuzziness));
+				Logger::Notice(
+					"Simplified operand B from "s +
+					std::to_string(count(it.Value(), TopAbs_FACE)) +
+					" to "s +
+					std::to_string(count(b.Last(), TopAbs_FACE))
+				);
 			}
 		}
 	} else {
@@ -5224,8 +5248,11 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTo
 							PERF("boolean operation: result min face-face dist check");
 
 							if ((v = min_face_face_distance(r, 1.e-4)) < 1.e-4) {
-								reason = 2;
-								success = false;
+								// #2095 Check if this distance wasn't already realized in the input first operand.
+								if (v < min_face_face_distance(a, 1.e-4)) {
+									reason = 2;
+									success = false;
+								}
 							}
 						}
 
@@ -5602,7 +5629,7 @@ IfcGeom::Kernel::faceset_helper<CP, LP>::faceset_helper(
 
 			if (edge_sets.find(segment_set) != edge_sets.end()) {
 				duplicate_faces++;
-				duplicates_.insert(*ps);
+				duplicates_.insert(util::conditional_address_of(*ps));
 				continue;
 			}
 			edge_sets.insert(segment_set);
@@ -5635,8 +5662,8 @@ IfcGeom::Kernel::faceset_helper<CP, LP>::faceset_helper(
 		}
 	}
 
-	if (loops_removed || (non_manifold && should_be_closed)) {
-		Logger::Warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges");
+	if (duplicates_.size() || loops_removed || (non_manifold && should_be_closed)) {
+		Logger::Warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " degenerate loops eliminated and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges");
 	}
 }
 

@@ -31,11 +31,32 @@ from ifcopenshell.api.material.data import Data
 from ifcopenshell.api.profile.data import Data as ProfileData
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
+class LoadMaterials(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.load_materials"
+    bl_label = "Load Materials"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.load_materials(tool.Material, context.scene.BIMMaterialProperties.material_type)
+
+
+class DisableEditingMaterials(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_editing_materials"
+    bl_label = "Disable Editing Materials"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disable_editing_materials(tool.Material)
+
+
+class SelectByMaterial(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.select_by_material"
+    bl_label = "Select By Material"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.select_by_material(tool.Material, material=tool.Ifc.get().by_id(self.material))
 
 
 class AssignParameterizedProfile(bpy.types.Operator):
@@ -68,70 +89,54 @@ class AssignParameterizedProfile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddDefaultMaterial(bpy.types.Operator, Operator):
-    bl_idname = "bim.add_default_material"
-    bl_label = "Add Default Material"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        core.add_default_material(tool.Ifc, tool.Material)
-        Data.load(IfcStore.get_file())
-
-
-class AddMaterial(bpy.types.Operator):
+class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_material"
     bl_label = "Add Material"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        obj = bpy.data.materials.get(self.obj) if self.obj else context.active_object.active_material
-        self.file = IfcStore.get_file()
-        result = ifcopenshell.api.run("material.add_material", self.file, **{"name": obj.name})
-        IfcStore.link_element(result, obj)
-        if obj.BIMMaterialProperties.ifc_style_id:
-            context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
-            if context:
-                ifcopenshell.api.run(
-                    "style.assign_material_style",
-                    self.file,
-                    **{
-                        "material": result,
-                        "style": self.file.by_id(obj.BIMMaterialProperties.ifc_style_id),
-                        "context": context,
-                    },
-                )
+        obj = bpy.data.materials.get(self.obj) if self.obj else None
+        core.add_material(tool.Ifc, tool.Material, tool.Style, obj=obj)
         Data.load(IfcStore.get_file())
         material_prop_purge()
-        return {"FINISHED"}
 
 
-class RemoveMaterial(bpy.types.Operator):
+class AddMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_material_set"
+    bl_label = "Add Material Set"
+    bl_options = {"REGISTER", "UNDO"}
+    set_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.add_material_set(tool.Ifc, tool.Material, set_type=self.set_type)
+        Data.load(IfcStore.get_file())
+        material_prop_purge()
+
+
+class RemoveMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_material"
     bl_label = "Remove Material"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    material: bpy.props.IntProperty()
 
     def _execute(self, context):
-        obj = bpy.data.materials.get(self.obj) if self.obj else context.active_object.active_material
-        self.file = IfcStore.get_file()
-        result = ifcopenshell.api.run(
-            "material.remove_material",
-            self.file,
-            **{"material": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)},
-        )
-        obj.BIMObjectProperties.ifc_definition_id = 0
+        core.remove_material(tool.Ifc, tool.Material, tool.Style, material=tool.Ifc.get().by_id(self.material))
         Data.load(IfcStore.get_file())
-        return {"FINISHED"}
 
 
-class UnlinkMaterial(bpy.types.Operator, Operator):
+class RemoveMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_material_set"
+    bl_label = "Remove Material Set"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.remove_material_set(tool.Ifc, tool.Material, material=tool.Ifc.get().by_id(self.material))
+        Data.load(IfcStore.get_file())
+
+
+class UnlinkMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unlink_material"
     bl_label = "Unlink Material"
     bl_options = {"REGISTER", "UNDO"}
@@ -773,3 +778,31 @@ class CopyMaterial(bpy.types.Operator):
         if material.id() in object_material_ids:
             return
         obj.data.materials.append(IfcStore.get_element(material.id()))
+
+
+class ExpandMaterialCategory(bpy.types.Operator):
+    bl_idname = "bim.expand_material_category"
+    bl_label = "Expand Material Category"
+    bl_options = {"REGISTER", "UNDO"}
+    category: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMMaterialProperties
+        for category in [c for c in props.materials if c.is_category and c.name == self.category]:
+            category.is_expanded = True
+        core.load_materials(tool.Material, props.material_type)
+        return {"FINISHED"}
+
+
+class ContractMaterialCategory(bpy.types.Operator):
+    bl_idname = "bim.contract_material_category"
+    bl_label = "Contract Material Category"
+    bl_options = {"REGISTER", "UNDO"}
+    category: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMMaterialProperties
+        for category in [c for c in props.materials if c.is_category and c.name == self.category]:
+            category.is_expanded = False
+        core.load_materials(tool.Material, props.material_type)
+        return {"FINISHED"}

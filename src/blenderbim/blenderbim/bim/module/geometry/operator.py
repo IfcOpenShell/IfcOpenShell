@@ -157,6 +157,9 @@ class UpdateRepresentation(bpy.types.Operator):
     def update_obj_mesh_representation(self, context, obj):
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
 
+        if not product.is_a("IfcGridAxis"):
+            tool.Geometry.clear_cache(product)
+
         if product.is_a("IfcGridAxis"):
             ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": product})
             return
@@ -203,25 +206,14 @@ class UpdateRepresentation(bpy.types.Operator):
 
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
 
-        [
-            blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=s.material)
-            for s in obj.material_slots
-            if s.material and not s.material.BIMMaterialProperties.ifc_style_id
-        ]
-
-        if isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons):
+        if tool.Geometry.is_body_representation(new_representation):
+            [tool.Geometry.run_style_add_style(obj=mat) for mat in tool.Geometry.get_object_materials_without_styles(obj)]
             ifcopenshell.api.run(
                 "style.assign_representation_styles",
                 self.file,
-                **{
-                    "shape_representation": new_representation,
-                    "styles": [
-                        self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
-                        for s in obj.material_slots
-                        if s.material
-                    ],
-                    "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
-                },
+                shape_representation=new_representation,
+                styles=tool.Geometry.get_styles(obj),
+                should_use_presentation_style_assignment=context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
             )
             tool.Geometry.record_object_materials(obj)
 
@@ -329,8 +321,8 @@ class CopyRepresentation(bpy.types.Operator, Operator):
 
 class OverrideDeleteTrait:
     def delete_ifc_object(self, obj):
-        if obj.BIMObjectProperties.ifc_definition_id:
-            element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+        element = tool.Ifc.get_entity(obj)
+        if element:
             IfcStore.delete_element(element)
             if getattr(element, "FillsVoids", None):
                 self.remove_filling(element)
@@ -339,9 +331,12 @@ class OverrideDeleteTrait:
                     self.remove_filling(rel.RelatedBuildingElement)
                 if element.VoidsElements:
                     self.delete_opening_element(element)
-            elif getattr(element, "HasOpenings", None):
-                for rel in element.HasOpenings:
-                    self.delete_opening_element(rel.RelatedOpeningElement)
+            else:
+                if getattr(element, "HasOpenings", None):
+                    for rel in element.HasOpenings:
+                        self.delete_opening_element(rel.RelatedOpeningElement)
+                for port in ifcopenshell.util.system.get_ports(element):
+                    self.remove_port(port)
 
     def delete_opening_element(self, element):
         obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
@@ -351,10 +346,14 @@ class OverrideDeleteTrait:
         obj = IfcStore.get_element(element.id())
         bpy.ops.bim.remove_filling(obj=obj.name)
 
+    def remove_port(self, port):
+        blenderbim.core.system.remove_port(tool.Ifc, tool.System, port=port)
+
 
 class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
     bl_idname = "object.delete"
     bl_label = "Delete"
+    bl_options = {"REGISTER", "UNDO"}
     use_global: bpy.props.BoolProperty(default=False)
     confirm: bpy.props.BoolProperty(default=True)
 
@@ -368,21 +367,29 @@ class OverrideDelete(bpy.types.Operator, OverrideDeleteTrait):
             return IfcStore.execute_ifc_operator(self, context)
         for obj in context.selected_objects:
             bpy.data.objects.remove(obj)
+        # Required otherwise gizmos are still visible
+        context.view_layer.objects.active = None
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_confirm(self, event)
+        if self.confirm:
+            return context.window_manager.invoke_confirm(self, event)
+        self.confirm = True
+        return self.execute(context)
 
     def _execute(self, context):
         for obj in context.selected_objects:
             self.delete_ifc_object(obj)
             bpy.data.objects.remove(obj)
+        # Required otherwise gizmos are still visible
+        context.view_layer.objects.active = None
         return {"FINISHED"}
 
 
 class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
     bl_idname = "outliner.delete"
     bl_label = "Delete"
+    bl_options = {"REGISTER", "UNDO"}
     hierarchy: bpy.props.BoolProperty(default=False)
 
     @classmethod
@@ -405,7 +412,6 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
             if item.bl_rna.identifier == "Collection":
                 collection = bpy.data.collections.get(item.name)
                 collection_data = self.get_collection_objects_and_children(collection)
-                print(collection_data)
                 objects_to_delete |= collection_data["objects"]
                 collections_to_delete |= collection_data["children"]
                 collections_to_delete.add(collection)
@@ -453,6 +459,7 @@ class OverrideOutlinerDelete(bpy.types.Operator, OverrideDeleteTrait):
 class OverrideDuplicateMove(bpy.types.Operator):
     bl_idname = "object.duplicate_move"
     bl_label = "Duplicate Objects"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):

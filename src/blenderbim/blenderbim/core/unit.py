@@ -32,7 +32,9 @@ def assign_scene_units(ifc, unit):
         areaunit = ifc.run("unit.add_conversion_based_unit", name=area_name)
         volumeunit = ifc.run("unit.add_conversion_based_unit", name=volume_name)
 
-    ifc.run("unit.assign_unit", units=[lengthunit, areaunit, volumeunit])
+    planeangleunit = ifc.run("unit.add_conversion_based_unit", name="degree")
+
+    ifc.run("unit.assign_unit", units=[lengthunit, areaunit, volumeunit, planeangleunit])
 
 
 def assign_unit(ifc, unit_tool, unit=None):
@@ -77,6 +79,12 @@ def add_context_dependent_unit(ifc, unit, unit_type=None, name=None):
     return result
 
 
+def add_conversion_based_unit(ifc, unit, name=None):
+    result = ifc.run("unit.add_conversion_based_unit", name=name)
+    unit.import_units()
+    return result
+
+
 def enable_editing_unit(unit_tool, unit=None):
     unit_tool.set_active_unit(unit)
     unit_tool.import_unit_attributes(unit)
@@ -88,12 +96,11 @@ def disable_editing_unit(unit):
 
 def edit_unit(ifc, unit_tool, unit=None):
     attributes = unit_tool.export_unit_attributes()
-    unit_class = unit_tool.get_unit_class(unit)
-    if unit_class == "IfcMonetaryUnit":
+    if unit_tool.is_unit_class(unit, "IfcMonetaryUnit"):
         ifc.run("unit.edit_monetary_unit", unit=unit, attributes=attributes)
-    elif unit_class == "IfcDerivedUnit":
+    elif unit_tool.is_unit_class(unit, "IfcDerivedUnit"):
         ifc.run("unit.edit_derived_unit", unit=unit, attributes=attributes)
-    elif unit_class == "IfcNamedUnit":
+    elif unit_tool.is_unit_class(unit, "IfcNamedUnit"):
         ifc.run("unit.edit_named_unit", unit=unit, attributes=attributes)
     unit_tool.import_units()
     unit_tool.clear_active_unit()

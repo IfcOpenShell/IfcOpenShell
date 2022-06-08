@@ -28,11 +28,12 @@
 
 #include "H5Cpp.h"
 
+#include "../serializers/serializers_api.h"
 #include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 
 #define USE_BINARY
 
-class HdfSerializer : public GeometrySerializer {
+class SERIALIZERS_API HdfSerializer : public GeometrySerializer {
 private:
 	const std::string hdf_filename;
 	unsigned int vcount_total;

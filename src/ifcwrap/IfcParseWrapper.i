@@ -718,6 +718,14 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		Logger::SetOutput(0, &ifcopenshell_log_stream);
 		Logger::Verbosity(Logger::LOG_WARNING);
 	}
+	void set_log_format_json() {
+		ifcopenshell_log_stream.str("");
+		Logger::OutputFormat(Logger::FMT_JSON);
+	}
+	void set_log_format_text() {
+		ifcopenshell_log_stream.str("");
+		Logger::OutputFormat(Logger::FMT_PLAIN);
+	}
 %}
 
 %{

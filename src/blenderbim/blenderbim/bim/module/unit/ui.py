@@ -57,6 +57,10 @@ class BIM_PT_units(Panel):
 
         if self.props.unit_classes == "IfcMonetaryUnit":
             row.operator("bim.add_monetary_unit", text="", icon="ADD")
+        elif self.props.unit_classes in ("IfcConversionBasedUnit", "IfcConversionBasedUnitWithOffset"):
+            row.prop(self.props, "conversion_unit_types", text="")
+            op = row.operator("bim.add_conversion_based_unit", text="", icon="ADD")
+            op.name = self.props.conversion_unit_types
         elif self.props.unit_classes == "IfcDerivedUnit":
             pass  # TODO
         elif self.props.unit_classes == "IfcSIUnit":
@@ -107,7 +111,7 @@ class BIM_UL_units(UIList):
                 op.unit = item.ifc_definition_id
 
             if props.active_unit_id == item.ifc_definition_id:
-                row.operator("bim.edit_unit", text="", icon="CHECKMARK")
+                row.operator("bim.edit_unit", text="", icon="CHECKMARK").unit = item.ifc_definition_id
                 row.operator("bim.disable_editing_unit", text="", icon="CANCEL")
             elif props.active_unit_id:
                 row.operator("bim.remove_unit", text="", icon="X").unit = item.ifc_definition_id

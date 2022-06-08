@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -32,16 +33,32 @@ class Style(blenderbim.core.tool.Style):
         obj.BIMStyleProperties.is_editing = False
 
     @classmethod
+    def disable_editing_styles(cls):
+        bpy.context.scene.BIMStylesProperties.is_editing = False
+
+    @classmethod
     def enable_editing(cls, obj):
         obj.BIMStyleProperties.is_editing = True
+
+    @classmethod
+    def enable_editing_styles(cls):
+        bpy.context.scene.BIMStylesProperties.is_editing = True
 
     @classmethod
     def export_surface_attributes(cls, obj):
         return blenderbim.bim.helper.export_attributes(obj.BIMStyleProperties.attributes)
 
     @classmethod
+    def get_active_style_type(cls):
+        return bpy.context.scene.BIMStylesProperties.style_type
+
+    @classmethod
     def get_context(cls, obj):
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
+    @classmethod
+    def get_elements_by_style(cls, style):
+        return ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style)
 
     @classmethod
     def get_name(cls, obj):
@@ -167,6 +184,28 @@ class Style(blenderbim.core.tool.Style):
         return results
 
     @classmethod
+    def import_presentation_styles(cls, style_type):
+        props = bpy.context.scene.BIMStylesProperties
+        props.styles.clear()
+        styles = sorted(tool.Ifc.get().by_type(style_type), key=lambda x: x.Name or "Unnamed")
+        for style in styles:
+            new = props.styles.add()
+            new.ifc_definition_id = style.id()
+            new.name = style.Name or "Unnamed"
+            new.total_elements = len(ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style))
+
+    @classmethod
     def import_surface_attributes(cls, style, obj):
         obj.BIMStyleProperties.attributes.clear()
         blenderbim.bim.helper.import_attributes2(style, obj.BIMStyleProperties.attributes)
+
+    @classmethod
+    def is_editing_styles(cls):
+        return bpy.context.scene.BIMStylesProperties.is_editing
+
+    @classmethod
+    def select_elements(cls, elements):
+        for element in elements:
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                obj.select_set(True)

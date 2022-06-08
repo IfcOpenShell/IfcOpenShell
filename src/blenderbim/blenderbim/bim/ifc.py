@@ -43,6 +43,7 @@ class IfcStore:
     library_file = None
     element_listeners = set()
     undo_redo_stack_objects = set()
+    undo_redo_stack_object_names = {}
     current_transaction = ""
     last_transaction = ""
     history = []
@@ -86,6 +87,7 @@ class IfcStore:
             ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
             IfcStore.cache_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
             cache_settings = ifcopenshell.geom.settings()
+            cache_settings.set(cache_settings.STRICT_TOLERANCE, True)
             try:
                 IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, cache_settings)
             except:
@@ -146,14 +148,32 @@ class IfcStore:
         IfcStore.element_listeners.add(callback)
 
     @staticmethod
-    def update_undo_redo_stack_objects():
+    def track_undo_redo_stack_object_map():
+        """Keeps track of currently mapped object names, typically during undo and redo
+
+        When any Blender object is stored outside a Blender PointerProperty, such as
+        in a regular Python list, there is the likely probability that the object
+        will be invalidated when undo or redo occurs. Object invalidation seems to
+        occur whenever an object is affected during an operation.
+
+        For example, if an operator deletes a modifier on o1, then o1 will be invalidated.
+        """
+        for key, value in IfcStore.id_map.items():
+            try:
+                IfcStore.undo_redo_stack_object_names[key] = value.name
+            except:
+                continue
+
+    @staticmethod
+    def track_undo_redo_stack_selected_objects():
         """Keeps track of selected object names, typically during undo and redo
 
         When any Blender object is stored outside a Blender PointerProperty, such as
         in a regular Python list, there is the likely probability that the object
         will be invalidated when undo or redo occurs. Object invalidation seems to
-        only occur for selected objects either pre/post undo/redo event, including
-        selected objects for consecutive undo/redos, and all children.
+        occur for selected objects either pre/post undo/redo event, including
+        selected objects for consecutive undo/redos, and all children. This is
+        important because selected objects are often deleted from the scene.
 
         So if I first select o1, then o2, then o3, then press undo, o3 will be
         invalidated. If instead I press undo twice, o3 and o2 will be invalidated.
@@ -168,14 +188,23 @@ class IfcStore:
         IfcStore.undo_redo_stack_objects |= objects
 
     @staticmethod
-    def reload_linked_elements(objects=None):
+    def reload_undo_redo_stack_objects():
+        """Reloads any invalidated objects after undo or redo
+
+        After an undo or redo operation, objects may have been invalidated in
+        our id_map and guid_map. Invalidated objects are typically those that
+        have been manipulated or deleted. This checks the cache of mapped and
+        selected objects prior to the operation and ensures that if the object
+        is invalidated, they are reloaded based on the object name that was
+        tracked prior to the undo / redo.
+        """
         file = IfcStore.get_file()
         if not file:
             return
-        if objects is None:
-            objects = bpy.data.objects
 
-        for obj in objects:
+        # First, reload objects that were selected or active
+        for name in IfcStore.undo_redo_stack_objects:
+            obj = bpy.data.objects.get(name)
             if not obj:
                 continue
             if not obj.BIMObjectProperties.ifc_definition_id:
@@ -184,6 +213,45 @@ class IfcStore:
             data = {"id": element.id(), "obj": obj.name}
             if hasattr(element, "GlobalId"):
                 data["guid"] = element.GlobalId
+            IfcStore.commit_link_element(data)
+
+        # Scan for any straggling invalidated objects which were indirectly affected and reload them too.
+        for key, value in IfcStore.id_map.items():
+            try:
+                value.name
+            except:
+                obj = bpy.data.objects.get(IfcStore.undo_redo_stack_object_names[key])
+                if not obj or not obj.BIMObjectProperties.ifc_definition_id:
+                    continue
+                element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+                data = {"id": element.id(), "obj": obj.name}
+                if hasattr(element, "GlobalId"):
+                    data["guid"] = element.GlobalId
+                IfcStore.commit_link_element(data)
+
+
+    @staticmethod
+    def relink_all_objects():
+        if not IfcStore.get_file():
+            return
+        for obj in bpy.data.objects:
+            IfcStore.relink_object(obj)
+        for obj in bpy.data.materials:
+            IfcStore.relink_object(obj)
+
+    @staticmethod
+    def relink_object(obj):
+        if not obj:
+            return
+        if obj.BIMObjectProperties.ifc_definition_id:
+            element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+            data = {"id": element.id(), "obj": obj.name}
+            if hasattr(element, "GlobalId"):
+                data["guid"] = element.GlobalId
+            IfcStore.commit_link_element(data)
+        if hasattr(obj, "BIMMaterialProperties") and obj.BIMMaterialProperties.ifc_style_id:
+            element = IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id)
+            data = {"id": element.id(), "obj": obj.name}
             IfcStore.commit_link_element(data)
 
     @staticmethod
@@ -239,6 +307,8 @@ class IfcStore:
     @staticmethod
     def commit_link_element(data):
         obj = bpy.data.objects.get(data["obj"])
+        if not obj:
+            obj = bpy.data.materials.get(data["obj"])
         IfcStore.id_map[data["id"]] = obj
         if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
@@ -311,6 +381,7 @@ class IfcStore:
     @staticmethod
     def begin_transaction(operator):
         IfcStore.undo_redo_stack_objects = set()
+        IfcStore.undo_redo_stack_object_names = {}
         IfcStore.current_transaction = str(uuid.uuid4())
         operator.transaction_key = IfcStore.current_transaction
 

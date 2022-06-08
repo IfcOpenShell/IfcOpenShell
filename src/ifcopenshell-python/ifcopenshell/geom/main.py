@@ -211,17 +211,23 @@ def create_shape(settings, inst, repr=None):
     )
 
 
-def consume_iterator(it):
+def consume_iterator(it, with_progress=False):
     if it.initialize():
         while True:
-            yield it.get()
+            if with_progress:
+                yield it.progress(), it.get()
+            else:
+                yield it.get()
             if not it.next():
                 break
 
 
-def iterate(settings, file_or_filename, num_threads=1, include=None, exclude=None):
+def iterate(settings, file_or_filename, num_threads=1, include=None, exclude=None, with_progress=False, cache=None):
     it = iterator(settings, file_or_filename, num_threads, include, exclude)
-    yield from consume_iterator(it)
+    if cache:
+        hdf5_cache = serializers.hdf5(cache, settings)
+        it.set_cache(hdf5_cache)
+    yield from consume_iterator(it, with_progress=with_progress)
 
 
 def make_shape_function(fn):
@@ -266,13 +272,20 @@ def wrap_buffer_creation(fn):
     return inner
 
 
+# Hdf- Xml- and glTF- serializers don't support writing to a buffer, only to filename
+# so no wrap_buffer_creation() for these serializers
 serializer_dict = {}
 serializer_dict["obj"] = wrap_buffer_creation(ifcopenshell_wrapper.WaveFrontOBJSerializer)
 serializer_dict["svg"] = wrap_buffer_creation(ifcopenshell_wrapper.SvgSerializer)
+serializer_dict["xml"] = ifcopenshell_wrapper.XmlSerializer
 serializer_dict["buffer"] = ifcopenshell_wrapper.buffer
+
+# gltf and hdf5 availability depend on IfcOpenShell configuration settings
 try:
-    # HdfSerializer doesn't support writing to a buffer (obviously) only to filename
-    # so no wrap_buffer_creation()
+    serializer_dict["gltf"] = ifcopenshell_wrapper.GltfSerializer
+except: pass
+
+try:
     serializer_dict["hdf5"] = ifcopenshell_wrapper.HdfSerializer
 except:
     pass

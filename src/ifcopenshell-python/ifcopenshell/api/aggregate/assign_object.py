@@ -21,14 +21,24 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file, product=None, relating_object=None):
+        """Assigns an object as an aggregate to a product
+
+        :param product: The part of the aggregate
+        :param relating_object: The whole of the aggregate
+        :return: entity: The aggregate relationship
+
+        Example::
+
+            element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
+            subelement = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
+            ifcopenshell.api.run("aggregate.assign_object", model, product=subelement, relating_object=element)
+        """
         self.file = file
         self.settings = {
-            "product": None,
-            "relating_object": None,
+            "product": product,
+            "relating_object": relating_object,
         }
-        for key, value in settings.items():
-            self.settings[key] = value
 
     def execute(self):
         decomposes = None

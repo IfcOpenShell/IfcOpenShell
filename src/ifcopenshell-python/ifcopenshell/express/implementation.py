@@ -55,6 +55,14 @@ class Implementation(codegen.Base):
                     templates.enum_from_string_stmt % dict(context, **locals()) for value in enum.values
                 ),
             )
+            
+        for name, enum in mapping.schema.selects.items():
+            write(
+                templates.select_function,
+                name=name,
+                schema_name=schema_name,
+                schema_name_upper=schema_name_upper
+            )
 
         write = lambda str, **kwargs: entity_implementations.append(str % kwargs)
 
@@ -151,6 +159,8 @@ class Implementation(codegen.Base):
                             "type": arg["full_type"].replace("::Value", ""),
                             "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
                             "star_if_optional": "*" if "boost::optional" in arg["full_type"] else "",
+                            "check_optional_set_begin": "if (v) {" if "boost::optional" in arg["full_type"] else "",
+                            "check_optional_set_end": "}" if "boost::optional" in arg["full_type"] else "",
                         },
                     )
 
@@ -347,6 +357,10 @@ class Implementation(codegen.Base):
             + [
                 ("extern enumeration_type* %s_%%s_type;" % schema_name_upper) % n
                 for n in mapping.schema.enumerations.keys()
+            ]
+            + [
+                ("extern select_type* %s_%%s_type;" % schema_name_upper) % n
+                for n in mapping.schema.selects.keys()
             ]
         )
 

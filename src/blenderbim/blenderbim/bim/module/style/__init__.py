@@ -21,22 +21,31 @@ from . import ui, prop, operator
 
 classes = (
     operator.AddStyle,
-    operator.EnableEditingStyle,
     operator.DisableEditingStyle,
+    operator.DisableEditingStyles,
     operator.EditStyle,
+    operator.EnableEditingStyle,
+    operator.LoadStyles,
     operator.RemoveStyle,
+    operator.SelectByStyle,
+    operator.UnlinkStyle,
     operator.UpdateStyleColours,
     operator.UpdateStyleTextures,
-    operator.UnlinkStyle,
+    prop.Style,
+    prop.BIMStylesProperties,
     prop.BIMStyleProperties,
+    ui.BIM_PT_styles,
     ui.BIM_PT_style,
     ui.BIM_PT_style_attributes,
+    ui.BIM_UL_styles,
 )
 
 
 def register():
+    bpy.types.Scene.BIMStylesProperties = bpy.props.PointerProperty(type=prop.BIMStylesProperties)
     bpy.types.Material.BIMStyleProperties = bpy.props.PointerProperty(type=prop.BIMStyleProperties)
 
 
 def unregister():
+    del bpy.types.Scene.BIMStylesProperties
     del bpy.types.Material.BIMStyleProperties

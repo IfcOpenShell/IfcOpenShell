@@ -31,6 +31,7 @@ classes = (
     operator.EnableEditingSystem,
     operator.HidePorts,
     operator.LoadSystems,
+    operator.RemovePort,
     operator.RemoveSystem,
     operator.SelectSystemProducts,
     operator.SetFlowDirection,

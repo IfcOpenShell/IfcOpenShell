@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+"""2D drawing generation and serialisation"""
 
 import math
 import json
@@ -56,6 +57,7 @@ class draw_settings:
     drawing_guid: str = ""
     profile_threshold: int = -1
     cells: bool = True
+    merge_cells: bool = False
 
 
 def main(settings, files, iterators=None, merge_projection=True, progress_function=DO_NOTHING):
@@ -173,118 +175,182 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
 
     if not settings.cells:
         return svg_data_1.encode("ascii", "xmlcharrefreplace")
-
-    # Parse SVG into vector of line segments
-    #
-    # The second argument 'projection' tells the parser to only include <g> groups
-    # that have the classname 'projection'. The IfcOpenShell SVG serializer puts
-    # the hidden line rendering output into this group. So the sections are not
-    # included here as they already form closed loops.
-    ls = W.svg_to_line_segments(svg_data_1, "projection")
-    progress_function("creating cells")
-    ps = W.line_segments_to_polygons(W.FILTERED_CARTESIAN_QUOTIENT, 1.0e-3, ls)
-    progress_function("done creating cells")
-
-    """
-    # Debugging tool to plot line segments and cells
-    from matplotlib import pyplot as plt
-
-    arr = numpy.array(ls).reshape((-1, 2, 2))
-    for x in arr:
-        plt.plot(x.T[0], x.T[1])
-    for x in ps[0]:
-        plt.fill(numpy.array(x.boundary).T[0], numpy.array(x.boundary).T[1])
-    """
-
-    # Reserialize cells into an SVG string
-    svg_data_2 = W.polygons_to_svg(ps, True)
-
-    # We parse both SVG files to create on document with the combination of sections from
-    # the output directly from the serializer and the cells found from the hidden line
-    # rendering
-    dom1 = parseString(svg_data_1)
-    dom2 = parseString(svg_data_2)
-
-    svg1 = dom1.childNodes[0]
-    svg2 = dom2.childNodes[0]
-
+    
     def yield_groups(n):
         if n.nodeType == n.ELEMENT_NODE and n.tagName == "g":
             yield n
         for c in n.childNodes:
             yield from yield_groups(c)
 
+    dom1 = parseString(svg_data_1)
+    svg1 = dom1.childNodes[0]
     # From file 1 we take the groups to be substituted
     groups1 = [g for g in yield_groups(svg1) if g.getAttribute("class") == "projection"]
-    # file 2 only has the groups we are interested in.
-    groups2 = list(yield_groups(svg2))
-
-    assert len(groups1) == len(groups2)
-
-    for ii, (g1, g2) in enumerate(zip(groups1, groups2)):
+    
+    # Parse SVG into vector of line segments
+    #
+    # The second argument 'projection' tells the parser to only include <g> groups
+    # that have the classname 'projection'. The IfcOpenShell SVG serializer puts
+    # the hidden line rendering output into this group. So the sections are not
+    # included here as they already form closed loops.
+    
+    ls_groups = W.svg_to_line_segments(svg_data_1, "projection")
+    for i, (ls, g1) in enumerate(zip(ls_groups, groups1)):
+        progress_function("creating cells", i)
+        
         projection, g1 = g1, g1.parentNode
+        
+        svgfill_context = W.context(W.FILTERED_CARTESIAN_QUOTIENT, 1.0e-3)
+        svgfill_context.add(ls)
+        
+        if settings.merge_cells:
+            # To be refined:
+            # - Find cells on original line segments
+            # - Associate cells with IFC entities for merging
+            # - Merge cells by discarding edges
+            # - Associate cells with IFC entities for styling        
+            num_passes = 1
+        else:
+            num_passes = 0
+        
+        for iteration in range(num_passes+1):
+        
+            # initialize empty group, note that in the current approach only one
+            # group is stored
+            ps = W.svg_groups_of_polygons()
+            
+            if iteration != 0 or svgfill_context.build():
+                svgfill_context.write(ps)
+        
+            """
+            # Debugging tool to plot line segments and cells
+            from matplotlib import pyplot as plt
 
-        # These are attributes on the original group that we can use to reconstruct
-        # a 4x4 matrix of the projection used in the SVG generation process
-        nm = g1.getAttribute("ifc:name")
-        m4 = numpy.array(json.loads(g1.getAttribute("ifc:plane")))
-        m3 = numpy.array(json.loads(g1.getAttribute("ifc:matrix3")))
-        m44 = numpy.eye(4)
-        m44[0][0:2] = m3[0][0:2]
-        m44[1][0:2] = m3[1][0:2]
-        m44[0][3] = m3[0][2]
-        m44[1][3] = m3[1][2]
-        m44 = numpy.linalg.inv(m44)
+            arr = numpy.array(ls).reshape((-1, 2, 2))
+            for x in arr:
+                plt.plot(x.T[0], x.T[1])
+            for x in ps[0]:
+                plt.fill(numpy.array(x.boundary).T[0], numpy.array(x.boundary).T[1])
+            """
+            
+            if iteration != num_passes:
+                pairs = svgfill_context.get_face_pairs()
+                semantics = [None] * (max(pairs)+1)
+                # For every edge print the two neighbouring faces
+                # for x in range(0, len(pairs), 2):
+                #     print(x // 2, *pairs[x:x+2])
 
-        def project(xy, z=0.0):
-            xyzw = m44 @ numpy.array(xy + [z, 1.0])
-            xyzw[1] *= -1.0
-            return (m4 @ xyzw)[0:3]
+            # Reserialize cells into an SVG string
+            svg_data_2 = W.polygons_to_svg(ps, True)
 
-        def pythonize(arr):
-            return tuple(map(float, arr))
+            # We parse both SVG files to create on document with the combination of sections from
+            # the output directly from the serializer and the cells found from the hidden line
+            # rendering
+            dom2 = parseString(svg_data_2)
+            svg2 = dom2.childNodes[0]
+            # file 2 only has the groups we are interested in.
+            # in fact in the approach, it's only a single group
+            
+            g2 = list(yield_groups(svg2))[0]
 
-        # Loop over the cell paths
-        for i, p in enumerate(g2.getElementsByTagName("path")):
+            # These are attributes on the original group that we can use to reconstruct
+            # a 4x4 matrix of the projection used in the SVG generation process
+            nm = g1.getAttribute("ifc:name")
+            m4 = numpy.array(json.loads(g1.getAttribute("ifc:plane")))
+            m3 = numpy.array(json.loads(g1.getAttribute("ifc:matrix3")))
+            m44 = numpy.eye(4)
+            m44[0][0:2] = m3[0][0:2]
+            m44[1][0:2] = m3[1][0:2]
+            m44[0][3] = m3[0][2]
+            m44[1][3] = m3[1][2]
+            m44 = numpy.linalg.inv(m44)
 
-            progress_function("group", ii, "path", i)
+            def project(xy, z=0.0):
+                xyzw = m44 @ numpy.array(xy + [z, 1.0])
+                xyzw[1] *= -1.0
+                return (m4 @ xyzw)[0:3]
 
-            d = p.getAttribute("d")
-            # point inside is an attribute that comes from line_segments_to_polygons()
-            # it is an arbitrary point guaranteed to be inside the polygon and outside
-            # of any potential inner bounds. We can use this to construct a ray to find
-            # the face of the IFC element that the cell belongs to.
-            assert p.hasAttribute("ifc:pointInside")
+            def pythonize(arr):
+                return tuple(map(float, arr))
 
-            xy = list(map(float, p.getAttribute("ifc:pointInside").split(",")))
+            # Loop over the cell paths
+            for pi, p in enumerate(g2.getElementsByTagName("path")):
 
-            a, b = project(xy, 0.0), project(xy, -100.0)
-            elements = tree.select_ray(pythonize(a), pythonize(b - a))
+                progress_function("group", i, "pass", iteration, "path", pi)
 
-            if elements:
-                # Put the IFC element entity type on the path for CSS-based styling
-                p.setAttribute("class", elements[0].instance.is_a())
+                d = p.getAttribute("d")
+                # point inside is an attribute that comes from line_segments_to_polygons()
+                # it is an arbitrary point guaranteed to be inside the polygon and outside
+                # of any potential inner bounds. We can use this to construct a ray to find
+                # the face of the IFC element that the cell belongs to.
+                assert p.hasAttribute("ifc:pointInside")
 
-                # Obtain style (IfcOpenShell IfcGeom::Material)
-                style = tree.styles()[elements[0].style_index]
+                xy = list(map(float, p.getAttribute("ifc:pointInside").split(",")))
+                
+                a, b = project(xy, 0.0), project(xy, -100.0)
+                
+                inside_elements = tree.select(pythonize(a))
+                
+                if inside_elements:                
+                    elements = None
+                    if iteration != num_passes:
+                        semantics[pi] = (inside_elements[0], -1)
+                else:
+                    elements = tree.select_ray(pythonize(a), pythonize(b - a))
 
-                # This is just a demonstration. We compose a factor of using:
-                # - ray intersection distance
-                # - dot product ray . face normal
-                # - style transparency
-                # the factor determines how much white will be interpolated
-                # into the style diffuse color.
-                clr = numpy.array(style.diffuse)
-                factor = (math.log(elements[0].distance + 2.0) / 7.0) * (1.0 - 0.5 * abs(elements[0].dot_product))
-                if style.has_transparency:
-                    factor *= 1.0 - style.transparency
-                clr = WHITE * (1.0 - factor) + clr * factor
+                if elements:
+                    # Put the IFC element entity type on the path for CSS-based styling
+                    p.setAttribute("class", elements[0].instance.is_a())
 
-                svg_fill = "rgb(%s)" % ", ".join(str(f * 255.0) for f in clr[0:3])
-            else:
-                svg_fill = "none"
+                    # Obtain style (IfcOpenShell IfcGeom::Material)
+                    style = tree.styles()[elements[0].style_index]
 
-            p.setAttribute("style", "fill: " + svg_fill)
+                    # This is just a demonstration. We compose a factor of using:
+                    # - ray intersection distance
+                    # - dot product ray . face normal
+                    # - style transparency
+                    # the factor determines how much white will be interpolated
+                    # into the style diffuse color.
+                    clr = numpy.array(style.diffuse)
+                    factor = (math.log(elements[0].distance + 2.0) / 7.0) * (1.0 - 0.5 * abs(elements[0].dot_product))
+                    if style.has_transparency:
+                        factor *= 1.0 - style.transparency
+                    clr = WHITE * (1.0 - factor) + clr * factor
+
+                    svg_fill = "rgb(%s)" % ", ".join(str(f * 255.0) for f in clr[0:3])
+                    
+                    if iteration != num_passes:
+                        semantics[pi] = elements[0]
+                else:
+                    svg_fill = "none"
+
+                p.setAttribute("style", "fill: " + svg_fill)
+                
+            if iteration != num_passes:
+                to_remove = []
+
+                for he_idx in range(0, len(pairs), 2):
+                    # @todo instead of ray_distance, better do (x.point - y.point).dot(x.normal)
+                    # to see if they're coplanar, because ray-distance will be different in case
+                    # of element surfaces non-orthogonal to the view direction
+                    
+                    def format(x):
+                        if x is None: return None
+                        elif isinstance(x, tuple):
+                            # found to be inside element using tree.select() no face or style info
+                            return x
+                        else: return (x.instance.is_a(), x.ray_distance, tuple(x.position))
+                    
+                    pp = pairs[he_idx:he_idx+2]
+                    if pp == (-1, -1):
+                        continue
+                    data = list(map(format, map(semantics.__getitem__, pp)))
+                    if None not in data and data[0][0] == data[1][0] and abs(data[0][1] - data[1][1]) < 1.e-5:
+                        to_remove.append(he_idx // 2)
+                        # Print edge index and semantic data
+                        # print(he_idx // 2, *data)
+                
+                svgfill_context.merge(to_remove)
 
         # Swap the XML nodes from the files
         # Remove the original hidden line node we still have in the serializer output

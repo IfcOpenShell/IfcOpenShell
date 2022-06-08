@@ -19,7 +19,7 @@
 import ifcopenshell
 
 
-def get_psets(element, psets_only=False, qtos_only=False):
+def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
     psets = {}
     if element.is_a("IfcTypeObject"):
         for definition in element.HasPropertySets or []:
@@ -34,6 +34,9 @@ def get_psets(element, psets_only=False, qtos_only=False):
                 continue
             psets[definition.Name] = get_property_definition(definition)
     elif hasattr(element, "IsDefinedBy"):
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type and should_inherit:
+            psets = get_psets(element_type, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False)
         for relationship in element.IsDefinedBy:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
@@ -41,7 +44,7 @@ def get_psets(element, psets_only=False, qtos_only=False):
                     continue
                 if qtos_only and not definition.is_a("IfcElementQuantity"):
                     continue
-                psets[definition.Name] = get_property_definition(definition)
+                psets.setdefault(definition.Name, {}).update(get_property_definition(definition))
     return psets
 
 
@@ -89,12 +92,12 @@ def get_predefined_type(element):
     element_type = get_type(element)
     if element_type:
         predefined_type = getattr(element_type, "PredefinedType", None)
-        if predefined_type == "USERDEFINED":
-            predefined_type = getattr(element_type, "ElementType", None)
+        if predefined_type == "USERDEFINED" or not predefined_type:
+            predefined_type = getattr(element_type, "ElementType", getattr(element_type, "ProcessType", None))
         if predefined_type and predefined_type != "NOTDEFINED":
             return predefined_type
     predefined_type = getattr(element, "PredefinedType", None)
-    if predefined_type == "USERDEFINED":
+    if predefined_type == "USERDEFINED" or not predefined_type:
         predefined_type = getattr(element, "ObjectType", None)
     return predefined_type
 
@@ -118,7 +121,7 @@ def get_types(type):
     return []
 
 
-def get_material(element, should_skip_usage=False):
+def get_material(element, should_skip_usage=False, should_inherit=True):
     if hasattr(element, "HasAssociations") and element.HasAssociations:
         for relationship in element.HasAssociations:
             if relationship.is_a("IfcRelAssociatesMaterial"):
@@ -128,9 +131,73 @@ def get_material(element, should_skip_usage=False):
                     elif relationship.RelatingMaterial.is_a("IfcMaterialProfileSetUsage"):
                         return relationship.RelatingMaterial.ForProfileSet
                 return relationship.RelatingMaterial
-    relating_type = get_type(element)
-    if relating_type != element and hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
-        return get_material(relating_type, should_skip_usage)
+    if should_inherit:
+        relating_type = get_type(element)
+        if relating_type != element and hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
+            return get_material(relating_type, should_skip_usage)
+
+
+def get_elements_by_material(ifc_file, material):
+    results = set()
+    for inverse in ifc_file.get_inverse(material):
+        if inverse.is_a("IfcRelAssociatesMaterial"):
+            results.update(inverse.RelatedObjects)
+        elif inverse.is_a("IfcMaterialLayer"):
+            for material_set in inverse.ToMaterialLayerSet:
+                results.update(get_elements_by_material(ifc_file, material_set))
+        elif inverse.is_a("IfcMaterialProfile"):
+            for material_set in inverse.ToMaterialProfileSet:
+                results.update(get_elements_by_material(ifc_file, material_set))
+        elif inverse.is_a("IfcMaterialConstituent"):
+            for material_set in inverse.ToMaterialConstituentSet:
+                results.update(get_elements_by_material(ifc_file, material_set))
+        elif inverse.is_a("IfcMaterialLayerSetUsage"):
+            results.update(get_elements_by_material(ifc_file, inverse))
+        elif inverse.is_a("IfcMaterialProfileSetUsage"):
+            results.update(get_elements_by_material(ifc_file, inverse))
+        elif inverse.is_a("IfcMaterialList"):
+            results.update(get_elements_by_material(ifc_file, inverse))
+    return results
+
+
+def get_elements_by_style(ifc_file, style):
+    results = set()
+    inverses = list(ifc_file.get_inverse(style))
+    while inverses:
+        inverse = inverses.pop()
+        if inverse.is_a("IfcPresentationStyleAssignment"):
+            inverses.extend(ifc_file.get_inverse(inverse))
+            continue
+        if not inverse.is_a("IfcStyledItem"):
+            continue
+        if inverse.Item:
+            [
+                results.update(get_elements_by_representation(ifc_file, i))
+                for i in ifc_file.get_inverse(inverse.Item)
+                if i.is_a("IfcShapeRepresentation")
+            ]
+        else:
+            styled_reps = [i for i in ifc_file.get_inverse(inverse) if i.is_a("IfcStyledRepresentation")]
+            for styled_rep in styled_reps:
+                for material_def_rep in styled_rep.OfProductRepresentation:
+                    results.update(get_elements_by_material(ifc_file, material_def_rep.RepresentedMaterial))
+    return results
+
+
+def get_elements_by_representation(ifc_file, representation):
+    results = set()
+    [results.update(pr.ShapeOfProduct) for pr in representation.OfProductRepresentation]
+    for rep_map in representation.RepresentationMap:
+        for inverse in ifc_file.get_inverse(rep_map):
+            if inverse.is_a("IfcTypeProduct"):
+                results.add(inverse)
+            elif inverse.is_a("IfcMappedItem"):
+                [
+                    results.update(get_elements_by_representation(ifc_file, rep))
+                    for rep in ifc_file.get_inverse(inverse)
+                    if rep.is_a("IfcShapeRepresentation")
+                ]
+    return results
 
 
 def get_layers(ifc_file, element):

@@ -28,6 +28,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.placement
 import blenderbim.tool as tool
+import blenderbim.core.geometry
 import blenderbim.core.aggregate
 import blenderbim.core.spatial
 import blenderbim.core.style
@@ -47,7 +48,7 @@ class IfcExporter:
             self.sync_deletions()
             self.sync_all_objects()
             self.sync_edited_objects()
-        extension = self.ifc_export_settings.output_file.split(".")[-1]
+        extension = self.ifc_export_settings.output_file.split(".")[-1].lower()
         if extension == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
                 filename, ext = os.path.splitext(os.path.basename(self.ifc_export_settings.output_file))
@@ -96,6 +97,7 @@ class IfcExporter:
             except:
                 continue
             ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
+        IfcStore.deleted_ids.clear()
         return results
 
     def sync_all_objects(self):
@@ -147,7 +149,7 @@ class IfcExporter:
         return checksum != str([s.id() for s in tool.Geometry.get_styles(obj) if s])
 
     def sync_object_placement(self, obj):
-        if not self.has_object_moved(obj):
+        if not tool.Ifc.is_moved(obj):
             return
         blender_matrix = np.array(obj.matrix_world)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
@@ -161,17 +163,6 @@ class IfcExporter:
         blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         return element
 
-    def has_object_moved(self, obj):
-        if not obj.BIMObjectProperties.location_checksum:
-            return True  # Let's be conservative
-        loc_check = np.frombuffer(eval(obj.BIMObjectProperties.location_checksum))
-        rot_check = np.frombuffer(eval(obj.BIMObjectProperties.rotation_checksum))
-        loc_real = np.array(obj.matrix_world.translation).flatten()
-        rot_real = np.array(obj.matrix_world.to_3x3()).flatten()
-        if np.allclose(loc_check, loc_real, atol=1e-4) and np.allclose(rot_check, rot_real, atol=1e-2):
-            return False
-        return True
-
     def sync_grid_axis_object_placement(self, obj, element):
         grid = (element.PartOfU or element.PartOfV or element.PartOfW)[0]
         grid_obj = tool.Ifc.get_object(grid)
@@ -179,6 +170,7 @@ class IfcExporter:
             self.sync_object_placement(grid_obj)
             if grid_obj.matrix_world != obj.matrix_world:
                 bpy.ops.bim.update_representation(obj=obj.name)
+        tool.Geometry.record_object_position(obj)
 
     def get_application_name(self):
         return "BlenderBIM"

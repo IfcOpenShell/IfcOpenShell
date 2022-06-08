@@ -69,6 +69,8 @@
 %include "../serializers/SvgSerializer.h"
 %include "../serializers/HdfSerializer.h"
 %include "../serializers/WavefrontObjSerializer.h"
+%include "../serializers/XmlSerializer.h"
+%include "../serializers/GltfSerializer.h"
 
 %template(ray_intersection_results) std::vector<IfcGeom::ray_intersection_result>;
 
@@ -298,6 +300,33 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	%}
 };
 
+%extend IfcGeom::BRepElement {
+    double calc_volume_() const {
+        double v;
+        if ($self->geometry().calculate_volume(v)) {
+            return v;
+        } else {
+            return std::numeric_limits<double>::quiet_NaN();
+        }
+    }
+
+    double calc_surface_area_() const {
+        double v;
+        if ($self->geometry().calculate_surface_area(v)) {
+            return v;
+        } else {
+            return std::numeric_limits<double>::quiet_NaN();
+        }
+    }
+
+    %pythoncode %{
+        # Hide the getters with read-only property implementations
+        geometry = property(geometry)
+        volume = property(calc_volume_)
+        surface_area = property(calc_surface_area_)
+    %}    
+};
+
 %extend IfcGeom::Material {
 	%pythoncode %{
         # Hide the getters with read-only property implementations
@@ -341,10 +370,46 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		IfcParse::IfcFile* file = instance->data().file;
 			
 		IfcGeom::Kernel kernel(file);
+
+		// @todo unify this logic with the logic in iterator impl.
+
 		kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_ORIENT, settings.get(IfcGeom::IteratorSettings::SEW_SHELLS) ? std::numeric_limits<double>::infinity() : -1);
 		kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES) ? (settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 		kernel.setValue(IfcGeom::Kernel::GV_LAYERSET_FIRST,
 			settings.get(IfcGeom::IteratorSettings::LAYERSET_FIRST)
+			? +1.0
+			: -1.0
+		);
+		kernel.setValue(IfcGeom::Kernel::GV_NO_WIRE_INTERSECTION_CHECK,
+			settings.get(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_CHECK)
+			? +1.0
+			: -1.0
+		);
+		kernel.setValue(IfcGeom::Kernel::GV_NO_WIRE_INTERSECTION_TOLERANCE,
+			settings.get(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE)
+			? +1.0
+			: -1.0
+		);
+		kernel.setValue(IfcGeom::Kernel::GV_PRECISION_FACTOR,
+			settings.get(IfcGeom::IteratorSettings::STRICT_TOLERANCE)
+			? 1.0
+			: 10.0
+		);
+
+		kernel.setValue(IfcGeom::Kernel::GV_DISABLE_BOOLEAN_RESULT,
+			settings.get(IfcGeom::IteratorSettings::DISABLE_BOOLEAN_RESULT)
+			? +1.0
+			: -1.0
+		);
+
+		kernel.setValue(IfcGeom::Kernel::GV_DEBUG_BOOLEAN,
+			settings.get(IfcGeom::IteratorSettings::DEBUG_BOOLEAN)
+			? +1.0
+			: -1.0
+		);
+
+		kernel.setValue(IfcGeom::Kernel::GV_BOOLEAN_ATTEMPT_2D,
+			settings.get(IfcGeom::IteratorSettings::BOOLEAN_ATTEMPT_2D)
 			? +1.0
 			: -1.0
 		);

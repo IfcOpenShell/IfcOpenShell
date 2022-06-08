@@ -78,6 +78,13 @@ def demo():
 
 
 @pytest.fixture
+def document():
+    prophet = Prophecy(blenderbim.core.tool.Document)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def drawing():
     prophet = Prophecy(blenderbim.core.tool.Drawing)
     yield prophet
@@ -87,6 +94,13 @@ def drawing():
 @pytest.fixture
 def geometry():
     prophet = Prophecy(blenderbim.core.tool.Geometry)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def georeference():
+    prophet = Prophecy(blenderbim.core.tool.Georeference)
     yield prophet
     prophet.verify()
 

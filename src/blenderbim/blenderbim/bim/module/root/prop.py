@@ -33,17 +33,11 @@ from bpy.props import (
     CollectionProperty,
 )
 
-products_enum = []
-classes_enum = []
 types_enum = []
 
 
 def purge():
-    global products_enum
-    global classes_enum
     global types_enum
-    products_enum = []
-    classes_enum = []
     types_enum = []
 
 
@@ -61,10 +55,9 @@ def getIfcPredefinedTypes(self, context):
     return types_enum
 
 
-def refreshClasses(self, context):
-    global classes_enum
-    classes_enum.clear()
-    enum = getIfcClasses(self, context)
+def refresh_classes(self, context):
+    IfcClassData.load()
+    enum = get_ifc_classes(self, context)
     context.scene.BIMRootProperties.ifc_class = enum[0][0]
 
 
@@ -76,38 +69,16 @@ def refreshPredefinedTypes(self, context):
         context.scene.BIMRootProperties.ifc_predefined_type = enum[0][0]
 
 
-def getIfcProducts(self, context):
-    global products_enum
-    file = IfcStore.get_file()
-    if len(products_enum) < 1:
-        products_enum.extend(
-            [
-                (e, e, "")
-                for e in [
-                    "IfcElement",
-                    "IfcElementType",
-                    "IfcSpatialElement",
-                    "IfcGroup",
-                    "IfcStructuralItem",
-                    "IfcContext",
-                    "IfcAnnotation",
-                    "IfcRelSpaceBoundary",
-                ]
-            ]
-        )
-        if file.schema == "IFC2X3":
-            products_enum[2] = ("IfcSpatialStructureElement", "IfcSpatialStructureElement", "")
-    return products_enum
+def get_ifc_products(self, context):
+    if not IfcClassData.is_loaded:
+        IfcClassData.load()
+    return IfcClassData.data["ifc_products"]
 
 
-def getIfcClasses(self, context):
-    global classes_enum
-    file = IfcStore.get_file()
-    if len(classes_enum) < 1 and file:
-        declaration = IfcStore.get_schema().declaration_by_name(context.scene.BIMRootProperties.ifc_product)
-        declarations = ifcopenshell.util.schema.get_subtypes(declaration)
-        classes_enum.extend([(c, c, "") for c in sorted([d.name() for d in declarations])])
-    return classes_enum
+def get_ifc_classes(self, context):
+    if not IfcClassData.is_loaded:
+        IfcClassData.load()
+    return IfcClassData.data["ifc_classes"]
 
 
 def get_contexts(self, context):
@@ -118,7 +89,7 @@ def get_contexts(self, context):
 
 class BIMRootProperties(PropertyGroup):
     contexts: EnumProperty(items=get_contexts, name="Contexts")
-    ifc_product: EnumProperty(items=getIfcProducts, name="Products", update=refreshClasses)
-    ifc_class: EnumProperty(items=getIfcClasses, name="Class", update=refreshPredefinedTypes)
+    ifc_product: EnumProperty(items=get_ifc_products, name="Products", update=refresh_classes)
+    ifc_class: EnumProperty(items=get_ifc_classes, name="Class", update=refreshPredefinedTypes)
     ifc_predefined_type: EnumProperty(items=getIfcPredefinedTypes, name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")

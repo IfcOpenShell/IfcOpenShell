@@ -5,6 +5,15 @@
 /_installed-vs*-x*/
 /build/
 
+# output directories
+/cmake/out/
+/docs/out/
+/src/examples/out/
+/src/ifcmax/out/
+/src/ifcwrap/out/
+/src/qtviewer/out/
+
+
 /win/BuildDepsCache*.txt
 # IfcExpressParser residue
 /src/ifcexpressparser/express_parser.py
@@ -13,6 +22,7 @@ __pycache__
 *.py.bak
 # Visual Studio Code files
 .vscode
+.vs
 # PyCharm files
 .idea
 
@@ -57,3 +67,9 @@ htmlcov
 
 # Blender
 *.blend1
+
+# Sphinx
+_build/
+
+# IDS Docs
+src/ifcopenshell-python/test/build

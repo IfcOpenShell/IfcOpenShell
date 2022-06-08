@@ -40,7 +40,7 @@ import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.export_ifc
 from lxml import etree
-from mathutils import Vector, Matrix, Euler, geometry
+from mathutils import Vector
 from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.group.data import Data as GroupData
@@ -53,7 +53,7 @@ def open_with_user_command(user_command, path):
     if user_command:
         commands = eval(user_command)
         for command in commands:
-            subprocess.run(command)
+            subprocess.Popen(command)
     else:
         webbrowser.open("file://" + path)
 
@@ -82,6 +82,11 @@ class AddDrawing(bpy.types.Operator, Operator):
             target_view=self.props.target_view,
             location_hint=hint,
         )
+        try:
+            drawing = tool.Ifc.get().by_id(self.props.active_drawing_id)
+            core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
+        except:
+            pass
 
 
 class CreateDrawing(bpy.types.Operator):
@@ -114,10 +119,20 @@ class CreateDrawing(bpy.types.Operator):
         start = time.time()
         self.profile_code("Start drawing generation process")
         self.props = context.scene.DocProperties
+        self.cprops = self.camera.data.BIMCameraProperties
         self.drawing_name = self.file.by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
         self.get_scale()
-        if self.camera.data.BIMCameraProperties.update_representation(self.camera):
+        if self.cprops.update_representation(self.camera):
             bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
+
+        self.svg_writer = svgwriter.SvgWriter()
+        self.svg_writer.human_scale = self.human_scale
+        self.svg_writer.scale = self.scale
+        self.svg_writer.data_dir = context.scene.BIMProperties.data_dir
+        self.svg_writer.camera = self.camera
+        self.svg_writer.camera_width, self.svg_writer.camera_height = self.get_camera_dimensions()
+        self.svg_writer.camera_projection = tuple(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
+
         underlay_svg = self.generate_underlay(context)
         self.profile_code("Generate underlay")
         linework_svg = self.generate_linework(context)
@@ -130,6 +145,16 @@ class CreateDrawing(bpy.types.Operator):
         print("Total Time: {:.2f}".format(time.time() - start))
         return {"FINISHED"}
 
+    def get_camera_dimensions(self):
+        render = bpy.context.scene.render
+        if self.is_landscape(render):
+            width = self.camera.data.ortho_scale
+            height = width / render.resolution_x * render.resolution_y
+        else:
+            height = self.camera.data.ortho_scale
+            width = height / render.resolution_y * render.resolution_x
+        return width, height
+
     def profile_code(self, message):
         if not self.time:
             self.time = time.time()
@@ -140,22 +165,26 @@ class CreateDrawing(bpy.types.Operator):
         # Hacky :)
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "diagrams", self.drawing_name + ".svg")
         with open(svg_path, "w") as outfile:
-            has_boilerplate = False
+            pset = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]
+            self.svg_writer.create_blank_svg(svg_path).define_boilerplate(
+                pset.get("Stylesheet"), pset.get("Markers"), pset.get("Symbols"), pset.get("Patterns")
+            )
+            boilerplate = self.svg_writer.svg.tostring()
+            outfile.write(boilerplate.replace("</svg>", ""))
             if underlay:
                 with open(underlay) as infile:
-                    for line in infile:
-                        if "<svg " in line:
-                            line = line.replace('">', '" xmlns:ifc="http://www.ifcopenshell.org/ns">')
-                        if "</svg>" in line:
+                    for i, line in enumerate(infile):
+                        if i < 2:
+                            continue
+                        elif "</svg>" in line:
                             continue
                         outfile.write(line)
                 shutil.copyfile(underlay[0:-4] + ".png", svg_path[0:-4] + "-underlay.png")
-                has_boilerplate = True
             if linework:
                 with open(linework) as infile:
                     should_skip = False
                     for i, line in enumerate(infile):
-                        if has_boilerplate and i == 0:
+                        if i == 0:
                             continue
                         if "</svg>" in line:
                             continue
@@ -168,11 +197,10 @@ class CreateDrawing(bpy.types.Operator):
                         elif should_skip:
                             continue
                         outfile.write(line)
-                has_boilerplate = True
             if annotation:
                 with open(annotation) as infile:
                     for i, line in enumerate(infile):
-                        if has_boilerplate and i in [0, 1]:
+                        if i < 2:
                             continue
                         if "</svg>" in line:
                             continue
@@ -181,13 +209,11 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def generate_underlay(self, context):
-        if not self.props.has_underlay:
+        if not self.cprops.has_underlay:
             return
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-underlay.svg")
         context.scene.render.filepath = svg_path[0:-4] + ".png"
-        drawing_style = context.scene.DocProperties.drawing_styles[
-            self.camera.data.BIMCameraProperties.active_drawing_style_index
-        ]
+        drawing_style = context.scene.DocProperties.drawing_styles[self.cprops.active_drawing_style_index]
 
         if drawing_style.render_type == "DEFAULT":
             bpy.ops.render.render(write_still=True)
@@ -219,29 +245,11 @@ class CreateDrawing(bpy.types.Operator):
             for name, value in previous_visibility.items():
                 bpy.data.objects[name].hide_set(value)
 
-        svg_writer = svgwriter.SvgWriter()
-        render = context.scene.render
-        if self.is_landscape(render):
-            width = self.camera.data.ortho_scale
-            height = width / render.resolution_x * render.resolution_y
-        else:
-            height = self.camera.data.ortho_scale
-            width = height / render.resolution_y * render.resolution_x
-        svg_writer.human_scale = self.human_scale
-        svg_writer.scale = self.scale
-        svg_writer.output = svg_path
-        svg_writer.data_dir = context.scene.BIMProperties.data_dir
-        svg_writer.vector_style = drawing_style.vector_style
-        svg_writer.camera = self.camera
-        svg_writer.camera_width = width
-        svg_writer.camera_height = height
-        svg_writer.camera_projection = tuple(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
-        svg_writer.background_image = context.scene.render.filepath
-        svg_writer.write("underlay")
+        self.svg_writer.create_blank_svg(svg_path).draw_underlay(context.scene.render.filepath).save()
         return svg_path
 
     def generate_linework(self, context):
-        if not self.props.has_linework:
+        if not self.cprops.has_linework:
             return
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-linework.svg")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
@@ -298,15 +306,16 @@ class CreateDrawing(bpy.types.Operator):
                     body_contexts.append(rep_context.id())
                     continue
 
-            elements = set(ifc.by_type("IfcElement")) - set(ifc.by_type("IfcOpeningElement"))
+            elements = tool.Drawing.get_drawing_elements(self.camera_element)
 
             self.setup_serialiser(ifc)
-            cache_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True)
             cache = IfcStore.get_cache()
             [cache.remove(guid) for guid in invalidated_guids]
 
             if target_view_contexts and elements:
-                geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, INCLUDE_CURVES=True)
+                geom_settings = ifcopenshell.geom.settings(
+                    DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
+                )
                 geom_settings.set_context_ids(target_view_contexts)
                 it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
                 it.set_cache(cache)
@@ -317,18 +326,14 @@ class CreateDrawing(bpy.types.Operator):
                 elements -= processed
 
             if body_contexts and elements:
-                geom_settings = ifcopenshell.geom.settings(
-                    DISABLE_TRIANGULATION=True,
-                )
+                geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
                 geom_settings.set_context_ids(body_contexts)
                 it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
                 it.set_cache(cache)
                 for elem in self.yield_from_iterator(it):
                     self.serialiser.write(elem)
 
-            geom_settings = ifcopenshell.geom.settings(
-                DISABLE_TRIANGULATION=True,
-            )
+            geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
             it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
             for elem in self.yield_from_iterator(it):
                 self.serialiser.write(elem)
@@ -345,7 +350,9 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def setup_serialiser(self, ifc):
-        self.svg_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, INCLUDE_CURVES=True)
+        self.svg_settings = ifcopenshell.geom.settings(
+            DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
+        )
         self.svg_buffer = ifcopenshell.geom.serializers.buffer()
         self.serialiser = ifcopenshell.geom.serializers.svg(self.svg_buffer, self.svg_settings)
         self.serialiser.setFile(ifc)
@@ -406,74 +413,19 @@ class CreateDrawing(bpy.types.Operator):
         return re.sub("[^0-9a-zA-Z]+", "", name)
 
     def generate_annotation(self, context):
-        if not self.props.has_annotation:
+        if not self.cprops.has_annotation:
             return
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-annotation.svg")
         if os.path.isfile(svg_path) and self.props.should_use_annotation_cache:
             return svg_path
 
-        camera = self.camera
-        svg_writer = svgwriter.SvgWriter()
+        elements = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(self.camera_element))
+        annotations = sorted(elements, key=lambda a: tool.Drawing.get_annotation_z_index(a))
 
-        drawing_style = context.scene.DocProperties.drawing_styles[
-            camera.data.BIMCameraProperties.active_drawing_style_index
-        ]
+        self.svg_writer.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
+        self.svg_writer.create_blank_svg(svg_path).draw_annotations(annotations).save()
 
-        render = context.scene.render
-        if self.is_landscape(render):
-            width = camera.data.ortho_scale
-            height = width / render.resolution_x * render.resolution_y
-        else:
-            height = camera.data.ortho_scale
-            width = height / render.resolution_y * render.resolution_x
-
-        svg_writer.human_scale = self.human_scale
-        svg_writer.scale = self.scale
-        svg_writer.output = svg_path
-        svg_writer.data_dir = context.scene.BIMProperties.data_dir
-        svg_writer.vector_style = drawing_style.vector_style
-        svg_writer.camera = camera
-        svg_writer.camera_width = width
-        svg_writer.camera_height = height
-        svg_writer.camera_projection = tuple(camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
-
-        for obj in camera.users_collection[0].objects:
-            if "IfcAnnotation/" not in obj.name:
-                continue
-            element = tool.Ifc.get_entity(obj)
-            if element.ObjectType == "GRID":
-                svg_writer.annotations.setdefault("grid_objs", []).append(obj)
-            elif obj.type == "CAMERA":
-                continue
-            elif element.ObjectType == "TEXT_LEADER":
-                svg_writer.annotations.setdefault("leader_objs", []).append(obj)
-            elif element.ObjectType == "STAIR_ARROW":
-                svg_writer.annotations["stair_obj"] = obj
-            elif element.ObjectType == "EQUAL_DIMENSION":
-                svg_writer.annotations.setdefault("equal_objs", []).append(obj)
-            elif element.ObjectType == "DIMENSION":
-                svg_writer.annotations.setdefault("dimension_objs", []).append(obj)
-            elif element.ObjectType == "BREAKLINE":
-                svg_writer.annotations["break_obj"] = obj
-            elif element.ObjectType == "HIDDEN_LINE":
-                svg_writer.annotations.setdefault("hidden_objs", []).append((obj, obj.data))
-            elif element.ObjectType == "SOLID_LINE":
-                svg_writer.annotations.setdefault("solid_objs", []).append((obj, obj.data))
-            elif element.ObjectType == "PLAN_LEVEL":
-                svg_writer.annotations.setdefault("plan_level_objs", []).append(obj)
-            elif element.ObjectType == "SECTION_LEVEL":
-                svg_writer.annotations["section_level_obj"] = obj
-            elif element.ObjectType == "TEXT":
-                svg_writer.annotations.setdefault("text_objs", []).append(obj)
-            elif element.ObjectType == "MISC":
-                svg_writer.annotations.setdefault("misc_objs", []).append(obj)
-
-        svg_writer.annotations["attributes"] = [a.name for a in drawing_style.attributes]
-        # TODO: This was the old 2D annotation box checking system, prepare to deprecate
-        svg_writer.annotations["annotation_objs"] = []
-
-        svg_writer.write("annotation")
-        return svg_writer.output
+        return svg_path
 
     def get_scale(self):
         if self.camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
@@ -563,7 +515,6 @@ class AddDrawingToSheet(bpy.types.Operator):
     bl_idname = "bim.add_drawing_to_sheet"
     bl_label = "Add Drawing To Sheet"
     bl_options = {"REGISTER", "UNDO"}
-    # TODO: check undo redo
 
     @classmethod
     def poll(cls, context):
@@ -572,9 +523,69 @@ class AddDrawingToSheet(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.DocProperties
+        active_drawing = props.drawings[props.active_drawing_index]
+        active_sheet = props.sheets[props.active_sheet_index]
+        drawing = tool.Ifc.get().by_id(active_drawing.ifc_definition_id)
+        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
+        if not sheet.is_a("IfcDocumentInformation"):
+            return {"FINISHED"}
+
+        if tool.Ifc.get_schema() == "IFC2X3":
+            references = sheet.DocumentReferences or []
+        else:
+            references = sheet.HasDocumentReferences or []
+
+        has_drawing = False
+        for reference in references:
+            if tool.Ifc.get_schema() == "IFC2X3":
+                element = [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference][
+                    0
+                ].RelatedObjects[0]
+            else:
+                element = reference.DocumentRefForObjects[0].RelatedObjects[0]
+            if element == drawing:
+                has_drawing = True
+                break
+
+        if has_drawing:
+            return {"FINISHED"}
+
+        reference = tool.Ifc.run("document.add_reference", information=sheet)
+        if tool.Ifc.get_schema() == "IFC2X3":
+            attributes = {"ItemReference": str(len(sheet.DocumentReferences or []))}
+        else:
+            attributes = {"Identification": str(len(sheet.HasDocumentReferences or []))}
+        tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
+        tool.Ifc.run("document.assign_document", product=drawing, document=reference)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
-        sheet_builder.add_drawing(props.active_drawing.name, props.active_sheet.name)
+        sheet_builder.add_drawing(reference, drawing, sheet)
+
+        tool.Drawing.import_sheets()
+        return {"FINISHED"}
+
+
+class RemoveDrawingFromSheet(bpy.types.Operator):
+    bl_idname = "bim.remove_drawing_from_sheet"
+    bl_label = "Remove Drawing From Sheet"
+    bl_options = {"REGISTER", "UNDO"}
+    reference: bpy.props.IntProperty()
+
+    def execute(self, context):
+        reference = tool.Ifc.get().by_id(self.reference)
+        sheet = tool.Drawing.get_reference_document(reference)
+
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.data_dir = context.scene.BIMProperties.data_dir
+        sheet_builder.remove_drawing(reference, sheet)
+
+        drawing = tool.Drawing.get_reference_element(reference)
+        if drawing:
+            tool.Ifc.run("document.unassign_document", product=drawing, document=reference)
+
+        tool.Ifc.run("document.remove_reference", reference=reference)
+
+        tool.Drawing.import_sheets()
         return {"FINISHED"}
 
 
@@ -590,10 +601,16 @@ class CreateSheets(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         props = scene.DocProperties
-        name = props.active_sheet.name
+        active_sheet = props.sheets[props.active_sheet_index]
+        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
+
+        if not sheet.is_a("IfcDocumentInformation"):
+            return {"FINISHED"}
+
+        name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = scene.BIMProperties.data_dir
-        sheet_builder.build(name)
+        sheet_builder.build(sheet)
 
         svg2pdf_command = context.preferences.addons["blenderbim"].preferences.svg2pdf_command
         svg2dxf_command = context.preferences.addons["blenderbim"].preferences.svg2dxf_command
@@ -677,7 +694,9 @@ class ActivateView(bpy.types.Operator):
 
                     project_collection.children["Views"].children[camera.users_collection[0].name].hide_viewport = False
         bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
+        bpy.context.scene.DocProperties.active_drawing_id = self.drawing
         bpy.ops.bim.activate_drawing_style()
+        core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
         return {"FINISHED"}
 
 
@@ -698,68 +717,6 @@ class SelectDocIfcFile(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
 
-class GenerateReferences(bpy.types.Operator):
-    bl_idname = "bim.generate_references"
-    bl_label = "Generate References"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        self.camera = context.scene.camera
-        self.filter_potential_references()
-        if self.camera.data.BIMCameraProperties.target_view == "PLAN_VIEW":
-            self.generate_grids()
-        if self.camera.data.BIMCameraProperties.target_view == "ELEVATION_VIEW":
-            self.generate_grids()
-            self.generate_levels(context)
-        if self.camera.data.BIMCameraProperties.target_view == "SECTION_VIEW":
-            self.generate_grids()
-            self.generate_levels(context)
-        return {"FINISHED"}
-
-    def filter_potential_references(self):
-        for name in ["grids", "levels"]:
-            setattr(self, name, [])
-        for obj in bpy.data.objects:
-            if "IfcGridAxis/" in obj.name:
-                self.grids.append(obj)
-            if "IfcBuildingStorey/" in obj.name:
-                self.levels.append(obj)
-
-    def generate_grids(self):
-        # TODO
-        pass
-
-    def generate_levels(self, context):
-        if self.camera.data.BIMCameraProperties.raster_x > self.camera.data.BIMCameraProperties.raster_y:
-            width = self.camera.data.ortho_scale
-            height = (
-                width / self.camera.data.BIMCameraProperties.raster_x * self.camera.data.BIMCameraProperties.raster_y
-            )
-        else:
-            height = self.camera.data.ortho_scale
-            width = (
-                height / self.camera.data.BIMCameraProperties.raster_y * self.camera.data.BIMCameraProperties.raster_x
-            )
-        level_obj = annotation.Annotator.get_annotation_obj("Section Level", "curve", context)
-
-        width_in_mm = width * 1000
-        real_world_width_in_mm = width_in_mm * scale
-        offset_in_mm = 20
-        offset_percentage = offset_in_mm / real_world_width_in_mm
-
-        for obj in self.levels:
-            projection = self.project_point_onto_camera(obj.location)
-            co1 = self.camera.matrix_world @ Vector((width / 2 - (offset_percentage * width), projection[1], -1))
-            co2 = self.camera.matrix_world @ Vector((-(width / 2), projection[1], -1))
-            annotation.Annotator.add_line_to_annotation(level_obj, context, co1, co2)
-
-    def project_point_onto_camera(self, point):
-        projection = self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-        return self.camera.matrix_world.inverted() @ geometry.intersect_line_plane(
-            point.xyz, point.xyz - projection, self.camera.location, projection
-        )
-
-
 class ResizeText(bpy.types.Operator):
     bl_idname = "bim.resize_text"
     bl_label = "Resize Text"
@@ -777,12 +734,10 @@ class RemoveDrawing(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_drawing"
     bl_label = "Remove Drawing"
     bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()
+    drawing: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.DocProperties
-        drawing = tool.Ifc.get().by_id(props.drawings[self.index].ifc_definition_id)
-        core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
+        core.remove_drawing(tool.Ifc, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
 
 
 class AddDrawingStyle(bpy.types.Operator):
@@ -935,71 +890,62 @@ class RemoveSheet(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_sheet"
     bl_label = "Remove Sheet"
     bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()
+    sheet: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.props = context.scene.DocProperties
-        sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
-        core.remove_sheet(tool.Ifc, tool.Drawing, sheet=sheet)
+        core.remove_sheet(tool.Ifc, tool.Drawing, sheet=tool.Ifc.get().by_id(self.sheet))
 
 
-class AddSchedule(bpy.types.Operator):
+class AddSchedule(bpy.types.Operator, Operator):
     bl_idname = "bim.add_schedule"
     bl_label = "Add Schedule"
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        new = context.scene.DocProperties.schedules.add()
-        new.name = "SCHEDULE {}".format(len(context.scene.DocProperties.schedules))
-        return {"FINISHED"}
-
-
-class RemoveSchedule(bpy.types.Operator):
-    bl_idname = "bim.remove_schedule"
-    bl_label = "Remove Schedule"
-    bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        props = context.scene.DocProperties
-        props.schedules.remove(self.index)
-        return {"FINISHED"}
-
-
-class SelectScheduleFile(bpy.types.Operator):
-    bl_idname = "bim.select_schedule_file"
-    bl_label = "Select Documentation IFC File"
-    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    filter_glob: bpy.props.StringProperty(default="*.ods", options={"HIDDEN"})
-    index: bpy.props.IntProperty()
+    filter_glob: bpy.props.StringProperty(default="*.ods;*.xls;*.xlsx", options={"HIDDEN"})
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
-    def execute(self, context):
-        props = context.scene.DocProperties
-        props.active_schedule.file = self.filepath
-        return {"FINISHED"}
+    def _execute(self, context):
+        filepath = self.filepath
+        if self.use_relative_path:
+            filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
+        core.add_schedule(
+            tool.Ifc,
+            tool.Drawing,
+            uri=filepath,
+        )
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
 
-class BuildSchedule(bpy.types.Operator):
+class RemoveSchedule(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_schedule"
+    bl_label = "Remove Schedule"
+    bl_options = {"REGISTER", "UNDO"}
+    schedule: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.remove_schedule(tool.Ifc, tool.Drawing, schedule=tool.Ifc.get().by_id(self.schedule))
+
+
+class OpenSchedule(bpy.types.Operator, Operator):
+    bl_idname = "bim.open_schedule"
+    bl_label = "Open Schedule"
+    bl_options = {"REGISTER", "UNDO"}
+    schedule: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.open_schedule(tool.Drawing, schedule=tool.Ifc.get().by_id(self.schedule))
+
+
+class BuildSchedule(bpy.types.Operator, Operator):
     bl_idname = "bim.build_schedule"
     bl_label = "Build Schedule"
+    schedule: bpy.props.IntProperty()
 
-    @classmethod
-    def poll(cls, context):
-        return context.scene.DocProperties.active_schedule.file
-
-    def execute(self, context):
-        props = context.scene.DocProperties
-        schedule = props.active_schedule
-        schedule_creator = scheduler.Scheduler()
-        outfile = os.path.join(context.scene.BIMProperties.data_dir, "schedules", schedule.name + ".svg")
-        schedule_creator.schedule(schedule.file, outfile)
-        open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, outfile)
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.build_schedule(tool.Drawing, schedule=tool.Ifc.get().by_id(self.schedule))
 
 
 class AddScheduleToSheet(bpy.types.Operator):
@@ -1015,9 +961,40 @@ class AddScheduleToSheet(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.DocProperties
+        active_schedule = props.schedules[props.active_schedule_index]
+        active_sheet = props.sheets[props.active_sheet_index]
+        schedule = tool.Ifc.get().by_id(active_schedule.ifc_definition_id)
+        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
+        if not sheet.is_a("IfcDocumentInformation"):
+            return {"FINISHED"}
+
+        if tool.Ifc.get_schema() == "IFC2X3":
+            references = sheet.DocumentReferences or []
+        else:
+            references = sheet.HasDocumentReferences or []
+
+        has_schedule = False
+        for reference in references:
+            if reference.Location == tool.Drawing.get_schedule_location(schedule):
+                has_schedule = True
+                break
+
+        if has_schedule:
+            return {"FINISHED"}
+
+        reference = tool.Ifc.run("document.add_reference", information=sheet)
+        if tool.Ifc.get_schema() == "IFC2X3":
+            attributes = {"ItemReference": str(len(sheet.DocumentReferences or []))}
+        else:
+            attributes = {"Identification": str(len(sheet.HasDocumentReferences or []))}
+        attributes["Location"] = tool.Drawing.get_schedule_location(schedule)
+        tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
+
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
-        sheet_builder.add_schedule(props.active_schedule.name, props.active_sheet.name)
+        sheet_builder.add_schedule(reference, schedule, sheet)
+
+        tool.Drawing.import_sheets()
         return {"FINISHED"}
 
 
@@ -1070,8 +1047,10 @@ class CopyGrid(bpy.types.Operator):
         return helper.get_active_drawing(context.scene)[0] is not None
 
     def execute(self, context):
+        drawing = tool.Ifc.get_entity(context.scene.camera)
+        target_view = tool.Drawing.get_drawing_target_view(drawing)
         subcontext = ifcopenshell.util.representation.get_context(
-            IfcStore.get_file(), "Plan", "Annotation", context.scene.camera.data.BIMCameraProperties.target_view
+            IfcStore.get_file(), "Plan", "Annotation", target_view
         )
         if not subcontext:
             return {"FINISHED"}
@@ -1080,8 +1059,8 @@ class CopyGrid(bpy.types.Operator):
         view_coll, camera = helper.get_active_drawing(context.scene)
         is_ortho = camera.data.type == "ORTHO"
         bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
-        clipping = is_ortho and camera.data.BIMCameraProperties.target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
-        elevating = is_ortho and camera.data.BIMCameraProperties.target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
+        clipping = is_ortho and target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
+        elevating = is_ortho and target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
 
         def grep(coll):
             results = []
@@ -1249,34 +1228,34 @@ class DisableEditingText(bpy.types.Operator, Operator):
         core.disable_editing_text(tool.Drawing, obj=context.active_object)
 
 
-class EditTextProduct(bpy.types.Operator, Operator):
-    bl_idname = "bim.edit_text_product"
+class EditAssignedProduct(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_assigned_product"
     bl_label = "Edit Text Product"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         product = None
-        if context.active_object.BIMTextProperties.relating_product:
-            product = tool.Ifc.get_entity(context.active_object.BIMTextProperties.relating_product)
-        core.edit_text_product(tool.Ifc, tool.Drawing, obj=context.active_object, product=product)
+        if context.active_object.BIMAssignedProductProperties.relating_product:
+            product = tool.Ifc.get_entity(context.active_object.BIMAssignedProductProperties.relating_product)
+        core.edit_assigned_product(tool.Ifc, tool.Drawing, obj=context.active_object, product=product)
 
 
-class EnableEditingTextProduct(bpy.types.Operator, Operator):
-    bl_idname = "bim.enable_editing_text_product"
+class EnableEditingAssignedProduct(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_assigned_product"
     bl_label = "Enable Editing Text Product"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.enable_editing_text_product(tool.Drawing, obj=context.active_object)
+        core.enable_editing_assigned_product(tool.Drawing, obj=context.active_object)
 
 
-class DisableEditingTextProduct(bpy.types.Operator, Operator):
-    bl_idname = "bim.disable_editing_text_product"
+class DisableEditingAssignedProduct(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_assigned_product"
     bl_label = "Disable Editing Text Product"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.disable_editing_text_product(tool.Drawing, obj=context.active_object)
+        core.disable_editing_assigned_product(tool.Drawing, obj=context.active_object)
 
 
 class LoadSheets(bpy.types.Operator, Operator):
@@ -1297,6 +1276,24 @@ class DisableEditingSheets(bpy.types.Operator, Operator):
         core.disable_editing_sheets(tool.Drawing)
 
 
+class LoadSchedules(bpy.types.Operator, Operator):
+    bl_idname = "bim.load_schedules"
+    bl_label = "Load Schedules"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.load_schedules(tool.Drawing)
+
+
+class DisableEditingSchedules(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_schedules"
+    bl_label = "Disable Editing Text Product"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.disable_editing_schedules(tool.Drawing)
+
+
 class LoadDrawings(bpy.types.Operator, Operator):
     bl_idname = "bim.load_drawings"
     bl_label = "Load Drawings"
@@ -1313,3 +1310,31 @@ class DisableEditingDrawings(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         core.disable_editing_drawings(tool.Drawing)
+
+
+class ExpandSheet(bpy.types.Operator):
+    bl_idname = "bim.expand_sheet"
+    bl_label = "Expand Sheet"
+    bl_options = {"REGISTER", "UNDO"}
+    sheet: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        for sheet in [s for s in props.sheets if s.ifc_definition_id == self.sheet]:
+            sheet.is_expanded = True
+        core.load_sheets(tool.Drawing)
+        return {"FINISHED"}
+
+
+class ContractSheet(bpy.types.Operator):
+    bl_idname = "bim.contract_sheet"
+    bl_label = "Contract Sheet"
+    bl_options = {"REGISTER", "UNDO"}
+    sheet: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        for sheet in [s for s in props.sheets if s.ifc_definition_id == self.sheet]:
+            sheet.is_expanded = False
+        core.load_sheets(tool.Drawing)
+        return {"FINISHED"}

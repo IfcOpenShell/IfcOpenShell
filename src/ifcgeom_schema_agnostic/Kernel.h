@@ -42,6 +42,9 @@ namespace IfcGeom {
 	private:
 		Kernel* implementation_;
 
+	protected:
+		Kernel() {};
+
 	public:
 		// Tolerances and settings for various geometrical operations:
 		enum GeomValue {
@@ -80,7 +83,7 @@ namespace IfcGeom {
 			GV_BOOLEAN_ATTEMPT_2D
 		};
 
-		Kernel(IfcParse::IfcFile* file_ = 0);
+		IFC_PARSE_API Kernel(IfcParse::IfcFile* file_);
 		
 		virtual ~Kernel() {}
 
@@ -107,12 +110,12 @@ namespace IfcGeom {
 			return implementation_->convert_placement(item, trsf);
 		}
 
-		static int count(const TopoDS_Shape&, TopAbs_ShapeEnum, bool unique=false);
-		static int surface_genus(const TopoDS_Shape&);
+		IFC_PARSE_API static int count(const TopoDS_Shape&, TopAbs_ShapeEnum, bool unique = false);
+		IFC_PARSE_API static int surface_genus(const TopoDS_Shape&);
 
-		static bool is_manifold(const TopoDS_Shape& a);
-		static IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity*, bool include_openings=true);
-		static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
+		IFC_PARSE_API static bool is_manifold(const TopoDS_Shape& a);
+		IFC_PARSE_API static IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity*, bool include_openings = true);
+		IFC_PARSE_API static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
 	};
 
 	namespace impl {

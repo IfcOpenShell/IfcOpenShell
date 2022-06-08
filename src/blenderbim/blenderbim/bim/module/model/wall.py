@@ -688,23 +688,10 @@ class DumbWallGenerator:
         for stroke in layer.active_frame.strokes:
             if len(stroke.points) == 1:
                 continue
-            coords = (stroke.points[0].co, stroke.points[-1].co)
-            direction = coords[1] - coords[0]
-            length = direction.length
-            if length < 0.1:
-                continue
-            data = {"coords": coords}
-
-            # Round to nearest 50mm (yes, metric for now)
-            self.length = 0.05 * round(length / 0.05)
-            self.rotation = math.atan2(direction[1], direction[0])
-            # Round to nearest 5 degrees
-            nearest_degree = (math.pi / 180) * 5
-            self.rotation = nearest_degree * round(self.rotation / nearest_degree)
-            self.location = coords[0]
-            data["obj"] = self.create_wall()
-            strokes.append(data)
-            objs.append(data["obj"])
+            data = self.create_wall_from_2_points((stroke.points[0].co, stroke.points[-1].co))
+            if data:
+                strokes.append(data)
+                objs.append(data["obj"])
 
         if len(objs) < 2:
             return objs
@@ -725,6 +712,23 @@ class DumbWallGenerator:
                     DumbWallJoiner(stroke["obj"], stroke2["obj"]).join_T()
         bpy.context.scene.grease_pencil.layers.remove(layer)
         return objs
+
+    def create_wall_from_2_points(self, coords):
+        direction = coords[1] - coords[0]
+        length = direction.length
+        if length < 0.1:
+            return
+        data = {"coords": coords}
+
+        # Round to nearest 50mm (yes, metric for now)
+        self.length = 0.05 * round(length / 0.05)
+        self.rotation = math.atan2(direction[1], direction[0])
+        # Round to nearest 5 degrees
+        nearest_degree = (math.pi / 180) * 5
+        self.rotation = nearest_degree * round(self.rotation / nearest_degree)
+        self.location = coords[0]
+        data["obj"] = self.create_wall()
+        return data
 
     def has_end_near_stroke(self, stroke, stroke2):
         point, distance = mathutils.geometry.intersect_point_line(stroke["coords"][0], *stroke2["coords"])
@@ -866,25 +870,24 @@ def calculate_quantities(usecase_path, ifc_file, settings):
     width = obj.dimensions[1] / unit_scale
     height = obj.dimensions[2] / unit_scale
 
-    if product.HasOpenings:
-        # TODO: calculate gross / net
-        gross_footprint_area = 0
-        net_footprint_area = 0
-        gross_side_area = 0
-        net_side_area = 0
-        gross_volume = 0
-        net_volume = 0
-    else:
-        bm = bmesh.new()
-        bm.from_mesh(obj.data)
-        bm.faces.ensure_lookup_table()
-        gross_footprint_area = sum([f.calc_area() for f in bm.faces if f.normal.z < -0.9])
-        net_footprint_area = gross_footprint_area
-        gross_side_area = sum([f.calc_area() for f in bm.faces if f.normal.y > 0.9])
-        net_side_area = gross_side_area
-        gross_volume = bm.calc_volume()
-        net_volume = gross_volume
-        bm.free()
+    bm_gross = bmesh.new()
+    bm_gross.from_mesh(obj.data)
+    bm_gross.faces.ensure_lookup_table()
+
+    bm_net = bmesh.new()
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    evaluated_mesh = obj.evaluated_get(depsgraph).data
+    bm_net.from_mesh(evaluated_mesh)
+    bm_net.faces.ensure_lookup_table()
+
+    gross_footprint_area = sum([f.calc_area() for f in bm_gross.faces if f.normal.z < -0.9])
+    net_footprint_area = sum([f.calc_area() for f in bm_net.faces if f.normal.z < -0.9])
+    gross_side_area = sum([f.calc_area() for f in bm_gross.faces if f.normal.y > 0.9])
+    net_side_area = sum([f.calc_area() for f in bm_net.faces if f.normal.y > 0.9])
+    gross_volume = bm_gross.calc_volume()
+    net_volume = bm_net.calc_volume()
+    bm_gross.free()
+    bm_net.free()
 
     ifcopenshell.api.run(
         "pset.edit_qto",

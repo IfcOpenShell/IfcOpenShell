@@ -297,6 +297,11 @@ def the_material_name_exists(name) -> bpy.types.Material:
     return obj
 
 
+@then(parsers.parse('the material "{name}" does not exist'))
+def the_material_name_does_not_exist(name):
+    assert bpy.data.materials.get(name) is None, "Material exists"
+
+
 @then("an IFC file does not exist")
 def an_ifc_file_does_not_exist():
     ifc = IfcStore.get_file()

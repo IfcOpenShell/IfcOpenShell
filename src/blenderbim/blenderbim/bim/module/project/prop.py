@@ -63,10 +63,16 @@ def update_filter_mode(self, context):
             new.ifc_definition_id = element.id()
             new.total_elements = sum([len(r.RelatedElements) for r in element.ContainsElements])
     elif self.filter_mode == "IFC_CLASS":
-        for ifc_class in sorted(list(set([e.is_a() for e in file.by_type("IfcElement")]))):
+        for ifc_class in sorted(list({e.is_a() for e in file.by_type("IfcElement")})):
             new = self.filter_categories.add()
             new.name = ifc_class
             new.total_elements = len(file.by_type(ifc_class, include_subtypes=False))
+    elif self.filter_mode == "IFC_TYPE":
+        for ifc_type in sorted(file.by_type("IfcElementType"), key=lambda e: e.Name or "Unnamed"):
+            new = self.filter_categories.add()
+            new.name = ifc_type.is_a() + "/" + (ifc_type.Name or "Unnamed")
+            new.ifc_definition_id = ifc_type.id()
+            new.total_elements = len(ifcopenshell.util.element.get_types(ifc_type))
 
 
 class LibraryElement(PropertyGroup):
@@ -85,6 +91,7 @@ class FilterCategory(PropertyGroup):
 
 class Link(PropertyGroup):
     name: StringProperty(name="Name")
+    collection_name: StringProperty(name="Collection Name")
     is_loaded: BoolProperty(name="Is Loaded", default=False)
 
 
@@ -116,25 +123,40 @@ class BIMProjectProperties(PropertyGroup):
             ("NONE", "None", "No filtering is performed"),
             ("DECOMPOSITION", "Decomposition", "Filter objects by decomposition"),
             ("IFC_CLASS", "IFC Class", "Filter objects by class"),
+            ("IFC_TYPE", "IFC Type", "Filter objects by type"),
             ("WHITELIST", "Whitelist", "Filter objects using a custom whitelist query"),
             ("BLACKLIST", "Blacklist", "Filter objects using a custom blacklist query"),
         ],
         name="Filter Mode",
         update=update_filter_mode,
     )
+    total_elements: IntProperty(name="Total Elements", default=0)
     filter_categories: CollectionProperty(name="Filter Categories", type=FilterCategory)
     active_filter_category_index: IntProperty(name="Active Filter Category Index")
     filter_query: StringProperty(name="Filter Query")
     should_filter_spatial_elements: BoolProperty(name="Filter Spatial Elements", default=False)
-    should_use_cpu_multiprocessing: BoolProperty(name="Import with CPU Multiprocessing", default=True)
-    should_merge_by_class: BoolProperty(name="Import and Merge by Class", default=False)
-    should_merge_by_material: BoolProperty(name="Import and Merge by Material", default=False)
-    should_merge_materials_by_colour: BoolProperty(name="Import and Merge Materials by Colour", default=False)
-    should_clean_mesh: BoolProperty(name="Import and Clean Mesh", default=True)
-    deflection_tolerance: FloatProperty(name="Import Deflection Tolerance", default=0.001)
-    angular_tolerance: FloatProperty(name="Import Angular Tolerance", default=0.5)
-    should_offset_model: BoolProperty(name="Import and Offset Model", default=False)
-    model_offset_coordinates: StringProperty(name="Model Offset Coordinates", default="0,0,0")
+    should_use_cpu_multiprocessing: BoolProperty(name="CPU Multiprocessing", default=True)
+    merge_mode: bpy.props.EnumProperty(
+        items=[
+            ("NONE", "None", "No objects are merged"),
+            ("IFC_CLASS", "IFC Class", "One object per IFC class"),
+            ("IFC_TYPE", "IFC Type", "One object per IFC construction type"),
+            ("MATERIAL", "Material", "One object per material"),
+        ],
+        name="Merge Mode",
+        default="NONE",
+    )
+    should_merge_materials_by_colour: BoolProperty(name="Merge Materials by Colour", default=False)
+    should_use_native_meshes: BoolProperty(name="Native Meshes", default=False)
+    should_clean_mesh: BoolProperty(name="Clean Meshes", default=True)
+    should_cache: BoolProperty(name="Cache", default=False)
+    is_coordinating: BoolProperty(name="For Coordination Only", default=False)
+    deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
+    angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
+    distance_limit: FloatProperty(name="Distance Limit", default=1000)
+    false_origin: StringProperty(name="False Origin", default="0,0,0")
+    element_offset: IntProperty(name="Element Offset", default=0)
+    element_limit: IntProperty(name="Element Offset", default=30000)
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
     export_schema: EnumProperty(items=get_export_schema, name="IFC Schema")
