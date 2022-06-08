@@ -135,12 +135,20 @@ class BIMProjectProperties(PropertyGroup):
     active_filter_category_index: IntProperty(name="Active Filter Category Index")
     filter_query: StringProperty(name="Filter Query")
     should_filter_spatial_elements: BoolProperty(name="Filter Spatial Elements", default=False)
-    should_use_cpu_multiprocessing: BoolProperty(name="Import with CPU Multiprocessing", default=True)
-    should_merge_by_class: BoolProperty(name="Import and Merge by Class", default=False)
-    should_merge_by_material: BoolProperty(name="Import and Merge by Material", default=False)
-    should_merge_materials_by_colour: BoolProperty(name="Import and Merge Materials by Colour", default=False)
-    should_clean_mesh: BoolProperty(name="Import and Clean Mesh", default=True)
+    should_use_cpu_multiprocessing: BoolProperty(name="CPU Multiprocessing", default=True)
+    merge_mode: bpy.props.EnumProperty(
+        items=[
+            ("NONE", "None", "No objects are merged"),
+            ("IFC_CLASS", "IFC Class", "One object per IFC class"),
+            ("IFC_TYPE", "IFC Type", "One object per IFC construction type"),
+            ("MATERIAL", "Material", "One object per material"),
+        ],
+        name="Merge Mode",
+        default="NONE",
+    )
+    should_merge_materials_by_colour: BoolProperty(name="Merge Materials by Colour", default=False)
     should_use_native_meshes: BoolProperty(name="Native Meshes", default=False)
+    should_clean_mesh: BoolProperty(name="Clean Meshes", default=True)
     should_cache: BoolProperty(name="Cache", default=False)
     is_coordinating: BoolProperty(name="For Coordination Only", default=False)
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
