@@ -88,6 +88,7 @@ SHAPE(IfcHalfSpaceSolid);
 SHAPE(IfcSurfaceOfLinearExtrusion);
 SHAPE(IfcSurfaceOfRevolution);
 SHAPE(IfcBlock);
+SHAPE(IfcBoundingBox);
 SHAPE(IfcRectangularPyramid);
 SHAPE(IfcRightCircularCylinder);
 SHAPE(IfcRightCircularCone);
