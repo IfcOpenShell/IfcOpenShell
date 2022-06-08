@@ -683,9 +683,10 @@ class IfcImporter:
             )
         else:
             iterator = ifcopenshell.geom.iterator(self.settings, self.file, include=products)
-        cache = IfcStore.get_cache()
-        if cache:
-            iterator.set_cache(cache)
+        if self.ifc_import_settings.should_cache:
+            cache = IfcStore.get_cache()
+            if cache:
+                iterator.set_cache(cache)
         valid_file = iterator.initialize()
         if not valid_file:
             return results
@@ -832,9 +833,10 @@ class IfcImporter:
             )
         else:
             iterator = ifcopenshell.geom.iterator(self.settings_2d, self.file, include=products)
-        cache = IfcStore.get_cache()
-        if cache:
-            iterator.set_cache(cache)
+        if self.ifc_import_settings.should_cache:
+            cache = IfcStore.get_cache()
+            if cache:
+                iterator.set_cache(cache)
         valid_file = iterator.initialize()
         if not valid_file:
             return results
@@ -1925,6 +1927,7 @@ class IfcImportSettings:
         self.should_merge_materials_by_colour = False
         self.should_use_native_meshes = False
         self.should_clean_mesh = True
+        self.should_cache = True
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
         self.distance_limit = 1000
@@ -1953,6 +1956,7 @@ class IfcImportSettings:
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
         settings.should_use_native_meshes = props.should_use_native_meshes
         settings.should_clean_mesh = props.should_clean_mesh
+        settings.should_cache = props.should_cache
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
         settings.distance_limit = props.distance_limit
