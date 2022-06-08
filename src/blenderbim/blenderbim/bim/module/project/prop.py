@@ -130,6 +130,7 @@ class BIMProjectProperties(PropertyGroup):
         name="Filter Mode",
         update=update_filter_mode,
     )
+    total_elements: IntProperty(name="Total Elements", default=0)
     filter_categories: CollectionProperty(name="Filter Categories", type=FilterCategory)
     active_filter_category_index: IntProperty(name="Active Filter Category Index")
     filter_query: StringProperty(name="Filter Query")
@@ -144,6 +145,8 @@ class BIMProjectProperties(PropertyGroup):
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
     distance_limit: FloatProperty(name="Distance Limit", default=1000)
     false_origin: StringProperty(name="False Origin", default="0,0,0")
+    element_offset: IntProperty(name="Element Offset", default=0)
+    element_limit: IntProperty(name="Element Offset", default=30000)
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
     export_schema: EnumProperty(items=get_export_schema, name="IFC Schema")

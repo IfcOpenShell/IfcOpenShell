@@ -495,6 +495,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             return {"FINISHED"}
         context.scene.BIMProperties.ifc_file = self.filepath
         context.scene.BIMProjectProperties.is_loading = True
+        context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
         if not self.is_advanced:
             bpy.ops.bim.load_project_elements()
         return {"FINISHED"}
