@@ -82,6 +82,7 @@ class BIM_PT_project(Panel):
         row.prop(pprops, "should_use_native_meshes")
         row.prop(pprops, "should_merge_materials_by_colour")
         row = self.layout.row()
+        row.prop(pprops, "is_coordinating")
         row.prop(pprops, "should_clean_mesh")
         row = self.layout.row()
         row.prop(pprops, "deflection_tolerance")

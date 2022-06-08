@@ -142,6 +142,7 @@ class BIMProjectProperties(PropertyGroup):
     should_clean_mesh: BoolProperty(name="Import and Clean Mesh", default=True)
     should_use_native_meshes: BoolProperty(name="Native Meshes", default=False)
     should_cache: BoolProperty(name="Cache", default=False)
+    is_coordinating: BoolProperty(name="For Coordination Only", default=False)
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
     distance_limit: FloatProperty(name="Distance Limit", default=1000)
