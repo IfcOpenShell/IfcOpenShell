@@ -364,15 +364,26 @@ class IfcImporter:
                 "type": "IfcSweptDiskSolid",
             }
             return True
+
+        if not self.ifc_import_settings.should_use_native_meshes:
+            return False # Performance improvements only occur on edge cases currently
+
         # FacetedBreps (without voids) are meshes. See #841.
-        # Commented out as seems currently too slow.
-        # if self.is_native_faceted_brep(representations):
-        #    self.native_data[element.GlobalId] = {
-        #        "representations": representations,
-        #        "representation": self.get_body_representation(element.Representation.Representations),
-        #        "type": "IfcFacetedBrep",
-        #    }
-        #    return True
+        if self.is_native_faceted_brep(representations):
+            self.native_data[element.GlobalId] = {
+                "representations": representations,
+                "representation": self.get_body_representation(element.Representation.Representations),
+                "type": "IfcFacetedBrep",
+            }
+            return True
+
+        if self.is_native_face_based_surface_model(representations):
+            self.native_data[element.GlobalId] = {
+                "representations": representations,
+                "representation": self.get_body_representation(element.Representation.Representations),
+                "type": "IfcFaceBasedSurfaceModel",
+            }
+            return True
 
     def is_native_swept_disk_solid(self, representations):
         for representation in representations:
@@ -385,6 +396,13 @@ class IfcImporter:
         for representation in representations:
             for i in representation["raw"].Items:
                 if i.is_a() != "IfcFacetedBrep":
+                    return False
+        return True
+
+    def is_native_face_based_surface_model(self, representations):
+        for representation in representations:
+            for i in representation["raw"].Items:
+                if i.is_a() != "IfcFaceBasedSurfaceModel":
                     return False
         return True
 
@@ -618,6 +636,8 @@ class IfcImporter:
                 if native_data["type"] == "IfcSweptDiskSolid":
                     mesh = self.create_native_swept_disk_solid(element, mesh_name)
                 elif native_data["type"] == "IfcFacetedBrep":
+                    mesh = self.create_native_faceted_brep(element, mesh_name)
+                elif native_data["type"] == "IfcFaceBasedSurfaceModel":
                     mesh = self.create_native_faceted_brep(element, mesh_name)
                 mesh.BIMMeshProperties.ifc_definition_id = representation.id()
                 mesh.name = mesh_name
@@ -935,22 +955,32 @@ class IfcImporter:
             self.convert_representation(item.MappingSource.MappedRepresentation)
         elif item.is_a() == "IfcFacetedBrep":
             self.convert_representation_item_faceted_brep(item)
+        elif item.is_a() == "IfcFaceBasedSurfaceModel":
+            self.convert_representation_item_face_based_surface_model(item)
+
+    def convert_representation_item_face_based_surface_model(self, item):
+        mesh = item.get_info_2(recursive=True)
+        for face_set in mesh["FbsmFaces"]:
+            self.convert_representation_item_face_set(item, face_set)
 
     def convert_representation_item_faceted_brep(self, item):
+        mesh = item.get_info_2(recursive=True)
+        return self.convert_representation_item_face_set(item, mesh["Outer"])
+
+    def convert_representation_item_face_set(self, item, mesh):
         # On a few occasions, we flatten a list. This seems to be the most efficient way to do it.
         # https://stackoverflow.com/questions/20112776/how-do-i-flatten-a-list-of-lists-nested-lists
-        mesh = item.get_info_2(recursive=True)
 
         # For huge face sets it might be better to do a "flatmap" instead of sum()
         # bounds = sum((f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1), ())
-        bounds = tuple(chain.from_iterable(f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1))
+        bounds = tuple(chain.from_iterable(f["Bounds"] for f in mesh["CfsFaces"] if len(f["Bounds"]) == 1))
         # Here are some untested alternatives, are they faster?
         # bounds = tuple((f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1))[0]
         # bounds = chain.from_iterable(f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1)
 
         polygons = [[(p["id"], p["Coordinates"]) for p in b["Bound"]["Polygon"]] for b in bounds]
 
-        for face in mesh["Outer"]["CfsFaces"]:
+        for face in mesh["CfsFaces"]:
             # Blender cannot handle faces with holes.
             if len(face["Bounds"]) > 1:
                 inner_bounds = []
@@ -1888,6 +1918,7 @@ class IfcImportSettings:
         self.should_merge_by_class = False
         self.should_merge_by_material = False
         self.should_merge_materials_by_colour = False
+        self.should_use_native_meshes = False
         self.should_clean_mesh = True
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
@@ -1913,6 +1944,7 @@ class IfcImportSettings:
         settings.should_merge_by_class = props.should_merge_by_class
         settings.should_merge_by_material = props.should_merge_by_material
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
+        settings.should_use_native_meshes = props.should_use_native_meshes
         settings.should_clean_mesh = props.should_clean_mesh
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance

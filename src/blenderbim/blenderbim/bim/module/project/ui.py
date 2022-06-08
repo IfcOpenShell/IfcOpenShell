@@ -78,6 +78,7 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "should_merge_by_material")
         row = self.layout.row()
+        row.prop(pprops, "should_use_native_meshes")
         row.prop(pprops, "should_merge_materials_by_colour")
         row = self.layout.row()
         row.prop(pprops, "should_clean_mesh")
