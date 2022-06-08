@@ -314,13 +314,18 @@ class IfcImporter:
             self.settings_2d.set_context_ids(self.plan_contexts)
 
     def process_element_filter(self):
+        offset = self.ifc_import_settings.element_offset
+        offset_limit = offset + self.ifc_import_settings.element_limit
+
         if self.ifc_import_settings.has_filter:
-            self.elements = set(self.ifc_import_settings.elements)
+            self.elements = self.ifc_import_settings.elements
             # TODO: enable filtering for annotations
             self.annotations = set(self.file.by_type("IfcAnnotation"))
         else:
-            self.elements = set(self.file.by_type("IfcElement"))
+            self.elements = self.file.by_type("IfcElement")
             self.annotations = set(self.file.by_type("IfcAnnotation"))
+
+        self.elements = set(self.elements[offset:offset_limit])
 
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
             self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
@@ -366,7 +371,7 @@ class IfcImporter:
             return True
 
         if not self.ifc_import_settings.should_use_native_meshes:
-            return False # Performance improvements only occur on edge cases currently
+            return False  # Performance improvements only occur on edge cases currently
 
         # FacetedBreps (without voids) are meshes. See #841.
         if self.is_native_faceted_brep(representations):
@@ -1924,6 +1929,8 @@ class IfcImportSettings:
         self.angular_tolerance = 0.5
         self.distance_limit = 1000
         self.false_origin = None
+        self.element_offset = 0
+        self.element_limit = 30000
         self.has_filter = None
         self.should_filter_spatial_elements = True
         self.elements = set()
@@ -1949,11 +1956,9 @@ class IfcImportSettings:
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
         settings.distance_limit = props.distance_limit
-        settings.false_origin = (
-            [float(o) for o in props.false_origin.split(",")]
-            if props.false_origin
-            else None
-        )
+        settings.false_origin = [float(o) for o in props.false_origin.split(",")] if props.false_origin else None
         if settings.false_origin == [0, 0, 0]:
             settings.false_origin = None
+        settings.element_offset = props.element_offset
+        settings.element_limit = props.element_limit
         return settings
