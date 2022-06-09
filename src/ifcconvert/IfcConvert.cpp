@@ -347,7 +347,8 @@ int main(int argc, char** argv) {
 		("strict-tolerance", "Use exact tolerance from model. Default is a 10 "
 						 "times increase for more permissive edge curves and fewer artifacts after "
 						 "boolean operations at the expense of geometric detail "
-						 "due to vertex collapsing and wire intersection fuzziness.");
+						 "due to vertex collapsing and wire intersection fuzziness.")
+		("ignore-contexts", "Use all representations regardless of the representation context.");
 
     std::string bounds;
 #ifdef HAVE_ICU
@@ -498,6 +499,7 @@ int main(int argc, char** argv) {
 	const bool no_wire_intersection_check = vmap.count("no-wire-intersection-check") != 0;
 	const bool no_wire_intersection_tolerance = vmap.count("no-wire-intersection-tolerance") != 0;
 	const bool strict_tolerance = vmap.count("strict-tolerance") != 0;
+	const bool ignore_contexts = vmap.count("ignore-contexts") != 0;
 
     if (!quiet || vmap.count("version")) {
 		print_version();
@@ -799,6 +801,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_CHECK, no_wire_intersection_check);
 	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE, no_wire_intersection_tolerance);
 	settings.set(IfcGeom::IteratorSettings::STRICT_TOLERANCE, strict_tolerance);
+	settings.set(IfcGeom::IteratorSettings::IGNORE_CONTEXTS, ignore_contexts);
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);

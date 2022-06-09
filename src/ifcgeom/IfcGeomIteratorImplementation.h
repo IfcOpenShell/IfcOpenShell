@@ -264,6 +264,8 @@ namespace IfcGeom {
 			allowed_context_types.insert("plan");
 			allowed_context_types.insert("notdefined");
 
+            bool ignoreContexts = settings.get(IteratorSettings::IGNORE_CONTEXTS);
+
 			std::set<std::string> context_types;
             if (!settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
 				// Really this should only be 'Model', as per 
@@ -363,10 +365,14 @@ namespace IfcGeom {
 				kernel.setValue(IfcGeom::Kernel::GV_PRECISION, 1.e-5);
 			}
 
-            if (representations->size() == 0) {
-                Logger::Warning("No representations encountered in relevant contexts, using all");
+			if (ignoreContexts || representations->size() == 0) {
+				if (ignoreContexts) {
+					Logger::Notice("Ignore representation contexts set, using all");
+				} else {
+					Logger::Warning("No representations encountered in relevant contexts, using all");
+				}
 				representations = ifc_file->instances_by_type<IfcSchema::IfcRepresentation>();
-            }
+			}
 
 			if (representations->size() == 0) {
 				Logger::Warning("No representations encountered, aborting");
