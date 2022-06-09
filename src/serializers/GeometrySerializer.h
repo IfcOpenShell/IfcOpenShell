@@ -33,29 +33,29 @@ typedef float real_t;
 class SerializerSettings : public IfcGeom::IteratorSettings
 {
 public:
-    enum Setting
+    enum Setting : unsigned long
     {
         /// Use entity names instead of unique IDs for naming elements.
         /// Applicable for OBJ, DAE, and SVG output.
-        USE_ELEMENT_NAMES = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 1),
+        USE_ELEMENT_NAMES = 1L << (IfcGeom::IteratorSettings::NUM_SETTINGS + 1),
         /// Use entity GUIDs instead of unique IDs for naming elements.
         /// Applicable for OBJ, DAE, and SVG output.
-        USE_ELEMENT_GUIDS = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 2),
+        USE_ELEMENT_GUIDS = 1L << (IfcGeom::IteratorSettings::NUM_SETTINGS + 2),
         /// Use material names instead of unique IDs for naming materials.
         /// Applicable for OBJ and DAE output.
-        USE_MATERIAL_NAMES = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 3),
+        USE_MATERIAL_NAMES = 1L << (IfcGeom::IteratorSettings::NUM_SETTINGS + 3),
 		/// Use element types instead of unique IDs for naming elements.
 		/// Applicable for DAE output.
-		USE_ELEMENT_TYPES = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 4),
+		USE_ELEMENT_TYPES = 1L << (IfcGeom::IteratorSettings::NUM_SETTINGS + 4),
 		/// Order the elements using their IfcBuildingStorey parent
 		/// Applicable for DAE output
-		USE_ELEMENT_HIERARCHY = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 5),
+		USE_ELEMENT_HIERARCHY = 1L << (IfcGeom::IteratorSettings::NUM_SETTINGS + 5),
         /// Use step ids for naming elements.
 		/// Applicable for OBJ, DAE, and SVG output.
-		USE_ELEMENT_STEPIDS = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 6),
+		USE_ELEMENT_STEPIDS = 1L << (IfcGeom::IteratorSettings::NUM_SETTINGS + 6),
 		/// Use Y UP .
 		/// Applicable for OBJ output.
-		USE_Y_UP = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 7),
+		USE_Y_UP = 1L << (IfcGeom::IteratorSettings::NUM_SETTINGS + 7),
 		/// Number of different setting flags.
         NUM_SETTINGS = 7
     };

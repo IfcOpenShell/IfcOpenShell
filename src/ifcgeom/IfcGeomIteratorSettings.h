@@ -106,7 +106,7 @@ namespace IfcGeom
 			NUM_SETTINGS = 25
         };
         /// Used to store logical OR combination of setting flags.
-        typedef unsigned SettingField;
+        typedef unsigned long SettingField;
 
         IteratorSettings()
             : settings_(WELD_VERTICES) // OR options that default to true here
