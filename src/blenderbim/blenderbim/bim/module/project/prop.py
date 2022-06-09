@@ -23,6 +23,7 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
+    PointerProperty,
     BoolProperty,
     CollectionProperty,
     EnumProperty,
@@ -91,8 +92,10 @@ class FilterCategory(PropertyGroup):
 
 class Link(PropertyGroup):
     name: StringProperty(name="Name")
-    collection_name: StringProperty(name="Collection Name")
+    collection: PointerProperty(name="Collection", type=bpy.types.Collection)
     is_loaded: BoolProperty(name="Is Loaded", default=False)
+    is_wireframe: BoolProperty(name="Is Wireframe", default=False)
+    is_hidden: BoolProperty(name="Is Hidden", default=False)
 
 
 class BIMProjectProperties(PropertyGroup):
