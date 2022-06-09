@@ -105,7 +105,7 @@ the boolean, or create a **Blacklist Filter Mode** to exclude the element from
 import.
 
 These types of errors are usually problems with external software (i.e. not
-internationally by the end-user) and typically do not affect critical geometry
+intentionally by the end-user) and typically do not affect critical geometry
 and can be worked around.
 
 Fully resolving boolean issues is a complex case by case topic and not covered
