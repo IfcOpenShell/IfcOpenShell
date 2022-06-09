@@ -84,7 +84,7 @@ class SelectIfcClass(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         for obj in context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            if not obj.BIMObjectProperties.ifc_definition_id or obj.is_library_indirect:
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             if does_keyword_exist(self.ifc_class, element.is_a(), context):
