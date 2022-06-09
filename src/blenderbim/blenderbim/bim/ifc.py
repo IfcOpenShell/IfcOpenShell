@@ -65,6 +65,9 @@ class IfcStore:
         IfcStore.pset_template_file = None
         IfcStore.library_path = ""
         IfcStore.library_file = None
+        IfcStore.last_transaction = ""
+        IfcStore.history = []
+        IfcStore.future = []
         IfcStore.schema_identifiers = ["IFC4", "IFC2X3"]
 
     @staticmethod

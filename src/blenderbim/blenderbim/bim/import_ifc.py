@@ -314,6 +314,8 @@ class IfcImporter:
 
         if self.ifc_import_settings.has_filter:
             self.elements = self.ifc_import_settings.elements
+            if isinstance(self.elements, set):
+                self.elements = list(self.elements)
             # TODO: enable filtering for annotations
             self.annotations = set(self.file.by_type("IfcAnnotation"))
         else:
