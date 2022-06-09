@@ -708,7 +708,7 @@ class LoadLink(bpy.types.Operator):
                     continue
                 bpy.data.scenes[0].collection.children.link(child)
         link = context.scene.BIMProjectProperties.links.get(filepath)
-        link.collection_name = child.name
+        link.collection = child
         link.is_loaded = True
         return {"FINISHED"}
 
@@ -718,11 +718,20 @@ class ToggleLinkVisibility(bpy.types.Operator):
     bl_label = "Toggle Link Visibility"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Toggle visibility between SOLID and WIREFRAME"
-    collection_name: bpy.props.StringProperty()
+    link: bpy.props.StringProperty()
+    mode: bpy.props.StringProperty()
 
     def execute(self, context):
-        collection_name = self.collection_name
-        objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, bpy.data.collections[collection_name].all_objects)
+        props = context.scene.BIMProjectProperties
+        link = props.links.get(self.link)
+        if self.mode == "WIREFRAME":
+            self.toggle_wireframe(link)
+        elif self.mode == "VISIBLE":
+            self.toggle_visibility(link)
+        return {"FINISHED"}
+
+    def toggle_wireframe(self, link):
+        objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, link.collection.all_objects)
         for i,obj in enumerate(objs):
             if i == 0:
                 if obj.display_type == "WIRE":
@@ -730,7 +739,22 @@ class ToggleLinkVisibility(bpy.types.Operator):
                 else:
                     display_type = "WIRE"
             obj.display_type = display_type
-        return {"FINISHED"}
+        link.is_wireframe = display_type == "WIRE"
+
+    def toggle_visibility(self, link):
+        queue = [bpy.context.view_layer.layer_collection]
+        layer_collection = None
+
+        while queue:
+            layer = queue.pop()
+            if layer.collection == link.collection:
+                layer_collection = layer
+                break
+            queue.extend(list(layer.children))
+
+        if layer_collection:
+            layer_collection.exclude = not layer_collection.exclude
+            link.is_hidden = layer_collection.exclude
 
 
 class ExportIFC(bpy.types.Operator):

@@ -302,8 +302,22 @@ class BIM_UL_links(UIList):
             row = layout.row(align=True)
             if item.is_loaded:
                 row.label(text=item.name)
-                op = row.operator("bim.toggle_link_visibility", text="", icon="HIDE_OFF")
-                op.collection_name = item.collection_name
+                op = row.operator(
+                    "bim.toggle_link_visibility",
+                    text="",
+                    icon="CUBE" if item.is_wireframe else "MESH_CUBE",
+                    emboss=False,
+                )
+                op.link = item.name
+                op.mode = "WIREFRAME"
+                op = row.operator(
+                    "bim.toggle_link_visibility",
+                    text="",
+                    icon="HIDE_ON" if item.is_hidden else "HIDE_OFF",
+                    emboss=False,
+                )
+                op.link = item.name
+                op.mode = "VISIBLE"
                 op = row.operator("bim.unload_link", text="", icon="UNLINKED")
                 op.filepath = item.name
             else:
