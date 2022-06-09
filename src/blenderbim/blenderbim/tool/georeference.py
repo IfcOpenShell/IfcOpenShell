@@ -242,7 +242,7 @@ class Georeference(blenderbim.core.tool.Georeference):
 
     @classmethod
     def set_ifc_grid_north(cls):
-        x_angle = -bpy.context.scene.sun_pos_properties.north_offset
+        x_angle = bpy.context.scene.sun_pos_properties.north_offset
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.map_conversion.get("XAxisAbscissa").string_value = str(cos(x_angle))
         props.map_conversion.get("XAxisOrdinate").string_value = str(sin(x_angle))

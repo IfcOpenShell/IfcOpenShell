@@ -334,9 +334,21 @@ class TestSetIfcGridNorth(NewFile):
         subject.set_ifc_grid_north()
         assert round(float(props.map_conversion.get("XAxisAbscissa").string_value), 3) == 1.0
         assert round(float(props.map_conversion.get("XAxisOrdinate").string_value), 3) == 0.0
+        bpy.context.scene.sun_pos_properties.north_offset = math.radians(-45)
+        subject.set_ifc_grid_north()
+        assert round(float(props.map_conversion.get("XAxisAbscissa").string_value), 3) == 0.707
+        assert round(float(props.map_conversion.get("XAxisOrdinate").string_value), 3) == -0.707
         bpy.context.scene.sun_pos_properties.north_offset = math.radians(45)
         subject.set_ifc_grid_north()
         assert round(float(props.map_conversion.get("XAxisAbscissa").string_value), 3) == 0.707
+        assert round(float(props.map_conversion.get("XAxisOrdinate").string_value), 3) == 0.707
+        bpy.context.scene.sun_pos_properties.north_offset = math.radians(135)
+        subject.set_ifc_grid_north()
+        assert round(float(props.map_conversion.get("XAxisAbscissa").string_value), 3) == -0.707
+        assert round(float(props.map_conversion.get("XAxisOrdinate").string_value), 3) == 0.707
+        bpy.context.scene.sun_pos_properties.north_offset = math.radians(-135)
+        subject.set_ifc_grid_north()
+        assert round(float(props.map_conversion.get("XAxisAbscissa").string_value), 3) == -0.707
         assert round(float(props.map_conversion.get("XAxisOrdinate").string_value), 3) == -0.707
 
 
@@ -354,4 +366,16 @@ class TestSetBlenderGridNorth(NewFile):
         props.map_conversion.get("XAxisAbscissa").string_value = "0.707"
         props.map_conversion.get("XAxisOrdinate").string_value = "-0.707"
         subject.set_blender_grid_north()
+        assert round(math.degrees(bpy.context.scene.sun_pos_properties.north_offset)) == -45
+        props.map_conversion.get("XAxisAbscissa").string_value = "0.707"
+        props.map_conversion.get("XAxisOrdinate").string_value = "0.707"
+        subject.set_blender_grid_north()
         assert round(math.degrees(bpy.context.scene.sun_pos_properties.north_offset)) == 45
+        props.map_conversion.get("XAxisAbscissa").string_value = "-0.707"
+        props.map_conversion.get("XAxisOrdinate").string_value = "0.707"
+        subject.set_blender_grid_north()
+        assert round(math.degrees(bpy.context.scene.sun_pos_properties.north_offset)) == 135
+        props.map_conversion.get("XAxisAbscissa").string_value = "-0.707"
+        props.map_conversion.get("XAxisOrdinate").string_value = "-0.707"
+        subject.set_blender_grid_north()
+        assert round(math.degrees(bpy.context.scene.sun_pos_properties.north_offset)) == -135
