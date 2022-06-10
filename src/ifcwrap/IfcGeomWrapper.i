@@ -483,6 +483,22 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				}
 			}
 
+			// Read precision for found representation's context
+			auto context = ifc_representation->ContextOfItems();
+			if (context->as<Schema::IfcGeometricRepresentationSubContext>()) {
+				context = context->as<Schema::IfcGeometricRepresentationSubContext>()->ParentContext();
+			}
+			if (context->as<Schema::IfcGeometricRepresentationContext>() && context->as<Schema::IfcGeometricRepresentationContext>()->Precision()) {
+				double p = *context->as<Schema::IfcGeometricRepresentationContext>()->Precision()
+					* kernel.getValue(IfcGeom::Kernel::GV_PRECISION_FACTOR);
+				p *= kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT);
+				if (p < 1.e-7) {
+					Logger::Message(Logger::LOG_WARNING, "Precision lower than 0.0000001 meter not enforced");
+					p = 1.e-7;
+				}
+				kernel.setValue(IfcGeom::Kernel::GV_PRECISION, p);
+			}
+
 			if (!ifc_representation) {
 				if (reps->size()) {
 					// Return a random representation
