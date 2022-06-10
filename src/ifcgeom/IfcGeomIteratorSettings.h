@@ -100,11 +100,13 @@ namespace IfcGeom
 			NO_WIRE_INTERSECTION_TOLERANCE = 1 << 22,
 			// Sets kernel precision factor to 1
 			STRICT_TOLERANCE = 1 << 23,
+			/// Ignore representation contexts and convert all
+			IGNORE_CONTEXTS = 1 << 24,
 			/// Number of different setting flags.
-			NUM_SETTINGS = 24,
+			NUM_SETTINGS = 25
         };
         /// Used to store logical OR combination of setting flags.
-        typedef unsigned SettingField;
+        typedef unsigned long SettingField;
 
         IteratorSettings()
             : settings_(WELD_VERTICES) // OR options that default to true here
