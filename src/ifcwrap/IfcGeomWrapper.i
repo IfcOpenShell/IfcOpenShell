@@ -485,11 +485,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 			// Read precision for found representation's context
 			auto context = ifc_representation->ContextOfItems();
-			if (context->as<typename Schema::IfcGeometricRepresentationSubContext>()) {
-				context = context->as<typename Schema::IfcGeometricRepresentationSubContext>()->ParentContext();
+			if (context->template as<typename Schema::IfcGeometricRepresentationSubContext>()) {
+				context = context->template as<typename Schema::IfcGeometricRepresentationSubContext>()->ParentContext();
 			}
-			if (context->as<typename Schema::IfcGeometricRepresentationContext>() && context->as<typename Schema::IfcGeometricRepresentationContext>()->Precision()) {
-				double p = *context->as<typename Schema::IfcGeometricRepresentationContext>()->Precision()
+			if (context->template as<typename Schema::IfcGeometricRepresentationContext>() && context->template as<typename Schema::IfcGeometricRepresentationContext>()->Precision()) {
+				double p = *context->template as<typename Schema::IfcGeometricRepresentationContext>()->Precision()
 					* kernel.getValue(IfcGeom::Kernel::GV_PRECISION_FACTOR);
 				p *= kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT);
 				if (p < 1.e-7) {
