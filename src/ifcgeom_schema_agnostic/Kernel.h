@@ -130,6 +130,10 @@ namespace IfcGeom {
 
 		KernelFactoryImplementation& kernel_implementations();
 	}
+
+	namespace util {
+		bool is_nested_compound_of_solid(const TopoDS_Shape& s, int depth = 0);
+	}
 }
 
 #endif

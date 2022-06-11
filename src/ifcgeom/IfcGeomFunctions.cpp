@@ -1375,78 +1375,115 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 	std::sort(opening_vector.begin(), opening_vector.end(), opening_sorter());
 
 	// Iterate over the shapes of the IfcProduct
-	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
+	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++it3) {
 
-		bool is_manifold = Kernel::is_manifold(it3->Shape());
+		TopoDS_Compound C;
+		BRep_Builder B;
+		B.MakeCompound(C);
+		TopoDS_Shape combined_result;
 
-		if (!is_manifold) {
-			Logger::Warning("Non-manifold first operand");
+		std::list<TopoDS_Shape> parts;
+
+		bool is_multiple = it3->Shape().ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(it3->Shape()).More() && util::is_nested_compound_of_solid(it3->Shape());
+
+		if (is_multiple) {
+			TopoDS_Iterator sit(it3->Shape());
+			for (; sit.More(); sit.Next()) {
+				parts.push_back(sit.Value());
+			}
+		} else {
+			parts.push_back(it3->Shape());
 		}
 
-		for (int as_shell = 0; as_shell < 2; ++as_shell) {
+		for (auto& entity_part : parts) {
 
-			TopoDS_Shape entity_shape_solid;
-			TopoDS_Shape entity_shape_unlocated;
-			if (as_shell) {
-				entity_shape_unlocated = it3->Shape();
+
+			bool is_manifold = Kernel::is_manifold(entity_part);
+
+			if (!is_manifold) {
+				Logger::Warning("Non-manifold first operand");
+			}
+
+			TopoDS_Shape entity_part_result;			
+
+			for (int as_shell = 0; as_shell < 2; ++as_shell) {
+
+				TopoDS_Shape entity_shape_solid;
+				TopoDS_Shape entity_shape_unlocated;
+				if (as_shell) {
+					entity_shape_unlocated = entity_part;
+				} else {
+					entity_shape_unlocated = ensure_fit_for_subtraction(entity_part, entity_shape_solid);
+				}
+				const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
+				if (entity_shape_gtrsf.Form() == gp_Other) {
+					Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
+				}
+				TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
+
+				TopoDS_Shape result = entity_shape;
+
+				auto it = opening_vector.begin();
+				auto jt = it;
+
+				for (;; ++it) {
+					if (it == opening_vector.end() || jt->first / it->first > 10.) {
+
+						TopTools_ListOfShape opening_list;
+						for (auto kt = jt; kt < it; ++kt) {
+							opening_list.Append(kt->second);
+						}
+
+						TopoDS_Shape intermediate_result;
+						if (boolean_operation(result, opening_list, BOPAlgo_CUT, intermediate_result)) {
+							result = intermediate_result;
+						} else {
+							Logger::Message(Logger::LOG_ERROR, "Opening subtraction failed for " + boost::lexical_cast<std::string>(std::distance(jt, it)) + " openings", entity);
+						}
+
+						jt = it;
+					}
+
+					if (it == opening_vector.end()) {
+						break;
+					}
+				}
+
+				int result_n_faces = count(result, TopAbs_FACE);
+
+				if (!is_manifold && as_shell == 0 && result_n_faces == 0) {
+					// If we have a non-manifold first operand and our first attempt
+					// on a Solid-Solid subtraction yielded a empty result (no faces)
+					// or a strange result, a larger number of faces with the original input
+					// included. Then retry (another iteration on the for-loop on as-shell)
+					// where we keep the first operand as is (a compound of faces probably,
+					// unless --orient-shells was activated in which case we're already lost).
+					if (!is_manifold) {
+						Logger::Warning("Retrying boolean operation on individual faces");
+					}
+					continue;
+				}
+
+				entity_part_result = result;
+
+				// For manifold first operands we're not even going to try if processing
+				// as loose faces gives a better result.
+				break;
+			}
+
+			if (is_multiple) {
+				B.Add(C, entity_part_result);
 			} else {
-				entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(), entity_shape_solid);
-			}
-			const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
-			if (entity_shape_gtrsf.Form() == gp_Other) {
-				Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
-			}
-			TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
-
-			TopoDS_Shape result = entity_shape;
-
-			auto it = opening_vector.begin();
-			auto jt = it;
-
-			for (;; ++it) {
-				if (it == opening_vector.end() || jt->first / it->first > 10.) {
-
-					TopTools_ListOfShape opening_list;
-					for (auto kt = jt; kt < it; ++kt) {
-						opening_list.Append(kt->second);
-					}
-
-					TopoDS_Shape intermediate_result;
-					if (boolean_operation(result, opening_list, BOPAlgo_CUT, intermediate_result)) {
-						result = intermediate_result;
-					} else {
-						Logger::Message(Logger::LOG_ERROR, "Opening subtraction failed for " + boost::lexical_cast<std::string>(std::distance(jt, it)) + " openings", entity);
-					}
-
-					jt = it;
-				}
-
-				if (it == opening_vector.end()) {
-					break;
-				}
+				combined_result = entity_part_result;
 			}
 
-			int result_n_faces = count(result, TopAbs_FACE);
-
-			if (!is_manifold && as_shell == 0 && result_n_faces == 0) {
-				// If we have a non-manifold first operand and our first attempt
-				// on a Solid-Solid subtraction yielded a empty result (no faces)
-				// or a strange result, a larger number of faces with the original input
-				// included. Then retry (another iteration on the for-loop on as-shell)
-				// where we keep the first operand as is (a compound of faces probably,
-				// unless --orient-shells was activated in which case we're already lost).
-				if (!is_manifold) {
-					Logger::Warning("Retrying boolean operation on individual faces");
-				}
-				continue;
-			}
-
-			cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), result, it3->StylePtr()));
-
-			// For manifold first operands we're not even going to try if processing
-			// as loose faces gives a better result.
-			break;
 		}
+
+		if (is_multiple) {
+			combined_result = C;
+		}
+
+		cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), combined_result, it3->StylePtr()));
 	}
 	return true;
 }
