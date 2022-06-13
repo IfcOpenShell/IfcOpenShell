@@ -110,7 +110,9 @@ class MSP2Ifc:
         for calendar in project.find("pr:Calendars", self.ns).findall("pr:Calendar", self.ns):
             calendar_id = calendar.find("pr:UID", self.ns).text
             week_days = []
-            for week_day in calendar.find("pr:WeekDays", self.ns).findall("pr:WeekDay", self.ns):
+            week_days_element = calendar.find("pr:WeekDays", self.ns)
+            week_day_elements = week_days_element.findall("pr:WeekDay", self.ns) if week_days_element else []
+            for week_day in week_day_elements:
                 working_times = []
                 if week_day.find("pr:WorkingTimes", self.ns):
                     for working_time in week_day.find("pr:WorkingTimes", self.ns).findall("pr:WorkingTime", self.ns):

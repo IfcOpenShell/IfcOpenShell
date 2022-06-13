@@ -354,3 +354,19 @@ bool IfcGeom::Kernel::is_manifold(const TopoDS_Shape& a) {
 		return true;
 	}
 }
+
+bool IfcGeom::util::is_nested_compound_of_solid(const TopoDS_Shape& s, int depth) {
+	if (s.ShapeType() == TopAbs_COMPOUND) {
+		TopoDS_Iterator it(s);
+		for (; it.More(); it.Next()) {
+			if (!is_nested_compound_of_solid(it.Value(), depth + 1)) {
+				return false;
+			}
+		}
+		return true;
+	} else if (s.ShapeType() == TopAbs_SOLID) {
+		return depth > 0;
+	} else {
+		return false;
+	}
+}

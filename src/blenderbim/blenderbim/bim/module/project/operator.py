@@ -495,6 +495,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             return {"FINISHED"}
         context.scene.BIMProperties.ifc_file = self.filepath
         context.scene.BIMProjectProperties.is_loading = True
+        context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
         if not self.is_advanced:
             bpy.ops.bim.load_project_elements()
         return {"FINISHED"}
@@ -545,6 +546,8 @@ class LoadProjectElements(bpy.types.Operator):
             settings.elements = self.get_decomposition_elements()
         elif self.props.filter_mode == "IFC_CLASS":
             settings.elements = self.get_ifc_class_elements()
+        elif self.props.filter_mode == "IFC_TYPE":
+            settings.elements = self.get_ifc_type_elements()
         elif self.props.filter_mode == "WHITELIST":
             settings.elements = self.get_whitelist_elements()
         elif self.props.filter_mode == "BLACKLIST":
@@ -595,6 +598,14 @@ class LoadProjectElements(bpy.types.Operator):
             elements.update(self.file.by_type(filter_category.name, include_subtypes=False))
         return elements
 
+    def get_ifc_type_elements(self):
+        elements = set()
+        for filter_category in self.props.filter_categories:
+            if not filter_category.is_selected:
+                continue
+            elements.update(ifcopenshell.util.element.get_types(self.file.by_id(filter_category.ifc_definition_id)))
+        return elements
+
     def get_whitelist_elements(self):
         selector = ifcopenshell.util.selector.Selector()
         return set(selector.parse(self.file, self.props.filter_query))
@@ -602,6 +613,18 @@ class LoadProjectElements(bpy.types.Operator):
     def get_blacklist_elements(self):
         selector = ifcopenshell.util.selector.Selector()
         return set(self.file.by_type("IfcElement")) - set(selector.parse(self.file, self.props.filter_query))
+
+
+class ToggleFilterCategories(bpy.types.Operator):
+    bl_idname = "bim.toggle_filter_categories"
+    bl_label = "Toggle Filter Categories"
+    bl_options = {"REGISTER", "UNDO"}
+    should_select: bpy.props.BoolProperty(name="Should Select", default=True)
+
+    def execute(self, context):
+        for filter_category in context.scene.BIMProjectProperties.filter_categories:
+            filter_category.is_selected = self.should_select
+        return {"FINISHED"}
 
 
 class LinkIfc(bpy.types.Operator):
@@ -685,7 +708,7 @@ class LoadLink(bpy.types.Operator):
                     continue
                 bpy.data.scenes[0].collection.children.link(child)
         link = context.scene.BIMProjectProperties.links.get(filepath)
-        link.collection_name = child.name
+        link.collection = child
         link.is_loaded = True
         return {"FINISHED"}
 
@@ -695,11 +718,20 @@ class ToggleLinkVisibility(bpy.types.Operator):
     bl_label = "Toggle Link Visibility"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Toggle visibility between SOLID and WIREFRAME"
-    collection_name: bpy.props.StringProperty()
+    link: bpy.props.StringProperty()
+    mode: bpy.props.StringProperty()
 
     def execute(self, context):
-        collection_name = self.collection_name
-        objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, bpy.data.collections[collection_name].all_objects)
+        props = context.scene.BIMProjectProperties
+        link = props.links.get(self.link)
+        if self.mode == "WIREFRAME":
+            self.toggle_wireframe(link)
+        elif self.mode == "VISIBLE":
+            self.toggle_visibility(link)
+        return {"FINISHED"}
+
+    def toggle_wireframe(self, link):
+        objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, link.collection.all_objects)
         for i,obj in enumerate(objs):
             if i == 0:
                 if obj.display_type == "WIRE":
@@ -707,7 +739,22 @@ class ToggleLinkVisibility(bpy.types.Operator):
                 else:
                     display_type = "WIRE"
             obj.display_type = display_type
-        return {"FINISHED"}
+        link.is_wireframe = display_type == "WIRE"
+
+    def toggle_visibility(self, link):
+        queue = [bpy.context.view_layer.layer_collection]
+        layer_collection = None
+
+        while queue:
+            layer = queue.pop()
+            if layer.collection == link.collection:
+                layer_collection = layer
+                break
+            queue.extend(list(layer.children))
+
+        if layer_collection:
+            layer_collection.exclude = not layer_collection.exclude
+            link.is_hidden = layer_collection.exclude
 
 
 class ExportIFC(bpy.types.Operator):

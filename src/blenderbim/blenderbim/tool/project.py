@@ -102,7 +102,7 @@ class Project(blenderbim.core.tool.Project):
 
         while queue:
             layer = queue.pop()
-            if layer.name == collection.name:
+            if layer.collection == collection:
                 layer_collection = layer
                 break
             queue.extend(list(layer.children))

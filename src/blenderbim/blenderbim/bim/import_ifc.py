@@ -121,7 +121,14 @@ class MaterialCreator:
     def parse_representation_item(self, item):
         if not item.StyledByItem:
             return
-        style_ids = [e.id() for e in self.ifc_importer.file.traverse(item.StyledByItem[0]) if e.is_a("IfcSurfaceStyle")]
+        style_ids = []
+        styles = list(item.StyledByItem[0].Styles)
+        while styles:
+            style = styles.pop()
+            if style.is_a("IfcSurfaceStyle"):
+                style_ids.append(style.id())
+            elif style.is_a("IfcPresentationStyleAssignment"):
+                styles.extend(style.Styles)
         if not style_ids:
             return
         for style_id in style_ids:
@@ -237,24 +244,19 @@ class IfcImporter:
         self.profile_code("Create spatial elements")
         self.create_structural_items()
         self.profile_code("Create structural items")
-        self.create_type_products()
-        self.profile_code("Create type products")
+        if not self.ifc_import_settings.is_coordinating:
+            self.create_type_products()
+            self.profile_code("Create type products")
         self.place_objects_in_collections()
         self.profile_code("Place objects in collections")
-        if self.ifc_import_settings.should_merge_by_class:
-            self.merge_by_class()
-            self.profile_code("Merging by class")
-        elif self.ifc_import_settings.should_merge_by_material:
-            self.merge_by_material()
-            self.profile_code("Merging by material")
-        if self.ifc_import_settings.should_merge_materials_by_colour or len(self.material_creator.materials) > 300:
-            self.merge_materials_by_colour()
-            self.profile_code("Merging by colour")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
             self.clean_mesh()
             self.profile_code("Mesh cleaning")
+        if self.ifc_import_settings.should_merge_materials_by_colour or len(self.material_creator.materials) > 300:
+            self.merge_materials_by_colour()
+            self.profile_code("Merging by colour")
         self.set_default_context()
         self.profile_code("Setting default context")
         self.update_progress(100)
@@ -307,13 +309,23 @@ class IfcImporter:
             self.settings_2d.set_context_ids(self.plan_contexts)
 
     def process_element_filter(self):
+        offset = self.ifc_import_settings.element_offset
+        offset_limit = offset + self.ifc_import_settings.element_limit
+
         if self.ifc_import_settings.has_filter:
-            self.elements = set(self.ifc_import_settings.elements)
+            self.elements = self.ifc_import_settings.elements
+            if isinstance(self.elements, set):
+                self.elements = list(self.elements)
             # TODO: enable filtering for annotations
             self.annotations = set(self.file.by_type("IfcAnnotation"))
         else:
-            self.elements = set(self.file.by_type("IfcElement"))
+            self.elements = self.file.by_type("IfcElement")
             self.annotations = set(self.file.by_type("IfcAnnotation"))
+
+        if self.ifc_import_settings.is_coordinating:
+            self.elements = [e for e in self.elements if e.Representation and not e.is_a("IfcFeatureElement")]
+
+        self.elements = set(self.elements[offset:offset_limit])
 
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
             self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
@@ -357,15 +369,26 @@ class IfcImporter:
                 "type": "IfcSweptDiskSolid",
             }
             return True
+
+        if not self.ifc_import_settings.should_use_native_meshes:
+            return False  # Performance improvements only occur on edge cases currently
+
         # FacetedBreps (without voids) are meshes. See #841.
-        # Commented out as seems currently too slow.
-        # if self.is_native_faceted_brep(representations):
-        #    self.native_data[element.GlobalId] = {
-        #        "representations": representations,
-        #        "representation": self.get_body_representation(element.Representation.Representations),
-        #        "type": "IfcFacetedBrep",
-        #    }
-        #    return True
+        if self.is_native_faceted_brep(representations):
+            self.native_data[element.GlobalId] = {
+                "representations": representations,
+                "representation": self.get_body_representation(element.Representation.Representations),
+                "type": "IfcFacetedBrep",
+            }
+            return True
+
+        if self.is_native_face_based_surface_model(representations):
+            self.native_data[element.GlobalId] = {
+                "representations": representations,
+                "representation": self.get_body_representation(element.Representation.Representations),
+                "type": "IfcFaceBasedSurfaceModel",
+            }
+            return True
 
     def is_native_swept_disk_solid(self, representations):
         for representation in representations:
@@ -378,6 +401,13 @@ class IfcImporter:
         for representation in representations:
             for i in representation["raw"].Items:
                 if i.is_a() != "IfcFacetedBrep":
+                    return False
+        return True
+
+    def is_native_face_based_surface_model(self, representations):
+        for representation in representations:
+            for i in representation["raw"].Items:
+                if i.is_a() != "IfcFaceBasedSurfaceModel":
                     return False
         return True
 
@@ -592,13 +622,20 @@ class IfcImporter:
                 return representation_map
 
     def create_native_elements(self):
-        total = 0
+        progress = 0
         checkpoint = time.time()
+        total = len(self.native_elements)
         for element in self.native_elements:
-            total += 1
-            if total % 250 == 0:
-                print("{} elements processed in {:.2f}s ...".format(total, time.time() - checkpoint))
+            progress += 1
+            if progress % 250 == 0:
+                percent = round(progress / total * 100)
+                print(
+                    "{} / {} ({}%) elements processed in {:.2f}s ...".format(
+                        progress, total, percent, time.time() - checkpoint
+                    )
+                )
                 checkpoint = time.time()
+                self.incrementally_merge_objects()
             native_data = self.native_data[element.GlobalId]
             representation = native_data["representation"]
             if not representation:
@@ -610,6 +647,8 @@ class IfcImporter:
                 if native_data["type"] == "IfcSweptDiskSolid":
                     mesh = self.create_native_swept_disk_solid(element, mesh_name)
                 elif native_data["type"] == "IfcFacetedBrep":
+                    mesh = self.create_native_faceted_brep(element, mesh_name)
+                elif native_data["type"] == "IfcFaceBasedSurfaceModel":
                     mesh = self.create_native_faceted_brep(element, mesh_name)
                 mesh.BIMMeshProperties.ifc_definition_id = representation.id()
                 mesh.name = mesh_name
@@ -650,26 +689,32 @@ class IfcImporter:
             )
         else:
             iterator = ifcopenshell.geom.iterator(self.settings, self.file, include=products)
-        cache = IfcStore.get_cache()
-        if cache:
-            iterator.set_cache(cache)
+        if self.ifc_import_settings.should_cache:
+            cache = IfcStore.get_cache()
+            if cache:
+                iterator.set_cache(cache)
         valid_file = iterator.initialize()
         if not valid_file:
             return results
         checkpoint = time.time()
-        total = 0
+        progress = 0
+        total = len(products)
         start_progress = self.progress
         progress_range = 85 - start_progress
         while True:
-            total += 1
-            if total % 250 == 0:
+            progress += 1
+            if progress % 250 == 0:
+                percent_created = round(progress / total * 100)
+                percent_preprocessed = iterator.progress()
+                percent_average = (percent_created + percent_preprocessed) / 2
                 print(
-                    "{} ({}%) elements processed in {:.2f}s ...".format(
-                        total, iterator.progress(), time.time() - checkpoint
+                    "{} / {} ({}% created, {}% preprocessed) elements processed in {:.2f}s ...".format(
+                        progress, total, percent_created, percent_preprocessed, time.time() - checkpoint
                     )
                 )
                 checkpoint = time.time()
-                self.update_progress((iterator.progress() / 100 * progress_range) + start_progress)
+                self.update_progress((percent_average / 100 * progress_range) + start_progress)
+                self.incrementally_merge_objects()
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.guid)
@@ -687,6 +732,19 @@ class IfcImporter:
                 break
         print("Done creating geometry")
         return results
+
+    def incrementally_merge_objects(self):
+        if not self.ifc_import_settings.is_coordinating:
+            return
+        if self.ifc_import_settings.merge_mode == "IFC_CLASS":
+            self.merge_by_class()
+            self.profile_code("Merging by class")
+        elif self.ifc_import_settings.merge_mode == "IFC_TYPE":
+            self.merge_by_type()
+            self.profile_code("Merging by type")
+        elif self.ifc_import_settings.merge_mode == "MATERIAL":
+            self.merge_by_material()
+            self.profile_code("Merging by material")
 
     def create_structural_items(self):
         # Create structural collections
@@ -798,9 +856,10 @@ class IfcImporter:
             )
         else:
             iterator = ifcopenshell.geom.iterator(self.settings_2d, self.file, include=products)
-        cache = IfcStore.get_cache()
-        if cache:
-            iterator.set_cache(cache)
+        if self.ifc_import_settings.should_cache:
+            cache = IfcStore.get_cache()
+            if cache:
+                iterator.set_cache(cache)
         valid_file = iterator.initialize()
         if not valid_file:
             return results
@@ -814,7 +873,7 @@ class IfcImporter:
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.guid)
-                self.create_product(self.file.by_id(shape.guid), shape)
+                self.create_product(product, shape)
                 results.add(product)
             if not iterator.next():
                 break
@@ -871,8 +930,13 @@ class IfcImporter:
     def get_representation_item_material_name(self, item):
         if not item.StyledByItem:
             return
-        style_ids = [e.id() for e in self.file.traverse(item.StyledByItem[0]) if e.is_a("IfcSurfaceStyle")]
-        return style_ids[0] if style_ids else None
+        styles = list(item.StyledByItem[0].Styles)
+        while styles:
+            style = styles.pop()
+            if style.is_a("IfcSurfaceStyle"):
+                return style.id()
+            elif style.is_a("IfcPresentationStyleAssignment"):
+                styles.extend(style.Styles)
 
     def create_native_faceted_brep(self, element, mesh_name):
         # TODO: georeferencing?
@@ -921,22 +985,32 @@ class IfcImporter:
             self.convert_representation(item.MappingSource.MappedRepresentation)
         elif item.is_a() == "IfcFacetedBrep":
             self.convert_representation_item_faceted_brep(item)
+        elif item.is_a() == "IfcFaceBasedSurfaceModel":
+            self.convert_representation_item_face_based_surface_model(item)
+
+    def convert_representation_item_face_based_surface_model(self, item):
+        mesh = item.get_info_2(recursive=True)
+        for face_set in mesh["FbsmFaces"]:
+            self.convert_representation_item_face_set(item, face_set)
 
     def convert_representation_item_faceted_brep(self, item):
+        mesh = item.get_info_2(recursive=True)
+        return self.convert_representation_item_face_set(item, mesh["Outer"])
+
+    def convert_representation_item_face_set(self, item, mesh):
         # On a few occasions, we flatten a list. This seems to be the most efficient way to do it.
         # https://stackoverflow.com/questions/20112776/how-do-i-flatten-a-list-of-lists-nested-lists
-        mesh = item.get_info_2(recursive=True)
 
         # For huge face sets it might be better to do a "flatmap" instead of sum()
         # bounds = sum((f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1), ())
-        bounds = tuple(chain.from_iterable(f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1))
+        bounds = tuple(chain.from_iterable(f["Bounds"] for f in mesh["CfsFaces"] if len(f["Bounds"]) == 1))
         # Here are some untested alternatives, are they faster?
         # bounds = tuple((f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1))[0]
         # bounds = chain.from_iterable(f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1)
 
         polygons = [[(p["id"], p["Coordinates"]) for p in b["Bound"]["Polygon"]] for b in bounds]
 
-        for face in mesh["Outer"]["CfsFaces"]:
+        for face in mesh["CfsFaces"]:
             # Blender cannot handle faces with holes.
             if len(face["Bounds"]) > 1:
                 inner_bounds = []
@@ -1066,33 +1140,74 @@ class IfcImporter:
 
     def merge_by_class(self):
         merge_set = {}
-        for obj in self.added_data.values():
-            if not isinstance(obj, bpy.types.Object):
+        id_set = {}
+        for ifc_definition_id, obj in self.added_data.items():
+            if not isinstance(obj, bpy.types.Object) or not obj.data:
                 continue
-            if "/" not in obj.name or "IfcRelAggregates" in obj.users_collection[0].name:
+            element = self.file.by_id(ifc_definition_id)
+            if not element.is_a("IfcElement"):
                 continue
-            merge_set.setdefault(obj.name.split("/")[0], []).append(obj)
-        self.merge_objects(merge_set)
+            merge_set.setdefault(element.is_a(), []).append(obj)
+            id_set.setdefault(element.is_a(), []).append(ifc_definition_id)
+        self.merge_objects(merge_set, id_set)
+
+    def merge_by_type(self):
+        merge_set = {}
+        id_set = {}
+        for ifc_definition_id, obj in self.added_data.items():
+            if not isinstance(obj, bpy.types.Object) or not obj.data:
+                continue
+            element = self.file.by_id(ifc_definition_id)
+            if not element.is_a("IfcElement"):
+                continue
+            element_type = ifcopenshell.util.element.get_type(element)
+            if not element_type:
+                continue
+            merge_key = str(element_type.id()) + "-" + element_type.Name or "Unnamed"
+            merge_set.setdefault(merge_key, []).append(obj)
+            id_set.setdefault(merge_key, []).append(ifc_definition_id)
+        self.merge_objects(merge_set, id_set)
 
     def merge_by_material(self):
         merge_set = {}
-        for obj in self.added_data.values():
-            if not isinstance(obj, bpy.types.Object):
+        id_set = {}
+        for ifc_definition_id, obj in self.added_data.items():
+            if not isinstance(obj, bpy.types.Object) or not obj.data:
                 continue
-            if "/" not in obj.name or "IfcRelAggregates" in obj.users_collection[0].name:
+            element = self.file.by_id(ifc_definition_id)
+            if not element.is_a("IfcElement"):
                 continue
-            if not obj.material_slots:
-                merge_set.setdefault("no-material", []).append(obj)
-            else:
-                merge_set.setdefault(obj.material_slots[0].name, []).append(obj)
-        self.merge_objects(merge_set)
+            merge_key = obj.material_slots[0].name if obj.material_slots else "no-material"
+            merge_set.setdefault(merge_key, []).append(obj)
+            id_set.setdefault(merge_key, []).append(ifc_definition_id)
+        self.merge_objects(merge_set, id_set)
 
-    def merge_objects(self, merge_set):
-        for ifc_class, objs in merge_set.items():
-            context_override = {}
-            context_override["object"] = context_override["active_object"] = objs[0]
-            context_override["selected_objects"] = context_override["selected_editable_objects"] = objs
-            bpy.ops.object.join(context_override)
+    def merge_objects(self, merge_set, id_set):
+        total_objs = sum([len(o) for o in merge_set.values()])
+        cumulative_total = 0
+        merge_set = {k: v for k, v in sorted(merge_set.items(), key=lambda i: len(i[1]), reverse=True)}
+        for group_name, objs in merge_set.items():
+            total_group_objs = len(objs)
+            if total_group_objs < 10:
+                continue
+            merge_potential = total_objs - cumulative_total
+            if merge_potential < 250:
+                print("Merge target achieved")
+                return
+            cumulative_total += total_group_objs
+            print(f"Merging {total_group_objs} objects, {merge_potential} potentially remaining -", group_name)
+            try:
+                target = objs[0]
+                target.data = target.data.copy()
+                context_override = {}
+                context_override["object"] = context_override["active_object"] = target
+                context_override["selected_objects"] = context_override["selected_editable_objects"] = objs
+                bpy.ops.object.join(context_override)
+                target.data.name += "-merge"
+                for ifc_definition_id in id_set[group_name][1:]:
+                    del self.added_data[ifc_definition_id]
+            except:
+                print("Merge failed")
 
     def merge_materials_by_colour(self):
         cleaned_materials = {}
@@ -1302,11 +1417,18 @@ class IfcImporter:
 
         for material_definition_representation in self.file.by_type("IfcMaterialDefinitionRepresentation"):
             material = material_definition_representation.RepresentedMaterial
+            blender_material = self.material_creator.materials[material.id()]
             for representation in material_definition_representation.Representations:
-                for style in [e for e in self.file.traverse(representation) if e.is_a("IfcSurfaceStyle")]:
-                    blender_material = self.material_creator.materials[material.id()]
-                    self.create_style(style, blender_material)
-                    parsed_styles.add(style.id())
+                styles = []
+                for styled_item in representation.Items:
+                    styles.extend(styled_item.Styles)
+                while styles:
+                    style = styles.pop()
+                    if style.is_a("IfcSurfaceStyle"):
+                        self.create_style(style, blender_material)
+                        parsed_styles.add(style.id())
+                    elif style.is_a("IfcPresentationStyleAssignment"):
+                        styles.extend(style.Styles)
 
         for style in self.file.by_type("IfcSurfaceStyle"):
             if style.id() in parsed_styles:
@@ -1864,14 +1986,18 @@ class IfcImportSettings:
         self.input_file = None
         self.diff_file = None
         self.should_use_cpu_multiprocessing = True
-        self.should_merge_by_class = False
-        self.should_merge_by_material = False
+        self.merge_mode = None
         self.should_merge_materials_by_colour = False
+        self.should_use_native_meshes = False
         self.should_clean_mesh = True
+        self.should_cache = True
+        self.is_coordinating = True
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
         self.distance_limit = 1000
         self.false_origin = None
+        self.element_offset = 0
+        self.element_limit = 30000
         self.has_filter = None
         self.should_filter_spatial_elements = True
         self.elements = set()
@@ -1889,18 +2015,18 @@ class IfcImportSettings:
         settings.diff_file = scene_diff.diff_json_file
         settings.collection_mode = props.collection_mode
         settings.should_use_cpu_multiprocessing = props.should_use_cpu_multiprocessing
-        settings.should_merge_by_class = props.should_merge_by_class
-        settings.should_merge_by_material = props.should_merge_by_material
+        settings.merge_mode = props.merge_mode
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
+        settings.should_use_native_meshes = props.should_use_native_meshes
         settings.should_clean_mesh = props.should_clean_mesh
+        settings.should_cache = props.should_cache
+        settings.is_coordinating = props.is_coordinating
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
         settings.distance_limit = props.distance_limit
-        settings.false_origin = (
-            [float(o) for o in props.false_origin.split(",")]
-            if props.false_origin
-            else None
-        )
+        settings.false_origin = [float(o) for o in props.false_origin.split(",")] if props.false_origin else None
         if settings.false_origin == [0, 0, 0]:
             settings.false_origin = None
+        settings.element_offset = props.element_offset
+        settings.element_limit = props.element_limit
         return settings
