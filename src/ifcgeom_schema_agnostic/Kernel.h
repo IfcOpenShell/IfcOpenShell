@@ -33,6 +33,12 @@
 #include <boost/function.hpp>
 
 #include <TopExp_Explorer.hxx>
+#include <gp_Ax2.hxx>
+#include <gp_Ax3.hxx>
+#include <gp_Trsf2d.hxx>
+#include <gp_GTrsf2d.hxx>
+#include <gp_Trsf.hxx>
+#include <gp_GTrsf.hxx>
 
 namespace IfcGeom {
 
@@ -116,6 +122,32 @@ namespace IfcGeom {
 		IFC_PARSE_API static bool is_manifold(const TopoDS_Shape& a);
 		IFC_PARSE_API static IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity*, bool include_openings = true);
 		IFC_PARSE_API static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
+
+		// For axis placements detect equality early in order for the
+		// relatively computionaly expensive gp_Trsf calculation to be skipped
+		IFC_PARSE_API static bool axis_equal(const gp_Ax3& a, const gp_Ax3& b, double tolerance) {
+			if (!a.Location().IsEqual(b.Location(), tolerance)) return false;
+			// Note that the tolerance below is angular, above is linear. Since architectural
+			// objects are about 1m'ish in scale, it should be somewhat equivalent. Besides,
+			// this is mostly a filter for NULL or default values in the placements.
+			if (!a.Direction().IsEqual(b.Direction(), tolerance)) return false;
+			if (!a.XDirection().IsEqual(b.XDirection(), tolerance)) return false;
+			if (!a.YDirection().IsEqual(b.YDirection(), tolerance)) return false;
+			return true;
+		}
+
+		IFC_PARSE_API static bool axis_equal(const gp_Ax2d& a, const gp_Ax2d& b, double tolerance) {
+			if (!a.Location().IsEqual(b.Location(), tolerance)) return false;
+			if (!a.Direction().IsEqual(b.Direction(), tolerance)) return false;
+			return true;
+		}
+
+		IFC_PARSE_API static bool is_identity(const gp_Trsf2d& t, double tolerance);
+		IFC_PARSE_API static bool is_identity(const gp_GTrsf2d& t, double tolerance);
+		IFC_PARSE_API static bool is_identity(const gp_Trsf& t, double tolerance);
+		IFC_PARSE_API static bool is_identity(const gp_GTrsf& t, double tolerance);
+
+		IFC_PARSE_API static gp_Trsf combine_offset_and_rotation(const gp_Vec &offset, const gp_Quaternion& rotation);
 	};
 
 	namespace impl {
@@ -134,6 +166,24 @@ namespace IfcGeom {
 	namespace util {
 		bool is_nested_compound_of_solid(const TopoDS_Shape& s, int depth = 0);
 	}
+
+	class IFC_GEOM_API geometry_exception : public std::exception {
+	protected:
+		std::string message;
+	public:
+		geometry_exception(const std::string& m)
+			: message(m) {}
+		virtual ~geometry_exception() throw () {}
+		virtual const char* what() const throw() {
+			return message.c_str();
+		}
+	};
+
+	class IFC_GEOM_API too_many_faces_exception : public geometry_exception {
+	public:
+		too_many_faces_exception()
+			: geometry_exception("Too many faces for operation") {}
+	};
 }
 
 #endif
