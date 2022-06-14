@@ -411,7 +411,7 @@ bool IfcGeom::Kernel::is_identity(const gp_GTrsf& t, double tolerance) {
 	return is_identity_helper(t, tolerance);
 }
 
-inline IFC_PARSE_API gp_Trsf IfcGeom::Kernel::combine_offset_and_rotation(const gp_Vec & offset, const gp_Quaternion & rotation) {
+gp_Trsf IfcGeom::Kernel::combine_offset_and_rotation(const gp_Vec & offset, const gp_Quaternion & rotation) {
 	auto offset_transform = gp_Trsf{};
 	offset_transform.SetTranslation(offset);
 
