@@ -53,6 +53,7 @@ OPTION(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
+OPTION(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" ON)
 if (${HAS_MAX})
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 endif()
@@ -65,6 +66,10 @@ OPTION(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning resu
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
 ENDIF()
+
+if(MSVC AND MSVC_PARALLEL_BUILD)
+	add_definitions("/MP")
+endif()
 
 # QtViewer requires Qt5
 OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF)
