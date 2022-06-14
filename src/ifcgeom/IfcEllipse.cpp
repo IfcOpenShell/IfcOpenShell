@@ -17,14 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-/********************************************************************************
- *                                                                              *
- * Implementations of the various conversion functions defined in mapping.i *
- *                                                                              *
- ********************************************************************************/
-
 #include <algorithm>
-
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 #include <gp_Dir.hxx>
@@ -41,7 +34,6 @@
 #include <gp_Ax2d.hxx>
 #include <gp_Pln.hxx>
 #include <gp_Circ.hxx>
-
 #include <TColgp_Array1OfPnt.hxx>
 #include <TColgp_Array1OfPnt2d.hxx>
 #include <TColStd_Array1OfReal.hxx>
@@ -50,60 +42,31 @@
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <Geom_TrimmedCurve.hxx>
-
 #include <BRepOffsetAPI_Sewing.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
-
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopExp_Explorer.hxx>
-
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepBuilderAPI_MakeShell.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
-
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Solid.hxx>
-
 #include <BRepFilletAPI_MakeFillet2d.hxx>
-
 #include <TopLoc_Location.hxx>
-
 #include "../ifcgeom/IfcGeom.h"
-
-#ifdef SCHEMA_HAS_IfcBSplineCurveWithKnots
 #include <Geom_BSplineCurve.hxx>
-#endif
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)& curve) {
-	const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
-	if ( r < ALMOST_ZERO ) { 
-		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l);
-		return false;
-	}
-	gp_Trsf trsf;
-	IfcSchema::IfcAxis2Placement* placement = l->Position();
-	if (placement->as<IfcSchema::IfcAxis2Placement3D>()) {
-		IfcGeom::Kernel::convert(placement->as<IfcSchema::IfcAxis2Placement3D>(),trsf);
-	} else {
-		gp_Trsf2d trsf2d;
-		IfcGeom::Kernel::convert(placement->as<IfcSchema::IfcAxis2Placement2D>(),trsf2d);
-		trsf = trsf2d;
-	}
-	gp_Ax2 ax = gp_Ax2().Transformed(trsf);
-	curve = new Geom_Circle(ax, r);
-	return true;
-}
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)& curve) {
 	double x = l->SemiAxis1() * getValue(GV_LENGTH_UNIT);
 	double y = l->SemiAxis2() * getValue(GV_LENGTH_UNIT);
@@ -136,75 +99,3 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)
 	curve = new Geom_Ellipse(ax, x, y);
 	return true;
 }
-
-#ifdef SCHEMA_HAS_IfcSurfaceCurve
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurve* sc, Handle(Geom_Curve)& curve) {
-	// @todo take into account PCurves.
-	return convert_curve(sc->Curve3D(), curve);
-}
-#endif
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& curve) {
-	gp_Pnt pnt;gp_Vec vec;
-	convert(l->Pnt(),pnt);
-	convert(l->Dir(),vec);	
-	// See note at IfcGeomWires.cpp:237
-	curve = new Geom_Line(pnt,vec);
-	return true;
-}
-
-#ifdef SCHEMA_HAS_IfcBSplineCurveWithKnots
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineCurveWithKnots* l, Handle(Geom_Curve)& curve) {
-
-	const bool is_rational = l->declaration().is(IfcSchema::IfcRationalBSplineCurveWithKnots::Class());
-
-	const IfcSchema::IfcCartesianPoint::list::ptr cps = l->ControlPointsList();
-	const std::vector<int> mults = l->KnotMultiplicities();
-	const std::vector<double> knots = l->Knots();
-
-	TColgp_Array1OfPnt      Poles(0,  cps->size() - 1);
-	TColStd_Array1OfReal    Weights(0, cps->size() - 1);
-	TColStd_Array1OfReal    Knots(0, (int)knots.size() - 1);
-	TColStd_Array1OfInteger Mults(0, (int)mults.size() - 1);
-	Standard_Integer        Degree = l->Degree();
-	Standard_Boolean        Periodic = false; 
-	// @tfk: it appears to be wrong to expect a period curve when the curve is closed, see #586
-	// Standard_Boolean     Periodic = l->ClosedCurve();
-	
-	int i;
-
-	if (is_rational) {
-		IfcSchema::IfcRationalBSplineCurveWithKnots* rl = (IfcSchema::IfcRationalBSplineCurveWithKnots*)l;
-		std::vector<double> weights = rl->WeightsData();
-
-		i = 0;
-		for (std::vector<double>::const_iterator it = weights.begin(); it != weights.end(); ++it, ++i) {
-			Weights(i) = *it;
-		}
-	}
-
-	i = 0;
-	for (IfcSchema::IfcCartesianPoint::list::it it = cps->begin(); it != cps->end(); ++it, ++i) {
-		gp_Pnt pnt;
-		if (!convert(*it, pnt)) return false;
-		Poles(i) = pnt;
-	}
-	
-	i = 0;
-	for (std::vector<int>::const_iterator it = mults.begin(); it != mults.end(); ++it, ++i) {
-		Mults(i) = *it;
-	}
-
-	i = 0;
-	for (std::vector<double>::const_iterator it = knots.begin(); it != knots.end(); ++it, ++i) {
-		Knots(i) = *it;
-	}
-	
-	if (is_rational) {
-		curve = new Geom_BSplineCurve(Poles, Weights, Knots, Mults, Degree, Periodic);
-	} else {
-		curve = new Geom_BSplineCurve(Poles, Knots, Mults, Degree, Periodic);
-	}
-	return true;
-}
-#endif
