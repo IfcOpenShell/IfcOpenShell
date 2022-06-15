@@ -1,6 +1,6 @@
 #include "boolean_utils.h"
 
-#include "../ifcgeom/IfcGeomTree.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
 
 #include <BRepBuilderAPI_Copy.hxx>
 #include <TopExp_Explorer.hxx>
