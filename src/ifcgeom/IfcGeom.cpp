@@ -24,7 +24,6 @@
  ********************************************************************************/
 
 #include <set>
-#include <cassert>
 #include <algorithm>
 #include <numeric>
 
@@ -34,32 +33,19 @@
 #include <gp_Vec.hxx>
 #include <gp_Dir.hxx>
 #include <gp_Pnt2d.hxx>
-#include <gp_Vec2d.hxx>
-#include <gp_Dir2d.hxx>
-#include <gp_Mat.hxx>
-#include <gp_Mat2d.hxx>
 #include <gp_GTrsf.hxx>
 #include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
 #include <gp_Ax3.hxx>
-#include <gp_Ax2d.hxx>
 #include <gp_Pln.hxx>
-#include <gp_Circ.hxx>
 
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm_ext/push_back.hpp>
 
-#include <TColgp_Array1OfPnt.hxx>
-#include <TColgp_Array1OfPnt2d.hxx>
-#include <TColStd_Array1OfReal.hxx>
-#include <TColStd_Array1OfInteger.hxx>
 
 #include <Geom_Line.hxx>
 #include <Geom_Circle.hxx>
-#include <Geom_Ellipse.hxx>
-#include <Geom_TrimmedCurve.hxx>
-#include <Geom_BSplineCurve.hxx>
 
 #include <Geom_Plane.hxx>
 #include <Geom_OffsetCurve.hxx>
@@ -107,9 +93,7 @@
 
 #include <ShapeAnalysis_Curve.hxx>
 #include <ShapeAnalysis_Surface.hxx>
-#include <ShapeAnalysis_ShapeTolerance.hxx>
 
-#include <ShapeUpgrade_UnifySameDomain.hxx>
 
 #include <BRepFilletAPI_MakeFillet2d.hxx>
 
@@ -118,7 +102,6 @@
 #include <GProp_GProps.hxx>
 #include <BRepGProp.hxx>
 
-#include <BRepBuilderAPI_Copy.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepBuilderAPI_GTransform.hxx>
 
@@ -135,25 +118,18 @@
 
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
-#include <TopTools_ListIteratorOfListOfShape.hxx>
-#include <TopTools_HSequenceOfShape.hxx>
 
 #include <BOPAlgo_PaveFiller.hxx>
-#include <BOPAlgo_BOP.hxx>
 
 #include <GCPnts_AbscissaPoint.hxx>
 
-#include <BRepTopAdaptor_FClass2d.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
 
 #include <GeomAPI_ExtremaCurveCurve.hxx>
 
 #include <Extrema_ExtCS.hxx>
-#include <Extrema_ExtPC.hxx>
-#include <BRepAdaptor_Curve.hxx>
 
 #include <ShapeAnalysis_Edge.hxx>
-#include <BRepExtrema_DistShapeShape.hxx>
 
 #if OCC_VERSION_HEX >= 0x70200
 #include <BOPAlgo_Alerts.hxx>
@@ -161,9 +137,11 @@
 
 #include "../ifcparse/macros.h"
 #include "../ifcparse/IfcSIPrefix.h"
+
 #include "../ifcparse/IfcFile.h"
 #include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom/IfcGeomTree.h"
+
+#include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
 #include "../ifcgeom_schema_agnostic/boolean_utils.h"
 
 #include <memory>
@@ -4924,4 +4902,129 @@ void IfcGeom::Kernel::set_conversion_placement_rel_to_type(const IfcParse::decla
 
 void IfcGeom::Kernel::set_conversion_placement_rel_to_instance(const IfcUtil::IfcBaseEntity* instance) {
 	placement_rel_to_instance_ = instance;
+}
+
+
+namespace {
+
+	bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
+		if (colour != 0) {
+			rgb[0] = colour->Red();
+			rgb[1] = colour->Green();
+			rgb[2] = colour->Blue();
+		}
+		return colour != 0;
+	}
+
+	bool process_colour(IfcSchema::IfcNormalisedRatioMeasure* factor, double* rgb) {
+		if (factor != 0) {
+			const double f = *factor;
+			rgb[0] = rgb[1] = rgb[2] = f;
+		}
+		return factor != 0;
+	}
+
+	bool process_colour(IfcSchema::IfcColourOrFactor* colour_or_factor, double* rgb) {
+		if (colour_or_factor == 0) {
+			return false;
+		} else if (colour_or_factor->declaration().is(IfcSchema::IfcColourRgb::Class())) {
+			return process_colour(static_cast<IfcSchema::IfcColourRgb*>(colour_or_factor), rgb);
+		} else if (colour_or_factor->declaration().is(IfcSchema::IfcNormalisedRatioMeasure::Class())) {
+			return process_colour(static_cast<IfcSchema::IfcNormalisedRatioMeasure*>(colour_or_factor), rgb);
+		} else {
+			return false;
+		}
+	}
+
+}
+
+#define Kernel MAKE_TYPE_NAME(Kernel)
+
+std::shared_ptr<const IfcGeom::SurfaceStyle> IfcGeom::Kernel::internalize_surface_style(const std::pair<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*>& shading_styles) {
+	if (shading_styles.second == 0) {
+		return 0;
+	}
+	int surface_style_id = shading_styles.first->data().id();
+	auto it = style_cache.find(surface_style_id);
+	if (it != style_cache.end()) {
+		return it->second;
+	}
+
+
+	IfcSchema::IfcSurfaceStyle* style = shading_styles.first->as<IfcSchema::IfcSurfaceStyle>();
+	IfcSchema::IfcSurfaceStyleShading* shading = shading_styles.second->as<IfcSchema::IfcSurfaceStyleShading>();
+
+	std::shared_ptr<SurfaceStyle> surface_style_ptr;
+
+	if (style->Name()) {
+		surface_style_ptr.reset(new SurfaceStyle(surface_style_id, *style->Name()));
+	} else {
+		surface_style_ptr.reset(new SurfaceStyle(surface_style_id));
+	}
+
+	std::shared_ptr<const SurfaceStyle> surface_style_ptr_const = std::const_pointer_cast<const SurfaceStyle>(surface_style_ptr);
+	SurfaceStyle& surface_style = *surface_style_ptr;
+
+	double rgb[3];
+	if (process_colour(shading->SurfaceColour(), rgb)) {
+		surface_style.Diffuse().reset(SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
+	}
+	if (shading_styles.second->declaration().is(IfcSchema::IfcSurfaceStyleRendering::Class())) {
+		IfcSchema::IfcSurfaceStyleRendering* rendering_style = static_cast<IfcSchema::IfcSurfaceStyleRendering*>(shading_styles.second);
+		if (rendering_style->DiffuseColour() && process_colour(rendering_style->DiffuseColour(), rgb)) {
+			SurfaceStyle::ColorComponent diffuse = surface_style.Diffuse().get_value_or(SurfaceStyle::ColorComponent(1, 1, 1));
+			surface_style.Diffuse().reset(SurfaceStyle::ColorComponent(diffuse.R() * rgb[0], diffuse.G() * rgb[1], diffuse.B() * rgb[2]));
+		}
+		if (rendering_style->DiffuseTransmissionColour()) {
+			// Not supported
+		}
+		if (rendering_style->ReflectionColour()) {
+			// Not supported
+		}
+		if (rendering_style->SpecularColour() && process_colour(rendering_style->SpecularColour(), rgb)) {
+			surface_style.Specular().reset(SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
+		}
+		if (rendering_style->SpecularHighlight()) {
+			IfcSchema::IfcSpecularHighlightSelect* highlight = rendering_style->SpecularHighlight();
+			if (highlight->declaration().is(IfcSchema::IfcSpecularRoughness::Class())) {
+				double roughness = *((IfcSchema::IfcSpecularRoughness*)highlight);
+				if (roughness >= 1e-9) {
+					surface_style.Specularity().reset(1.0 / roughness);
+				}
+			} else if (highlight->declaration().is(IfcSchema::IfcSpecularExponent::Class())) {
+				surface_style.Specularity().reset(*((IfcSchema::IfcSpecularExponent*)highlight));
+			}
+		}
+		if (rendering_style->TransmissionColour()) {
+			// Not supported
+		}
+		if (rendering_style->Transparency()) {
+			const double d = *rendering_style->Transparency();
+			surface_style.Transparency().reset(d);
+		}
+	}
+	return style_cache[surface_style_id] = surface_style_ptr_const;
+}
+
+std::shared_ptr<const IfcGeom::SurfaceStyle> IfcGeom::Kernel::get_style(const IfcSchema::IfcRepresentationItem* item) {
+	return internalize_surface_style(get_surface_style<IfcSchema::IfcSurfaceStyleShading>(item));
+}
+
+std::shared_ptr<const IfcGeom::SurfaceStyle> IfcGeom::Kernel::get_style(const IfcSchema::IfcMaterial* material) {
+	IfcSchema::IfcMaterialDefinitionRepresentation::list::ptr defs = material->HasRepresentation();
+	for (IfcSchema::IfcMaterialDefinitionRepresentation::list::it jt = defs->begin(); jt != defs->end(); ++jt) {
+		IfcSchema::IfcRepresentation::list::ptr reps = (*jt)->Representations();
+		IfcSchema::IfcStyledItem::list::ptr styles(new IfcSchema::IfcStyledItem::list);
+		for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
+			styles->push((**it).Items()->as<IfcSchema::IfcStyledItem>());
+		}
+		for (IfcSchema::IfcStyledItem::list::it it = styles->begin(); it != styles->end(); ++it) {
+			const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*> ss = get_surface_style<IfcSchema::IfcSurfaceStyleShading>(*it);
+			if (ss.second) {
+				return internalize_surface_style(ss);
+			}
+		}
+	}
+	auto material_style = std::make_shared<IfcGeom::SurfaceStyle>(material->data().id(), material->Name());
+	return style_cache[material->data().id()] = material_style;
 }

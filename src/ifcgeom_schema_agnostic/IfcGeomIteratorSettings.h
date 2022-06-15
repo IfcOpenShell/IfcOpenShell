@@ -20,11 +20,13 @@
 #ifndef IFCGEOMITERATORSETTINGS_H
 #define IFCGEOMITERATORSETTINGS_H
 
-#include <array>
-
 #include "ifc_geom_api.h"
+
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcBaseClass.h"
+
+#include <set>
+#include <array>
 
 namespace IfcGeom
 {
@@ -132,16 +134,9 @@ namespace IfcGeom
 		double force_space_transparency() const { return force_space_transparency_; }
 		std::set<int> context_ids() const { return context_ids_; }
 
-        void set_deflection_tolerance(double value)
-        {
-            /// @todo Using deflection tolerance of 1e-6 or smaller hangs the conversion, research more in-depth.
-            /// This bug can be reproduced e.g. with the Duplex model that can be found from http://www.nibs.org/?page=bsa_commonbimfiles#project1
-            deflection_tolerance_ = value;
-            if (deflection_tolerance_ <= 1e-6) {
-                Logger::Message(Logger::LOG_WARNING, "Deflection tolerance cannot be set to <= 1e-6; using the default value 1e-3");
-                deflection_tolerance_ = 1e-3;
-            }
-        }
+		/// @todo Using deflection tolerance of 1e-6 or smaller hangs the conversion, research more in-depth.
+		/// This bug can be reproduced e.g. with the Duplex model that can be found from http://www.nibs.org/?page=bsa_commonbimfiles#project1
+		void set_deflection_tolerance(double value);
 
 		void set_angular_tolerance(double value) {
 			angular_tolerance_ = value;

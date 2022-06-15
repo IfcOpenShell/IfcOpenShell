@@ -21,7 +21,8 @@
 #define IFCGEOMTREE_H
 
 #include "../ifcparse/IfcFile.h"
-#include "../ifcgeom/IfcGeomElement.h"
+
+#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
 #include "../ifcgeom_schema_agnostic/Kernel.h"
