@@ -476,7 +476,7 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 /// Generates UVs for a single mesh using box projection.
 /// @todo Very simple impl. Assumes that input vertices and normals match 1:1.
 
-inline std::vector<double> IfcGeom::Representation::Triangulation::box_project_uvs(const std::vector<double>& vertices, const std::vector<double>& normals)
+std::vector<double> IfcGeom::Representation::Triangulation::box_project_uvs(const std::vector<double>& vertices, const std::vector<double>& normals)
 {
 	std::vector<double> uvs;
 	uvs.resize(vertices.size() / 3 * 2);
@@ -504,9 +504,7 @@ inline std::vector<double> IfcGeom::Representation::Triangulation::box_project_u
 	return uvs;
 }
 
-// Welds vertices that belong to different faces
-
-inline int IfcGeom::Representation::Triangulation::addVertex(int material_index, const gp_XYZ & p) {
+int IfcGeom::Representation::Triangulation::addVertex(int material_index, const gp_XYZ & p) {
 	const bool convert = settings().get(IteratorSettings::CONVERT_BACK_UNITS);
 	const double X = convert ? (p.X() / settings().unit_magnitude()) : p.X();
 	const double Y = convert ? (p.Y() / settings().unit_magnitude()) : p.Y();
@@ -525,7 +523,7 @@ inline int IfcGeom::Representation::Triangulation::addVertex(int material_index,
 	return i;
 }
 
-inline void IfcGeom::Representation::Triangulation::addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount, std::vector<std::pair<int, int>>& edges_temp) {
+void IfcGeom::Representation::Triangulation::addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount, std::vector<std::pair<int, int>>& edges_temp) {
 	const Edge e = Edge((std::min)(n1, n2), (std::max)(n1, n2));
 	if (edgecount.find(e) == edgecount.end()) edgecount[e] = 1;
 	else edgecount[e] ++;
