@@ -39,7 +39,7 @@
 #endif
 
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
-#include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcLogger.h"
 

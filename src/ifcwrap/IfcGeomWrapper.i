@@ -58,14 +58,14 @@
 	}
 }
 
-%include "../ifcgeom/ifc_geom_api.h"
-%include "../ifcgeom/IfcGeomIteratorSettings.h"
-%include "../ifcgeom/IfcGeomElement.h"
+%include "../ifcgeom_schema_agnostic/ifc_geom_api.h"
+%include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
+%include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
 %include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
-%include "../ifcgeom/IfcGeomRepresentation.h"
+%include "../ifcgeom_schema_agnostic/IfcGeomRepresentation.h"
 %include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
-
 %include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+
 %include "../serializers/SvgSerializer.h"
 %include "../serializers/HdfSerializer.h"
 %include "../serializers/WavefrontObjSerializer.h"
@@ -76,7 +76,7 @@
 
 // A Template instantantation should be defined before it is used as a base class. 
 // But frankly I don't care as most methods are subtlely different anyway.
-%include "../ifcgeom/IfcGeomTree.h"
+%include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
 
 %extend IfcGeom::tree {
 
