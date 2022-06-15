@@ -172,9 +172,9 @@ namespace IfcGeom {
 			static std::vector<double> box_project_uvs(const std::vector<double> &vertices, const std::vector<double> &normals);
 
 		private:
-			// Welds vertices that belong to different faces
+			/// Welds vertices that belong to different faces
 			int addVertex(int material_index, const gp_XYZ& p);
-			inline void addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount, std::vector<std::pair<int, int> >& edges_temp);
+			void addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount, std::vector<std::pair<int, int> >& edges_temp);
 
 			Triangulation();
 			Triangulation(const Triangulation&);
