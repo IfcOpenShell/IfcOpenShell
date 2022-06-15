@@ -2,8 +2,8 @@
 #define ITERATOR_KERNEL_H
 
 #include "../ifcparse/IfcFile.h"
-#include "../ifcgeom/IfcGeomIteratorSettings.h"
-#include "../ifcgeom/IfcRepresentationShapeItem.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../ifcgeom_schema_agnostic/IfcRepresentationShapeItem.h"
 
 #ifdef HAS_SCHEMA_2x3
 #include "../ifcparse/Ifc2x3.h"
@@ -39,6 +39,13 @@
 #include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_GTrsf.hxx>
+
+static const double ALMOST_ZERO = 1.e-9;
+
+template <typename T>
+inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance = ALMOST_ZERO) {
+	return fabs(a - b) < tolerance;
+}
 
 namespace IfcGeom {
 
