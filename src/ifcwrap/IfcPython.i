@@ -80,7 +80,7 @@
 %{
 	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 	#include "../ifcgeom_schema_agnostic/Serialization.h"
-	#include "../ifcgeom/IfcGeomTree.h"
+	#include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"
@@ -133,7 +133,7 @@
 %module ifcopenshell_wrapper %{
 	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 	#include "../ifcgeom_schema_agnostic/Serialization.h"
-	#include "../ifcgeom/IfcGeomTree.h"
+	#include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"
