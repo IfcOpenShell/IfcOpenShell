@@ -381,19 +381,16 @@ class TestIdsAuthoring(unittest.TestCase):
         facet = ids.entity.create(name="IFCWALL", predefinedType="X")
         run("Overridden predefined types should pass", facet=facet, inst=wall, expected=True)
 
-        # Restrictions are allowed when matching the IFC class
         restriction = ids.restriction.create(options=["IFCWALL", "IFCSLAB"], type="enumeration")
         facet = ids.entity.create(name=restriction)
         run("Entities can be specified as an enumeration 1/3", facet=facet, inst=ifc.createIfcWall(), expected=True)
         run("Entities can be specified as an enumeration 2/3", facet=facet, inst=ifc.createIfcSlab(), expected=True)
         run("Entities can be specified as an enumeration 3/3", facet=facet, inst=ifc.createIfcBeam(), expected=False)
 
-        # Another example of how restrictions are allowed when matching the IFC class
-        # Note: Regex patterns follow the XSD flavour
         restriction = ids.restriction.create(options="IFC.*TYPE", type="pattern")
         facet = ids.entity.create(name=restriction)
-        run("Entities can be specified as a pattern 1/2", facet=facet, inst=ifc.createIfcWall(), expected=False)
-        run("Entities can be specified as a pattern 2/2", facet=facet, inst=ifc.createIfcWallType(), expected=True)
+        run("Entities can be specified as a XSD regex pattern 1/2", facet=facet, inst=ifc.createIfcWall(), expected=False)
+        run("Entities can be specified as a XSD regex pattern 2/2", facet=facet, inst=ifc.createIfcWallType(), expected=True)
 
         restriction = ids.restriction.create(options="FOO.*", type="pattern")
         facet = ids.entity.create(name="IFCWALL", predefinedType=restriction)
@@ -462,87 +459,123 @@ class TestIdsAuthoring(unittest.TestCase):
         element = ifc.createIfcTask(IsMilestone=True, TaskTime=ifc.createIfcTaskTime())
         run("Attributes referencing an object should pass", facet=facet, inst=element, expected=True)
 
-        # Selects are only considered for truthy or falsey
         facet = ids.attribute.create(name="DiffuseColour")
         element = ifc.createIfcSurfaceStyleRendering()
         rgb = ifc.createIfcColourRgb(None, 1, 1, 1)
         run("Attributes with a select referencing an object should pass", facet=facet, inst=ifc.createIfcSurfaceStyleRendering(SurfaceColour=rgb, ReflectanceMethod="FLAT", DiffuseColour=ifc.createIfcColourRgb(None, 1, 1, 1)), expected=True)
         run("Attributes with a select referencing a primitive should pass", facet=facet, inst=ifc.createIfcSurfaceStyleRendering(SurfaceColour=rgb, ReflectanceMethod="FLAT", DiffuseColour=ifc.createIfcNormalisedRatioMeasure(0.5)), expected=True)
 
-        # When a value is specified, the value shall match case sensitively
+        facet = ids.attribute.create(name="EngagedIn")
+        person = ifc.createIfcPerson()
+        organisation = ifc.createIfcOrganization(Name="Foo")
+        ifc.createIfcPersonAndOrganization(ThePerson=person, TheOrganization=organisation)
+        run("Inverse attributes cannot be checked and always fail", facet=facet, inst=person, expected=False)
+
+        facet = ids.attribute.create(name="Dim")
+        run("Derived attributes cannot be checked and always fail", facet=facet, inst=ifc.createIfcCartesianPoint([0., 0., 0.]), expected=False)
+
         facet = ids.attribute.create(name="Name", value="Foobar")
         run("Attributes should check strings case sensitively 1/2", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=True)
         run("Attributes should check strings case sensitively 2/2", facet=facet, inst=ifc.createIfcWall(Name="foobar"), expected=False)
 
-        # Value checks are meaningless for checking objects, selects, and lists so it always fails
-        facet = ids.attribute.create(name="OwnerHistory", value="Foobar")
-        assert bool(facet(ifc.createIfcWall(OwnerHistory=ifc.createIfcOwnerHistory()))) is False
+        facet = ids.attribute.create(name="TaskTime", value="Foobar")
+        run("Value checks always fail for objects", facet=facet, inst=ifc.createIfcTask(IsMilestone=False, TaskTime=ifc.createIfcTaskTime()), expected=False)
 
-        # Selects
+        rgb = ifc.createIfcColourRgb(None, 1, 1, 1)
+        facet = ids.attribute.create(name="DiffuseColour", value="Foobar")
+        run("Value checks always fail for selects", facet=facet, inst=ifc.createIfcSurfaceStyleRendering(SurfaceColour=rgb, ReflectanceMethod="FLAT", DiffuseColour=ifc.createIfcNormalisedRatioMeasure(0.5)), expected=False)
 
-        # Lists
+        facet = ids.attribute.create(name="Coordinates", value="Foobar")
+        run("Value checks always fail for lists", facet=facet, inst=ifc.createIfcCartesianPoint([0., 0., 0.]), expected=False)
 
         # TODO continue from here
 
-        # TODO should we be allowed to check inverse attributes?
-        # Nope - always false
+        global_id = ifcopenshell.guid.new()
+        facet = ids.attribute.create(name="GlobalId", value=global_id)
+        run("GlobalIds are treated as strings and not expanded", facet=facet, inst=ifc.createIfcWall(GlobalId=global_id), expected=True)
 
-        # TODO should we be allowed to check derived attributes?
-        # Nope - always false
+        # 255 characters
+        identifier = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345"
+        facet = ids.attribute.create(name="Identification", value=identifier + "_extra_characters")
+        run("IDS does not bother with string truncation such as for identifiers", facet=facet, inst=ifc.createIfcPerson(Identification=identifier), expected=False)
 
-        # Simple values which must be strings are checked with strict typing. No type casting shall occur.
-        facet = ids.attribute.create(name="Eastings", value="42")
-        run("", facet=facet, inst=ifc.createIfcMapConversion(Eastings=0), expected=False)
-        run("", facet=facet, inst=ifc.createIfcMapConversion(Eastings=42), expected=False)
+        facet = ids.attribute.create(name="RefractionIndex", value="42")
+        run("Numeric values are checked using type casting 1/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42), expected=True)
+        facet = ids.attribute.create(name="RefractionIndex", value="42.")
+        run("Numeric values are checked using type casting 2/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42.0), expected=True)
+        facet = ids.attribute.create(name="RefractionIndex", value="42.0")
+        run("Numeric values are checked using type casting 3/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42.0), expected=True)
+        facet = ids.attribute.create(name="RefractionIndex", value="42")
+        run("Numeric values are checked using type casting 4/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42.3), expected=False)
+        facet = ids.attribute.create(name="RefractionIndex", value="42,3")
+        run("Only specifically formatted numbers are allowed 1/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42.3), expected=False)
+        facet = ids.attribute.create(name="RefractionIndex", value="123,4.5")
+        run("Only specifically formatted numbers are allowed 2/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=1234.5), expected=False)
+        facet = ids.attribute.create(name="RefractionIndex", value="1.2345e3")
+        run("Only specifically formatted numbers are allowed 3/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=1234.5), expected=True)
+        facet = ids.attribute.create(name="RefractionIndex", value="1.2345E3")
+        run("Only specifically formatted numbers are allowed 3/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=1234.5), expected=True)
 
-        # Strict type checking is done with restrictions. This is really ugly, but hopefully hidden to a user.
-        restriction = ids.restriction.create(options=[42], type="enumeration", base="decimal")
-        # Here is another uglier option:
-        # restriction = ids.restriction.create(
-        #     options={"minInclusive": 42, "maxInclusive": 42}, type="bounds", base="decimal"
-        # )
-        facet = ids.attribute.create(name="Eastings", value=restriction)
-        run("", facet=facet, inst=ifc.createIfcMapConversion(Eastings=42), expected=True)
+        facet = ids.attribute.create(name="NumberOfRisers", value="42")
+        run("Integers follow the same rules as numbers", facet=facet, inst=ifc.createIfcStairFlight(NumberOfRisers=42), expected=True)
+        facet = ids.attribute.create(name="NumberOfRisers", value="42.0")
+        run("Integers follow the same rules as numbers 2/2", facet=facet, inst=ifc.createIfcStairFlight(NumberOfRisers=42), expected=True)
 
-        # Restrictions are allowed for the name
+        facet = ids.attribute.create(name="NumberOfRisers", value="42.3")
+        run("Integers are always floored when cast 1/2", facet=facet, inst=ifc.createIfcStairFlight(NumberOfRisers=42), expected=True)
+        facet = ids.attribute.create(name="NumberOfRisers", value="42.7")
+        run("Integers are always floored when cast 2/2", facet=facet, inst=ifc.createIfcStairFlight(NumberOfRisers=42), expected=True)
+
+        facet = ids.attribute.create(name="NumberOfRisers", value="42.7")
+        run("Integers are always floored when cast 2/2", facet=facet, inst=ifc.createIfcStairFlight(NumberOfRisers=42), expected=True)
+
+        facet = ids.attribute.create(name="IsMilestone", value="TRUE")
+        element = ifc.createIfcTask(IsMilestone=False)
+        run("Booleans must be specified as uppercase strings 1/3", facet=facet, inst=element, expected=False)
+        facet = ids.attribute.create(name="IsMilestone", value="FALSE")
+        run("Booleans must be specified as uppercase strings 2/3", facet=facet, inst=element, expected=True)
+        facet = ids.attribute.create(name="IsMilestone", value="False")
+        run("Booleans must be specified as uppercase strings 2/3", facet=facet, inst=element, expected=False)
+
+        facet = ids.attribute.create(name="EditionDate", value="2022-01-01")
+        run("Dates are treated as strings 1/2", facet=facet, inst=ifc.createIfcClassification(Name="Name", EditionDate="2022-01-01"), expected=True)
+        run("Dates are treated as strings 1/2", facet=facet, inst=ifc.createIfcClassification(Name="Name", EditionDate="2022-01-01+00:00"), expected=False)
+
+        facet = ids.attribute.create(name="ScheduleDuration", value="PT16H")
+        run("Durations are treated as strings 1/2", facet=facet, inst=ifc.createIfcClassification(Name="Name", EditionDate="PT16H"), expected=False)
+        run("Durations are treated as strings 2/2", facet=facet, inst=ifc.createIfcClassification(Name="Name", EditionDate="P2D"), expected=False)
+
         restriction = ids.restriction.create(options=".*Name.*", type="pattern")
         facet = ids.attribute.create(name=restriction)
-        run("", facet=facet, inst=ifc.createIfcMaterialLayerSet(LayerSetName="Foo"), expected=True)
-        run("", facet=facet, inst=ifc.createIfcMaterialConstituentSet(Name="Foo"), expected=True)
+        run("Name restrictions may be used 1/4", facet=facet, inst=ifc.createIfcMaterialLayerSet(MaterialLayers=[ifc.createIfcMaterialLayer(LayerThickness=1)], LayerSetName="Foo"), expected=True)
+        run("Name restrictions may be used 2/4", facet=facet, inst=ifc.createIfcMaterialConstituentSet(Name="Foo"), expected=True)
 
-        # Restrictions for the name imply that multiple names may be matched. All, not any, must pass the checks.
         restriction = ids.restriction.create(options=["Name", "Description"], type="enumeration")
         facet = ids.attribute.create(name=restriction)
-        run("", facet=facet, inst=ifc.createIfcWall(Name="Foo"), expected=False)
-        run("", facet=facet, inst=ifc.createIfcWall(Name="Foo", Description="Bar"), expected=True)
+        run("Name restrictions may be used 3/4", facet=facet, inst=ifc.createIfcWall(Name="Foo"), expected=False)
+        run("Name restrictions may be used 4/4", facet=facet, inst=ifc.createIfcWall(Name="Foo", Description="Bar"), expected=True)
 
-        # Restrictions are allowed for the value
         restriction = ids.restriction.create(options=["Foo", "Bar"], type="enumeration")
         facet = ids.attribute.create(name="Name", value=restriction)
-        run("", facet=facet, inst=ifc.createIfcWall(Name="Foo"), expected=True)
-        run("", facet=facet, inst=ifc.createIfcWall(Name="Bar"), expected=True)
-        run("", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=False)
+        run("Value restrictions may be used 1/3", facet=facet, inst=ifc.createIfcWall(Name="Foo"), expected=True)
+        run("Value restrictions may be used 2/3", facet=facet, inst=ifc.createIfcWall(Name="Bar"), expected=True)
+        run("Value restrictions may be used 3/3", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=False)
 
-        # The facet checks on attributes on the type, which may be inherited by the occurence
-        # TODO attribute inheritance is not defined IFC behaviour
-        facet = ids.attribute.create(name="Description", value="Foobar")
-        run("", facet=facet, inst=ifc.createIfcWall(Description="Foobar"), expected=True)
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
         wall_type.Description = "Foobar"
-        run("", facet=facet, inst=wall, expected=True)
+        run("Attributes are not inherited by the occurrence", facet=facet, inst=wall, expected=False)
 
-        # The facet checks on attributes on the type, which may be overriden by attributes on the occurence
-        # TODO attribute overriding is not defined IFC behaviour
-        facet = ids.attribute.create(name="Description", value="Foobar")
-        run("", facet=facet, inst=ifc.createIfcWall(Description="Foobar"), expected=True)
-        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
-        wall_type.Description = "Foobaz"
-        wall.Description = "Foobar"
-        run("", facet=facet, inst=wall, expected=True)
+        restriction = ids.restriction.create(options=["42"], type="enumeration", base="string")
+        facet = ids.attribute.create(name="RefractionIndex", value=restriction)
+        run("Typecast checking may also occur within enumeration restrictions", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42), expected=True)
+
+        restriction = ids.restriction.create(
+            options={"minInclusive": 42, "maxInclusive": 42}, type="bounds", base="decimal"
+        )
+        facet = ids.attribute.create(name="RefractionIndex", value=restriction)
+        run("Strict numeric checking may be done with a bounds restriction", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42), expected=True)
 
     def test_creating_a_classification_facet(self):
         facet = ids.classification.create()
@@ -567,6 +600,8 @@ class TestIdsAuthoring(unittest.TestCase):
         }
 
     def test_filtering_using_a_classification_facet(self):
+        set_facet("classification")
+
         library = ifcopenshell.file()
         system = library.createIfcClassification(Name="Foobar")
         ref1 = library.createIfcClassificationReference(Identification="1", ReferencedSource=system)
@@ -596,45 +631,37 @@ class TestIdsAuthoring(unittest.TestCase):
             is_lightweight=False,
         )
 
-        # A classification facet with no data matches any present classification
         facet = ids.classification.create()
-        run("", facet=facet, inst=element0, expected=False)
-        run("", facet=facet, inst=element1, expected=True)
+        run("A classification facet with no data matches any classification 1/2", facet=facet, inst=element0, expected=False)
+        run("A classification facet with no data matches any classification 2/2", facet=facet, inst=element1, expected=True)
 
-        # Values should match exactly if lightweight classifications are used.
         facet = ids.classification.create(value="1")
-        run("", facet=facet, inst=element1, expected=True)
+        run("Values should match exactly if lightweight classifications are used", facet=facet, inst=element1, expected=True)
 
-        # Values should match subreferences if full classifications are used.
-        # E.g. a facet searching for Uniclass EF_25_10 Walls will match Uniclass EF_25_10_25, EF_25_10_30, etc
         facet = ids.classification.create(value="2")
-        run("", facet=facet, inst=element22, expected=True)
+        run("Values match subreferences if full classifications are used (e.g. EF_25_10 should match EF_25_10_25, EF_25_10_30, etc)", facet=facet, inst=element22, expected=True)
 
-        # Systems should match exactly regardless of lightweight or full classifications
         facet = ids.classification.create(system="Foobar")
-        run("", facet=facet, inst=project, expected=True)
-        run("", facet=facet, inst=element0, expected=False)
-        run("", facet=facet, inst=element1, expected=True)
-        run("", facet=facet, inst=element11, expected=True)
-        run("", facet=facet, inst=element22, expected=True)
+        run("Systems should match exactly 1/5", facet=facet, inst=project, expected=True)
+        run("Systems should match exactly 2/5", facet=facet, inst=element0, expected=False)
+        run("Systems should match exactly 3/5", facet=facet, inst=element1, expected=True)
+        run("Systems should match exactly 4/5", facet=facet, inst=element11, expected=True)
+        run("Systems should match exactly 5/5", facet=facet, inst=element22, expected=True)
 
-        # Restrictions can be used for values
         restriction = ids.restriction.create(options="1.*", type="pattern")
         facet = ids.classification.create(value=restriction)
-        run("", facet=facet, inst=element1, expected=True)
-        run("", facet=facet, inst=element11, expected=True)
-        run("", facet=facet, inst=element22, expected=False)
+        run("Restrictions can be used for values 1/3", facet=facet, inst=element1, expected=True)
+        run("Restrictions can be used for values 2/3", facet=facet, inst=element11, expected=True)
+        run("Restrictions can be used for values 3/3", facet=facet, inst=element22, expected=False)
 
-        # Restrictions can be used for systems
         restriction = ids.restriction.create(options="Foo.*", type="pattern")
         facet = ids.classification.create(system=restriction)
-        run("", facet=facet, inst=element0, expected=False)
-        run("", facet=facet, inst=element1, expected=True)
+        run("Restrictions can be used for systems 1/2", facet=facet, inst=element0, expected=False)
+        run("Restrictions can be used for systems 2/2", facet=facet, inst=element1, expected=True)
 
-        # Specifying both a value and a system means that both (as opposed to either) requirements must be met
         facet = ids.classification.create(system="Foobar", value="1")
-        run("", facet=facet, inst=element1, expected=True)
-        run("", facet=facet, inst=element11, expected=False)
+        run("Both system and value must match (all, not any) if specified 1/2", facet=facet, inst=element1, expected=True)
+        run("Both system and value must match (all, not any) if specified 2/2", facet=facet, inst=element11, expected=False)
 
         # The facet checks on either the type or instance.
         # IFC doesn't specify how inheritance and overrides work here. Two options:
