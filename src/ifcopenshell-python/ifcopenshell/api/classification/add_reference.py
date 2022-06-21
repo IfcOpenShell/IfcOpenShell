@@ -58,13 +58,30 @@ class Usecase:
             return
 
         migrator = ifcopenshell.util.schema.Migrator()
+
         if self.settings["is_lightweight"]:
             old_referenced_source = self.settings["reference"].ReferencedSource
             self.settings["reference"].ReferencedSource = None
+        else:
+            existing_classification = [
+                c for c in self.file.by_type("IfcClassification") if c.Name == self.settings["classification"].Name
+            ]
+
         relating_classification = migrator.migrate(self.settings["reference"], self.file)
+
         if self.settings["is_lightweight"]:
             relating_classification.ReferencedSource = self.settings["classification"]
             self.settings["reference"].ReferencedSource = old_referenced_source
+        elif existing_classification:
+            to_delete = set()
+            for traversed_reference in self.file.traverse(relating_classification):
+                if traversed_reference.ReferencedSource.is_a("IfcClassification"):
+                    to_delete.add(traversed_reference.ReferencedSource)
+                    traversed_reference.ReferencedSource = existing_classification[0]
+                    break
+            for element in to_delete:
+                self.file.remove(element)
+
         self.file.create_entity(
             "IfcRelAssociatesClassification",
             **{
