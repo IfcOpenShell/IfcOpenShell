@@ -21,6 +21,7 @@ import re
 import logging
 import numpy as np
 import datetime
+import builtins
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -643,11 +644,15 @@ class attribute(facet):
                     is_pass = False
                 elif value == tuple():
                     is_pass = False
-                elif (
-                    inst.attribute_type(inst.wrapped_data.get_argument_index(names[i])) == "LOGICAL"
-                    and value == "UNKNOWN"
-                ):
-                    is_pass = False
+                else:
+                    argument_index = inst.wrapped_data.get_argument_index(names[i])
+                    try:
+                        attribute_type = inst.attribute_type(argument_index)
+                        if attribute_type == "LOGICAL" and value == "UNKNOWN":
+                            is_pass = False
+                    except:
+                        if names[i] in inst.wrapped_data.get_inverse_attribute_names():
+                            is_pass = False
                 if not is_pass:
                     break
 
