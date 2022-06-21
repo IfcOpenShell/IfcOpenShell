@@ -40,13 +40,8 @@ class DocGenerator:
 
         result = "pass" if expected is True else "fail"
 
-        # Create an IFC file with the instance in `inst` passed to us
-        # based on an IFC file template with project and units.
-        f = template.create()
-        instances = [f.add(inst)]
-        for nm in inst.wrapped_data.get_inverse_attribute_names():
-            for v in getattr(inst, nm):
-                instances.append(f.add(v))
+        f = inst.wrapped_data.file
+        instances = list(f)
 
         # Validate the file created and loop over the issues, fixing them
         # one by one.
@@ -62,12 +57,9 @@ class DocGenerator:
             elif "IfcMaterialList" in issue["message"]:
                 issue["instance"].Materials = [f.createIfcMaterial("Concrete", None, "CONCRETE")]
             else:
-                raise Exception("About to emit invalid example data")
+                raise Exception("About to emit invalid example data:", issue)
 
-        ifc_lines = list(map(str, {i: None for i in itertools.chain.from_iterable(map(f.traverse, instances))}.keys()))
-        ifc_id = ifc_lines[0].split("=")[0]
-        ifc_text = "\n".join(ifc_lines)
-
+        ifc_text = "\n".join([f"{e} /* Testcase */" if e == inst else str(e) for e in f])
         basename = f"{result}-" + re.sub("[^0-9a-zA-Z]", "_", name.lower())
 
         # Write IFC to disk
@@ -96,7 +88,7 @@ class DocGenerator:
         ).replace("\t", "  ")
 
         self.testcases.setdefault(self.facet, []).append(
-            {"name": name, "ids": xml_text, "ifc": ifc_text, "basename": basename, "result": result, "id": ifc_id}
+            {"name": name, "ids": xml_text, "ifc": ifc_text, "basename": basename, "result": result, "id": inst.id()}
         )
 
         assert bool(facet(inst)) is expected

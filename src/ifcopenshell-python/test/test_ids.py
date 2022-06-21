@@ -263,18 +263,20 @@ class TestIdsAuthoring(unittest.TestCase):
         set_facet("entity")
 
         ifc = ifcopenshell.file()
-
         facet = ids.entity.create(name="IFCRABBIT")
         run("Invalid entities always fail", facet=facet, inst=ifc.createIfcWall(), expected=False)
 
+        ifc = ifcopenshell.file()
         facet = ids.entity.create(name="IFCWALL")
         run("A matching entity should pass", facet=facet, inst=ifc.createIfcWall(), expected=True)
+        ifc = ifcopenshell.file()
         run(
             "An matching entity should pass regardless of predefined type",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"),
             expected=True,
         )
+        ifc = ifcopenshell.file()
         run(
             "An entity not matching the specified class should fail",
             facet=facet,
@@ -283,6 +285,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
         # TODO: Some votes to prefer inheritance (For: Moult, Evandro, Artur)
         # Possible argument: CAD tools don't understand IFC
+        ifc = ifcopenshell.file()
         run(
             "Subclasses are not considered as matching",
             facet=facet,
@@ -292,6 +295,7 @@ class TestIdsAuthoring(unittest.TestCase):
 
         # TODO But in that case why are the enumerations for things like partOf using the IFC capitalisation?
         facet = ids.entity.create(name="IfcWall")
+        ifc = ifcopenshell.file()
         run(
             "Entities must be specified as uppercase strings",
             facet=facet,
@@ -300,18 +304,21 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCWALL", predefinedType="SOLIDWALL")
+        ifc = ifcopenshell.file()
         run(
             "A matching predefined type should pass",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"),
             expected=True,
         )
+        ifc = ifcopenshell.file()
         run(
             "A null predefined type should always fail a specified predefined types",
             facet=facet,
             inst=ifc.createIfcWall(),
             expected=False,
         )
+        ifc = ifcopenshell.file()
         run(
             "An entity not matching a specified predefined type will fail",
             facet=facet,
@@ -320,6 +327,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCWALL", predefinedType="solidwall")
+        ifc = ifcopenshell.file()
         run(
             "A predefined type from an enumeration must be uppercase",
             facet=facet,
@@ -328,6 +336,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCWALL", predefinedType="WALDO")
+        ifc = ifcopenshell.file()
         run(
             "A predefined type may specify a user-defined object type",
             facet=facet,
@@ -336,6 +345,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCWALL", predefinedType="WALDO")
+        ifc = ifcopenshell.file()
         run(
             "User-defined types are checked case sensitively",
             facet=facet,
@@ -344,6 +354,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCWALLTYPE", predefinedType="WALDO")
+        ifc = ifcopenshell.file()
         run(
             "A predefined type may specify a user-defined element type",
             facet=facet,
@@ -352,6 +363,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCTASKTYPE", predefinedType="TASKY")
+        ifc = ifcopenshell.file()
         run(
             "A predefined type may specify a user-defined process type",
             facet=facet,
@@ -360,6 +372,7 @@ class TestIdsAuthoring(unittest.TestCase):
         )
 
         facet = ids.entity.create(name="IFCWALL", predefinedType="USERDEFINED")
+        ifc = ifcopenshell.file()
         run(
             "A predefined type must always specify a meaningful type, not USERDEFINED itself",
             facet=facet,
@@ -367,12 +380,14 @@ class TestIdsAuthoring(unittest.TestCase):
             expected=False,
         )
 
+        ifc = ifcopenshell.file()
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType", predefined_type="X")
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
         facet = ids.entity.create(name="IFCWALL", predefinedType="X")
         run("Inherited predefined types should pass", facet=facet, inst=wall, expected=True)
 
+        ifc = ifcopenshell.file()
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="X")
         wall_type = ifcopenshell.api.run(
             "root.create_entity", ifc, ifc_class="IfcWallType", predefined_type="NOTDEFINED"
@@ -383,22 +398,30 @@ class TestIdsAuthoring(unittest.TestCase):
 
         restriction = ids.restriction.create(options=["IFCWALL", "IFCSLAB"], type="enumeration")
         facet = ids.entity.create(name=restriction)
+        ifc = ifcopenshell.file()
         run("Entities can be specified as an enumeration 1/3", facet=facet, inst=ifc.createIfcWall(), expected=True)
+        ifc = ifcopenshell.file()
         run("Entities can be specified as an enumeration 2/3", facet=facet, inst=ifc.createIfcSlab(), expected=True)
+        ifc = ifcopenshell.file()
         run("Entities can be specified as an enumeration 3/3", facet=facet, inst=ifc.createIfcBeam(), expected=False)
 
         restriction = ids.restriction.create(options="IFC.*TYPE", type="pattern")
         facet = ids.entity.create(name=restriction)
+        ifc = ifcopenshell.file()
         run("Entities can be specified as a XSD regex pattern 1/2", facet=facet, inst=ifc.createIfcWall(), expected=False)
+        ifc = ifcopenshell.file()
         run("Entities can be specified as a XSD regex pattern 2/2", facet=facet, inst=ifc.createIfcWallType(), expected=True)
 
         restriction = ids.restriction.create(options="FOO.*", type="pattern")
         facet = ids.entity.create(name="IFCWALL", predefinedType=restriction)
+        ifc = ifcopenshell.file()
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAR")
-        wall2 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAZ")
-        wall3 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="BAZFOO")
         run("Restrictions an be specified for the predefined type 1/3", facet=facet, inst=wall, expected=True)
+        ifc = ifcopenshell.file()
+        wall2 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAZ")
         run("Restrictions an be specified for the predefined type 2/3", facet=facet, inst=wall2, expected=True)
+        ifc = ifcopenshell.file()
+        wall3 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="BAZFOO")
         run("Restrictions an be specified for the predefined type 3/3", facet=facet, inst=wall3, expected=False)
 
     def test_creating_an_attribute_facet(self):
@@ -421,28 +444,34 @@ class TestIdsAuthoring(unittest.TestCase):
         set_facet("attribute")
 
         ifc = ifcopenshell.file()
-
         facet = ids.attribute.create(name="Foobar")
         run("Invalid attribute names always fail", facet=facet, inst=ifc.createIfcWall(), expected=False)
 
+        ifc = ifcopenshell.file()
         facet = ids.attribute.create(name="Name")
         run("Attributes with a string value should pass", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=True)
+        ifc = ifcopenshell.file()
         run("Attributes with null values always fail", facet=facet, inst=ifc.createIfcWall(), expected=False)
         # The logic is that unfortunately most BIM users cannot differentiate between the two.
+        ifc = ifcopenshell.file()
         run("Attributes with empty strings always fail", facet=facet, inst=ifc.createIfcWall(Name=""), expected=False)
         facet = ids.attribute.create(name="CountValue")
+        ifc = ifcopenshell.file()
         run("Attributes with a zero number have meaning and should pass", facet=facet, inst=ifc.createIfcQuantityCount(Name="Foobar", CountValue=0), expected=True)
 
         facet = ids.attribute.create(name="IsCritical")
+        ifc = ifcopenshell.file()
         element = ifc.createIfcTaskTime(IsCritical=True)
         run("Attributes with a boolean true should pass", facet=facet, inst=element, expected=True)
         element.IsCritical = False
         run("Attributes with a boolean false should pass", facet=facet, inst=element, expected=True)
 
         facet = ids.attribute.create(name="RelatingPriorities")
+        ifc = ifcopenshell.file()
         run("Attributes with an empty list always fail", facet=facet, inst=ifc.createIfcRelConnectsPathElements(RelatingElement=ifc.createIfcWall(), RelatedElement=ifc.createIfcWall(), RelatingPriorities=[], RelatedPriorities=[], RelatedConnectionType="ATSTART", RelatingConnectionType="ATEND"), expected=False)
 
         facet = ids.attribute.create(name="LayerStyles")
+        ifc = ifcopenshell.file()
         item = ifc.createIfcCartesianPoint([0., 0., 0.])
         layer = ifc.createIfcPresentationLayerWithStyle("Foo", None, [item], None, True, False, False, [])
         run("Attributes with an empty set always fail", facet=facet, inst=layer, expected=False)
@@ -452,84 +481,112 @@ class TestIdsAuthoring(unittest.TestCase):
         run("Attributes with a logical unknown always fail", facet=facet, inst=layer, expected=False)
 
         facet = ids.attribute.create(name="ScheduleDuration")
+        ifc = ifcopenshell.file()
         element = ifc.createIfcTaskTime(ScheduleDuration="P0D")
         run("Attributes with a zero duration should pass", facet=facet, inst=element, expected=True)
 
         facet = ids.attribute.create(name="TaskTime")
+        ifc = ifcopenshell.file()
         element = ifc.createIfcTask(IsMilestone=True, TaskTime=ifc.createIfcTaskTime())
         run("Attributes referencing an object should pass", facet=facet, inst=element, expected=True)
 
         facet = ids.attribute.create(name="DiffuseColour")
-        element = ifc.createIfcSurfaceStyleRendering()
+        ifc = ifcopenshell.file()
         rgb = ifc.createIfcColourRgb(None, 1, 1, 1)
         run("Attributes with a select referencing an object should pass", facet=facet, inst=ifc.createIfcSurfaceStyleRendering(SurfaceColour=rgb, ReflectanceMethod="FLAT", DiffuseColour=ifc.createIfcColourRgb(None, 1, 1, 1)), expected=True)
+
+        ifc = ifcopenshell.file()
+        rgb = ifc.createIfcColourRgb(None, 1, 1, 1)
         run("Attributes with a select referencing a primitive should pass", facet=facet, inst=ifc.createIfcSurfaceStyleRendering(SurfaceColour=rgb, ReflectanceMethod="FLAT", DiffuseColour=ifc.createIfcNormalisedRatioMeasure(0.5)), expected=True)
 
+        ifc = ifcopenshell.file()
         facet = ids.attribute.create(name="EngagedIn")
         person = ifc.createIfcPerson()
         organisation = ifc.createIfcOrganization(Name="Foo")
         ifc.createIfcPersonAndOrganization(ThePerson=person, TheOrganization=organisation)
         run("Inverse attributes cannot be checked and always fail", facet=facet, inst=person, expected=False)
 
+        ifc = ifcopenshell.file()
         facet = ids.attribute.create(name="Dim")
         run("Derived attributes cannot be checked and always fail", facet=facet, inst=ifc.createIfcCartesianPoint([0., 0., 0.]), expected=False)
 
         facet = ids.attribute.create(name="Name", value="Foobar")
+        ifc = ifcopenshell.file()
         run("Attributes should check strings case sensitively 1/2", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=True)
+        ifc = ifcopenshell.file()
         run("Attributes should check strings case sensitively 2/2", facet=facet, inst=ifc.createIfcWall(Name="foobar"), expected=False)
 
         facet = ids.attribute.create(name="TaskTime", value="Foobar")
+        ifc = ifcopenshell.file()
         run("Value checks always fail for objects", facet=facet, inst=ifc.createIfcTask(IsMilestone=False, TaskTime=ifc.createIfcTaskTime()), expected=False)
 
-        rgb = ifc.createIfcColourRgb(None, 1, 1, 1)
         facet = ids.attribute.create(name="DiffuseColour", value="Foobar")
+        ifc = ifcopenshell.file()
+        rgb = ifc.createIfcColourRgb(None, 1, 1, 1)
         run("Value checks always fail for selects", facet=facet, inst=ifc.createIfcSurfaceStyleRendering(SurfaceColour=rgb, ReflectanceMethod="FLAT", DiffuseColour=ifc.createIfcNormalisedRatioMeasure(0.5)), expected=False)
 
         facet = ids.attribute.create(name="Coordinates", value="Foobar")
+        ifc = ifcopenshell.file()
         run("Value checks always fail for lists", facet=facet, inst=ifc.createIfcCartesianPoint([0., 0., 0.]), expected=False)
 
         # TODO continue from here
 
         global_id = ifcopenshell.guid.new()
         facet = ids.attribute.create(name="GlobalId", value=global_id)
+        ifc = ifcopenshell.file()
         run("GlobalIds are treated as strings and not expanded", facet=facet, inst=ifc.createIfcWall(GlobalId=global_id), expected=True)
 
         # 255 characters
         identifier = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345"
         facet = ids.attribute.create(name="Identification", value=identifier + "_extra_characters")
-        run("IDS does not bother with string truncation such as for identifiers", facet=facet, inst=ifc.createIfcPerson(Identification=identifier), expected=False)
+        ifc = ifcopenshell.file()
+        run("IDS does not handle string truncation such as for identifiers", facet=facet, inst=ifc.createIfcPerson(Identification=identifier), expected=False)
 
         facet = ids.attribute.create(name="RefractionIndex", value="42")
+        ifc = ifcopenshell.file()
         run("Numeric values are checked using type casting 1/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42), expected=True)
         facet = ids.attribute.create(name="RefractionIndex", value="42.")
+        ifc = ifcopenshell.file()
         run("Numeric values are checked using type casting 2/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42.0), expected=True)
         facet = ids.attribute.create(name="RefractionIndex", value="42.0")
+        ifc = ifcopenshell.file()
         run("Numeric values are checked using type casting 3/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42.0), expected=True)
         facet = ids.attribute.create(name="RefractionIndex", value="42")
+        ifc = ifcopenshell.file()
         run("Numeric values are checked using type casting 4/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42.3), expected=False)
         facet = ids.attribute.create(name="RefractionIndex", value="42,3")
+        ifc = ifcopenshell.file()
         run("Only specifically formatted numbers are allowed 1/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42.3), expected=False)
         facet = ids.attribute.create(name="RefractionIndex", value="123,4.5")
+        ifc = ifcopenshell.file()
         run("Only specifically formatted numbers are allowed 2/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=1234.5), expected=False)
         facet = ids.attribute.create(name="RefractionIndex", value="1.2345e3")
+        ifc = ifcopenshell.file()
         run("Only specifically formatted numbers are allowed 3/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=1234.5), expected=True)
         facet = ids.attribute.create(name="RefractionIndex", value="1.2345E3")
-        run("Only specifically formatted numbers are allowed 3/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=1234.5), expected=True)
+        ifc = ifcopenshell.file()
+        run("Only specifically formatted numbers are allowed 4/4", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=1234.5), expected=True)
 
         facet = ids.attribute.create(name="NumberOfRisers", value="42")
+        ifc = ifcopenshell.file()
         run("Integers follow the same rules as numbers", facet=facet, inst=ifc.createIfcStairFlight(NumberOfRisers=42), expected=True)
         facet = ids.attribute.create(name="NumberOfRisers", value="42.0")
+        ifc = ifcopenshell.file()
         run("Integers follow the same rules as numbers 2/2", facet=facet, inst=ifc.createIfcStairFlight(NumberOfRisers=42), expected=True)
 
         facet = ids.attribute.create(name="NumberOfRisers", value="42.3")
+        ifc = ifcopenshell.file()
         run("Integers are always floored when cast 1/2", facet=facet, inst=ifc.createIfcStairFlight(NumberOfRisers=42), expected=True)
         facet = ids.attribute.create(name="NumberOfRisers", value="42.7")
+        ifc = ifcopenshell.file()
         run("Integers are always floored when cast 2/2", facet=facet, inst=ifc.createIfcStairFlight(NumberOfRisers=42), expected=True)
 
         facet = ids.attribute.create(name="NumberOfRisers", value="42.7")
+        ifc = ifcopenshell.file()
         run("Integers are always floored when cast 2/2", facet=facet, inst=ifc.createIfcStairFlight(NumberOfRisers=42), expected=True)
 
         facet = ids.attribute.create(name="IsMilestone", value="TRUE")
+        ifc = ifcopenshell.file()
         element = ifc.createIfcTask(IsMilestone=False)
         run("Booleans must be specified as uppercase strings 1/3", facet=facet, inst=element, expected=False)
         facet = ids.attribute.create(name="IsMilestone", value="FALSE")
@@ -538,29 +595,41 @@ class TestIdsAuthoring(unittest.TestCase):
         run("Booleans must be specified as uppercase strings 2/3", facet=facet, inst=element, expected=False)
 
         facet = ids.attribute.create(name="EditionDate", value="2022-01-01")
+        ifc = ifcopenshell.file()
         run("Dates are treated as strings 1/2", facet=facet, inst=ifc.createIfcClassification(Name="Name", EditionDate="2022-01-01"), expected=True)
+        ifc = ifcopenshell.file()
         run("Dates are treated as strings 1/2", facet=facet, inst=ifc.createIfcClassification(Name="Name", EditionDate="2022-01-01+00:00"), expected=False)
 
         facet = ids.attribute.create(name="ScheduleDuration", value="PT16H")
+        ifc = ifcopenshell.file()
         run("Durations are treated as strings 1/2", facet=facet, inst=ifc.createIfcClassification(Name="Name", EditionDate="PT16H"), expected=False)
+        ifc = ifcopenshell.file()
         run("Durations are treated as strings 2/2", facet=facet, inst=ifc.createIfcClassification(Name="Name", EditionDate="P2D"), expected=False)
 
         restriction = ids.restriction.create(options=".*Name.*", type="pattern")
         facet = ids.attribute.create(name=restriction)
+        ifc = ifcopenshell.file()
         run("Name restrictions may be used 1/4", facet=facet, inst=ifc.createIfcMaterialLayerSet(MaterialLayers=[ifc.createIfcMaterialLayer(LayerThickness=1)], LayerSetName="Foo"), expected=True)
+        ifc = ifcopenshell.file()
         run("Name restrictions may be used 2/4", facet=facet, inst=ifc.createIfcMaterialConstituentSet(Name="Foo"), expected=True)
 
         restriction = ids.restriction.create(options=["Name", "Description"], type="enumeration")
         facet = ids.attribute.create(name=restriction)
+        ifc = ifcopenshell.file()
         run("Name restrictions may be used 3/4", facet=facet, inst=ifc.createIfcWall(Name="Foo"), expected=False)
+        ifc = ifcopenshell.file()
         run("Name restrictions may be used 4/4", facet=facet, inst=ifc.createIfcWall(Name="Foo", Description="Bar"), expected=True)
 
         restriction = ids.restriction.create(options=["Foo", "Bar"], type="enumeration")
         facet = ids.attribute.create(name="Name", value=restriction)
+        ifc = ifcopenshell.file()
         run("Value restrictions may be used 1/3", facet=facet, inst=ifc.createIfcWall(Name="Foo"), expected=True)
+        ifc = ifcopenshell.file()
         run("Value restrictions may be used 2/3", facet=facet, inst=ifc.createIfcWall(Name="Bar"), expected=True)
+        ifc = ifcopenshell.file()
         run("Value restrictions may be used 3/3", facet=facet, inst=ifc.createIfcWall(Name="Foobar"), expected=False)
 
+        ifc = ifcopenshell.file()
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
@@ -569,12 +638,14 @@ class TestIdsAuthoring(unittest.TestCase):
 
         restriction = ids.restriction.create(options=["42"], type="enumeration", base="string")
         facet = ids.attribute.create(name="RefractionIndex", value=restriction)
+        ifc = ifcopenshell.file()
         run("Typecast checking may also occur within enumeration restrictions", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42), expected=True)
 
         restriction = ids.restriction.create(
             options={"minInclusive": 42, "maxInclusive": 42}, type="bounds", base="decimal"
         )
         facet = ids.attribute.create(name="RefractionIndex", value=restriction)
+        ifc = ifcopenshell.file()
         run("Strict numeric checking may be done with a bounds restriction", facet=facet, inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42), expected=True)
 
     def test_creating_a_classification_facet(self):
@@ -603,23 +674,25 @@ class TestIdsAuthoring(unittest.TestCase):
         set_facet("classification")
 
         library = ifcopenshell.file()
-        system = library.createIfcClassification(Name="Foobar")
-        ref1 = library.createIfcClassificationReference(Identification="1", ReferencedSource=system)
+        system_a = library.createIfcClassification(Name="Foobar")
+        ref1 = library.createIfcClassificationReference(Identification="1", ReferencedSource=system_a)
         ref11 = library.createIfcClassificationReference(Identification="11", ReferencedSource=ref1)
-        ref2 = library.createIfcClassificationReference(Identification="2", ReferencedSource=system)
+        ref2 = library.createIfcClassificationReference(Identification="2", ReferencedSource=system_a)
         ref22 = library.createIfcClassificationReference(Identification="22", ReferencedSource=ref2)
+        system_b = library.createIfcClassification(Name="Foobaz")
+        refx = library.createIfcClassificationReference(Identification="X", ReferencedSource=system_b)
 
         ifc = ifcopenshell.file()
         project = ifc.createIfcProject()
-        ifcopenshell.api.run("classification.add_classification", ifc, classification=system)
+        system_a = ifcopenshell.api.run("classification.add_classification", ifc, classification=system_a)
         element0 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         element1 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=element1, reference=ref1, classification=system
+            "classification.add_reference", ifc, product=element1, reference=ref1, classification=system_a
         )
         element11 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=element11, reference=ref11, classification=system
+            "classification.add_reference", ifc, product=element11, reference=ref11, classification=system_a
         )
         element22 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         ifcopenshell.api.run(
@@ -627,7 +700,7 @@ class TestIdsAuthoring(unittest.TestCase):
             ifc,
             product=element22,
             reference=ref22,
-            classification=system,
+            classification=system_a,
             is_lightweight=False,
         )
 
@@ -663,24 +736,27 @@ class TestIdsAuthoring(unittest.TestCase):
         run("Both system and value must match (all, not any) if specified 1/2", facet=facet, inst=element1, expected=True)
         run("Both system and value must match (all, not any) if specified 2/2", facet=facet, inst=element11, expected=False)
 
-        # The facet checks on either the type or instance.
-        # IFC doesn't specify how inheritance and overrides work here. Two options:
-        # Option 1) Occurrences replace inherited type references
-        # Option 2) Occurrences union with inherited type references
-        # Option 2 is followed here.
+        # IFC doesn't yet formally specify how inheritance and overrides work here. We follow these rules:
+        # https://github.com/buildingSMART/IFC4.3.x-development/issues/475
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
-        ifcopenshell.api.run("classification.add_reference", ifc, product=wall, reference=ref11, classification=system)
+        ifcopenshell.api.run("classification.add_reference", ifc, product=wall, reference=ref11, classification=system_a)
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=wall_type, reference=ref22, classification=system
+            "classification.add_reference", ifc, product=wall_type, reference=ref22, classification=system_a
         )
+
+        system_b = ifcopenshell.api.run("classification.add_classification", ifc, classification=system_b)
+        ifcopenshell.api.run(
+            "classification.add_reference", ifc, product=wall_type, reference=refx, classification=system_b
+        )
+
         facet = ids.classification.create(value="11")
-        run("", facet=facet, inst=wall, expected=True)
-        run("", facet=facet, inst=wall_type, expected=False)
+        run("Occurrences override the type classification per system 1/3", facet=facet, inst=wall, expected=True)
         facet = ids.classification.create(value="22")
-        run("", facet=facet, inst=wall, expected=True)
-        run("", facet=facet, inst=wall_type, expected=True)
+        run("Occurrences override the type classification per system 2/3", facet=facet, inst=wall, expected=False)
+        facet = ids.classification.create(value="X")
+        run("Occurrences override the type classification per system 3/3", facet=facet, inst=wall, expected=True)
 
     def test_creating_a_property_facet(self):
         facet = ids.property.create()
