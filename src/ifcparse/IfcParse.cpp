@@ -1858,8 +1858,12 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 				we->setArgument(i, copy);
 			} else if (decl && decl->is(*schema()->declaration_by_name("IfcLengthMeasure"))) {
 				if (boost::math::isnan(conversion_factor)) {
-					const std::pair<IfcUtil::IfcBaseClass*, double> this_file_unit = getUnit("LENGTHUNIT");
-					const std::pair<IfcUtil::IfcBaseClass*, double> other_file_unit = other_file->getUnit("LENGTHUNIT");
+					std::pair<IfcUtil::IfcBaseClass*, double> this_file_unit = { nullptr, 1.0 };
+					std::pair<IfcUtil::IfcBaseClass*, double> other_file_unit = { nullptr, 1.0 };
+					try {
+						this_file_unit = getUnit("LENGTHUNIT");
+						other_file_unit = other_file->getUnit("LENGTHUNIT");
+					} catch (IfcParse::IfcException&) {}
 					if (this_file_unit.first && other_file_unit.first) {
 						conversion_factor = other_file_unit.second / this_file_unit.second;
 					} else {
