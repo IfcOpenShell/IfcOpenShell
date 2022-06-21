@@ -190,7 +190,7 @@ def update_drawing_name(ifc, drawing_tool, drawing=None, name=None):
 def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None):
     context = drawing_tool.get_annotation_context(drawing_tool.get_drawing_target_view(drawing))
     if not context:
-        return
+        return "No annotation context for drawing"
     drawing_tool.show_decorations()
     obj = drawing_tool.create_annotation_object(drawing, object_type)
     element = ifc.get_entity(obj)
