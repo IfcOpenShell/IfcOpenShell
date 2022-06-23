@@ -380,6 +380,121 @@ void format_quantities(IfcSchema::IfcPhysicalQuantity::list::ptr quantities, ptr
 	}
 }
 
+// Format IfcTask instances and insert into the DOM.
+void format_tasks(IfcSchema::IfcTask* task, ptree& node) {
+	ptree* ntask = format_entity_instance(task, node);
+
+	if (ntask) {
+#ifdef SCHEMA_IfcTask_HAS_TaskTime
+		IfcSchema::IfcTaskTime* task_time = task->TaskTime();
+		if (task_time)
+		{
+			format_entity_instance(task_time, *ntask);
+		}
+#endif
+
+#ifdef SCHEMA_IfcProcess_HAS_IsSuccessorFrom
+		IfcSchema::IfcRelSequence::list::ptr successor_from = task->IsSuccessorFrom();
+		for (IfcSchema::IfcRelSequence::list::it it = successor_from->begin(); it != successor_from->end(); ++it)
+		{
+			IfcSchema::IfcProcess* relating_process = (*it)->RelatingProcess();
+			ptree nobject;
+			nobject.put("<xmlattr>.id", relating_process->GlobalId());
+			ntask->add_child("IsSuccessorFrom", nobject);
+		}
+#endif
+
+#ifdef SCHEMA_IfcProcess_HAS_IsPredecessorTo
+		IfcSchema::IfcRelSequence::list::ptr predecessor_to = task->IsPredecessorTo();
+		for (IfcSchema::IfcRelSequence::list::it it = predecessor_to->begin(); it != predecessor_to->end(); ++it)
+		{
+			IfcSchema::IfcProcess* relating_process = (*it)->RelatedProcess();
+			ptree nobject;
+			nobject.put("<xmlattr>.id", relating_process->GlobalId());
+			ntask->add_child("IsPredecessorTo", nobject);
+		}
+#endif
+
+		IfcSchema::IfcPropertySetDefinition::list::ptr property_sets = get_related
+			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinition>
+			(task, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
+
+		for (IfcSchema::IfcPropertySetDefinition::list::it it = property_sets->begin(); it != property_sets->end(); ++it) {
+			IfcSchema::IfcPropertySetDefinition* pset = *it;
+			if (pset->declaration().is(IfcSchema::IfcPropertySet::Class())) {
+				format_entity_instance(pset, *ntask, true);
+			}
+			else if (pset->declaration().is(IfcSchema::IfcElementQuantity::Class())) {
+				format_entity_instance(pset, *ntask, true);
+			}
+		}
+
+#ifdef SCHEMA_IfcProcess_HAS_OperatesOn
+		IfcSchema::IfcRelAssignsToProcess::list::ptr operates = task->OperatesOn();
+		if (operates->size() > 0)
+		{
+			for (IfcSchema::IfcRelAssignsToProcess::list::it i = operates->begin(); i != operates->end(); ++i)
+			{
+				IfcSchema::IfcRelAssignsToProcess* operation = (*i);
+				IfcSchema::IfcObjectDefinition::list::ptr objects = operation->RelatedObjects();
+				for (IfcSchema::IfcObjectDefinition::list::it it2 = objects->begin(); it2 != objects->end(); ++it2)
+				{
+					IfcSchema::IfcObjectDefinition* object = *it2;
+					ptree nobject;
+					nobject.put("<xmlattr>.id", object->GlobalId());
+					if (object->declaration().is(IfcSchema::IfcProduct::Class()))
+					{
+						ntask->add_child("Input", nobject);
+					}
+					else if (object->declaration().is(IfcSchema::IfcResource::Class()))
+					{
+						ntask->add_child("Resource", nobject);
+					}
+					else if (object->declaration().is(IfcSchema::IfcControl::Class()))
+					{
+						ntask->add_child("Control", nobject);
+					}
+					else
+					{
+						nobject.put("<xmlattr>.Type", object->declaration().name());
+						ntask->add_child("OperatesOn", nobject);
+					}
+				}
+			}
+		}
+#endif
+
+		IfcSchema::IfcRelAssigns::list::ptr assignments = task->HasAssignments();
+		for (IfcSchema::IfcRelAssigns::list::it i = assignments->begin(); i != assignments->end(); ++i)
+		{
+			IfcSchema::IfcRelAssigns* assignment = *i;
+			if (assignment->declaration().is(IfcSchema::IfcRelAssignsToProduct::Class())) {
+				IfcSchema::IfcRelAssignsToProduct* assign_to_product = assignment->as<IfcSchema::IfcRelAssignsToProduct>();
+				IfcSchema::IfcProduct* product = assign_to_product->RelatingProduct()->as<IfcSchema::IfcProduct>();
+				ptree nobject;
+				nobject.put("<xmlattr>.id", product->GlobalId());
+				ntask->add_child("Output", nobject);
+			}
+		}
+
+#ifdef SCHEMA_IfcObjectDefinition_HAS_IsNestedBy
+		IfcSchema::IfcRelNests::list::ptr nested_by = task->IsNestedBy();
+		for (IfcSchema::IfcRelNests::list::it it = nested_by->begin(); it != nested_by->end(); ++it)
+		{
+			IfcSchema::IfcObjectDefinition::list::ptr related_objects = (*it)->RelatedObjects();
+			for (IfcSchema::IfcObjectDefinition::list::it it2 = related_objects->begin(); it2 != related_objects->end(); ++it2)
+			{
+				if (!(*it2)->declaration().is(IfcSchema::IfcTask::Class())) {
+					continue;
+				}
+				IfcSchema::IfcTask* task2 = (*it2)->as<IfcSchema::IfcTask>();
+				format_tasks(task2, *ntask);
+			}
+		}
+#endif
+	}
+}
+
 } // ~unnamed namespace
 
 void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
@@ -392,7 +507,7 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	}
 	IfcSchema::IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties, quantities, types, layers, materials;
+	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, work, calendars;
 	
 	// Write the SPF header as XML nodes.
 	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
@@ -479,6 +594,77 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 		}
 	}
 
+	// Write all work schedules and values as XML nodes.
+	ptree pwork_schedules;
+	IfcSchema::IfcWorkSchedule::list::ptr pschedules = file->instances_by_type<IfcSchema::IfcWorkSchedule>();
+	for (IfcSchema::IfcWorkSchedule::list::it it = pschedules->begin(); it != pschedules->end(); ++it) {
+		IfcSchema::IfcWorkSchedule* schedule = *it;
+		ptree* nschedule = format_entity_instance(schedule, pwork_schedules);
+		
+		if(nschedule) {
+			IfcSchema::IfcRelAssignsToControl::list::ptr controls = schedule->Controls();
+			for(IfcSchema::IfcRelAssignsToControl::list::it it2 = controls->begin(); it2 != controls->end(); ++it2) {
+				IfcSchema::IfcRelAssignsToControl* control = *it2;
+				
+				IfcSchema::IfcObjectDefinition::list::ptr objects = control->RelatedObjects();
+				for(IfcSchema::IfcObjectDefinition::list::it it3 = objects->begin(); it3 != objects->end(); ++it3) {
+					IfcSchema::IfcObjectDefinition* object = *it3;
+					
+					if (object && object->declaration().is(IfcSchema::IfcTask::Class())) {
+						IfcSchema::IfcTask* task = object->as<IfcSchema::IfcTask>();
+						format_tasks(task, *nschedule);
+					}
+				}
+			}
+		}
+	}
+	work.add_child("schedules", pwork_schedules);
+
+	// Write all work plans and values as XML nodes.
+	ptree pwork_plans;
+	IfcSchema::IfcWorkPlan::list::ptr pplans = file->instances_by_type<IfcSchema::IfcWorkPlan>();
+	for (IfcSchema::IfcWorkPlan::list::it it = pplans->begin(); it != pplans->end(); ++it) {
+		IfcSchema::IfcWorkPlan* plan = *it;
+		ptree* nschedule = format_entity_instance(plan, pwork_plans);
+
+		if (nschedule) {
+#ifdef SCHEMA_IfcObjectDefinition_HAS_IsDecomposedBy
+			auto decomposed_by = plan->IsDecomposedBy();
+			for (auto it2 = decomposed_by->begin(); it2 != decomposed_by->end(); ++it2)
+			{
+				IfcSchema::IfcObjectDefinition::list::ptr related_objects = (*it2)->RelatedObjects();
+				for (IfcSchema::IfcObjectDefinition::list::it it3 = related_objects->begin(); it3 != related_objects->end(); ++it3)
+				{
+					IfcSchema::IfcObjectDefinition* work_schedule = *it3;
+					ptree pwork_schedule;
+					pwork_schedule.put("<xmlattr>.id", work_schedule->GlobalId());
+					nschedule->add_child("IfcWorkSchedule", pwork_schedule);
+				}
+			}
+#endif
+		}
+	}
+	work.add_child("plans", pwork_plans);
+	
+	// Write all work calendars and values as XML nodes.
+#ifdef SCHEMA_HAS_IfcWorkCalendar
+	IfcSchema::IfcWorkCalendar::list::ptr pcalendars = file->instances_by_type<IfcSchema::IfcWorkCalendar>();
+	for (IfcSchema::IfcWorkCalendar::list::it it = pcalendars->begin(); it != pcalendars->end(); ++it) {
+		IfcSchema::IfcWorkCalendar* calendar = *it;
+		ptree* ncalendar = format_entity_instance(calendar, calendars);
+		
+		if (ncalendar) {
+			IfcSchema::IfcWorkTime::list::ptr working_times = calendar->WorkingTimes().value_or(nullptr);
+			if (working_times != nullptr) {
+				for (IfcSchema::IfcWorkTime::list::it it2 = working_times->begin(); it2 != working_times->end(); ++it2)
+				{
+					IfcSchema::IfcWorkTime* working_time = *it2;
+					format_entity_instance(working_time, *ncalendar);
+				}
+			}
+		}
+	}
+#endif
 
 	// Write all type objects as XML nodes.
 	IfcSchema::IfcTypeObject::list::ptr type_objects = file->instances_by_type<IfcSchema::IfcTypeObject>();
@@ -565,8 +751,10 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	root.add_child("ifc.units",         units);
 	root.add_child("ifc.properties",    properties);
 	root.add_child("ifc.quantities",    quantities);
+	root.add_child("ifc.work",			work);
+	root.add_child("ifc.calendars",		calendars);
 	root.add_child("ifc.types",         types);
-    	root.add_child("ifc.layers",        layers);
+	root.add_child("ifc.layers",        layers);
 	root.add_child("ifc.materials",     materials);
 	root.add_child("ifc.decomposition", decomposition);
 

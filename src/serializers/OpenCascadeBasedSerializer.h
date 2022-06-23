@@ -20,11 +20,12 @@
 #ifndef OPENCASCADEBASEDSERIALIZER_H
 #define OPENCASCADEBASEDSERIALIZER_H
 
+#include "../serializers/serializers_api.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
 #include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 
-class OpenCascadeBasedSerializer : public WriteOnlyGeometrySerializer {
+class SERIALIZERS_API OpenCascadeBasedSerializer : public WriteOnlyGeometrySerializer {
 	OpenCascadeBasedSerializer(const OpenCascadeBasedSerializer&); //N/A
 	OpenCascadeBasedSerializer& operator =(const OpenCascadeBasedSerializer&); //N/A
 protected:

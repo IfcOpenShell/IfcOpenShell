@@ -88,10 +88,6 @@ class Unit(blenderbim.core.tool.Unit):
         return ifcopenshell.util.unit.si_type_names.get(unit_type, None)
 
     @classmethod
-    def get_unit_class(cls, unit):
-        return unit.is_a()
-
-    @classmethod
     def import_unit_attributes(cls, unit):
         def callback(name, prop, data):
             if name == "Dimensions" and data["type"] != "IfcSIUnit":
@@ -151,6 +147,10 @@ class Unit(blenderbim.core.tool.Unit):
     @classmethod
     def is_scene_unit_metric(cls):
         return bpy.context.scene.unit_settings.system in ["METRIC", "NONE"]
+
+    @classmethod
+    def is_unit_class(cls, unit, ifc_class):
+        return unit.is_a(ifc_class)
 
     @classmethod
     def set_active_unit(cls, unit):

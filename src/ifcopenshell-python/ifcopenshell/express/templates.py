@@ -36,7 +36,9 @@ header = """
 
 struct %(schema_name)s {
 
-static const IfcParse::schema_definition& get_schema();
+IFC_PARSE_API static const IfcParse::schema_definition& get_schema();
+
+IFC_PARSE_API static void clear_schema();
 
 static const char* const Identifier;
 
@@ -257,13 +259,13 @@ get_attr_stmt_nested_array = "%(null_check)s aggregate_of_aggregate_of_instance:
 get_inverse = "return data_->getInverse(%(schema_name_upper)s_%(type)s_type, %(index)d)->as<%(type)s>();"
 
 set_attr_stmt = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(%(star_if_optional)sv"
-    + ");data_->setArgument(%(index)d,attr);}"
+    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();%(check_optional_set_begin)sattr->set(%(star_if_optional)sv"
+    + ");%(check_optional_set_end)sdata_->setArgument(%(index)d,attr);}"
 )
-set_attr_stmt_enum = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(%(star_if_optional)sv,%(non_optional_type)s::ToString(%(star_if_optional)sv)));data_->setArgument(%(index)d,attr);}"
+set_attr_stmt_enum = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();%(check_optional_set_begin)sattr->set(IfcWrite::IfcWriteArgument::EnumerationReference(%(star_if_optional)sv,%(non_optional_type)s::ToString(%(star_if_optional)sv)));%(check_optional_set_end)sdata_->setArgument(%(index)d,attr);}"
 set_attr_stmt_array = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((%(star_if_optional)sv)->generalize()"
-    + ");data_->setArgument(%(index)d,attr);}"
+    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();%(check_optional_set_begin)sattr->set((%(star_if_optional)sv)->generalize()"
+    + ");%(check_optional_set_end)sdata_->setArgument(%(index)d,attr);}"
 )
 
 constructor_stmt = (

@@ -18,7 +18,7 @@
 ********************************************************************************/
 
 #include "IfcGeom.h"
-#include "IfcGeomShapeType.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomShapeType.h"
 
 #include <BRepCheck_Analyzer.hxx>
 

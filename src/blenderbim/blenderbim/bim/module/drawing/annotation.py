@@ -151,23 +151,32 @@ class Annotator:
         return obj
 
     @staticmethod
-    def get_annotation_obj(object_type, data_type):
-        collection = bpy.context.scene.camera.users_collection[0]
+    def get_annotation_obj(drawing, object_type, data_type):
+        camera = tool.Ifc.get_object(drawing)
+        co1, _, _, _ = Annotator.get_placeholder_coords(camera)
+        matrix_world = camera.matrix_world.copy()
+        matrix_world[0][3] = co1.x
+        matrix_world[1][3] = co1.y
+        matrix_world[2][3] = co1.z
+        collection = camera.users_collection[0]
         if object_type == "TEXT":
             obj = bpy.data.objects.new(object_type, None)
+            obj.matrix_world = matrix_world
             collection.objects.link(obj)
             return obj
-        elif object_type == "TEXT_LEADER":
+        elif object_type in ("TEXT_LEADER", "SECTION_LEVEL"):
             data = bpy.data.curves.new(object_type, type="CURVE")
             data.dimensions = "3D"
             data.resolution_u = 2
             obj = bpy.data.objects.new(object_type, data)
+            obj.matrix_world = matrix_world
             collection.objects.link(obj)
             return obj
-        for obj in collection.objects:
-            element = tool.Ifc.get_entity(obj)
-            if element and element.ObjectType == object_type:
-                return obj
+        if object_type != "ANGLE":
+            for obj in collection.objects:
+                element = tool.Ifc.get_entity(obj)
+                if element and element.ObjectType == object_type:
+                    return obj
         if data_type == "mesh":
             data = bpy.data.meshes.new(object_type)
         elif data_type == "curve":
@@ -175,12 +184,14 @@ class Annotator:
             data.dimensions = "3D"
             data.resolution_u = 2
         obj = bpy.data.objects.new(object_type, data)
+        obj.matrix_world = matrix_world
         collection.objects.link(obj)
         return obj
 
     @staticmethod
-    def get_placeholder_coords():
-        camera = bpy.context.scene.camera
+    def get_placeholder_coords(camera=None):
+        if not camera:
+            camera = bpy.context.scene.camera
         z_offset = camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
         if bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y:
             y = (

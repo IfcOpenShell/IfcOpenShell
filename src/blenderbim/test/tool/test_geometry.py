@@ -102,25 +102,6 @@ class TestDeleteData(NewFile):
         assert not bpy.data.meshes.get("Mesh")
 
 
-class TestDoesObjectHaveMeshWithFaces(NewFile):
-    def test_empties_return_false(self):
-        obj = bpy.data.objects.new("Object", None)
-        assert subject.does_object_have_mesh_with_faces(obj) is False
-
-    def test_non_meshes_return_false(self):
-        obj = bpy.data.objects.new("Object", bpy.data.cameras.new("Curve"))
-        assert subject.does_object_have_mesh_with_faces(obj) is False
-
-    def test_meshes_without_faces_return_false(self):
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        assert subject.does_object_have_mesh_with_faces(obj) is False
-
-    def test_meshes_with_faces_return_true(self):
-        bpy.ops.mesh.primitive_cube_add()
-        obj = bpy.data.objects.get("Cube")
-        assert subject.does_object_have_mesh_with_faces(obj) is True
-
-
 class TestDoesRepresentationIdExist(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()

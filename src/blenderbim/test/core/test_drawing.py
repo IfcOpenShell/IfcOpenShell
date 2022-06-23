@@ -43,30 +43,30 @@ class TestEditText:
         subject.edit_text(ifc, drawing, obj="obj")
 
 
-class TestEnableEditingTextProduct:
+class TestEnableEditingAssignedProduct:
     def test_run(self, drawing):
-        drawing.enable_editing_text_product("obj").should_be_called()
-        drawing.import_text_product("obj").should_be_called()
-        subject.enable_editing_text_product(drawing, obj="obj")
+        drawing.enable_editing_assigned_product("obj").should_be_called()
+        drawing.import_assigned_product("obj").should_be_called()
+        subject.enable_editing_assigned_product(drawing, obj="obj")
 
 
-class TestDisableEditingTextProduct:
+class TestDisableEditingAssignedProduct:
     def test_run(self, drawing):
-        drawing.disable_editing_text_product("obj").should_be_called()
-        subject.disable_editing_text_product(drawing, obj="obj")
+        drawing.disable_editing_assigned_product("obj").should_be_called()
+        subject.disable_editing_assigned_product(drawing, obj="obj")
 
 
-class TestEditTextProduct:
+class TestEditAssignedProduct:
     def test_run(self, ifc, drawing):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        drawing.get_text_product("element").should_be_called().will_return("existing_product")
+        drawing.get_assigned_product("element").should_be_called().will_return("existing_product")
         ifc.run(
             "drawing.unassign_product", relating_product="existing_product", related_object="element"
         ).should_be_called()
         ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
         drawing.update_text_value("obj").should_be_called()
-        drawing.disable_editing_text_product("obj").should_be_called()
-        subject.edit_text_product(ifc, drawing, obj="obj", product="product")
+        drawing.disable_editing_assigned_product("obj").should_be_called()
+        subject.edit_assigned_product(ifc, drawing, obj="obj", product="product")
 
 
 class TestLoadSheets:
@@ -114,16 +114,81 @@ class TestAddSheet:
 
 class TestOpenSheet:
     def test_run(self, drawing):
-        drawing.get_sheet_filename("sheet").should_be_called().will_return("filename")
-        drawing.open_svg("filename").should_be_called()
+        drawing.get_document_uri("sheet").should_be_called().will_return("uri")
+        drawing.open_svg("uri").should_be_called()
         subject.open_sheet(drawing, sheet="sheet")
 
 
 class TestRemoveSheet:
     def test_run(self, ifc, drawing):
-        ifc.run("document.remove_document", document="sheet").should_be_called()
+        ifc.run("document.remove_information", information="sheet").should_be_called()
         drawing.import_sheets().should_be_called()
         subject.remove_sheet(ifc, drawing, sheet="sheet")
+
+
+class TestLoadSchedules:
+    def test_run(self, drawing):
+        drawing.import_schedules().should_be_called()
+        drawing.enable_editing_schedules().should_be_called()
+        subject.load_schedules(drawing)
+
+
+class TestDisableEditingSchedules:
+    def test_run(self, drawing):
+        drawing.disable_editing_schedules().should_be_called()
+        subject.disable_editing_schedules(drawing)
+
+
+class TestAddSchedule:
+    def test_run(self, ifc, drawing):
+        ifc.run("document.add_information").should_be_called().will_return("schedule")
+        ifc.run("document.add_reference", information="schedule").should_be_called().will_return("reference")
+        ifc.get_schema().should_be_called().will_return("IFC4")
+        ifc.run(
+            "document.edit_information",
+            information="schedule",
+            attributes={"Identification": "X", "Name": "UNTITLED", "Scope": "SCHEDULE", "Location": "uri"},
+        ).should_be_called()
+        drawing.import_schedules().should_be_called()
+        subject.add_schedule(ifc, drawing, uri="uri")
+
+    def test_using_a_document_id_in_ifc2x3(self, ifc, drawing):
+        ifc.run("document.add_information").should_be_called().will_return("schedule")
+        ifc.run("document.add_reference", information="schedule").should_be_called().will_return("reference")
+        ifc.get_schema().should_be_called().will_return("IFC2X3")
+        ifc.run(
+            "document.edit_information",
+            information="schedule",
+            attributes={"DocumentId": "X", "Name": "UNTITLED", "Scope": "SCHEDULE"},
+        ).should_be_called()
+        ifc.run("document.edit_reference", reference="reference", attributes={"Location": "uri"}).should_be_called()
+        drawing.import_schedules().should_be_called()
+        subject.add_schedule(ifc, drawing, uri="uri")
+
+
+class TestRemoveSchedule:
+    def test_run(self, ifc, drawing):
+        ifc.run("document.remove_information", information="schedule").should_be_called()
+        drawing.import_schedules().should_be_called()
+        subject.remove_schedule(ifc, drawing, schedule="schedule")
+
+
+class TestOpenSchedule:
+    def test_run(self, drawing):
+        drawing.get_schedule_location("schedule").should_be_called().will_return("uri")
+        drawing.open_spreadsheet("uri").should_be_called()
+        subject.open_schedule(drawing, schedule="schedule")
+
+
+class TestUpdateScheduleName:
+    def test_do_not_update_if_name_unchanged(self, ifc, drawing):
+        drawing.get_name("schedule").should_be_called().will_return("name")
+        subject.update_schedule_name(ifc, drawing, schedule="schedule", name="name")
+
+    def test_run(self, ifc, drawing):
+        drawing.get_name("schedule").should_be_called().will_return("oldname")
+        ifc.run("document.edit_information", information="schedule", attributes={"Name": "name"}).should_be_called()
+        subject.update_schedule_name(ifc, drawing, schedule="schedule", name="name")
 
 
 class TestLoadDrawings:
@@ -162,7 +227,17 @@ class TestAddDrawing:
         collector.assign("obj").should_be_called()
         ifc.run("pset.add_pset", product="element", name="EPset_Drawing").should_be_called().will_return("pset")
         ifc.run(
-            "pset.edit_pset", pset="pset", properties={"TargetView": "target_view", "Scale": "1/100"}
+            "pset.edit_pset",
+            pset="pset",
+            properties={
+                "TargetView": "target_view",
+                "Scale": "1/100",
+                "HumanScale": "1:100",
+                "HasUnderlay": False,
+                "HasLinework": True,
+                "HasAnnotation": True,
+                "GlobalReferencing": True,
+            },
         ).should_be_called()
         drawing.import_drawings().should_be_called()
         subject.add_drawing(ifc, collector, drawing, target_view="target_view", location_hint="location_hint")
@@ -206,7 +281,7 @@ class TestAddAnnotation:
         drawing.show_decorations().should_be_called()
         drawing.get_drawing_target_view("drawing").should_be_called().will_return("target_view")
         drawing.get_annotation_context("target_view").should_be_called().will_return("context")
-        drawing.create_annotation_object("object_type").should_be_called().will_return("obj")
+        drawing.create_annotation_object("drawing", "object_type").should_be_called().will_return("obj")
         ifc.get_entity("obj").should_be_called().will_return(None)
         drawing.get_ifc_representation_class("object_type").should_be_called().will_return("ifc_representation_class")
         drawing.run_root_assign_class(
