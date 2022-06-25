@@ -21,6 +21,7 @@ import re
 import logging
 import numpy as np
 import datetime
+import builtins
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -643,16 +644,35 @@ class attribute(facet):
                     is_pass = False
                 elif value == tuple():
                     is_pass = False
-                elif (
-                    inst.attribute_type(inst.wrapped_data.get_argument_index(names[i])) == "LOGICAL"
-                    and value == "UNKNOWN"
-                ):
-                    is_pass = False
+                else:
+                    argument_index = inst.wrapped_data.get_argument_index(names[i])
+                    try:
+                        attribute_type = inst.attribute_type(argument_index)
+                        if attribute_type == "LOGICAL" and value == "UNKNOWN":
+                            is_pass = False
+                    except:
+                        if names[i] in inst.wrapped_data.get_inverse_attribute_names():
+                            is_pass = False
                 if not is_pass:
                     break
 
         if is_pass and self.value:
-            is_pass = all([v == self.value for v in values])
+            for value in values:
+                if isinstance(value, ifcopenshell.entity_instance):
+                    is_pass = False
+                    break
+                elif isinstance(self.value, str) and isinstance(value, str):
+                    if value != self.value:
+                        is_pass = False
+                        break
+                elif isinstance(self.value, str):
+                    cast_value = cast_to_value(self.value, value)
+                    if value != cast_value:
+                        is_pass = False
+                        break
+                elif value != self.value:
+                    is_pass = False
+                    break
 
         if self.value:
             self.message = "foo"
@@ -1095,6 +1115,22 @@ class boolean_or(boolean_logic):
     fold = any
 
 
+def cast_to_value(from_value, to_value):
+    try:
+        target_type = type(to_value).__name__
+        if target_type == "int":
+            # Casting str -> float -> int means that notation like '1e3' is preserved
+            return int(float(from_value))
+        elif target_type == "bool":
+            if from_value == "TRUE":
+                return True
+            elif from_value == "FALSE":
+                return False
+        return builtins.__dict__[target_type](from_value)
+    except ValueError:
+        pass
+
+
 class restriction:
     """
     The value restriction from XSD implemented as a list of values and a containment test
@@ -1217,13 +1253,12 @@ class restriction:
         :rtype: bool
         """
         result = False
-        # TODO implement data type comparison
         if self and (other or other == 0):
             if self.type == "enumeration" and self.base == "bool":
                 self.options = [x.lower() for x in self.options]
                 result = str(other).lower() in self.options
             elif self.type == "enumeration":
-                result = other in self.options
+                result = other in [cast_to_value(o, other) for o in self.options]
             elif self.type == "bounds":
                 result = True
                 for sign in self.options.keys():

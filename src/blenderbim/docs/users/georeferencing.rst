@@ -81,29 +81,42 @@ Northings, Orthogonal Height, and **Grid North**.
     are trained to work in **Map Coordinates**, it is safer to work with local
     engineering coordinates and consult your surveyor for professional guidance.
 
-**Map Conversions** contain three types of parameters. The **Eastings**,
-**Northings** and **Orthogonal Height** parameters define the translation from
-the model's XYZ coordinates to map Eastings, Northings, and Heights. The **X
-Axis Abcissa** and **X Axis Ordinate** define the rotation vector from **Project
-North** to **Grid North**. The **Scale** defines the average combined scale
-factor across the small 1km site that converts from the model's surface
-distances to map grid distances. Note that the **Scale** is actually not a
-constant. However, for the small sites dealt with in vertical construction, it
-may be approximated to be a constant by your surveyor and will typically be a
-value close to, but not exactly 1. Your model's local engineering origin at 0,
-0, 0, will always convert exactly to the **Easting**, **Northing**, and
-**Orthogonal Height** displayed in this panel.
+**Map Conversions** contain six parameters.
+
+**Eastings**, **Northings** and **Orthogonal Height** parameters define the
+translation from the model's XYZ coordinates to map **Eastings**, **Northings**,
+and **Heights**.  Your model's local engineering origin at 0, 0, 0, will always
+convert exactly to the **Easting**, **Northing**, and **Orthogonal Height**
+displayed in this panel.
+
+The **X Axis Abcissa** and **X Axis Ordinate** define the rotation vector from
+**Project North** to **Grid North**. These two numbers combine into a coordinate
+vector pointing along the X axis (i.e. **Project East**). The default is an
+abscissa of 1 and ordinate of 0. This default (1, 0) vector implies **Project
+East** and **Grid East** coalign, which means there is no rotation between
+**Project North** and **Grid North**.
+
+.. image:: xaxisabscissaordinate.png
 
 .. tip::
     
-   The rotation from **Project North** to **Grid North** are shown using the **X
-   Axis Abcissa** and **X Axis Ordinate**. It sounds strange, but these two
-   numbers combine into a coordinate vector pointing along the X axis (i.e.
-   East). For example, an abscissa of 1 and an ordinate of 0 gives the vector of
-   (1, 0), which points directly in the +X direction, due East. This vector
-   means there is no rotation between **Project North** to **Grid North**. To
-   save you the mental struggle of converting this vector to degrees, a
-   calculated rotation is always just below these values. Phew!
+   To save you the mental struggle of converting to degrees, a calculated
+   rotation is always just below these values. Phew!
+
+The distance measured on site, or the "surface distance" is actually not the
+same as the distance measured between Eastings and Northings. This difference is
+provided by the **Scale** parameter. The **Scale** defines the average combined
+scale factor across the small 1km site that converts from the model's surface
+distances to map grid distances. Note that the **Scale** is actually not a
+constant. However, for the small sites dealt with in vertical construction, it
+may be approximated to be a constant by your surveyor and will typically be a
+value close to, but not exactly 1.
+
+.. note::
+
+    Always check that the surveyor provides a scale factor such that surface
+    distance multiplied by **Scale** equals map grid distances (as opposed to
+    the other way around).
 
 Working with Map Coordinates
 ----------------------------

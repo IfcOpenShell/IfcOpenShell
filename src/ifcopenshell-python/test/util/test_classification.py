@@ -71,7 +71,10 @@ class TestGetReferences(test.bootstrap.IFC4):
             reference=reference2,
             classification=classification,
         )
-        assert subject.get_references(element) == set(self.file.by_type("IfcClassificationReference"))
+        reference1 = [r for r in self.file.by_type("IfcClassificationReference") if r.Identification == "1"][0]
+        reference2 = [r for r in self.file.by_type("IfcClassificationReference") if r.Identification == "2"][0]
+        assert subject.get_references(element_type) == set([reference2])
+        assert subject.get_references(element) == set([reference1])
 
     def test_getting_direct_classifications(self):
         library = ifcopenshell.file()
