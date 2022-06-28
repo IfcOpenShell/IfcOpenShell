@@ -80,6 +80,8 @@ def get_properties(properties):
     for prop in properties or []:
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
+        elif prop.is_a("IfcPropertyEnumeratedValue"):
+            values = []
             for enum in prop.EnumerationValues:
                 values.append(enum.wrappedValue)
             if values:
@@ -98,9 +100,9 @@ def get_properties(properties):
 def get_predefined_type(element):
     element_type = get_type(element)
     if element_type:
-        predefined_type = getattr(element_type, "PredefinedType", None)
+        predefined_type = getattr(element_type, "ElementType", getattr(element_type, "ProcessType", None))
         if predefined_type == "USERDEFINED" or not predefined_type:
-            predefined_type = getattr(element_type, "ElementType", getattr(element_type, "ProcessType", None))
+            predefined_type = getattr(element_type, "ElementType", None)
         if predefined_type and predefined_type != "NOTDEFINED":
             return predefined_type
     predefined_type = getattr(element, "PredefinedType", None)
