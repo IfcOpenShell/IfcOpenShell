@@ -139,10 +139,26 @@ def get_primary_measure_type(self, context):
     return AddEditCustomPropertiesData.data["primary_measure_type"]
 
 
+class EnumerationValues(PropertyGroup):
+    string_value: StringProperty(name="Value")
+    bool_value: BoolProperty(name="Value")
+    int_value: IntProperty(name="Value")
+    float_value: FloatProperty(name="Value")
+    is_selected: BoolProperty(default=False)
+    
+    
+class IfcSimpleProperty(Attribute):
+    #bounded_values:
+    enumerated_values: CollectionProperty(type=EnumerationValues)
+    #list_values:
+    #reference_values:
+    #table_values:    
+                
+                
 class PsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
+    properties: CollectionProperty(name="Properties", type=IfcSimpleProperty)
     pset_name: EnumProperty(items=getPsetNames, name="Pset Name")
     qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
 
@@ -197,6 +213,14 @@ class AddEditProperties(PropertyGroup):
     int_value: IntProperty(name="Value")
     float_value: FloatProperty(name="Value")
     primary_measure_type: EnumProperty(items=get_primary_measure_type, name="Primary Measure Type")
+    template_type: EnumProperty(
+        items=[
+            ("IfcPropertySingleValue","IfcPropertySingleValue","IfcPropertySingleValue"),
+            ("IfcPropertyEnumeratedValue","IfcPropertyEnumeratedValue","IfcPropertyEnumeratedValue")
+        ],
+        name="Template Type"
+    )
+    enum_values: CollectionProperty(name="Enum Values", type=EnumerationValues)
 
     def get_value_name(self):
         ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)
