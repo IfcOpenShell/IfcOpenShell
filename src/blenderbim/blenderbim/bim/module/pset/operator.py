@@ -133,23 +133,24 @@ class EnablePsetEditing(bpy.types.Operator):
                     # IFC4 and not in IFC2X3. To fully fix this we need to
                     # generate the IFC2X3 pset template definitions.
                     continue
-            elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
-                data_type = "enum"
-                enum_items = [v.wrappedValue for v in prop_template.Enumerators.EnumerationValues]
             elif prop_template.TemplateType in ["Q_LENGTH", "Q_AREA", "Q_VOLUME", "Q_WEIGHT", "Q_TIME"]:
                 data_type = "float"
             elif prop_template.TemplateType == "Q_COUNT":
                 data_type = "integer"
+            elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
+                enum_items = [v.wrappedValue for v in prop_template.Enumerators.EnumerationValues]
+                #selected_enum_items = [e.EnumerationValues.wrappedValue for e in Data.properties[e]]
+                data_type = "" 
             else:
                 continue  # Other types not yet supported
 
             new = self.props.properties.add()
             new.name = prop_template.Name
             new.is_null = data.get(prop_template.Name, None) is None
-            new.is_optional = True
-            new.data_type = data_type
+            new.is_optional = True         
             new.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
-
+            new.data_type = data_type
+        
             if data_type == "string":
                 new.string_value = "" if new.is_null else data[prop_template.Name]
             elif data_type == "integer":
@@ -158,22 +159,48 @@ class EnablePsetEditing(bpy.types.Operator):
                 new.float_value = 0.0 if new.is_null else data[prop_template.Name]
             elif data_type == "boolean":
                 new.bool_value = False if new.is_null else data[prop_template.Name]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(enum_items)
-                if data.get(prop_template.Name):
-                    new.enum_value = str(data[prop_template.Name])
+            if prop_template.TemplateType == "P_ENUMERATEDVALUE":
+
+                new.set_value(prop_template.Enumerators.EnumerationValues[0].wrappedValue)
+                
+                for enum in enum_items:
+                    new_enum = new.enumerated_values.add()
+                    data_type = new.get_value_name()
+                    setattr(new_enum, data_type, enum)
+                    if data.get(prop_template.Name):
+                        new_enum.is_selected = enum in data[prop_template.Name]
 
     def load_from_pset_data(self, pset_data):
         for prop_id in pset_data["Properties"]:
             prop = Data.properties[prop_id]
-
-            value = prop["NominalValue"]
-            new = self.props.properties.add()
-            new.set_value(value)
-            new.name = prop["Name"]
-            new.is_null = value is None
-            new.is_optional = True
-            new.set_value(new.get_value_default() if new.is_null else value)
+            
+            if prop["type"] == "IfcPropertyEnumeratedValue":
+                new = self.props.properties.add()
+                new.name = prop["Name"]
+                new.is_null = new.enumerated_values is None
+                new.is_optional = True
+                new.set_value(prop["EnumerationReference"].EnumerationValues[0].wrappedValue)
+                
+                enum_ref = [v.wrappedValue for v in prop["EnumerationReference"].EnumerationValues]
+                enum_vals = [v.wrappedValue for v in prop["EnumerationValues"]]
+                for enum in enum_ref:                 
+                    new_enum = new.enumerated_values.add()
+                    data_type = new.get_value_name()
+                    setattr(new_enum, data_type, enum)
+                    if enum in enum_vals:
+                        new_enum.is_selected = True
+                    else:
+                        new_enum.is_selected = False
+                    
+            else:
+                value = prop["NominalValue"]
+                new = self.props.properties.add()
+                new.set_value(value)
+                new.name = prop["Name"]
+                new.is_null = value is None
+                new.is_optional = True
+                new.set_value(new.get_value_default() if new.is_null else value)       
+                    
 
 
 class DisablePsetEditing(bpy.types.Operator, Operator):
@@ -209,7 +236,11 @@ class EditPset(bpy.types.Operator, Operator):
         else:
             data = Data.psets if pset_id in Data.psets else Data.qtos
             for prop in props.properties:
-                properties[prop.name] = prop.get_value()
+                if len(prop.enumerated_values) != 0:                    
+                    value_name = prop.get_value_name()
+                    properties[prop.name] = [e[value_name] for e in prop.enumerated_values if e.is_selected]
+                else:
+                    properties[prop.name] = prop.get_value()
 
         if pset_id in Data.psets:
             ifcopenshell.api.run(
@@ -381,9 +412,13 @@ class BIM_OT_add_property_to_edit(bpy.types.Operator):
     bl_idname = "bim.add_property_to_edit"
     bl_options = {"REGISTER", "UNDO"}
     option: bpy.props.StringProperty()
+    index: bpy.props.IntProperty()
 
     def execute(self, context):
-        getattr(context.scene, self.option).add()
+        if self.index == -1:
+            getattr(context.scene, self.option).add()
+        else:
+            getattr(context.scene, self.option)[self.index].enum_values.add()
         return {"FINISHED"}
 
 
@@ -392,10 +427,14 @@ class BIM_OT_remove_property_to_edit(bpy.types.Operator):
     bl_idname = "bim.remove_property_to_edit"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
+    index2: bpy.props.IntProperty(default=-1)
     option: bpy.props.StringProperty()
 
     def execute(self, context):
-        getattr(context.scene, self.option).remove(self.index)
+        if self.index2 == -1:
+            getattr(context.scene, self.option).remove(self.index)
+        else:
+            getattr(context.scene, self.option)[self.index].enum_values.remove(self.index2)
         return {"FINISHED"}
 
 
@@ -468,18 +507,39 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator):
                 continue
             ifc_element = tool.Ifc.get().by_id(ifc_definition_id)
 
-            for prop in props:
+            for prop in props:               
                 value = getattr(prop, prop.get_value_name())
-                primary_measure_type = prop.primary_measure_type
-                value_ifc_entity = getattr(self.file, f"create{primary_measure_type}")(value)
-
+                primary_measure_type = prop.primary_measure_type 
+                           
+                if prop.template_type == "IfcPropertyEnumeratedValue":
+                    value_ifc_entity = self.generate_enum_entity(prop)
+                elif prop.template_type == "IfcPropertySingleValue":
+                    value_ifc_entity = getattr(self.file, f"create{primary_measure_type}")(value)
+                    
                 new_pset = ifcopenshell.api.run("pset.add_pset", self.file, product=ifc_element, name=prop.pset_name)
                 ifcopenshell.api.run(
                     "pset.edit_pset", self.file, pset=new_pset, properties={prop.property_name: value_ifc_entity}
                 )
-
+        Data.load(IfcStore.get_file(), ifc_definition_id)
         self.report({"INFO"}, "Finished applying changes")
         return {"FINISHED"}
+    
+    def generate_enum_entity(self, prop):
+        prop_type = prop.get_value_name()
+        prop_enum = self.file.create_entity(
+                        "IFCPROPERTYENUMERATION",
+                        Name=prop.property_name,
+                        EnumerationValues=tuple(self.file.create_entity(
+                            prop.primary_measure_type, ev[prop_type]) for ev in prop.enum_values)
+                    )
+        prop_enum_value = self.file.create_entity(
+                        "IFCPROPERTYENUMERATEDVALUE",
+                        Name=prop.property_name,
+                        EnumerationValues=tuple(self.file.create_entity(
+                            prop.primary_measure_type, ev[prop_type]) for ev in prop.enum_values if ev.is_selected == True),
+                        EnumerationReference=prop_enum
+                    )
+        return prop_enum_value
 
 
 class BIM_OT_bulk_remove_psets(bpy.types.Operator):
