@@ -29,6 +29,7 @@ import blenderbim.core.type
 import blenderbim.core.geometry
 from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.model.data import AuthoringData
 from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
@@ -152,7 +153,8 @@ class AddTypeInstance(bpy.types.Operator):
         context.view_layer.objects.active = obj
         return {"FINISHED"}
 
-    def generate_layered_element(self, ifc_class, relating_type):
+    @staticmethod
+    def generate_layered_element(ifc_class, relating_type):
         layer_set_direction = None
 
         parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
@@ -172,6 +174,83 @@ class AddTypeInstance(bpy.types.Operator):
                 return True
         else:
             pass  # Dumb block generator? Eh? :)
+
+
+class DisplayIFCTypes(bpy.types.Operator):
+    bl_idname = "bim.display_ifc_types"
+    bl_label = "Browse IFC Types"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Display all possible IFC types for new instances"
+
+    def execute(self, context):
+        bpy.ops.object.mode_set(mode="OBJECT")
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        if not AuthoringData.is_loaded:
+            AuthoringData.load()
+        props = context.scene.BIMModelProperties
+        props.relating_type = props.relating_type
+        min_width = 250
+        width = max([min_width, int(context.region.width / 7)])
+        return context.window_manager.invoke_popup(self, width=width)
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.BIMModelProperties
+        split = layout.split(align=True, factor=0.6)
+        col = split.column(align=True)
+        row = col.row()
+        row.label(text="Select IFC Type to add:")
+        col.row().separator(factor=2)
+        enabled = True
+        if AuthoringData.data["ifc_classes"]:
+            row = col.row()
+            row.prop(data=props, property="ifc_class", text="", icon="FILE_VOLUME")
+            col.row().separator()
+        else:
+            enabled = False
+        if AuthoringData.data["relating_types"]:
+            row = col.row()
+            row.prop(data=props, property="relating_type", text="", icon="FILE_3D")
+            col.row().separator()
+        else:
+            enabled = False
+        col.row().separator(factor=4)
+        row = col.row()
+        op = row.operator("bim.add_ifc_type_instance", icon="ADD")
+        row.enabled = enabled
+        op.ifc_class = props.ifc_class
+        op.relating_type_id = props.relating_type
+        col = split.column()
+        box = col.box()
+        if enabled:
+            box.template_icon(icon_value=props.icon_id, scale=6.)
+
+
+class AddIFCTypeInstance(bpy.types.Operator):
+    bl_idname = "bim.add_ifc_type_instance"
+    bl_label = "Add"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add an instance of this IFC type"
+    ifc_class: bpy.props.StringProperty()
+    relating_type_id: bpy.props.StringProperty()
+
+    def close_panel(self, event):
+        x, y = event.mouse_x, event.mouse_y
+        bpy.context.window.cursor_warp(10, 10)
+        move_back = lambda: bpy.context.window.cursor_warp(x, y)
+        bpy.app.timers.register(move_back, first_interval=0.001)
+
+    def invoke(self, context, event):
+        self.close_panel(event)
+        return self.execute(context)
+
+    def execute(self, context):
+        props = context.scene.BIMModelProperties
+        props.ifc_class, props.relating_type = self.ifc_class, self.relating_type_id
+        bpy.ops.bim.add_type_instance()
+        return {'FINISHED'}
 
 
 class AlignProduct(bpy.types.Operator):
