@@ -37,7 +37,6 @@ class BimTool(WorkSpaceTool):
     bl_keymap = (
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
-        ("bim.hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.join_wall", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("join_type", "L")]}),
         ("bim.join_wall", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": [("join_type", "V")]}),
@@ -61,19 +60,13 @@ class BimTool(WorkSpaceTool):
             return
         props = context.scene.BIMModelProperties
         if AuthoringData.data["ifc_classes"]:
-            row.prop(props, "ifc_class", text="")
+            row.operator("bim.display_ifc_types", icon="COLLAPSEMENU")
         else:
             row.label(text="No IFC Class")
-        if AuthoringData.data["relating_types"]:
-            row.prop(props, "relating_type", text="")
-        else:
+        if not AuthoringData.data["relating_types"]:
             row.label(text="No Relating Type")
 
         row.label(text="", icon="BLANK1")
-
-        row = layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="Add Type Instance", icon="EVENT_A")
 
         if AuthoringData.data["ifc_classes"]:
             if props.ifc_class == "IfcWallType":
@@ -154,9 +147,6 @@ class Hotkey(bpy.types.Operator):
             pass
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
-
-    def hotkey_S_A(self):
-        bpy.ops.bim.add_type_instance()
 
     def hotkey_S_C(self):
         if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
