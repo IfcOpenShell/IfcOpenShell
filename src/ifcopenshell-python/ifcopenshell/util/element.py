@@ -81,13 +81,8 @@ def get_properties(properties):
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
         elif prop.is_a("IfcPropertyEnumeratedValue"):
-            values = []
-            for enum in prop.EnumerationValues:
-                values.append(enum.wrappedValue)
-            if values:
-                results[prop.Name] = str(values) if len(values)>1 else values[0]
-            else:
-                results[prop.Name] = None
+            values = [v.wrappedValue for v in prop.EnumerationValues]
+            results[prop.Name] = [v.wrappedValue for v in prop.EnumerationValues] or None
 
         elif prop.is_a("IfcComplexProperty"):
             data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
@@ -100,9 +95,9 @@ def get_properties(properties):
 def get_predefined_type(element):
     element_type = get_type(element)
     if element_type:
-        predefined_type = getattr(element_type, "ElementType", getattr(element_type, "ProcessType", None))
+        predefined_type = getattr(element_type, "PredefinedType", None)
         if predefined_type == "USERDEFINED" or not predefined_type:
-            predefined_type = getattr(element_type, "ElementType", None)
+            predefined_type = getattr(element_type, "ElementType", getattr(element_type, "ProcessType", None))
         if predefined_type and predefined_type != "NOTDEFINED":
             return predefined_type
     predefined_type = getattr(element, "PredefinedType", None)
