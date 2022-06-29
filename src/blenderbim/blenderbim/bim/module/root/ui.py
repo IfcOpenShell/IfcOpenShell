@@ -79,8 +79,9 @@ class BIM_PT_class(Panel):
         if not is_reassigning_class:
             row = self.layout.row()
             row.prop(props, "ifc_product")
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         row.prop(props, "ifc_class")
+        row.operator("bim.root_ifc_class_filter", text="", icon="VIEWZOOM")
         if ifc_predefined_types:
             row = self.layout.row()
             row.prop(props, "ifc_predefined_type")
