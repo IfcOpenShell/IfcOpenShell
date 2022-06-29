@@ -31,7 +31,7 @@ import blenderbim.core.root as core
 import blenderbim.tool as tool
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.root.prop import get_contexts
+from blenderbim.bim.module.root.prop import get_contexts, get_ifc_classes_filtered
 
 
 class Operator:
@@ -189,3 +189,24 @@ class CopyClass(bpy.types.Operator, Operator):
         for obj in objects:
             core.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
         blenderbim.bim.handler.purge_module_data()
+
+
+class BIM_OT_root_property_textfield(bpy.types.Operator):
+    bl_idname = "bim.root_ifc_class_filter"
+    bl_label = "Filter Property"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
+        context.scene.BIMRootProperties.ifc_class = context.scene.BIMRootProperties.ifc_class_filter_enum
+        return {"FINISHED"}
+
+    def draw(self, context):
+        props = context.scene.BIMRootProperties
+        self.layout.prop(props, "ifc_class_filter_textfield")
+        if len(get_ifc_classes_filtered(props, context)) > 10:
+            self.layout.prop(props, "ifc_class_filter_enum")
+        else:
+            self.layout.props_enum(props, "ifc_class_filter_enum")
