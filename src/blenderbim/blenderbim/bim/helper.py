@@ -33,7 +33,7 @@ def draw_attributes(props, layout, copy_operator=None):
         draw_attribute(attribute, row, copy_operator)
 
 
-def draw_attribute(box, attribute, layout, copy_operator=None):
+def draw_attribute(attribute, layout, copy_operator=None):
     value_name = attribute.get_value_name()
     if not value_name:
         layout.label(text=attribute.name)
