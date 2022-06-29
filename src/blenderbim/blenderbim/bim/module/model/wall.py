@@ -817,7 +817,15 @@ class DumbWallGenerator:
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer2"})
         MaterialData.load(self.file)
-        obj.select_set(True)
+        try:
+            obj.select_set(True)
+        except RuntimeError:
+            def msg(self, context):
+                txt = "The created object could not be assigned to a collection. "
+                txt += "Has any IfcSpatialElement been deleted?"
+                self.layout.label(text=txt)
+
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
         return obj
 
 
