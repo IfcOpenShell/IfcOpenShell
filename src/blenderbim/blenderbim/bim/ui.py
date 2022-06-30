@@ -170,6 +170,18 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.operator("bim.configure_visibility")
 
 
+def prop_with_search(layout, data, prop, data_path, text=None):
+    row = layout.row(align=True)
+    if text is None:
+        row.prop(data, prop)
+    else:
+        row.prop(data, prop, text=text)
+    if hasattr(data, prop + "_collection"):
+        op = row.operator("bim.root_ifc_class_filter", text="", icon="VIEWZOOM")
+        op.prop_name = prop
+        op.data_path = data_path
+
+
 def ifc_units(self, context):
     scene = context.scene
     props = scene.BIMProperties
