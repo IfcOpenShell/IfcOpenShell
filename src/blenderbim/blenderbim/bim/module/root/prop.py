@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.util.schema
 from blenderbim.bim.module.root.data import IfcClassData
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.prop import StrProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -32,7 +33,6 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-
 types_enum = []
 classes_enum = []
 
@@ -88,15 +88,6 @@ def get_ifc_classes(self, context):
     return IfcClassData.data["ifc_classes"]
 
 
-def get_ifc_classes_filtered(self, context):
-    ifc_classes = get_ifc_classes(self, context)
-    global classes_enum
-    classes_enum = [
-        c for c in ifc_classes
-        if self.ifc_class_filter_textfield.lower() in c[0].lower()] or ifc_classes
-    return classes_enum
-
-
 def get_contexts(self, context):
     if not IfcClassData.is_loaded:
         IfcClassData.load()
@@ -106,8 +97,20 @@ def get_contexts(self, context):
 class BIMRootProperties(PropertyGroup):
     contexts: EnumProperty(items=get_contexts, name="Contexts")
     ifc_product: EnumProperty(items=get_ifc_products, name="Products", update=refresh_classes)
+    ifc_product_collection: CollectionProperty(type=StrProperty)
     ifc_class: EnumProperty(items=get_ifc_classes, name="Class", update=refreshPredefinedTypes)
-    ifc_class_filter_textfield: StringProperty(name="Filter", options={"TEXTEDIT_UPDATE"})
-    ifc_class_filter_enum: EnumProperty(items=get_ifc_classes_filtered, name="Class", update=update_class_enum)
+    ifc_class_collection: CollectionProperty(type=StrProperty)
     ifc_predefined_type: EnumProperty(items=getIfcPredefinedTypes, name="Predefined Type", default=None)
+    ifc_predefined_type_collection: CollectionProperty(type=StrProperty)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
+
+    def ensure_prop_collection(self, context, prop_name):
+        getter = {
+            "ifc_class": get_ifc_classes,
+            "ifc_product": get_ifc_products,
+            "ifc_predefined_type": getIfcPredefinedTypes,
+        }[prop_name]
+        collection = getattr(self, prop_name + "_collection")
+        collection.clear()
+        for item in getter(self, context):
+            collection.add().name = item[0]
