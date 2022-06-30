@@ -18,6 +18,7 @@
 
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.ui import prop_with_search
 from blenderbim.bim.helper import draw_attribute
 from blenderbim.bim.module.pset.data import (
     ObjectPsetsData,
@@ -138,7 +139,7 @@ class BIM_PT_object_psets(Panel):
 
         props = context.active_object.PsetProperties
         row = self.layout.row(align=True)
-        row.prop(props, "pset_name", text="")
+        prop_with_search(row, props, "pset_name", "active_object.PsetProperties", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
         op.obj = context.active_object.name
         op.obj_type = "Object"

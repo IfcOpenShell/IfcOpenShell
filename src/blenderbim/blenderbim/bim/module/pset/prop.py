@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.bim.schema
-from blenderbim.bim.prop import Attribute
+from blenderbim.bim.prop import Attribute, StrProperty
 import ifcopenshell
 from ifcopenshell.api.pset.data import Data
 from blenderbim.bim.module.pset.data import AddEditCustomPropertiesData
@@ -47,7 +47,7 @@ def purge():
     qtonames = {}
 
 
-def getPsetNames(self, context):
+def get_pset_names(self, context):
     global psetnames
     obj = context.active_object
     if not obj.BIMObjectProperties.ifc_definition_id:
@@ -122,7 +122,7 @@ def getWorkSchedulePsetNames(self, context):
     return psetnames[ifc_class]
 
 
-def getQtoNames(self, context):
+def get_qto_names(self, context):
     global qtonames
     if "/" in context.active_object.name:
         ifc_class = context.active_object.name.split("/")[0]
@@ -145,22 +145,34 @@ class EnumerationValues(PropertyGroup):
     int_value: IntProperty(name="Value")
     float_value: FloatProperty(name="Value")
     is_selected: BoolProperty(default=False)
-    
-    
+
+
 class IfcSimpleProperty(Attribute):
     #bounded_values:
     enumerated_values: CollectionProperty(type=EnumerationValues)
     #list_values:
     #reference_values:
     #table_values:    
-                
-                
+
+
 class PsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
     properties: CollectionProperty(name="Properties", type=IfcSimpleProperty)
-    pset_name: EnumProperty(items=getPsetNames, name="Pset Name")
-    qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
+    pset_name_collection: CollectionProperty(type=StrProperty)
+    pset_name: EnumProperty(items=get_pset_names, name="Pset Name")
+    qto_name: EnumProperty(items=get_qto_names, name="Qto Name")
+    qto_name_collection: CollectionProperty(type=StrProperty)
+
+    def ensure_prop_collection(self, context, prop_name):
+        getter = {
+            "pset_name": get_pset_names,
+            "qto_name": get_qto_names,
+        }[prop_name]
+        collection = getattr(self, prop_name + "_collection")
+        collection.clear()
+        for item in getter(self, context):
+            collection.add().name = item[0]
 
 
 class MaterialPsetProperties(PropertyGroup):
