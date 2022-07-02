@@ -41,7 +41,9 @@ class Data:
     @classmethod
     def psetqtos(cls, element, psets_only=False, qtos_only=False):
         results = []
-        psetqtos = ifcopenshell.util.element.get_psets(element, psets_only=psets_only, qtos_only=qtos_only)
+        psetqtos = ifcopenshell.util.element.get_psets(
+            element, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False
+        )
         for name, data in psetqtos.items():
             results.append(
                 {

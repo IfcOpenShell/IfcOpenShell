@@ -29,27 +29,30 @@ import blenderbim.core.geometry
 import blenderbim.tool as tool
 import ifcopenshell.util.representation
 import blenderbim.bim.module.drawing.sheeter as sheeter
+import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.helper as helper
 
 
 class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
-    def create_annotation_object(cls, object_type):
+    def create_annotation_object(cls, drawing, object_type):
         data_type = {
+            "ANGLE": "mesh",
+            "BREAKLINE": "mesh",
+            "DIAMETER": "curve",
             "DIMENSION": "curve",
-            "EQUAL_DIMENSION": "curve",
+            "FILL_AREA": "mesh",
+            "HIDDEN_LINE": "mesh",
+            "LINEWORK": "mesh",
+            "PLAN_LEVEL": "curve",
+            "RADIUS": "curve",
+            "SECTION_LEVEL": "curve",
+            "STAIR_ARROW": "curve",
             "TEXT": "empty",
             "TEXT_LEADER": "curve",
-            "STAIR_ARROW": "curve",
-            "HIDDEN_LINE": "mesh",
-            "PLAN_LEVEL": "curve",
-            "SECTION_LEVEL": "curve",
-            "BREAKLINE": "mesh",
-            "FILL_AREA": "mesh",
-            "LINEWORK": "mesh",
         }[object_type]
-        obj = annotation.Annotator.get_annotation_obj(object_type, data_type)
+        obj = annotation.Annotator.get_annotation_obj(drawing, object_type, data_type)
         if object_type == "FILL_AREA":
             obj = annotation.Annotator.add_plane_to_annotation(obj)
         elif object_type != "TEXT":
@@ -72,10 +75,15 @@ class Drawing(blenderbim.core.tool.Drawing):
         return camera
 
     @classmethod
+    def create_svg_schedule(cls, schedule):
+        schedule_creator = scheduler.Scheduler()
+        schedule_creator.schedule(cls.get_schedule_location(schedule), cls.get_document_uri(schedule))
+
+    @classmethod
     def create_svg_sheet(cls, document, titleblock):
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_builder.create(cls.get_sheet_filename(document), titleblock)
+        sheet_builder.create(cls.get_document_uri(document), titleblock)
 
     @classmethod
     def delete_collection(cls, collection):
@@ -98,6 +106,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.context.scene.DocProperties.is_editing_drawings = False
 
     @classmethod
+    def disable_editing_schedules(cls):
+        bpy.context.scene.DocProperties.is_editing_schedules = False
+
+    @classmethod
     def disable_editing_sheets(cls):
         bpy.context.scene.DocProperties.is_editing_sheets = False
 
@@ -106,8 +118,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         obj.BIMTextProperties.is_editing = False
 
     @classmethod
-    def disable_editing_text_product(cls, obj):
-        obj.BIMTextProperties.is_editing_product = False
+    def disable_editing_assigned_product(cls, obj):
+        obj.BIMAssignedProductProperties.is_editing_product = False
 
     @classmethod
     def enable_editing(cls, obj):
@@ -122,6 +134,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.context.scene.DocProperties.is_editing_drawings = True
 
     @classmethod
+    def enable_editing_schedules(cls):
+        bpy.context.scene.DocProperties.is_editing_schedules = True
+
+    @classmethod
     def enable_editing_sheets(cls):
         bpy.context.scene.DocProperties.is_editing_sheets = True
 
@@ -130,8 +146,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         obj.BIMTextProperties.is_editing = True
 
     @classmethod
-    def enable_editing_text_product(cls, obj):
-        obj.BIMTextProperties.is_editing_product = True
+    def enable_editing_assigned_product(cls, obj):
+        obj.BIMAssignedProductProperties.is_editing_product = True
 
     @classmethod
     def ensure_unique_drawing_name(cls, name):
@@ -163,6 +179,18 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def get_body_context(cls):
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
+    @classmethod
+    def get_document_uri(cls, document):
+        if hasattr(document, "Identification"):
+            name = document.Identification or "X"
+        else:
+            name = document.DocumentId or "X"
+        name += " - " + (document.Name or "Unnamed")
+        if document.Scope == "DOCUMENTATION":
+            return os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", name + ".svg")
+        elif document.Scope == "SCHEDULE":
+            return os.path.join(bpy.context.scene.BIMProperties.data_dir, "schedules", name + ".svg")
 
     @classmethod
     def get_drawing_collection(cls, drawing):
@@ -197,13 +225,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         return element.Name
 
     @classmethod
-    def get_sheet_filename(cls, document):
-        if hasattr(document, "Identification"):
-            name = document.Identification or "X"
-        else:
-            name = document.DocumentId or "X"
-        name += " - " + (document.Name or "Unnamed")
-        return name
+    def get_schedule_location(cls, schedule):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return schedule.DocumentReferences[0].Location
+        return schedule.Location
 
     @classmethod
     def generate_drawing_matrix(cls, target_view, location_hint):
@@ -257,7 +282,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             return items[0]
 
     @classmethod
-    def get_text_product(cls, element):
+    def get_assigned_product(cls, element):
         for rel in element.HasAssignments:
             if rel.is_a("IfcRelAssignsToProduct"):
                 return rel.RelatingProduct
@@ -271,6 +296,19 @@ class Drawing(blenderbim.core.tool.Drawing):
             new.ifc_definition_id = drawing.id()
             new.name = drawing.Name or "Unnamed"
             new.target_view = cls.get_drawing_target_view(drawing)
+
+    @classmethod
+    def import_schedules(cls):
+        bpy.context.scene.DocProperties.schedules.clear()
+        schedules = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SCHEDULE"]
+        for schedule in schedules:
+            new = bpy.context.scene.DocProperties.schedules.add()
+            new.ifc_definition_id = schedule.id()
+            new.name = schedule.Name or "Unnamed"
+            if tool.Ifc.get_schema() == "IFC2X3":
+                new.identification = schedule.DocumentId
+            else:
+                new.identification = schedule.Identification
 
     @classmethod
     def import_sheets(cls):
@@ -303,9 +341,12 @@ class Drawing(blenderbim.core.tool.Drawing):
                     new.identification = reference.Identification or "X"
 
                 element = cls.get_reference_element(reference)
-
-                new.name = element.Name
-                new.reference_type = "DRAWING"
+                if element:
+                    new.name = element.Name
+                    new.reference_type = "DRAWING"
+                else:
+                    new.name = cls.get_reference_document(reference).Name or "Unnamed"
+                    new.reference_type = "SCHEDULE"
 
     @classmethod
     def import_text_attributes(cls, obj):
@@ -315,28 +356,33 @@ class Drawing(blenderbim.core.tool.Drawing):
         blenderbim.bim.helper.import_attributes2(text, props.attributes)
 
     @classmethod
-    def import_text_product(cls, obj):
+    def import_assigned_product(cls, obj):
         element = tool.Ifc.get_entity(obj)
-        product = cls.get_text_product(element)
+        product = cls.get_assigned_product(element)
         if product:
-            obj.BIMTextProperties.relating_product = tool.Ifc.get_object(product)
+            obj.BIMAssignedProductProperties.relating_product = tool.Ifc.get_object(product)
         else:
-            obj.BIMTextProperties.relating_product = None
+            obj.BIMAssignedProductProperties.relating_product = None
 
     @classmethod
     def open_with_user_command(cls, user_command, path):
         if user_command:
             commands = eval(user_command)
             for command in commands:
-                subprocess.run(command)
+                subprocess.Popen(command)
         else:
             webbrowser.open("file://" + path)
 
     @classmethod
-    def open_svg(cls, filename):
+    def open_spreadsheet(cls, uri):
         cls.open_with_user_command(
-            bpy.context.preferences.addons["blenderbim"].preferences.svg_command,
-            os.path.join(bpy.context.scene.BIMProperties.data_dir, "sheets", filename + ".svg"),
+            bpy.context.preferences.addons["blenderbim"].preferences.spreadsheet_command, uri
+        )
+
+    @classmethod
+    def open_svg(cls, uri):
+        cls.open_with_user_command(
+            bpy.context.preferences.addons["blenderbim"].preferences.svg_command, uri
         )
 
     @classmethod
@@ -375,7 +421,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         if not element:
             return
         value = element.Literal
-        product = cls.get_text_product(tool.Ifc.get_entity(obj))
+        product = cls.get_assigned_product(tool.Ifc.get_entity(obj))
         if product:
             selector = ifcopenshell.util.selector.Selector()
             variables = {}
@@ -796,10 +842,11 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def get_reference_element(cls, reference):
         if tool.Ifc.get_schema() == "IFC2X3":
-            return [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference][
-                0
-            ].RelatedObjects[0]
-        return reference.DocumentRefForObjects[0].RelatedObjects[0]
+            refs = [r for r in tool.Ifc.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == reference]
+        else:
+            refs = reference.DocumentRefForObjects
+        if refs:
+            return refs[0].RelatedObjects[0]
 
     @classmethod
     def get_drawing_human_scale(cls, drawing):
@@ -851,7 +898,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                 return rel.RelatingDocument
 
     @classmethod
-    def get_reference_sheet(cls, reference):
+    def get_reference_document(cls, reference):
         if tool.Ifc.get_schema() == "IFC2X3":
             return reference.ReferenceToDocument[0]
         return reference.ReferencedDocument

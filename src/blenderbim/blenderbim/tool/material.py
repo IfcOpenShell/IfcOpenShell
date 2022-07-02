@@ -46,7 +46,7 @@ class Material(blenderbim.core.tool.Material):
 
     @classmethod
     def get_elements_by_material(cls, material):
-        return set(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+        return ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
 
     @classmethod
     def get_name(cls, obj):
@@ -55,17 +55,33 @@ class Material(blenderbim.core.tool.Material):
     @classmethod
     def import_material_definitions(cls, material_type):
         props = bpy.context.scene.BIMMaterialProperties
+        expanded_categories = {m.name for m in props.materials if m.is_expanded}
         props.materials.clear()
-        for material in tool.Ifc.get().by_type(material_type):
+        get_name = lambda x: x.Name or "Unnamed"
+        if material_type == "IfcMaterialLayerSet":
+            get_name = lambda x: x.LayerSetName or "Unnamed"
+        elif material_type == "IfcMaterialList":
+            get_name = lambda x: "Unnamed"
+        materials = sorted(tool.Ifc.get().by_type(material_type), key=get_name)
+        categories = {}
+        if material_type == "IfcMaterial":
+            [categories.setdefault(m.Category, []).append(m) for m in materials]
+            for category, mats in categories.items():
+                cat = props.materials.add()
+                cat.name = category or ""
+                cat.is_category = True
+                cat.is_expanded = cat.name in expanded_categories
+                for material in mats if cat.is_expanded else []:
+                    new = props.materials.add()
+                    new.ifc_definition_id = material.id()
+                    new.name = get_name(material)
+                    new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+            return
+        for material in materials:
             new = props.materials.add()
             new.ifc_definition_id = material.id()
-            if material.is_a("IfcMaterialLayerSet"):
-                new.name = material.LayerSetName or "Unnamed"
-            elif material.is_a("IfcMaterialList"):
-                new.name = "Unnamed"
-            else:
-                new.name = material.Name or "Unnamed"
-            new.total_elements = len(set(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)))
+            new.name = get_name(material)
+            new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
 
     @classmethod
     def is_editing_materials(cls):

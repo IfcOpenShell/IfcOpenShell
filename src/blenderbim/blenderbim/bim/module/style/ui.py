@@ -57,8 +57,8 @@ class BIM_PT_styles(Panel):
         #row.operator("bim.add_presentation_style", text="", icon="ADD")
         if self.props.styles and self.props.active_style_index < len(self.props.styles):
             style = self.props.styles[self.props.active_style_index]
-        #    op = row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF")
-        #    op.style = style.ifc_definition_id
+            op = row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF")
+            op.style = style.ifc_definition_id
             row.operator("bim.remove_style", text="", icon="X").style = style.ifc_definition_id
 
         self.layout.template_list("BIM_UL_styles", "", self.props, "styles", self.props, "active_style_index")
@@ -138,6 +138,6 @@ class BIM_UL_styles(UIList):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)
-            #row2 = row.row()
-            #row2.alignment = "RIGHT"
-            #row2.label(text=str(item.total_elements))
+            row2 = row.row()
+            row2.alignment = "RIGHT"
+            row2.label(text=str(item.total_elements))

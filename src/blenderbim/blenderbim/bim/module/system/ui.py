@@ -140,7 +140,9 @@ class BIM_PT_ports(Panel):
         if not context.active_object:
             return False
         element = tool.Ifc.get_entity(context.active_object)
-        if not element or not element.is_a("IfcDistributionElement"):
+        if not element:
+            return False
+        if not element.is_a("IfcDistributionElement") and not element.is_a("IfcDistributionElementType"):
             return False
         return True
 
@@ -183,6 +185,7 @@ class BIM_PT_port(Panel):
         row.operator("bim.set_flow_direction", icon="BACK", text="").direction = "SINK"
         row.operator("bim.set_flow_direction", icon="ARROW_LEFTRIGHT", text="").direction = "SOURCEANDSINK"
         row.operator("bim.set_flow_direction", icon="RESTRICT_INSTANCED_ON", text="").direction = "NOTDEFINED"
+        row.operator("bim.remove_port", icon="X", text="")
 
 
 class BIM_UL_systems(UIList):

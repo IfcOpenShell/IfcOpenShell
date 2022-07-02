@@ -67,3 +67,9 @@ htmlcov
 
 # Blender
 *.blend1
+
+# Sphinx
+_build/
+
+# IDS Docs
+src/ifcopenshell-python/test/build

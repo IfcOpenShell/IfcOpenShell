@@ -154,13 +154,6 @@ class TestGetSINameFromUnitType:
             assert subject.get_si_name_from_unit_type(key) == value
 
 
-class TestGetUnitClass:
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        assert subject.get_unit_class(ifc.createIfcSIUnit()) == "IfcSIUnit"
-        assert subject.get_unit_class(ifc.createIfcNamedUnit()) == "IfcNamedUnit"
-
-
 class TestImportUnitAttributes(NewFile):
     def test_importing_derived_units(self):
         ifc = ifcopenshell.file()
@@ -305,6 +298,13 @@ class TestIsSceneUnitMetric(NewFile):
         assert subject.is_scene_unit_metric() is False
         props.system = "NONE"
         assert subject.is_scene_unit_metric() is True
+
+
+class TestIsUnitClass:
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        assert subject.is_unit_class(ifc.createIfcSIUnit(), "IfcNamedUnit") is True
+        assert subject.is_unit_class(ifc.createIfcSIUnit(), "IfcMonetaryUnit") is False
 
 
 class TestSetActiveUnit(NewFile):

@@ -38,7 +38,7 @@ MESSAGE(STATUS "Autodesk 3ds Max SDK found at ${max_sdk}")
 set(HAS_MAX TRUE)
 endif()
 endforeach()
-
+OPTION(MINIMAL_BUILD "The build is to make a minimal version of IFC converter from OCCT into IFC." OFF)
 OPTION(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
 OPTION(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
@@ -53,6 +53,7 @@ OPTION(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
+OPTION(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" ON)
 if (${HAS_MAX})
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 endif()
@@ -65,6 +66,10 @@ OPTION(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning resu
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
 ENDIF()
+
+if(MSVC AND MSVC_PARALLEL_BUILD)
+	add_definitions("/MP")
+endif()
 
 # QtViewer requires Qt5
 OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF)
@@ -121,6 +126,7 @@ ENDMACRO()
 
 UNIFY_ENVVARS_AND_CACHE(OCC_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(OCC_LIBRARY_DIR)
+if (NOT MINIMAL_BUILD)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(LIBXML2_INCLUDE_DIR)
@@ -130,17 +136,20 @@ UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
 UNIFY_ENVVARS_AND_CACHE(HDF5_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARIES)
+endif()
 UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
 UNIFY_ENVVARS_AND_CACHE(BOOST_LIBRARYDIR)
 
+if (NOT MINIMAL_BUILD)
 UNIFY_ENVVARS_AND_CACHE(CGAL_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(CGAL_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(GMP_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(GMP_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
+endif()
 
-if (GLTF_SUPPORT AND BUILD_CONVERT)
+if (NOT MINIMAL_BUILD AND GLTF_SUPPORT AND BUILD_CONVERT)
 UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
 FIND_FILE(json_hpp "json.hpp" ${JSON_INCLUDE_DIR}/nlohmann)
 IF(json_hpp)
@@ -201,10 +210,12 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
+if (NOT MINIMAL_BUILD)
 # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
-find_package(LibXml2 REQUIRED)
+  find_package(LibXml2 REQUIRED)
+endif()
 
-if (IFCXML_SUPPORT)
+if (NOT MINIMAL_BUILD AND IFCXML_SUPPORT)
     add_definitions(-DWITH_IFCXML)
 	set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
 endif()
@@ -346,7 +357,7 @@ endif()
 
 endif(BUILD_IFCGEOM)
 
-IF(COLLADA_SUPPORT)
+IF(NOT MINIMAL_BUILD AND COLLADA_SUPPORT)
 	# Find OpenCOLLADA
 	IF("${OPENCOLLADA_INCLUDE_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No OpenCOLLADA include directory specified")
@@ -426,7 +437,7 @@ IF(COLLADA_SUPPORT)
 	ENDIF()
 ENDIF()
 
-if(HDF5_SUPPORT)
+if(NOT MINIMAL_BUILD AND HDF5_SUPPORT)
     IF("${HDF5_INCLUDE_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No HDF5 include directory specified")
 	ElSE()
@@ -774,7 +785,7 @@ INSTALL(TARGETS IfcConvert
 endif(BUILD_CONVERT)
 
 # IfcGeomServer
-if(BUILD_GEOMSERVER)
+if(NOT MINIMAL_BUILD AND BUILD_GEOMSERVER)
 
 file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
 file(GLOB H_FILES ../src/ifcgeomserver/*.h)
@@ -828,7 +839,7 @@ IF(BUILD_DOCUMENTATION)
 	ADD_SUBDIRECTORY(../docs docs)
 ENDIF()
 
-IF(BUILD_IFCPYTHON)
+IF(NOT MINIMAL_BUILD AND BUILD_IFCPYTHON)
 	ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
 ENDIF()
 
@@ -836,11 +847,12 @@ IF(BUILD_EXAMPLES)
 	ADD_SUBDIRECTORY(../src/examples examples)
 ENDIF()
 
-IF(BUILD_IFCMAX)
+IF(NOT MINIMAL_BUILD AND BUILD_IFCMAX)
 	ADD_SUBDIRECTORY(../src/ifcmax ifcmax)
 ENDIF()
-
+if (NOT MINIMAL_BUILD)
 ADD_SUBDIRECTORY(../src/svgfill svgfill)
+endif()
 
 # CMake installation targets
 INSTALL(FILES ${IFCPARSE_H_FILES}

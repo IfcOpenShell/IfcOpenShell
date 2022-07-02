@@ -460,8 +460,55 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), submatrix)
         assert subelement.ObjectPlacement.PlacementRelTo == element.ObjectPlacement
 
+    def test_changing_placements_always_affecting_child_ports_as_a_special_case(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.run("unit.assign_unit", self.file)
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
+        subelement = ifcopenshell.api.run("system.add_port", self.file, element=element)
+        matrix = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 1.0),
+                (0.0, 1.0, 0.0, 1.0),
+                (0.0, 0.0, 1.0, 1.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        submatrix = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 1.0),
+                (0.0, 1.0, 0.0, 2.0),
+                (0.0, 0.0, 1.0, 3.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        shifted_submatrix = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 1.0),
+                (0.0, 1.0, 0.0, 3.0),
+                (0.0, 0.0, 1.0, 5.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=element, matrix=matrix.copy(), is_si=False
+        )
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=subelement, matrix=submatrix.copy(), is_si=False
+        )
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement",
+            self.file,
+            product=element,
+            matrix=submatrix.copy(),
+            is_si=False,
+            should_transform_children=False,
+        )
+        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), submatrix)
+        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), shifted_submatrix)
+        assert subelement.ObjectPlacement.PlacementRelTo == element.ObjectPlacement
 
-class TestEditObjectPlacement(test.bootstrap.IFC2X3):
+
+class TestEditObjectPlacementIFC2X3(test.bootstrap.IFC2X3):
     def test_changing_placements_relative_to_a_distribution_element(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", self.file)

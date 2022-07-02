@@ -354,3 +354,69 @@ bool IfcGeom::Kernel::is_manifold(const TopoDS_Shape& a) {
 		return true;
 	}
 }
+
+bool IfcGeom::util::is_nested_compound_of_solid(const TopoDS_Shape& s, int depth) {
+	if (s.ShapeType() == TopAbs_COMPOUND) {
+		TopoDS_Iterator it(s);
+		for (; it.More(); it.Next()) {
+			if (!is_nested_compound_of_solid(it.Value(), depth + 1)) {
+				return false;
+			}
+		}
+		return true;
+	} else if (s.ShapeType() == TopAbs_SOLID) {
+		return depth > 0;
+	} else {
+		return false;
+	}
+}
+
+namespace {
+	template <typename T> struct dimension_count {};
+	template <>           struct dimension_count <gp_Trsf2d > { static const int n = 2; };
+	template <>           struct dimension_count <gp_GTrsf2d> { static const int n = 2; };
+	template <>           struct dimension_count < gp_Trsf  > { static const int n = 3; };
+	template <>           struct dimension_count < gp_GTrsf > { static const int n = 3; };
+
+	template <typename T>
+	bool is_identity_helper(const T& t, double tolerance) {
+		// Note the {1, n+1} range due to Open Cascade's 1-based indexing
+		// Note the {1, n+2} range due to the translation part of the matrix
+		for (int i = 1; i < dimension_count<T>::n + 2; ++i) {
+			for (int j = 1; j < dimension_count<T>::n + 1; ++j) {
+				const double iden_value = i == j ? 1. : 0.;
+				const double trsf_value = t.Value(j, i);
+				if (fabs(trsf_value - iden_value) > tolerance) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+}
+
+bool IfcGeom::Kernel::is_identity(const gp_Trsf2d& t, double tolerance) {
+	return is_identity_helper(t, tolerance);
+}
+
+bool IfcGeom::Kernel::is_identity(const gp_GTrsf2d& t, double tolerance) {
+	return is_identity_helper(t, tolerance);
+}
+
+bool IfcGeom::Kernel::is_identity(const gp_Trsf& t, double tolerance) {
+	return is_identity_helper(t, tolerance);
+}
+
+bool IfcGeom::Kernel::is_identity(const gp_GTrsf& t, double tolerance) {
+	return is_identity_helper(t, tolerance);
+}
+
+gp_Trsf IfcGeom::Kernel::combine_offset_and_rotation(const gp_Vec & offset, const gp_Quaternion & rotation) {
+	auto offset_transform = gp_Trsf{};
+	offset_transform.SetTranslation(offset);
+
+	auto rotation_transform = gp_Trsf{};
+	rotation_transform.SetRotation(rotation);
+
+	return rotation_transform * offset_transform;
+}

@@ -57,6 +57,10 @@ class Style(blenderbim.core.tool.Style):
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
     @classmethod
+    def get_elements_by_style(cls, style):
+        return ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style)
+
+    @classmethod
     def get_name(cls, obj):
         return obj.name
 
@@ -183,10 +187,12 @@ class Style(blenderbim.core.tool.Style):
     def import_presentation_styles(cls, style_type):
         props = bpy.context.scene.BIMStylesProperties
         props.styles.clear()
-        for style in tool.Ifc.get().by_type(style_type):
+        styles = sorted(tool.Ifc.get().by_type(style_type), key=lambda x: x.Name or "Unnamed")
+        for style in styles:
             new = props.styles.add()
             new.ifc_definition_id = style.id()
             new.name = style.Name or "Unnamed"
+            new.total_elements = len(ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style))
 
     @classmethod
     def import_surface_attributes(cls, style, obj):
@@ -196,3 +202,10 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def is_editing_styles(cls):
         return bpy.context.scene.BIMStylesProperties.is_editing
+
+    @classmethod
+    def select_elements(cls, elements):
+        for element in elements:
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                obj.select_set(True)

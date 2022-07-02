@@ -2,6 +2,11 @@
 test:
 	pytest -p no:pytest-blender test
 
+.PHONY: build-ids-docs
+build-ids-docs:
+	mkdir -p test/build
+	cd test && python ids_doc_generator.py
+
 .PHONY: qa
 qa:
 	black .

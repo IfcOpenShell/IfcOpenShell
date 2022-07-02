@@ -115,7 +115,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-2985bba-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-cb8cfd7-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
 
@@ -534,11 +534,19 @@ test-core:
 
 .PHONY: test-bim
 test-bim:
+ifndef MODULE
 	pytest test/bim
+else
+	pytest test/bim -m "$(MODULE)" ./ --maxfail=1
+endif
 
 .PHONY: test-tool
 test-tool:
+ifndef MODULE
 	pytest test/tool
+else
+	pytest test/tool/test_$(MODULE).py
+endif
 
 .PHONY: qa
 qa:

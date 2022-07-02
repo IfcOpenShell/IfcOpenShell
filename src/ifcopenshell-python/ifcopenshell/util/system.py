@@ -40,7 +40,8 @@ def get_ports(element):
     results = []
     for rel in getattr(element, "IsNestedBy", []) or []:
         results.extend([o for o in rel.RelatedObjects if o.is_a("IfcDistributionPort")])
-    for rel in element.HasPorts or []:
+    # IFC2X3 only, deprecated in IFC4
+    for rel in getattr(element, "HasPorts", []) or []:
         results.append(rel.RelatingPort)
     return results
 

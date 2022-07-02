@@ -35,6 +35,8 @@ classes = (
     operator.BIM_OT_rename_parameters,
     operator.BIM_OT_add_edit_custom_property,
     operator.BIM_OT_bulk_remove_psets,
+    prop.EnumerationValues,
+    prop.IfcSimpleProperty,
     prop.PsetProperties,
     prop.MaterialPsetProperties,
     prop.TaskPsetProperties,

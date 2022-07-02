@@ -19,7 +19,7 @@
 import ifcopenshell
 
 
-def get_psets(element, psets_only=False, qtos_only=False):
+def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
     psets = {}
     if element.is_a("IfcTypeObject"):
         for definition in element.HasPropertySets or []:
@@ -34,6 +34,9 @@ def get_psets(element, psets_only=False, qtos_only=False):
                 continue
             psets[definition.Name] = get_property_definition(definition)
     elif hasattr(element, "IsDefinedBy"):
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type and should_inherit:
+            psets = get_psets(element_type, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False)
         for relationship in element.IsDefinedBy:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
@@ -41,7 +44,7 @@ def get_psets(element, psets_only=False, qtos_only=False):
                     continue
                 if qtos_only and not definition.is_a("IfcElementQuantity"):
                     continue
-                psets[definition.Name] = get_property_definition(definition)
+                psets.setdefault(definition.Name, {}).update(get_property_definition(definition))
     return psets
 
 
@@ -77,6 +80,10 @@ def get_properties(properties):
     for prop in properties or []:
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
+        elif prop.is_a("IfcPropertyEnumeratedValue"):
+            values = [v.wrappedValue for v in prop.EnumerationValues]
+            results[prop.Name] = [v.wrappedValue for v in prop.EnumerationValues] or None
+
         elif prop.is_a("IfcComplexProperty"):
             data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
             data["properties"] = get_properties(prop.HasProperties)
@@ -90,7 +97,7 @@ def get_predefined_type(element):
     if element_type:
         predefined_type = getattr(element_type, "PredefinedType", None)
         if predefined_type == "USERDEFINED" or not predefined_type:
-            predefined_type = getattr(element_type, "ElementType", None)
+            predefined_type = getattr(element_type, "ElementType", getattr(element_type, "ProcessType", None))
         if predefined_type and predefined_type != "NOTDEFINED":
             return predefined_type
     predefined_type = getattr(element, "PredefinedType", None)
@@ -118,7 +125,7 @@ def get_types(type):
     return []
 
 
-def get_material(element, should_skip_usage=False):
+def get_material(element, should_skip_usage=False, should_inherit=True):
     if hasattr(element, "HasAssociations") and element.HasAssociations:
         for relationship in element.HasAssociations:
             if relationship.is_a("IfcRelAssociatesMaterial"):
@@ -128,31 +135,72 @@ def get_material(element, should_skip_usage=False):
                     elif relationship.RelatingMaterial.is_a("IfcMaterialProfileSetUsage"):
                         return relationship.RelatingMaterial.ForProfileSet
                 return relationship.RelatingMaterial
-    relating_type = get_type(element)
-    if relating_type != element and hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
-        return get_material(relating_type, should_skip_usage)
+    if should_inherit:
+        relating_type = get_type(element)
+        if relating_type != element and hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
+            return get_material(relating_type, should_skip_usage)
 
 
 def get_elements_by_material(ifc_file, material):
-    results = []
+    results = set()
     for inverse in ifc_file.get_inverse(material):
         if inverse.is_a("IfcRelAssociatesMaterial"):
-            results.extend(inverse.RelatedObjects)
+            results.update(inverse.RelatedObjects)
         elif inverse.is_a("IfcMaterialLayer"):
             for material_set in inverse.ToMaterialLayerSet:
-                results.extend(get_elements_by_material(ifc_file, material_set))
+                results.update(get_elements_by_material(ifc_file, material_set))
         elif inverse.is_a("IfcMaterialProfile"):
             for material_set in inverse.ToMaterialProfileSet:
-                results.extend(get_elements_by_material(ifc_file, material_set))
+                results.update(get_elements_by_material(ifc_file, material_set))
         elif inverse.is_a("IfcMaterialConstituent"):
             for material_set in inverse.ToMaterialConstituentSet:
-                results.extend(get_elements_by_material(ifc_file, material_set))
+                results.update(get_elements_by_material(ifc_file, material_set))
         elif inverse.is_a("IfcMaterialLayerSetUsage"):
-            results.extend(get_elements_by_material(ifc_file, inverse))
+            results.update(get_elements_by_material(ifc_file, inverse))
         elif inverse.is_a("IfcMaterialProfileSetUsage"):
-            results.extend(get_elements_by_material(ifc_file, inverse))
+            results.update(get_elements_by_material(ifc_file, inverse))
         elif inverse.is_a("IfcMaterialList"):
-            results.extend(get_elements_by_material(ifc_file, inverse))
+            results.update(get_elements_by_material(ifc_file, inverse))
+    return results
+
+
+def get_elements_by_style(ifc_file, style):
+    results = set()
+    inverses = list(ifc_file.get_inverse(style))
+    while inverses:
+        inverse = inverses.pop()
+        if inverse.is_a("IfcPresentationStyleAssignment"):
+            inverses.extend(ifc_file.get_inverse(inverse))
+            continue
+        if not inverse.is_a("IfcStyledItem"):
+            continue
+        if inverse.Item:
+            [
+                results.update(get_elements_by_representation(ifc_file, i))
+                for i in ifc_file.get_inverse(inverse.Item)
+                if i.is_a("IfcShapeRepresentation")
+            ]
+        else:
+            styled_reps = [i for i in ifc_file.get_inverse(inverse) if i.is_a("IfcStyledRepresentation")]
+            for styled_rep in styled_reps:
+                for material_def_rep in styled_rep.OfProductRepresentation:
+                    results.update(get_elements_by_material(ifc_file, material_def_rep.RepresentedMaterial))
+    return results
+
+
+def get_elements_by_representation(ifc_file, representation):
+    results = set()
+    [results.update(pr.ShapeOfProduct) for pr in representation.OfProductRepresentation]
+    for rep_map in representation.RepresentationMap:
+        for inverse in ifc_file.get_inverse(rep_map):
+            if inverse.is_a("IfcTypeProduct"):
+                results.add(inverse)
+            elif inverse.is_a("IfcMappedItem"):
+                [
+                    results.update(get_elements_by_representation(ifc_file, rep))
+                    for rep in ifc_file.get_inverse(inverse)
+                    if rep.is_a("IfcShapeRepresentation")
+                ]
     return results
 
 

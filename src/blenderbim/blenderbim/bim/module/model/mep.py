@@ -54,7 +54,6 @@ class MepGenerator:
                 self.width = dimensions.get("NominalDiameterOrWidth")
                 self.height = dimensions.get("NominalHeight")
                 self.length = 1
-                self.rotation = 0
 
                 return self.derive_from_cursor()
         elif self.relating_type.is_a("IfcPipeSegmentType"):
@@ -66,14 +65,14 @@ class MepGenerator:
 
     def create_rectangle_segment(self):
         verts = [
-            Vector((0, self.width, 0)),
-            Vector((0, 0, 0)),
-            Vector((0, self.width, self.height)),
-            Vector((0, 0, self.height)),
-            Vector((self.length, self.width, 0)),
-            Vector((self.length, 0, 0)),
-            Vector((self.length, self.width, self.height)),
-            Vector((self.length, 0, self.height)),
+            Vector((- self.width / 2, self.height / 2, 0)),
+            Vector((- self.width / 2, - self.height / 2, 0)),
+            Vector((- self.width / 2, self.height / 2, self.length)),
+            Vector((- self.width / 2, - self.height / 2, self.length)),
+            Vector((self.width / 2, self.height / 2, 0)),
+            Vector((self.width / 2, - self.height / 2, 0)),
+            Vector((self.width / 2, self.height / 2, self.length)),
+            Vector((self.width / 2, - self.height / 2, self.length)),
         ]
         faces = [
             [1, 3, 2, 0],
@@ -91,7 +90,8 @@ class MepGenerator:
 
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
         obj.location = self.location
-        obj.rotation_euler[2] = self.rotation
+        obj.rotation_euler[0] = math.pi / 2
+        obj.rotation_euler[2] = math.pi / 2
         self.collection.objects.link(obj)
 
         bpy.ops.bim.assign_class(
@@ -100,9 +100,19 @@ class MepGenerator:
             ifc_representation_class="IfcExtrudedAreaSolid/IfcRectangleProfileDef",
         )
 
-        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type)
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        element = tool.Ifc.get_entity(obj)
+
+        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=self.relating_type)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.Mep"})
+
+        start_port_matrix = Matrix()
+        end_port_matrix = Matrix.Translation((0, 0, self.length))
+
+        for mat in [start_port_matrix, end_port_matrix]:
+            port = tool.Ifc.run("root.create_entity", ifc_class="IfcDistributionPort")
+            tool.Ifc.run("system.assign_port", element=element, port=port)
+            tool.Ifc.run("geometry.edit_object_placement", product=port, matrix=obj.matrix_world @ mat, is_si=True)
+
         obj.select_set(True)
         return obj

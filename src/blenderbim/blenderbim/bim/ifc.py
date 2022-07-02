@@ -65,6 +65,9 @@ class IfcStore:
         IfcStore.pset_template_file = None
         IfcStore.library_path = ""
         IfcStore.library_file = None
+        IfcStore.last_transaction = ""
+        IfcStore.history = []
+        IfcStore.future = []
         IfcStore.schema_identifiers = ["IFC4", "IFC2X3"]
 
     @staticmethod
@@ -232,20 +235,27 @@ class IfcStore:
 
     @staticmethod
     def relink_all_objects():
-        file = IfcStore.get_file()
-        if not file:
+        if not IfcStore.get_file():
             return
         for obj in bpy.data.objects:
-            if not obj:
-                continue
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            IfcStore.relink_object(obj)
+        for obj in bpy.data.materials:
+            IfcStore.relink_object(obj)
+
+    @staticmethod
+    def relink_object(obj):
+        if not obj:
+            return
+        if obj.BIMObjectProperties.ifc_definition_id:
+            element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
             data = {"id": element.id(), "obj": obj.name}
             if hasattr(element, "GlobalId"):
                 data["guid"] = element.GlobalId
             IfcStore.commit_link_element(data)
-
+        if hasattr(obj, "BIMMaterialProperties") and obj.BIMMaterialProperties.ifc_style_id:
+            element = IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id)
+            data = {"id": element.id(), "obj": obj.name}
+            IfcStore.commit_link_element(data)
 
     @staticmethod
     def delete_element(element):
@@ -300,6 +310,8 @@ class IfcStore:
     @staticmethod
     def commit_link_element(data):
         obj = bpy.data.objects.get(data["obj"])
+        if not obj:
+            obj = bpy.data.materials.get(data["obj"])
         IfcStore.id_map[data["id"]] = obj
         if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj

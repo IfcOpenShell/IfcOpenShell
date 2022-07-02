@@ -154,6 +154,11 @@ def update_drawing_name(self, context):
     core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
 
 
+def update_schedule_name(self, context):
+    schedule = tool.Ifc.get().by_id(self.ifc_definition_id)
+    core.update_schedule_name(tool.Ifc, tool.Drawing, schedule=schedule, name=self.name)
+
+
 def update_has_underlay(self, context):
     update_layer(self, context, "HasUnderlay", self.has_underlay)
 
@@ -232,8 +237,9 @@ class Drawing(PropertyGroup):
 
 
 class Schedule(PropertyGroup):
-    name: StringProperty(name="Name")
-    file: StringProperty(name="File")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    name: StringProperty(name="Name", update=update_schedule_name)
+    identification: StringProperty(name="Identification")
 
 
 class Sheet(PropertyGroup):
@@ -306,6 +312,7 @@ class DocProperties(PropertyGroup):
     should_use_annotation_cache: BoolProperty(name="Use Annotation Cache", default=False)
     should_extract: BoolProperty(name="Should Extract", default=True)
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
+    is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
     target_view: EnumProperty(
         items=[
             ("PLAN_VIEW", "Plan", ""),
@@ -336,10 +343,6 @@ class DocProperties(PropertyGroup):
         name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
     )
 
-    @property
-    def active_schedule(self):
-        return self.schedules[self.active_schedule_index]
-
 
 class BIMCameraProperties(PropertyGroup):
     has_underlay: BoolProperty(name="Underlay", default=False, update=update_has_underlay)
@@ -352,19 +355,6 @@ class BIMCameraProperties(PropertyGroup):
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
     is_nts: BoolProperty(name="Is NTS")
-    cut_objects: EnumProperty(
-        items=[
-            (
-                ".IfcWall|.IfcSlab|.IfcCurtainWall|.IfcStair|.IfcStairFlight|.IfcColumn|.IfcBeam|.IfcMember|.IfcCovering|.IfcSpace",
-                "Overall Plan / Section",
-                "",
-            ),
-            (".IfcElement", "Detail Drawing", ""),
-            ("CUSTOM", "Custom", ""),
-        ],
-        name="Cut Objects",
-    )
-    cut_objects_custom: StringProperty(name="Custom Cut")
     active_drawing_style_index: IntProperty(name="Active Drawing Style Index")
 
     # For now, this JSON dump are all the parameters that determine a camera's "Block representation"
@@ -387,7 +377,6 @@ class BIMCameraProperties(PropertyGroup):
 
 class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
-    is_editing_product: BoolProperty(name="Is Editing Product", default=False)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     value: StringProperty(name="Value", default="TEXT")
     font_size: EnumProperty(
@@ -402,4 +391,7 @@ class BIMTextProperties(PropertyGroup):
         update=refreshFontSize,
         name="Font Size",
     )
+
+class BIMAssignedProductProperties(PropertyGroup):
+    is_editing_product: BoolProperty(name="Is Editing Product", default=False)
     relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object)

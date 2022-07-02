@@ -154,21 +154,24 @@ class Document:
 
 @interface
 class Drawing:
-    def create_annotation_object(cls, object_type): pass
+    def create_annotation_object(cls, drawing, object_type): pass
     def create_camera(cls, name, matrix): pass
+    def create_svg_schedule(cls, schedule): pass
     def create_svg_sheet(cls, document, titleblock): pass
     def delete_collection(cls, collection): pass
     def delete_drawing_elements(cls, elements): pass
     def delete_object(cls, obj): pass
+    def disable_editing_assigned_product(cls, obj): pass
     def disable_editing_drawings(cls): pass
+    def disable_editing_schedules(cls): pass
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
-    def disable_editing_text_product(cls, obj): pass
     def enable_editing(cls, obj): pass
+    def enable_editing_assigned_product(cls, obj): pass
     def enable_editing_drawings(cls): pass
+    def enable_editing_schedules(cls): pass
     def enable_editing_sheets(cls): pass
     def enable_editing_text(cls, obj): pass
-    def enable_editing_text_product(cls, obj): pass
     def ensure_unique_drawing_name(cls, name): pass
     def ensure_unique_identification(cls, identification): pass
     def export_text_literal_attributes(cls, obj): pass
@@ -176,20 +179,23 @@ class Drawing:
     def generate_drawing_name(cls, target_view, location_hint): pass
     def generate_sheet_identification(cls): pass
     def get_annotation_context(cls, target_view): pass
+    def get_assigned_product(cls, element): pass
     def get_body_context(cls): pass
+    def get_document_uri(cls, document): pass
     def get_drawing_collection(cls, drawing): pass
     def get_drawing_group(cls, drawing): pass
     def get_drawing_target_view(cls, drawing): pass
     def get_group_elements(cls, group): pass
     def get_ifc_representation_class(cls, object_type): pass
     def get_name(cls, element): pass
-    def get_sheet_filename(cls, document): pass
+    def get_schedule_location(cls, schedule): pass
     def get_text_literal(cls, obj): pass
-    def get_text_product(cls, element): pass
+    def import_assigned_product(cls, obj): pass
     def import_drawings(cls): pass
+    def import_schedules(cls): pass
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
-    def import_text_product(cls, obj): pass
+    def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def set_drawing_collection_name(cls, group, collection): pass
@@ -240,6 +246,29 @@ class Geometry:
     def should_force_triangulation(cls): pass
     def should_generate_uvs(cls, obj): pass
     def should_use_presentation_style_assignment(cls): pass
+
+
+@interface
+class Georeference:
+    def disable_editing(cls): pass
+    def enable_editing(cls): pass
+    def enh2xyz(cls, map_conversion, coordinates): pass
+    def get_coordinates(cls, io): pass
+    def get_cursor_location(cls): pass
+    def get_map_conversion(cls): pass
+    def get_map_conversion_attributes(cls): pass
+    def get_projected_crs_attributes(cls): pass
+    def get_true_north_attributes(cls): pass
+    def import_map_conversion(cls): pass
+    def import_projected_crs(cls): pass
+    def import_true_north(cls): pass
+    def set_blender_grid_north(cls): pass
+    def set_blender_true_north(cls): pass
+    def set_coordinates(cls, io, coordinates): pass
+    def set_cursor_location(cls, coordinates): pass
+    def set_ifc_grid_north(cls): pass
+    def set_ifc_true_north(cls): pass
+    def xyz2enh(cls, map_conversion, coordinates): pass
 
 
 @interface
@@ -437,6 +466,7 @@ class Style:
     def export_surface_attributes(cls, obj): pass
     def get_active_style_type(cls): pass
     def get_context(cls, obj): pass
+    def get_elements_by_style(cls, style): pass
     def get_name(cls, obj): pass
     def get_style(cls, obj): pass
     def get_surface_rendering_attributes(cls, obj): pass
@@ -448,6 +478,7 @@ class Style:
     def import_presentation_styles(cls, style_type): pass
     def import_surface_attributes(cls, style, obj): pass
     def is_editing_styles(cls): pass
+    def select_elements(cls, elements): pass
 
 
 @interface
@@ -467,7 +498,8 @@ class System:
     def get_ports(cls, element): pass
     def import_system_attributes(cls, system): pass
     def import_systems(cls): pass
-    def load_ports(cls, port): pass
+    def load_ports(cls, element, ports): pass
+    def run_geometry_edit_object_placement(cls, obj=None): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def select_elements(cls, elements): pass
     def select_system_products(cls, system): pass
@@ -499,10 +531,10 @@ class Unit:
     def get_scene_unit_name(cls, unit_type): pass
     def get_scene_unit_si_prefix(cls): pass
     def get_si_name_from_unit_type(cls, unit_type): pass
-    def get_unit_class(cls, unit): pass
     def import_unit_attributes(cls, unit): pass
     def import_units(cls): pass
     def is_scene_unit_metric(cls): pass
+    def is_unit_class(cls, unit, ifc_class): pass
     def set_active_unit(cls, unit): pass
 
 

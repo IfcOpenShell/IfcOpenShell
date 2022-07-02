@@ -38,11 +38,21 @@ def draw_attribute(attribute, layout, copy_operator=None):
     if not value_name:
         layout.label(text=attribute.name)
         return
-    layout.prop(
-        attribute,
-        value_name,
-        text=attribute.name,
-    )
+    if len(attribute.enumerated_values) != 0:
+        layout.label(text=attribute.name)
+        grid = layout.column_flow(columns=4)    
+        for e in attribute.enumerated_values:
+            grid.prop(
+                e,
+                "is_selected",
+                text=str(e[value_name])
+            )
+    else:
+        layout.prop(
+            attribute,
+            value_name,
+            text=attribute.name,  
+        )
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
     if copy_operator:
