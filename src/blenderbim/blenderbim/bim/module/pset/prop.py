@@ -148,31 +148,24 @@ class EnumerationValues(PropertyGroup):
 
 
 class IfcSimpleProperty(Attribute):
-    #bounded_values:
+    # bounded_values:
     enumerated_values: CollectionProperty(type=EnumerationValues)
-    #list_values:
-    #reference_values:
-    #table_values:    
+    # list_values:
+    # reference_values:
+    # table_values:
 
 
 class PsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
     properties: CollectionProperty(name="Properties", type=IfcSimpleProperty)
-    pset_name_collection: CollectionProperty(type=StrProperty)
     pset_name: EnumProperty(items=get_pset_names, name="Pset Name")
     qto_name: EnumProperty(items=get_qto_names, name="Qto Name")
-    qto_name_collection: CollectionProperty(type=StrProperty)
 
-    def ensure_prop_collection(self, context, prop_name):
-        getter = {
-            "pset_name": get_pset_names,
-            "qto_name": get_qto_names,
-        }[prop_name]
-        collection = getattr(self, prop_name + "_collection")
-        collection.clear()
-        for item in getter(self, context):
-            collection.add().name = item[0]
+    getter_enum = {
+        "qto_name": get_qto_names,
+        "pset_name": get_pset_names,
+    }
 
 
 class MaterialPsetProperties(PropertyGroup):
@@ -227,12 +220,20 @@ class AddEditProperties(PropertyGroup):
     primary_measure_type: EnumProperty(items=get_primary_measure_type, name="Primary Measure Type")
     template_type: EnumProperty(
         items=[
-            ("IfcPropertySingleValue","IfcPropertySingleValue","IfcPropertySingleValue"),
-            ("IfcPropertyEnumeratedValue","IfcPropertyEnumeratedValue","IfcPropertyEnumeratedValue")
+            ("IfcPropertySingleValue", "IfcPropertySingleValue", "IfcPropertySingleValue"),
+            ("IfcPropertyEnumeratedValue", "IfcPropertyEnumeratedValue", "IfcPropertyEnumeratedValue"),
         ],
-        name="Template Type"
+        name="Template Type",
     )
     enum_values: CollectionProperty(name="Enum Values", type=EnumerationValues)
+
+    getter_enum = {
+        "primary_measure_type": get_primary_measure_type,
+        "template_type": lambda self, context: [
+            ("IfcPropertySingleValue", "IfcPropertySingleValue", "IfcPropertySingleValue"),
+            ("IfcPropertyEnumeratedValue", "IfcPropertyEnumeratedValue", "IfcPropertyEnumeratedValue"),
+        ],
+    }
 
     def get_value_name(self):
         ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)

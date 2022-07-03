@@ -33,6 +33,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
 types_enum = []
 classes_enum = []
 
@@ -97,20 +98,13 @@ def get_contexts(self, context):
 class BIMRootProperties(PropertyGroup):
     contexts: EnumProperty(items=get_contexts, name="Contexts")
     ifc_product: EnumProperty(items=get_ifc_products, name="Products", update=refresh_classes)
-    ifc_product_collection: CollectionProperty(type=StrProperty)
     ifc_class: EnumProperty(items=get_ifc_classes, name="Class", update=refreshPredefinedTypes)
-    ifc_class_collection: CollectionProperty(type=StrProperty)
     ifc_predefined_type: EnumProperty(items=getIfcPredefinedTypes, name="Predefined Type", default=None)
-    ifc_predefined_type_collection: CollectionProperty(type=StrProperty)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
 
-    def ensure_prop_collection(self, context, prop_name):
-        getter = {
-            "ifc_class": get_ifc_classes,
-            "ifc_product": get_ifc_products,
-            "ifc_predefined_type": getIfcPredefinedTypes,
-        }[prop_name]
-        collection = getattr(self, prop_name + "_collection")
-        collection.clear()
-        for item in getter(self, context):
-            collection.add().name = item[0]
+    getter_enum = {
+        "contexts": get_contexts,
+        "ifc_product": get_ifc_products,
+        "ifc_class": get_ifc_classes,
+        "ifc_predefined_type": getIfcPredefinedTypes,
+    }
