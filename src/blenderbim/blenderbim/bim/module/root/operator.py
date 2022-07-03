@@ -32,6 +32,7 @@ import blenderbim.tool as tool
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.root.prop import get_contexts
+from blenderbim.bim.prop import StrProperty
 
 
 class Operator:
@@ -191,20 +192,25 @@ class CopyClass(bpy.types.Operator, Operator):
         blenderbim.bim.handler.purge_module_data()
 
 
-class BIM_OT_root_property_textfield(bpy.types.Operator):
-    bl_idname = "bim.root_ifc_class_filter"
+class BIM_OT_enum_property_search(bpy.types.Operator):
+    bl_idname = "bim.enum_property_search"
     bl_label = "Search For Property"
     bl_options = {"REGISTER", "UNDO"}
-    data_path: bpy.props.StringProperty()
     prop_name: bpy.props.StringProperty()
+    collection: bpy.props.CollectionProperty(type=StrProperty)
 
     def invoke(self, context, event):
-        context.path_resolve(self.data_path).ensure_prop_collection(context, self.prop_name)
+        self.data = context.data
+        getter = self.data.getter_enum.get(self.prop_name, None)
+        if getter is None:
+            return {"FINISHED"}
+        self.collection.clear()
+        for item in getter(self.data, context):
+            self.collection.add().name = item[0]
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
         return {"FINISHED"}
 
     def draw(self, context):
-        props = context.path_resolve(self.data_path)
-        self.layout.prop_search(props, self.prop_name, props, self.prop_name + "_collection")
+        self.layout.prop_search(self.data, self.prop_name, self, "collection")
