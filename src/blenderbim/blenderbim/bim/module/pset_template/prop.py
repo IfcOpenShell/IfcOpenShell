@@ -152,6 +152,10 @@ class PropTemplate(PropertyGroup):
     description: StringProperty(name="Description")
     primary_measure_type: EnumProperty(items=get_primary_measure_type, name="Primary Measure Type")
 
+    getter_enum = {
+        "primary_measure_type": get_primary_measure_type,
+    }
+
 
 class BIMPsetTemplateProperties(PropertyGroup):
     pset_template_files: EnumProperty(
@@ -162,3 +166,8 @@ class BIMPsetTemplateProperties(PropertyGroup):
     active_prop_template_id: IntProperty(name="Active Prop Template Id")
     active_pset_template: PointerProperty(type=PsetTemplate)
     active_prop_template: PointerProperty(type=PropTemplate)
+
+    getter_enum = {
+        "pset_template_files": getPsetTemplateFiles,
+        "pset_templates": getPsetTemplates,
+    }

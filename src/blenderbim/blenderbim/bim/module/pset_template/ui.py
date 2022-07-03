@@ -19,6 +19,7 @@
 import bpy
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.ui import prop_with_search
 from blenderbim.bim.module.pset_template.prop import (
     getPsetTemplates,
 )
@@ -39,13 +40,13 @@ class BIM_PT_pset_template(Panel):
         props = context.scene.BIMPsetTemplateProperties
 
         row = layout.row(align=True)
-        row.prop(props, "pset_template_files", text="")
+        prop_with_search(row, props, "pset_template_files", text="")
         row.operator("bim.save_pset_template_file", text="", icon="EXPORT")
 
         row = layout.row(align=True)
 
         if bool(getPsetTemplates(props, context)):
-            row.prop(props, "pset_templates", text="", icon="COPY_ID")
+            prop_with_search(row, props, "pset_templates", text="", icon="COPY_ID")
         else:
             row.label(text="No Pset Templates", icon="COPY_ID")
 
@@ -93,7 +94,7 @@ class BIM_PT_pset_template(Panel):
             if props.active_prop_template_id and props.active_prop_template_id == prop_template_id:
                 row.prop(props.active_prop_template, "name", text="")
                 row.prop(props.active_prop_template, "description", text="")
-                row.prop(props.active_prop_template, "primary_measure_type", text="")
+                prop_with_search(row, props.active_prop_template, "primary_measure_type", text="")
             else:
                 row.label(text=prop_template["Name"])
                 row.label(text=prop_template["Description"])

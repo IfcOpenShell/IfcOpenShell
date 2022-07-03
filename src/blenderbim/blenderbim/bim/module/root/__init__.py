@@ -26,7 +26,7 @@ classes = (
     operator.EnableReassignClass,
     operator.ReassignClass,
     operator.UnlinkObject,
-    operator.BIM_OT_root_property_textfield,
+    operator.BIM_OT_enum_property_search,
     prop.BIMRootProperties,
     ui.BIM_PT_class,
 )
