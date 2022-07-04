@@ -72,8 +72,7 @@ class BIM_PT_pset_template(Panel):
             row.prop(props.active_pset_template, "name")
             row = layout.row()
             row.prop(props.active_pset_template, "description")
-            row = layout.row()
-            row.prop(props.active_pset_template, "template_type")
+            prop_with_search(layout, props.active_pset_template, "template_type")
             row = layout.row()
             row.prop(props.active_pset_template, "applicable_entity")
         else:    
