@@ -40,7 +40,7 @@ def draw_attribute(attribute, layout, copy_operator=None):
         return
     if len(attribute.enumerated_values) != 0:
         layout.label(text=attribute.name)
-        grid = layout.column_flow(columns=4)    
+        grid = layout.column_flow(columns=3)    
         for e in attribute.enumerated_values:
             grid.prop(
                 e,
