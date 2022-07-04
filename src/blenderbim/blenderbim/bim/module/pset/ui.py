@@ -18,6 +18,7 @@
 
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.ui import prop_with_search
 from blenderbim.bim.helper import draw_attribute
 from blenderbim.bim.module.pset.data import (
     ObjectPsetsData,
@@ -95,7 +96,7 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
 
 def draw_psetqto_editable_ui(box, props, prop):
     row = box.row(align=True)
-    draw_attribute(box, prop, row, copy_operator="bim.copy_property_to_selection")
+    draw_attribute(prop, row, copy_operator="bim.copy_property_to_selection")
     if (
         "length" in prop.name.lower()
         or "width" in prop.name.lower()
@@ -138,7 +139,7 @@ class BIM_PT_object_psets(Panel):
 
         props = context.active_object.PsetProperties
         row = self.layout.row(align=True)
-        row.prop(props, "pset_name", text="")
+        prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
         op.obj = context.active_object.name
         op.obj_type = "Object"
@@ -177,7 +178,7 @@ class BIM_PT_object_qtos(Panel):
 
         props = context.active_object.PsetProperties
         row = self.layout.row(align=True)
-        row.prop(props, "qto_name", text="")
+        prop_with_search(row, props, "qto_name", text="")
         op = row.operator("bim.add_qto", icon="ADD", text="")
         op.obj = context.active_object.name
         op.obj_type = "Object"
@@ -450,12 +451,12 @@ class BIM_PT_add_edit_custom_properties(Panel):
                 row.prop(prop, "property_name", text="")
                 if prop.template_type == "IfcPropertySingleValue":
                     row.prop(prop, prop.get_value_name(), text="")
-                row.prop(prop, "primary_measure_type", text="")
-                row.prop(prop, "template_type", text="")
+                prop_with_search(row, prop, "primary_measure_type", text="")
+                prop_with_search(row, prop, "template_type", text="")
                 op = row.operator("bim.remove_property_to_edit", icon="X", text="")
                 op.index = index
                 op.option = "AddEditProperties"
-            
+
                 if prop.template_type == "IfcPropertyEnumeratedValue":
                     op = row.operator("bim.add_property_to_edit", icon="ADD", text="Add Enum")
                     op.option = "AddEditProperties"
@@ -494,7 +495,7 @@ class BIM_PT_delete_psets(Panel):
         row = layout.row()
         op = row.operator("bim.add_property_to_edit", icon="ADD")
         op.option = "DeletePsets"
-        
+
         if props:
             for index, prop in enumerate(props):
                 row = layout.row(align=True)

@@ -412,7 +412,7 @@ class BIM_OT_add_property_to_edit(bpy.types.Operator):
     bl_idname = "bim.add_property_to_edit"
     bl_options = {"REGISTER", "UNDO"}
     option: bpy.props.StringProperty()
-    index: bpy.props.IntProperty()
+    index: bpy.props.IntProperty(default=-1)
 
     def execute(self, context):
         if self.index == -1:
