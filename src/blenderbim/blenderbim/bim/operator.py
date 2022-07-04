@@ -25,6 +25,7 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 from . import schema
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.prop import StrProperty
 from blenderbim.bim.ui import IFCFileSelector
 from mathutils import Vector, Matrix, Euler
 from math import radians
@@ -523,3 +524,41 @@ class ConfigureVisibility(bpy.types.Operator):
 
     def execute(self, context):
         return {"FINISHED"}
+
+
+def update_enum_property_search_prop(self, context):
+    for i, prop in enumerate(self.collection_name):
+        if prop.name == self.dummy_name:
+            setattr(context.data, self.prop_name, self.collection_identifier[i].name)
+
+
+class BIM_OT_enum_property_search(bpy.types.Operator):
+    bl_idname = "bim.enum_property_search"
+    bl_label = "Search For Property"
+    bl_options = {"REGISTER", "UNDO"}
+    dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop)
+    collection_name: bpy.props.CollectionProperty(type=StrProperty)
+    collection_identifier: bpy.props.CollectionProperty(type=StrProperty)
+    prop_name: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        self.data = context.data
+        getter = self.data.getter_enum.get(self.prop_name, None)
+        if getter is None:
+            return {"FINISHED"}
+        self.collection_name.clear()
+        self.collection_identifier.clear()
+        for item in getter(self.data, context):
+            self.collection_identifier.add().name = item[0]
+            if item[0] == getattr(self.data, self.prop_name):
+                self.dummy_name = item[1]  # We found the current enum value
+            self.collection_name.add().name = item[1]
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def draw(self, context):
+        # Mandatory to access context.data in update :
+        self.layout.context_pointer_set(name="data", data=self.data) 
+        self.layout.prop_search(self, "dummy_name", self, "collection_name")
