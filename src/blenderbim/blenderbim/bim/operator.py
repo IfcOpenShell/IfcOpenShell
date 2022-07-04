@@ -25,6 +25,7 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 from . import schema
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.prop import StrProperty
 from blenderbim.bim.ui import IFCFileSelector
 from mathutils import Vector, Matrix, Euler
 from math import radians
@@ -523,3 +524,27 @@ class ConfigureVisibility(bpy.types.Operator):
 
     def execute(self, context):
         return {"FINISHED"}
+
+
+class BIM_OT_enum_property_search(bpy.types.Operator):
+    bl_idname = "bim.enum_property_search"
+    bl_label = "Search For Property"
+    bl_options = {"REGISTER", "UNDO"}
+    prop_name: bpy.props.StringProperty()
+    collection: bpy.props.CollectionProperty(type=StrProperty)
+
+    def invoke(self, context, event):
+        self.data = context.data
+        getter = self.data.getter_enum.get(self.prop_name, None)
+        if getter is None:
+            return {"FINISHED"}
+        self.collection.clear()
+        for item in getter(self.data, context):
+            self.collection.add().name = item[0]
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def draw(self, context):
+        self.layout.prop_search(self.data, self.prop_name, self, "collection")
