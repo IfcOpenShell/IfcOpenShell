@@ -146,15 +146,42 @@ class PsetTemplate(PropertyGroup):
     applicable_entity: StringProperty(name="Applicable Entity")
 
 
+class EnumerationValues(PropertyGroup):
+    string_value: StringProperty(name="Value")
+    bool_value: BoolProperty(name="Value")
+    int_value: IntProperty(name="Value")
+    float_value: FloatProperty(name="Value")
+    
+    
 class PropTemplate(PropertyGroup):
     global_id: StringProperty(name="Global ID")
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
     primary_measure_type: EnumProperty(items=get_primary_measure_type, name="Primary Measure Type")
-
+    template_type: EnumProperty(
+        items=[
+            ("P_SINGLEVALUE","P_SINGLEVALUE",""),
+            ("P_ENUMERATEDVALUE","P_ENUMERATEDVALUE","")
+        ],
+        name="Template Type"
+    )
+    enum_values: CollectionProperty(type=EnumerationValues)
     getter_enum = {
         "primary_measure_type": get_primary_measure_type,
     }
+
+    
+    def get_value_name(self):
+        ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)
+        data_type = ifcopenshell.util.attribute.get_primitive_type(ifc_data_type)
+        if data_type == "string":
+            return "string_value"
+        elif data_type == "boolean":
+            return "bool_value"
+        elif data_type == "integer":
+            return "int_value"
+        elif data_type == "float":
+            return "float_value"
 
 
 class BIMPsetTemplateProperties(PropertyGroup):
@@ -166,7 +193,8 @@ class BIMPsetTemplateProperties(PropertyGroup):
     active_prop_template_id: IntProperty(name="Active Prop Template Id")
     active_pset_template: PointerProperty(type=PsetTemplate)
     active_prop_template: PointerProperty(type=PropTemplate)
-
+    new_template_filename: StringProperty("New TemplateFileName")
+    
     getter_enum = {
         "pset_template_files": getPsetTemplateFiles,
         "pset_templates": getPsetTemplates,
