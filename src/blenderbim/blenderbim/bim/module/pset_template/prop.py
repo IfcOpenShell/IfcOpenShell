@@ -147,7 +147,7 @@ class PsetTemplate(PropertyGroup):
     applicable_entity: StringProperty(name="Applicable Entity")
 
     getter_enum = {
-        "template_type": lambda self, context: get_template_type(self, context),
+        "template_type": get_template_type,
     }
 
 
