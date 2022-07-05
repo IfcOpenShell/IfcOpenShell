@@ -282,6 +282,29 @@ class SaveLibraryFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AppendAllLibraryElements(bpy.types.Operator):
+    bl_idname = "bim.append_all_library_elements"
+    bl_label = "Append All Library Elements"
+    bl_options = {"REGISTER", "UNDO"}
+    
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+    
+    def _execute(self, context):
+        props = context.scene.BIMProjectProperties.library_elements
+        
+        for prop in props:
+            bpy.ops.bim.append_library_element(
+                definition = prop.ifc_definition_id,
+                prop_index = context.scene.BIMProjectProperties.get_library_element_index(prop)
+            )
+        return {"FINISHED"}
+    
+    
 class AppendLibraryElement(bpy.types.Operator):
     bl_idname = "bim.append_library_element"
     bl_label = "Append Library Element"

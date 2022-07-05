@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AppendAllLibraryElements,
     operator.AppendLibraryElement,
     operator.AssignLibraryDeclaration,
     operator.ChangeLibraryElement,
