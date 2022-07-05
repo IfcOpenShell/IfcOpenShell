@@ -107,9 +107,10 @@ class Usecase:
                     continue               
                 else:
                     properties.append(
-                    self.file.create_entity(
-                        "IfcPropertySingleValue",
-                        **{"Name": name, "NominalValue": value},
+                        self.file.create_entity(
+                            "IfcPropertySingleValue",
+                            **{"Name": name, "NominalValue": value},
+                        )
                     )
             #TODO-The following "elif" is temporary code, will need to refactor at some point - vulevukusej
             elif isinstance(value, list):
