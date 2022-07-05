@@ -483,6 +483,15 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				}
 			}
 
+			if (!ifc_representation) {
+				if (reps->size()) {
+					// Return a random representation
+					ifc_representation = *reps->begin();
+				} else {
+					throw IfcParse::IfcException("No suitable IfcRepresentation found");
+				}
+			}
+
 			// Read precision for found representation's context
 			auto context = ifc_representation->ContextOfItems();
 			if (context->template as<typename Schema::IfcGeometricRepresentationSubContext>()) {
@@ -497,15 +506,6 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					p = 1.e-7;
 				}
 				kernel.setValue(IfcGeom::Kernel::GV_PRECISION, p);
-			}
-
-			if (!ifc_representation) {
-				if (reps->size()) {
-					// Return a random representation
-					ifc_representation = *reps->begin();
-				} else {
-					throw IfcParse::IfcException("No suitable IfcRepresentation found");
-				}
 			}
 
 			IfcGeom::BRepElement* brep = kernel.convert(settings, ifc_representation, product);
