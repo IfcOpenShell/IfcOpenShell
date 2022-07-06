@@ -240,6 +240,10 @@ class Attribute(PropertyGroup):
             value = str(value)
         setattr(self, self.get_value_name(), value)
 
+    getter_enum = {
+        "enum_value": getAttributeEnumValues,
+    }
+
 
 class ModuleVisibility(PropertyGroup):
     name: StringProperty(name="Name")
