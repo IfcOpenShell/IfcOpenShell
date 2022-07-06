@@ -139,26 +139,22 @@ def get_primary_measure_type(self, context):
     return AddEditCustomPropertiesData.data["primary_measure_type"]
 
 
-class EnumerationValues(PropertyGroup):
-    string_value: StringProperty(name="Value")
-    bool_value: BoolProperty(name="Value")
-    int_value: IntProperty(name="Value")
-    float_value: FloatProperty(name="Value")
-    is_selected: BoolProperty(default=False)
+class IfcPropertyEnumeratedValue(PropertyGroup):
+    enumerated_values: CollectionProperty(type=Attribute)
 
 
-class IfcSimpleProperty(Attribute):
-    # bounded_values:
-    enumerated_values: CollectionProperty(type=EnumerationValues)
-    # list_values:
-    # reference_values:
-    # table_values:
+class IfcProperty(PropertyGroup):
+    metadata: PointerProperty(type=Attribute)
+    value_type: EnumProperty(
+        items=[(v, v, v) for v in ("IfcPropertySingleValue", "IfcPropertyEnumeratedValue")], name="Value Type"
+    )
+    enumerated_value: PointerProperty(type=IfcPropertyEnumeratedValue)
 
 
 class PsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=IfcSimpleProperty)
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_pset_names, name="Pset Name")
     qto_name: EnumProperty(items=get_qto_names, name="Qto Name")
 
@@ -225,7 +221,7 @@ class AddEditProperties(PropertyGroup):
         ],
         name="Template Type",
     )
-    enum_values: CollectionProperty(name="Enum Values", type=EnumerationValues)
+    enum_values: CollectionProperty(name="Enum Values", type=Attribute)
 
     getter_enum = {
         "primary_measure_type": get_primary_measure_type,
