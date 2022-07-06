@@ -732,7 +732,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
 
     def toggle_wireframe(self, link):
         objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, link.collection.all_objects)
-        for i,obj in enumerate(objs):
+        for i, obj in enumerate(objs):
             if i == 0:
                 if obj.display_type == "WIRE":
                     display_type = "TEXTURED"

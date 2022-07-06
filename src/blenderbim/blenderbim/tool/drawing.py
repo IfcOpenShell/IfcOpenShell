@@ -375,15 +375,11 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def open_spreadsheet(cls, uri):
-        cls.open_with_user_command(
-            bpy.context.preferences.addons["blenderbim"].preferences.spreadsheet_command, uri
-        )
+        cls.open_with_user_command(bpy.context.preferences.addons["blenderbim"].preferences.spreadsheet_command, uri)
 
     @classmethod
     def open_svg(cls, uri):
-        cls.open_with_user_command(
-            bpy.context.preferences.addons["blenderbim"].preferences.svg_command, uri
-        )
+        cls.open_with_user_command(bpy.context.preferences.addons["blenderbim"].preferences.svg_command, uri)
 
     @classmethod
     def run_root_assign_class(

@@ -125,7 +125,6 @@ class TestHidePorts:
         system.delete_element_objects(["port"]).should_be_called()
         subject.hide_ports(ifc, system, element="element")
 
-
     def test_syncing_locations_if_objects_moved_prior_to_hiding_ports(self, ifc, system):
         ifc.get_object("element").should_be_called().will_return("obj")
         ifc.is_moved("obj").should_be_called().will_return(True)

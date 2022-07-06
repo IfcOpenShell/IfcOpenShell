@@ -37,7 +37,7 @@ class UnitsData:
             "unit_classes": cls.unit_classes(),
             "named_unit_types": cls.named_unit_types(),
             "conversion_unit_types": cls.conversion_unit_types(),
-            "total_units": cls.get_total_units()
+            "total_units": cls.get_total_units(),
         }
         cls.is_loaded = True
 

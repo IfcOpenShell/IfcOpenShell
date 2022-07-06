@@ -392,6 +392,7 @@ class BIMTextProperties(PropertyGroup):
         name="Font Size",
     )
 
+
 class BIMAssignedProductProperties(PropertyGroup):
     is_editing_product: BoolProperty(name="Is Editing Product", default=False)
     relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object)

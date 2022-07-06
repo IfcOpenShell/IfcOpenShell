@@ -84,7 +84,9 @@ class ObjectMaterialData:
 
     @classmethod
     def materials(cls):
-        return sorted([(str(m.id()), m.Name or "Unnamed", "") for m in tool.Ifc.get().by_type("IfcMaterial")], key=lambda x: x[1])
+        return sorted(
+            [(str(m.id()), m.Name or "Unnamed", "") for m in tool.Ifc.get().by_type("IfcMaterial")], key=lambda x: x[1]
+        )
 
     @classmethod
     def type_material(cls):

@@ -28,31 +28,31 @@ from ifcopenshell.api.pset_template.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
-#This is just a temporary operator until
-#@Moult performs some of his refactor-magic ;) - vulevukusej
+# This is just a temporary operator until
+# @Moult performs some of his refactor-magic ;) - vulevukusej
 class RefreshPsetTemplates(bpy.types.Operator):
     bl_idname = "bim.refresh_psettemplates"
     bl_label = "Refresh the data for PsetTemplates"
     bl_options = {"REGISTER", "UNDO"}
-    
+
     def execute(self, context):
         purge_templates()
-        purge_psets()      
-        return {"FINISHED"}    
-        
-    
+        purge_psets()
+        return {"FINISHED"}
+
+
 class AddPsetFile(bpy.types.Operator):
     bl_idname = "bim.add_pset_file"
     bl_label = "Add Pset File"
     bl_options = {"REGISTER", "UNDO"}
-    
+
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self, width=250)
-    
+
     def draw(self, context):
         self.props = context.scene.BIMPsetTemplateProperties
         self.layout.prop(self.props, "new_template_filename", text="Filename:")
-        
+
     def execute(self, context):
         template = ifcopenshell.file()
         filepath = os.path.join(
@@ -60,7 +60,7 @@ class AddPsetFile(bpy.types.Operator):
             "pset",
             self.props.new_template_filename + ".ifc",
         )
-        
+
         template.create_entity(
             "IFCPROPERTYSETTEMPLATE",
             **{
@@ -68,14 +68,14 @@ class AddPsetFile(bpy.types.Operator):
                 "Name": "Name",
                 "Description": "Description",
                 "TemplateType": "PSET_TYPEDRIVENONLY",
-                "ApplicableEntity": "IfcTypeObject"
+                "ApplicableEntity": "IfcTypeObject",
             }
         )
         template.write(filepath)
         self.props.new_template_filename = ""
         return {"FINISHED"}
-  
-    
+
+
 class AddPsetTemplate(bpy.types.Operator):
     bl_idname = "bim.add_pset_template"
     bl_label = "Add Pset Template"
@@ -190,33 +190,35 @@ class EnableEditingPropTemplate(bpy.types.Operator):
         props.active_prop_template.primary_measure_type = template["PrimaryMeasureType"]
         props.active_prop_template.template_type = template["TemplateType"]
         props.active_prop_template.enum_values.clear()
-        
+
         if template["Enumerators"]:
             props.active_prop_template.enum_values.clear()
             data_type = props.active_prop_template.get_value_name()
             for e in template["Enumerators"].EnumerationValues:
                 new = props.active_prop_template.enum_values.add()
                 setattr(new, data_type, e.wrappedValue)
-            
+
         return {"FINISHED"}
-    
+
+
 class DeletePropEnum(bpy.types.Operator):
     bl_idname = "bim.delete_prop_enum"
     bl_label = "delete property enumeration"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
-    
+
     def execute(self, context):
         active_prop = context.scene.BIMPsetTemplateProperties.active_prop_template
         active_prop.enum_values.remove(self.index)
         return {"FINISHED"}
+
 
 class AddPropEnum(bpy.types.Operator):
     bl_idname = "bim.add_prop_enum"
     bl_label = "add property enumeration"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
-    
+
     def execute(self, context):
         active_prop = context.scene.BIMPsetTemplateProperties.active_prop_template
         active_prop.enum_values.add()
@@ -380,26 +382,27 @@ class EditPropTemplate(bpy.types.Operator):
                     "Description": props.active_prop_template.description,
                     "PrimaryMeasureType": props.active_prop_template.primary_measure_type,
                     "TemplateType": props.active_prop_template.template_type,
-                    "Enumerators": enumerator
+                    "Enumerators": enumerator,
                 },
             }
         )
         Data.load(IfcStore.pset_template_file)
         bpy.ops.bim.disable_editing_prop_template()
         return {"FINISHED"}
-    
-    #TODO -This will need to go into the 
+
+    # TODO -This will need to go into the
     # api code at some point - vulevukusej
     def generate_prop_enum(self, props):
         self.file = IfcStore.pset_template_file
         data_type = props.active_prop_template.get_value_name()
         prop = props.active_prop_template
         prop_enum = self.file.create_entity(
-                        "IFCPROPERTYENUMERATION",
-                        Name=prop.name,
-                        EnumerationValues=tuple(self.file.create_entity(
-                            prop.primary_measure_type, ev[data_type]) for ev in prop.enum_values)
-                    )
+            "IFCPROPERTYENUMERATION",
+            Name=prop.name,
+            EnumerationValues=tuple(
+                self.file.create_entity(prop.primary_measure_type, ev[data_type]) for ev in prop.enum_values
+            ),
+        )
         return prop_enum
 
     def rollback(self, data):
