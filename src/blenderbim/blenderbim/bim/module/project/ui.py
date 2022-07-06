@@ -216,6 +216,7 @@ class BIM_PT_project_library(Panel):
         if self.props.active_library_element:
             row.operator("bim.rewind_library", icon="FRAME_PREV", text="")
         row.operator("bim.refresh_library", icon="FILE_REFRESH", text="")
+        row.operator("bim.append_all_library_elements", icon="APPEND_BLEND",text="")
         self.layout.template_list(
             "BIM_UL_library",
             "",
