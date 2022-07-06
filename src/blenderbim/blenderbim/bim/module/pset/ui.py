@@ -19,7 +19,6 @@
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.ui import prop_with_search
-from blenderbim.bim.helper import draw_attribute
 from blenderbim.bim.module.pset.data import (
     ObjectPsetsData,
     ObjectQtosData,
@@ -30,6 +29,45 @@ from blenderbim.bim.module.pset.data import (
     ProfilePsetsData,
     WorkSchedulePsetsData,
 )
+
+
+def draw_property(prop, layout, copy_operator=None):
+    if prop.value_type == "IfcPropertySingleValue":
+        draw_single_property(prop, layout, copy_operator)
+    elif prop.value_type == "IfcPropertyEnumeratedValue":
+        draw_enumerated_property(prop, layout, copy_operator)
+
+
+def draw_single_property(prop, layout, copy_operator=None):
+    value_name = prop.metadata.get_value_name()
+    if not value_name:
+        layout.label(text=prop.metadata.name)
+        return
+    layout.prop(
+        prop.metadata,
+        value_name,
+        text=prop.metadata.name,
+    )
+    if prop.metadata.is_optional:
+        layout.prop(prop.metadata, "is_null", icon="RADIOBUT_OFF" if prop.metadata.is_null else "RADIOBUT_ON", text="")
+    if copy_operator:
+        op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
+        op.name = prop.metadata.name
+    if prop.metadata.is_uri:
+        op = layout.operator("bim.select_uri_prop", text="", icon="FILE_FOLDER")
+        op.data_path = prop.metadata.path_from_id("string_value")
+
+
+def draw_enumerated_property(prop, layout, copy_operator=None):
+    value_name = prop.metadata.get_value_name()
+    if not value_name:
+        layout.label(text=prop.metadata.name)
+        return
+    if len(prop.enumerated_value.enumerated_values) != 0:
+        layout.label(text=prop.metadata.name)
+        grid = layout.column_flow(columns=3)
+        for e in prop.enumerated_value.enumerated_values:
+            grid.prop(e, "is_selected", text=str(e[value_name]))
 
 
 def get_active_pset_obj_name(context, obj_type):
@@ -96,7 +134,7 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
 
 def draw_psetqto_editable_ui(box, props, prop):
     row = box.row(align=True)
-    draw_attribute(prop, row, copy_operator="bim.copy_property_to_selection")
+    draw_property(prop, row, copy_operator="bim.copy_property_to_selection")
     if (
         "length" in prop.name.lower()
         or "width" in prop.name.lower()
