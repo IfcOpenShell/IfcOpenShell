@@ -145,6 +145,7 @@ def create_case(fn, openings):
 
 
 class TestWallOpenings:
+    @pytest.mark.skipif(shutil.which("IfcConvert"), reason="Requires IfcConvert in path")
     def test_all(self):
 
         cases = [
