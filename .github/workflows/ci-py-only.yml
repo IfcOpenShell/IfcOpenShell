@@ -1,4 +1,4 @@
-name: ci
+name: ci_py_only
 
 on:
   push:
