@@ -560,5 +560,5 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
 
     def draw(self, context):
         # Mandatory to access context.data in update :
-        self.layout.context_pointer_set(name="data", data=self.data) 
+        self.layout.context_pointer_set(name="data", data=self.data)
         self.layout.prop_search(self, "dummy_name", self, "collection_name")

@@ -75,7 +75,9 @@ class Material(blenderbim.core.tool.Material):
                     new = props.materials.add()
                     new.ifc_definition_id = material.id()
                     new.name = get_name(material)
-                    new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+                    new.total_elements = len(
+                        ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
+                    )
             return
         for material in materials:
             new = props.materials.add()

@@ -138,6 +138,4 @@ class BIMObjectMaterialProperties(PropertyGroup):
         items=getParameterizedProfileClasses, name="Parameterized Profile Classes"
     )
 
-    getter_enum = {
-        "material": get_materials
-    }
+    getter_enum = {"material": get_materials}

@@ -38,13 +38,13 @@ class BIM_PT_pset_template(Panel):
     def draw(self, context):
         layout = self.layout
         props = context.scene.BIMPsetTemplateProperties
-        
+
         row = layout.row(align=True)
         prop_with_search(row, props, "pset_template_files", text="")
         row.operator("bim.save_pset_template_file", text="", icon="EXPORT")
-        row.operator("bim.add_pset_file",icon="ADD",text="")
+        row.operator("bim.add_pset_file", icon="ADD", text="")
         row.operator("bim.refresh_psettemplates", icon="FILE_REFRESH", text="")
-        
+
         row = layout.row(align=True)
 
         if bool(getPsetTemplates(props, context)):
@@ -75,7 +75,7 @@ class BIM_PT_pset_template(Panel):
             prop_with_search(layout, props.active_pset_template, "template_type")
             row = layout.row()
             row.prop(props.active_pset_template, "applicable_entity")
-        else:    
+        else:
             pset_template = Data.pset_templates[int(props.pset_templates)]
             for name, value in pset_template.items():
                 if name == "id" or name == "type" or name == "HasPropertyTemplates":
@@ -87,7 +87,7 @@ class BIM_PT_pset_template(Panel):
         row = layout.row(align=True)
         row.label(text="Property Templates", icon="COPY_ID")
         row.operator("bim.add_prop_template", icon="ADD", text="")
-        
+
         row = layout.row()
         row.label(text="Name | Description | PrimaryMeasureType | TemplateType")
 
@@ -100,26 +100,27 @@ class BIM_PT_pset_template(Panel):
                 row.prop(props.active_prop_template, "description", text="")
                 prop_with_search(row, props.active_prop_template, "primary_measure_type", text="")
                 row.prop(props.active_prop_template, "template_type", text="")
-                
+
                 if props.active_prop_template.template_type == "P_ENUMERATEDVALUE":
                     row = layout.row(align=True)
                     split = row.split(factor=0.2)
-                    c=split.column()
-                    c.label(text="Enumerations:",)
-                    
-                    c=split.column()
+                    c = split.column()
+                    c.label(
+                        text="Enumerations:",
+                    )
+
+                    c = split.column()
                     box = c.box()
                     grid = box.column_flow(columns=4)
                     value_name = props.active_prop_template.get_value_name()
                     r = grid.row()
                     r.operator("bim.add_prop_enum", text="Add Enum")
-                    for k,v in enumerate(props.active_prop_template.enum_values):
-                        r = grid.row(align=True)                 
+                    for k, v in enumerate(props.active_prop_template.enum_values):
+                        r = grid.row(align=True)
                         r.prop(v, value_name, text="")
                         op = r.operator("bim.delete_prop_enum", icon="X", text="")
                         op.index = k
-                    
-                    
+
             else:
                 row.label(text=prop_template["Name"])
                 row.label(text=prop_template["Description"])

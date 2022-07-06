@@ -164,11 +164,8 @@ class PropTemplate(PropertyGroup):
     description: StringProperty(name="Description")
     primary_measure_type: EnumProperty(items=get_primary_measure_type, name="Primary Measure Type")
     template_type: EnumProperty(
-        items=[
-            ("P_SINGLEVALUE","P_SINGLEVALUE",""),
-            ("P_ENUMERATEDVALUE","P_ENUMERATEDVALUE","")
-        ],
-        name="Template Type"
+        items=[("P_SINGLEVALUE", "P_SINGLEVALUE", ""), ("P_ENUMERATEDVALUE", "P_ENUMERATEDVALUE", "")],
+        name="Template Type",
     )
     enum_values: CollectionProperty(type=EnumerationValues)
     getter_enum = {

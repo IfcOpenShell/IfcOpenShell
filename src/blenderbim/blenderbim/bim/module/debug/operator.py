@@ -112,6 +112,7 @@ class CreateAllShapes(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         elements = self.file.by_type("IfcElement") + self.file.by_type("IfcSpace")
+
         total = len(elements)
         settings = ifcopenshell.geom.settings()
         failures = []
