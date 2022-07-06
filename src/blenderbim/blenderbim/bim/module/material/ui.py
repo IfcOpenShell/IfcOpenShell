@@ -22,7 +22,7 @@ from ifcopenshell.api.material.data import Data
 from ifcopenshell.api.profile.data import Data as ProfileData
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
-from blenderbim.bim.ui import prop_with_search
+from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialData
 
 

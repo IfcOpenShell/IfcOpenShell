@@ -170,15 +170,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.operator("bim.configure_visibility")
 
 
-def prop_with_search(layout, data, prop_name, **kwargs):  # Kwargs are layout.prop arguments (text, icon, etc.)
-    row = layout.row(align=True)
-    # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
-    row.context_pointer_set(name="data", data=data)
-    row.prop(data, prop_name, **kwargs)
-    op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
-    op.prop_name = prop_name
-
-
 def ifc_units(self, context):
     scene = context.scene
     props = scene.BIMProperties

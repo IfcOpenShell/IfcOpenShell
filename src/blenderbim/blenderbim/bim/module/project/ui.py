@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from blenderbim.bim.ui import prop_with_search
+from blenderbim.bim.helper import prop_with_search
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.project.data import ProjectData

@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.bim.ui import prop_with_search
+from blenderbim.bim.helper import prop_with_search
 import bpy
 from blenderbim.bim.helper import draw_attributes
 
