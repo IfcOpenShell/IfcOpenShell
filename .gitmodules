@@ -10,4 +10,4 @@
 	url = https://github.com/IfcOpenShell/svgfill
 [submodule "src/ifcopenshell-python/test/Sample-BIM-Files"]
 	path = src/ifcopenshell-python/test/Sample-BIM-Files
-	url = https://github.com/atomczak/Sample-BIM-Files
+	url = https://github.com/IfcOpenShell/ids-test-files
