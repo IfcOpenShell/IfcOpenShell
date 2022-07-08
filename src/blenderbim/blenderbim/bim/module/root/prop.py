@@ -34,11 +34,14 @@ from bpy.props import (
 )
 
 types_enum = []
+classes_enum = []
 
 
 def purge():
     global types_enum
     types_enum = []
+    global classes_enum
+    classes_enum = []
 
 
 def getIfcPredefinedTypes(self, context):
@@ -69,6 +72,10 @@ def refreshPredefinedTypes(self, context):
         context.scene.BIMRootProperties.ifc_predefined_type = enum[0][0]
 
 
+def update_class_enum(self, context):
+    self.ifc_class = self.ifc_class_filter_enum
+
+
 def get_ifc_products(self, context):
     if not IfcClassData.is_loaded:
         IfcClassData.load()
@@ -93,3 +100,10 @@ class BIMRootProperties(PropertyGroup):
     ifc_class: EnumProperty(items=get_ifc_classes, name="Class", update=refreshPredefinedTypes)
     ifc_predefined_type: EnumProperty(items=getIfcPredefinedTypes, name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
+
+    getter_enum = {
+        "contexts": get_contexts,
+        "ifc_product": get_ifc_products,
+        "ifc_class": get_ifc_classes,
+        "ifc_predefined_type": getIfcPredefinedTypes,
+    }

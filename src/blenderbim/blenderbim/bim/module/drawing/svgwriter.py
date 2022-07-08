@@ -70,7 +70,7 @@ class SvgWriter:
             viewBox=("0 0 {} {}".format(self.width, self.height)),
             id="root",
             data_scale=self.human_scale,
-            debug=False, # Disable validation so that we can insert the IFC namespace
+            debug=False,  # Disable validation so that we can insert the IFC namespace
         )
         self.svg.attribs["xmlns:ifc"] = "http://www.ifcopenshell.org/ns"
         return self
@@ -81,7 +81,9 @@ class SvgWriter:
     def draw_underlay(self, image):
         self.svg.add(
             self.svg.image(
-                os.path.join("..", "diagrams", os.path.basename(image)), width=self.width, height=self.height,
+                os.path.join("..", "diagrams", os.path.basename(image)),
+                width=self.width,
+                height=self.height,
             )
         )
         return self
@@ -252,7 +254,9 @@ class SvgWriter:
             end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
             vector = end - start
             line = self.svg.add(
-                self.svg.line(start=tuple(start * self.svg_scale), end=tuple(end * self.svg_scale), class_=" ".join(classes))
+                self.svg.line(
+                    start=tuple(start * self.svg_scale), end=tuple(end * self.svg_scale), class_=" ".join(classes)
+                )
             )
             line["stroke-dasharray"] = "12.5, 3, 3, 3"
             axis_tag = tool.Ifc.get_entity(obj).Name
@@ -361,7 +365,9 @@ class SvgWriter:
             end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
             vector = end - start
             line = self.svg.add(
-                self.svg.line(start=tuple(start * self.svg_scale), end=tuple(end * self.svg_scale), class_=" ".join(classes))
+                self.svg.line(
+                    start=tuple(start * self.svg_scale), end=tuple(end * self.svg_scale), class_=" ".join(classes)
+                )
             )
 
     def draw_leader_annotation(self, obj):
@@ -427,7 +433,9 @@ class SvgWriter:
             (symbol_position * self.svg_scale)[1],
         )
 
-        self.svg.add(self.svg.use("#elevation-arrow", insert=tuple(symbol_position * self.svg_scale), transform=transform))
+        self.svg.add(
+            self.svg.use("#elevation-arrow", insert=tuple(symbol_position * self.svg_scale), transform=transform)
+        )
         self.svg.add(self.svg.use("#elevation-tag", insert=tuple(symbol_position * self.svg_scale)))
 
         reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
@@ -666,7 +674,7 @@ class SvgWriter:
         dir2 = ((arc_matrix.inverted() @ arc_end_pts[1]) - (arc_matrix.inverted() @ center)).normalized()
         angle = -dir1.xy.angle_signed(dir2.xy)
 
-        #if is_reflex:
+        # if is_reflex:
         #    angle = angle % (math.pi * 2)
 
         # Center of gravity of all vertices, used to help position the text
@@ -680,7 +688,9 @@ class SvgWriter:
         arc_midpoint = center + ((cog - center).normalized() * radius)
 
         text_position = self.project_point_onto_camera(arc_midpoint)
-        text_position = Vector(((x_offset + text_position.x) * self.svg_scale, (y_offset - text_position.y) * self.svg_scale))
+        text_position = Vector(
+            ((x_offset + text_position.x) * self.svg_scale, (y_offset - text_position.y) * self.svg_scale)
+        )
 
         center_projected = self.project_point_onto_camera(center)
         center_position = Vector(
@@ -704,8 +714,12 @@ class SvgWriter:
 
         # Draw SVG arc, see for details: http://xahlee.info/js/svg_circle_arc.html
         arc_proj_end_pts = [self.project_point_onto_camera(v) for v in arc_end_pts]
-        p1 = Vector(((x_offset + arc_proj_end_pts[0].x) * self.svg_scale, (y_offset - arc_proj_end_pts[0].y) * self.svg_scale))
-        p2 = Vector(((x_offset + arc_proj_end_pts[1].x) * self.svg_scale, (y_offset - arc_proj_end_pts[1].y) * self.svg_scale))
+        p1 = Vector(
+            ((x_offset + arc_proj_end_pts[0].x) * self.svg_scale, (y_offset - arc_proj_end_pts[0].y) * self.svg_scale)
+        )
+        p2 = Vector(
+            ((x_offset + arc_proj_end_pts[1].x) * self.svg_scale, (y_offset - arc_proj_end_pts[1].y) * self.svg_scale)
+        )
         r = radius * self.svg_scale
         # reflex = 1 if angle > math.pi else 0
         reflex = is_reflex
@@ -735,10 +749,16 @@ class SvgWriter:
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
             p0 = Vector(
-                ((x_offset + projected_points[0].x) * self.svg_scale, (y_offset - projected_points[0].y) * self.svg_scale)
+                (
+                    (x_offset + projected_points[0].x) * self.svg_scale,
+                    (y_offset - projected_points[0].y) * self.svg_scale,
+                )
             )
             p1 = Vector(
-                ((x_offset + projected_points[1].x) * self.svg_scale, (y_offset - projected_points[1].y) * self.svg_scale)
+                (
+                    (x_offset + projected_points[1].x) * self.svg_scale,
+                    (y_offset - projected_points[1].y) * self.svg_scale,
+                )
             )
             text_offset = (p0 - p1).xy.normalized() * 5
             text_position = projected_points[0]
@@ -823,7 +843,9 @@ class SvgWriter:
             text_position = (mid * self.svg_scale) + perpendicular
         rotation = math.degrees(vector.angle_signed(Vector((1, 0))))
         line = self.svg.add(
-            self.svg.line(start=tuple(start * self.svg_scale), end=tuple(end * self.svg_scale), class_=" ".join(classes))
+            self.svg.line(
+                start=tuple(start * self.svg_scale), end=tuple(end * self.svg_scale), class_=" ".join(classes)
+            )
         )
         if text_override is not None:
             text = text_override

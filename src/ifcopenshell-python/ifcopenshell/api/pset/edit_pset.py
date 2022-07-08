@@ -102,9 +102,16 @@ class Usecase:
             if value is None:
                 continue
             if isinstance(value, ifcopenshell.entity_instance):
-                nominal_value = value
                 if value.is_a(True) == "IFC4.IfcPropertyEnumeratedValue":
                     properties.append(value)
+                    continue               
+                else:
+                    properties.append(
+                        self.file.create_entity(
+                            "IfcPropertySingleValue",
+                            **{"Name": name, "NominalValue": value},
+                        )
+                    )
             #TODO-The following "elif" is temporary code, will need to refactor at some point - vulevukusej
             elif isinstance(value, list):
                 for pset_template in self.settings["pset_template"].HasPropertyTemplates:
@@ -122,6 +129,7 @@ class Usecase:
                             EnumerationReference=prop_enum
                         )
                         properties.append(prop_enum_value)
+                        continue
             else:
                 primary_measure_type = self.get_primary_measure_type(name, new_value=value)
                 value = self.cast_value_to_primary_measure_type(value, primary_measure_type)

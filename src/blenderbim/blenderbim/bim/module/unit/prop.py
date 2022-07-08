@@ -68,3 +68,9 @@ class BIMUnitProperties(PropertyGroup):
     conversion_unit_types: EnumProperty(items=get_conversion_unit_types, name="Conversion Unit Types")
     named_unit_types: EnumProperty(items=get_named_unit_types, name="Named Unit Types")
     unit_attributes: CollectionProperty(name="Unit Attributes", type=Attribute)
+
+    getter_enum = {
+        "unit_classes": get_unit_classes,
+        "conversion_unit_types": get_conversion_unit_types,
+        "named_unit_types": get_named_unit_types,
+    }
