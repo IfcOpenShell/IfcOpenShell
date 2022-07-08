@@ -35,6 +35,7 @@ class Usecase:
                 "PrimaryMeasureType": "IfcLabel",
                 "TemplateType": "P_SINGLEVALUE",
                 "AccessState": "READWRITE",
+                "Enumerators": None
             }
         )
         has_property_templates = list(self.settings["pset_template"].HasPropertyTemplates or [])

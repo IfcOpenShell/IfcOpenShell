@@ -65,14 +65,14 @@ class MepGenerator:
 
     def create_rectangle_segment(self):
         verts = [
-            Vector((- self.width / 2, self.height / 2, 0)),
-            Vector((- self.width / 2, - self.height / 2, 0)),
-            Vector((- self.width / 2, self.height / 2, self.length)),
-            Vector((- self.width / 2, - self.height / 2, self.length)),
+            Vector((-self.width / 2, self.height / 2, 0)),
+            Vector((-self.width / 2, -self.height / 2, 0)),
+            Vector((-self.width / 2, self.height / 2, self.length)),
+            Vector((-self.width / 2, -self.height / 2, self.length)),
             Vector((self.width / 2, self.height / 2, 0)),
-            Vector((self.width / 2, - self.height / 2, 0)),
+            Vector((self.width / 2, -self.height / 2, 0)),
             Vector((self.width / 2, self.height / 2, self.length)),
-            Vector((self.width / 2, - self.height / 2, self.length)),
+            Vector((self.width / 2, -self.height / 2, self.length)),
         ]
         faces = [
             [1, 3, 2, 0],

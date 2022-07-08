@@ -118,7 +118,7 @@ class SheetBuilder:
         sheet_tree = ET.parse(sheet_path)
         sheet_root = sheet_tree.getroot()
 
-        for g in sheet_root.findall('{http://www.w3.org/2000/svg}g'):
+        for g in sheet_root.findall("{http://www.w3.org/2000/svg}g"):
             if g.attrib.get("data-id") == str(reference.id()):
                 sheet_root.remove(g)
                 break

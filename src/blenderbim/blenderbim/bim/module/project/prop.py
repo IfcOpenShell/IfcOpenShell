@@ -167,3 +167,28 @@ class BIMProjectProperties(PropertyGroup):
 
     def get_library_element_index(self, lib_element):
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))
+
+    getter_enum = {
+        "collection_mode": lambda self, context: [
+            ("DECOMPOSITION", "Decomposition", "Collections represent aggregates and spatial containers"),
+            ("SPATIAL_DECOMPOSITION", "Spatial Decomposition", "Collections represent spatial containers"),
+            ("IFC_CLASS", "IFC Class", "Collections represent IFC class"),
+            ("NONE", "None", "No collections are created"),
+        ],
+        "filter_mode": lambda self, context: [
+            ("NONE", "None", "No filtering is performed"),
+            ("DECOMPOSITION", "Decomposition", "Filter objects by decomposition"),
+            ("IFC_CLASS", "IFC Class", "Filter objects by class"),
+            ("IFC_TYPE", "IFC Type", "Filter objects by type"),
+            ("WHITELIST", "Whitelist", "Filter objects using a custom whitelist query"),
+            ("BLACKLIST", "Blacklist", "Filter objects using a custom blacklist query"),
+        ],
+        "merge_mode": lambda self, context: [
+            ("NONE", "None", "No objects are merged"),
+            ("IFC_CLASS", "IFC Class", "One object per IFC class"),
+            ("IFC_TYPE", "IFC Type", "One object per IFC construction type"),
+            ("MATERIAL", "Material", "One object per material"),
+        ],
+        "export_schema": get_export_schema,
+        "template_file": get_template_file,
+    }

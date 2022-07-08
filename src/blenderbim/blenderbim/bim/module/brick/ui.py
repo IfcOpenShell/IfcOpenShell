@@ -18,6 +18,7 @@
 
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
+from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.brick.data import BrickschemaData, BrickschemaReferencesData
 
 
@@ -48,7 +49,8 @@ class BIM_PT_brickschema(Panel):
         row.operator("bim.close_brick_project", text="", icon="CANCEL")
 
         row = self.layout.row(align=True)
-        row.prop(self.props, "namespace", text="")
+        prop_with_search(row, self.props, "namespace", text="")
+        prop_with_search(row, self.props, "brick_equipment_class", text="")
         row.prop(self.props, "brick_equipment_class", text="")
         row.operator("bim.add_brick", text="", icon="ADD")
 
@@ -101,7 +103,7 @@ class BIM_PT_ifc_brickschema_references(Panel):
             return
 
         row = self.layout.row(align=True)
-        row.prop(self.props, "libraries")
+        prop_with_search(row, self.props, "libraries")
         row.operator("bim.convert_brick_project", text="", icon="ADD")
 
         row = self.layout.row(align=True)

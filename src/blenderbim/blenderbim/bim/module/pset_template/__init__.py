@@ -20,6 +20,8 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.RefreshPsetTemplates,
+    operator.AddPsetFile,
     operator.SavePsetTemplateFile,
     operator.AddPsetTemplate,
     operator.EditPsetTemplate,
@@ -30,8 +32,11 @@ classes = (
     operator.EnableEditingPsetTemplate,
     operator.DisableEditingPsetTemplate,
     operator.EnableEditingPropTemplate,
+    operator.DeletePropEnum,
+    operator.AddPropEnum,
     operator.DisableEditingPropTemplate,
     prop.PsetTemplate,
+    prop.EnumerationValues,
     prop.PropTemplate,
     prop.BIMPsetTemplateProperties,
     ui.BIM_PT_pset_template,

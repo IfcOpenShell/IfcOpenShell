@@ -624,6 +624,7 @@ class EditTaskTime(bpy.types.Operator):
             if prop.is_null:
                 attributes[prop.name] = None
                 return True
+            # TODO make this parse PT32 as P4D
             attributes[prop.name] = helper.parse_duration(prop.string_value)
             return True
 

@@ -19,6 +19,7 @@
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.unit.data import UnitsData
 
 
@@ -53,22 +54,22 @@ class BIM_PT_units(Panel):
             return
 
         row = self.layout.row(align=True)
-        row.prop(self.props, "unit_classes", text="")
+        prop_with_search(row, self.props, "unit_classes", text="")
 
         if self.props.unit_classes == "IfcMonetaryUnit":
             row.operator("bim.add_monetary_unit", text="", icon="ADD")
         elif self.props.unit_classes in ("IfcConversionBasedUnit", "IfcConversionBasedUnitWithOffset"):
-            row.prop(self.props, "conversion_unit_types", text="")
+            prop_with_search(row, self.props, "conversion_unit_types", text="")
             op = row.operator("bim.add_conversion_based_unit", text="", icon="ADD")
             op.name = self.props.conversion_unit_types
         elif self.props.unit_classes == "IfcDerivedUnit":
             pass  # TODO
         elif self.props.unit_classes == "IfcSIUnit":
-            row.prop(self.props, "named_unit_types", text="")
+            prop_with_search(row, self.props, "named_unit_types", text="")
             op = row.operator("bim.add_si_unit", text="", icon="ADD")
             op.unit_type = self.props.named_unit_types
         elif self.props.unit_classes == "IfcContextDependentUnit":
-            row.prop(self.props, "named_unit_types", text="")
+            prop_with_search(row, self.props, "named_unit_types", text="")
             op = row.operator("bim.add_context_dependent_unit", text="", icon="ADD")
             op.name = "THINGAMAJIG"
             op.unit_type = self.props.named_unit_types

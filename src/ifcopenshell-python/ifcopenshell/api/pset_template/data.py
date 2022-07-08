@@ -49,5 +49,7 @@ class Data:
                 "Name": data["Name"],
                 "Description": data["Description"],
                 "PrimaryMeasureType": data["PrimaryMeasureType"],
+                "TemplateType": data["TemplateType"],
+                "Enumerators": data["Enumerators"]
             }
         cls.is_loaded = True
