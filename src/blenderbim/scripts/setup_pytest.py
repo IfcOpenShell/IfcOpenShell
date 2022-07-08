@@ -18,11 +18,14 @@
 
 import subprocess
 import sys
+from pathlib import Path
 
 py_exec = str(sys.executable)
+lib = Path(py_exec).parent.parent / "lib" 
+
 subprocess.call([py_exec, "-m", "ensurepip", "--user"])
-subprocess.call([py_exec, "-m", "pip", "install", "--upgrade", "pip"])
-subprocess.call([py_exec, "-m", "pip", "install", "pytest"])
-subprocess.call([py_exec, "-m", "pip", "install", "pytest-blender"])
-subprocess.call([py_exec, "-m", "pip", "install", "pytest-bdd"])
-subprocess.call([py_exec, "-m", "pip", "install", "pygments"])
+subprocess.call([py_exec, "-m", "pip", "install", "--upgrade",  "pip"])
+subprocess.call([py_exec, "-m", "pip", "install", f"--target={str(lib)}", "pytest"])
+subprocess.call([py_exec, "-m", "pip", "install", f"--target={str(lib)}", "pytest-blender"])
+subprocess.call([py_exec, "-m", "pip", "install", f"--target={str(lib)}", "pytest-bdd"])
+subprocess.call([py_exec, "-m", "pip", "install", f"--target={str(lib)}", "pygments"])

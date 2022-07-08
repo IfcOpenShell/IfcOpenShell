@@ -20,7 +20,7 @@ import bpy
 import blenderbim.bim.module.root.prop as root_prop
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.ui import prop_with_search
+from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.root.data import IfcClassData
 
 

@@ -21,7 +21,6 @@ import ifcopenshell
 import ifcopenshell.util.schema
 from blenderbim.bim.module.root.data import IfcClassData
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

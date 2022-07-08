@@ -145,6 +145,7 @@ def create_case(fn, openings):
 
 
 class TestWallOpenings:
+    @pytest.mark.skipif(shutil.which("IfcConvert") is None, reason="Requires IfcConvert in path")
     def test_all(self):
 
         cases = [
@@ -244,4 +245,4 @@ class TestWallOpenings:
 
 
 if __name__ == "__main__":
-    TestWallOpenings().test_all()
+    pytest.main(["-x", __file__])

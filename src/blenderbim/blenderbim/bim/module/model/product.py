@@ -121,9 +121,7 @@ class AddTypeInstance(bpy.types.Operator):
         collection_obj = bpy.data.objects.get(collection.name)
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         element = tool.Ifc.get_entity(obj)
-        blenderbim.core.type.assign_type(
-            tool.Ifc, tool.Type, element=element, type=relating_type
-        )
+        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
         if building_obj:
             if instance_class in ["IfcWindow", "IfcDoor"]:
