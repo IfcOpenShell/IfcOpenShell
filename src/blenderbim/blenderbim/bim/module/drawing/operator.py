@@ -152,13 +152,13 @@ class CreateDrawing(bpy.types.Operator):
 
             with profile("Generate underlay"):
                 underlay_svg = self.generate_underlay(context)
-            
+
             with profile("Generate linework"):
                 linework_svg = self.generate_linework(context)
 
             with profile("Generate annotation"):
                 annotation_svg = self.generate_annotation(context)
-            
+
             with profile("Combine SVG layers"):
                 svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
 

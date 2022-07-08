@@ -163,6 +163,7 @@ class TestGetMapConversionAttributes(NewFile):
             "Scale": 6.0,
         }
 
+
 class TestGetTrueNorthAttributes(NewFile):
     def test_run(self):
         TestImportTrueNorth().test_run()
@@ -185,18 +186,18 @@ class TestDisableEditing(NewFile):
 
 class TestSetCoordinates(NewFile):
     def test_run(self):
-        subject.set_coordinates("input", [1., 2., 3.])
+        subject.set_coordinates("input", [1.0, 2.0, 3.0])
         assert bpy.context.scene.BIMGeoreferenceProperties.coordinate_input == "1.0,2.0,3.0"
-        subject.set_coordinates("output", [4., 5., 6.])
+        subject.set_coordinates("output", [4.0, 5.0, 6.0])
         assert bpy.context.scene.BIMGeoreferenceProperties.coordinate_output == "4.0,5.0,6.0"
 
 
 class TestGetCoordinates(NewFile):
     def test_run(self):
         bpy.context.scene.BIMGeoreferenceProperties.coordinate_input = "1.0,2.0,3.0"
-        assert subject.get_coordinates("input") == [1., 2., 3.]
+        assert subject.get_coordinates("input") == [1.0, 2.0, 3.0]
         bpy.context.scene.BIMGeoreferenceProperties.coordinate_output = "4.0,5.0,6.0"
-        assert subject.get_coordinates("output") == [4., 5., 6.]
+        assert subject.get_coordinates("output") == [4.0, 5.0, 6.0]
 
 
 class TestGetCursorLocation(NewFile):
@@ -207,8 +208,8 @@ class TestGetCursorLocation(NewFile):
         ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
         unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", prefix="MILLI", name="METRE")
         ifcopenshell.api.run("unit.assign_unit", ifc, units=[unit])
-        bpy.context.scene.cursor.location = (1., 2., 3.)
-        assert subject.get_cursor_location() == [1000., 2000., 3000.]
+        bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
+        assert subject.get_cursor_location() == [1000.0, 2000.0, 3000.0]
 
 
 class TestSetCursorLocation(NewFile):
@@ -219,8 +220,8 @@ class TestSetCursorLocation(NewFile):
         ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
         unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", prefix="MILLI", name="METRE")
         ifcopenshell.api.run("unit.assign_unit", ifc, units=[unit])
-        subject.set_cursor_location([1000., 2000., 3000.])
-        assert list(bpy.context.scene.cursor.location) == [1., 2., 3.]
+        subject.set_cursor_location([1000.0, 2000.0, 3000.0])
+        assert list(bpy.context.scene.cursor.location) == [1.0, 2.0, 3.0]
 
 
 class TestSetIfcTrueNorth(NewFile):
@@ -258,13 +259,13 @@ class TestGetMapConversion(NewFile):
 
 class TestXyz2Enh(NewFile):
     def test_run(self):
-        assert subject.xyz2enh([0., 0., 0.], None) == [0., 0., 0.]
+        assert subject.xyz2enh([0.0, 0.0, 0.0], None) == [0.0, 0.0, 0.0]
 
     def test_using_the_blender_offset(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
         props.blender_eastings = "1.0"
-        assert subject.xyz2enh([0., 0., 0.], None) == (1., 0., 0.)
+        assert subject.xyz2enh([0.0, 0.0, 0.0], None) == (1.0, 0.0, 0.0)
 
     def test_using_the_map_conversion(self):
         ifc = ifcopenshell.file()
@@ -274,7 +275,7 @@ class TestXyz2Enh(NewFile):
         ifcopenshell.api.run("georeference.add_georeferencing", ifc)
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Eastings = 1.0
-        assert subject.xyz2enh([0., 0., 0.], map_conversion) == (1., 0., 0.)
+        assert subject.xyz2enh([0.0, 0.0, 0.0], map_conversion) == (1.0, 0.0, 0.0)
 
     def test_applying_both_blender_offset_and_map_conversion(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -287,18 +288,18 @@ class TestXyz2Enh(NewFile):
         ifcopenshell.api.run("georeference.add_georeferencing", ifc)
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Northings = 1.0
-        assert subject.xyz2enh([0., 0., 0.], map_conversion) == (1., 1., 0.)
+        assert subject.xyz2enh([0.0, 0.0, 0.0], map_conversion) == (1.0, 1.0, 0.0)
 
 
 class TestEnh2Xyz(NewFile):
     def test_run(self):
-        assert subject.enh2xyz([0., 0., 0.], None) == [0., 0., 0.]
+        assert subject.enh2xyz([0.0, 0.0, 0.0], None) == [0.0, 0.0, 0.0]
 
     def test_using_the_blender_offset(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
         props.blender_eastings = "1.0"
-        assert subject.enh2xyz([0., 0., 0.], None) == (-1., 0., 0.)
+        assert subject.enh2xyz([0.0, 0.0, 0.0], None) == (-1.0, 0.0, 0.0)
 
     def test_using_the_map_conversion(self):
         ifc = ifcopenshell.file()
@@ -308,7 +309,7 @@ class TestEnh2Xyz(NewFile):
         ifcopenshell.api.run("georeference.add_georeferencing", ifc)
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Eastings = 1.0
-        assert subject.enh2xyz([0., 0., 0.], map_conversion) == (-1., 0., 0.)
+        assert subject.enh2xyz([0.0, 0.0, 0.0], map_conversion) == (-1.0, 0.0, 0.0)
 
     def test_applying_both_blender_offset_and_map_conversion(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -321,7 +322,7 @@ class TestEnh2Xyz(NewFile):
         ifcopenshell.api.run("georeference.add_georeferencing", ifc)
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Northings = 1.0
-        assert subject.enh2xyz([0., 0., 0.], map_conversion) == (-1., -1., 0.)
+        assert subject.enh2xyz([0.0, 0.0, 0.0], map_conversion) == (-1.0, -1.0, 0.0)
 
 
 class TestSetIfcGridNorth(NewFile):

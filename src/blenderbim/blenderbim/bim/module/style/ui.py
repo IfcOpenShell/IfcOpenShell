@@ -54,7 +54,7 @@ class BIM_PT_styles(Panel):
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
 
-        #row.operator("bim.add_presentation_style", text="", icon="ADD")
+        # row.operator("bim.add_presentation_style", text="", icon="ADD")
         if self.props.styles and self.props.active_style_index < len(self.props.styles):
             style = self.props.styles[self.props.active_style_index]
             op = row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF")
