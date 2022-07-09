@@ -80,6 +80,10 @@ def get_properties(properties):
     for prop in properties or []:
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
+        elif prop.is_a("IfcPropertyEnumeratedValue"):
+            values = [v.wrappedValue for v in prop.EnumerationValues]
+            results[prop.Name] = [v.wrappedValue for v in prop.EnumerationValues] or None
+
         elif prop.is_a("IfcComplexProperty"):
             data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
             data["properties"] = get_properties(prop.HasProperties)

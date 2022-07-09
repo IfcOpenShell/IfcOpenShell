@@ -69,3 +69,9 @@ class BIMBrickProperties(PropertyGroup):
     libraries: EnumProperty(name="Libraries", items=get_libraries)
     namespace: EnumProperty(name="Namespace", items=get_namespaces)
     brick_equipment_class: EnumProperty(name="Brick Equipment Class", items=get_brick_equipment_classes)
+
+    getter_enum = {
+        "libraries": get_libraries,
+        "namespace": get_namespaces,
+        "brick_equipment_class": get_brick_equipment_classes,
+    }

@@ -20,6 +20,7 @@ import bpy
 import blenderbim.bim.module.root.prop as root_prop
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.root.data import IfcClassData
 
 
@@ -76,17 +77,14 @@ class BIM_PT_class(Panel):
 
     def draw_class_dropdowns(self, context, ifc_predefined_types, is_reassigning_class=False):
         props = context.scene.BIMRootProperties
+        layout = self.layout
         if not is_reassigning_class:
-            row = self.layout.row()
-            row.prop(props, "ifc_product")
-        row = self.layout.row()
-        row.prop(props, "ifc_class")
+            prop_with_search(layout, props, "ifc_product")
+        prop_with_search(layout, props, "ifc_class")
         if ifc_predefined_types:
-            row = self.layout.row()
-            row.prop(props, "ifc_predefined_type")
-        if ifc_predefined_types == "USERDEFINED":
-            row = self.layout.row()
-            row.prop(props, "ifc_userdefined_type")
+            prop_with_search(layout, props, "ifc_predefined_type")
+            if props.ifc_predefined_type == "USERDEFINED":
+                row = layout.row()
+                row.prop(props, "ifc_userdefined_type")
         if not is_reassigning_class:
-            row = self.layout.row()
-            row.prop(context.scene.BIMRootProperties, "contexts")
+            prop_with_search(layout, props, "contexts")
