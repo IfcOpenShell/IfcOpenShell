@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import math
 import mathutils
 import ifcopenshell
 import ifcopenshell.api
@@ -30,9 +31,11 @@ import blenderbim.core.geometry
 from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
+from blenderbim.bim.helper import prop_with_search
 from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
+from . import prop
 
 
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
@@ -54,13 +57,26 @@ def add_empty_type_button(self, context):
     self.layout.operator(AddEmptyType.bl_idname, icon="FILE_3D")
 
 
+def close_operator_panel(event):
+    x, y = event.mouse_x, event.mouse_y
+    bpy.context.window.cursor_warp(10, 10)
+    move_back = lambda: bpy.context.window.cursor_warp(x, y)
+    bpy.app.timers.register(move_back, first_interval=0.001)
+
+
 class AddTypeInstance(bpy.types.Operator):
     bl_idname = "bim.add_type_instance"
-    bl_label = "Add Type Instance"
+    bl_label = "Add"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Add the selected Type Instance to the model"
+    bl_description = "Add Type Instance to the model"
     ifc_class: bpy.props.StringProperty()
     relating_type: bpy.props.IntProperty()
+    from_invoke: bpy.props.BoolProperty(default=False)
+
+    def invoke(self, context, event):
+        if self.from_invoke:
+            close_operator_panel(event)
+        return self.execute(context)
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
@@ -176,7 +192,7 @@ class AddTypeInstance(bpy.types.Operator):
 
 class DisplayIFCTypes(bpy.types.Operator):
     bl_idname = "bim.display_ifc_types"
-    bl_label = "Browse IFC Types"
+    bl_label = "Browse IFC Construction Types"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Display all possible IFC types for new instances"
 
@@ -188,67 +204,232 @@ class DisplayIFCTypes(bpy.types.Operator):
         if not AuthoringData.is_loaded:
             AuthoringData.load()
         props = context.scene.BIMModelProperties
-        props.relating_type = props.relating_type
+        if props.unfold_relating_type:
+            ifc_class = props.ifc_class
+            ifc_type_info = AuthoringData.ifc_type_info(ifc_class)
+            if ifc_type_info is None or not ifc_type_info.fully_loaded:
+                AuthoringData.assetize_ifc_class(ifc_class)
+        else:
+            prop.update_relating_type(props, context)
         min_width = 250
-        width = max([min_width, int(context.region.width / 7)])
+        width_scaling = 6. ** -1
+        width = max([min_width, int(width_scaling * context.region.width)])
         return context.window_manager.invoke_popup(self, width=width)
 
     def draw(self, context):
-        layout = self.layout
         props = context.scene.BIMModelProperties
+        if props.unfold_relating_type:
+            self.draw_by_class(props)
+        else:
+            self.draw_by_class_and_relating_type(props)
+
+    def draw_header(self, props):
+        layout = self.layout
         split = layout.split(align=True, factor=0.6)
-        col = split.column(align=True)
-        row = col.row()
-        row.label(text="Select IFC Type to add:")
-        col.row().separator(factor=2)
+        col1 = split.column(align=True)
+        row = col1.row()
+        row.prop(data=props, property="unfold_relating_type", text="Preview All Relating Types")
+        col1.row().separator(factor=0.5)
+        row = col1.row()
+        row.label(text="Select IFC Construction Type:")
+        col1.row().separator(factor=2)
         enabled = True
         if AuthoringData.data["ifc_classes"]:
-            row = col.row()
-            row.prop(data=props, property="ifc_class", text="", icon="FILE_VOLUME")
-            col.row().separator()
+            row = col1.row()
+            row.label(text="", icon="FILE_VOLUME")
+            prop_with_search(row, props, "ifc_class", text="")
+            col1.row().separator()
         else:
             enabled = False
+        col2 = split.column(align=True)
+        subsplit = col2.split(factor=0.9)
+        subcol = [subsplit.column() for _ in range(2)][-1]
+        subcol.operator("bim.type_instance_help", text="", icon="QUESTION")
+        col2.row().separator(factor=1)
+        return {"enabled": enabled, "layout": layout, "col1": col1, "col2": col2}
+
+    def draw_by_class(self, props):
+        header_data = self.draw_header(props)
+        enabled, layout = [header_data[key] for key in ["enabled", "layout"]]
+        ifc_class = props.ifc_class
+        num_cols = 3
+        layout.row().separator(factor=0.25)
+        flow = layout.grid_flow(row_major=True, columns=num_cols, even_columns=True, even_rows=True, align=True)
+        relating_types = AuthoringData.relating_types()
+        num_types = len(relating_types)
+        for idx, (rt_id, name, desc) in enumerate(relating_types):
+            outer_col = flow.column()
+            box = outer_col.box()
+            row = box.row()
+            row.label(text=name, icon="FILE_3D")
+            row.alignment = "CENTER"
+            row = box.row()
+            if enabled:
+                preview_ifc_types = AuthoringData.data["preview_ifc_types"]
+                if ifc_class in preview_ifc_types:
+                    preview_ifc_class = preview_ifc_types[ifc_class]
+                    if name in preview_ifc_class:
+                        icon_id = preview_ifc_class[name]["icon_id"]
+                        row.template_icon(icon_value=icon_id, scale=6.)
+            outer_col.row().separator(factor=0.5)
+            row = outer_col.row()
+            split = row.split(factor=0.5)
+            col = split.column()
+            op = col.operator("bim.select_type_instance", icon="RIGHTARROW_THIN")
+            op.ifc_class = ifc_class
+            op.relating_type_id = rt_id
+            col = split.column()
+            op = col.operator("bim.add_type_instance", icon="ADD")
+            op.from_invoke = True
+            op.ifc_class = ifc_class
+            if rt_id.isnumeric():
+                op.relating_type = int(rt_id)
+            factor = 2 if idx + 1 < math.ceil(num_types / num_cols) else 0.5
+            outer_col.row().separator(factor=factor)
+        last_row_cols = num_types % num_cols
+        if last_row_cols != 0:
+            for _ in range(num_cols - last_row_cols):
+                flow.column()
+
+    def draw_by_class_and_relating_type(self, props):
+        header_data = self.draw_header(props)
+        enabled, col1, col2 = [header_data[key] for key in ["enabled", "col1", "col2"]]
+        ifc_class = props.ifc_class
         if AuthoringData.data["relating_types"]:
-            row = col.row()
-            row.prop(data=props, property="relating_type", text="", icon="FILE_3D")
-            col.row().separator()
+            row = col1.row()
+            row.label(text="", icon="FILE_3D")
+            prop_with_search(row, props, "relating_type", text="")
+            col1.row().separator()
         else:
             enabled = False
-        col.row().separator(factor=4)
-        row = col.row()
-        op = row.operator("bim.add_ifc_type_instance", icon="ADD")
+        col1.row().separator(factor=4.75)
+        row = col1.row()
         row.enabled = enabled
-        op.ifc_class = props.ifc_class
+        op = row.operator("bim.select_type_instance", icon="RIGHTARROW_THIN")
+        op.ifc_class = ifc_class
         op.relating_type_id = props.relating_type
-        col = split.column()
-        box = col.box()
+        op = row.operator("bim.add_type_instance", icon="ADD")
+        op.from_invoke = True
+        op.ifc_class = ifc_class
+        relating_type = props.relating_type
+        if relating_type.isnumeric():
+            op.relating_type = int(relating_type)
+        box = col2.box()
         if enabled:
             box.template_icon(icon_value=props.icon_id, scale=6.)
 
 
-class AddIFCTypeInstance(bpy.types.Operator):
-    bl_idname = "bim.add_ifc_type_instance"
-    bl_label = "Add"
+class SelectTypeInstance(bpy.types.Operator):
+    bl_idname = "bim.select_type_instance"
+    bl_label = "Select"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Add an instance of this IFC type"
+    bl_description = "Pick Type Instance as selection for subsequent operations"
     ifc_class: bpy.props.StringProperty()
     relating_type_id: bpy.props.StringProperty()
 
-    def close_panel(self, event):
-        x, y = event.mouse_x, event.mouse_y
-        bpy.context.window.cursor_warp(10, 10)
-        move_back = lambda: bpy.context.window.cursor_warp(x, y)
-        bpy.app.timers.register(move_back, first_interval=0.001)
-
     def invoke(self, context, event):
-        self.close_panel(event)
+        close_operator_panel(event)
         return self.execute(context)
 
     def execute(self, context):
         props = context.scene.BIMModelProperties
-        props.ifc_class, props.relating_type = self.ifc_class, self.relating_type_id
-        bpy.ops.bim.add_type_instance()
-        return {'FINISHED'}
+        if self.ifc_class != "":
+            props.ifc_class = self.ifc_class
+        if self.relating_type_id != "":
+            props.relating_type = self.relating_type_id
+        return {"FINISHED"}
+
+
+class TypeInstanceHelp(bpy.types.Operator):
+    bl_idname = "bim.type_instance_help"
+    bl_label = "IFC Construction Type Help"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Click to read some contextual help"
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_popup(self, width=525)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.row().separator(factor=0.5)
+        row = layout.row()
+        row.alignment = "CENTER"
+        row.label(text="BlenderBIM Help", icon="BLENDER")
+        row = layout.row()
+        row.alignment = "CENTER"
+        row.label(text="[IFC Construction Type Browser]")
+        layout.row().separator(factor=0.5)
+        row = self.col_with_margins(layout.row()).row()
+        row.label(text="When to use:", icon="KEYTYPE_MOVING_HOLD_VEC")
+        self.draw_lines(layout, self.message_purpose)
+        layout.row().separator()
+        row = self.col_with_margins(layout.row()).row()
+        row.label(text="Overall workflow:", icon="KEYTYPE_MOVING_HOLD_VEC")
+        self.draw_lines(layout, self.message_overall)
+        layout.row().separator()
+        row = self.col_with_margins(layout.row()).row()
+        row.label(text="UI panel hints:", icon="KEYTYPE_MOVING_HOLD_VEC")
+        self.draw_lines(layout, self.message_ui)
+        layout.row().separator(factor=1.5)
+        row = self.col_with_margins(layout.row()).row()
+        row.label(text="Further help:", icon="KEYTYPE_MOVING_HOLD_VEC")
+        layout.row().separator(factor=0.5)
+        row = self.col_with_margins(layout).row()
+        op = row.operator("bim.open_upstream", text="Homepage", icon="HOME")
+        op.page = "home"
+        op = row.operator("bim.open_upstream", text="Docs", icon="DOCUMENTS")
+        op.page = "docs"
+        op = row.operator("bim.open_upstream", text="Wiki", icon="CURRENT_FILE")
+        op.page = "wiki"
+        op = row.operator("bim.open_upstream", text="Community", icon="COMMUNITY")
+        op.page = "community"
+        layout.row().separator()
+
+    @staticmethod
+    def col_with_margins(layout, margin_left=0.025, margin_right=None):
+        margin_right = margin_left if margin_right is None else margin_right
+        split = layout.split(factor=margin_left, align=True)
+        col = [split.column() for _ in range(2)][-1]
+        subsplit = col.split(factor=(1. - margin_right), align=True)
+        subcol = subsplit.column()
+        subsplit.column().label(text="")
+        return subcol
+
+    def draw_lines(self, layout, lines):
+        box = self.col_with_margins(layout).box()
+        for line in lines:
+            row = box.row()
+            row.label(text="", icon="RIGHTARROW_THIN")
+            row.label(text=line)
+
+    @property
+    def message_purpose(self):
+        return [
+            'Available IFC Construction Types can be previewed and added through the button',
+            '"Browse IFC Construction Types", which appears when an IFC Project Library,',
+            'containing in turn definitions of construction types, is loaded. In order to ',
+            'manage loaded IFC Project Libraries, navigate to [Scene Properties] -> [IFC',
+            'Project Setup] -> [IFC Project Library] under the Properties panel.'
+        ]
+
+    @property
+    def message_overall(self):
+        return [
+            'Choose an IFC Construction Type by picking 1) an IFC Class and 2) a Relating Type. ',
+            'Then, click on the "Add" button to directly add one instance of the chosen type to',
+            'the model, or alternatively click on the "Select" button to be able to later add ',
+            'several instances with SHIFT + A.'
+        ]
+
+    @property
+    def message_ui(self):
+        return [
+            'If "Preview All Relating Types" is marked, a preview for every Relating Type will',
+            'be shown at once. Not advisable on large projects with dozens of types per class.'
+        ]
 
 
 class AlignProduct(bpy.types.Operator):

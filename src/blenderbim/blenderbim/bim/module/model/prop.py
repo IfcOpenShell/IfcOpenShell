@@ -44,16 +44,25 @@ def update_icon_id(self, context):
     if ((ifc_class not in AuthoringData.data["preview_ifc_types"]
             or relating_type not in AuthoringData.data["preview_ifc_types"][ifc_class])
             and relating_type is not None):
-        AuthoringData.assetize_relating_type_from_selection()
+        if not AuthoringData.assetize_relating_type_from_selection():
+            return
     props = bpy.context.scene.BIMModelProperties
     props.icon_id = AuthoringData.data["preview_ifc_types"][ifc_class][relating_type]["icon_id"]
 
 
 def update_ifc_class(self, context):
-    AuthoringData.load_ifc_classes()
-    AuthoringData.load_relating_types()
-    self.relating_type = AuthoringData.data["relating_types"][0][0]
-    update_icon_id(self, context)
+    if not AuthoringData.updating:
+        AuthoringData.load_ifc_classes()
+        AuthoringData.load_relating_types()
+        props = context.scene.BIMModelProperties
+        if props.unfold_relating_type:
+            ifc_class = props.ifc_class
+            ifc_type_info = AuthoringData.ifc_type_info(ifc_class)
+            if ifc_type_info is None or not ifc_type_info.fully_loaded:
+                AuthoringData.assetize_ifc_class(ifc_class)
+        else:
+            self.relating_type = AuthoringData.data["relating_types"][0][0]
+            update_icon_id(self, context)
 
 
 def update_relating_type(self, context):
@@ -61,26 +70,45 @@ def update_relating_type(self, context):
     update_icon_id(self, context)
 
 
+def update_unfold_relating_type(self, context):
+    update_ifc_class(self, context)
+
+    # if self.unfold_relating_type:
+    #     props = context.scene.BIMModelProperties
+    #     ifc_class = props.ifc_class
+    #     ifc_type_info = AuthoringData.ifc_type_info(ifc_class)
+    #     if ifc_type_info is None or not ifc_type_info.fully_loaded:
+    #         AuthoringData.assetize_ifc_class(ifc_class)
+    # else:
+    #     update_ifc_class(self, context)
+
+
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="IFC Class", update=update_ifc_class)
     relating_type: bpy.props.EnumProperty(items=get_relating_type, name="Relating Type", update=update_relating_type)
     icon_id: bpy.props.IntProperty()
+    unfold_relating_type: bpy.props.BoolProperty(update=update_unfold_relating_type)
     occurrence_name_style: bpy.props.EnumProperty(
         items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")],
         name="Occurrence Name Style",
     )
     occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
+    getter_enum = {
+        "ifc_class": get_ifc_class,
+        "relating_type": get_relating_type
+    }
 
 
 def get_ifc_type_info_relating_types(self, context):
-    ifc_class = self.ifc_class
+    ifc_class = self.name
     return AuthoringData.relating_types(ifc_class=ifc_class)
 
 
 class IfcTypeInfo(PropertyGroup):
-    ifc_class: bpy.props.StringProperty(name="IFC class", description="IFC class")
+    name: bpy.props.StringProperty(name="IFC class", description="IFC class")
     relating_type: bpy.props.EnumProperty(
         name="Relating type", description="Relating type", items=get_ifc_type_info_relating_types
     )
+    fully_loaded: bpy.props.BoolProperty(default=False)
 
 
