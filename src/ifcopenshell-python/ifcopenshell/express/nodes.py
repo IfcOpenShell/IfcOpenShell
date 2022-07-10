@@ -21,6 +21,7 @@ from __future__ import print_function
 
 import io
 import string
+import operator
 import collections
 
 
@@ -55,6 +56,11 @@ class ListNode:
     def __init__(self, s, loc, tokens, rule=None):
         self.rule = rule or (type(self).__name__)
         self.tokens = tokens.asList()
+        self.dict_tokens = collections.defaultdict(list)
+        for t in self.tokens:
+            r = getattr(t, 'rule', None)
+            if r:
+                self.dict_tokens[r].append(t)                
         self.flat = sum([getattr(t, "flat", [t]) for t in self.tokens], [])
 
     def __repr__(self):
@@ -97,7 +103,7 @@ def format_clause(exp):
     return "".join(whitespace(term) for term in exp.flat)
 
 
-class TypeDeclaration(Node):
+class TypeDeclaration(Node): 
     name = property(lambda self: self.type_id[0])
     utype = property(lambda self: self.underlying_type.any().any())
     type = property(lambda self: self.utype[0] if isinstance(self.utype, list) else self.utype)
@@ -229,6 +235,41 @@ class NamedType(Node):
         return self.type
 
 
+def do_try(fn):
+    try:
+        return fn()
+    except: pass
+
+
+def to_tree(x, key=None):
+    def get_rule_id(x):
+        from bootstrap import actions
+        ty = type(x).__name__
+        matches = [k for k, v in actions.items() if v == ty]
+        if matches:
+            return matches[0]
+        
+    def prune(di):
+        import bootstrap
+        rule_dependencies = {
+            k: list(map(operator.attrgetter('contents'), bootstrap.reduce(lambda x, y: x | y, (bootstrap.find_bytype(e, bootstrap.Keyword) for e in [v])))) \
+            for k, v in bootstrap.express
+        }        
+        subrules = list(filter(str.islower, rule_dependencies[key]))
+        return {k: v for k, v in di.items() if k in subrules}
+        
+    if isinstance(x, ListNode):
+        return to_tree(x.dict_tokens, key=get_rule_id(x) or key)
+    if isinstance(x, Node,):
+        return to_tree(x.tokens, key=get_rule_id(x) or key)
+    elif isinstance(x, dict):
+        return prune({k: to_tree(v, key=k) for k, v in x.items()})
+    elif isinstance(x, list):
+        return [to_tree(v, key=key) for v in x]
+    else:
+        return x
+
+
 class AggregationType(Node):
     aggregate_type = property(lambda self: self.flat[0])
     bounds = property(lambda self: (list(self.tokens.values())[0][0].bound_spec or [None])[0])
@@ -247,6 +288,8 @@ class AggregationType(Node):
             return v.parameter_type.named_types
         elif v.parameter_type.generalized_types.general_aggregation_types:
             return v.parameter_type.generalized_types.general_aggregation_types
+        elif do_try(lambda: v.parameter_type.generalized_types.generic_type.generic_type[0].GENERIC):
+            return do_try(lambda: v.parameter_type.generalized_types.generic_type.generic_type[0].GENERIC)
         else:
             import pdb
 

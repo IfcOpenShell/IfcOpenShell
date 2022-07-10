@@ -84,6 +84,7 @@ class Schema:
         return self.types_entities[key]
 
     def __init__(self, parsetree):
+        self.tree = parsetree
         self.name = parsetree.syntax[0][0].simple_id
 
         sort = lambda d: OrderedCaseInsensitiveDict(sorted(d))
