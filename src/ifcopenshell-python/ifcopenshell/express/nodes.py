@@ -241,29 +241,68 @@ def do_try(fn):
     except: pass
 
 
+def get_rule_id(x):
+    from bootstrap import actions
+    if not isinstance(x, str):
+        x = type(x).__name__
+    matches = [k for k, v in actions.items() if v == x]
+    if matches:
+        return matches[0]
+
+
 def to_tree(x, key=None):
-    def get_rule_id(x):
-        from bootstrap import actions
-        ty = type(x).__name__
-        matches = [k for k, v in actions.items() if v == ty]
-        if matches:
-            return matches[0]
         
-    def prune(di):
+    def prune(di):       
         import bootstrap
         rule_dependencies = {
             k: list(map(operator.attrgetter('contents'), bootstrap.reduce(lambda x, y: x | y, (bootstrap.find_bytype(e, bootstrap.Keyword) for e in [v])))) \
             for k, v in bootstrap.express
-        }        
-        subrules = list(filter(str.islower, rule_dependencies[key]))
-        return {k: v for k, v in di.items() if k in subrules}
+        }
+        expr = [e for k, e in bootstrap.express if k == key][0]
+        all_rules = [k for k, e in bootstrap.express]
+        
+        # if key == "rule_head":
+        #     breakpoint()
+        
+        # translate class names back to grammar rules if nested actions are encountered
+        di = {get_rule_id(k) or k: v for k, v in di.items()}
+        
+        def replace_synonyms(x):
+            for y in x:
+                if y in di:
+                    yield y
+                else:
+                    rule = [e for k, e in bootstrap.express if k == y][0]
+                    if isinstance(rule, bootstrap.Term) and isinstance(rule.contents, bootstrap.Keyword):
+                        yield rule.contents.contents
+                
+        subrules = list(replace_synonyms(rule_dependencies[key]))
+        if not isinstance(expr, bootstrap.Union):
+            # Filter out terminals when not a union. E.g no
+            # reason to retain TYPE, END_TYPE, but operators
+            # such as IN, LIKE should be retained.
+            subrules = list(filter(str.islower, subrules))
+        vs = list(di.values())
+        return {k: v for k, v in di.items() if k in subrules or (k == key and len(vs) == 1 and vs[0] not in all_rules)}
+        
+    def simplify(di):
+        if isinstance(di, list):
+            if set(map(type, di)) == {str} and set(map(len, di)) == {1}:
+                return "".join(di)
+            return [simplify(v) for v in di]
+        elif isinstance(di, dict) and len(di) == 1 and next(iter(di.values())) == {}:
+            return next(iter(di.keys()))
+        elif isinstance(di, dict):
+            return {k: simplify(v) for k, v in di.items()}
+        else:
+            return di
         
     if isinstance(x, ListNode):
         return to_tree(x.dict_tokens, key=get_rule_id(x) or key)
     if isinstance(x, Node,):
         return to_tree(x.tokens, key=get_rule_id(x) or key)
     elif isinstance(x, dict):
-        return prune({k: to_tree(v, key=k) for k, v in x.items()})
+        return simplify(prune({k: to_tree(v, key=k) for k, v in x.items()}))
     elif isinstance(x, list):
         return [to_tree(v, key=key) for v in x]
     else:
@@ -432,3 +471,16 @@ class StringType(Node):
         if self.width:
             s += " " + repr(self.width)
         return s
+
+
+class ProcedureDeclaration(Node):
+    @property
+    def name(self):
+        return self.flat[1]
+        
+        
+class FunctionDeclaration(ProcedureDeclaration):
+    pass
+    
+class RuleDeclaration(ProcedureDeclaration):
+    pass

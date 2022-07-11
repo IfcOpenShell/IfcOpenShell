@@ -92,11 +92,17 @@ class Schema:
         declarations = [
             d.any()[0]
             for d in parsetree.syntax[0][0].schema_body[0]
-            if d.rule == "declaration" and d.any()[0].rule != "function_decl"
+            if d.rule == "declaration"
+        ] + [
+            d
+            for d in parsetree.syntax[0][0].schema_body[0]
+            if d.rule == "RuleDeclaration"
         ]
-
+        
         self.types = sort([(t.name, t) for t in declarations if isinstance(t, nodes.TypeDeclaration)])
         self.entities = sort([(t.name, t) for t in declarations if isinstance(t, nodes.EntityDeclaration)])
+        self.rules = sort([(t.name, t) for t in declarations if isinstance(t, nodes.RuleDeclaration)])
+        self.functions = sort([(t.name, t) for t in declarations if isinstance(t, nodes.FunctionDeclaration)])
 
         self.keys = list(self.types.keys()) + list(self.entities.keys())
         self.types_entities = {k: v for d in (self.types, self.entities) for k, v in d.items()}
