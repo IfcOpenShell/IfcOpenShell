@@ -85,17 +85,19 @@ class Schema:
 
     def __init__(self, parsetree):
         self.tree = parsetree
-        self.name = parsetree.syntax[0][0].simple_id
+        schema = next(iter(parsetree.syntax[0]))
+        self.name = schema.simple_id
+        schema_declarations = list(schema.schema_body[0])
 
         sort = lambda d: OrderedCaseInsensitiveDict(sorted(d))
 
         declarations = [
             d.any()[0]
-            for d in parsetree.syntax[0][0].schema_body[0]
+            for d in schema_declarations
             if d.rule == "declaration"
         ] + [
             d
-            for d in parsetree.syntax[0][0].schema_body[0]
+            for d in schema_declarations
             if d.rule == "RuleDeclaration"
         ]
         

@@ -57,10 +57,18 @@ class ListNode:
         self.rule = rule or (type(self).__name__)
         self.tokens = tokens.asList()
         self.dict_tokens = collections.defaultdict(list)
+        
+        rules_as_list = set()
         for t in self.tokens:
             r = getattr(t, 'rule', None)
             if r:
-                self.dict_tokens[r].append(t)                
+                rules_as_list.add(r)
+                self.dict_tokens[r].append(t)
+                
+        for r, t in tokens.asDict().items():
+            if r not in rules_as_list:
+                self.dict_tokens[r].append(t)
+                
         self.flat = sum([getattr(t, "flat", [t]) for t in self.tokens], [])
 
     def __repr__(self):
@@ -68,9 +76,10 @@ class ListNode:
 
     def __iter__(self):
         return iter(self.tokens)
-
-    def __getitem__(self, i):
-        return self.tokens[i]
+    
+    # Somehow indexing messes up the pyparsing results, so instead of x[0] use list(x)[0]
+    # def __getitem__(self, i):
+    #     return self.tokens[i]
 
     def init(self):
         pass
@@ -115,7 +124,7 @@ class TypeDeclaration(Node):
         self.where = []
         clause = self.where_clause
         if clause:
-            clause = clause[0]
+            clause = list(clause[0])
 
             self.where = [(r.simple_id, format_clause(r.expression[0])) for r in clause[1::2]]
 
@@ -170,7 +179,7 @@ class EntityDeclaration(Node):
         self.where = []
         clause = [r for r in self.entity_body[0] if r.rule == "where_clause"]
         if clause:
-            clause = clause[0]
+            clause = list(clause[0])
 
             self.where = [(r.simple_id, format_clause(r.expression[0])) for r in clause[1::2]]
 
