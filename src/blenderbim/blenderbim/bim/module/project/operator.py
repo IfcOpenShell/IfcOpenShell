@@ -71,6 +71,7 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
     bl_description = "Select an IFC file that can be used as a library"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
+    append_all: bpy.props.BoolProperty(default=False)
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
@@ -87,6 +88,8 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
         bpy.ops.bim.refresh_library()
         if context.area:
             context.area.tag_redraw()
+        if self.append_all:
+            bpy.ops.bim.append_entire_library()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -104,6 +107,9 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
     def commit(self, data):
         IfcStore.library_path = data["filepath"]
         IfcStore.library_file = ifcopenshell.open(data["filepath"])
+        
+    def draw(self, context):
+        self.layout.prop(self, "append_all", text= "Append Entire Library")
 
 
 class RefreshLibrary(bpy.types.Operator):
@@ -282,6 +288,27 @@ class SaveLibraryFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AppendEntiryLibrary(bpy.types.Operator):
+    bl_idname = "bim.append_entire_library"
+    bl_label = "Append Entiry Library"
+    
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        self.library = IfcStore.library_file
+        
+        lib_elements = ifcopenshell.util.selector.Selector().parse(self.library, '.IfcTypeProduct | .IfcMaterial | .IfcCostSchedule| .IfcProfileDef')
+        for element in lib_elements:
+            bpy.ops.bim.append_library_element(definition= element.id())
+        return {"FINISHED"}
+                     
+    
 class AppendLibraryElement(bpy.types.Operator):
     bl_idname = "bim.append_library_element"
     bl_label = "Append Library Element"
