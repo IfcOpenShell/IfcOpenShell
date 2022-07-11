@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.EditBlenderCollection,
     operator.ActivateIfcClassFilter,
     operator.ActivateIfcBuildingStoreyFilter,
     operator.ColourByAttribute,
@@ -31,18 +32,30 @@ classes = (
     operator.SelectGlobalId,
     operator.SelectIfcClass,
     operator.SelectPset,
+    operator.Reset3dView,
+    operator.FilterModelElements,
     prop.BIMFilterClasses,
     prop.BIMFilterBuildingStoreys,
     prop.BIMSearchProperties,
+    prop.SearchCollection,
+    prop.SearchQueryFilter,
+    prop.SearchQuery,
+    prop.SearchQueryGroup,
+    prop.IfcSelectorProperties,
     ui.BIM_PT_search,
     ui.BIM_UL_ifc_class_filter,
     ui.BIM_UL_ifc_building_storey_filter,
+    ui.BIM_PT_IFCSelector
 )
 
 
 def register():
-    bpy.types.Scene.BIMSearchProperties = bpy.props.PointerProperty(type=prop.BIMSearchProperties)
+    bpy.types.Scene.BIMSearchProperties = bpy.props.PointerProperty(
+        type=prop.BIMSearchProperties)
+    bpy.types.Scene.IfcSelectorProperties = bpy.props.PointerProperty(
+        type=prop.IfcSelectorProperties)
 
 
 def unregister():
     del bpy.types.Scene.BIMSearchProperties
+    del bpy.types.Scene.IfcSelectorProperties
