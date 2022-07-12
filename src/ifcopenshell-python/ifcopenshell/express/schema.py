@@ -81,7 +81,7 @@ class Schema:
         return iter(self.keys)
 
     def __getitem__(self, key):
-        return self.types_entities[key]
+        return self.all_declarations[OrderedCaseInsensitiveDict_KeyObject(key)]
 
     def __init__(self, parsetree):
         self.tree = parsetree
@@ -106,8 +106,8 @@ class Schema:
         self.rules = sort([(t.name, t) for t in declarations if isinstance(t, nodes.RuleDeclaration)])
         self.functions = sort([(t.name, t) for t in declarations if isinstance(t, nodes.FunctionDeclaration)])
 
-        self.keys = list(self.types.keys()) + list(self.entities.keys())
-        self.types_entities = {k: v for d in (self.types, self.entities) for k, v in d.items()}
+        self.keys = list(self.types.keys()) + list(self.entities.keys()) + list(self.rules.entities.keys()), list(self.functions.entities.keys())
+        self.all_declarations = {k: v for d in (self.types, self.entities, self.rules, self.functions) for k, v in d.items()}
 
         of_type = lambda *types: sort(
             [(a, b.type) for a, b in self.types.items() if any(isinstance(b.type, ty) for ty in types)]

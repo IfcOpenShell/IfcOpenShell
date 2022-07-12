@@ -24,6 +24,7 @@ import string
 import operator
 import collections
 
+import bootstrap
 
 class Node:
     def __init__(self, s, loc, tokens, rule=None):
@@ -251,28 +252,24 @@ def do_try(fn):
 
 
 def get_rule_id(x):
-    from bootstrap import actions
     if not isinstance(x, str):
         x = type(x).__name__
-    matches = [k for k, v in actions.items() if v == x]
+    matches = [k for k, v in bootstrap.actions.items() if v == x]
     if matches:
         return matches[0]
 
+rule_dependencies = {
+    k: list(map(operator.attrgetter('contents'), bootstrap.reduce(lambda x, y: x | y, (bootstrap.find_bytype(e, bootstrap.Keyword) for e in [v])))) \
+    for k, v in bootstrap.express
+}
+
+all_rules = [k for k, e in bootstrap.express]
+
+rule_definitions = {k: v for k, v in bootstrap.express}
 
 def to_tree(x, key=None):
         
     def prune(di):       
-        import bootstrap
-        rule_dependencies = {
-            k: list(map(operator.attrgetter('contents'), bootstrap.reduce(lambda x, y: x | y, (bootstrap.find_bytype(e, bootstrap.Keyword) for e in [v])))) \
-            for k, v in bootstrap.express
-        }
-        expr = [e for k, e in bootstrap.express if k == key][0]
-        all_rules = [k for k, e in bootstrap.express]
-        
-        # if key == "rule_head":
-        #     breakpoint()
-        
         # translate class names back to grammar rules if nested actions are encountered
         di = {get_rule_id(k) or k: v for k, v in di.items()}
         
@@ -284,14 +281,23 @@ def to_tree(x, key=None):
                     rule = [e for k, e in bootstrap.express if k == y][0]
                     if isinstance(rule, bootstrap.Term) and isinstance(rule.contents, bootstrap.Keyword):
                         yield rule.contents.contents
-                
+
         subrules = list(replace_synonyms(rule_dependencies[key]))
-        if not isinstance(expr, bootstrap.Union):
+        
+        if rule_dependencies[key] and not subrules:
+            # sometimes an intermediate production rule is missing
+            # from the pyparsing output, e.g from parameter to simple_expression
+            # directly. Recover from this.
+            subrules = sum(map(rule_dependencies.__getitem__, rule_dependencies[key]), [])
+        
+        if not isinstance(rule_definitions[key], bootstrap.Union):
             # Filter out terminals when not a union. E.g no
             # reason to retain TYPE, END_TYPE, but operators
             # such as IN, LIKE should be retained.
             subrules = list(filter(str.islower, subrules))
+
         vs = list(di.values())
+        
         return {k: v for k, v in di.items() if k in subrules or (k == key and len(vs) == 1 and vs[0] not in all_rules)}
         
     def simplify(di):
@@ -309,7 +315,10 @@ def to_tree(x, key=None):
     if isinstance(x, ListNode):
         return to_tree(x.dict_tokens, key=get_rule_id(x) or key)
     if isinstance(x, Node,):
-        return to_tree(x.tokens, key=get_rule_id(x) or key)
+        d = to_tree(x.tokens, key=get_rule_id(x) or key)
+        if key is None:
+            return {get_rule_id(x): d}
+        return d
     elif isinstance(x, dict):
         return simplify(prune({k: to_tree(v, key=k) for k, v in x.items()}))
     elif isinstance(x, list):
