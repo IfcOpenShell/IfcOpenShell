@@ -188,7 +188,7 @@ class EntityDeclaration(Node):
         clause = [r for r in self.entity_body[0] if r.rule == "unique_clause"]
         if clause:
             clause = clause[0]
-            self.unique = [(r[0], r[2].simple_id) for r in clause[1::2]]
+            self.unique = [(r[0], r[2].simple_id) for r in map(list, list(clause)[1::2])]
 
     def __repr__(self):
         strm = io.StringIO()
@@ -475,7 +475,7 @@ class WidthSpec(Node):
     fixed = property(lambda self: self.FIXED is not None)
 
     def init(self):
-        self.width = int("".join(self.width[0].flat))
+        self.width = int("".join(list(self.width)[0].flat))
 
     def __repr__(self):
         return "(%d)%s" % (self.width, " fixed" if self.fixed else "")
