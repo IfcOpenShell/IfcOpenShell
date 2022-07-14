@@ -48,6 +48,21 @@ Scenario: Add type instance - add a mesh where existing instances have changed c
     Then the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
     And the object "IfcWall/Wall.001" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
 
+Scenario: Assetize one object
+    Given I load the demo construction library
+    And I set "scene.BIMModelProperties.constr_class" to "IfcBeamType"
+    And I set "scene.BIMModelProperties.constr_class" to "DEMO1"
+    When I make an asset from the selected construction type
+    Then the object "IfcBeam/Beam" does not exist
+    And the construction type "IfcBeamType"/"DEMO1" has a preview
+
+Scenario: Assetize one class
+    Given I load the demo construction library
+    And I set "scene.BIMModelProperties.constr_class" to "IfcWallType"
+    When I make assets from the selected construction class
+    Then objects starting with "IfcWall/" do not exist
+    And all construction types for "IfcWallType" have a preview
+
 Scenario: Add grid
     Given an empty IFC project
     When I press "mesh.add_grid"
