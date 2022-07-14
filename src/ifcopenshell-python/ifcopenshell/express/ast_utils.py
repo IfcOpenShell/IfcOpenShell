@@ -111,14 +111,45 @@ def write_dot(fn, g):
 def indent(n, s):
     "\n".join(" "*n + l for l in s.split("\n"))
         
+
+from pyparsing import *
+SLASH = Suppress("/")
+identifier = Word(alphanums + "_")
+rule = identifier + (ZeroOrMore(SLASH + identifier))
+
+all_rules = []
+
+def paths(G, root, length):
+    import networkx as nx
+    
+    sd = dict(nx.bfs_successors(G, root, depth_limit=length-1))
+    def r(x, p=None):
+        if p and len(p) == length:
+            yield tuple(map(lambda n: G.nodes[n].get('label'), p))
+        else:
+            for y in sd.get(x, []):
+                yield from r(y, (p or [x])+[y])
+    yield from r(root)
+
 class codegen_rule:
     def __init__(self, pattern, fn):
-        self.pattern = pattern
+        self.pattern = tuple(rule.parseString(pattern))
         self.fn = fn
+        all_rules.append(self)
+        
+    @staticmethod
+    def match(self, graph, pattern):
+        import networkx as nx
+        for n in reversed(list(nx.topological_sort(G))):
+            print(self.pattern, "in", *paths(graph, n, len(self.pattern)))
+            if self.pattern in paths(graph, n, len(self.pattern)):
+                print(n, "->", self.fn)
+                yield n
         
     def __call__(self, graph):
         for x in self.match(self, graph, self.pattern):
-            self.fn(x)
+            # self.fn(context(x))
+            pass
 
 
 def process_rule_decl(context):
@@ -143,11 +174,17 @@ def process_expression(context):
     if len(context.term) == 2 and context.rel_op_extended:
         return "{context.term[0]} {context.rel_op_extended} {context.term[1]}"
 
-codegen_rule("built_in_function/SIZEOF", lambda context: return f"len")
-codegen_rule("function_call", lambda context: return f"{context.branch[0]}(context.branch[1])")
-codegen_rule("actual_parameter_list", lambda context: return ','.join(context.branch)")
+
+codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
+codegen_rule("function_call", lambda context: f"{context.branch[0]}(context.branch[1])")
+codegen_rule("actual_parameter_list", lambda context: ','.join(context.branch))
 codegen_rule("rule_decl", process_rule_decl)
 codegen_rule("domain_rule", process_domain_rule)
+
+def map_rules(G):
+    root = next(filter(lambda p: p[1] == 0, G.in_degree()))[0]
+    for r in all_rules:
+        r(G)
 
 if __name__ == "__main__":
     import shutil
@@ -163,7 +200,10 @@ if __name__ == "__main__":
                 
         json.dump(tree, sys.stdout, indent=2)
         
+        G = to_graph(tree)
+        H = map_rules(G)
+        
         fn = f"{nm}.dot"
-        write_dot(fn, to_graph(tree))
+        write_dot(fn, G)
 
         print(subprocess.call([shutil.which("dot") or "dot", fn, "-O", "-Tpng"]))
