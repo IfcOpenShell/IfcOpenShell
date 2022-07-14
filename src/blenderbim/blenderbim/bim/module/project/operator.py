@@ -109,6 +109,7 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
         IfcStore.library_file = ifcopenshell.open(data["filepath"])
         
     def draw(self, context):
+        IFCFileSelector.draw(self, context)
         self.layout.prop(self, "append_all", text= "Append Entire Library")
 
 
