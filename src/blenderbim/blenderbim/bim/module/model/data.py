@@ -112,8 +112,8 @@ class AuthoringData:
         constr_type_info = cls.constr_type_info(constr_class)
         _ = cls.new_constr_type_info(constr_class) if constr_type_info is None else constr_type_info
         constr_class_occurrences = cls.constr_class_entities(constr_class)
+        preview_constr_types = cls.data["preview_constr_types"]
         for constr_class_entity in constr_class_occurrences:
-            preview_constr_types = cls.data["preview_constr_types"]
 
             ### handle asset regeneration when library entity is updated ¿?
             if (constr_class not in preview_constr_types
@@ -189,6 +189,10 @@ class AuthoringData:
         except (RuntimeError, ValueError):
             return None
         return constr_class_entity.Name if constr_class_entity.is_a() == constr_class else None
+
+    def constr_type_id_by_name(cls, constr_class, constr_type):
+        constr_types = [ct for ct in cls.constr_types(constr_class=constr_class) if ct.Name == constr_type]
+        return None if len(constr_types) == 0 else constr_types[0]
 
     @classmethod
     def consolidate_constr_type(cls):
