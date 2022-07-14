@@ -31,31 +31,35 @@ def refresh():
 class AuthoringData:
     data = {}
     is_loaded = False
-    updating = False
 
     @classmethod
     def load(cls):
         cls.is_loaded = True
         if not hasattr(cls, "data"):
             cls.data = {}
-        cls.load_ifc_classes()
-        cls.load_relating_types()
-        cls.load_preview_ifc_types()
+        cls.load_constr_classes()
+        cls.load_constr_types()
+        cls.load_constr_types_browser()
+        cls.load_preview_constr_types()
 
     @classmethod
-    def load_ifc_classes(cls):
-        cls.data["ifc_classes"] = cls.ifc_classes()
+    def load_constr_classes(cls):
+        cls.data["constr_classes"] = cls.constr_classes()
 
     @classmethod
-    def load_relating_types(cls):
-        cls.data["relating_types"] = cls.relating_types()
+    def load_constr_types(cls):
+        cls.data["constr_types_ids"] = cls.constr_types()
 
     @classmethod
-    def load_preview_ifc_types(cls):
-        cls.data["preview_ifc_types"] = preview_icon_ids
+    def load_constr_types_browser(cls):
+        cls.data["constr_types_ids_browser"] = cls.constr_types_browser()
 
     @classmethod
-    def ifc_classes(cls):
+    def load_preview_constr_types(cls):
+        cls.data["preview_constr_types"] = preview_icon_ids
+
+    @classmethod
+    def constr_classes(cls):
         results = []
         classes = {
             e.is_a()
@@ -67,102 +71,133 @@ class AuthoringData:
         return results
 
     @classmethod
-    def ifc_class_entities(cls, ifc_class=None):
-        ifc_classes = cls.data["ifc_classes"]
-        if not ifc_classes:
+    def constr_class_entities(cls, constr_class=None):
+        constr_classes = cls.data["constr_classes"]
+        if not constr_classes:
             return []
         results = []
-        if ifc_class is None:
-            ifc_class = bpy.context.scene.BIMModelProperties.ifc_class
-        if not ifc_class and ifc_classes:
-            ifc_class = ifc_classes[0][0]
-        if ifc_class:
-            elements = sorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: s.Name)
+        if constr_class is None:
+            props = bpy.context.scene.BIMModelProperties
+            constr_class = props.constr_class
+        if not constr_class and constr_classes:
+            constr_class = constr_classes[0][0]
+        if constr_class:
+            elements = sorted(tool.Ifc.get().by_type(constr_class), key=lambda s: s.Name)
             results.extend(elements)
             return results
         return []
 
     @classmethod
-    def relating_types(cls, ifc_class=None):
-        return [(str(e.id()), e.Name, e.Description or "") for e in cls.ifc_class_entities(ifc_class=ifc_class)]
+    def constr_types(cls, constr_class=None):
+        return [
+            (str(e.id()), e.Name, e.Description or "") for e in cls.constr_class_entities(constr_class=constr_class)
+        ]
+
+    @classmethod
+    def constr_types_browser(cls):
+        props = bpy.context.scene.BIMModelProperties
+        return cls.constr_types(constr_class=props.constr_class_browser)
 
     @staticmethod
-    def new_ifc_type_info(ifc_class):
-        ifc_type_info = bpy.context.scene.IfcTypeInfo.add()
-        ifc_type_info.name = ifc_class
-        return ifc_type_info
+    def new_constr_type_info(constr_class):
+        constr_type_info = bpy.context.scene.ConstrTypeInfo.add()
+        constr_type_info.name = constr_class
+        return constr_type_info
 
     @classmethod
-    def assetize_ifc_class(cls, ifc_class=None):
-        if ifc_class is None:
+    def assetize_constr_class(cls, constr_class=None):
+        if constr_class is None:
             props = bpy.context.scene.BIMModelProperties
-            ifc_class = props.ifc_class
-        ifc_type_info = cls.ifc_type_info(ifc_class)
-        _ = cls.new_ifc_type_info(ifc_class) if ifc_type_info is None else ifc_type_info
-        ifc_class_occurrences = cls.ifc_class_entities(ifc_class)
-        for ifc_class_entity in ifc_class_occurrences:
-            obj = tool.Ifc.get_object(ifc_class_entity)
-            cls.assetize_object(obj, ifc_class, ifc_class_entity)
-        ifc_type_info = cls.ifc_type_info(ifc_class)
-        ifc_type_info.fully_loaded = True
+            constr_class = props.constr_class
+        constr_type_info = cls.constr_type_info(constr_class)
+        _ = cls.new_constr_type_info(constr_class) if constr_type_info is None else constr_type_info
+        constr_class_occurrences = cls.constr_class_entities(constr_class)
+        for constr_class_entity in constr_class_occurrences:
+            preview_constr_types = cls.data["preview_constr_types"]
+
+            ### handle asset regeneration when library entity is updated ¿?
+            if (constr_class not in preview_constr_types
+                    or str(constr_class_entity.id()) not in preview_constr_types[constr_class]):
+                obj = tool.Ifc.get_object(constr_class_entity)
+                cls.assetize_object(obj, constr_class, constr_class_entity)
+        constr_type_info = cls.constr_type_info(constr_class)
+        constr_type_info.fully_loaded = True
 
     @classmethod
-    def assetize_object(cls, obj, ifc_class, ifc_class_entity, from_selection=False):
-        relating_type = ifc_class_entity.Name
+    def assetize_object(cls, obj, constr_class, constr_class_entity, from_selection=False):
+        constr_type_id = constr_class_entity.id()
         to_be_deleted = False
         if obj.type == 'EMPTY':
-            kwargs = {} if from_selection else {'ifc_class': ifc_class, 'relating_type_id': ifc_class_entity.id()}
-            new_obj = cls.new_ifc_type_instance(**kwargs)
+            kwargs = {}
+            if not from_selection:
+                kwargs.update({'constr_class': constr_class, 'constr_type_id': constr_type_id})
+            new_obj = cls.new_constr_type_instance(**kwargs)
             if new_obj is not None:
                 to_be_deleted = True
                 obj = new_obj
         obj.asset_mark()
         obj.asset_generate_preview()
         icon_id = obj.preview.icon_id
-        if ifc_class not in cls.data["preview_ifc_types"]:
-            cls.data["preview_ifc_types"][ifc_class] = {}
-        cls.data["preview_ifc_types"][ifc_class][relating_type] = {"icon_id": icon_id, "object": obj}
+        if constr_class not in cls.data["preview_constr_types"]:
+            cls.data["preview_constr_types"][constr_class] = {}
+        cls.data["preview_constr_types"][constr_class][str(constr_type_id)] = {"icon_id": icon_id, "object": obj}
         if to_be_deleted:
             for col in obj.users_collection:
                 col.objects.unlink(obj)
 
     @classmethod
-    def assetize_relating_type_from_selection(cls):
+    def assetize_constr_type_from_selection(cls):
         props = bpy.context.scene.BIMModelProperties
-        ifc_class = props.ifc_class
-        relating_type_id = props.relating_type
-        ifc_class_occurrences = cls.ifc_class_entities(ifc_class=ifc_class)
-        ifc_class_occurrences = [entity for entity in ifc_class_occurrences if entity.id() == int(relating_type_id)]
-        if len(ifc_class_occurrences) == 0:
+        constr_class_browser = props.constr_class_browser
+        constr_type_id_browser = props.constr_type_id_browser
+        constr_class_occurrences = cls.constr_class_entities(constr_class=constr_class_browser)
+        constr_class_occurrences = [
+            entity for entity in constr_class_occurrences if entity.id() == int(constr_type_id_browser)
+        ]
+        if len(constr_class_occurrences) == 0:
             return False
-        ifc_class_entity = ifc_class_occurrences[0]
-        obj = tool.Ifc.get_object(ifc_class_entity)
+        constr_class_entity = constr_class_occurrences[0]
+        obj = tool.Ifc.get_object(constr_class_entity)
         if obj is None:
             return False
-        cls.assetize_object(obj, ifc_class, ifc_class_entity, from_selection=True)
+        cls.assetize_object(obj, constr_class_browser, constr_class_entity, from_selection=True)
         return True
 
     @staticmethod
-    def ifc_type_info(ifc_class):
-        ifc_type_infos = [element for element in bpy.context.scene.IfcTypeInfo if element.name == ifc_class]
-        return None if len(ifc_type_infos) == 0 else ifc_type_infos[0]
+    def constr_type_info(constr_class):
+        constr_type_infos = [element for element in bpy.context.scene.ConstrTypeInfo if element.name == constr_class]
+        return None if len(constr_type_infos) == 0 else constr_type_infos[0]
 
     @classmethod
-    def new_ifc_type_instance(cls, ifc_class=None, relating_type_id=None):
-        if ifc_class is not None:
-            cls.updating = True
-            props = bpy.context.scene.BIMModelProperties
-            props.ifc_class = ifc_class
-            props.relating_type = str(relating_type_id)
-            cls.updating = False
-        bpy.ops.bim.add_type_instance()
+    def new_constr_type_instance(cls, constr_class=None, constr_type_id=None):
+        props = bpy.context.scene.BIMModelProperties
+        if constr_class is None:
+            bpy.ops.bim.add_type_instance(
+                constr_class=props.constr_class_browser, constr_type_id=int(props.constr_type_id_browser)
+            )
+        else:
+            props.constr_class = constr_class
+            props.constr_type_id = str(constr_type_id)
+            bpy.ops.bim.add_type_instance()
         return bpy.context.selected_objects[-1]
 
     @staticmethod
-    def relating_type_name_by_id(ifc_class, relating_type_id):
+    def constr_type_name_by_id(constr_class, constr_type_id):
         file = IfcStore.get_file()
         try:
-            ifc_class_entity = file.by_id(int(relating_type_id))
+            constr_class_entity = file.by_id(int(constr_type_id))
         except (RuntimeError, ValueError):
             return None
-        return ifc_class_entity.Name if ifc_class_entity.is_a() == ifc_class else None
+        return constr_class_entity.Name if constr_class_entity.is_a() == constr_class else None
+
+    @classmethod
+    def consolidate_constr_type(cls):
+        props = bpy.context.scene.BIMModelProperties
+        props.constr_class = props.constr_class_browser
+        props.constr_type_id = props.constr_type_id_browser
+
+    @classmethod
+    def setup_constr_type_browser(cls):
+        props = bpy.context.scene.BIMModelProperties
+        props.constr_class_browser = props.constr_class
+        props.constr_type_id_browser = props.constr_type_id
