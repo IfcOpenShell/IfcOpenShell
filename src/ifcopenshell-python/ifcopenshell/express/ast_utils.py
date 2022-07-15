@@ -1,13 +1,15 @@
 import sys
 import json
 import hashlib
+import operator
+import functools
 import itertools
 
 import ifcopenshell.express
 
-def to_graph(tree):
+import networkx as nx
 
-    import networkx as nx
+def to_graph(tree):
     g = nx.DiGraph()
 
     # Convert 
@@ -82,7 +84,8 @@ def write_dot(fn, g):
             return "N"+hashlib.md5(n.encode()).hexdigest()
 
         def format(di):
-            inner = ",".join(f"{k}=\"{v}\"" for k, v in di.items())
+            Q = '"'
+            inner = ",".join(f"{k}={'' if v.startswith('<') else Q}{v}{'' if v.startswith('<') else Q}" for k, v in di.items())
             if inner:
                 inner = f"[{inner}]"
             return inner
@@ -109,7 +112,12 @@ def write_dot(fn, g):
         
         
 def indent(n, s):
-    "\n".join(" "*n + l for l in s.split("\n"))
+    if isinstance(s, str):
+        strs = [s]
+    else:
+        strs = s
+    splitted = itertools.chain.from_iterable(map(functools.partial(str.split, sep="\n"), map(str, strs)))
+    return "\n".join(" "*n + l for l in splitted)
         
 
 from pyparsing import *
@@ -117,11 +125,11 @@ SLASH = Suppress("/")
 identifier = Word(alphanums + "_")
 rule = identifier + (ZeroOrMore(SLASH + identifier))
 
-all_rules = []
-
 def paths(G, root, length):
-    import networkx as nx
-    
+    if length == 1:
+        yield (G.nodes[root].get('label'),)
+        return
+        
     sd = dict(nx.bfs_successors(G, root, depth_limit=length-1))
     def r(x, p=None):
         if p and len(p) == length:
@@ -131,26 +139,78 @@ def paths(G, root, length):
                 yield from r(y, (p or [x])+[y])
     yield from r(root)
 
+
+class context:
+    def __init__(self, graph, rules):
+        self.graph = graph
+        self.rules = rules
+        
+    def __getattr__(self, k):
+        def inner():
+            for r in self.rules:
+                label_id_pairs = map(
+                    lambda n: (self.graph.nodes[n].get('label'), n),
+                    # itertools.chain.from_iterable(
+                    #     dict(nx.bfs_successors(self.graph, r)).values()
+                    # )
+                    self.graph.successors(r)
+                )
+                matching = filter(lambda p: p[0] == k, label_id_pairs)
+                yield from map(operator.itemgetter(1), matching)
+            
+        return context(self.graph, list(inner()))
+
+    def __iter__(self):
+        for r in self.rules:
+            yield context(self.graph, [r])
+        
+    def __str__(self):
+        assert len(self.rules) == 1
+        nodes = itertools.chain(self.rules, itertools.chain.from_iterable(
+            dict(nx.bfs_successors(self.graph, self.rules[0])).values()
+        ))
+        terminals_or_values = list(filter(
+            lambda n: self.graph.nodes[n].get('is_terminal') or self.graph.nodes[n].get('value'),
+            nodes
+        ))
+        # assert len(terminals) == 1
+        attrs = self.graph.nodes[terminals_or_values[0]]
+        return attrs.get('value', attrs['label'])
+
+
+    def branches(self):
+        assert len(self.rules) == 1
+        return [context(self.graph, [n]) for n in self.graph.successors(self.rules[0])]
+        
+        
+    def branch(self, i):
+        return self.branches()[i]
+
+    def __len__(self):
+        return len(self.rules)
+
+    def __getitem__(self, k):
+        return list(self)[k]
+        
+
 class codegen_rule:
     def __init__(self, pattern, fn):
         self.pattern = tuple(rule.parseString(pattern))
         self.fn = fn
-        all_rules.append(self)
+        if not hasattr(codegen_rule, 'all_rules'):
+            codegen_rule.all_rules = []
+        codegen_rule.all_rules.append(self)
         
-    @staticmethod
-    def match(self, graph, pattern):
-        import networkx as nx
-        for n in reversed(list(nx.topological_sort(G))):
-            print(self.pattern, "in", *paths(graph, n, len(self.pattern)))
-            if self.pattern in paths(graph, n, len(self.pattern)):
-                print(n, "->", self.fn)
-                yield n
-        
-    def __call__(self, graph):
-        for x in self.match(self, graph, self.pattern):
-            # self.fn(context(x))
-            pass
+    def __call__(self, graph, node):
+        v = self.fn(context(graph, [node]))
+        graph.nodes[node]['value'] = v
 
+    @staticmethod
+    def apply(G):
+        for n in reversed(list(nx.topological_sort(G))):
+            for r in codegen_rule.all_rules:
+                if r.pattern in paths(G, n, len(r.pattern)):
+                    r(G, n)
 
 def process_rule_decl(context):
     return f"""
@@ -159,32 +219,27 @@ class {context.rule_head.rule_id}:
         self.file = file
         
     def validate(self):
-{indent(8, [f"validate_{r}() for r in context.domain_rule.rule_label_id"])}
-        
-{indent(4, context.domain_rule)}
+        {context.rule_head.entity_ref} = self.file.by_type("{context.rule_head.entity_ref}")
+{indent(8, context.where_clause.domain_rule)}
 """
 
 def process_domain_rule(context):
     return f"""
-def validate_{context.rule_label_id}(self):
-    return context.expression
+if not {context.expression}:
+    raise ValueError(f"{{type(self).__name__}}.{context.rule_label_id}")
 """
 
 def process_expression(context):
-    if len(context.term) == 2 and context.rel_op_extended:
-        return "{context.term[0]} {context.rel_op_extended} {context.term[1]}"
+    if len(context.simple_expression.term) == 2 and context.rel_op_extended:
+        return f"{context.simple_expression.term[0]} {context.rel_op_extended} {context.simple_expression.term[1]}"
 
 
 codegen_rule("built_in_function/SIZEOF", lambda context: f"len")
-codegen_rule("function_call", lambda context: f"{context.branch[0]}(context.branch[1])")
-codegen_rule("actual_parameter_list", lambda context: ','.join(context.branch))
+codegen_rule("function_call", lambda context: f"{context.branch(0)}({context.branch(1)})")
+codegen_rule("actual_parameter_list", lambda context: ','.join(map(str, context.branches())))
 codegen_rule("rule_decl", process_rule_decl)
 codegen_rule("domain_rule", process_domain_rule)
-
-def map_rules(G):
-    root = next(filter(lambda p: p[1] == 0, G.in_degree()))[0]
-    for r in all_rules:
-        r(G)
+codegen_rule("expression", process_expression)
 
 if __name__ == "__main__":
     import shutil
@@ -201,7 +256,13 @@ if __name__ == "__main__":
         json.dump(tree, sys.stdout, indent=2)
         
         G = to_graph(tree)
-        H = map_rules(G)
+        codegen_rule.apply(G)
+
+        for n in G.nodes.values():
+            if v := n.get('value'):
+                nl = "\n"
+                es = "\\n"
+                n['label'] = f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">{v.replace("<", "&lt;").replace(nl, "<br/>")}</td></tr></table>>'
         
         fn = f"{nm}.dot"
         write_dot(fn, G)
