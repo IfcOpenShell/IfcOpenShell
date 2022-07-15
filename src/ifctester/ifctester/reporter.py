@@ -19,15 +19,25 @@
 import os
 import sys
 import logging
-import numpy as np
-import ifcopenshell.util.placement
-from bcf.v2.bcfxml import BcfXml
-from bcf.v2 import data as bcf
 
 
-class Console:
-    def __init__(self, ids, use_colour=True):
+class Reporter:
+    def __init__(self, ids):
         self.ids = ids
+
+    def report(self, ids):
+        pass
+
+    def to_string():
+        return ""
+
+    def write(filepath):
+        pass
+
+
+class Console(Reporter):
+    def __init__(self, ids, use_colour=True):
+        super().__init__(ids)
         self.use_colour = use_colour
         self.colours = {
             "red": "\033[1;31m",
@@ -77,7 +87,6 @@ class Console:
         for applicability in specification.applicability:
             print(" " * 8 + applicability.to_string("applicability"))
 
-
         if not total and specification.status is False:
             return
 
@@ -99,7 +108,7 @@ class Console:
 
     def report_reason(self, reason, element):
         is_bold = False
-        for substring in reason.split("\""):
+        for substring in reason.split('"'):
             if is_bold:
                 self.set_style("purple")
             else:
@@ -115,76 +124,52 @@ class Console:
             sys.stdout.write("".join([self.colours[c] for c in colours]))
 
 
-class JsonReporter:
-    def __init__(self, specifications):
-        self.specifications = specifications
-        self.results = []
+class Json(Reporter):
+    def __init__(self, ids):
+        super().__init__(ids)
+        self.results = {}
 
     def report(self):
-        for specification in self.specifications:
-            self.results.append(self.report_specification(specification))
+        self.results["title"] = self.ids.info.get("title", "Untitled IDS")
+        self.results["specifications"] = []
+        for specification in self.ids.specifications:
+            self.results["specifications"].append(self.report_specification(specification))
         return self.results
 
     def report_specification(self, specification):
-        return {"status": specification.status}
+        requirements = []
+        for requirement in specification.requirements:
+            requirements.append(
+                {
+                    "description": requirement.to_string("requirement"),
+                    "success": not requirement.failed_entities,
+                    "failed_entities": [
+                        {"reason": requirement.failed_reasons[i], "element": str(e)}
+                        for i, e in enumerate(requirement.failed_entities[0:10])
+                    ],
+                }
+            )
+        total = len(specification.applicable_entities)
+        return {
+            "name": specification.name,
+            "status": specification.status,
+            "total_successes": total - len(specification.failed_entities),
+            "total": total,
+            "required": specification.minOccurs != 0,
+            "requirements": requirements,
+        }
 
+    def to_string(self):
+        import json
 
-class SimpleHandler(logging.StreamHandler):
-    """Logging handler listing all cases in python list."""
+        return json.dumps(self.results)
 
-    def __init__(self, report_valid=False):
-        """Logging handler listing all cases in python list.
+    def to_file(self, filepath):
+        import json
 
-        :param report_valid: True if you want to list all the compliant cases as well, defaults to False
-        :type report_valid: bool, optional
-        """
-        logging.StreamHandler.__init__(self)
-        self.statements = []
-        if report_valid:
-            self.setLevel(logging.DEBUG)
-        else:
-            self.setLevel(logging.ERROR)
+        with open(filepath, "w") as outfile:
+            return json.dump(self.results, outfile)
 
-    def emit(self, mymsg):
-        """Triggered on each use of logging with the Simple handler enabled.
-
-        :param log_content: default logger message
-        :type log_content: string|dict
-        """
-        self.statements.append(mymsg.msg)
-
-
-class CsvHandler(logging.StreamHandler):
-    """Logging handler listing all cases in csv file."""
-
-    def __init__(self, filepath="./Report.csv", report_valid=False):
-        """Logging handler listing all cases in csv file.
-
-        :param report_valid: True if you want to list all the compliant cases as well, defaults to False
-        :type report_valid: bool, optional
-        """
-        import csv
-
-        logging.StreamHandler.__init__(self)
-        if report_valid:
-            self.setLevel(logging.INFO)
-        else:
-            self.setLevel(logging.ERROR)
-        self.file = open(filepath, "w", encoding="UTF8", newline="")
-        self.csvwriter = csv.writer(self.file)
-        self.csvwriter.writerow(["guid", "result", "sentence"])  # header
-
-    def emit(self, mymsg):
-        """Triggered on each use of logging with the Simple handler enabled.
-
-        :param log_content: default logger message
-        :type log_content: string|dict
-        """
-        # BUG  bytes-like object is required, not 'str'
-        self.csvwriter.writerow(mymsg.msg)
-
-    def flush(self):
-        self.file.close()
 
 
 class BcfHandler(logging.StreamHandler):
@@ -212,6 +197,10 @@ class BcfHandler(logging.StreamHandler):
     """
 
     def __init__(self, project_name="IDS Project", author="your@email.com", filepath=None, report_valid=False):
+        import numpy as np
+        import ifcopenshell.util.placement
+        from bcf.v2.bcfxml import BcfXml
+        from bcf.v2 import data as bcf
 
         logging.StreamHandler.__init__(self)
         if report_valid:
