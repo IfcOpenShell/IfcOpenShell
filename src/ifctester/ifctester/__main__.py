@@ -20,10 +20,9 @@
 
 import time
 import argparse
-
+import ifcopenshell
 from . import ids
 from . import reporter
-import ifcopenshell
 
 parser = argparse.ArgumentParser(description="Uses an IDS to audit an IFC")
 parser.add_argument("ids", type=str, help="Path to an IDS")
