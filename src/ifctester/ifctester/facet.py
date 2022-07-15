@@ -351,6 +351,10 @@ class Property(Facet):
             psets = {k: v for k, v in all_psets.items() if k == self.propertySet}
 
         is_pass = bool(psets)
+        reason = None
+
+        if not is_pass:
+            reason = {"type": "NOPSET"}
 
         if is_pass:
             props = {}
@@ -365,6 +369,7 @@ class Property(Facet):
 
                 if not bool(props[pset_name]):
                     is_pass = False
+                    reason = {"type": "NOVALUE"}
                     break
 
                 if self.measure:
@@ -381,6 +386,7 @@ class Property(Facet):
 
                         if data_type != self.measure:
                             is_pass = False
+                            reason = {"type": "MEASURE", "actual": data_type}
                             break
 
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
@@ -399,8 +405,9 @@ class Property(Facet):
                 if self.value:
                     if any([v != self.value for v in props[pset_name].values()]):
                         is_pass = False
+                        reason = {"type": "VALUE", "actual": list(props[pset_name].values())}
                         break
-        return PropertyResult(is_pass, "todo")
+        return PropertyResult(is_pass, reason)
 
 
 class Material(Facet):
@@ -626,8 +633,6 @@ class ClassificationResult(Result):
         if self.reason["type"] == "NOVALUE":
             return "The entity has no classification"
         elif self.reason["type"] == "VALUE":
-            return f"The found references \"{str(self.reason['actual'])}\" do not match the requirements"
-        elif self.reason["type"] == "VALUE":
             return f"The references \"{str(self.reason['actual'])}\" do not match the requirements"
         elif self.reason["type"] == "system":
             return f"The systems \"{str(self.reason['actual'])}\" do not match the requirements"
@@ -640,7 +645,16 @@ class PartOfResult(Result):
 
 class PropertyResult(Result):
     def to_string(self):
-        return "TODO"
+        if self.reason["type"] == "NOPSET":
+            return "The entity has no property sets"
+        elif self.reason["type"] == "NOVALUE":
+            return "The property set does not contain the required property"
+        elif self.reason["type"] == "MEASURE":
+            return f"The data type \"{str(self.reason['actual'])}\" does not match the requirements"
+        elif self.reason["type"] == "VALUE" and len(self.reason['actual']) == 1:
+            return f"The property value \"{str(self.reason['actual'][0])}\" does not match the requirements"
+        elif self.reason["type"] == "VALUE":
+            return f"The property values \"{str(self.reason['actual'])}\" do not match the requirements"
 
 
 class MaterialResult(Result):
