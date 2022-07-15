@@ -77,13 +77,16 @@ class Facet:
             templates = self.requirement_templates
 
         for template in templates:
+            total_variables = len(template) - len(template.replace("{", ""))
+            total_replacements = 0
             for key in self.parameters:
                 key = key.replace("@", "")
                 value = getattr(self, key)
                 key_variable = "{" + key + "}"
                 if value is not None and key_variable in template:
                     template = template.replace(key_variable, str(value))
-                if "{" not in template:
+                    total_replacements += 1
+                if total_replacements == total_variables:
                     return template
 
     def to_ids_value(self, parameter):
@@ -574,7 +577,7 @@ class Restriction:
 
     def __str__(self):
         if self.type == "enumeration":
-            msg = "one of '%s'" % "' or '".join(self.options)
+            return "one of '%s'" % "' or '".join(self.options)
         elif self.type == "bounds":
             bounds = {
                 "minInclusive": "larger or equal ",
@@ -582,15 +585,14 @@ class Restriction:
                 "minExclusive": "larger than ",
                 "maxExclusive": "smaller than ",
             }
-            msg = "of value %s" % ", and ".join([bounds[x] + str(self.options[x]) for x in self.options])
+            return "of value %s" % ", and ".join([bounds[x] + str(self.options[x]) for x in self.options])
         elif self.type == "length":
-            msg = "with %s letters" % " and ".join(self.options)
+            return "%s letters long" % " and ".join(self.options)
         elif self.type == "pattern":
-            msg = "with pattern '%s'" % self.options
+            return "the pattern '%s'" % self.options
         # TODO add fractionDigits
         # TODO add totalDigits
         # TODO add whiteSpace
-        return msg
 
 
 class Result:
