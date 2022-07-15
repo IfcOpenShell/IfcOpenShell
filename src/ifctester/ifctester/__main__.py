@@ -30,6 +30,12 @@ parser.add_argument("ifc", type=str, help="Path to an IFC")
 parser.add_argument(
     "-r", "--reporter", type=str, help="The reporting method to view audit results", default="Console"
 )
+parser.add_argument(
+    "--no-color", help="Disable colour output supported by Console reporting", action="store_true"
+)
+parser.add_argument(
+    "-o", "--output", help="Output file supported by Json reporting"
+)
 args = parser.parse_args()
 
 start = time.time()
@@ -40,4 +46,15 @@ start = time.time()
 specs.validate(ifc)
 print("Finished validating:", time.time() - start)
 start = time.time()
-reporter.Console(specs).report()
+
+if args.reporter == "Console":
+    engine = reporter.Console(specs, use_colour=not args.no_color)
+elif args.reporter == "Json":
+    engine = reporter.Json(specs)
+
+engine.report()
+
+if args.output:
+    engine.to_file(args.output)
+else:
+    print(engine.to_string())
