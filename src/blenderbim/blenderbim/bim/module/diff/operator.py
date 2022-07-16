@@ -20,6 +20,7 @@ import bpy
 import ifccsv
 import ifcopenshell
 import json
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -44,15 +45,15 @@ class VisualiseDiff(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        # ifc_file = IfcStore.get_file() # In case we get from Store
-        ifc_file = ifcopenshell.open(context.scene.DiffProperties.diff_new_file)  # for Now refer to the new file
+        ifc_file = tool.Ifc.get()
         with open(context.scene.DiffProperties.diff_json_file, "r") as file:
             diff = json.load(file)
         for obj in context.visible_objects:
             obj.color = (1.0, 1.0, 1.0, 0.2)
-            global_id = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId
-            if not global_id:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
                 continue
+            global_id = element.GlobalId
             if global_id in diff["deleted"]:
                 obj.color = (1.0, 0.0, 0.0, 0.2)
             elif global_id in diff["added"]:
