@@ -106,7 +106,7 @@ class Schema:
         self.rules = sort([(t.name, t) for t in declarations if isinstance(t, nodes.RuleDeclaration)])
         self.functions = sort([(t.name, t) for t in declarations if isinstance(t, nodes.FunctionDeclaration)])
 
-        self.keys = list(self.types.keys()) + list(self.entities.keys()) + list(self.rules.keys()), list(self.functions.keys())
+        self.keys = list(self.types.keys()) + list(self.entities.keys()) + list(self.rules.keys()) + list(self.functions.keys())
         self.all_declarations = {k: v for d in (self.types, self.entities, self.rules, self.functions) for k, v in d.items()}
 
         of_type = lambda *types: sort(

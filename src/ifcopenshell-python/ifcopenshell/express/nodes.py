@@ -232,7 +232,7 @@ class EntityDeclaration(Node):
 
 
 class EnumerationType(Node):
-    values = property(lambda self: self.enumeration_type[2][1::2])
+    values = property(lambda self: list(self.enumeration_type[2])[1::2])
 
     def __repr__(self):
         return "ENUMERATION OF (" + ",".join(self.values) + ")"
@@ -363,7 +363,7 @@ class AggregationType(Node):
 
 
 class SelectType(Node):
-    values = property(lambda self: self.select_type[1][1::2])
+    values = property(lambda self: list(self.select_type[1])[1::2])
 
     def __repr__(self):
         return "SELECT (" + ",".join(map(str, self.values)) + ")"
