@@ -5,6 +5,9 @@
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+
 IfcGeom::Kernel::Kernel(IfcParse::IfcFile* file) {
 	if (file != 0) {
 		if (file->schema() == 0) {
@@ -48,44 +51,22 @@ IfcGeom::impl::KernelFactoryImplementation& IfcGeom::impl::kernel_implementation
 	return impl;
 }
 
-#ifdef HAS_SCHEMA_2x3
-extern void init_KernelImplementation_Ifc2x3(IfcGeom::impl::KernelFactoryImplementation*);
-#endif	
-#ifdef HAS_SCHEMA_4
-extern void init_KernelImplementation_Ifc4(IfcGeom::impl::KernelFactoryImplementation*);
-#endif	
-#ifdef HAS_SCHEMA_4x1
-extern void init_KernelImplementation_Ifc4x1(IfcGeom::impl::KernelFactoryImplementation*);
-#endif	
-#ifdef HAS_SCHEMA_4x2
-extern void init_KernelImplementation_Ifc4x2(IfcGeom::impl::KernelFactoryImplementation*);
-#endif	
-#ifdef HAS_SCHEMA_4x3_rc1
-extern void init_KernelImplementation_Ifc4x3_rc1(IfcGeom::impl::KernelFactoryImplementation*);
-#endif	
-#ifdef HAS_SCHEMA_4x3_rc2
-extern void init_KernelImplementation_Ifc4x3_rc2(IfcGeom::impl::KernelFactoryImplementation*);
-#endif
+// Declares the schema-based external kernel initialization routines:
+// - extern void init_KernelImplementation_Ifc2x3(IfcGeom::impl::KernelFactoryImplementation*);
+// - ...
+#define EXTERNAL_DEFS(r, data, elem) \
+	BOOST_PP_CAT(BOOST_PP_CAT(extern void init_KernelImplementation_, elem), (IfcGeom::impl::KernelFactoryImplementation*);)
+
+// Declares the schema-based external iterator initialization routines:
+// - init_IteratorImplementation_Ifc2x3(this);
+// - ...
+#define CALL_DEFS(r, data, elem) \
+	BOOST_PP_CAT(BOOST_PP_CAT(init_KernelImplementation_, elem), (this);)
+
+BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS, , SCHEMA_SEQ)
 
 IfcGeom::impl::KernelFactoryImplementation::KernelFactoryImplementation() {
-#ifdef HAS_SCHEMA_2x3
-	init_KernelImplementation_Ifc2x3(this);
-#endif	
-#ifdef HAS_SCHEMA_4
-	init_KernelImplementation_Ifc4(this);
-#endif	
-#ifdef HAS_SCHEMA_4x1
-	init_KernelImplementation_Ifc4x1(this);
-#endif	
-#ifdef HAS_SCHEMA_4x2
-	init_KernelImplementation_Ifc4x2(this);
-#endif	
-#ifdef HAS_SCHEMA_4x3_rc1
-	init_KernelImplementation_Ifc4x3_rc1(this);
-#endif	
-#ifdef HAS_SCHEMA_4x3_rc2
-	init_KernelImplementation_Ifc4x3_rc2(this);
-#endif
+	BOOST_PP_SEQ_FOR_EACH(CALL_DEFS, , SCHEMA_SEQ)
 }
 
 void IfcGeom::impl::KernelFactoryImplementation::bind(const std::string& schema_name, IfcGeom::impl::kernel_fn fn) {
@@ -155,6 +136,20 @@ IfcSchema::IfcObjectDefinition* get_decomposing_entity_impl(IfcSchema::IfcProduc
 	return parent;                                                                                               \
 }
 
+#define GET_RELATINGOBJECT_IFC4_VARIANT(IfcSchema)                                    \
+                                                                                      \
+IfcUtil::IfcBaseEntity* get_RelatingObject(IfcSchema::IfcRelDecomposes* decompose) {  \
+    IfcSchema::IfcRelAggregates* aggr = decompose->as<IfcSchema::IfcRelAggregates>(); \
+    if (aggr != nullptr) {                                                            \
+        return aggr->RelatingObject();                                                \
+    }                                                                                 \
+    IfcSchema::IfcRelNests* nest = decompose->as<IfcSchema::IfcRelNests>();           \
+    if (nest != nullptr) {                                                            \
+        return nest->RelatingObject();                                                \
+    }                                                                                 \
+    return nullptr;                                                                   \
+}
+
 namespace {
 
 #ifdef HAS_SCHEMA_2x3
@@ -165,113 +160,59 @@ namespace {
 #endif
 
 #ifdef HAS_SCHEMA_4
-	IfcUtil::IfcBaseEntity* get_RelatingObject(Ifc4::IfcRelDecomposes* decompose) {
-		Ifc4::IfcRelAggregates* aggr = decompose->as<Ifc4::IfcRelAggregates>();
-		if (aggr != nullptr) {
-			return aggr->RelatingObject();
-		}
-		Ifc4::IfcRelNests* nest = decompose->as<Ifc4::IfcRelNests>();
-		if (nest != nullptr) {
-			return nest->RelatingObject();
-		}
-		return nullptr;
-	}
+	GET_RELATINGOBJECT_IFC4_VARIANT(Ifc4);
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4);
 #endif
 
 #ifdef HAS_SCHEMA_4x1
-    IfcUtil::IfcBaseEntity* get_RelatingObject(Ifc4x1::IfcRelDecomposes* decompose) {
-		Ifc4x1::IfcRelAggregates* aggr = decompose->as<Ifc4x1::IfcRelAggregates>();
-		if (aggr != nullptr) {
-			return aggr->RelatingObject();
-		}
-		Ifc4x1::IfcRelNests* nest = decompose->as<Ifc4x1::IfcRelNests>();
-		if (nest != nullptr) {
-			return nest->RelatingObject();
-		}
-		return nullptr;
-	}
+	GET_RELATINGOBJECT_IFC4_VARIANT(Ifc4x1);
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x1);
 #endif
 
 #ifdef HAS_SCHEMA_4x2
-    IfcUtil::IfcBaseEntity* get_RelatingObject(Ifc4x2::IfcRelDecomposes* decompose) {
-		Ifc4x2::IfcRelAggregates* aggr = decompose->as<Ifc4x2::IfcRelAggregates>();
-		if (aggr != nullptr) {
-			return aggr->RelatingObject();
-		}
-		Ifc4x2::IfcRelNests* nest = decompose->as<Ifc4x2::IfcRelNests>();
-		if (nest != nullptr) {
-			return nest->RelatingObject();
-		}
-		return nullptr;
-	}
+	GET_RELATINGOBJECT_IFC4_VARIANT(Ifc4x2);
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x2);
 #endif
 
 #ifdef HAS_SCHEMA_4x3_rc1
-    IfcUtil::IfcBaseEntity* get_RelatingObject(Ifc4x3_rc1::IfcRelDecomposes* decompose) {
-		Ifc4x3_rc1::IfcRelAggregates* aggr = decompose->as<Ifc4x3_rc1::IfcRelAggregates>();
-		if (aggr != nullptr) {
-			return aggr->RelatingObject();
-		}
-		Ifc4x3_rc1::IfcRelNests* nest = decompose->as<Ifc4x3_rc1::IfcRelNests>();
-		if (nest != nullptr) {
-			return nest->RelatingObject();
-		}
-		return nullptr;
-	}
+	GET_RELATINGOBJECT_IFC4_VARIANT(Ifc4x3_rc1);
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x3_rc1);
 #endif
 
 #ifdef HAS_SCHEMA_4x3_rc2
-	IfcUtil::IfcBaseEntity* get_RelatingObject(Ifc4x3_rc2::IfcRelDecomposes* decompose) {
-		Ifc4x3_rc2::IfcRelAggregates* aggr = decompose->as<Ifc4x3_rc2::IfcRelAggregates>();
-		if (aggr != nullptr) {
-			return aggr->RelatingObject();
-		}
-		Ifc4x3_rc2::IfcRelNests* nest = decompose->as<Ifc4x3_rc2::IfcRelNests>();
-		if (nest != nullptr) {
-			return nest->RelatingObject();
-		}
-		return nullptr;
-	}
+	GET_RELATINGOBJECT_IFC4_VARIANT(Ifc4x3_rc2);
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x3_rc2);
 #endif
 	
+#ifdef HAS_SCHEMA_4x3_rc3
+	GET_RELATINGOBJECT_IFC4_VARIANT(Ifc4x3_rc3);
+	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x3_rc3);
+#endif
+
+#ifdef HAS_SCHEMA_4x3_rc4
+	GET_RELATINGOBJECT_IFC4_VARIANT(Ifc4x3_rc4);
+	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x3_rc4);
+#endif
+
+#ifdef HAS_SCHEMA_4x3
+	GET_RELATINGOBJECT_IFC4_VARIANT(Ifc4x3);
+	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x3);
+#endif
 }
 
+// Declares the schema-based IfcProduct check:
+// - if (inst->as<Ifc2x3::IfcProduct>()) { ... }
+// - ...
+#define IFCPROCUCT_CHECK(r, data, elem) \
+	if (inst->as<BOOST_PP_CAT(Ifc, elem)::IfcProduct>()) { return get_decomposing_entity_impl(inst->as<BOOST_PP_CAT(Ifc, elem)::IfcProduct>(), include_openings); }
+
+#define GET_LAYERS(r, data, elem) \
+	if (inst->as<BOOST_PP_CAT(Ifc, elem)::IfcProduct>()) { return get_layers_impl<BOOST_PP_CAT(Ifc, elem)>(inst->as<BOOST_PP_CAT(Ifc, elem)::IfcProduct>()); }
+
+
 IfcUtil::IfcBaseEntity* IfcGeom::Kernel::get_decomposing_entity(IfcUtil::IfcBaseEntity* inst, bool include_openings) {
-#ifdef HAS_SCHEMA_2x3
-	if (inst->as<Ifc2x3::IfcProduct>()) {
-		return get_decomposing_entity_impl(inst->as<Ifc2x3::IfcProduct>(), include_openings);
-	}
-#endif
-#ifdef HAS_SCHEMA_4
-	if (inst->as<Ifc4::IfcProduct>()) {
-		return get_decomposing_entity_impl(inst->as<Ifc4::IfcProduct>(), include_openings);
-	}
-#endif
-#ifdef HAS_SCHEMA_4x1
-	if (inst->as<Ifc4x1::IfcProduct>()) {
-		return get_decomposing_entity_impl(inst->as<Ifc4x1::IfcProduct>(), include_openings);
-	}
-#endif
-#ifdef HAS_SCHEMA_4x2
-	if (inst->as<Ifc4x2::IfcProduct>()) {
-		return get_decomposing_entity_impl(inst->as<Ifc4x2::IfcProduct>(), include_openings);
-	}
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-	if (inst->as<Ifc4x3_rc1::IfcProduct>()) {
-		return get_decomposing_entity_impl(inst->as<Ifc4x3_rc1::IfcProduct>(), include_openings);
-	}
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-	if (inst->as<Ifc4x3_rc2::IfcProduct>()) {
-		return get_decomposing_entity_impl(inst->as<Ifc4x3_rc2::IfcProduct>(), include_openings);
-	}
-#endif
+	BOOST_PP_SEQ_FOR_EACH(IFCPROCUCT_CHECK, , SCHEMA_SEQ)
+
 	if (inst->declaration().name() == "IfcProject") {
 		return nullptr;
 	}
@@ -298,36 +239,7 @@ namespace {
 }
 
 std::map<std::string, IfcUtil::IfcBaseEntity*> IfcGeom::Kernel::get_layers(IfcUtil::IfcBaseEntity* inst) {
-#ifdef HAS_SCHEMA_2x3
-	if (inst->as<Ifc2x3::IfcProduct>()) {
-		return get_layers_impl<Ifc2x3>(inst->as<Ifc2x3::IfcProduct>());
-	}
-#endif
-#ifdef HAS_SCHEMA_4
-	if (inst->as<Ifc4::IfcProduct>()) {
-		return get_layers_impl<Ifc4>(inst->as<Ifc4::IfcProduct>());
-	}
-#endif
-#ifdef HAS_SCHEMA_4x1
-	if (inst->as<Ifc4x1::IfcProduct>()) {
-		return get_layers_impl<Ifc4x1>(inst->as<Ifc4x1::IfcProduct>());
-	}
-#endif
-#ifdef HAS_SCHEMA_4x2
-	if (inst->as<Ifc4x2::IfcProduct>()) {
-		return get_layers_impl<Ifc4x2>(inst->as<Ifc4x2::IfcProduct>());
-	}
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-	if (inst->as<Ifc4x3_rc1::IfcProduct>()) {
-		return get_layers_impl<Ifc4x3_rc1>(inst->as<Ifc4x3_rc1::IfcProduct>());
-	}
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-	if (inst->as<Ifc4x3_rc2::IfcProduct>()) {
-		return get_layers_impl<Ifc4x3_rc2>(inst->as<Ifc4x3_rc2::IfcProduct>());
-	}
-#endif
+	BOOST_PP_SEQ_FOR_EACH(GET_LAYERS, , SCHEMA_SEQ)
 
 	throw IfcParse::IfcException("Unexpected entity " + inst->declaration().name());
 }
