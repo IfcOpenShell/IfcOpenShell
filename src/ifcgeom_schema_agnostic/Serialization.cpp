@@ -7,10 +7,10 @@
 #include <boost/algorithm/string/case_conv.hpp>
 
 #define EXTERNAL_DEFS_1(r, data, elem) \
-	IfcUtil::IfcBaseClass* BOOST_PP_CAT(tesselate_, elem)(const TopoDS_Shape& shape, double deflection);
+	IfcUtil::IfcBaseClass* BOOST_PP_CAT(tesselate_Ifc, elem)(const TopoDS_Shape& shape, double deflection);
 
 #define EXTERNAL_DEFS_2(r, data, elem) \
-	IfcUtil::IfcBaseClass* BOOST_PP_CAT(serialise_, elem)(const TopoDS_Shape& shape, bool advanced);
+	IfcUtil::IfcBaseClass* BOOST_PP_CAT(serialise_Ifc, elem)(const TopoDS_Shape& shape, bool advanced);
 
 #define CONDITIONAL_CALL(r, data, elem) \
 	if (schema_name_lower == BOOST_PP_STRINGIZE(BOOST_PP_CAT(elem,))) { \
@@ -22,7 +22,7 @@ namespace IfcGeom {
 	BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS_2, , SCHEMA_SEQ);
 }
 
-#define METHOD_NAME tesselate_
+#define METHOD_NAME tesselate_Ifc
 
 IfcUtil::IfcBaseClass* IfcGeom::tesselate(const std::string& schema_name, const TopoDS_Shape& shape, double arg_2) {
 	// @todo an ugly hack to guarantee schemas are initialised.
@@ -38,7 +38,7 @@ IfcUtil::IfcBaseClass* IfcGeom::tesselate(const std::string& schema_name, const 
 }
 
 #undef METHOD_NAME
-#define METHOD_NAME serialise_
+#define METHOD_NAME serialise_Ifc
 
 IfcUtil::IfcBaseClass* IfcGeom::serialise(const std::string& schema_name, const TopoDS_Shape& shape, bool arg_2) {
 	// @todo an ugly hack to guarantee schemas are initialised.
