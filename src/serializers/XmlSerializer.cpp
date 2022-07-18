@@ -5,10 +5,10 @@
 #include <boost/algorithm/string/case_conv.hpp>
 
 #define EXTERNAL_DEFS(r, data, elem) \
-	extern void BOOST_PP_CAT(init_XmlSerializer, elem)(XmlSerializerFactory::Factory*);
+	extern void BOOST_PP_CAT(init_XmlSerializerIfc, elem)(XmlSerializerFactory::Factory*);
 
 #define CALL_DEFS(r, data, elem) \
-	BOOST_PP_CAT(init_XmlSerializer, elem)(this);
+	BOOST_PP_CAT(init_XmlSerializerIfc, elem)(this);
 
 BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS, , SCHEMA_SEQ)
 

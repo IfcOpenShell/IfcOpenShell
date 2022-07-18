@@ -55,13 +55,13 @@ IfcGeom::impl::KernelFactoryImplementation& IfcGeom::impl::kernel_implementation
 // - extern void init_KernelImplementation_Ifc2x3(IfcGeom::impl::KernelFactoryImplementation*);
 // - ...
 #define EXTERNAL_DEFS(r, data, elem) \
-	extern void BOOST_PP_CAT(init_KernelImplementation_, elem)(IfcGeom::impl::KernelFactoryImplementation*);
+	extern void BOOST_PP_CAT(init_KernelImplementation_Ifc, elem)(IfcGeom::impl::KernelFactoryImplementation*);
 
 // Declares the schema-based external iterator initialization routines:
 // - init_IteratorImplementation_Ifc2x3(this);
 // - ...
 #define CALL_DEFS(r, data, elem) \
-	BOOST_PP_CAT(init_KernelImplementation_, elem)(this);
+	BOOST_PP_CAT(init_KernelImplementation_Ifc, elem)(this);
 
 BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS, , SCHEMA_SEQ)
 
