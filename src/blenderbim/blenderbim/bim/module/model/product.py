@@ -340,10 +340,13 @@ def ensure_material_assigned(usecase_path, ifc_file, settings):
             if om is not None and om.BIMObjectProperties.ifc_definition_id
         ]
 
-        if material[0].id() in object_material_ids:
+        if material and material[0].id() in object_material_ids:
             continue
 
         if len(obj.data.materials) == 1:
             obj.data.materials.clear()
+
+        if not material:
+            continue
 
         obj.data.materials.append(IfcStore.get_element(material[0].id()))
