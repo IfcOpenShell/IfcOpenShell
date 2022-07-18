@@ -7,10 +7,10 @@
 #include <boost/algorithm/string/case_conv.hpp>
 
 #define EXTERNAL_DEFS_1(r, data, elem) \
-	BOOST_PP_CAT(BOOST_PP_CAT(IfcUtil::IfcBaseClass* tesselate_, elem), (const TopoDS_Shape& shape, double deflection);)
+	IfcUtil::IfcBaseClass* BOOST_PP_CAT(tesselate_, elem)(const TopoDS_Shape& shape, double deflection);
 
 #define EXTERNAL_DEFS_2(r, data, elem) \
-	BOOST_PP_CAT(BOOST_PP_CAT(IfcUtil::IfcBaseClass* serialise_, elem), (const TopoDS_Shape& shape, bool advanced);)
+	IfcUtil::IfcBaseClass* BOOST_PP_CAT(serialise_, elem)(const TopoDS_Shape& shape, bool advanced);
 
 #define CONDITIONAL_CALL(r, data, elem) \
 	if (schema_name_lower == BOOST_PP_STRINGIZE(BOOST_PP_CAT(elem,))) { \
