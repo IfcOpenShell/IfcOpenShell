@@ -7,6 +7,7 @@ var xs = 'http://www.w3.org/2001/XMLSchema';
 
 class IDSContainer extends HTMLElement {
     connectedCallback() {
+        this.filename = 'specifications.ids';
         this.ids = null;
         this.containerId = crypto.randomUUID();
     }
@@ -805,7 +806,7 @@ class IDSLoader extends HTMLElement {
         var inputElement = document.createElement("input");
         inputElement.idsLoader = this;
         inputElement.type = "file";
-        inputElement.accept = '.xml';
+        inputElement.accept = '.ids,.xml';
         inputElement.multiple = false;
         inputElement.addEventListener("change", this.loadFile)
         inputElement.dispatchEvent(new MouseEvent("click")); 
@@ -813,6 +814,8 @@ class IDSLoader extends HTMLElement {
 
     loadFile(e) {
         var self = this.idsLoader;
+        var container = self.closest('ids-container')
+        container.filename = this.files[0].name;
         var read = new FileReader();
         read.readAsBinaryString(this.files[0]);
         read.onloadend = function() {
@@ -844,6 +847,18 @@ class IDSSave extends HTMLElement {
     click() {
         var xmlString = new XMLSerializer().serializeToString(this.closest('ids-container').ids);
         console.log(xmlString);
+        var container = this.closest('ids-container')
+        this.download(container.filename, xmlString);
+    }
+
+    download(filename, text) {
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+        element.setAttribute('download', filename);
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
     }
 }
 
