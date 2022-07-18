@@ -15,7 +15,7 @@
 // for and then overflow into an existing empty include file.
 
 #define INCLUDE_SCHEMA(n) \
-	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), BOOST_PP_STRINGIZE(BOOST_PP_CAT(BOOST_PP_CAT(../ifcparse/Ifc,BOOST_PP_SEQ_ELEM(n,SCHEMA_SEQ)),.h)), "empty.h")
+	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), BOOST_PP_STRINGIZE(../ifcparse/BOOST_PP_CAT(Ifc,BOOST_PP_SEQ_ELEM(n,SCHEMA_SEQ)).h), "empty.h")
 
 #include INCLUDE_SCHEMA(0)
 #include INCLUDE_SCHEMA(1)
