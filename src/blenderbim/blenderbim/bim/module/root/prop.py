@@ -107,3 +107,20 @@ class BIMRootProperties(PropertyGroup):
         "ifc_class": get_ifc_classes,
         "ifc_predefined_type": getIfcPredefinedTypes,
     }
+
+    getter_enum_suggestion = {
+        "ifc_class": {
+            "IfcWall": ("Glazing (Wall)", "Glass (Wall)", "Pane (Wall)"),
+            "IfcWindow": ("Glazing (Window)", "Glass (Window)", "Pane (Window)"),
+            "IfcPlate": ("Glazing (Plate)", "Glass (Plate)", "Pane (Plate)"),
+            "IfcFurniture": ("Signage"),
+            "IfcSlab": ("Hob"),
+            "IfcCovering": ("Flashing", "Capping"),
+            "IfcCableSegment": ("Lighting Rod"),
+            "IfcSensor": ("Card Reader", "Fob Reader"),
+            "IfcSwitchingDevice": ("Reed Switch", "Electric Isolating Switch"),
+            "IfcActuator": ("Electric Strike"),
+            "IfcAirTerminalBox": ("VAV Box"),
+            "IfcUnitaryEquipment": ("Fan Coil Unit (FCU)"),
+        }
+    }

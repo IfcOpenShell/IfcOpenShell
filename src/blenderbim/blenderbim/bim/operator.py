@@ -527,9 +527,10 @@ class ConfigureVisibility(bpy.types.Operator):
 
 
 def update_enum_property_search_prop(self, context):
-    for i, prop in enumerate(self.collection_name):
+    for i, prop in enumerate(self.collection_names):
         if prop.name == self.dummy_name:
-            setattr(context.data, self.prop_name, self.collection_identifier[i].name)
+            setattr(context.data, self.prop_name, self.collection_identifiers[i].name)
+            break
 
 
 class BIM_OT_enum_property_search(bpy.types.Operator):
@@ -537,22 +538,43 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     bl_label = "Search For Property"
     bl_options = {"REGISTER", "UNDO"}
     dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop)
-    collection_name: bpy.props.CollectionProperty(type=StrProperty)
-    collection_identifier: bpy.props.CollectionProperty(type=StrProperty)
+    collection_names: bpy.props.CollectionProperty(type=StrProperty)
+    collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
     prop_name: bpy.props.StringProperty()
+
+    def clear_collections(self):
+        self.collection_names.clear()
+        self.collection_identifiers.clear()
+
+    def add_item(self, identifier:str, name:str):
+        self.collection_identifiers.add().name = identifier
+        self.collection_names.add().name = name
+
+    def add_items_regular(self, context, getter):
+        self.identifiers = []
+        for item in getter(self.data, context):
+            self.identifiers.append(item[0])
+            self.add_item(identifier=item[0], name=item[1])
+            if item[0] == getattr(self.data, self.prop_name):
+                self.dummy_name = item[1]  # We found the current enum name
+
+    def add_items_suggestions(self):
+        getter_enum_suggestion = getattr(self.data, "getter_enum_suggestion", None)
+        if getter_enum_suggestion is not None:
+            mapping = getter_enum_suggestion.get(self.prop_name, {})
+            for key, values in mapping.items():
+                if key in self.identifiers:
+                    for value in values:
+                        self.add_item(identifier=key, name=value)
 
     def invoke(self, context, event):
         self.data = context.data
         getter = self.data.getter_enum.get(self.prop_name, None)
         if getter is None:
             return {"FINISHED"}
-        self.collection_name.clear()
-        self.collection_identifier.clear()
-        for item in getter(self.data, context):
-            self.collection_identifier.add().name = item[0]
-            if item[0] == getattr(self.data, self.prop_name):
-                self.dummy_name = item[1]  # We found the current enum value
-            self.collection_name.add().name = item[1]
+        self.clear_collections()
+        self.add_items_regular(context, getter)
+        self.add_items_suggestions()
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
@@ -561,4 +583,4 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     def draw(self, context):
         # Mandatory to access context.data in update :
         self.layout.context_pointer_set(name="data", data=self.data)
-        self.layout.prop_search(self, "dummy_name", self, "collection_name")
+        self.layout.prop_search(self, "dummy_name", self, "collection_names")
