@@ -88,6 +88,12 @@ def get_ifc_classes(self, context):
     return IfcClassData.data["ifc_classes"]
 
 
+def get_ifc_classes_suggestions():
+    if not IfcClassData.is_loaded:
+        IfcClassData.load()
+    return IfcClassData.data["ifc_classes_suggestions"]
+
+
 def get_contexts(self, context):
     if not IfcClassData.is_loaded:
         IfcClassData.load()
@@ -109,18 +115,5 @@ class BIMRootProperties(PropertyGroup):
     }
 
     getter_enum_suggestion = {
-        "ifc_class": {
-            "IfcWall": ("Glazing (Wall)", "Glass (Wall)", "Pane (Wall)"),
-            "IfcWindow": ("Glazing (Window)", "Glass (Window)", "Pane (Window)"),
-            "IfcPlate": ("Glazing (Plate)", "Glass (Plate)", "Pane (Plate)"),
-            "IfcFurniture": ("Signage"),
-            "IfcSlab": ("Hob"),
-            "IfcCovering": ("Flashing", "Capping"),
-            "IfcCableSegment": ("Lighting Rod"),
-            "IfcSensor": ("Card Reader", "Fob Reader"),
-            "IfcSwitchingDevice": ("Reed Switch", "Electric Isolating Switch"),
-            "IfcActuator": ("Electric Strike"),
-            "IfcAirTerminalBox": ("VAV Box"),
-            "IfcUnitaryEquipment": ("Fan Coil Unit (FCU)"),
-        }
+        "ifc_class": get_ifc_classes_suggestions,
     }

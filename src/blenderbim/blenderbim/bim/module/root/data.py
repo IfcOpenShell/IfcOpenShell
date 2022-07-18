@@ -35,6 +35,7 @@ class IfcClassData:
         cls.data = {}
         cls.data["ifc_products"] = cls.ifc_products()
         cls.data["ifc_classes"] = cls.ifc_classes()
+        cls.data["ifc_classes_suggestions"] = cls.ifc_classes_suggestions()
         cls.data["contexts"] = cls.contexts()
         cls.data["has_entity"] = cls.has_entity()
         cls.data["name"] = cls.name()
@@ -73,6 +74,23 @@ class IfcClassData:
         if ifc_product == "IfcElementType":
             names.extend(("IfcDoorStyle", "IfcWindowStyle"))
         return [(c, c, "") for c in sorted(names)]
+
+    @classmethod
+    def ifc_classes_suggestions(cls):
+        return {
+            "IfcWall": ("Glazing (Wall)", "Glass (Wall)", "Pane (Wall)",),
+            "IfcWindow": ("Glazing (Window)", "Glass (Window)", "Pane (Window)",),
+            "IfcPlate": ("Glazing (Plate)", "Glass (Plate)", "Pane (Plate)",),
+            "IfcFurniture": ("Signage",),
+            "IfcSlab": ("Hob",),
+            "IfcCovering": ("Flashing", "Capping",),
+            "IfcCableSegment": ("Lighting Rod",),
+            "IfcSensor": ("Card Reader", "Fob Reader",),
+            "IfcSwitchingDevice": ("Reed Switch", "Electric Isolating Switch",),
+            "IfcActuator": ("Electric Strike",),
+            "IfcAirTerminalBox": ("VAV Box",),
+            "IfcUnitaryEquipment": ("Fan Coil Unit (FCU)",),
+        }
 
     @classmethod
     def contexts(cls):
