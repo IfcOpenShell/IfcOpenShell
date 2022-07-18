@@ -36,7 +36,7 @@ classes = (
     operator.RefreshLibrary,
     operator.RewindLibrary,
     operator.SaveLibraryFile,
-    operator.AppendEntiryLibrary,
+    operator.AppendEntireLibrary,
     operator.SelectLibraryFile,
     operator.ToggleFilterCategories,
     operator.ToggleLinkVisibility,
