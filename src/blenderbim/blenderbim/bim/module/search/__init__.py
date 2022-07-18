@@ -50,10 +50,8 @@ classes = (
 
 
 def register():
-    bpy.types.Scene.BIMSearchProperties = bpy.props.PointerProperty(
-        type=prop.BIMSearchProperties)
-    bpy.types.Scene.IfcSelectorProperties = bpy.props.PointerProperty(
-        type=prop.IfcSelectorProperties)
+    bpy.types.Scene.BIMSearchProperties = bpy.props.PointerProperty(type=prop.BIMSearchProperties)
+    bpy.types.Scene.IfcSelectorProperties = bpy.props.PointerProperty(type=prop.IfcSelectorProperties)
 
 
 def unregister():
