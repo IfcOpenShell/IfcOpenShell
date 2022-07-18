@@ -288,7 +288,7 @@ class SaveLibraryFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AppendEntiryLibrary(bpy.types.Operator):
+class AppendEntireLibrary(bpy.types.Operator):
     bl_idname = "bim.append_entire_library"
     bl_label = "Append Entiry Library"
 
