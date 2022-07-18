@@ -68,7 +68,6 @@ class EditBlenderCollection(bpy.types.Operator):
             getattr(context.bim_prop_group, self.collection).add()
         else:
             getattr(context.bim_prop_group, self.collection).remove(self.index)
-
         return {"FINISHED"}
 
 
@@ -104,8 +103,7 @@ class SelectIfcClass(bpy.types.Operator):
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id or obj.is_library_indirect:
                 continue
-            element = self.file.by_id(
-                obj.BIMObjectProperties.ifc_definition_id)
+            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             if does_keyword_exist(self.ifc_class, element.is_a(), context):
                 obj.select_set(True)
         return {"FINISHED"}
@@ -126,12 +124,10 @@ class SelectAttribute(bpy.types.Operator):
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            element = self.file.by_id(
-                obj.BIMObjectProperties.ifc_definition_id)
+            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             if context.scene.BIMSearchProperties.should_ignorecase:
                 data = element.get_info()
-                value = next((v for k, v in data.items()
-                             if k.lower() == attribute_name.lower()), None)
+                value = next((v for k, v in data.items() if k.lower() == attribute_name.lower()), None)
             else:
                 value = getattr(element, attribute_name, None)
             if does_keyword_exist(pattern, value, context):
@@ -155,8 +151,7 @@ class SelectPset(bpy.types.Operator):
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            element = self.file.by_id(
-                obj.BIMObjectProperties.ifc_definition_id)
+            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             psets = ifcopenshell.util.element.get_psets(element)
             if search_pset_name == "":
                 props = {}
@@ -164,10 +159,8 @@ class SelectPset(bpy.types.Operator):
             else:
                 props = None
             if context.scene.BIMSearchProperties.should_ignorecase:
-                props = props or next(
-                    (v for k, v in psets.items() if k.lower() == search_pset_name.lower()), {})
-                value = str(next((v for k, v in props.items()
-                            if k.lower() == search_prop_name.lower()), None))
+                props = props or next((v for k, v in psets.items() if k.lower() == search_pset_name.lower()), {})
+                value = str(next((v for k, v in props.items() if k.lower() == search_prop_name.lower()), None))
             else:
                 props = props or psets.get(search_pset_name, {})
                 value = props.get(search_prop_name, None)
@@ -539,8 +532,8 @@ class FilterModelElements(bpy.types.Operator):
             
             selection += "["
 
-            if f.selector == "Pset-Property":
-                selection += f'{f.active_option}.{f.active_sub_option} {"!" if f.negation else ""} ="{f.value}"'
+            if f.selector == "IfcPropertySet":
+                selection += f'{f.active_option.split(": ")[1]}.{f.active_sub_option.split(": ")[1]} {"!" if f.negation else ""}="{f.value}"'
             elif f.selector == "Attribute":
                 selection += f'{f.attribute} {"!" if f.negation else ""}= "{f.value}"'
 
