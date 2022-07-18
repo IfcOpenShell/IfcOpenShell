@@ -561,9 +561,11 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     def add_items_suggestions(self):
         getter_enum_suggestion = getattr(self.data, "getter_enum_suggestion", None)
         if getter_enum_suggestion is not None:
-            mapping = getter_enum_suggestion.get(self.prop_name, {})
+            mapping = getter_enum_suggestion.get(self.prop_name, {})()
             for key, values in mapping.items():
                 if key in self.identifiers:
+                    if not isinstance(values, (tuple, list)):
+                        values = [values]
                     for value in values:
                         self.add_item(identifier=key, name=value)
 
