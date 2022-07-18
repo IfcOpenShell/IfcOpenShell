@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections import defaultdict
 import bpy
 import ifcopenshell.util.element
 import blenderbim.tool as tool
@@ -77,20 +78,24 @@ class IfcClassData:
 
     @classmethod
     def ifc_classes_suggestions(cls):
-        return {
-            "IfcWall": ("Glazing (Wall)", "Glass (Wall)", "Pane (Wall)",),
-            "IfcWindow": ("Glazing (Window)", "Glass (Window)", "Pane (Window)",),
-            "IfcPlate": ("Glazing (Plate)", "Glass (Plate)", "Pane (Plate)",),
-            "IfcFurniture": ("Signage",),
-            "IfcSlab": ("Hob",),
-            "IfcCovering": ("Flashing", "Capping",),
-            "IfcCableSegment": ("Lighting Rod",),
-            "IfcSensor": ("Card Reader", "Fob Reader",),
-            "IfcSwitchingDevice": ("Reed Switch", "Electric Isolating Switch",),
-            "IfcActuator": ("Electric Strike",),
-            "IfcAirTerminalBox": ("VAV Box",),
-            "IfcUnitaryEquipment": ("Fan Coil Unit (FCU)",),
-        }
+        suggestions = defaultdict(list)
+        suggestions.update(
+            {
+            "IfcWall": ["Glazing", "Glass", "Pane",],
+            "IfcWindow": ["Glazing", "Glass", "Pane",],
+            "IfcPlate": ["Glazing", "Glass", "Pane",],
+            "IfcFurniture": ["Signage",],
+            "IfcSlab": ["Hob",],
+            "IfcCovering": ["Flashing", "Capping",],
+            "IfcCableSegment": ["Lighting Rod",],
+            "IfcSensor": ["Card Reader", "Fob Reader",],
+            "IfcSwitchingDevice": ["Reed Switch", "Electric Isolating Switch",],
+            "IfcActuator": ["Electric Strike",],
+            "IfcAirTerminalBox": ["VAV Box",],
+            "IfcUnitaryEquipment": ["Fan Coil Unit",],
+            }
+        )
+        return suggestions
 
     @classmethod
     def contexts(cls):
