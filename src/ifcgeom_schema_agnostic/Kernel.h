@@ -7,7 +7,10 @@
 
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/seq/size.hpp>
+#include <boost/preprocessor/seq/pop_back.hpp>
 #include <boost/preprocessor/comparison/greater.hpp> 
+#include <boost/preprocessor/selection/min.hpp>
+
 
 // @tfk A macro cannot define an include (I think), so here we can't
 // loop over the sequence of schema identifiers, but rather we have
@@ -15,7 +18,7 @@
 // for and then overflow into an existing empty include file.
 
 #define INCLUDE_SCHEMA(n) \
-	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), BOOST_PP_STRINGIZE(../ifcparse/BOOST_PP_CAT(Ifc,BOOST_PP_SEQ_ELEM(n,SCHEMA_SEQ)).h), "empty.h")
+	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), BOOST_PP_STRINGIZE(../ifcparse/BOOST_PP_CAT(Ifc,BOOST_PP_SEQ_ELEM(BOOST_PP_MIN(n, BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_POP_BACK(SCHEMA_SEQ))),SCHEMA_SEQ)).h), "empty.h")
 
 #include INCLUDE_SCHEMA(0)
 #include INCLUDE_SCHEMA(1)
