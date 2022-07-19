@@ -131,7 +131,7 @@ class AssignClass(bpy.types.Operator, Operator):
         ifc_class = self.ifc_class or props.ifc_class
         predefined_type = self.userdefined_type if self.predefined_type == "USERDEFINED" else self.predefined_type
         ifc_context = self.context_id
-        if not ifc_context and props._annotations__["contexts"].keywords.get("items")(props, context):
+        if not ifc_context and props.__annotations__["contexts"].keywords.get("items")(props, context):
             ifc_context = int(props.contexts or "0") or None
         if ifc_context:
             ifc_context = tool.Ifc.get().by_id(ifc_context)
