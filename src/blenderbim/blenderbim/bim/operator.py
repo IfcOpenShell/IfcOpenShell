@@ -27,6 +27,7 @@ from . import schema
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty
 from blenderbim.bim.ui import IFCFileSelector
+from blenderbim.bim.helper import get_enum_items
 from mathutils import Vector, Matrix, Euler
 from math import radians
 
@@ -545,11 +546,9 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     def invoke(self, context, event):
         self.clear_collections()
         self.data = context.data
-        items = self.data.__annotations__[self.prop_name].keywords.get("items")
+        items = get_enum_items(self.data, self.prop_name, context)
         if items is None:
             return {"FINISHED"}
-        if not isinstance(items, list):
-            items = items(self.data, context)
         self.add_items_regular(items)
         self.add_items_suggestions()
         return context.window_manager.invoke_props_dialog(self)

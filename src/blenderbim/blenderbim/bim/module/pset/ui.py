@@ -490,7 +490,7 @@ class BIM_PT_add_edit_custom_properties(Panel):
                 if prop.template_type == "IfcPropertySingleValue":
                     row.prop(prop, prop.get_value_name(), text="")
                 prop_with_search(row, prop, "primary_measure_type", text="")
-                prop_with_search(row, prop, "template_type", text="")
+                row.prop(prop, "template_type", text="")
                 op = row.operator("bim.remove_property_to_edit", icon="X", text="")
                 op.index = index
                 op.option = "AddEditProperties"
