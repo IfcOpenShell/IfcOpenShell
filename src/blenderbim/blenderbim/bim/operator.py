@@ -546,7 +546,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
         self.collection_names.clear()
         self.collection_identifiers.clear()
 
-    def add_item(self, identifier:str, name:str):
+    def add_item(self, identifier: str, name: str):
         self.collection_identifiers.add().name = identifier
         self.collection_names.add().name = name
 
@@ -559,9 +559,9 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                 self.dummy_name = item[1]  # We found the current enum name
 
     def add_items_suggestions(self):
-        getter_enum_suggestion = getattr(self.data, "getter_enum_suggestion", None)
-        if getter_enum_suggestion is not None:
-            mapping = getter_enum_suggestion.get(self.prop_name)
+        getter_suggestions = getattr(self.data, "getter_enum_suggestions", None)
+        if getter_suggestions is not None:
+            mapping = getter_suggestions.get(self.prop_name)
             if mapping is None:
                 return
             for key, values in mapping().items():

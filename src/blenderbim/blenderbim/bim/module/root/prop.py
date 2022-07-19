@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from copy import deepcopy
 import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
@@ -92,20 +91,7 @@ def get_ifc_classes(self, context):
 def get_ifc_classes_suggestions():
     if not IfcClassData.is_loaded:
         IfcClassData.load()
-    suggestions = deepcopy(IfcClassData.data["ifc_classes_suggestions"])
-    file = IfcStore.get_file()
-    if file:
-        for ifc_class in get_ifc_classes(None, None):
-            ifc_class = ifc_class[0]
-            declaration = IfcStore.get_schema().declaration_by_name(ifc_class)
-            for attribute in declaration.attributes():
-                if attribute.name() == "PredefinedType":
-                    for e in attribute.type_of_attribute().declared_type().enumeration_items():
-                        if e in ("NOTDEFINED", "USERDEFINED",):
-                            continue
-                        suggestions[ifc_class].append(e)
-    return suggestions
-
+    return IfcClassData.data["ifc_classes_suggestions"]
 
 def get_contexts(self, context):
     if not IfcClassData.is_loaded:
@@ -127,6 +113,6 @@ class BIMRootProperties(PropertyGroup):
         "ifc_predefined_type": getIfcPredefinedTypes,
     }
 
-    getter_enum_suggestion = {
+    getter_enum_suggestions = {
         "ifc_class": get_ifc_classes_suggestions,
     }

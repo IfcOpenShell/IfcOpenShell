@@ -20,6 +20,7 @@ from collections import defaultdict
 import bpy
 import ifcopenshell.util.element
 import blenderbim.tool as tool
+from blenderbim.bim.ifc import IfcStore
 
 
 def refresh():
@@ -81,20 +82,34 @@ class IfcClassData:
         suggestions = defaultdict(list)
         suggestions.update(
             {
-            "IfcWall": ["Glazing", "Glass", "Pane",],
-            "IfcWindow": ["Glazing", "Glass", "Pane",],
-            "IfcPlate": ["Glazing", "Glass", "Pane",],
-            "IfcFurniture": ["Signage",],
-            "IfcSlab": ["Hob",],
-            "IfcCovering": ["Flashing", "Capping",],
-            "IfcCableSegment": ["Lighting Rod",],
-            "IfcSensor": ["Card Reader", "Fob Reader",],
-            "IfcSwitchingDevice": ["Reed Switch", "Electric Isolating Switch",],
-            "IfcActuator": ["Electric Strike",],
-            "IfcAirTerminalBox": ["VAV Box",],
-            "IfcUnitaryEquipment": ["Fan Coil Unit",],
+                "IfcWall": ["Glazing", "Glass", "Pane"],
+                "IfcWindow": ["Glazing", "Glass", "Pane"],
+                "IfcPlate": ["Glazing", "Glass", "Pane"],
+                "IfcFurniture": ["Signage"],
+                "IfcSlab": ["Hob"],
+                "IfcCovering": ["Flashing", "Capping"],
+                "IfcCableSegment": ["Lighting Rod"],
+                "IfcSensor": ["Card Reader", "Fob Reader"],
+                "IfcSwitchingDevice": ["Reed Switch", "Electric Isolating Switch"],
+                "IfcActuator": ["Electric Strike"],
+                "IfcAirTerminalBox": ["VAV Box"],
+                "IfcUnitaryEquipment": ["Fan Coil Unit"],
             }
         )
+        file = IfcStore.get_file()
+        if file:
+            for ifc_class in cls.ifc_classes():
+                ifc_class = ifc_class[0]
+                declaration = IfcStore.get_schema().declaration_by_name(ifc_class)
+                for attribute in declaration.attributes():
+                    if attribute.name() == "PredefinedType":
+                        for e in attribute.type_of_attribute().declared_type().enumeration_items():
+                            if e in (
+                                "NOTDEFINED",
+                                "USERDEFINED",
+                            ):
+                                continue
+                            suggestions[ifc_class].append(e.title())
         return suggestions
 
     @classmethod
