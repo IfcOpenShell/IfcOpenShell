@@ -21,6 +21,7 @@ import ifcopenshell.util.fm
 import ifcopenshell.util.element
 import lark
 
+
 class Selector:
     @classmethod
     def parse(cls, ifc_file, query, elements=None):
@@ -36,7 +37,7 @@ class Selector:
                     filter: "[" filter_key (comparison filter_value)? "]"
                     filter_key: WORD | pset_or_qto
                     filter_value: ESCAPED_STRING | SIGNED_FLOAT | SIGNED_INT | BOOLEAN | NULL
-                    pset_or_qto: /[^\W][^.=]*[^\W]/ "." /[^\W][^.=]*[^\W]/
+                    pset_or_qto: /[^\W][^.=<>]*[^\W]/ "." /[^\W][^.=<>]*[^\W]/
                     lfunction: and | or
                     inverse_relationship: types | decomposed_by | bounded_by
                     types: "*"
@@ -141,8 +142,7 @@ class Selector:
                 elif hasattr(element, "ObjectTypeOf") and element.ObjectTypeOf:
                     results.extend(element.ObjectTypeOf[0].RelatedObjects)
             elif inverse_relationship == "decomposed_by":
-                results.extend(
-                    ifcopenshell.util.element.get_decomposition(element))
+                results.extend(ifcopenshell.util.element.get_decomposition(element))
             elif inverse_relationship == "bounded_by" and hasattr(element, "BoundedBy"):
                 for relationship in element.BoundedBy:
                     results.append(relationship.RelatedBuildingElement)
@@ -160,8 +160,7 @@ class Selector:
             if cls.elements is None:
                 elements = cls.file.by_type(class_selector.children[0])
             else:
-                elements = [e for e in cls.elements if e.is_a(
-                    class_selector.children[0])]
+                elements = [e for e in cls.elements if e.is_a(class_selector.children[0])]
         if len(class_selector.children) > 1 and class_selector.children[1].data == "filter":
             return cls.filter_elements(elements, class_selector.children[1])
         return elements
@@ -185,7 +184,7 @@ class Selector:
             elif token_type == "SIGNED_FLOAT":
                 value = float(filter_rule.children[2].children[0])
             elif token_type == "BOOLEAN":
-                value = filter_rule.children[2].children[0].lower() == 'true'
+                value = filter_rule.children[2].children[0].lower() == "true"
             elif token_type == "NULL":
                 value = None
         for element in elements:
@@ -210,8 +209,7 @@ class Selector:
             key = ".".join(key.split(".")[1:])
         elif "." in key and key.split(".")[0] == "material":
             try:
-                element = ifcopenshell.util.element.get_material(
-                    element, should_skip_usage=True)
+                element = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
                 if not element:
                     return None
             except:
