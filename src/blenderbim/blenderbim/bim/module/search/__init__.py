@@ -32,7 +32,7 @@ classes = (
     operator.SelectGlobalId,
     operator.SelectIfcClass,
     operator.SelectPset,
-    operator.Reset3dView,
+    operator.UnhideAllElements,
     operator.FilterModelElements,
     prop.BIMFilterClasses,
     prop.BIMFilterBuildingStoreys,

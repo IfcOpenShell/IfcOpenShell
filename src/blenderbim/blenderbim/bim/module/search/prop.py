@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 from ifcopenshell import util
 from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
