@@ -35,6 +35,9 @@ classes = (
     operator.UnhideAllElements,
     operator.FilterModelElements,
     operator.IfcSelector,
+    operator.SaveSelectorQuery,
+    operator.OpenQueryLibrary,
+    operator.LoadQuery,
     prop.BIMFilterClasses,
     prop.BIMFilterBuildingStoreys,
     prop.BIMSearchProperties,
@@ -46,7 +49,7 @@ classes = (
     ui.BIM_PT_search,
     ui.BIM_UL_ifc_class_filter,
     ui.BIM_UL_ifc_building_storey_filter,
-    ui.BIM_PT_IFCSelector
+    ui.BIM_PT_IFCSelector,
 )
 
 

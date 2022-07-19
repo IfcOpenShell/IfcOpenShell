@@ -107,20 +107,20 @@ def load_sub_options(self, context):
     if self.selector not in ["IfcClass"]:
         self.load_option = "sub_options"
         load_selection_options(self, context)
-    
+
+
 def load_selection_options(self, context):
     ifc = IfcStore.file
     load_option = self.load_option
     op = getattr(self, load_option)
     op.clear()
-
     options = []
 
     if load_option == "options":
         self.sub_options.clear()
         if self.selector == "IFC Class":
             options = get_classes(self, "IfcElement")
-            options.append(("IfcSpace", "IfcSpace",""))
+            options.append(("IfcSpace", "IfcSpace", ""))
         elif self.selector == "IfcSpatialElement":
             options = get_classes(self, "IfcSpatialElement")
         elif self.selector == "IfcElementType":
@@ -130,7 +130,7 @@ def load_selection_options(self, context):
         elif self.selector == "IfcPropertySet":
             psets = Selector.parse(ifc, ".IfcPropertySet")
             options = set([o.Name for o in psets])
-        
+
     elif load_option == "sub_options":
         if self.selector in ["IfcSpatialElement", "IfcElementType"]:
             active_option = self.active_option.split(": ")[1]
@@ -144,7 +144,6 @@ def load_selection_options(self, context):
                 for prop in pset.HasProperties:
                     options.add(prop.Name)
 
-
     for index, option in enumerate(options):
         new = op.add()
         if self.selector in ["IfcSpatialElement", "IfcElementType"]:
@@ -157,7 +156,6 @@ def load_selection_options(self, context):
             new.name = f"{index}: {option}"
         else:
             new.name = f"{index}: {option[0]}"
-    
     self.load_option = "options"
 
 
@@ -175,7 +173,8 @@ class SearchCollection(PropertyGroup):
     name: StringProperty()
     long_name: StringProperty()
     global_id: StringProperty()
-    
+    query: StringProperty()
+
 class IfcSelector:
     and_or: EnumProperty(
         items=[(i, i, i) for i in ["and", "or"]],
@@ -191,15 +190,14 @@ class IfcSelector:
             ("<", "less than", ""),
         ],
     )
-    load_option: StringProperty(default="options")
-    
+    load_option: StringProperty(
+        default="options", description="controls whether or not options or sub_options are loaded"
+    )
     options: CollectionProperty(type=SearchCollection)
     active_option: StringProperty(update=load_sub_options)
-    
     sub_options: CollectionProperty(type=SearchCollection)
     active_sub_option: StringProperty()
-    
-    value: StringProperty()
+    value: StringProperty(description="generic 'value' that can be used in multiple scenarios")
 
 
 class SearchQueryFilter(PropertyGroup, IfcSelector):
@@ -214,13 +212,7 @@ class SearchQueryFilter(PropertyGroup, IfcSelector):
         name="Filter selection by",
         update=load_selection_options,
     )
-    
-    # property_sets: CollectionProperty(type=StrProperty)
-    # selected_property_set: StringProperty(update=load_selection_options)
 
-    # prop_names: CollectionProperty(type=StrProperty)
-    # selected_prop: StringProperty()
-    # prop_value: StringProperty()
 
 class SearchQuery(PropertyGroup, IfcSelector):
     filters: CollectionProperty(type=SearchQueryFilter)
@@ -231,6 +223,7 @@ class SearchQuery(PropertyGroup, IfcSelector):
         default="-",
     )
 
+
 class SearchQueryGroup(PropertyGroup, IfcSelector):
     queries: CollectionProperty(type=SearchQuery)
 
@@ -239,4 +232,8 @@ class IfcSelectorProperties(PropertyGroup, IfcSelector):
     groups: CollectionProperty(type=SearchQueryGroup)
     selector_query_syntax: StringProperty()
     
-
+    query_library: CollectionProperty(type=SearchCollection)
+    active_query: StringProperty()
+    
+    active_query: StringProperty()
+    manual_override: BoolProperty(default=False, description="Toggle to allow manual typing of query-syntax")
