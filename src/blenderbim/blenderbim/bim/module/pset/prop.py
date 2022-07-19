@@ -162,7 +162,7 @@ class PsetProperties(PropertyGroup):
 class MaterialPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=getMaterialPsetNames, name="Pset Name")
 
 
@@ -184,14 +184,14 @@ class ResourcePsetProperties(PropertyGroup):
 class ProfilePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=getProfilePsetNames, name="Pset Name")
 
 
 class WorkSchedulePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=getWorkSchedulePsetNames, name="Pset Name")
 
 
