@@ -467,9 +467,14 @@ class ActivateIfcBuildingStoreyFilter(bpy.types.Operator):
         
         
 class Reset3dView(bpy.types.Operator):
+
+
+class UnhideAllElements(bpy.types.Operator):
     """Filter model elements based on selection"""
     bl_idname = "bim.reset_3d_view"
     bl_label = "Reset 3D View"
+    bl_idname = "bim.unhide_all_elements"
+    bl_label = "Unhide All Elements"
 
     def execute(self, context):
         for obj in bpy.data.scenes["Scene"].objects:
