@@ -47,7 +47,7 @@ class BIM_PT_styles(Panel):
         if self.props.is_editing:
             row.operator("bim.disable_editing_styles", text="", icon="CANCEL")
         else:
-            row.prop(self.props, "style_type", text="")
+            blenderbim.bim.helper.prop_with_search(row, self.props, "style_type", text="")
             row.operator("bim.load_styles", text="", icon="IMPORT").style_type = self.props.style_type
             return
 
