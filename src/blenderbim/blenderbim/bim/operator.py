@@ -542,6 +542,26 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
     prop_name: bpy.props.StringProperty()
 
+    def invoke(self, context, event):
+        self.clear_collections()
+        self.data = context.data
+        items = self.data.__annotations__[self.prop_name].keywords.get("items")
+        if items is None:
+            return {"FINISHED"}
+        if not isinstance(items, list):
+            items = items(self.data, context)
+        self.add_items_regular(items)
+        self.add_items_suggestions()
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        # Mandatory to access context.data in update :
+        self.layout.context_pointer_set(name="data", data=self.data)
+        self.layout.prop_search(self, "dummy_name", self, "collection_names")
+
+    def execute(self, context):
+        return {"FINISHED"}
+
     def clear_collections(self):
         self.collection_names.clear()
         self.collection_identifiers.clear()
@@ -550,9 +570,9 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
         self.collection_identifiers.add().name = identifier
         self.collection_names.add().name = name
 
-    def add_items_regular(self, context, getter):
+    def add_items_regular(self, items):
         self.identifiers = []
-        for item in getter(self.data, context):
+        for item in items:
             self.identifiers.append(item[0])
             self.add_item(identifier=item[0], name=item[1])
             if item[0] == getattr(self.data, self.prop_name):
@@ -570,21 +590,3 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                         values = [values]
                     for value in values:
                         self.add_item(identifier=key, name=key + " (" + value + ")")
-
-    def invoke(self, context, event):
-        self.data = context.data
-        getter = self.data.getter_enum.get(self.prop_name, None)
-        if getter is None:
-            return {"FINISHED"}
-        self.clear_collections()
-        self.add_items_regular(context, getter)
-        self.add_items_suggestions()
-        return context.window_manager.invoke_props_dialog(self)
-
-    def execute(self, context):
-        return {"FINISHED"}
-
-    def draw(self, context):
-        # Mandatory to access context.data in update :
-        self.layout.context_pointer_set(name="data", data=self.data)
-        self.layout.prop_search(self, "dummy_name", self, "collection_names")
