@@ -34,6 +34,7 @@ classes = (
     operator.SelectPset,
     operator.UnhideAllElements,
     operator.FilterModelElements,
+    operator.IfcSelector,
     prop.BIMFilterClasses,
     prop.BIMFilterBuildingStoreys,
     prop.BIMSearchProperties,
