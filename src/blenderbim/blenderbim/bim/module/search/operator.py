@@ -192,12 +192,10 @@ class ColourByAttribute(bpy.types.Operator):
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            element = self.file.by_id(
-                obj.BIMObjectProperties.ifc_definition_id)
+            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             if context.scene.BIMSearchProperties.should_ignorecase:
                 data = element.get_info()
-                value = next((v for k, v in data.items()
-                             if k.lower() == attribute_name.lower()), None)
+                value = next((v for k, v in data.items() if k.lower() == attribute_name.lower()), None)
             else:
                 value = getattr(element, attribute_name, None)
             if value not in values:
@@ -211,8 +209,7 @@ class ColourByAttribute(bpy.types.Operator):
     def store_state(self, context):
         areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
         if areas:
-            self.transaction_data = {
-                "area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
 
     def rollback(self, data):
         if data:
@@ -247,8 +244,7 @@ class ColourByPset(bpy.types.Operator):
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            element = self.file.by_id(
-                obj.BIMObjectProperties.ifc_definition_id)
+            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             psets = ifcopenshell.util.element.get_psets(element)
             if search_pset_name == "":
                 props = {}
@@ -256,10 +252,8 @@ class ColourByPset(bpy.types.Operator):
             else:
                 props = None
             if context.scene.BIMSearchProperties.should_ignorecase:
-                props = props or next(
-                    (v for k, v in psets.items() if k.lower() == search_pset_name.lower()), {})
-                value = str(next((v for k, v in props.items()
-                            if k.lower() == search_prop_name.lower()), None))
+                props = props or next((v for k, v in psets.items() if k.lower() == search_pset_name.lower()), {})
+                value = str(next((v for k, v in props.items() if k.lower() == search_prop_name.lower()), None))
             else:
                 props = props or psets.get(search_pset_name, {})
                 value = str(props.get(search_prop_name, None))
@@ -274,8 +268,7 @@ class ColourByPset(bpy.types.Operator):
     def store_state(self, context):
         areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
         if areas:
-            self.transaction_data = {
-                "area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
 
     def rollback(self, data):
         if data:
@@ -308,8 +301,7 @@ class ColourByClass(bpy.types.Operator):
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            element = self.file.by_id(
-                obj.BIMObjectProperties.ifc_definition_id)
+            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             ifc_class = element.is_a()
             if ifc_class not in ifc_classes:
                 ifc_classes[ifc_class] = next(colours)
@@ -322,8 +314,7 @@ class ColourByClass(bpy.types.Operator):
     def store_state(self, context):
         areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
         if areas:
-            self.transaction_data = {
-                "area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
 
     def rollback(self, data):
         if data:
@@ -350,8 +341,7 @@ class ToggleFilterSelection(bpy.types.Operator):
     "Click to select/deselect current selection"
     bl_idname = "bim.toggle_filter_selection"
     bl_label = "Toggle Filter Selection"
-    action: bpy.props.EnumProperty(
-        items=(("SELECT", "Select", ""), ("DESELECT", "Deselect", "")))
+    action: bpy.props.EnumProperty(items=(("SELECT", "Select", ""), ("DESELECT", "Deselect", "")))
 
     def execute(self, context):
         props = bpy.context.scene.BIMSearchProperties
@@ -410,10 +400,8 @@ class ActivateIfcClassFilter(bpy.types.Operator):
             else len(bpy.context.scene.BIMSearchProperties.filter_classes),
         )
         row = self.layout.row(align=True)
-        row.operator("bim.toggle_filter_selection",
-                     text="Select All").action = "SELECT"
-        row.operator("bim.toggle_filter_selection",
-                     text="Deselect All").action = "DESELECT"
+        row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
+        row.operator("bim.toggle_filter_selection", text="Deselect All").action = "DESELECT"
 
 
 class ActivateIfcBuildingStoreyFilter(bpy.types.Operator):
@@ -460,17 +448,13 @@ class ActivateIfcBuildingStoreyFilter(bpy.types.Operator):
             else len(bpy.context.scene.BIMSearchProperties.filter_building_storeys),
         )
         row = self.layout.row(align=True)
-        row.operator("bim.toggle_filter_selection",
-                     text="Select All").action = "SELECT"
-        row.operator("bim.toggle_filter_selection",
-                     text="Deselect All").action = "DESELECT"
-        
-        
-class Reset3dView(bpy.types.Operator):
+        row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
+        row.operator("bim.toggle_filter_selection", text="Deselect All").action = "DESELECT"
 
 
 class UnhideAllElements(bpy.types.Operator):
     """Filter model elements based on selection"""
+
     bl_idname = "bim.reset_3d_view"
     bl_label = "Reset 3D View"
     bl_idname = "bim.unhide_all_elements"
@@ -484,6 +468,7 @@ class UnhideAllElements(bpy.types.Operator):
 
 class FilterModelElements(bpy.types.Operator):
     """Filter model elements based on selection"""
+
     bl_idname = "bim.filter_model_elements"
     bl_label = "Filter Model Elements"
     option: bpy.props.StringProperty("select|isolate|hide")
@@ -496,14 +481,14 @@ class FilterModelElements(bpy.types.Operator):
         return {"FINISHED"}
 
     def add_groups(self, selector):
-        selection = ''
+        selection = ""
         for group_index, group in enumerate(selector.groups):
             if group_index != 0:
                 selection += " | "
-            selection += "(" if len(selector.groups) >1 else ""
+            selection += "(" if len(selector.groups) > 1 else ""
             selection = self.add_queries(selection, group)
 
-            selection += ")" if len(selector.groups) >1 else ""
+            selection += ")" if len(selector.groups) > 1 else ""
         return selection
 
     def add_queries(self, selection, group):
@@ -522,7 +507,7 @@ class FilterModelElements(bpy.types.Operator):
             elif query.selector == "IfcElementType":
                 index = int(query.active_sub_option.split(":")[0])
                 selection += f"* #{query.sub_options[index].global_id}"
-                
+
             elif query.selector == "IfcSpatialElement":
                 index = int(query.active_sub_option.split(":")[0])
                 selection += f"@ #{query.sub_options[index].global_id}"
@@ -530,11 +515,11 @@ class FilterModelElements(bpy.types.Operator):
 
     def add_filters(self, selection, query):
         for f_index, f in enumerate(query.filters):
-            
-            if f_index !=0:
+
+            if f_index != 0:
                 selection += " & " if f.and_or == "and" else " | "
                 selection += f".{query.active_option}"
-            
+
             selection += "["
 
             if f.selector == "IfcPropertySet":
@@ -544,23 +529,157 @@ class FilterModelElements(bpy.types.Operator):
 
             selection += "]"
         return selection
-            
+
     def update_model_view(self, context, selection):
         query = Selector.parse(IfcStore.file, selection)
-        sel_element_ids = [e.id() for e in query]  
-        bpy.ops.object.select_all(action='DESELECT')
+        sel_element_ids = [e.id() for e in query]
+        bpy.ops.object.select_all(action="DESELECT")
 
-            
         for obj in bpy.data.scenes["Scene"].objects:
-            obj.hide_set(False) # reset 3d view
-            
+            obj.hide_set(False)  # reset 3d view
+
             if self.option == "select":
                 if obj.BIMObjectProperties.ifc_definition_id in sel_element_ids:
                     obj.select_set(True)
             elif self.option == "isolate":
-                if obj.BIMObjectProperties.ifc_definition_id not in sel_element_ids:        
+                if obj.BIMObjectProperties.ifc_definition_id not in sel_element_ids:
                     obj.hide_set(True)
             elif self.option == "hide":
-                if obj.BIMObjectProperties.ifc_definition_id in sel_element_ids:        
+                if obj.BIMObjectProperties.ifc_definition_id in sel_element_ids:
                     obj.hide_set(True)
+                    
+from . import ui
+class IfcSelector(bpy.types.Operator):
+    """Select elements in model with IFC Selector"""
 
+    bl_idname = "bim.ifc_selector"
+    bl_label = "Select elements with IFC Selector"
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=800)
+    
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+        
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def draw(self, context):
+        ifc_selector = context.scene.IfcSelectorProperties
+        layout = self.layout
+        row = layout.row()
+
+        row.context_pointer_set(name="bim_prop_group", data=ifc_selector)
+        op = row.operator("bim.edit_blender_collection", text="Add selection group")
+        op.option = "add"
+        op.collection = "groups"
+        layout.separator()
+
+        self.draw_query_group_ui(ifc_selector, layout)
+        
+        if len(ifc_selector.groups) != 0:
+            row = layout.row()
+            row.alignment = "CENTER"
+            select = row.operator("bim.filter_model_elements", text="select")
+            select.option = "select"
+            isolate = row.operator("bim.filter_model_elements", text="isolate")
+            isolate.option = "isolate"
+            hide = row.operator("bim.filter_model_elements", text="hide")
+            hide.option = "hide"
+            row.operator("bim.unhide_all_elements", text="unhide all elements")   
+            
+            row = layout.row()
+            row.prop(ifc_selector, "selector_query_syntax", text="Query Syntax")
+
+    def draw_query_group_ui(self, ifc_selector, layout):
+        for index, group in enumerate(ifc_selector.groups):
+            row = layout.row()
+            row.alignment = "CENTER"
+            row.label(text="or") if index !=0 else None
+            
+            box = layout.box()
+            row = box.row(align=True)
+            row.alignment = "CENTER"
+            row.label(text=f"Group #{str(index+1)}")
+            row.context_pointer_set(name="bim_prop_group", data=group)
+            op = row.operator("bim.edit_blender_collection", text="Add query", icon="PLUS")
+            op.option = "add"
+            op.collection = "queries"
+
+            row.context_pointer_set(name="bim_prop_group", data=ifc_selector)
+            op = row.operator("bim.edit_blender_collection", text="Remove selection group")
+            op.option = "remove"
+            op.collection = "groups"
+            op.index = index
+
+            self.draw_query_ui(group, box)
+
+    def draw_query_ui(self, group, box):
+        for index, query in enumerate(group.queries):
+            row = box.row()
+            row.alignment = "LEFT"
+                
+            row.prop(query, "and_or", text="") if index != 0 else None
+            if query.and_or == "or":
+                row=box.row()
+                row.alignment = "LEFT" 
+            row.prop(query, "selector", text="")
+
+            if query.selector in ["IFC Class", "IfcSpatialElement", "IfcElementType"]:
+                row.label(text="Equals")
+                row.prop_search(query, "active_option", query, "options", text="")
+                row.prop_search(query, "active_sub_option", query, "sub_options", text="") if len(query.sub_options) != 0 else None
+                self.draw_filter_ui(index, box, query)
+                
+            elif query.selector in ["GlobalId", "Attribute"]:
+                row.prop(query, "negation", text="")
+                row.prop(query, "comparison", text="")
+                row.prop(query, "value", text="")
+
+            row.context_pointer_set(name="bim_prop_group", data=group)
+            op = row.operator("bim.edit_blender_collection", icon="REMOVE", text="")
+            op.option = "remove"
+            op.collection = "queries"
+            op.index = index
+
+            row.context_pointer_set(name="bim_prop_group", data=query)
+            op = (
+                    row.operator("bim.edit_blender_collection", text="Add filter")
+                    if query.selector == "IFC Class"
+                    else None
+                )
+            if op:
+                op.option = "add"
+                op.collection = "filters"
+
+    def draw_filter_ui(self, index, box, query):
+        for filter_index, f in enumerate(query.filters):
+            row = box.row()
+            row.alignment = "LEFT"
+            row.label(text="  ↪")
+            row.prop(f, "and_or", text="") if filter_index != 0 else None
+            if f.and_or == "or":
+                row=box.row()
+                row.alignment = "LEFT"
+                row.label(text="  ↪") 
+            row.prop(f, "selector", text="")
+
+            if f.selector == "Attribute":
+                row.prop(f, "attribute", text="")
+                row.prop(f, "negation",)
+                row.prop(f, "comparison", text="")
+                row.prop(f, "value", text="")
+
+            elif f.selector == "IfcPropertySet":
+                row.prop_search(f, "active_option", f, "options", text="")
+                row.prop_search(f, "active_sub_option", f, "sub_options", text="")
+                row.prop(f, "negation")
+                row.prop(f, "comparison", text="")
+                row.prop(f, "value", text="")
+
+            row.context_pointer_set(name="bim_prop_group", data=query)
+            op = row.operator("bim.edit_blender_collection", icon="REMOVE", text="")
+            op.option = "remove"
+            op.collection = "filters"
+            op.index = filter_index
