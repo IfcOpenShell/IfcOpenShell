@@ -88,6 +88,11 @@ def get_ifc_classes(self, context):
     return IfcClassData.data["ifc_classes"]
 
 
+def get_ifc_classes_suggestions():
+    if not IfcClassData.is_loaded:
+        IfcClassData.load()
+    return IfcClassData.data["ifc_classes_suggestions"]
+
 def get_contexts(self, context):
     if not IfcClassData.is_loaded:
         IfcClassData.load()
@@ -101,9 +106,6 @@ class BIMRootProperties(PropertyGroup):
     ifc_predefined_type: EnumProperty(items=getIfcPredefinedTypes, name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
 
-    getter_enum = {
-        "contexts": get_contexts,
-        "ifc_product": get_ifc_products,
-        "ifc_class": get_ifc_classes,
-        "ifc_predefined_type": getIfcPredefinedTypes,
+    getter_enum_suggestions = {
+        "ifc_class": get_ifc_classes_suggestions,
     }

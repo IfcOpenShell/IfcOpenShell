@@ -146,10 +146,6 @@ class PsetTemplate(PropertyGroup):
     template_type: EnumProperty(items=get_template_type, name="Template Type")
     applicable_entity: StringProperty(name="Applicable Entity")
 
-    getter_enum = {
-        "template_type": get_template_type,
-    }
-
 
 class EnumerationValues(PropertyGroup):
     string_value: StringProperty(name="Value")
@@ -168,9 +164,6 @@ class PropTemplate(PropertyGroup):
         name="Template Type",
     )
     enum_values: CollectionProperty(type=EnumerationValues)
-    getter_enum = {
-        "primary_measure_type": get_primary_measure_type,
-    }
 
     def get_value_name(self):
         ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)
@@ -195,8 +188,3 @@ class BIMPsetTemplateProperties(PropertyGroup):
     active_pset_template: PointerProperty(type=PsetTemplate)
     active_prop_template: PointerProperty(type=PropTemplate)
     new_template_filename: StringProperty("New TemplateFileName")
-
-    getter_enum = {
-        "pset_template_files": getPsetTemplateFiles,
-        "pset_templates": getPsetTemplates,
-    }
