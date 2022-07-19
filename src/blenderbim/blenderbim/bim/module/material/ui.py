@@ -51,7 +51,7 @@ class BIM_PT_materials(Panel):
             row.operator("bim.disable_editing_materials", text="", icon="CANCEL")
         else:
             row = self.layout.row(align=True)
-            row.prop(self.props, "material_type", text="")
+            prop_with_search(row, self.props, "material_type", text="")
             row.operator("bim.load_materials", text="", icon="IMPORT")
             return
 
@@ -189,7 +189,7 @@ class BIM_PT_object_material(Panel):
             return self.draw_material_ui()
 
         row = self.layout.row(align=True)
-        row.prop(self.props, "material_type", text="")
+        prop_with_search(row, self.props, "material_type", text="")
         if self.props.material_type == "IfcMaterial" or self.props.material_type == "IfcMaterialList":
             prop_with_search(row, self.props, "material", text="")
         row.operator("bim.assign_material", icon="ADD", text="")

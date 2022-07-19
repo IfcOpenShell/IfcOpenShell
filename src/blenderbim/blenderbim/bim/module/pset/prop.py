@@ -158,11 +158,6 @@ class PsetProperties(PropertyGroup):
     pset_name: EnumProperty(items=get_pset_names, name="Pset Name")
     qto_name: EnumProperty(items=get_qto_names, name="Qto Name")
 
-    getter_enum = {
-        "qto_name": get_qto_names,
-        "pset_name": get_pset_names,
-    }
-
 
 class MaterialPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
@@ -222,14 +217,6 @@ class AddEditProperties(PropertyGroup):
         name="Template Type",
     )
     enum_values: CollectionProperty(name="Enum Values", type=Attribute)
-
-    getter_enum = {
-        "primary_measure_type": get_primary_measure_type,
-        "template_type": lambda self, context: [
-            ("IfcPropertySingleValue", "IfcPropertySingleValue", "IfcPropertySingleValue"),
-            ("IfcPropertyEnumeratedValue", "IfcPropertyEnumeratedValue", "IfcPropertyEnumeratedValue"),
-        ],
-    }
 
     def get_value_name(self):
         ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)
