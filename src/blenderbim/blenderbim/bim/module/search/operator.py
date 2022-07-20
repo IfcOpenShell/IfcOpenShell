@@ -66,7 +66,14 @@ def does_keyword_exist(pattern, string, context):
     elif string == pattern:
         return True
 
-
+# hack to close popup
+# https://blender.stackexchange.com/a/202576/130742
+def close_operator_panel(event):
+    x, y = event.mouse_x, event.mouse_y
+    bpy.context.window.cursor_warp(10, 10)
+    move_back = lambda: bpy.context.window.cursor_warp(x, y)
+    bpy.app.timers.register(move_back, first_interval=0.01)
+    
 class EditBlenderCollection(Operator):
     bl_idname = "bim.edit_blender_collection"
     bl_label = "Add or Remove blender collection item"
@@ -563,7 +570,6 @@ class FilterModelElements(Operator):
 
 class IfcSelector(Operator):
     """Select elements in model with IFC Selector"""
-
     bl_idname = "bim.ifc_selector"
     bl_label = "Select elements with IFC Selector"
 
@@ -604,19 +610,11 @@ class SaveSelectorQuery(Operator):
 
 class OpenQueryLibrary(Operator):
     """Open Query Library"""
-
     bl_idname = "bim.open_query_library"
     bl_label = "Open Query Library"
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=400)
-
-    def close_panel(event):
-        x, y = event.mouse_x, event.mouse_y
-        bpy.context.window.cursor_warp(10, 10)
-
-        move_back = lambda: bpy.context.window.cursor_warp(x, y)
-        bpy.app.timers.register(move_back, first_interval=0.001)
+        return context.window_manager.invoke_popup(self, width=400)
 
     def draw(self, context):
         layout = self.layout
@@ -643,6 +641,10 @@ class LoadQuery(Operator):
     bl_label = "Load Query"
     index: IntProperty()
 
+    def invoke(self, context, event):
+        close_operator_panel(event)
+        return self.execute(context)
+    
     def execute(self, context):
         ifc_selector = context.scene.IfcSelectorProperties
         ifc_selector.selector_query_syntax = ifc_selector.query_library[self.index].query
