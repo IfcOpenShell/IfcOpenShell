@@ -189,7 +189,7 @@ class Selector:
                 value = None
         for element in elements:
             element_value = cls.get_element_value(element, key)
-            if element_value is None and value is not None:
+            if element_value is None and value is not None and "not" not in comparison:
                 continue
             if comparison and cls.filter_element(element, element_value, comparison, value):
                 results.append(element)

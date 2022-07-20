@@ -112,7 +112,7 @@ class TestSelector(test.bootstrap.IFC4):
         assert subject.Selector.parse(self.file, '.IfcElement[Name*="oba"]') == [element]
         assert subject.Selector.parse(self.file, '.IfcElement[Name*="abc"]') == []
 
-    def test_comparing_if_value_does_not_exist(self):
+    def test_selecting_if_value_not_matching(self):
         element_1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset_1 = ifcopenshell.api.run("pset.add_pset", self.file, product=element_1, name="Foo_Bar")
@@ -121,6 +121,11 @@ class TestSelector(test.bootstrap.IFC4):
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset_2, properties={"Foo": "BOO"})
         assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo != "Bar"]') == [element_2]
         assert subject.Selector.parse(self.file, '.IfcElement[Foo_Bar.Foo != "BOO"]') == [element_1]
+        
+
+    def test_selecting_when_attribute_is_none(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        assert subject.Selector.parse(self.file, '.IfcElement[PredefinedType !="non-existent predefined type"]') == [element]
         
     def test_selecting_a_property_which_includes_non_standard_characters(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
