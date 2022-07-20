@@ -111,6 +111,12 @@ class TestSelector(test.bootstrap.IFC4):
         assert subject.Selector.parse(self.file, '.IfcElement[Name*="Foo"]') == [element]
         assert subject.Selector.parse(self.file, '.IfcElement[Name*="oba"]') == [element]
         assert subject.Selector.parse(self.file, '.IfcElement[Name*="abc"]') == []
+        
+    def test_selecting_a_property_which_includes_non_standard_characters(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="a !%$§&/()?|*-+,€~#@µ^°a")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"a !%$§&/()?|*-+,€~#@µ^°a": "Bar"})
+        assert subject.Selector.parse(self.file, '.IfcElement[a !%$§&/()?|*-+,€~#@µ^°a.a !%$§&/()?|*-+,€~#@µ^°a="Bar"]') == [element]
 
     def test_comparing_if_value_is_in_a_list(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
