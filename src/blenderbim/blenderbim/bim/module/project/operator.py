@@ -107,10 +107,9 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
     def commit(self, data):
         IfcStore.library_path = data["filepath"]
         IfcStore.library_file = ifcopenshell.open(data["filepath"])
-        
+
     def draw(self, context):
-        IFCFileSelector.draw(self, context)
-        self.layout.prop(self, "append_all", text= "Append Entire Library")
+        self.layout.prop(self, "append_all", text="Append Entire Library")
 
 
 class RefreshLibrary(bpy.types.Operator):
@@ -289,10 +288,10 @@ class SaveLibraryFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AppendEntiryLibrary(bpy.types.Operator):
+class AppendEntireLibrary(bpy.types.Operator):
     bl_idname = "bim.append_entire_library"
     bl_label = "Append Entiry Library"
-    
+
     @classmethod
     def poll(cls, context):
         return IfcStore.get_file()
@@ -303,13 +302,15 @@ class AppendEntiryLibrary(bpy.types.Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         self.library = IfcStore.library_file
-        
-        lib_elements = ifcopenshell.util.selector.Selector().parse(self.library, '.IfcTypeProduct | .IfcMaterial | .IfcCostSchedule| .IfcProfileDef')
+
+        lib_elements = ifcopenshell.util.selector.Selector().parse(
+            self.library, ".IfcTypeProduct | .IfcMaterial | .IfcCostSchedule| .IfcProfileDef"
+        )
         for element in lib_elements:
-            bpy.ops.bim.append_library_element(definition= element.id())
+            bpy.ops.bim.append_library_element(definition=element.id())
         return {"FINISHED"}
-                     
-    
+
+
 class AppendLibraryElement(bpy.types.Operator):
     bl_idname = "bim.append_library_element"
     bl_label = "Append Library Element"
@@ -661,16 +662,19 @@ class LinkIfc(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Link a Blender file"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.blend;*.blend1", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def execute(self, context):
-        new = context.scene.BIMProjectProperties.links.add()
-        filepath = self.filepath
-        if self.use_relative_path:
-            filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
-        new.name = filepath
-        bpy.ops.bim.load_link(filepath=self.filepath)
+        for file in self.files:
+            filepath = os.path.join(self.directory, file.name)
+            new = context.scene.BIMProjectProperties.links.add()
+            if self.use_relative_path:
+                filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
+            new.name = filepath
+            bpy.ops.bim.load_link(filepath=self.filepath)
         return {"FINISHED"}
 
     def invoke(self, context, event):

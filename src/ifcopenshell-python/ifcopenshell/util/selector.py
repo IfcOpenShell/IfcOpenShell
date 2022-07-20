@@ -27,7 +27,6 @@ class Selector:
     def parse(cls, ifc_file, query, elements=None):
         cls.file = ifc_file
         cls.elements = elements
-
         l = lark.Lark(
             """start: query (lfunction query)*
                     query: selector | group
@@ -38,7 +37,7 @@ class Selector:
                     filter: "[" filter_key (comparison filter_value)? "]"
                     filter_key: WORD | pset_or_qto
                     filter_value: ESCAPED_STRING | SIGNED_FLOAT | SIGNED_INT | BOOLEAN | NULL
-                    pset_or_qto: /[A-Za-z0-9_]+/ "." /[A-Za-z0-9_]+/
+                    pset_or_qto: /[^\W][^.=<>]*[^\W]/ "." /[^\W][^.=<>]*[^\W]/
                     lfunction: and | or
                     inverse_relationship: types | decomposed_by | bounded_by
                     types: "*"
@@ -185,7 +184,7 @@ class Selector:
             elif token_type == "SIGNED_FLOAT":
                 value = float(filter_rule.children[2].children[0])
             elif token_type == "BOOLEAN":
-                value = filter_rule.children[2].children[0].lower() == 'true'
+                value = filter_rule.children[2].children[0].lower() == "true"
             elif token_type == "NULL":
                 value = None
         for element in elements:
