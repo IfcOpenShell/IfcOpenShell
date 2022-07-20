@@ -20,6 +20,7 @@ import re
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
+from ifcopenshell.api.group.data import Data
 from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
@@ -513,7 +514,7 @@ class FilterModelElements(Operator):
                 selection = self.add_filters(selection, query)
 
             elif query.selector == "GlobalId":
-                selection += f"#{query.global_id}"
+                selection += f"#{query.value}"
 
             elif query.selector == "IfcElementType":
                 index = int(query.active_sub_option.split(":")[0])
@@ -645,4 +646,30 @@ class LoadQuery(Operator):
     def execute(self, context):
         ifc_selector = context.scene.IfcSelectorProperties
         ifc_selector.selector_query_syntax = ifc_selector.query_library[self.index].query
+        return {"FINISHED"}
+    
+class AddToIfcGroup(Operator):
+    bl_idname = "bim.add_to_ifc_group"
+    bl_label = "Add to IFC Group"
+    group_name: StringProperty(name="Group Name")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=400)
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "group_name")
+        
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifc_selector = context.scene.IfcSelectorProperties
+        selector_query_syntax = ifc_selector.selector_query_syntax
+        
+        group = ifcopenshell.api.run("group.add_group", self.file, **{"Name": self.group_name})
+        objects = Selector.parse(self.file, selector_query_syntax)
+        for obj in objects:
+            ifcopenshell.api.run("group.assign_group", self.file, **{"product": obj, "group": group})
+        
+        Data.load(IfcStore.get_file())
+        
         return {"FINISHED"}
