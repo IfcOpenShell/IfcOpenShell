@@ -38,6 +38,7 @@ classes = (
     operator.SaveSelectorQuery,
     operator.OpenQueryLibrary,
     operator.LoadQuery,
+    operator.AddToIfcGroup,
     prop.BIMFilterClasses,
     prop.BIMFilterBuildingStoreys,
     prop.BIMSearchProperties,
