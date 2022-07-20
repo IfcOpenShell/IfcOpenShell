@@ -20,7 +20,7 @@ import bpy
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import draw_attributes
+from blenderbim.bim.helper import draw_attributes, prop_with_search
 from ifcopenshell.api.structural.data import Data
 from blenderbim.bim.module.structural.data import StructuralData
 
@@ -482,7 +482,7 @@ class BIM_PT_structural_loads(Panel):
             row.operator("bim.disable_structural_load_editing_ui", text="", icon="SCREEN_BACK")
 
             row = self.layout.row(align=True)
-            row.prop(self.props, "structural_load_types", text="")
+            prop_with_search(row, self.props, "structural_load_types", text="")
             row.operator("bim.add_structural_load", text="", icon="ADD").ifc_class = self.props.structural_load_types
         else:
             row.operator("bim.load_structural_loads", text="", icon="GREASEPENCIL")
@@ -551,7 +551,7 @@ class BIM_PT_boundary_conditions(Panel):
             row.operator("bim.disable_boundary_condition_editing_ui", text="", icon="SCREEN_BACK")
 
             row = self.layout.row(align=True)
-            row.prop(self.props, "boundary_condition_types", text="")
+            prop_with_search(row, self.props, "boundary_condition_types", text="")
             row.operator(
                 "bim.add_boundary_condition", text="", icon="ADD"
             ).ifc_class = self.props.boundary_condition_types

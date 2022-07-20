@@ -108,7 +108,7 @@ def export_attributes(props, callback=None):
     return attributes
 
 
-def prop_with_search(layout, data, prop_name, **kwargs):  
+def prop_with_search(layout, data, prop_name, **kwargs):
     # kwargs are layout.prop arguments (text, icon, etc.)
     row = layout.row(align=True)
     # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
@@ -118,15 +118,18 @@ def prop_with_search(layout, data, prop_name, **kwargs):
     op.prop_name = prop_name
 
 
-def col_with_margins(layout, margin_left=0.025, margin_right=None):
-    margin_right = margin_left if margin_right is None else margin_right
-    split = layout.split(factor=margin_left, align=True)
-    cols = [split.column() for _ in range(2)]
-    cols[0].label(text="")
-    subsplit = cols[-1].split(factor=(1. - margin_right), align=True)
-    subcol = subsplit.column()
-    subsplit.column().label(text="")
-    return subcol
+def get_enum_items(data, prop_name, context):
+    # Retrieve items from a dynamic EnumProperty, which is otherwise not supported
+    # Or throws an error in the console when the items callback returns an empty list
+    # See https://blender.stackexchange.com/q/215781/86891
+    prop = data.__annotations__[prop_name]
+    items = prop.keywords.get("items")
+    if items is None:
+        return
+    if not isinstance(items, (list, tuple)):
+        # items are retrieved through a callback, not a static list :
+        items = items(data, context)
+    return items
 
 
 class IfcHeaderExtractor:

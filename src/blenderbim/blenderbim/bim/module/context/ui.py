@@ -64,8 +64,8 @@ class BIM_PT_context(bpy.types.Panel):
                 row.operator("bim.remove_context", icon="X", text="").context = ifc_context["id"]
 
             row = box.row(align=True)
-            row.prop(props, "subcontexts", text="")
-            row.prop(props, "target_views", text="")
+            blenderbim.bim.helper.prop_with_search(row, props, "subcontexts", text="")
+            blenderbim.bim.helper.prop_with_search(row, props, "target_views", text="")
             op = row.operator("bim.add_context", icon="ADD", text="")
             op.context_type = ifc_context["context_type"]
             op.context_identifier = props.subcontexts

@@ -1,43 +1,19 @@
 #include "XmlSerializer.h"
 
-#ifdef HAS_SCHEMA_2x3
-extern void init_XmlSerializerIfc2x3(XmlSerializerFactory::Factory*);
-#endif
-#ifdef HAS_SCHEMA_4
-extern void init_XmlSerializerIfc4(XmlSerializerFactory::Factory*);
-#endif
-#ifdef HAS_SCHEMA_4x1
-extern void init_XmlSerializerIfc4x1(XmlSerializerFactory::Factory*);
-#endif
-#ifdef HAS_SCHEMA_4x2
-extern void init_XmlSerializerIfc4x2(XmlSerializerFactory::Factory*);
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-extern void init_XmlSerializerIfc4x3_rc1(XmlSerializerFactory::Factory*);
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-extern void init_XmlSerializerIfc4x3_rc2(XmlSerializerFactory::Factory*);
-#endif
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+
+#define EXTERNAL_DEFS(r, data, elem) \
+	extern void BOOST_PP_CAT(init_XmlSerializerIfc, elem)(XmlSerializerFactory::Factory*);
+
+#define CALL_DEFS(r, data, elem) \
+	BOOST_PP_CAT(init_XmlSerializerIfc, elem)(this);
+
+BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS, , SCHEMA_SEQ)
 
 XmlSerializerFactory::Factory::Factory() {
-#ifdef HAS_SCHEMA_2x3
-	init_XmlSerializerIfc2x3(this);
-#endif
-#ifdef HAS_SCHEMA_4
-	init_XmlSerializerIfc4(this);
-#endif
-#ifdef HAS_SCHEMA_4x1
-	init_XmlSerializerIfc4x1(this);
-#endif
-#ifdef HAS_SCHEMA_4x2
-	init_XmlSerializerIfc4x2(this);
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-	init_XmlSerializerIfc4x3_rc1(this);
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-	init_XmlSerializerIfc4x3_rc2(this);
-#endif
+	BOOST_PP_SEQ_FOR_EACH(CALL_DEFS, , SCHEMA_SEQ)
 }
 
 void XmlSerializerFactory::Factory::bind(const std::string& schema_name, fn f) {

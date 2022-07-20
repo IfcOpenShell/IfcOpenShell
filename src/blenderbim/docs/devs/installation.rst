@@ -108,12 +108,12 @@ On Windows:
     $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\bim" "src\blenderbim\blenderbim\bim"
 
     # Remove the IfcOpenShell dependency Python code
-    $ rd \S \Q "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api"
-    $ rd \S \Q "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util"
+    $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api"
+    $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util"
 
     # Replace them with links to the Git repository
-    $ mklink \D "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api" "src\ifcopenshell-python\ifcopenshell\api"
-    $ mklink \D "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util" "src\ifcopenshell-python\ifcopenshell\util"
+    $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api" "src\ifcopenshell-python\ifcopenshell\api"
+    $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util" "src\ifcopenshell-python\ifcopenshell\util"
 
 
 After you modify your code in the Git repository, you will need to restart
