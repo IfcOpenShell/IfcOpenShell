@@ -132,6 +132,15 @@ def get_enum_items(data, prop_name, context):
     return items
 
 
+# hack to close popup
+# https://blender.stackexchange.com/a/202576/130742
+def close_operator_panel(event):
+    x, y = event.mouse_x, event.mouse_y
+    bpy.context.window.cursor_warp(10, 10)
+    move_back = lambda: bpy.context.window.cursor_warp(x, y)
+    bpy.app.timers.register(move_back, first_interval=0.01)
+
+
 class IfcHeaderExtractor:
     def __init__(self, filepath: str):
         self.filepath = filepath

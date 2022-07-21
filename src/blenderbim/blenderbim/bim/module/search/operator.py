@@ -24,6 +24,7 @@ from ifcopenshell.api.group.data import Data
 from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import close_operator_panel
 from itertools import cycle
 from bpy.types import PropertyGroup, Operator
 from bpy.props import (
@@ -66,14 +67,7 @@ def does_keyword_exist(pattern, string, context):
     elif string == pattern:
         return True
 
-# hack to close popup
-# https://blender.stackexchange.com/a/202576/130742
-def close_operator_panel(event):
-    x, y = event.mouse_x, event.mouse_y
-    bpy.context.window.cursor_warp(10, 10)
-    move_back = lambda: bpy.context.window.cursor_warp(x, y)
-    bpy.app.timers.register(move_back, first_interval=0.01)
-    
+
 class EditBlenderCollection(Operator):
     bl_idname = "bim.edit_blender_collection"
     bl_label = "Add or Remove blender collection item"
@@ -639,10 +633,6 @@ class LoadQuery(Operator):
     bl_idname = "bim.load_query"
     bl_label = "Load Query"
     index: IntProperty()
-
-    def invoke(self, context, event):
-        close_operator_panel(event)
-        return self.execute(context)
     
     def execute(self, context):
         ifc_selector = context.scene.IfcSelectorProperties
