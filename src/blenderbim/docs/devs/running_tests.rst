@@ -6,7 +6,8 @@ Running tests
 The BlenderBIM Add-on has three layers of tests for each of its three technology
 layers. These roughly form a test pyramid, moving from many abstract domain
 logic tests, to low-level concrete unit tests, to a minimal number of UI and
-smoke tests. These tests use ``pytest`` as the test framework and runner.
+smoke tests. These tests use ``pytest`` as the test framework and runner, so you
+will need to install ``pytest``.
 
 All development is expected to use test driven development, and so we expect
 test coverage to be 100% where it is technically possible to test.
@@ -39,8 +40,8 @@ similar.
 Tool tests
 ----------
 
-The tool layer tests actual concrete functions. These have the following
-dependencies:
+The tool layer tests actual concrete functions. You will need to install the
+following dependencies:
 
 * pytest-blender, accessible to your system's Python
 * Blender executable, accessible to pytest-blender on your system's Python
@@ -50,6 +51,16 @@ dependencies:
 
 You can install the dependencies by running the ``scripts/setup_pytest.py``
 script in Blender.
+
+.. warning::
+
+   The ``scripts/setup_pytest.py`` may not work for all operating systems and
+   installation environments. In this case, you may be required to install the
+   dependencies manually.
+
+   Please be aware that some Blender may come packaged with its own Python,
+   which may be separate to the Python installation on your system. Be sure to
+   install the dependencies to the correct Python environment.
 
 Then, run the tests. This will launch Blender headlessly and check the behaviour
 of all concrete functions.
