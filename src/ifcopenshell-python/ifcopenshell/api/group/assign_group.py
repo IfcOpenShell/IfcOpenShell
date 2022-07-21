@@ -37,7 +37,7 @@ class Usecase:
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
                     "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedObjects": [self.settings["product"]],
+                    "RelatedObjects": self.settings["product"],
                     "RelatingGroup": self.settings["group"],
                 }
             )
