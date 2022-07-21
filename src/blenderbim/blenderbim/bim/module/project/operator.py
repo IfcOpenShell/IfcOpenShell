@@ -315,12 +315,16 @@ class AppendLibraryElement(bpy.types.Operator):
     bl_idname = "bim.append_library_element"
     bl_label = "Append Library Element"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Append element to the current project"
     definition: bpy.props.IntProperty()
     prop_index: bpy.props.IntProperty()
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        poll = bool(IfcStore.get_file())
+        if bpy.app.version > (3, 0, 0) and not poll:
+            cls.poll_message_set("Please create or load a project first.")
+        return poll
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
