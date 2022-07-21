@@ -167,7 +167,7 @@ class AssignGroup(bpy.types.Operator):
                 "group.assign_group",
                 self.file,
                 **{
-                    "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
+                    "product": [self.file.by_id(product.BIMObjectProperties.ifc_definition_id)],
                     "group": self.file.by_id(self.group),
                 }
             )
