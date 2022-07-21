@@ -470,7 +470,6 @@ class ActivateIfcBuildingStoreyFilter(Operator):
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
         row.operator("bim.toggle_filter_selection", text="Deselect All").action = "DESELECT"
 
-
 class UnhideAllElements(Operator):
     """Filter model elements based on selection"""
 
@@ -669,9 +668,8 @@ class AddToIfcGroup(Operator):
         
         group = ifcopenshell.api.run("group.add_group", self.file, **{"Name": self.group_name})
         objects = Selector.parse(self.file, selector_query_syntax)
-        for obj in objects:
-            ifcopenshell.api.run("group.assign_group", self.file, **{"product": obj, "group": group})
-        
+
+        ifcopenshell.api.run("group.assign_group", self.file, **{"product": objects, "group": group})
         Data.load(IfcStore.get_file())
         
         return {"FINISHED"}
