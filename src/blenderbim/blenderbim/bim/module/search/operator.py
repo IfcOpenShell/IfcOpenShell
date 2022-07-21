@@ -666,7 +666,7 @@ class AddToIfcGroup(Operator):
         ifc_selector = context.scene.IfcSelectorProperties
         selector_query_syntax = ifc_selector.selector_query_syntax
         
-        group = ifcopenshell.api.run("group.add_group", self.file, **{"Name": self.group_name})
+        group = ifcopenshell.api.run("group.add_group", self.file, **{"Name": self.group_name, "Description": f'*selector*{selector_query_syntax}*selector*'})
         objects = Selector.parse(self.file, selector_query_syntax)
 
         ifcopenshell.api.run("group.assign_group", self.file, **{"product": objects, "group": group})

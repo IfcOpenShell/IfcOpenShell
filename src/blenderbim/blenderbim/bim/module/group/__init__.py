@@ -31,6 +31,7 @@ classes = (
     operator.EnableEditingGroup,
     operator.DisableEditingGroup,
     operator.SelectGroupProducts,
+    operator.UpdateGroup,
     prop.Group,
     prop.BIMGroupProperties,
     ui.BIM_PT_groups,

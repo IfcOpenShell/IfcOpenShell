@@ -40,7 +40,7 @@ class BIM_PT_groups(Panel):
         self.props = context.scene.BIMGroupProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Groups Found".format(len(Data.groups)), icon="OUTLINER")
+        row.label(text=f"{len(Data.groups)} Groups Found", icon="OUTLINER")
         if self.props.is_editing:
             row.operator("bim.add_group", text="", icon="ADD")
             row.operator("bim.disable_group_editing_ui", text="", icon="CANCEL")
@@ -118,7 +118,7 @@ class BIM_UL_groups(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
+            row.label(text=f"*{item.name}") if item.selection_query != "" else row.label(text=item.name)
             group_id = item.ifc_definition_id
             if context.scene.BIMGroupProperties.active_group_id == group_id:
                 op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
@@ -130,6 +130,10 @@ class BIM_UL_groups(UIList):
                 op.group = group_id
                 op = row.operator("bim.remove_group", text="", icon="X")
                 op.group = group_id
+                if item.selection_query != "":
+                    op = row.operator("bim.update_group", text="", icon="FILE_REFRESH")
+                    op.group_id = item.ifc_definition_id
+                    op.query = item.selection_query
             else:
                 op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
                 op.group = group_id
@@ -137,12 +141,18 @@ class BIM_UL_groups(UIList):
                 op.group = group_id
                 op = row.operator("bim.remove_group", text="", icon="X")
                 op.group = group_id
+                if item.selection_query != "":
+                    op = row.operator("bim.update_group", text="", icon="FILE_REFRESH")
+                    op.group_id = item.ifc_definition_id
+                    op.query = item.selection_query
 
 
 class BIM_UL_object_groups(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
+            row.label(text=f"*{item.name}") if item.selection_query != "" else row.label(text=item.name)
+            op = row.operator("bim.remove_group", text="", icon="X")
+            op.group = item.ifc_definition_id
             op = row.operator("bim.assign_group", text="", icon="ADD")
             op.group = item.ifc_definition_id

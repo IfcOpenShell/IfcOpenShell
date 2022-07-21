@@ -22,6 +22,7 @@ import ifcopenshell.api
 import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.group.data import Data
+from ifcopenshell.util.selector import Selector
 
 
 class LoadGroups(bpy.types.Operator):
@@ -36,6 +37,7 @@ class LoadGroups(bpy.types.Operator):
             new = props.groups.add()
             new.ifc_definition_id = ifc_definition_id
             new.name = group["Name"]
+            new.selection_query = group["Description"].split("*selector*")[1] if group["Description"] else ""
         props.is_editing = True
         bpy.ops.bim.disable_editing_group()
         return {"FINISHED"}
@@ -218,4 +220,32 @@ class SelectGroupProducts(bpy.types.Operator):
             product_groups = Data.products.get(obj.BIMObjectProperties.ifc_definition_id, [])
             if self.group in product_groups:
                 obj.select_set(True)
+        return {"FINISHED"}
+
+class UpdateGroup(bpy.types.Operator):
+    bl_idname = "bim.update_group"
+    bl_label = "Update Group"
+    bl_options = {"REGISTER", "UNDO"}
+    query: bpy.props.StringProperty()
+    group_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        group = self.file.by_id(self.group_id)
+        query = self.query
+
+        new_products = Selector.parse(self.file, query)
+        ifcopenshell.api.run(
+            "group.update_group_products",
+            self.file,
+            **{
+                "products": new_products,
+                "group": group,
+            }
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_groups()
         return {"FINISHED"}
