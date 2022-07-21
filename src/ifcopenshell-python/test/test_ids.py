@@ -1111,7 +1111,7 @@ class TestIdsAuthoring(unittest.TestCase):
         group = ifcopenshell.api.run("group.add_group", ifc)
         facet = ids.partOf.create(entity="IfcGroup")
         run("", facet=facet, inst=element, expected=False)
-        ifcopenshell.api.run("group.assign_group", ifc, product=element, group=group)
+        ifcopenshell.api.run("group.assign_group", ifc, product=[element], group=group)
         run("", facet=facet, inst=element, expected=True)
 
         # An IfcGroup can be passed by subtypes
@@ -1119,7 +1119,7 @@ class TestIdsAuthoring(unittest.TestCase):
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         group = ifc.createIfcInventory()
         facet = ids.partOf.create(entity="IfcGroup")
-        ifcopenshell.api.run("group.assign_group", ifc, product=element, group=group)
+        ifcopenshell.api.run("group.assign_group", ifc, product=[element], group=group)
         run("", facet=facet, inst=element, expected=True)
 
         # An IfcSystem only checks that a system is assigned without any other logic

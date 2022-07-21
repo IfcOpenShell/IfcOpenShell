@@ -43,6 +43,7 @@ class Usecase:
             )
         rel = self.settings["group"].IsGroupedBy[0]
         related_objects = set(rel.RelatedObjects) or set()
-        related_objects.add(self.settings["product"])
+        for obj in self.settings["product"]:
+            related_objects.add(obj)
         rel.RelatedObjects = list(related_objects)
         ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
