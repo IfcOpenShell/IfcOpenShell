@@ -754,7 +754,7 @@ class AddStructuralActivity(bpy.types.Operator):
                 structural_member=element,
             )
             ifcopenshell.api.run(
-                "group.assign_group", self.file, product=activity, group=self.file.by_id(self.load_group)
+                "group.assign_group", self.file, product=[activity], group=self.file.by_id(self.load_group)
             )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.enable_editing_structural_load_group_activities(load_group=self.load_group)
