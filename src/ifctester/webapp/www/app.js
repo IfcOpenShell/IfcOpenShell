@@ -10,6 +10,7 @@ class IDSContainer extends HTMLElement {
         this.filename = 'specifications.ids';
         this.ids = null;
         this.containerId = crypto.randomUUID();
+        this.isEditing = true;
     }
 }
 
@@ -315,6 +316,13 @@ class IDSFacets extends HTMLElement {
         }
         feather.replace();
     }
+
+    showResults(requirements) {
+        var facetElements = this.getElementsByTagName('ids-facet');
+        for (var i=0; i<facetElements.length; i++) {
+            facetElements[i].showResults(requirements[i]);
+        }
+    }
 }
 
 class IDSFacetInstructions extends HTMLElement {
@@ -398,6 +406,21 @@ class IDSFacet extends HTMLElement {
         var paramElements = this.getElementsByTagName('ids-param');
         for (var i=0; i<paramElements.length; i++) {
             paramElements[i].load(this.params[i]);
+        }
+    }
+
+    showResults(requirement) {
+        var idsResultElements = this.parentElement.getElementsByTagName('ids-result');
+        for (var i=0; i<idsResultElements.length; i++) {
+            if (! idsResultElements[i].classList.contains('hidden')) {
+                idsResultElements[i].classList.add('hidden');
+            }
+            if (requirement.status == true && idsResultElements[i].attributes['name'].value == 'pass') {
+                idsResultElements[i].classList.remove('hidden');
+            } else if (requirement.status == false && idsResultElements[i].attributes['name'].value == 'fail') {
+                idsResultElements[i].classList.remove('hidden');
+                idsResultElements[i].getElementsByTagName('span')[0].textContent = requirement.failed_entities.length;
+            }
         }
     }
 
@@ -747,6 +770,13 @@ class IDSSpecs extends HTMLElement {
         }
         feather.replace();
     }
+
+    showResults(specifications) {
+        var specElements = this.getElementsByTagName('ids-spec');
+        for (var i=0; i<specElements.length; i++) {
+            specElements[i].showResults(specifications[i]);
+        }
+    }
 }
 
 class IDSSpec extends HTMLElement {
@@ -786,6 +816,15 @@ class IDSSpec extends HTMLElement {
         }
     }
 
+    showResults(specification) {
+        var facetsElements = this.getElementsByTagName('ids-facets');
+        for (var i=0; i<facetsElements.length; i++) {
+            if (facetsElements[i].attributes['name'].value == "requirements") {
+                facetsElements[i].showResults(specification.requirements);
+            }
+        }
+    }
+
     dragover(e) {
         // The HTML draggable API is terrible.
         e.preventDefault();
@@ -809,7 +848,7 @@ class IDSLoader extends HTMLElement {
         inputElement.accept = '.ids,.xml';
         inputElement.multiple = false;
         inputElement.addEventListener("change", this.loadFile)
-        inputElement.dispatchEvent(new MouseEvent("click")); 
+        inputElement.dispatchEvent(new MouseEvent("click"));
     }
 
     loadFile(e) {
@@ -845,9 +884,8 @@ class IDSSave extends HTMLElement {
     }
 
     click() {
-        var xmlString = new XMLSerializer().serializeToString(this.closest('ids-container').ids);
-        console.log(xmlString);
         var container = this.closest('ids-container')
+        var xmlString = new XMLSerializer().serializeToString(container.ids);
         this.download(container.filename, xmlString);
     }
 
@@ -862,9 +900,53 @@ class IDSSave extends HTMLElement {
     }
 }
 
+
+class IDSAudit extends HTMLElement {
+    connectedCallback() {
+        this.addEventListener('click', this.launchFileBrowser);
+    }
+
+    launchFileBrowser(accept, callback) {
+        var inputElement = document.createElement("input");
+        inputElement.idsAudit = this;
+        inputElement.type = "file";
+        inputElement.accept = '.ifc';
+        inputElement.multiple = false;
+        inputElement.addEventListener("change", this.loadFile)
+        inputElement.dispatchEvent(new MouseEvent("click"));
+    }
+
+    loadFile(e) {
+        var self = this.idsAudit;
+        var container = self.closest('ids-container');
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function() { self.processResponse(request); };
+        request.open("POST", "audit");
+        var data = new FormData();
+        data.append('ifc', this.files[0]);
+        data.append('ids', new Blob([new XMLSerializer().serializeToString(container.ids)], {type:'text/plain'}));
+        request.send(data);
+    }
+
+    processResponse(request) {
+        if (request.readyState != 4) {
+            return;
+        }
+        var container = this.closest('ids-container');
+        container.isEditing = false;
+        var results = JSON.parse(request.responseText);
+        var specsElements = container.getElementsByTagName('ids-specs');
+        for (var i=0; i<specsElements.length; i++) {
+            var specs = specsElements[i];
+            specs.showResults(results.specifications);
+        }
+    }
+}
+
 window.customElements.define('ids-container', IDSContainer);
 window.customElements.define('ids-loader', IDSLoader);
 window.customElements.define('ids-save', IDSSave);
+window.customElements.define('ids-audit', IDSAudit);
 window.customElements.define('ids-info', IDSInfo);
 window.customElements.define('ids-info-element', IDSInfoElement);
 window.customElements.define('ids-specs', IDSSpecs);
