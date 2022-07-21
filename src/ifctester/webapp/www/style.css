@@ -270,20 +270,30 @@ ids-spec ids-spec-handle .snippet {
     bottom: -5px;
     position: relative;
 }
-.result-icon {
+ids-result {
     display: inline-block;
     position: absolute;
     margin-left: -30px;
-    margin-top: -2px;
+    margin-top: -3px;
     cursor: help;
 }
-.result-icon.pass {
+ids-result span {
+    position: absolute;
+    float: right;
+    right: 30px;
+    background-color: #333;
+    color: white;
+    font-family: 'Nova Mono';
+    padding: 3px;
+    border-radius: 5px;
+}
+ids-result[name="pass"] {
     color: var(--green);
 }
-.result-icon.fail {
+ids-result[name="fail"] {
     color: var(--red);
 }
-.result-icon:hover {
+ids-result:hover {
     color: var(--blue);
 }
 .hidden {

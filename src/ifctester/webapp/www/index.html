@@ -47,9 +47,11 @@
                                     <i data-feather="download"></i> SAVE
                                 </a>
                             </ids-save>
-                            <a href="#">
-                                <i data-feather="play"></i> AUDIT MODEL
-                            </a>
+                            <ids-audit>
+                                <a href="#">
+                                    <i data-feather="play"></i> AUDIT MODEL
+                                </a>
+                            </ids-audit>
                             <span>
                                 <a href="#">
                                     <i data-feather="x"></i> CLOSE
@@ -139,6 +141,13 @@
                                                             <i data-feather="x"></i>
                                                         </ids-facet-remove>
                                                     </span>
+                                                    <ids-result name="fail" class="result-icon hidden">
+                                                        <i data-feather="x"></i>
+                                                        <span>32</span>
+                                                    </ids-result>
+                                                    <ids-result name="pass" class="result-icon hidden">
+                                                        <i data-feather="check"></i>
+                                                    </ids-result>
                                                     <ids-facet type="requirement"></ids-facet>
                                                     <ids-facet-instructions class="requirement-instructions" title="Instructions">
                                                         Optionally write instructions about how to achieve this requirement.
@@ -163,7 +172,7 @@
                                             </ids-spec-move>
                                         </span>
                                     </div>
-                                <ids-spec>
+                                </ids-spec>
                             </template>
                         </ids-specs>
                     </div>
