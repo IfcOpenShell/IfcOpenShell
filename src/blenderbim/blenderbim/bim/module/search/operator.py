@@ -20,9 +20,22 @@ import re
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
+from ifcopenshell.api.group.data import Data
+from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from itertools import cycle
+from bpy.types import PropertyGroup, Operator
+from bpy.props import (
+    PointerProperty,
+    StringProperty,
+    EnumProperty,
+    BoolProperty,
+    IntProperty,
+    FloatProperty,
+    FloatVectorProperty,
+    CollectionProperty,
+)
 
 
 colour_list = [
@@ -53,14 +66,37 @@ def does_keyword_exist(pattern, string, context):
     elif string == pattern:
         return True
 
+# hack to close popup
+# https://blender.stackexchange.com/a/202576/130742
+def close_operator_panel(event):
+    x, y = event.mouse_x, event.mouse_y
+    bpy.context.window.cursor_warp(10, 10)
+    move_back = lambda: bpy.context.window.cursor_warp(x, y)
+    bpy.app.timers.register(move_back, first_interval=0.01)
+    
+class EditBlenderCollection(Operator):
+    bl_idname = "bim.edit_blender_collection"
+    bl_label = "Add or Remove blender collection item"
+    bl_options = {"REGISTER", "UNDO"}
+    option: StringProperty()
+    collection: StringProperty()
+    index: IntProperty()
 
-class SelectGlobalId(bpy.types.Operator):
+    def execute(self, context):
+        if self.option == "add":
+            getattr(context.bim_prop_group, self.collection).add()
+        else:
+            getattr(context.bim_prop_group, self.collection).remove(self.index)
+        return {"FINISHED"}
+
+
+class SelectGlobalId(Operator):
     """Click to select the objects that match with the given Global ID"""
 
     bl_idname = "bim.select_global_id"
     bl_label = "Select GlobalId"
     bl_options = {"REGISTER", "UNDO"}
-    global_id: bpy.props.StringProperty()
+    global_id: StringProperty()
 
     def execute(self, context):
         ifc_file = tool.Ifc.get()
@@ -73,13 +109,13 @@ class SelectGlobalId(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectIfcClass(bpy.types.Operator):
+class SelectIfcClass(Operator):
     """Click to select all objects that match with the given IFC class"""
 
     bl_idname = "bim.select_ifc_class"
     bl_label = "Select IFC Class"
     bl_options = {"REGISTER", "UNDO"}
-    ifc_class: bpy.props.StringProperty()
+    ifc_class: StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -92,7 +128,7 @@ class SelectIfcClass(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectAttribute(bpy.types.Operator):
+class SelectAttribute(Operator):
     """Click to select all objects that match with the given Attribute Name and Value"""
 
     bl_idname = "bim.select_attribute"
@@ -118,7 +154,7 @@ class SelectAttribute(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectPset(bpy.types.Operator):
+class SelectPset(Operator):
     """Click to select all objects that match with the given Pset Name, Properties Name and Value"""
 
     bl_idname = "bim.select_pset"
@@ -152,7 +188,7 @@ class SelectPset(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ColourByAttribute(bpy.types.Operator):
+class ColourByAttribute(Operator):
     """Click to colour different objects according to given Attribute Name"""
 
     bl_idname = "bim.colour_by_attribute"
@@ -203,7 +239,7 @@ class ColourByAttribute(bpy.types.Operator):
             data["area"].spaces[0].shading.color_type = "OBJECT"
 
 
-class ColourByPset(bpy.types.Operator):
+class ColourByPset(Operator):
     """Click to colour different objects according to given Prop Name"""
 
     bl_idname = "bim.colour_by_pset"
@@ -262,7 +298,7 @@ class ColourByPset(bpy.types.Operator):
             data["area"].spaces[0].shading.color_type = "OBJECT"
 
 
-class ColourByClass(bpy.types.Operator):
+class ColourByClass(Operator):
     """Click to colour different objects according to their IFC Classes"""
 
     bl_idname = "bim.colour_by_class"
@@ -308,7 +344,7 @@ class ColourByClass(bpy.types.Operator):
             data["area"].spaces[0].shading.color_type = "OBJECT"
 
 
-class ResetObjectColours(bpy.types.Operator):
+class ResetObjectColours(Operator):
     """Reset the colour of selected objects"""
 
     bl_idname = "bim.reset_object_colours"
@@ -320,11 +356,11 @@ class ResetObjectColours(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ToggleFilterSelection(bpy.types.Operator):
+class ToggleFilterSelection(Operator):
     "Click to select/deselect current selection"
     bl_idname = "bim.toggle_filter_selection"
     bl_label = "Toggle Filter Selection"
-    action: bpy.props.EnumProperty(items=(("SELECT", "Select", ""), ("DESELECT", "Deselect", "")))
+    action: EnumProperty(items=(("SELECT", "Select", ""), ("DESELECT", "Deselect", "")))
 
     def execute(self, context):
         props = bpy.context.scene.BIMSearchProperties
@@ -341,7 +377,7 @@ class ToggleFilterSelection(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ActivateIfcClassFilter(bpy.types.Operator):
+class ActivateIfcClassFilter(Operator):
     """Filter the current selection by IFC class"""
 
     bl_idname = "bim.activate_ifc_class_filter"
@@ -387,7 +423,7 @@ class ActivateIfcClassFilter(bpy.types.Operator):
         row.operator("bim.toggle_filter_selection", text="Deselect All").action = "DESELECT"
 
 
-class ActivateIfcBuildingStoreyFilter(bpy.types.Operator):
+class ActivateIfcBuildingStoreyFilter(Operator):
     """Filter the current selection by Building Storey"""
 
     bl_idname = "bim.activate_ifc_building_storey_filter"
@@ -453,7 +489,7 @@ class FilterModelElements(Operator):
 
     bl_idname = "bim.filter_model_elements"
     bl_label = "Filter Model Elements"
-    option: StringProperty("select|isolate|hide", default="select")
+    option: StringProperty("select|isolate|hide")
 
     def execute(self, context):
         selector = context.scene.IfcSelectorProperties
@@ -632,9 +668,8 @@ class AddToIfcGroup(Operator):
         
         group = ifcopenshell.api.run("group.add_group", self.file, **{"Name": self.group_name})
         objects = Selector.parse(self.file, selector_query_syntax)
-        
+
         ifcopenshell.api.run("group.assign_group", self.file, **{"product": objects, "group": group})
-        
         Data.load(IfcStore.get_file())
         
         return {"FINISHED"}

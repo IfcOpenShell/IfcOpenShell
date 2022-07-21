@@ -590,12 +590,15 @@ function(files_for_ifc_version IFC_VERSION RESULT_NAME)
 endfunction()
 
 if(NOT SCHEMA_VERSIONS)
-    set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4")
+    set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4" "4x3")
 endif()
 
 foreach(s ${SCHEMA_VERSIONS})
 	add_definitions(-DHAS_SCHEMA_${s})
 endforeach()
+
+string(REPLACE ";" ")(" schema_version_seq "(${SCHEMA_VERSIONS})")
+ADD_DEFINITIONS(-DSCHEMA_SEQ=${schema_version_seq})
 
 if(COMPILE_SCHEMA)
 	# @todo, this appears to be untested at the moment
