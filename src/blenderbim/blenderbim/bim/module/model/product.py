@@ -31,7 +31,7 @@ import blenderbim.core.geometry
 from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
-from blenderbim.bim.helper import prop_with_search, col_with_margins
+from blenderbim.bim.helper import prop_with_search, layout_with_margins
 from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
@@ -201,7 +201,6 @@ class DisplayConstrTypes(bpy.types.Operator):
     bl_description = "Display all available Construction Types to add new instances"
 
     def execute(self, context):
-        bpy.ops.object.mode_set(mode="OBJECT")
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -230,7 +229,7 @@ class DisplayConstrTypes(bpy.types.Operator):
 
     def draw_header(self, props):
         layout = self.layout
-        inner_layout = col_with_margins(layout, margin_left=0.004)
+        inner_layout = layout_with_margins(layout, margin_left=0.004)
         inner_layout.row().separator(factor=0.75)
         split = inner_layout.split(align=True, factor=2./3)
         col1 = split.column(align=True)
@@ -284,7 +283,7 @@ class DisplayConstrTypes(bpy.types.Operator):
             row = box.row()
             split = row.split(factor=0.5)
             col = split.column()
-            op = col.operator("bim.select_type_instance", icon="RIGHTARROW_THIN")
+            op = col.operator("bim.select_construction_type", icon="RIGHTARROW_THIN")
             op.constr_class = constr_class_browser
             op.constr_type_id = constr_type_id_browser
             col = split.column()
@@ -315,7 +314,7 @@ class DisplayConstrTypes(bpy.types.Operator):
         col1.row().separator(factor=4.75)
         row = col1.row()
         row.enabled = enabled
-        op = row.operator("bim.select_type_instance", icon="RIGHTARROW_THIN")
+        op = row.operator("bim.select_construction_type", icon="RIGHTARROW_THIN")
         op.constr_class = constr_class_browser
         op.constr_type_id = constr_type_id_browser
         op = row.operator("bim.add_type_instance", icon="ADD")
@@ -332,8 +331,8 @@ class DisplayConstrTypes(bpy.types.Operator):
         col1.row().separator(factor=1)
 
 
-class SelectTypeInstance(bpy.types.Operator):
-    bl_idname = "bim.select_type_instance"
+class SelectConstructionType(bpy.types.Operator):
+    bl_idname = "bim.select_construction_type"
     bl_label = "Select"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Pick Type Instance as selection for subsequent operations"
@@ -374,15 +373,15 @@ class TypeInstanceHelp(bpy.types.Operator):
         row.label(text="BlenderBIM Help", icon="BLENDER")
         layout.row().separator(factor=0.5)
 
-        row = col_with_margins(layout.row()).row()
+        row = layout_with_margins(layout.row()).row()
         row.label(text="Overview:", icon="KEYTYPE_MOVING_HOLD_VEC")
         self.draw_lines(layout, self.message_summary)
         layout.row().separator()
 
-        row = col_with_margins(layout.row()).row()
+        row = layout_with_margins(layout.row()).row()
         row.label(text="Further support:", icon="KEYTYPE_MOVING_HOLD_VEC")
         layout.row().separator(factor=0.5)
-        row = col_with_margins(layout).row()
+        row = layout_with_margins(layout).row()
         op = row.operator("bim.open_upstream", text="Homepage", icon="HOME")
         op.page = "home"
         op = row.operator("bim.open_upstream", text="Docs", icon="DOCUMENTS")
@@ -394,7 +393,7 @@ class TypeInstanceHelp(bpy.types.Operator):
         layout.row().separator()
 
     def draw_lines(self, layout, lines):
-        box = col_with_margins(layout).box()
+        box = layout_with_margins(layout).box()
         for line in lines:
             row = box.row()
             row.label(text=f"  {line}")

@@ -190,8 +190,9 @@ class AuthoringData:
             return None
         return constr_class_entity.Name if constr_class_entity.is_a() == constr_class else None
 
+    @classmethod
     def constr_type_id_by_name(cls, constr_class, constr_type):
-        constr_types = [ct for ct in cls.constr_types(constr_class=constr_class) if ct.Name == constr_type]
+        constr_types = [ct[0] for ct in cls.constr_types(constr_class=constr_class) if ct[1] == constr_type]
         return None if len(constr_types) == 0 else constr_types[0]
 
     @classmethod

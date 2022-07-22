@@ -23,7 +23,7 @@ classes = (
     product.AddEmptyType,
     product.AddTypeInstance,
     product.DisplayConstrTypes,
-    product.SelectTypeInstance,
+    product.SelectConstructionType,
     product.TypeInstanceHelp,
     product.AlignProduct,
     product.DynamicallyVoidProduct,
