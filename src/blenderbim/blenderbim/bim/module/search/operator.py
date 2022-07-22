@@ -634,6 +634,10 @@ class LoadQuery(Operator):
     bl_label = "Load Query"
     index: IntProperty()
     
+    def invoke(self, context, event):
+        close_operator_panel(event)
+        return self.execute(context)
+    
     def execute(self, context):
         ifc_selector = context.scene.IfcSelectorProperties
         ifc_selector.selector_query_syntax = ifc_selector.query_library[self.index].query
