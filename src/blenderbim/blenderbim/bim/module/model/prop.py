@@ -77,6 +77,20 @@ def update_constr_type(self, context):
     AuthoringData.load_constr_types()
 
 
+def update_constr_type_by_name(self, context):
+    AuthoringData.load_constr_types()
+    constr_type_id = AuthoringData.constr_type_id_by_name(self.constr_class, self.constr_type)
+    if constr_type_id is not None:
+        self.constr_type_id = constr_type_id
+
+
+def update_constr_type_browser_by_name(self, context):
+    AuthoringData.load_constr_types_browser()
+    constr_type_id_browser = AuthoringData.constr_type_id_by_name(self.constr_class_browser, self.constr_type_browser)
+    if constr_type_id_browser is not None:
+        self.constr_type_id_browser = constr_type_id_browser
+
+
 def update_constr_type_browser(self, context):
     AuthoringData.load_constr_types_browser()
     update_icon_id(self, context)
@@ -91,9 +105,11 @@ class BIMModelProperties(PropertyGroup):
     constr_class_browser: bpy.props.EnumProperty(
         items=get_constr_class, name="Construction Class", update=update_constr_class_browser
     )
+    constr_type: bpy.props.StringProperty(update=update_constr_type_by_name)
     constr_type_id: bpy.props.EnumProperty(
         items=get_constr_type, name="Construction Type", update=update_constr_type
     )
+    constr_type_browser: bpy.props.StringProperty(update=update_constr_type_browser_by_name)
     constr_type_id_browser: bpy.props.EnumProperty(
         items=get_constr_type_browser, name="Construction Type", update=update_constr_type_browser
     )
