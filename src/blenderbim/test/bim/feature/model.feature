@@ -8,9 +8,9 @@ Scenario: Add type instance - add from a mesh
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMModelProperties.constr_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I set "scene.BIMModelProperties.relating_type" to "{cube}"
+    And I set "scene.BIMModelProperties.constr_type_id" to "{cube}"
     When I press "bim.add_type_instance"
     Then the object "IfcWall/Wall" exists
 
@@ -21,9 +21,9 @@ Scenario: Add type instance - add from an empty
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMModelProperties.constr_class" to "IfcWallType"
     And the variable "empty" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I set "scene.BIMModelProperties.relating_type" to "{empty}"
+    And I set "scene.BIMModelProperties.constr_type_id" to "{empty}"
     When I press "bim.add_type_instance"
     Then the object "IfcWall/Wall" exists
 
@@ -34,9 +34,9 @@ Scenario: Add type instance - add a mesh where existing instances have changed c
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMModelProperties.constr_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I set "scene.BIMModelProperties.relating_type" to "{cube}"
+    And I set "scene.BIMModelProperties.constr_type_id" to "{cube}"
     And I press "bim.add_type_instance"
     And the object "IfcWall/Wall" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcWall/Wall" is selected
@@ -48,18 +48,22 @@ Scenario: Add type instance - add a mesh where existing instances have changed c
     Then the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
     And the object "IfcWall/Wall.001" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
 
-Scenario: Assetize one object
-    Given I load the demo construction library
-    And I set "scene.BIMModelProperties.constr_class" to "IfcBeamType"
-    And I set "scene.BIMModelProperties.constr_class" to "DEMO1"
-    When I make an asset from the selected construction type
+Scenario: Preview one type on the Construction Type Browser
+    Given an empty IFC project
+    And I load the demo construction library
+    When I display the Construction Type Browser
+    And I preview only one asset on the Construction Type Browser
+    And I set "scene.BIMModelProperties.constr_class_browser" to "IfcBeamType"
+    And I set "scene.BIMModelProperties.constr_type_browser" to "DEMO1"
     Then the object "IfcBeam/Beam" does not exist
     And the construction type "IfcBeamType"/"DEMO1" has a preview
 
-Scenario: Assetize one class
-    Given I load the demo construction library
-    And I set "scene.BIMModelProperties.constr_class" to "IfcWallType"
-    When I make assets from the selected construction class
+Scenario: Preview one class on the Construction Type Browser
+    Given an empty IFC project
+    And I load the demo construction library
+    When I display the Construction Type Browser
+    And I preview all available assets on the Construction Type Browser
+    And I set "scene.BIMModelProperties.constr_class_browser" to "IfcWallType"
     Then objects starting with "IfcWall/" do not exist
     And all construction types for "IfcWallType" have a preview
 
