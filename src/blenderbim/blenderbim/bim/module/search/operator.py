@@ -20,9 +20,11 @@ import re
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
+from ifcopenshell.api.group.data import Data
 from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import close_operator_panel
 from itertools import cycle
 from bpy.types import PropertyGroup, Operator
 from bpy.props import (
@@ -462,7 +464,6 @@ class ActivateIfcBuildingStoreyFilter(Operator):
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
         row.operator("bim.toggle_filter_selection", text="Deselect All").action = "DESELECT"
 
-
 class UnhideAllElements(Operator):
     """Filter model elements based on selection"""
 
@@ -479,7 +480,6 @@ class UnhideAllElements(Operator):
 
 class FilterModelElements(Operator):
     """Filter model elements based on selection"""
-
     bl_idname = "bim.filter_model_elements"
     bl_label = "Filter Model Elements"
     option: StringProperty("select|isolate|hide")
@@ -513,7 +513,7 @@ class FilterModelElements(Operator):
                 selection = self.add_filters(selection, query)
 
             elif query.selector == "GlobalId":
-                selection += f"#{query.global_id}"
+                selection += f"#{query.value}"
 
             elif query.selector == "IfcElementType":
                 index = int(query.active_sub_option.split(":")[0])
@@ -562,7 +562,6 @@ class FilterModelElements(Operator):
 
 class IfcSelector(Operator):
     """Select elements in model with IFC Selector"""
-
     bl_idname = "bim.ifc_selector"
     bl_label = "Select elements with IFC Selector"
 
@@ -603,19 +602,11 @@ class SaveSelectorQuery(Operator):
 
 class OpenQueryLibrary(Operator):
     """Open Query Library"""
-
     bl_idname = "bim.open_query_library"
     bl_label = "Open Query Library"
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=400)
-
-    def close_panel(event):
-        x, y = event.mouse_x, event.mouse_y
-        bpy.context.window.cursor_warp(10, 10)
-
-        move_back = lambda: bpy.context.window.cursor_warp(x, y)
-        bpy.app.timers.register(move_back, first_interval=0.001)
+        return context.window_manager.invoke_popup(self, width=400)
 
     def draw(self, context):
         layout = self.layout
@@ -641,8 +632,37 @@ class LoadQuery(Operator):
     bl_idname = "bim.load_query"
     bl_label = "Load Query"
     index: IntProperty()
-
+    
+    def invoke(self, context, event):
+        close_operator_panel(event)
+        return self.execute(context)
+    
     def execute(self, context):
         ifc_selector = context.scene.IfcSelectorProperties
         ifc_selector.selector_query_syntax = ifc_selector.query_library[self.index].query
+        return {"FINISHED"}
+    
+class AddToIfcGroup(Operator):
+    bl_idname = "bim.add_to_ifc_group"
+    bl_label = "Add to IFC Group"
+    group_name: StringProperty(name="Group Name")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=400)
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "group_name")
+        
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifc_selector = context.scene.IfcSelectorProperties
+        selector_query_syntax = ifc_selector.selector_query_syntax
+        
+        group = ifcopenshell.api.run("group.add_group", self.file, **{"Name": self.group_name, "Description": f'*selector*{selector_query_syntax}*selector*'})
+        objects = Selector.parse(self.file, selector_query_syntax)
+
+        ifcopenshell.api.run("group.assign_group", self.file, **{"product": objects, "group": group})
+        Data.load(IfcStore.get_file())
+        
         return {"FINISHED"}

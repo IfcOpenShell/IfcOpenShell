@@ -34,7 +34,8 @@ from bpy.props import (
 class Group(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
-
+    selection_query: StringProperty(name="Selection Query")
+    
 
 class BIMGroupProperties(PropertyGroup):
     group_attributes: CollectionProperty(name="Group Attributes", type=Attribute)

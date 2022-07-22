@@ -99,6 +99,15 @@ def i_add_a_sun():
 def i_add_a_material():
     bpy.context.active_object.active_material = bpy.data.materials.new("Material")
 
+@given("I add a new group to IfcSelector")
+@when("I add a new group to IfcSelector")
+def i_add_a_new_collection_item():
+    bpy.data.scenes["Scene"].IfcSelectorProperties.groups.add()
+    
+@given("I add a new query to IfcSelector")
+@when("I add a new query to IfcSelector")
+def i_add_a_new_collection_item():
+    bpy.data.scenes["Scene"].IfcSelectorProperties.groups[0].queries.add()
 
 @given(parsers.parse('the material "{name}" colour is set to "{colour}"'))
 @when(parsers.parse('the material "{name}" colour is set to "{colour}"'))
