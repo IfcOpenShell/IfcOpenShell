@@ -217,7 +217,8 @@ class Specification:
             self.applicable_entities.append(element)
             for facet in self.requirements:
                 result = facet(element)
-                if not bool(result):
+                facet.status = bool(result)
+                if not facet.status:
                     self.failed_entities.add(element)
                     facet.failed_entities.append(element)
                     facet.failed_reasons.append(str(result))
@@ -227,5 +228,7 @@ class Specification:
             self.status = False
         elif self.minOccurs != 0 and not self.applicable_entities:
             self.status = False
+            for facet in self.requirements:
+                facet.status = False
         elif len(self.applicable_entities) > (self.maxOccurs or 1):
             self.status = False

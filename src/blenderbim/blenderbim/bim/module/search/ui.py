@@ -153,7 +153,8 @@ class IfcSelectorUI:
             row = layout.row(align=True)
             row.alignment = "CENTER"
             row.operator("bim.save_selector_query", text="Save Query")
-            row.operator("bim.open_query_library", text="Load Query")
+            op = row.operator("bim.open_query_library", text="Load Query")
+            row.operator("bim.add_to_ifc_group", text="Add to IFC Group")
 
     def draw_query_group_ui(self, ifc_selector, layout):
         for index, group in enumerate(ifc_selector.groups):
