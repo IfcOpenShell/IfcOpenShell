@@ -480,7 +480,6 @@ class UnhideAllElements(Operator):
 
 class FilterModelElements(Operator):
     """Filter model elements based on selection"""
-
     bl_idname = "bim.filter_model_elements"
     bl_label = "Filter Model Elements"
     option: StringProperty("select|isolate|hide")
