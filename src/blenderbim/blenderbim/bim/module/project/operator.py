@@ -678,7 +678,7 @@ class LinkIfc(bpy.types.Operator):
             if self.use_relative_path:
                 filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
             new.name = filepath
-            bpy.ops.bim.load_link(filepath=self.filepath)
+            bpy.ops.bim.load_link(filepath=filepath)
         return {"FINISHED"}
 
     def invoke(self, context, event):
