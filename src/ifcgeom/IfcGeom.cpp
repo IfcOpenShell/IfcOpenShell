@@ -3459,11 +3459,10 @@ bool IfcGeom::Kernel::triangulate_wire(const std::vector<TopoDS_Wire>& wires, To
 
 	if (!tri.IsNull()) {
 
-		const Poly_Array1OfTriangle& triangles = tri->Triangles();
-		for (int i = 1; i <= triangles.Length(); ++i) {
+		for (int i = 1; i <= tri->NbTriangles(); ++i) {
 			if (face.Orientation() == TopAbs_REVERSED)
-				triangles(i).Get(n123[2], n123[1], n123[0]);
-			else triangles(i).Get(n123[0], n123[1], n123[2]);
+				tri->Triangle(i).Get(n123[2], n123[1], n123[0]);
+			else tri->Triangle(i).Get(n123[0], n123[1], n123[2]);
 
 			// Create polygons from the mesh vertices
 			BRepBuilderAPI_MakeWire mp2;

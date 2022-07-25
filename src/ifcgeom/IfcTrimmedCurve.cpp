@@ -31,7 +31,6 @@
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <BRepAdaptor_CompCurve.hxx>
 #include <Standard_Version.hxx>
-#include <BRepAdaptor_HCompCurve.hxx>
 #include <Approx_Curve3d.hxx>
 #include "../ifcgeom/IfcGeom.h"
 
