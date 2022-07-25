@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from blenderbim.bim.helper import prop_with_search
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
@@ -46,7 +47,7 @@ class BIM_PT_systems(Panel):
             row.operator("bim.disable_system_editing_ui", text="", icon="CANCEL")
 
             row = self.layout.row(align=True)
-            row.prop(self.props, "system_class", text="")
+            prop_with_search(row, self.props, "system_class", text="")
             row.operator("bim.add_system", text="", icon="ADD")
         else:
             row.operator("bim.load_systems", text="", icon="GREASEPENCIL")

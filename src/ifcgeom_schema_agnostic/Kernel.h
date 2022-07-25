@@ -5,33 +5,31 @@
 #include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
 #include "../ifcgeom_schema_agnostic/IfcRepresentationShapeItem.h"
 
-#ifdef HAS_SCHEMA_2x3
-#include "../ifcparse/Ifc2x3.h"
-#endif
-#ifdef HAS_SCHEMA_4
-#include "../ifcparse/Ifc4.h"
-#endif
-#ifdef HAS_SCHEMA_4x1
-#include "../ifcparse/Ifc4x1.h"
-#endif
-#ifdef HAS_SCHEMA_4x2
-#include "../ifcparse/Ifc4x2.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-#include "../ifcparse/Ifc4x3_rc1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-#include "../ifcparse/Ifc4x3_rc2.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc3
-#include "../ifcparse/Ifc4x3_rc3.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc4
-#include "../ifcparse/Ifc4x3_rc4.h"
-#endif
-#ifdef HAS_SCHEMA_4x3
-#include "../ifcparse/Ifc4x3.h"
-#endif
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/seq/size.hpp>
+#include <boost/preprocessor/seq/pop_back.hpp>
+#include <boost/preprocessor/comparison/greater.hpp> 
+#include <boost/preprocessor/selection/min.hpp>
+
+
+// @tfk A macro cannot define an include (I think), so here we can't
+// loop over the sequence of schema identifiers, but rather we have
+// unroll the loop with at least the amount of schemas we'd like support
+// for and then overflow into an existing empty include file.
+
+#define INCLUDE_SCHEMA(n) \
+	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), BOOST_PP_STRINGIZE(../ifcparse/BOOST_PP_CAT(Ifc,BOOST_PP_SEQ_ELEM(BOOST_PP_MIN(n, BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_POP_BACK(SCHEMA_SEQ))),SCHEMA_SEQ)).h), "empty.h")
+
+#include INCLUDE_SCHEMA(0)
+#include INCLUDE_SCHEMA(1)
+#include INCLUDE_SCHEMA(2)
+#include INCLUDE_SCHEMA(3)
+#include INCLUDE_SCHEMA(4)
+#include INCLUDE_SCHEMA(5)
+#include INCLUDE_SCHEMA(6)
+#include INCLUDE_SCHEMA(7)
+#include INCLUDE_SCHEMA(8)
+#include INCLUDE_SCHEMA(9)
 
 #include <boost/function.hpp>
 

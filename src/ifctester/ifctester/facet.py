@@ -42,6 +42,7 @@ def cast_to_value(from_value, to_value):
 
 class Facet:
     def __init__(self, *parameters):
+        self.status = None
         self.failed_entities = []
         self.failed_reasons = []
         for i, name in enumerate(self.parameters):

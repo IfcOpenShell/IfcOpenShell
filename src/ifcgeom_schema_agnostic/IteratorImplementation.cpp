@@ -8,13 +8,13 @@
 // - extern void init_IteratorImplementation_Ifc2x3(IteratorFactoryImplementation*);
 // - ...
 #define EXTERNAL_DEFS(r, data, elem) \
-	BOOST_PP_CAT(BOOST_PP_CAT(extern void init_IteratorImplementation_, elem), (IteratorFactoryImplementation*);)
+	extern void BOOST_PP_CAT(init_IteratorImplementation_Ifc, elem)(IteratorFactoryImplementation*);
 
 // Declares the schema-based external iterator initialization routines:
 // - init_IteratorImplementation_Ifc2x3(this);
 // - ...
 #define CALL_DEFS(r, data, elem) \
-	BOOST_PP_CAT(BOOST_PP_CAT(init_IteratorImplementation_, elem), (this);)
+	BOOST_PP_CAT(init_IteratorImplementation_Ifc, elem)(this);
 
 IFC_GEOM_API IteratorFactoryImplementation& iterator_implementations() {
 	static IteratorFactoryImplementation impl;

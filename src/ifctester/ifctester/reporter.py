@@ -28,10 +28,10 @@ class Reporter:
     def report(self, ids):
         pass
 
-    def to_string():
+    def to_string(self):
         return ""
 
-    def write(filepath):
+    def write(self, filepath):
         pass
 
 
@@ -142,7 +142,7 @@ class Json(Reporter):
             requirements.append(
                 {
                     "description": requirement.to_string("requirement"),
-                    "success": not requirement.failed_entities,
+                    "status": requirement.status,
                     "failed_entities": [
                         {"reason": requirement.failed_reasons[i], "element": str(e)}
                         for i, e in enumerate(requirement.failed_entities[0:10])

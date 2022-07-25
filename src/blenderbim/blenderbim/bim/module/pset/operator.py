@@ -124,43 +124,52 @@ class EnablePsetEditing(bpy.types.Operator):
                 continue  # Other types not yet supported
             if prop_template.TemplateType == "P_SINGLEVALUE":
                 self.load_single_value(prop_template, data)
+            elif prop_template.TemplateType.startswith("Q_"):
+                self.load_single_value(prop_template, data)
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
                 self.load_enumerated_value(prop_template, data)
 
     def load_single_value(self, prop_template, data):
-        try:
-            data_type = ifcopenshell.util.attribute.get_primitive_type(
-                IfcStore.get_schema().declaration_by_name(prop_template.PrimaryMeasureType or "IfcLabel")
-            )
-        except:
-            # TODO: Occurs if the data type is something that exists in
-            # IFC4 and not in IFC2X3. To fully fix this we need to
-            # generate the IFC2X3 pset template definitions.
-            return
-
         prop = self.props.properties.add()
+        prop.name = prop_template.Name
         prop.value_type = "IfcPropertySingleValue"
         metadata = prop.metadata
         metadata.name = prop_template.Name
         metadata.is_null = data.get(prop_template.Name, None) is None
         metadata.is_optional = True
         metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
-        metadata.data_type = data_type
+        metadata.data_type = self.get_data_type(prop_template)
 
-        if data_type == "string":
+        if metadata.data_type == "string":
             metadata.string_value = "" if metadata.is_null else data[prop_template.Name]
-        elif data_type == "integer":
+        elif metadata.data_type == "integer":
             metadata.int_value = 0 if metadata.is_null else data[prop_template.Name]
-        elif data_type == "float":
+        elif metadata.data_type == "float":
             metadata.float_value = 0.0 if metadata.is_null else data[prop_template.Name]
-        elif data_type == "boolean":
+        elif metadata.data_type == "boolean":
             metadata.bool_value = False if metadata.is_null else data[prop_template.Name]
+
+    def get_data_type(self, prop_template):
+        if prop_template.TemplateType in ["Q_LENGTH", "Q_AREA", "Q_VOLUME", "Q_WEIGHT", "Q_TIME"]:
+            return "float"
+        elif prop_template.TemplateType == "Q_COUNT":
+            return "integer"
+        try:
+            return ifcopenshell.util.attribute.get_primitive_type(
+                IfcStore.get_schema().declaration_by_name(prop_template.PrimaryMeasureType or "IfcLabel")
+            )
+        except:
+            # TODO: Occurs if the data type is something that exists in
+            # IFC4 and not in IFC2X3. To fully fix this we need to
+            # generate the IFC2X3 pset template definitions.
+            pass
 
     def load_enumerated_value(self, prop_template, data):
         enum_items = [v.wrappedValue for v in prop_template.Enumerators.EnumerationValues]
         selected_enum_items = data.get(prop_template.Name, [])
 
         prop = self.props.properties.add()
+        prop.name = prop_template.Name
         prop.value_type = "IfcPropertyEnumeratedValue"
         metadata = prop.metadata
         metadata.name = prop_template.Name
@@ -200,8 +209,8 @@ class EnablePsetEditing(bpy.types.Operator):
                     new.is_selected = enum in selected_enum_items
             else:
                 value = prop["NominalValue"]
-                prop = self.props.properties.add()
-                metadata = prop.metadata
+                new_prop = self.props.properties.add()
+                metadata = new_prop.metadata
                 metadata.set_value(value)
                 metadata.name = prop["Name"]
                 metadata.is_null = value is None
@@ -358,7 +367,7 @@ class GuessQuantity(bpy.types.Operator):
         self.qto_calculator = QtoCalculator()
         obj = context.active_object
         prop = obj.PsetProperties.properties.get(self.prop)
-        prop.float_value = self.guess_quantity(obj, context)
+        prop.metadata.float_value = self.guess_quantity(obj, context)
         return {"FINISHED"}
 
     def guess_quantity(self, obj, context):
@@ -402,7 +411,7 @@ class CopyPropertyToSelection(bpy.types.Operator, Operator):
     def _execute(self, context):
         is_pset = tool.Ifc.get().by_id(context.active_object.PsetProperties.active_pset_id).is_a("IfcPropertySet")
         pset_name = context.active_object.PsetProperties.active_pset_name
-        prop_value = context.active_object.PsetProperties.properties.get(self.name).get_value()
+        prop_value = context.active_object.PsetProperties.properties.get(self.name).metadata.get_value()
         for obj in context.selected_objects:
             core.copy_property_to_selection(
                 tool.Ifc,
