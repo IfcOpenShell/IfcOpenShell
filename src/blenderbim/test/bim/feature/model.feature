@@ -11,7 +11,7 @@ Scenario: Add type instance - add from a mesh
     And I set "scene.BIMModelProperties.constr_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.constr_type_id" to "{cube}"
-    When I press "bim.add_type_instance"
+    When I press "bim.add_constr_type"
     Then the object "IfcWall/Wall" exists
 
 Scenario: Add type instance - add from an empty
@@ -24,7 +24,7 @@ Scenario: Add type instance - add from an empty
     And I set "scene.BIMModelProperties.constr_class" to "IfcWallType"
     And the variable "empty" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.constr_type_id" to "{empty}"
-    When I press "bim.add_type_instance"
+    When I press "bim.add_constr_type"
     Then the object "IfcWall/Wall" exists
 
 Scenario: Add type instance - add a mesh where existing instances have changed context
@@ -37,35 +37,49 @@ Scenario: Add type instance - add a mesh where existing instances have changed c
     And I set "scene.BIMModelProperties.constr_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.constr_type_id" to "{cube}"
-    And I press "bim.add_type_instance"
+    And I press "bim.add_constr_type"
     And the object "IfcWall/Wall" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcWall/Wall" is selected
     And the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.TargetView == 'PLAN_VIEW'][0].id()"
     And I set "scene.BIMRootProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     And the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
-    When I press "bim.add_type_instance"
+    When I press "bim.add_constr_type"
     Then the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
     And the object "IfcWall/Wall.001" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
 
 Scenario: Preview one type on the Construction Type Browser
     Given an empty IFC project
     And I load the demo construction library
-    When I display the Construction Type Browser
-    And I preview only one asset on the Construction Type Browser
-    And I set "scene.BIMModelProperties.constr_class_browser" to "IfcBeamType"
-    And I set "scene.BIMModelProperties.constr_type_browser" to "DEMO1"
-    Then the object "IfcBeam/Beam" does not exist
-    And the construction type "IfcBeamType"/"DEMO1" has a preview
+    When I display the construction type browser
+    And I preview only one asset on the construction type browser
+    And I set "scene.BIMModelProperties.constr_class_browser" to "IfcColumnType"
+    And I set "scene.BIMModelProperties.constr_type_browser" to "DEMO2"
+    And I select the browser construction type
+    Then "scene.BIMModelProperties.constr_class" is "IfcColumnType"
+    And construction type is DEMO2
+    And objects starting with "IfcColumn/" do not exist
+    And the construction type "IfcColumnType"/"DEMO2" has a preview
 
-Scenario: Preview one class on the Construction Type Browser
+Scenario: Preview one class on the construction type browser
     Given an empty IFC project
     And I load the demo construction library
-    When I display the Construction Type Browser
-    And I preview all available assets on the Construction Type Browser
+    When I display the construction type browser
+    And I preview all available assets on the construction type browser
     And I set "scene.BIMModelProperties.constr_class_browser" to "IfcWallType"
-    Then objects starting with "IfcWall/" do not exist
+    Then "scene.BIMModelProperties.constr_class_browser" is "IfcWallType"
+    And objects starting with "IfcWall/" do not exist
     And all construction types for "IfcWallType" have a preview
+
+Scenario: Add one type from the Construction Type Browser
+    Given an empty IFC project
+    And I load the demo construction library
+    When I display the construction type browser
+    And I preview only one asset on the construction type browser
+    And I set "scene.BIMModelProperties.constr_class_browser" to "IfcColumnType"
+    And I set "scene.BIMModelProperties.constr_type_browser" to "DEMO2"
+    And I add the browser construction type
+    Then the object "IfcColumn/Column" exists
 
 Scenario: Add grid
     Given an empty IFC project
