@@ -66,7 +66,7 @@ class BimTool(WorkSpaceTool):
         constr_types_ids = AuthoringData.data["constr_types_ids"]
 
         if is_tool_header:
-            row.operator("bim.type_instance_help", text="", icon="QUESTION")
+            row.operator("bim.help_constr_types", text="", icon="QUESTION")
 
         if constr_classes and is_tool_header:
             row.label(text="", icon="BLANK1")
@@ -184,7 +184,7 @@ class Hotkey(bpy.types.Operator):
         return {"FINISHED"}
 
     def hotkey_S_A(self):
-        bpy.ops.bim.add_type_instance()
+        bpy.ops.bim.add_constr_type()
 
     def hotkey_S_C(self):
         if self.has_ifc_class and self.props.ifc_class == "IfcWallType":

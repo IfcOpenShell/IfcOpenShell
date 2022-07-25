@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 import bpy
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
 
 preview_icon_ids = {}
+attempts = 0
 
 
 def refresh():
@@ -37,6 +39,7 @@ class AuthoringData:
         cls.is_loaded = True
         if not hasattr(cls, "data"):
             cls.data = {}
+        cls.props = bpy.context.scene.BIMModelProperties
         cls.load_constr_classes()
         cls.load_constr_types()
         cls.load_constr_types_browser()
@@ -77,8 +80,7 @@ class AuthoringData:
             return []
         results = []
         if constr_class is None:
-            props = bpy.context.scene.BIMModelProperties
-            constr_class = props.constr_class
+            constr_class = cls.props.constr_class
         if not constr_class and constr_classes:
             constr_class = constr_classes[0][0]
         if constr_class:
@@ -95,8 +97,7 @@ class AuthoringData:
 
     @classmethod
     def constr_types_browser(cls):
-        props = bpy.context.scene.BIMModelProperties
-        return cls.constr_types(constr_class=props.constr_class_browser)
+        return cls.constr_types(constr_class=cls.props.constr_class_browser)
 
     @staticmethod
     def new_constr_type_info(constr_class):
@@ -107,8 +108,7 @@ class AuthoringData:
     @classmethod
     def assetize_constr_class(cls, constr_class=None):
         if constr_class is None:
-            props = bpy.context.scene.BIMModelProperties
-            constr_class = props.constr_class
+            constr_class = cls.props.constr_class
         constr_type_info = cls.constr_type_info(constr_class)
         _ = cls.new_constr_type_info(constr_class) if constr_type_info is None else constr_type_info
         constr_class_occurrences = cls.constr_class_entities(constr_class)
@@ -131,7 +131,7 @@ class AuthoringData:
             kwargs = {}
             if not from_selection:
                 kwargs.update({'constr_class': constr_class, 'constr_type_id': constr_type_id})
-            new_obj = cls.new_constr_type_instance(**kwargs)
+            new_obj = cls.new_constr_type(**kwargs)
             if new_obj is not None:
                 to_be_deleted = True
                 obj = new_obj
@@ -147,9 +147,8 @@ class AuthoringData:
 
     @classmethod
     def assetize_constr_type_from_selection(cls):
-        props = bpy.context.scene.BIMModelProperties
-        constr_class_browser = props.constr_class_browser
-        constr_type_id_browser = props.constr_type_id_browser
+        constr_class_browser = cls.props.constr_class_browser
+        constr_type_id_browser = cls.props.constr_type_id_browser
         constr_class_occurrences = cls.constr_class_entities(constr_class=constr_class_browser)
         constr_class_occurrences = [
             entity for entity in constr_class_occurrences if entity.id() == int(constr_type_id_browser)
@@ -169,16 +168,15 @@ class AuthoringData:
         return None if len(constr_type_infos) == 0 else constr_type_infos[0]
 
     @classmethod
-    def new_constr_type_instance(cls, constr_class=None, constr_type_id=None):
-        props = bpy.context.scene.BIMModelProperties
+    def new_constr_type(cls, constr_class=None, constr_type_id=None):
         if constr_class is None:
-            bpy.ops.bim.add_type_instance(
-                constr_class=props.constr_class_browser, constr_type_id=int(props.constr_type_id_browser)
+            bpy.ops.bim.add_constr_type(
+                constr_class=cls.props.constr_class_browser, constr_type_id=int(cls.props.constr_type_id_browser)
             )
         else:
-            props.constr_class = constr_class
-            props.constr_type_id = str(constr_type_id)
-            bpy.ops.bim.add_type_instance()
+            cls.props.constr_class = constr_class
+            cls.props.constr_type_id = str(constr_type_id)
+            bpy.ops.bim.add_constr_type()
         return bpy.context.selected_objects[-1]
 
     @staticmethod
@@ -197,12 +195,10 @@ class AuthoringData:
 
     @classmethod
     def consolidate_constr_type(cls):
-        props = bpy.context.scene.BIMModelProperties
-        props.constr_class = props.constr_class_browser
-        props.constr_type_id = props.constr_type_id_browser
+        cls.props.constr_class = cls.props.constr_class_browser
+        cls.props.constr_type_id = cls.props.constr_type_id_browser
 
     @classmethod
     def setup_constr_type_browser(cls):
-        props = bpy.context.scene.BIMModelProperties
-        props.constr_class_browser = props.constr_class
-        props.constr_type_id_browser = props.constr_type_id
+        cls.props.constr_class_browser = cls.props.constr_class
+        cls.props.constr_type_id_browser = cls.props.constr_type_id
