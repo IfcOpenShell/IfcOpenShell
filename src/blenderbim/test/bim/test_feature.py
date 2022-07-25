@@ -89,7 +89,7 @@ def i_add_an_empty():
 
 
 @given("I add a sun")
-@when("I add an sun")
+@when("I add a sun")
 def i_add_a_sun():
     bpy.ops.object.light_add(type="SUN")
 
@@ -100,16 +100,14 @@ def i_add_a_material():
     bpy.context.active_object.active_material = bpy.data.materials.new("Material")
 
 
-@given("I add a new group to IfcSelector")
-@when("I add a new group to IfcSelector")
-def i_add_a_new_collection_item():
-    bpy.data.scenes["Scene"].IfcSelectorProperties.groups.add()
+@given(parsers.parse('I add a new item to "{collection}"'))
+@when(parsers.parse('I add a new item to "{collection}"'))
+def i_add_a_new_collection_item(collection):
+    try:
+        eval(f"bpy.context.{collection}.add()")
+    except:
+        assert False, "Collection does not exist"
 
-
-@given("I add a new query to IfcSelector")
-@when("I add a new query to IfcSelector")
-def i_add_a_new_collection_item():
-    bpy.data.scenes["Scene"].IfcSelectorProperties.groups[0].queries.add()
 
 
 @given(parsers.parse('the material "{name}" colour is set to "{colour}"'))
@@ -489,6 +487,7 @@ def prop_is_value(prop, value):
             except:
                 pass
     if not is_value:
+        print(f"bpy.context.{prop}")
         actual_value = eval(f"bpy.context.{prop}")
         assert False, f"Value is {actual_value}"
 
