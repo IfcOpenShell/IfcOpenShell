@@ -31,7 +31,7 @@ import blenderbim.core.geometry
 from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
-from blenderbim.bim.helper import prop_with_search, layout_with_margins
+from blenderbim.bim.helper import prop_with_search, layout_with_margins, close_operator_panel
 from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
@@ -57,15 +57,8 @@ def add_empty_type_button(self, context):
     self.layout.operator(AddEmptyType.bl_idname, icon="FILE_3D")
 
 
-def close_operator_panel(event):
-    x, y = event.mouse_x, event.mouse_y
-    bpy.context.window.cursor_warp(10, 10)
-    move_back = lambda: bpy.context.window.cursor_warp(x, y)
-    bpy.app.timers.register(move_back, first_interval=0.001)
-
-
-class AddTypeInstance(bpy.types.Operator):
-    bl_idname = "bim.add_type_instance"
+class AddConstrType(bpy.types.Operator):
+    bl_idname = "bim.add_constr_type"
     bl_label = "Add"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add Type Instance to the model"
@@ -208,13 +201,13 @@ class DisplayConstrTypes(bpy.types.Operator):
             AuthoringData.load()
         AuthoringData.setup_constr_type_browser()
         props = context.scene.BIMModelProperties
-        if props.unfold_relating_type:
+        if props.unfold_constr_types:
             constr_class = props.constr_class_browser
             constr_type_info = AuthoringData.constr_type_info(constr_class)
             if constr_type_info is None or not constr_type_info.fully_loaded:
                 AuthoringData.assetize_constr_class(constr_class)
         else:
-            prop.update_constr_type(props, context)
+            prop.update_constr_type_browser(props, context)
         min_width = 250
         width_scaling = 5 ** -1
         width = max([min_width, int(width_scaling * context.region.width)])
@@ -222,10 +215,11 @@ class DisplayConstrTypes(bpy.types.Operator):
 
     def draw(self, context):
         props = context.scene.BIMModelProperties
-        if props.unfold_relating_type:
-            self.draw_by_constr_class(props)
+        header_data = self.draw_header(props)
+        if props.unfold_constr_types:
+            self.draw_by_constr_class(props, header_data)
         else:
-            self.draw_by_constr_class_and_type(props)
+            self.draw_by_constr_class_and_type(props, header_data)
 
     def draw_header(self, props):
         layout = self.layout
@@ -234,7 +228,7 @@ class DisplayConstrTypes(bpy.types.Operator):
         split = inner_layout.split(align=True, factor=2./3)
         col1 = split.column(align=True)
         row = col1.row()
-        row.prop(data=props, property="unfold_relating_type", text="Preview All Construction Types")
+        row.prop(data=props, property="unfold_constr_types", text="Preview All Construction Types")
         col1.row().separator(factor=1)
         row = col1.row()
         row.label(text="Select Construction Type:")
@@ -250,12 +244,11 @@ class DisplayConstrTypes(bpy.types.Operator):
         col2 = split.column(align=True)
         subsplit = col2.split(factor=0.9)
         subcol = [subsplit.column() for _ in range(2)][-1]
-        subcol.operator("bim.type_instance_help", text="", icon="QUESTION")
+        subcol.operator("bim.help_constr_types", text="", icon="QUESTION")
         col2.row().separator(factor=1)
         return {"enabled": enabled, "layout": inner_layout, "col1": col1, "col2": col2}
 
-    def draw_by_constr_class(self, props):
-        header_data = self.draw_header(props)
+    def draw_by_constr_class(self, props, header_data):
         enabled, layout = [header_data[key] for key in ["enabled", "layout"]]
         constr_class_browser = props.constr_class_browser
         num_cols = 3
@@ -287,7 +280,7 @@ class DisplayConstrTypes(bpy.types.Operator):
             op.constr_class = constr_class_browser
             op.constr_type_id = constr_type_id_browser
             col = split.column()
-            op = col.operator("bim.add_type_instance", icon="ADD")
+            op = col.operator("bim.add_constr_type", icon="ADD")
             op.from_invoke = True
             op.constr_class = constr_class_browser
             if constr_type_id_browser.isnumeric():
@@ -299,8 +292,7 @@ class DisplayConstrTypes(bpy.types.Operator):
             for _ in range(num_cols - last_row_cols):
                 flow.column()
 
-    def draw_by_constr_class_and_type(self, props):
-        header_data = self.draw_header(props)
+    def draw_by_constr_class_and_type(self, props, header_data):
         enabled, col1, col2 = [header_data[key] for key in ["enabled", "col1", "col2"]]
         constr_class_browser = props.constr_class_browser
         constr_type_id_browser = props.constr_type_id_browser
@@ -317,7 +309,7 @@ class DisplayConstrTypes(bpy.types.Operator):
         op = row.operator("bim.select_construction_type", icon="RIGHTARROW_THIN")
         op.constr_class = constr_class_browser
         op.constr_type_id = constr_type_id_browser
-        op = row.operator("bim.add_type_instance", icon="ADD")
+        op = row.operator("bim.add_constr_type", icon="ADD")
         op.from_invoke = True
         op.constr_class = constr_class_browser
         if constr_type_id_browser.isnumeric():
@@ -353,8 +345,8 @@ class SelectConstructionType(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class TypeInstanceHelp(bpy.types.Operator):
-    bl_idname = "bim.type_instance_help"
+class HelpConstrTypes(bpy.types.Operator):
+    bl_idname = "bim.help_constr_types"
     bl_label = "Construction Types Help"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Click to read some contextual help"

@@ -21,10 +21,10 @@ from . import handler, prop, ui, grid, product, wall, slab, stair, opening, pie,
 
 classes = (
     product.AddEmptyType,
-    product.AddTypeInstance,
+    product.AddConstrType,
     product.DisplayConstrTypes,
     product.SelectConstructionType,
-    product.TypeInstanceHelp,
+    product.HelpConstrTypes,
     product.AlignProduct,
     product.DynamicallyVoidProduct,
     workspace.Hotkey,

@@ -48,8 +48,7 @@ def update_icon_id(self, context):
             and constr_type_browser is not None):
         if not AuthoringData.assetize_constr_type_from_selection():
             return
-    props = bpy.context.scene.BIMModelProperties
-    props.icon_id = AuthoringData.data["preview_constr_types"][constr_class_browser][constr_type_id_browser]["icon_id"]
+    self.icon_id = AuthoringData.data["preview_constr_types"][constr_class_browser][constr_type_id_browser]["icon_id"]
 
 
 def update_constr_class(self, context):
@@ -62,7 +61,7 @@ def update_constr_class_browser(self, context):
     AuthoringData.load_constr_classes()
     AuthoringData.load_constr_types_browser()
     props = context.scene.BIMModelProperties
-    if props.unfold_relating_type:
+    if props.unfold_constr_types:
         constr_class_browser = props.constr_class_browser
         constr_type_info = AuthoringData.constr_type_info(constr_class_browser)
         if constr_type_info is None or not constr_type_info.fully_loaded:
@@ -114,7 +113,7 @@ class BIMModelProperties(PropertyGroup):
         items=get_constr_type_browser, name="Construction Type", update=update_constr_type_browser
     )
     icon_id: bpy.props.IntProperty()
-    unfold_relating_type: bpy.props.BoolProperty(update=update_unfold_constr_type)
+    unfold_constr_types: bpy.props.BoolProperty(update=update_unfold_constr_type)
     occurrence_name_style: bpy.props.EnumProperty(
         items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")],
         name="Occurrence Name Style",
