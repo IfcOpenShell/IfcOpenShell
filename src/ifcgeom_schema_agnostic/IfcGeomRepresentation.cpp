@@ -155,14 +155,13 @@ namespace {
 						coords.push_back(tri->Node(i).Transformed(loc).XYZ());
 					}
 
-					const Poly_Array1OfTriangle& triangles = tri->Triangles();
-					for (int i = 1; i <= triangles.Length(); ++i) {
+					for (int i = 1; i <= tri->NbTriangles(); ++i) {
 						int n1, n2, n3;
 
 						if (face.Orientation() == TopAbs_REVERSED) {
-							triangles(i).Get(n3, n2, n1);
+							tri->Triangle(i).Get(n3, n2, n1);
 						} else {
-							triangles(i).Get(n1, n2, n3);
+							tri->Triangle(i).Get(n1, n2, n3);
 						}
 
 						const gp_XYZ& pt1 = coords[n1 - 1];
@@ -360,12 +359,11 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 					}
 				}
 
-				const Poly_Array1OfTriangle& triangles = tri->Triangles();
-				for (int i = 1; i <= triangles.Length(); ++i) {
+				for (int i = 1; i <= tri->NbTriangles(); ++i) {
 					int n1, n2, n3;
 					if (face.Orientation() == TopAbs_REVERSED)
-						triangles(i).Get(n3, n2, n1);
-					else triangles(i).Get(n1, n2, n3);
+						tri->Triangle(i).Get(n3, n2, n1);
+					else tri->Triangle(i).Get(n1, n2, n3);
 
 					/* An alternative would be to calculate normals based
 						* on the coordinates of the mesh vertices */
