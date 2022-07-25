@@ -63,7 +63,7 @@ architecture flow charts and diagrams. The code and its comments will guide you
 through the process.
 
 Before playing with the demo module, you may want to switch to using a source
-installation. See `blenderbim/installation <./installation.rst>`_ for details.
+installation. See `blenderbim/installation <./installation.html>`_ for details.
 
 To see the demo module in action, you'll need to enable it. In
 ``src/blenderbim/blenderbim/bim/__init__.py``, uncomment the line for the demo
@@ -95,7 +95,7 @@ and how to test and structure it so that you can build incredibly complex
 features in a maintainable way.
 
 Tests for quality checking also exist. The system is designed so that you can
-do "Test Driven Development". For reference on how to run these tests, see `blenderbim/running_tests <./running_tests.rst>`_
+do "Test Driven Development". For reference on how to run these tests, see `blenderbim/running_tests <./running_tests.html>`_
 for details. You can find the tests here:
 
 ::

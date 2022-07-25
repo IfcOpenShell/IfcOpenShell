@@ -209,8 +209,8 @@ class EnablePsetEditing(bpy.types.Operator):
                     new.is_selected = enum in selected_enum_items
             else:
                 value = prop["NominalValue"]
-                prop = self.props.properties.add()
-                metadata = prop.metadata
+                new_prop = self.props.properties.add()
+                metadata = new_prop.metadata
                 metadata.set_value(value)
                 metadata.name = prop["Name"]
                 metadata.is_null = value is None
