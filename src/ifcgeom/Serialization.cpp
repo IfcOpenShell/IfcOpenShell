@@ -16,6 +16,8 @@
 #include <Geom_BezierCurve.hxx>
 #include <Geom_TrimmedCurve.hxx>
 
+#include <Standard_Version.hxx>
+
 #include "IfcGeom.h"
 
 template <typename T, typename U>

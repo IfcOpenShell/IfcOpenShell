@@ -26,6 +26,7 @@
 #include <TopoDS_Compound.hxx>
 #include <BRepGProp.hxx>
 #include <GProp_GProps.hxx>
+#include <Standard_Version.hxx>
 
 #include "../ifcparse/IfcLogger.h"
 #include "../ifcgeom_schema_agnostic/Kernel.h"

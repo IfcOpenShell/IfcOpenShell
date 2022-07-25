@@ -3458,6 +3458,7 @@ bool IfcGeom::Kernel::triangulate_wire(const std::vector<TopoDS_Wire>& wires, To
 	Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
 
 	if (!tri.IsNull()) {
+
 #if OCC_VERSION_HEX < 0x70600
 		const Poly_Array1OfTriangle& triangles = tri->Triangles();
 		for (int i = 1; i <= triangles.Length(); ++i) {
