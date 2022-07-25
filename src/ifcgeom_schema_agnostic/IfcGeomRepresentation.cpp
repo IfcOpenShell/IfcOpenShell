@@ -155,6 +155,7 @@ namespace {
 					for (int i = 1; i <= tri->NbNodes(); ++i) {
 						coords.push_back(tri->Node(i).Transformed(loc).XYZ());
 					}
+
 #if OCC_VERSION_HEX < 0x70600
 					const Poly_Array1OfTriangle& triangles = tri->Triangles();
 					for (int i = 1; i <= triangles.Length(); ++i) {
@@ -370,6 +371,7 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 						_normals.push_back(normal.Z());
 					}
 				}
+
 #if OCC_VERSION_HEX < 0x70600
 				const Poly_Array1OfTriangle& triangles = tri->Triangles();
 				for (int i = 1; i <= triangles.Length(); ++i) {
