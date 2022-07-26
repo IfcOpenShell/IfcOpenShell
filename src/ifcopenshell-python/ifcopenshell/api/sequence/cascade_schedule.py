@@ -44,7 +44,7 @@ class Usecase:
                 else:
                     print("... is a predecessor to ...", debug_task)
             print("... which is cyclically a predecessor to ...", task)
-            raise Exception("Recursive tasks found. Could not cascade schedule.")
+            raise RecursionError("Recursive tasks found. Could not cascade schedule.")
 
         if not task.TaskTime:
             return
