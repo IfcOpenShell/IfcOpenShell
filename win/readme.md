@@ -80,7 +80,7 @@ Let's say you have already installed 64-bit Python 3.5.1 to `C:\Python3`.
 Before building the dependencies, disable the script from installing Python:
 ```
 > set IFCOS_INSTALL_PYTHON=FALSE
-> build-deps.cmd
+> buid-deps.cmd
 ```
 
 After building the dependencies, append Python version and installation directory information to the BuildDepsCache file
