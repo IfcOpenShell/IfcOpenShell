@@ -120,9 +120,7 @@ class AddTypeInstance(bpy.types.Operator):
         collection_obj = bpy.data.objects.get(collection.name)
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         element = tool.Ifc.get_entity(obj)
-        blenderbim.core.type.assign_type(
-            tool.Ifc, tool.Type, element=element, type=relating_type
-        )
+        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
         if building_obj:
             if instance_class in ["IfcWindow", "IfcDoor"]:
@@ -342,10 +340,13 @@ def ensure_material_assigned(usecase_path, ifc_file, settings):
             if om is not None and om.BIMObjectProperties.ifc_definition_id
         ]
 
-        if material[0].id() in object_material_ids:
+        if material and material[0].id() in object_material_ids:
             continue
 
         if len(obj.data.materials) == 1:
             obj.data.materials.clear()
+
+        if not material:
+            continue
 
         obj.data.materials.append(IfcStore.get_element(material[0].id()))

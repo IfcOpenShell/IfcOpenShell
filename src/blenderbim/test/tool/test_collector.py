@@ -222,7 +222,7 @@ class TestAssign(NewFile):
         tool.Ifc.link(element, element_obj)
         group = ifcopenshell.api.run("group.add_group", tool.Ifc.get())
         group.ObjectType = "DRAWING"
-        ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), product=element, group=group)
+        ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), product=[element], group=group)
         subject.assign(element_obj)
         assert element_obj.users_collection[0].name == "IfcGroup/Unnamed"
         assert bpy.data.collections.get("Views").children.get("IfcGroup/Unnamed")
@@ -235,7 +235,7 @@ class TestAssign(NewFile):
         tool.Ifc.link(element, element_obj)
         group = ifcopenshell.api.run("group.add_group", tool.Ifc.get())
         group.ObjectType = "DRAWING"
-        ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), product=element, group=group)
+        ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), product=[element], group=group)
         subject.assign(element_obj)
         assert element_obj.users_collection[0].name == "IfcGroup/Unnamed"
         assert bpy.data.collections.get("Views").children.get("IfcGroup/Unnamed")

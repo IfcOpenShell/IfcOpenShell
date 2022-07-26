@@ -39,13 +39,31 @@ class Usecase:
         if not self.start_dates:
             return
 
+        is_cyclic = False
+        attempts = 0
         self.pending_nodes = set(self.g.nodes)
+        max_worst_case_attempts = pow(len(self.pending_nodes), 2)
         while self.pending_nodes:
+            attempts += 1
             remaining_nodes = set()
             for pending_node in self.pending_nodes:
                 if not self.forward_pass(pending_node):
                     remaining_nodes.add(pending_node)
             self.pending_nodes = remaining_nodes
+
+            # As we parse nodes, the remaining attempts can drop dramatically, so we recalculate the upper limit
+            max_remaining_attempts = pow(len(self.pending_nodes), 2)
+            if max_remaining_attempts < max_worst_case_attempts:
+                max_worst_case_attempts = max_remaining_attempts
+                attempts = 0
+
+            if attempts > max_worst_case_attempts:
+                is_cyclic = True
+                break # We have an infinite loop due to a cyclic graph
+
+        if is_cyclic:
+            raise RecursionError("Task graph is cyclic and so critical path method cannot be performed.")
+            return
 
         self.pending_nodes = set(self.g.nodes)
         while self.pending_nodes:

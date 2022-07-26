@@ -19,18 +19,15 @@
 import os
 import re
 import logging
-import operator
 import numpy as np
 import datetime
-
+import builtins
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.classification
-
 from bcf.v2.bcfxml import BcfXml
 from bcf.v2 import data as bcf
-
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xmlschema.validators import identities
@@ -112,10 +109,10 @@ class ids:
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
             "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_05.xsd",
             "info": self.info,
-            "specifications": [],
+            "specifications": {"specification": []},
         }
         for spec in self.specifications:
-            ids_dict["specifications"].append({"specification": spec.asdict()})  # TEST!
+            ids_dict["specifications"]["specification"].append(spec.asdict())
         return ids_dict
 
     def to_string(self, ids_schema=ids_schema):
@@ -139,6 +136,7 @@ class ids:
         :return: Result of the newly created file validation against the schema.
         :rtype: bool
         """
+        ET.register_namespace("", "http://standards.buildingsmart.org/IDS")
         ET.ElementTree(ids_schema.encode(self.asdict())).write(filepath, encoding="utf-8", xml_declaration=True)
         return ids_schema.is_valid(filepath)
 
@@ -161,6 +159,29 @@ class ids:
         ids_file = ids()
         ids_file.specifications = [specification.parse(s) for s in ids_content["specifications"]["specification"]]
         return ids_file
+
+    def validate2(self, ifc_file):
+        """Use to validate IFC model against IDS specifications.
+
+        :param ifc_file: path to ifc file
+        :type ifc_file: str
+        :param logger: Logging object with handlers, defaults to None
+        :type logger: logging, optional
+        """
+        for specification in self.specifications:
+            specification.applicable_entities.clear()
+            specification.failed_entities.clear()
+            specification.status = None
+        for element in ifc_file:
+            for specification in self.specifications:
+                if not specification.applicability(element, None):
+                    continue
+                specification.applicable_entities.append(element)
+                if specification.requirements(element, None):
+                    specification.status = True
+                else:
+                    specification.status = False
+                    specification.failed_entities.append(element)
 
     def validate(self, ifc_file, logger=None):
         """Use to validate IFC model against IDS specifications.
@@ -186,7 +207,7 @@ class ids:
                 if comply:
                     self.ifc_passed += 1
             if self.ifc_applicable == 0:
-                if spec.use == "required":
+                if spec.minOccurs != "0":
                     logger.error("No applicable elements found. Minimum 1 applicable element required.")
                 else:
                     logger.debug("No applicable elements found. None required.")
@@ -215,7 +236,8 @@ class specification:
     def __init__(
         self,
         name="Unnamed",
-        use="required",
+        minOccurs=None,
+        maxOccurs=None,
         ifcVersion=["IFC2X3", "IFC4"],
         identifier=None,
         description=None,
@@ -225,17 +247,24 @@ class specification:
 
         :param name: Name describing the specification to a contract reader
         :type name: str
-        :param use: 'required'|'optional', defaults to "required"
-        :type use: str, optional
+        :param minOccurs: The minimum total entities that should pass as an integer >= 0
+        :type minOccurs: str, optional
+        :param maxOccurs: The maximum total entities that should pass as an integer >= 0 or "unbounded"
+        :type maxOccurs: str, optional
         """
         self.name = name or "Unnamed"
         self.applicability = None
         self.requirements = None
-        self.use = use
+        self.minOccurs = minOccurs
+        self.maxOccurs = maxOccurs
         self.ifcVersion = ifcVersion
         self.identifier = identifier
         self.description = description
         self.instructions = instructions
+
+        self.applicable_entities = []
+        self.failed_entities = []
+        self.status = None
 
     def asdict(self):
         """Converts object to a dictionary, adding required attributes.
@@ -246,12 +275,11 @@ class specification:
         # if older python collections.OrderedDict()
         results = {
             "@name": self.name,
-            "@use": self.use,
             "@ifcVersion": self.ifcVersion,
             "applicability": {},
             "requirements": {},
         }
-        for attribute in ["identifier", "description", "instructions"]:
+        for attribute in ["identifier", "description", "instructions", "minOccurs", "maxOccurs"]:
             value = getattr(self, attribute)
             if value:
                 results[f"@{attribute}"] = value
@@ -287,7 +315,8 @@ class specification:
             spec.name = ids_dict["@name"]
         except KeyError:
             spec.name = ""
-        spec.use = ids_dict["@use"]
+        spec.minOccurs = ids_dict["@minOccurs"]
+        spec.maxOccurs = ids_dict["@maxOccurs"]
         spec.ifcVersion = ids_dict["@ifcVersion"]
         spec.applicability = boolean_and(parse_rules(ids_dict["applicability"]))
         spec.requirements = boolean_and(parse_rules(ids_dict["requirements"]))
@@ -337,7 +366,6 @@ class specification:
         :rtype: [bool,bool]
         """
         if self.applicability(inst, logger):
-
             valid = self.requirements(inst, logger)
 
             if valid:
@@ -424,19 +452,9 @@ class facet(metaclass=meta_facet):
     Use child classes instead: entity, classification, property and material.
     """
 
-    def __init__(self, node=None, location=None):
-
+    def __init__(self, node=None):
         if node:
             self.node = node
-            if "@location" in self:
-                self.location = self.node["@location"]
-            else:
-                self.location = "any"
-
-        if location:
-            self.location = location
-        else:
-            self.location = "any"
 
     def __getattr__(self, attr):
 
@@ -473,10 +491,10 @@ class facet(metaclass=meta_facet):
 class entity(facet):
     """The IDS entity facet currently *with* inheritance"""
 
-    parameters = ["name", "predefinedType"]
+    parameters = ["name", "predefinedType", "instructions"]
 
     @staticmethod
-    def create(name=None, predefinedType=None):
+    def create(name=None, predefinedType=None, instructions=None):
         """Create an entity facet that can be added to applicability or requirements of IDS specification.
 
         :param name: IFC entity name that is required. e.g. IfcWall, defaults to None
@@ -490,6 +508,7 @@ class entity(facet):
         inst = entity()
         inst.name = name
         inst.predefinedType = predefinedType
+        inst.instructions = instructions
         return inst
 
     def asdict(self):
@@ -501,6 +520,8 @@ class entity(facet):
         results = {"name": parameter_asdict(self.name)}
         if self.predefinedType:
             results["predefinedType"] = parameter_asdict(self.predefinedType)
+        if self.instructions:
+            results["@instructions"] = self.instructions
         return results
 
     def __call__(self, inst, logger=None):
@@ -516,10 +537,7 @@ class entity(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
-        if isinstance(self.name, str):
-            is_pass = inst.is_a().lower() == self.name.lower()
-        else:
-            is_pass = inst.is_a() == self.name
+        is_pass = inst.is_a().upper() == self.name
         if is_pass and self.predefinedType:
             predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
             is_pass = predefined_type == self.predefinedType
@@ -535,20 +553,20 @@ class entity(facet):
 class attribute(facet):
     """The IDS attribute facet"""
 
-    parameters = ["name", "value", "location", "use", "instructions"]
+    parameters = ["name", "value", "minOccurs", "maxOccurs", "instructions"]
 
     @staticmethod
-    def create(name="Name", value=None, location="any", use=None, instructions=None):
+    def create(name="Name", value=None, minOccurs=None, maxOccurs=None, instructions=None):
         """Create an attribute facet that can be added to applicability or requirements of IDS specification.
 
         :param name: Attribute name, such as "Description"
         :type name: str
         :param value: Attribute value, with type being strictly checked
         :type value: str, optional
-        :param location: Where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
-        :type location: str, optional
-        :param use: 'required'|'optional', defaults to "required"
-        :type use: str, optional
+        :param minOccurs: The minimum total entities that should pass as an integer >= 0
+        :type minOccurs: str, optional
+        :param maxOccurs: The maximum total entities that should pass as an integer >= 0 or "unbounded"
+        :type maxOccurs: str, optional
         :param instructions: Instructions as a guide for model authors when reading the requirements
         :type instructions: str, optional
         :return: entity object
@@ -558,8 +576,8 @@ class attribute(facet):
         inst = attribute()
         inst.name = name
         inst.value = value
-        inst.location = location
-        inst.use = use
+        inst.minOccurs = minOccurs
+        inst.maxOccurs = maxOccurs
         inst.instructions = instructions
         return inst
 
@@ -569,16 +587,16 @@ class attribute(facet):
         :return: Xmlschema compliant dictionary.
         :rtype: dict
         """
-        fac_dict = {"name": parameter_asdict(self.name)}
+        results = {"name": parameter_asdict(self.name)}
         if self.value:
-            fac_dict["value"] = parameter_asdict(self.value)
-        if self.location:
-            fac_dict["@location"] = self.location
-        if self.use:
-            fac_dict["@use"] = self.use
+            results["value"] = parameter_asdict(self.value)
+        if self.minOccurs:
+            results["@minOccurs"] = self.minOccurs
+        if self.maxOccurs:
+            results["@maxOccurs"] = self.maxOccurs
         if self.instructions:
-            fac_dict["@instructions"] = self.instructions
-        return fac_dict
+            results["@instructions"] = self.instructions
+        return results
 
     def __call__(self, inst, logger=None):
         """Validate an ifc instance.
@@ -596,29 +614,65 @@ class attribute(facet):
                 return [getattr(element, name, None)]
             return [v for k, v in element.get_info().items() if k == name]
 
-        if self.location == "instance":
-            values = get_values(inst, self.name)
-        elif self.location == "type":
-            element_type = ifcopenshell.util.element.get_type(inst)
-            values = get_values(element_type, self.name) if element_type else []
-        elif self.location == "any":
-            element_type = ifcopenshell.util.element.get_type(inst)
+        element_type = ifcopenshell.util.element.get_type(inst)
 
-            if isinstance(self.name, str):
-                type_value = getattr(element_type, self.name, None) if element_type else None
-                occurrence_value = getattr(inst, self.name, None)
-                values = [occurrence_value if occurrence_value is not None else type_value]
+        if isinstance(self.name, str):
+            type_value = getattr(element_type, self.name, None) if element_type else None
+            occurrence_value = getattr(inst, self.name, None)
+            names = [self.name]
+            values = [occurrence_value if occurrence_value is not None else type_value]
+        else:
+            if element_type:
+                info = element_type.get_info()
+                info.update({k: v for k, v in inst.get_info().items() if v is not None})
             else:
-                if element_type:
-                    info = element_type.get_info()
-                    info.update({k: v for k, v in inst.get_info().items() if v is not None})
-                else:
-                    info = inst.get_info()
-                values = [v for k, v in info.items() if k == self.name]
+                info = inst.get_info()
+            names = []
+            values = []
+            for k, v in info.items():
+                if k == self.name:
+                    names.append(k)
+                    values.append(v)
 
-        is_pass = bool(values) and all([v is not None and v != "" for v in values])
+        is_pass = bool(values)
+
+        if is_pass:
+            for i, value in enumerate(values):
+                if value is None:
+                    is_pass = False
+                elif value == "":
+                    is_pass = False
+                elif value == tuple():
+                    is_pass = False
+                else:
+                    argument_index = inst.wrapped_data.get_argument_index(names[i])
+                    try:
+                        attribute_type = inst.attribute_type(argument_index)
+                        if attribute_type == "LOGICAL" and value == "UNKNOWN":
+                            is_pass = False
+                    except:
+                        if names[i] in inst.wrapped_data.get_inverse_attribute_names():
+                            is_pass = False
+                if not is_pass:
+                    break
+
         if is_pass and self.value:
-            is_pass = all([v == self.value for v in values])
+            for value in values:
+                if isinstance(value, ifcopenshell.entity_instance):
+                    is_pass = False
+                    break
+                elif isinstance(self.value, str) and isinstance(value, str):
+                    if value != self.value:
+                        is_pass = False
+                        break
+                elif isinstance(self.value, str):
+                    cast_value = cast_to_value(self.value, value)
+                    if value != cast_value:
+                        is_pass = False
+                        break
+                elif value != self.value:
+                    is_pass = False
+                    break
 
         if self.value:
             self.message = "foo"
@@ -632,28 +686,30 @@ class classification(facet):
     The IDS classification facet by traversing the HasAssociations inverse attribute
     """
 
-    parameters = ["system", "value", "location", "uri", "use", "instructions"]
-    message = "%(location)sclassification reference %(value)s from '%(system)s'"
+    parameters = ["system", "value", "uri", "minOccurs", "maxOccurs" "instructions"]
+    message = "sclassification reference %(value)s from '%(system)s'"
 
     @staticmethod
-    def create(value=None, system=None, location="any", uri=None, use=None, instructions=None):
+    def create(value=None, system=None, uri=None, minOccurs=None, maxOccurs=None, instructions=None):
         """Create a classification facet that can be added to applicability or requirements of IDS specification.
 
-        :param location: Where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
-        :type location: str, optional
         :param value: Value that is required. Could be alphanumeric or restriction object, defaults to None
         :type value: restriction|alphanumeric, optional
         :param system: System that is required. Could be alphanumeric or restriction object, defaults to None
         :type system: restriction|alphanumeric, optional
+        :param minOccurs: The minimum total entities that should pass as an integer >= 0
+        :type minOccurs: str, optional
+        :param maxOccurs: The maximum total entities that should pass as an integer >= 0 or "unbounded"
+        :type maxOccurs: str, optional
         :return: classification object
         :rtype: classification
         """
         inst = classification()
         inst.value = value
         inst.system = system
-        inst.location = location
         inst.uri = uri
-        inst.use = use
+        inst.minOccurs = minOccurs
+        inst.maxOccurs = maxOccurs
         inst.instructions = instructions
         return inst
 
@@ -663,15 +719,17 @@ class classification(facet):
         :return: Xmlschema compliant dictionary.
         :rtype: dict
         """
-        results = {"@location": self.location}
+        results = {}
         if self.value:
             results["value"] = parameter_asdict(self.value)
         if self.system:
             results["system"] = parameter_asdict(self.system)
         if self.uri:
             results["@uri"] = self.uri
-        if self.use:
-            results["@use"] = self.use
+        if self.minOccurs:
+            results["@minOccurs"] = self.minOccurs
+        if self.maxOccurs:
+            results["@maxOccurs"] = self.maxOccurs
         if self.instructions:
             results["@instructions"] = self.instructions
         return results
@@ -686,13 +744,7 @@ class classification(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
-        if self.location == "instance":
-            leaf_references = ifcopenshell.util.classification.get_references(inst, should_inherit=False)
-        elif self.location == "type":
-            element_type = ifcopenshell.util.element.get_type(inst)
-            leaf_references = ifcopenshell.util.classification.get_references(element_type) if element_type else set()
-        elif self.location == "any":
-            leaf_references = ifcopenshell.util.classification.get_references(inst)
+        leaf_references = ifcopenshell.util.classification.get_references(inst)
 
         references = leaf_references.copy()
         for leaf_reference in leaf_references:
@@ -708,8 +760,6 @@ class classification(facet):
                 [self.system == ifcopenshell.util.classification.get_classification(r).Name for r in references]
             )
 
-        self.location_msg = location[self.location]
-
         if references:
             return facet_evaluation(
                 is_pass,
@@ -717,11 +767,10 @@ class classification(facet):
                 % {
                     "system": list(references)[0][0],
                     "value": list(references)[0][1],
-                    "location": self.location_msg,
                 },  # TODO Fix this 0 index reference assumption when I refactor out the messages
             )
         else:
-            return facet_evaluation(False, "does not have %sclassification reference" % self.location_msg)
+            return facet_evaluation(False, "does not have classification reference")
 
 
 class partOf(facet):
@@ -752,7 +801,7 @@ class partOf(facet):
         :return: Xmlschema compliant dictionary.
         :rtype: dict
         """
-        return {"@entity": parameter_asdict(self.entity)}
+        return {"@entity": self.entity}
 
     def __call__(self, inst, logger=None):
         """Validate an ifc instance against that partOf facet.
@@ -786,30 +835,32 @@ class property(facet):
     The IDS property facet implemented using `ifcopenshell.util.element`
     """
 
-    parameters = ["name", "propertySet", "value", "location"]
-    message = "%(location)sproperty '%(name)s' in '%(propertySet)s' with a value %(value)s"
+    parameters = ["name", "propertySet", "value"]
+    message = "property '%(name)s' in '%(propertySet)s' with a value %(value)s"
 
     @staticmethod
     def create(
         propertySet="Property_Set",
         name="PropertyName",
         value=None,
-        location="any",
         measure=None,
         uri=None,
-        use=None,
+        minOccurs=None,
+        maxOccurs=None,
         instructions=None,
     ):
         """Create a property facet that can be added to applicability or requirements of IDS specification.
 
-        :param location: Where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
-        :type location: str, optional
         :param propertySet: Propertyset that is required. Could be alphanumeric or restriction object, defaults to None
         :type propertySet: restriction|alphanumeric, optional
         :param name: Name that is required. Could be alphanumeric or restriction object, defaults to None
         :type name: restriction|alphanumeric, optional
         :param value: Value that is required. Could be alphanumeric or restriction object, defaults to None
         :type value: restriction|alphanumeric, optional
+        :param minOccurs: The minimum total entities that should pass as an integer >= 0
+        :type minOccurs: str, optional
+        :param maxOccurs: The maximum total entities that should pass as an integer >= 0 or "unbounded"
+        :type maxOccurs: str, optional
         :return: property object
         :rtype: property
         """
@@ -817,10 +868,10 @@ class property(facet):
         inst.propertySet = propertySet
         inst.name = name
         inst.value = value
-        inst.location = location
         inst.measure = measure
         inst.uri = uri
-        inst.use = use
+        inst.minOccurs = minOccurs
+        inst.maxOccurs = maxOccurs
         inst.instructions = instructions
         return inst
 
@@ -831,7 +882,6 @@ class property(facet):
         :rtype: dict
         """
         results = {
-            "@location": self.location,
             "propertySet": parameter_asdict(self.propertySet),
             "name": parameter_asdict(self.name),
         }
@@ -841,8 +891,10 @@ class property(facet):
             results["@measure"] = self.measure
         if self.uri:
             results["@uri"] = self.uri
-        if self.use:
-            results["@use"] = self.use
+        if self.minOccurs:
+            results["@minOccurs"] = self.minOccurs
+        if self.maxOccurs:
+            results["@maxOccurs"] = self.maxOccurs
         if self.instructions:
             results["@instructions"] = self.instructions
         # TODO '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
@@ -858,15 +910,7 @@ class property(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
-        all_psets = {}
-        if self.location == "instance":
-            all_psets = ifcopenshell.util.element.get_psets(inst, should_inherit=False)
-        elif self.location == "type":
-            element_type = ifcopenshell.util.element.get_type(inst)
-            if element_type:
-                all_psets = ifcopenshell.util.element.get_psets(element_type, should_inherit=False)
-        elif self.location == "any":
-            all_psets = ifcopenshell.util.element.get_psets(inst)
+        all_psets = ifcopenshell.util.element.get_psets(inst)
 
         if isinstance(self.propertySet, str):
             pset = all_psets.get(self.propertySet, None)
@@ -942,15 +986,13 @@ class property(facet):
 class material(facet):
     """The IDS material facet used to traverse the HasAssociations inverse attribute."""
 
-    parameters = ["value", "location"]
-    message = "%(location)smaterial '%(value)s'"
+    parameters = ["value"]
+    message = "material '%(value)s'"
 
     @staticmethod
-    def create(value=None, location="any", uri=None, use=None, instructions=None):
+    def create(value=None, uri=None, minOccurs=None, maxOccurs=None, instructions=None):
         """Create a material facet that can be added to applicability or requirements of IDS specification.
 
-        :param location: Where to check for the parameter. One of "any"|"instance"|"type", defaults to "any"
-        :type location: str, optional
         :param value: Value that is required. Could be alphanumeric or restriction object, defaults to None
         :type value: restriction|alphanumeric, optional
         :return: material object
@@ -958,9 +1000,9 @@ class material(facet):
         """
         inst = material()
         inst.value = value
-        inst.location = location
         inst.uri = uri
-        inst.use = use
+        inst.minOccurs = minOccurs
+        inst.maxOccurs = maxOccurs
         inst.instructions = instructions
         return inst
 
@@ -970,13 +1012,15 @@ class material(facet):
         :return: Xmlschema compliant dictionary.
         :rtype: dict
         """
-        results = {"@location": self.location}
+        results = {}
         if self.value:
             results["value"] = parameter_asdict(self.value)
         if self.uri:
             results["@uri"] = self.uri
-        if self.use:
-            results["@use"] = self.use
+        if self.minOccurs:
+            results["@minOccurs"] = self.minOccurs
+        if self.maxOccurs:
+            results["@maxOccurs"] = self.maxOccurs
         if self.instructions:
             results["@instructions"] = self.instructions
         return results
@@ -991,15 +1035,7 @@ class material(facet):
         :return: result of the validation as bool and message
         :rtype: facet_evaluation(bool, str)
         """
-        material = None
-        if self.location == "instance":
-            material = ifcopenshell.util.element.get_material(inst, should_skip_usage=True, should_inherit=False)
-        elif self.location == "type":
-            element_type = ifcopenshell.util.element.get_type(inst)
-            if element_type:
-                material = ifcopenshell.util.element.get_material(element_type, should_skip_usage=True)
-        elif self.location == "any":
-            material = ifcopenshell.util.element.get_material(inst, should_skip_usage=True)
+        material = ifcopenshell.util.element.get_material(inst, should_skip_usage=True)
 
         is_pass = material is not None
 
@@ -1079,6 +1115,22 @@ class boolean_or(boolean_logic):
     fold = any
 
 
+def cast_to_value(from_value, to_value):
+    try:
+        target_type = type(to_value).__name__
+        if target_type == "int":
+            # Casting str -> float -> int means that notation like '1e3' is preserved
+            return int(float(from_value))
+        elif target_type == "bool":
+            if from_value == "TRUE":
+                return True
+            elif from_value == "FALSE":
+                return False
+        return builtins.__dict__[target_type](from_value)
+    except ValueError:
+        pass
+
+
 class restriction:
     """
     The value restriction from XSD implemented as a list of values and a containment test
@@ -1149,7 +1201,7 @@ class restriction:
                     rest_dict["xs:enumeration"].append({"@value": option})
         elif self.type == "bounds":
             for option in self.options:
-                rest_dict["xs:" + option] = [{"@value": self.options[option], "@fixed": False}]
+                rest_dict["xs:" + option] = [{"@value": str(self.options[option]), "@fixed": False}]
         elif self.type == "pattern":
             if "xs:pattern" not in rest_dict:
                 rest_dict["xs:pattern"] = [{"@value": self.options}]
@@ -1201,13 +1253,12 @@ class restriction:
         :rtype: bool
         """
         result = False
-        # TODO implement data type comparison
         if self and (other or other == 0):
             if self.type == "enumeration" and self.base == "bool":
                 self.options = [x.lower() for x in self.options]
                 result = str(other).lower() in self.options
             elif self.type == "enumeration":
-                result = other in self.options
+                result = other in [cast_to_value(o, other) for o in self.options]
             elif self.type == "bounds":
                 result = True
                 for sign in self.options.keys():

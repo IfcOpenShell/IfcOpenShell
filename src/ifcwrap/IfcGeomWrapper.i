@@ -58,14 +58,14 @@
 	}
 }
 
-%include "../ifcgeom/ifc_geom_api.h"
-%include "../ifcgeom/IfcGeomIteratorSettings.h"
-%include "../ifcgeom/IfcGeomElement.h"
+%include "../ifcgeom_schema_agnostic/ifc_geom_api.h"
+%include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
+%include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
 %include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
-%include "../ifcgeom/IfcGeomRepresentation.h"
+%include "../ifcgeom_schema_agnostic/IfcGeomRepresentation.h"
 %include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
-
 %include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+
 %include "../serializers/SvgSerializer.h"
 %include "../serializers/HdfSerializer.h"
 %include "../serializers/WavefrontObjSerializer.h"
@@ -76,7 +76,7 @@
 
 // A Template instantantation should be defined before it is used as a base class. 
 // But frankly I don't care as most methods are subtlely different anyway.
-%include "../ifcgeom/IfcGeomTree.h"
+%include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
 
 %extend IfcGeom::tree {
 
@@ -370,10 +370,46 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		IfcParse::IfcFile* file = instance->data().file;
 			
 		IfcGeom::Kernel kernel(file);
+
+		// @todo unify this logic with the logic in iterator impl.
+
 		kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_ORIENT, settings.get(IfcGeom::IteratorSettings::SEW_SHELLS) ? std::numeric_limits<double>::infinity() : -1);
 		kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES) ? (settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 		kernel.setValue(IfcGeom::Kernel::GV_LAYERSET_FIRST,
 			settings.get(IfcGeom::IteratorSettings::LAYERSET_FIRST)
+			? +1.0
+			: -1.0
+		);
+		kernel.setValue(IfcGeom::Kernel::GV_NO_WIRE_INTERSECTION_CHECK,
+			settings.get(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_CHECK)
+			? +1.0
+			: -1.0
+		);
+		kernel.setValue(IfcGeom::Kernel::GV_NO_WIRE_INTERSECTION_TOLERANCE,
+			settings.get(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE)
+			? +1.0
+			: -1.0
+		);
+		kernel.setValue(IfcGeom::Kernel::GV_PRECISION_FACTOR,
+			settings.get(IfcGeom::IteratorSettings::STRICT_TOLERANCE)
+			? 1.0
+			: 10.0
+		);
+
+		kernel.setValue(IfcGeom::Kernel::GV_DISABLE_BOOLEAN_RESULT,
+			settings.get(IfcGeom::IteratorSettings::DISABLE_BOOLEAN_RESULT)
+			? +1.0
+			: -1.0
+		);
+
+		kernel.setValue(IfcGeom::Kernel::GV_DEBUG_BOOLEAN,
+			settings.get(IfcGeom::IteratorSettings::DEBUG_BOOLEAN)
+			? +1.0
+			: -1.0
+		);
+
+		kernel.setValue(IfcGeom::Kernel::GV_BOOLEAN_ATTEMPT_2D,
+			settings.get(IfcGeom::IteratorSettings::BOOLEAN_ATTEMPT_2D)
 			? +1.0
 			: -1.0
 		);
@@ -456,6 +492,22 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				}
 			}
 
+			// Read precision for found representation's context
+			auto context = ifc_representation->ContextOfItems();
+			if (context->template as<typename Schema::IfcGeometricRepresentationSubContext>()) {
+				context = context->template as<typename Schema::IfcGeometricRepresentationSubContext>()->ParentContext();
+			}
+			if (context->template as<typename Schema::IfcGeometricRepresentationContext>() && context->template as<typename Schema::IfcGeometricRepresentationContext>()->Precision()) {
+				double p = *context->template as<typename Schema::IfcGeometricRepresentationContext>()->Precision()
+					* kernel.getValue(IfcGeom::Kernel::GV_PRECISION_FACTOR);
+				p *= kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT);
+				if (p < 1.e-7) {
+					Logger::Message(Logger::LOG_WARNING, "Precision lower than 0.0000001 meter not enforced");
+					p = 1.e-7;
+				}
+				kernel.setValue(IfcGeom::Kernel::GV_PRECISION, p);
+			}
+
 			IfcGeom::BRepElement* brep = kernel.convert(settings, ifc_representation, product);
 			if (!brep) {
 				throw IfcParse::IfcException("Failed to process shape");
@@ -532,6 +584,21 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		#ifdef HAS_SCHEMA_4x3_rc2
 		if (schema_name == "IFC4X3_RC2") {
 			return helper_fn_create_shape<Ifc4x3_rc2>(settings, instance, representation);
+		}
+		#endif
+		#ifdef HAS_SCHEMA_4x3_rc3
+		if (schema_name == "IFC4X3_RC3") {
+			return helper_fn_create_shape<Ifc4x3_rc3>(settings, instance, representation);
+		}
+		#endif
+		#ifdef HAS_SCHEMA_4x3_rc4
+		if (schema_name == "IFC4X3_RC4") {
+			return helper_fn_create_shape<Ifc4x3_rc4>(settings, instance, representation);
+		}
+		#endif
+		#ifdef HAS_SCHEMA_4x3
+		if (schema_name == "IFC4X3") {
+			return helper_fn_create_shape<Ifc4x3>(settings, instance, representation);
 		}
 		#endif
 		

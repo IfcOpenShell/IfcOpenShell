@@ -249,6 +249,29 @@ class Geometry:
 
 
 @interface
+class Georeference:
+    def disable_editing(cls): pass
+    def enable_editing(cls): pass
+    def enh2xyz(cls, map_conversion, coordinates): pass
+    def get_coordinates(cls, io): pass
+    def get_cursor_location(cls): pass
+    def get_map_conversion(cls): pass
+    def get_map_conversion_attributes(cls): pass
+    def get_projected_crs_attributes(cls): pass
+    def get_true_north_attributes(cls): pass
+    def import_map_conversion(cls): pass
+    def import_projected_crs(cls): pass
+    def import_true_north(cls): pass
+    def set_blender_grid_north(cls): pass
+    def set_blender_true_north(cls): pass
+    def set_coordinates(cls, io, coordinates): pass
+    def set_cursor_location(cls, coordinates): pass
+    def set_ifc_grid_north(cls): pass
+    def set_ifc_true_north(cls): pass
+    def xyz2enh(cls, map_conversion, coordinates): pass
+
+
+@interface
 class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
@@ -508,10 +531,10 @@ class Unit:
     def get_scene_unit_name(cls, unit_type): pass
     def get_scene_unit_si_prefix(cls): pass
     def get_si_name_from_unit_type(cls, unit_type): pass
-    def get_unit_class(cls, unit): pass
     def import_unit_attributes(cls, unit): pass
     def import_units(cls): pass
     def is_scene_unit_metric(cls): pass
+    def is_unit_class(cls, unit, ifc_class): pass
     def set_active_unit(cls, unit): pass
 
 

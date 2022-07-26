@@ -36,7 +36,7 @@ def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
     elif hasattr(element, "IsDefinedBy"):
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type and should_inherit:
-            psets = get_psets(element_type)
+            psets = get_psets(element_type, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False)
         for relationship in element.IsDefinedBy:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
@@ -80,6 +80,10 @@ def get_properties(properties):
     for prop in properties or []:
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
+        elif prop.is_a("IfcPropertyEnumeratedValue"):
+            values = [v.wrappedValue for v in prop.EnumerationValues]
+            results[prop.Name] = [v.wrappedValue for v in prop.EnumerationValues] or None
+
         elif prop.is_a("IfcComplexProperty"):
             data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
             data["properties"] = get_properties(prop.HasProperties)
@@ -93,7 +97,7 @@ def get_predefined_type(element):
     if element_type:
         predefined_type = getattr(element_type, "PredefinedType", None)
         if predefined_type == "USERDEFINED" or not predefined_type:
-            predefined_type = getattr(element_type, "ElementType", None)
+            predefined_type = getattr(element_type, "ElementType", getattr(element_type, "ProcessType", None))
         if predefined_type and predefined_type != "NOTDEFINED":
             return predefined_type
     predefined_type = getattr(element, "PredefinedType", None)

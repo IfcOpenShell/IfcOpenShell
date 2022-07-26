@@ -109,7 +109,7 @@ class Usecase:
             for inverse in self.file.get_inverse(added_context):
                 ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
         for added_context in added_contexts:
-            ifcopenshell.util.element.remove_deep(self.file, added_context)
+            ifcopenshell.util.element.remove_deep2(self.file, added_context)
 
         element_type = ifcopenshell.util.element.get_type(self.settings["element"])
         if element_type:

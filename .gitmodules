@@ -8,9 +8,6 @@
 [submodule "src/svgfill"]
 	path = src/svgfill
 	url = https://github.com/IfcOpenShell/svgfill
-[submodule "src/ifcopenshell-python/ifcopenshell/Sample-BIM-Files"]
-	path = src/ifcopenshell-python/ifcopenshell/Sample-BIM-Files
-	url = https://github.com/atomczak/Sample-BIM-Files
 [submodule "src/ifcopenshell-python/test/Sample-BIM-Files"]
 	path = src/ifcopenshell-python/test/Sample-BIM-Files
-	url = https://github.com/atomczak/Sample-BIM-Files
+	url = https://github.com/IfcOpenShell/ids-test-files

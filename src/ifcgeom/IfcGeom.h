@@ -23,13 +23,6 @@
 #include <cmath>
 #include <array>
 
-static const double ALMOST_ZERO = 1.e-9;
-
-template <typename T>
-inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMOST_ZERO) {
-	return fabs(a-b) < tolerance; 
-}
-
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 #include <gp_Mat.hxx>
@@ -54,14 +47,12 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcBaseClass.h"
 
-#include "../ifcgeom/IfcGeomElement.h" 
-#include "../ifcgeom/IfcGeomRepresentation.h" 
-#include "../ifcgeom/IfcRepresentationShapeItem.h"
-#include "../ifcgeom/IfcGeomShapeType.h"
-
+#include "../ifcgeom_schema_agnostic/IfcGeomElement.h" 
+#include "../ifcgeom_schema_agnostic/IfcGeomRepresentation.h" 
+#include "../ifcgeom_schema_agnostic/IfcRepresentationShapeItem.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomShapeType.h"
 #include "../ifcgeom_schema_agnostic/Kernel.h"
-
-#include "ifc_geom_api.h"
+#include "../ifcgeom_schema_agnostic/ifc_geom_api.h"
 
 // Define this in case you want to conserve memory usage at all cost. This has been
 // benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
@@ -87,24 +78,7 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #include INCLUDE_PARENT_DIR(IfcSchema)
 
 namespace IfcGeom {
-	class IFC_GEOM_API geometry_exception : public std::exception {
-	protected:
-		std::string message;
-	public:
-		geometry_exception(const std::string& m)
-			: message(m) {}
-		virtual ~geometry_exception() throw () {}
-		virtual const char* what() const throw() {
-			return message.c_str();
-		}
-	};
-
-	class IFC_GEOM_API too_many_faces_exception : public geometry_exception {
-	public:
-		too_many_faces_exception()
-			: geometry_exception("Too many faces for operation") {}
-	};
-
+	
 class IFC_GEOM_API MAKE_TYPE_NAME(Cache) {
 public:
 #include "mapping_cache.i"

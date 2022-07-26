@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from blenderbim.bim.helper import prop_with_search
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.project.data import ProjectData
@@ -48,11 +49,13 @@ class BIM_PT_project(Panel):
 
     def draw_load_ui(self, context):
         pprops = context.scene.BIMProjectProperties
-        row = self.layout.row()
-        row.prop(pprops, "collection_mode")
-        row = self.layout.row()
-        row.prop(pprops, "filter_mode")
-        if pprops.filter_mode in ["DECOMPOSITION", "IFC_CLASS"]:
+        prop_with_search(self.layout, pprops, "collection_mode")
+        prop_with_search(self.layout, pprops, "filter_mode")
+        if pprops.filter_mode in ["DECOMPOSITION", "IFC_CLASS", "IFC_TYPE"]:
+            row = self.layout.row(align=True)
+            row.label(text=f"Total: {pprops.total_elements}")
+            row.operator("bim.toggle_filter_categories", text="", icon="CHECKBOX_HLT").should_select = True
+            row.operator("bim.toggle_filter_categories", text="", icon="CHECKBOX_DEHLT").should_select = False
             self.layout.template_list(
                 "BIM_UL_filter_categories",
                 "",
@@ -70,21 +73,31 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "should_use_cpu_multiprocessing")
         row = self.layout.row()
-        row.prop(pprops, "should_merge_by_class")
+        row.prop(pprops, "should_clean_mesh")
         row = self.layout.row()
-        row.prop(pprops, "should_merge_by_material")
+        row.prop(pprops, "should_cache")
+        row = self.layout.row()
+        row.prop(pprops, "should_use_native_meshes")
         row = self.layout.row()
         row.prop(pprops, "should_merge_materials_by_colour")
         row = self.layout.row()
-        row.prop(pprops, "should_clean_mesh")
+        row.prop(pprops, "is_coordinating")
+        if pprops.is_coordinating:
+            prop_with_search(self.layout, pprops, "merge_mode")
         row = self.layout.row()
         row.prop(pprops, "deflection_tolerance")
         row = self.layout.row()
         row.prop(pprops, "angular_tolerance")
         row = self.layout.row()
-        row.prop(pprops, "should_offset_model")
+        row.prop(pprops, "distance_limit")
         row = self.layout.row()
-        row.prop(pprops, "model_offset_coordinates")
+        row.prop(pprops, "false_origin")
+
+        row = self.layout.row()
+        row.label(text="Element Range")
+        row = self.layout.row(align=True)
+        row.prop(pprops, "element_offset", text="")
+        row.prop(pprops, "element_limit", text="")
 
         row = self.layout.row(align=True)
         row.operator("bim.load_project_elements")
@@ -150,12 +163,12 @@ class BIM_PT_project(Panel):
         op.should_save_as = False
         op = row.operator("export_ifc.bim", icon="FILE_TICK", text="Save As")
         op.should_save_as = True
+        row.operator("bim.unload_project", text="", icon="X")
 
     def draw_create_project_ui(self, context):
         props = context.scene.BIMProperties
         pprops = context.scene.BIMProjectProperties
-        row = self.layout.row()
-        row.prop(pprops, "export_schema")
+        prop_with_search(self.layout, pprops, "export_schema")
         row = self.layout.row()
         row.prop(context.scene.unit_settings, "system")
         row = self.layout.row()
@@ -164,8 +177,7 @@ class BIM_PT_project(Panel):
         row.prop(props, "area_unit", text="Area Unit")
         row = self.layout.row()
         row.prop(props, "volume_unit", text="Volume Unit")
-        row = self.layout.row()
-        row.prop(pprops, "template_file", text="Template")
+        prop_with_search(self.layout, pprops, "template_file", text="Template")
 
         row = self.layout.row(align=True)
         row.operator("bim.create_project")
@@ -286,8 +298,22 @@ class BIM_UL_links(UIList):
             row = layout.row(align=True)
             if item.is_loaded:
                 row.label(text=item.name)
-                op = row.operator("bim.toggle_link_visibility", text="", icon="HIDE_OFF")
-                op.collection_name = item.collection_name
+                op = row.operator(
+                    "bim.toggle_link_visibility",
+                    text="",
+                    icon="CUBE" if item.is_wireframe else "MESH_CUBE",
+                    emboss=False,
+                )
+                op.link = item.name
+                op.mode = "WIREFRAME"
+                op = row.operator(
+                    "bim.toggle_link_visibility",
+                    text="",
+                    icon="HIDE_ON" if item.is_hidden else "HIDE_OFF",
+                    emboss=False,
+                )
+                op.link = item.name
+                op.mode = "VISIBLE"
                 op = row.operator("bim.unload_link", text="", icon="UNLINKED")
                 op.filepath = item.name
             else:

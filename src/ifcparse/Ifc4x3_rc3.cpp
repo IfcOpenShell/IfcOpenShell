@@ -13130,11 +13130,11 @@ Ifc4x3_rc3::IfcWarpingMomentMeasure::operator double() const { return *data_->ge
 
 // Function implementations for IfcActionRequest
 boost::optional< ::Ifc4x3_rc3::IfcActionRequestTypeEnum::Value > Ifc4x3_rc3::IfcActionRequest::PredefinedType() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcActionRequestTypeEnum::FromString(*data_->getArgument(6)); }
-void Ifc4x3_rc3::IfcActionRequest::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcActionRequestTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcActionRequestTypeEnum::ToString(*v)));data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcActionRequest::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcActionRequestTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcActionRequestTypeEnum::ToString(*v)));}data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcActionRequest::Status() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcActionRequest::setStatus(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcActionRequest::setStatus(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcActionRequest::LongDescription() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcActionRequest::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcActionRequest::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcActionRequest::declaration() const { return *IFC4X3_RC3_IfcActionRequest_type; }
@@ -13157,9 +13157,9 @@ Ifc4x3_rc3::IfcActor::IfcActor(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHi
 ::Ifc4x3_rc3::IfcRoleEnum::Value Ifc4x3_rc3::IfcActorRole::Role() const {  return ::Ifc4x3_rc3::IfcRoleEnum::FromString(*data_->getArgument(0)); }
 void Ifc4x3_rc3::IfcActorRole::setRole(::Ifc4x3_rc3::IfcRoleEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcRoleEnum::ToString(v)));data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcActorRole::UserDefinedRole() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcActorRole::setUserDefinedRole(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcActorRole::setUserDefinedRole(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcActorRole::Description() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcActorRole::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcActorRole::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 ::Ifc4x3_rc3::IfcExternalReferenceRelationship::list::ptr Ifc4x3_rc3::IfcActorRole::HasExternalReference() const { return data_->getInverse(IFC4X3_RC3_IfcExternalReferenceRelationship_type, 3)->as<IfcExternalReferenceRelationship>(); }
 
@@ -13170,7 +13170,7 @@ Ifc4x3_rc3::IfcActorRole::IfcActorRole(::Ifc4x3_rc3::IfcRoleEnum::Value v1_Role,
 
 // Function implementations for IfcActuator
 boost::optional< ::Ifc4x3_rc3::IfcActuatorTypeEnum::Value > Ifc4x3_rc3::IfcActuator::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcActuatorTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcActuator::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcActuatorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcActuatorTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcActuator::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcActuatorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcActuatorTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcActuator::declaration() const { return *IFC4X3_RC3_IfcActuator_type; }
@@ -13190,11 +13190,11 @@ Ifc4x3_rc3::IfcActuatorType::IfcActuatorType(std::string v1_GlobalId, ::Ifc4x3_r
 
 // Function implementations for IfcAddress
 boost::optional< ::Ifc4x3_rc3::IfcAddressTypeEnum::Value > Ifc4x3_rc3::IfcAddress::Purpose() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcAddressTypeEnum::FromString(*data_->getArgument(0)); }
-void Ifc4x3_rc3::IfcAddress::setPurpose(boost::optional< ::Ifc4x3_rc3::IfcAddressTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAddressTypeEnum::ToString(*v)));data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcAddress::setPurpose(boost::optional< ::Ifc4x3_rc3::IfcAddressTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAddressTypeEnum::ToString(*v)));}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcAddress::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcAddress::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcAddress::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcAddress::UserDefinedPurpose() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcAddress::setUserDefinedPurpose(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcAddress::setUserDefinedPurpose(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 ::Ifc4x3_rc3::IfcPerson::list::ptr Ifc4x3_rc3::IfcAddress::OfPerson() const { return data_->getInverse(IFC4X3_RC3_IfcPerson_type, 7)->as<IfcPerson>(); }
 ::Ifc4x3_rc3::IfcOrganization::list::ptr Ifc4x3_rc3::IfcAddress::OfOrganization() const { return data_->getInverse(IFC4X3_RC3_IfcOrganization_type, 4)->as<IfcOrganization>(); }
@@ -13232,7 +13232,7 @@ Ifc4x3_rc3::IfcAdvancedFace::IfcAdvancedFace(aggregate_of< ::Ifc4x3_rc3::IfcFace
 
 // Function implementations for IfcAirTerminal
 boost::optional< ::Ifc4x3_rc3::IfcAirTerminalTypeEnum::Value > Ifc4x3_rc3::IfcAirTerminal::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcAirTerminalTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcAirTerminal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAirTerminalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAirTerminalTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcAirTerminal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAirTerminalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAirTerminalTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcAirTerminal::declaration() const { return *IFC4X3_RC3_IfcAirTerminal_type; }
@@ -13242,7 +13242,7 @@ Ifc4x3_rc3::IfcAirTerminal::IfcAirTerminal(std::string v1_GlobalId, ::Ifc4x3_rc3
 
 // Function implementations for IfcAirTerminalBox
 boost::optional< ::Ifc4x3_rc3::IfcAirTerminalBoxTypeEnum::Value > Ifc4x3_rc3::IfcAirTerminalBox::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcAirTerminalBoxTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcAirTerminalBox::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAirTerminalBoxTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAirTerminalBoxTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcAirTerminalBox::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAirTerminalBoxTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAirTerminalBoxTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcAirTerminalBox::declaration() const { return *IFC4X3_RC3_IfcAirTerminalBox_type; }
@@ -13272,7 +13272,7 @@ Ifc4x3_rc3::IfcAirTerminalType::IfcAirTerminalType(std::string v1_GlobalId, ::If
 
 // Function implementations for IfcAirToAirHeatRecovery
 boost::optional< ::Ifc4x3_rc3::IfcAirToAirHeatRecoveryTypeEnum::Value > Ifc4x3_rc3::IfcAirToAirHeatRecovery::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcAirToAirHeatRecoveryTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcAirToAirHeatRecovery::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAirToAirHeatRecoveryTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAirToAirHeatRecoveryTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcAirToAirHeatRecovery::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAirToAirHeatRecoveryTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAirToAirHeatRecoveryTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcAirToAirHeatRecovery::declaration() const { return *IFC4X3_RC3_IfcAirToAirHeatRecovery_type; }
@@ -13292,7 +13292,7 @@ Ifc4x3_rc3::IfcAirToAirHeatRecoveryType::IfcAirToAirHeatRecoveryType(std::string
 
 // Function implementations for IfcAlarm
 boost::optional< ::Ifc4x3_rc3::IfcAlarmTypeEnum::Value > Ifc4x3_rc3::IfcAlarm::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcAlarmTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcAlarm::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAlarmTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAlarmTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcAlarm::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAlarmTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAlarmTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcAlarm::declaration() const { return *IFC4X3_RC3_IfcAlarm_type; }
@@ -13312,7 +13312,7 @@ Ifc4x3_rc3::IfcAlarmType::IfcAlarmType(std::string v1_GlobalId, ::Ifc4x3_rc3::If
 
 // Function implementations for IfcAlignment
 boost::optional< ::Ifc4x3_rc3::IfcAlignmentTypeEnum::Value > Ifc4x3_rc3::IfcAlignment::PredefinedType() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcAlignmentTypeEnum::FromString(*data_->getArgument(7)); }
-void Ifc4x3_rc3::IfcAlignment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAlignmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAlignmentTypeEnum::ToString(*v)));data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcAlignment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAlignmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAlignmentTypeEnum::ToString(*v)));}data_->setArgument(7,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcAlignment::declaration() const { return *IFC4X3_RC3_IfcAlignment_type; }
@@ -13338,11 +13338,11 @@ void Ifc4x3_rc3::IfcAlignmentCantSegment::setHorizontalLength(double v) { {IfcWr
 double Ifc4x3_rc3::IfcAlignmentCantSegment::StartCantLeft() const {  double v = *data_->getArgument(4); return v; }
 void Ifc4x3_rc3::IfcAlignmentCantSegment::setStartCantLeft(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcAlignmentCantSegment::EndCantLeft() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } double v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcAlignmentCantSegment::setEndCantLeft(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcAlignmentCantSegment::setEndCantLeft(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 double Ifc4x3_rc3::IfcAlignmentCantSegment::StartCantRight() const {  double v = *data_->getArgument(6); return v; }
 void Ifc4x3_rc3::IfcAlignmentCantSegment::setStartCantRight(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcAlignmentCantSegment::EndCantRight() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcAlignmentCantSegment::setEndCantRight(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcAlignmentCantSegment::setEndCantRight(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 ::Ifc4x3_rc3::IfcAlignmentCantSegmentTypeEnum::Value Ifc4x3_rc3::IfcAlignmentCantSegment::PredefinedType() const {  return ::Ifc4x3_rc3::IfcAlignmentCantSegmentTypeEnum::FromString(*data_->getArgument(8)); }
 void Ifc4x3_rc3::IfcAlignmentCantSegment::setPredefinedType(::Ifc4x3_rc3::IfcAlignmentCantSegmentTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcAlignmentCantSegmentTypeEnum::ToString(v)));data_->setArgument(8,attr);} }
 
@@ -13372,7 +13372,7 @@ void Ifc4x3_rc3::IfcAlignmentHorizontalSegment::setEndRadiusOfCurvature(double v
 double Ifc4x3_rc3::IfcAlignmentHorizontalSegment::SegmentLength() const {  double v = *data_->getArgument(6); return v; }
 void Ifc4x3_rc3::IfcAlignmentHorizontalSegment::setSegmentLength(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcAlignmentHorizontalSegment::GravityCenterLineHeight() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcAlignmentHorizontalSegment::setGravityCenterLineHeight(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcAlignmentHorizontalSegment::setGravityCenterLineHeight(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 ::Ifc4x3_rc3::IfcAlignmentHorizontalSegmentTypeEnum::Value Ifc4x3_rc3::IfcAlignmentHorizontalSegment::PredefinedType() const {  return ::Ifc4x3_rc3::IfcAlignmentHorizontalSegmentTypeEnum::FromString(*data_->getArgument(8)); }
 void Ifc4x3_rc3::IfcAlignmentHorizontalSegment::setPredefinedType(::Ifc4x3_rc3::IfcAlignmentHorizontalSegmentTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcAlignmentHorizontalSegmentTypeEnum::ToString(v)));data_->setArgument(8,attr);} }
 
@@ -13384,9 +13384,9 @@ Ifc4x3_rc3::IfcAlignmentHorizontalSegment::IfcAlignmentHorizontalSegment(boost::
 
 // Function implementations for IfcAlignmentParameterSegment
 boost::optional< std::string > Ifc4x3_rc3::IfcAlignmentParameterSegment::StartTag() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcAlignmentParameterSegment::setStartTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcAlignmentParameterSegment::setStartTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcAlignmentParameterSegment::EndTag() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcAlignmentParameterSegment::setEndTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcAlignmentParameterSegment::setEndTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcAlignmentParameterSegment::declaration() const { return *IFC4X3_RC3_IfcAlignmentParameterSegment_type; }
@@ -13424,7 +13424,7 @@ void Ifc4x3_rc3::IfcAlignmentVerticalSegment::setStartGradient(double v) { {IfcW
 double Ifc4x3_rc3::IfcAlignmentVerticalSegment::EndGradient() const {  double v = *data_->getArgument(6); return v; }
 void Ifc4x3_rc3::IfcAlignmentVerticalSegment::setEndGradient(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcAlignmentVerticalSegment::RadiusOfCurvature() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcAlignmentVerticalSegment::setRadiusOfCurvature(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcAlignmentVerticalSegment::setRadiusOfCurvature(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 ::Ifc4x3_rc3::IfcAlignmentVerticalSegmentTypeEnum::Value Ifc4x3_rc3::IfcAlignmentVerticalSegment::PredefinedType() const {  return ::Ifc4x3_rc3::IfcAlignmentVerticalSegmentTypeEnum::FromString(*data_->getArgument(8)); }
 void Ifc4x3_rc3::IfcAlignmentVerticalSegment::setPredefinedType(::Ifc4x3_rc3::IfcAlignmentVerticalSegmentTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcAlignmentVerticalSegmentTypeEnum::ToString(v)));data_->setArgument(8,attr);} }
 
@@ -13436,7 +13436,7 @@ Ifc4x3_rc3::IfcAlignmentVerticalSegment::IfcAlignmentVerticalSegment(boost::opti
 
 // Function implementations for IfcAnnotation
 boost::optional< ::Ifc4x3_rc3::IfcAnnotationTypeEnum::Value > Ifc4x3_rc3::IfcAnnotation::PredefinedType() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcAnnotationTypeEnum::FromString(*data_->getArgument(7)); }
-void Ifc4x3_rc3::IfcAnnotation::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAnnotationTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAnnotationTypeEnum::ToString(*v)));data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcAnnotation::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAnnotationTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAnnotationTypeEnum::ToString(*v)));}data_->setArgument(7,attr);} }
 
 ::Ifc4x3_rc3::IfcRelContainedInSpatialStructure::list::ptr Ifc4x3_rc3::IfcAnnotation::ContainedInStructure() const { return data_->getInverse(IFC4X3_RC3_IfcRelContainedInSpatialStructure_type, 4)->as<IfcRelContainedInSpatialStructure>(); }
 
@@ -13449,7 +13449,7 @@ Ifc4x3_rc3::IfcAnnotation::IfcAnnotation(std::string v1_GlobalId, ::Ifc4x3_rc3::
 ::Ifc4x3_rc3::IfcCurve* Ifc4x3_rc3::IfcAnnotationFillArea::OuterBoundary() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(0)))->as<::Ifc4x3_rc3::IfcCurve>(true); }
 void Ifc4x3_rc3::IfcAnnotationFillArea::setOuterBoundary(::Ifc4x3_rc3::IfcCurve* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcCurve >::ptr > Ifc4x3_rc3::IfcAnnotationFillArea::InnerBoundaries() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(1); return es->as< ::Ifc4x3_rc3::IfcCurve >(); }
-void Ifc4x3_rc3::IfcAnnotationFillArea::setInnerBoundaries(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcCurve >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcAnnotationFillArea::setInnerBoundaries(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcCurve >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(1,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcAnnotationFillArea::declaration() const { return *IFC4X3_RC3_IfcAnnotationFillArea_type; }
@@ -13475,25 +13475,25 @@ Ifc4x3_rc3::IfcApplication::IfcApplication(::Ifc4x3_rc3::IfcOrganization* v1_App
 
 // Function implementations for IfcAppliedValue
 boost::optional< std::string > Ifc4x3_rc3::IfcAppliedValue::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcAppliedValue::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcAppliedValue::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcAppliedValue::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcAppliedValue::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcAppliedValue::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 ::Ifc4x3_rc3::IfcAppliedValueSelect* Ifc4x3_rc3::IfcAppliedValue::AppliedValue() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(2)))->as<::Ifc4x3_rc3::IfcAppliedValueSelect>(true); }
 void Ifc4x3_rc3::IfcAppliedValue::setAppliedValue(::Ifc4x3_rc3::IfcAppliedValueSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 ::Ifc4x3_rc3::IfcMeasureWithUnit* Ifc4x3_rc3::IfcAppliedValue::UnitBasis() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcMeasureWithUnit>(true); }
 void Ifc4x3_rc3::IfcAppliedValue::setUnitBasis(::Ifc4x3_rc3::IfcMeasureWithUnit* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcAppliedValue::ApplicableDate() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcAppliedValue::setApplicableDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcAppliedValue::setApplicableDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcAppliedValue::FixedUntilDate() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcAppliedValue::setFixedUntilDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcAppliedValue::setFixedUntilDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcAppliedValue::Category() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcAppliedValue::setCategory(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcAppliedValue::setCategory(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcAppliedValue::Condition() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcAppliedValue::setCondition(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcAppliedValue::setCondition(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcArithmeticOperatorEnum::Value > Ifc4x3_rc3::IfcAppliedValue::ArithmeticOperator() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcArithmeticOperatorEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcAppliedValue::setArithmeticOperator(boost::optional< ::Ifc4x3_rc3::IfcArithmeticOperatorEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcArithmeticOperatorEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcAppliedValue::setArithmeticOperator(boost::optional< ::Ifc4x3_rc3::IfcArithmeticOperatorEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcArithmeticOperatorEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAppliedValue >::ptr > Ifc4x3_rc3::IfcAppliedValue::Components() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(9); return es->as< ::Ifc4x3_rc3::IfcAppliedValue >(); }
-void Ifc4x3_rc3::IfcAppliedValue::setComponents(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAppliedValue >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcAppliedValue::setComponents(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAppliedValue >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(9,attr);} }
 
 ::Ifc4x3_rc3::IfcExternalReferenceRelationship::list::ptr Ifc4x3_rc3::IfcAppliedValue::HasExternalReference() const { return data_->getInverse(IFC4X3_RC3_IfcExternalReferenceRelationship_type, 3)->as<IfcExternalReferenceRelationship>(); }
 
@@ -13504,19 +13504,19 @@ Ifc4x3_rc3::IfcAppliedValue::IfcAppliedValue(boost::optional< std::string > v1_N
 
 // Function implementations for IfcApproval
 boost::optional< std::string > Ifc4x3_rc3::IfcApproval::Identifier() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcApproval::setIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcApproval::setIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcApproval::Name() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcApproval::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcApproval::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcApproval::Description() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcApproval::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcApproval::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcApproval::TimeOfApproval() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcApproval::setTimeOfApproval(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcApproval::setTimeOfApproval(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcApproval::Status() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcApproval::setStatus(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcApproval::setStatus(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcApproval::Level() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcApproval::setLevel(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcApproval::setLevel(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcApproval::Qualifier() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcApproval::setQualifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcApproval::setQualifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 ::Ifc4x3_rc3::IfcActorSelect* Ifc4x3_rc3::IfcApproval::RequestingApproval() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(7)))->as<::Ifc4x3_rc3::IfcActorSelect>(true); }
 void Ifc4x3_rc3::IfcApproval::setRequestingApproval(::Ifc4x3_rc3::IfcActorSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(7,attr);} }
 ::Ifc4x3_rc3::IfcActorSelect* Ifc4x3_rc3::IfcApproval::GivingApproval() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(8)))->as<::Ifc4x3_rc3::IfcActorSelect>(true); }
@@ -13577,7 +13577,7 @@ Ifc4x3_rc3::IfcArbitraryProfileDefWithVoids::IfcArbitraryProfileDefWithVoids(::I
 
 // Function implementations for IfcAsset
 boost::optional< std::string > Ifc4x3_rc3::IfcAsset::Identification() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcAsset::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcAsset::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 ::Ifc4x3_rc3::IfcCostValue* Ifc4x3_rc3::IfcAsset::OriginalValue() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(6)))->as<::Ifc4x3_rc3::IfcCostValue>(true); }
 void Ifc4x3_rc3::IfcAsset::setOriginalValue(::Ifc4x3_rc3::IfcCostValue* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 ::Ifc4x3_rc3::IfcCostValue* Ifc4x3_rc3::IfcAsset::CurrentValue() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(7)))->as<::Ifc4x3_rc3::IfcCostValue>(true); }
@@ -13591,7 +13591,7 @@ void Ifc4x3_rc3::IfcAsset::setUser(::Ifc4x3_rc3::IfcActorSelect* v) { {IfcWrite:
 ::Ifc4x3_rc3::IfcPerson* Ifc4x3_rc3::IfcAsset::ResponsiblePerson() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(11)))->as<::Ifc4x3_rc3::IfcPerson>(true); }
 void Ifc4x3_rc3::IfcAsset::setResponsiblePerson(::Ifc4x3_rc3::IfcPerson* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(11,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcAsset::IncorporationDate() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } std::string v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcAsset::setIncorporationDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcAsset::setIncorporationDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 ::Ifc4x3_rc3::IfcCostValue* Ifc4x3_rc3::IfcAsset::DepreciatedValue() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(13)))->as<::Ifc4x3_rc3::IfcCostValue>(true); }
 void Ifc4x3_rc3::IfcAsset::setDepreciatedValue(::Ifc4x3_rc3::IfcCostValue* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(13,attr);} }
 
@@ -13611,21 +13611,21 @@ void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setWebThickness(double v) { {Ifc
 double Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::BottomFlangeThickness() const {  double v = *data_->getArgument(6); return v; }
 void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setBottomFlangeThickness(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::BottomFlangeFilletRadius() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setBottomFlangeFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setBottomFlangeFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 double Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::TopFlangeWidth() const {  double v = *data_->getArgument(8); return v; }
 void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setTopFlangeWidth(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(8,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::TopFlangeThickness() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setTopFlangeThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setTopFlangeThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::TopFlangeFilletRadius() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setTopFlangeFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setTopFlangeFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::BottomFlangeEdgeRadius() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } double v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setBottomFlangeEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setBottomFlangeEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::BottomFlangeSlope() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } double v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setBottomFlangeSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setBottomFlangeSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::TopFlangeEdgeRadius() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return boost::none; } double v = *data_->getArgument(13); return v; }
-void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setTopFlangeEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(13,attr);} }
+void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setTopFlangeEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(13,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::TopFlangeSlope() const { if(!data_->getArgument(14) || data_->getArgument(14)->isNull()) { return boost::none; } double v = *data_->getArgument(14); return v; }
-void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setTopFlangeSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(14,attr);} }
+void Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::setTopFlangeSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(14,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::declaration() const { return *IFC4X3_RC3_IfcAsymmetricIShapeProfileDef_type; }
@@ -13635,7 +13635,7 @@ Ifc4x3_rc3::IfcAsymmetricIShapeProfileDef::IfcAsymmetricIShapeProfileDef(::Ifc4x
 
 // Function implementations for IfcAudioVisualAppliance
 boost::optional< ::Ifc4x3_rc3::IfcAudioVisualApplianceTypeEnum::Value > Ifc4x3_rc3::IfcAudioVisualAppliance::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcAudioVisualApplianceTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcAudioVisualAppliance::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAudioVisualApplianceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAudioVisualApplianceTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcAudioVisualAppliance::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcAudioVisualApplianceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAudioVisualApplianceTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcAudioVisualAppliance::declaration() const { return *IFC4X3_RC3_IfcAudioVisualAppliance_type; }
@@ -13771,7 +13771,7 @@ Ifc4x3_rc3::IfcBSplineSurfaceWithKnots::IfcBSplineSurfaceWithKnots(int v1_UDegre
 
 // Function implementations for IfcBeam
 boost::optional< ::Ifc4x3_rc3::IfcBeamTypeEnum::Value > Ifc4x3_rc3::IfcBeam::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcBeamTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcBeam::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBeamTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBeamTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcBeam::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBeamTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBeamTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcBeam::declaration() const { return *IFC4X3_RC3_IfcBeam_type; }
@@ -13799,7 +13799,7 @@ Ifc4x3_rc3::IfcBeamType::IfcBeamType(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 
 // Function implementations for IfcBearing
 boost::optional< ::Ifc4x3_rc3::IfcBearingTypeEnum::Value > Ifc4x3_rc3::IfcBearing::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcBearingTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcBearing::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBearingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBearingTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcBearing::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBearingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBearingTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcBearing::declaration() const { return *IFC4X3_RC3_IfcBearing_type; }
@@ -13845,7 +13845,7 @@ Ifc4x3_rc3::IfcBlock::IfcBlock(::Ifc4x3_rc3::IfcAxis2Placement3D* v1_Position, d
 
 // Function implementations for IfcBoiler
 boost::optional< ::Ifc4x3_rc3::IfcBoilerTypeEnum::Value > Ifc4x3_rc3::IfcBoiler::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcBoilerTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcBoiler::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBoilerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBoilerTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcBoiler::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBoilerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBoilerTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcBoiler::declaration() const { return *IFC4X3_RC3_IfcBoiler_type; }
@@ -13895,7 +13895,7 @@ Ifc4x3_rc3::IfcBorehole::IfcBorehole(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 
 // Function implementations for IfcBoundaryCondition
 boost::optional< std::string > Ifc4x3_rc3::IfcBoundaryCondition::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcBoundaryCondition::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcBoundaryCondition::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcBoundaryCondition::declaration() const { return *IFC4X3_RC3_IfcBoundaryCondition_type; }
@@ -14019,7 +14019,7 @@ Ifc4x3_rc3::IfcBoxedHalfSpace::IfcBoxedHalfSpace(::Ifc4x3_rc3::IfcSurface* v1_Ba
 
 // Function implementations for IfcBridge
 boost::optional< ::Ifc4x3_rc3::IfcBridgeTypeEnum::Value > Ifc4x3_rc3::IfcBridge::PredefinedType() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcBridgeTypeEnum::FromString(*data_->getArgument(9)); }
-void Ifc4x3_rc3::IfcBridge::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBridgeTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBridgeTypeEnum::ToString(*v)));data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcBridge::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBridgeTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBridgeTypeEnum::ToString(*v)));}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcBridge::declaration() const { return *IFC4X3_RC3_IfcBridge_type; }
@@ -14029,9 +14029,9 @@ Ifc4x3_rc3::IfcBridge::IfcBridge(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwner
 
 // Function implementations for IfcBuilding
 boost::optional< double > Ifc4x3_rc3::IfcBuilding::ElevationOfRefHeight() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcBuilding::setElevationOfRefHeight(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcBuilding::setElevationOfRefHeight(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcBuilding::ElevationOfTerrain() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcBuilding::setElevationOfTerrain(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcBuilding::setElevationOfTerrain(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 ::Ifc4x3_rc3::IfcPostalAddress* Ifc4x3_rc3::IfcBuilding::BuildingAddress() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(11)))->as<::Ifc4x3_rc3::IfcPostalAddress>(true); }
 void Ifc4x3_rc3::IfcBuilding::setBuildingAddress(::Ifc4x3_rc3::IfcPostalAddress* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(11,attr);} }
 
@@ -14043,7 +14043,7 @@ Ifc4x3_rc3::IfcBuilding::IfcBuilding(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 
 // Function implementations for IfcBuildingElementPart
 boost::optional< ::Ifc4x3_rc3::IfcBuildingElementPartTypeEnum::Value > Ifc4x3_rc3::IfcBuildingElementPart::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcBuildingElementPartTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcBuildingElementPart::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBuildingElementPartTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBuildingElementPartTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcBuildingElementPart::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBuildingElementPartTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBuildingElementPartTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcBuildingElementPart::declaration() const { return *IFC4X3_RC3_IfcBuildingElementPart_type; }
@@ -14063,7 +14063,7 @@ Ifc4x3_rc3::IfcBuildingElementPartType::IfcBuildingElementPartType(std::string v
 
 // Function implementations for IfcBuildingElementProxy
 boost::optional< ::Ifc4x3_rc3::IfcBuildingElementProxyTypeEnum::Value > Ifc4x3_rc3::IfcBuildingElementProxy::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcBuildingElementProxyTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcBuildingElementProxy::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBuildingElementProxyTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBuildingElementProxyTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcBuildingElementProxy::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBuildingElementProxyTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBuildingElementProxyTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcBuildingElementProxy::declaration() const { return *IFC4X3_RC3_IfcBuildingElementProxy_type; }
@@ -14083,7 +14083,7 @@ Ifc4x3_rc3::IfcBuildingElementProxyType::IfcBuildingElementProxyType(std::string
 
 // Function implementations for IfcBuildingStorey
 boost::optional< double > Ifc4x3_rc3::IfcBuildingStorey::Elevation() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcBuildingStorey::setElevation(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcBuildingStorey::setElevation(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcBuildingStorey::declaration() const { return *IFC4X3_RC3_IfcBuildingStorey_type; }
@@ -14093,9 +14093,9 @@ Ifc4x3_rc3::IfcBuildingStorey::IfcBuildingStorey(std::string v1_GlobalId, ::Ifc4
 
 // Function implementations for IfcBuildingSystem
 boost::optional< ::Ifc4x3_rc3::IfcBuildingSystemTypeEnum::Value > Ifc4x3_rc3::IfcBuildingSystem::PredefinedType() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcBuildingSystemTypeEnum::FromString(*data_->getArgument(5)); }
-void Ifc4x3_rc3::IfcBuildingSystem::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBuildingSystemTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBuildingSystemTypeEnum::ToString(*v)));data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcBuildingSystem::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBuildingSystemTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBuildingSystemTypeEnum::ToString(*v)));}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcBuildingSystem::LongName() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcBuildingSystem::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcBuildingSystem::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcBuildingSystem::declaration() const { return *IFC4X3_RC3_IfcBuildingSystem_type; }
@@ -14121,9 +14121,9 @@ Ifc4x3_rc3::IfcBuiltElementType::IfcBuiltElementType(std::string v1_GlobalId, ::
 
 // Function implementations for IfcBuiltSystem
 boost::optional< ::Ifc4x3_rc3::IfcBuiltSystemTypeEnum::Value > Ifc4x3_rc3::IfcBuiltSystem::PredefinedType() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcBuiltSystemTypeEnum::FromString(*data_->getArgument(5)); }
-void Ifc4x3_rc3::IfcBuiltSystem::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBuiltSystemTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBuiltSystemTypeEnum::ToString(*v)));data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcBuiltSystem::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBuiltSystemTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBuiltSystemTypeEnum::ToString(*v)));}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcBuiltSystem::LongName() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcBuiltSystem::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcBuiltSystem::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcBuiltSystem::declaration() const { return *IFC4X3_RC3_IfcBuiltSystem_type; }
@@ -14133,7 +14133,7 @@ Ifc4x3_rc3::IfcBuiltSystem::IfcBuiltSystem(std::string v1_GlobalId, ::Ifc4x3_rc3
 
 // Function implementations for IfcBurner
 boost::optional< ::Ifc4x3_rc3::IfcBurnerTypeEnum::Value > Ifc4x3_rc3::IfcBurner::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcBurnerTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcBurner::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBurnerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBurnerTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcBurner::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcBurnerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcBurnerTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcBurner::declaration() const { return *IFC4X3_RC3_IfcBurner_type; }
@@ -14161,7 +14161,7 @@ void Ifc4x3_rc3::IfcCShapeProfileDef::setWallThickness(double v) { {IfcWrite::If
 double Ifc4x3_rc3::IfcCShapeProfileDef::Girth() const {  double v = *data_->getArgument(6); return v; }
 void Ifc4x3_rc3::IfcCShapeProfileDef::setGirth(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcCShapeProfileDef::InternalFilletRadius() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcCShapeProfileDef::setInternalFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcCShapeProfileDef::setInternalFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCShapeProfileDef::declaration() const { return *IFC4X3_RC3_IfcCShapeProfileDef_type; }
@@ -14171,7 +14171,7 @@ Ifc4x3_rc3::IfcCShapeProfileDef::IfcCShapeProfileDef(::Ifc4x3_rc3::IfcProfileTyp
 
 // Function implementations for IfcCableCarrierFitting
 boost::optional< ::Ifc4x3_rc3::IfcCableCarrierFittingTypeEnum::Value > Ifc4x3_rc3::IfcCableCarrierFitting::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCableCarrierFittingTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCableCarrierFitting::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCableCarrierFittingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCableCarrierFittingTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCableCarrierFitting::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCableCarrierFittingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCableCarrierFittingTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCableCarrierFitting::declaration() const { return *IFC4X3_RC3_IfcCableCarrierFitting_type; }
@@ -14191,7 +14191,7 @@ Ifc4x3_rc3::IfcCableCarrierFittingType::IfcCableCarrierFittingType(std::string v
 
 // Function implementations for IfcCableCarrierSegment
 boost::optional< ::Ifc4x3_rc3::IfcCableCarrierSegmentTypeEnum::Value > Ifc4x3_rc3::IfcCableCarrierSegment::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCableCarrierSegmentTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCableCarrierSegment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCableCarrierSegmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCableCarrierSegmentTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCableCarrierSegment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCableCarrierSegmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCableCarrierSegmentTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCableCarrierSegment::declaration() const { return *IFC4X3_RC3_IfcCableCarrierSegment_type; }
@@ -14211,7 +14211,7 @@ Ifc4x3_rc3::IfcCableCarrierSegmentType::IfcCableCarrierSegmentType(std::string v
 
 // Function implementations for IfcCableFitting
 boost::optional< ::Ifc4x3_rc3::IfcCableFittingTypeEnum::Value > Ifc4x3_rc3::IfcCableFitting::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCableFittingTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCableFitting::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCableFittingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCableFittingTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCableFitting::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCableFittingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCableFittingTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCableFitting::declaration() const { return *IFC4X3_RC3_IfcCableFitting_type; }
@@ -14231,7 +14231,7 @@ Ifc4x3_rc3::IfcCableFittingType::IfcCableFittingType(std::string v1_GlobalId, ::
 
 // Function implementations for IfcCableSegment
 boost::optional< ::Ifc4x3_rc3::IfcCableSegmentTypeEnum::Value > Ifc4x3_rc3::IfcCableSegment::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCableSegmentTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCableSegment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCableSegmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCableSegmentTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCableSegment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCableSegmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCableSegmentTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCableSegment::declaration() const { return *IFC4X3_RC3_IfcCableSegment_type; }
@@ -14251,7 +14251,7 @@ Ifc4x3_rc3::IfcCableSegmentType::IfcCableSegmentType(std::string v1_GlobalId, ::
 
 // Function implementations for IfcCaissonFoundation
 boost::optional< ::Ifc4x3_rc3::IfcCaissonFoundationTypeEnum::Value > Ifc4x3_rc3::IfcCaissonFoundation::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCaissonFoundationTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCaissonFoundation::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCaissonFoundationTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCaissonFoundationTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCaissonFoundation::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCaissonFoundationTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCaissonFoundationTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCaissonFoundation::declaration() const { return *IFC4X3_RC3_IfcCaissonFoundation_type; }
@@ -14291,7 +14291,7 @@ Ifc4x3_rc3::IfcCartesianPointList::IfcCartesianPointList() : IfcGeometricReprese
 std::vector< std::vector< double > > Ifc4x3_rc3::IfcCartesianPointList2D::CoordList() const {  std::vector< std::vector< double > > v = *data_->getArgument(0); return v; }
 void Ifc4x3_rc3::IfcCartesianPointList2D::setCoordList(std::vector< std::vector< double > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc3::IfcCartesianPointList2D::TagList() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::vector< std::string > /*[1:?]*/ v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcCartesianPointList2D::setTagList(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcCartesianPointList2D::setTagList(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCartesianPointList2D::declaration() const { return *IFC4X3_RC3_IfcCartesianPointList2D_type; }
@@ -14303,7 +14303,7 @@ Ifc4x3_rc3::IfcCartesianPointList2D::IfcCartesianPointList2D(std::vector< std::v
 std::vector< std::vector< double > > Ifc4x3_rc3::IfcCartesianPointList3D::CoordList() const {  std::vector< std::vector< double > > v = *data_->getArgument(0); return v; }
 void Ifc4x3_rc3::IfcCartesianPointList3D::setCoordList(std::vector< std::vector< double > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc3::IfcCartesianPointList3D::TagList() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::vector< std::string > /*[1:?]*/ v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcCartesianPointList3D::setTagList(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcCartesianPointList3D::setTagList(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCartesianPointList3D::declaration() const { return *IFC4X3_RC3_IfcCartesianPointList3D_type; }
@@ -14319,7 +14319,7 @@ void Ifc4x3_rc3::IfcCartesianTransformationOperator::setAxis2(::Ifc4x3_rc3::IfcD
 ::Ifc4x3_rc3::IfcCartesianPoint* Ifc4x3_rc3::IfcCartesianTransformationOperator::LocalOrigin() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(2)))->as<::Ifc4x3_rc3::IfcCartesianPoint>(true); }
 void Ifc4x3_rc3::IfcCartesianTransformationOperator::setLocalOrigin(::Ifc4x3_rc3::IfcCartesianPoint* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcCartesianTransformationOperator::Scale() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcCartesianTransformationOperator::setScale(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcCartesianTransformationOperator::setScale(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCartesianTransformationOperator::declaration() const { return *IFC4X3_RC3_IfcCartesianTransformationOperator_type; }
@@ -14337,7 +14337,7 @@ Ifc4x3_rc3::IfcCartesianTransformationOperator2D::IfcCartesianTransformationOper
 
 // Function implementations for IfcCartesianTransformationOperator2DnonUniform
 boost::optional< double > Ifc4x3_rc3::IfcCartesianTransformationOperator2DnonUniform::Scale2() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcCartesianTransformationOperator2DnonUniform::setScale2(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcCartesianTransformationOperator2DnonUniform::setScale2(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCartesianTransformationOperator2DnonUniform::declaration() const { return *IFC4X3_RC3_IfcCartesianTransformationOperator2DnonUniform_type; }
@@ -14357,9 +14357,9 @@ Ifc4x3_rc3::IfcCartesianTransformationOperator3D::IfcCartesianTransformationOper
 
 // Function implementations for IfcCartesianTransformationOperator3DnonUniform
 boost::optional< double > Ifc4x3_rc3::IfcCartesianTransformationOperator3DnonUniform::Scale2() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } double v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcCartesianTransformationOperator3DnonUniform::setScale2(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcCartesianTransformationOperator3DnonUniform::setScale2(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcCartesianTransformationOperator3DnonUniform::Scale3() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } double v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcCartesianTransformationOperator3DnonUniform::setScale3(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcCartesianTransformationOperator3DnonUniform::setScale3(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCartesianTransformationOperator3DnonUniform::declaration() const { return *IFC4X3_RC3_IfcCartesianTransformationOperator3DnonUniform_type; }
@@ -14379,7 +14379,7 @@ Ifc4x3_rc3::IfcCenterLineProfileDef::IfcCenterLineProfileDef(::Ifc4x3_rc3::IfcPr
 
 // Function implementations for IfcChiller
 boost::optional< ::Ifc4x3_rc3::IfcChillerTypeEnum::Value > Ifc4x3_rc3::IfcChiller::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcChillerTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcChiller::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcChillerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcChillerTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcChiller::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcChillerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcChillerTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcChiller::declaration() const { return *IFC4X3_RC3_IfcChiller_type; }
@@ -14399,7 +14399,7 @@ Ifc4x3_rc3::IfcChillerType::IfcChillerType(std::string v1_GlobalId, ::Ifc4x3_rc3
 
 // Function implementations for IfcChimney
 boost::optional< ::Ifc4x3_rc3::IfcChimneyTypeEnum::Value > Ifc4x3_rc3::IfcChimney::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcChimneyTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcChimney::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcChimneyTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcChimneyTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcChimney::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcChimneyTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcChimneyTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcChimney::declaration() const { return *IFC4X3_RC3_IfcChimney_type; }
@@ -14465,19 +14465,19 @@ Ifc4x3_rc3::IfcCivilElementType::IfcCivilElementType(std::string v1_GlobalId, ::
 
 // Function implementations for IfcClassification
 boost::optional< std::string > Ifc4x3_rc3::IfcClassification::Source() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcClassification::setSource(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcClassification::setSource(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcClassification::Edition() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcClassification::setEdition(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcClassification::setEdition(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcClassification::EditionDate() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcClassification::setEditionDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcClassification::setEditionDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 std::string Ifc4x3_rc3::IfcClassification::Name() const {  std::string v = *data_->getArgument(3); return v; }
 void Ifc4x3_rc3::IfcClassification::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcClassification::Description() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcClassification::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcClassification::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcClassification::Location() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcClassification::setLocation(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcClassification::setLocation(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc3::IfcClassification::ReferenceTokens() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::vector< std::string > /*[1:?]*/ v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcClassification::setReferenceTokens(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcClassification::setReferenceTokens(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 
 ::Ifc4x3_rc3::IfcRelAssociatesClassification::list::ptr Ifc4x3_rc3::IfcClassification::ClassificationForObjects() const { return data_->getInverse(IFC4X3_RC3_IfcRelAssociatesClassification_type, 5)->as<IfcRelAssociatesClassification>(); }
 ::Ifc4x3_rc3::IfcClassificationReference::list::ptr Ifc4x3_rc3::IfcClassification::HasReferences() const { return data_->getInverse(IFC4X3_RC3_IfcClassificationReference_type, 3)->as<IfcClassificationReference>(); }
@@ -14491,9 +14491,9 @@ Ifc4x3_rc3::IfcClassification::IfcClassification(boost::optional< std::string > 
 ::Ifc4x3_rc3::IfcClassificationReferenceSelect* Ifc4x3_rc3::IfcClassificationReference::ReferencedSource() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcClassificationReferenceSelect>(true); }
 void Ifc4x3_rc3::IfcClassificationReference::setReferencedSource(::Ifc4x3_rc3::IfcClassificationReferenceSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcClassificationReference::Description() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcClassificationReference::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcClassificationReference::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcClassificationReference::Sort() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcClassificationReference::setSort(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcClassificationReference::setSort(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 
 ::Ifc4x3_rc3::IfcRelAssociatesClassification::list::ptr Ifc4x3_rc3::IfcClassificationReference::ClassificationRefForObjects() const { return data_->getInverse(IFC4X3_RC3_IfcRelAssociatesClassification_type, 5)->as<IfcRelAssociatesClassification>(); }
 ::Ifc4x3_rc3::IfcClassificationReference::list::ptr Ifc4x3_rc3::IfcClassificationReference::HasReferences() const { return data_->getInverse(IFC4X3_RC3_IfcClassificationReference_type, 3)->as<IfcClassificationReference>(); }
@@ -14523,7 +14523,7 @@ Ifc4x3_rc3::IfcClothoid::IfcClothoid(::Ifc4x3_rc3::IfcAxis2Placement* v1_Positio
 
 // Function implementations for IfcCoil
 boost::optional< ::Ifc4x3_rc3::IfcCoilTypeEnum::Value > Ifc4x3_rc3::IfcCoil::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCoilTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCoil::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCoilTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCoilTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCoil::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCoilTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCoilTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCoil::declaration() const { return *IFC4X3_RC3_IfcCoil_type; }
@@ -14567,7 +14567,7 @@ Ifc4x3_rc3::IfcColourRgbList::IfcColourRgbList(std::vector< std::vector< double 
 
 // Function implementations for IfcColourSpecification
 boost::optional< std::string > Ifc4x3_rc3::IfcColourSpecification::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcColourSpecification::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcColourSpecification::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcColourSpecification::declaration() const { return *IFC4X3_RC3_IfcColourSpecification_type; }
@@ -14577,7 +14577,7 @@ Ifc4x3_rc3::IfcColourSpecification::IfcColourSpecification(boost::optional< std:
 
 // Function implementations for IfcColumn
 boost::optional< ::Ifc4x3_rc3::IfcColumnTypeEnum::Value > Ifc4x3_rc3::IfcColumn::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcColumnTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcColumn::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcColumnTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcColumnTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcColumn::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcColumnTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcColumnTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcColumn::declaration() const { return *IFC4X3_RC3_IfcColumn_type; }
@@ -14605,7 +14605,7 @@ Ifc4x3_rc3::IfcColumnType::IfcColumnType(std::string v1_GlobalId, ::Ifc4x3_rc3::
 
 // Function implementations for IfcCommunicationsAppliance
 boost::optional< ::Ifc4x3_rc3::IfcCommunicationsApplianceTypeEnum::Value > Ifc4x3_rc3::IfcCommunicationsAppliance::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCommunicationsApplianceTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCommunicationsAppliance::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCommunicationsApplianceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCommunicationsApplianceTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCommunicationsAppliance::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCommunicationsApplianceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCommunicationsApplianceTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCommunicationsAppliance::declaration() const { return *IFC4X3_RC3_IfcCommunicationsAppliance_type; }
@@ -14637,11 +14637,11 @@ Ifc4x3_rc3::IfcComplexProperty::IfcComplexProperty(std::string v1_Name, boost::o
 
 // Function implementations for IfcComplexPropertyTemplate
 boost::optional< std::string > Ifc4x3_rc3::IfcComplexPropertyTemplate::UsageName() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcComplexPropertyTemplate::setUsageName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcComplexPropertyTemplate::setUsageName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcComplexPropertyTemplateTypeEnum::Value > Ifc4x3_rc3::IfcComplexPropertyTemplate::TemplateType() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcComplexPropertyTemplateTypeEnum::FromString(*data_->getArgument(5)); }
-void Ifc4x3_rc3::IfcComplexPropertyTemplate::setTemplateType(boost::optional< ::Ifc4x3_rc3::IfcComplexPropertyTemplateTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcComplexPropertyTemplateTypeEnum::ToString(*v)));data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcComplexPropertyTemplate::setTemplateType(boost::optional< ::Ifc4x3_rc3::IfcComplexPropertyTemplateTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcComplexPropertyTemplateTypeEnum::ToString(*v)));}data_->setArgument(5,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPropertyTemplate >::ptr > Ifc4x3_rc3::IfcComplexPropertyTemplate::HasPropertyTemplates() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(6); return es->as< ::Ifc4x3_rc3::IfcPropertyTemplate >(); }
-void Ifc4x3_rc3::IfcComplexPropertyTemplate::setHasPropertyTemplates(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPropertyTemplate >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcComplexPropertyTemplate::setHasPropertyTemplates(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPropertyTemplate >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(6,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcComplexPropertyTemplate::declaration() const { return *IFC4X3_RC3_IfcComplexPropertyTemplate_type; }
@@ -14685,7 +14685,7 @@ Ifc4x3_rc3::IfcCompositeCurveSegment::IfcCompositeCurveSegment(::Ifc4x3_rc3::Ifc
 aggregate_of< ::Ifc4x3_rc3::IfcProfileDef >::ptr Ifc4x3_rc3::IfcCompositeProfileDef::Profiles() const {  aggregate_of_instance::ptr es = *data_->getArgument(2); return es->as< ::Ifc4x3_rc3::IfcProfileDef >(); }
 void Ifc4x3_rc3::IfcCompositeProfileDef::setProfiles(aggregate_of< ::Ifc4x3_rc3::IfcProfileDef >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(2,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcCompositeProfileDef::Label() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcCompositeProfileDef::setLabel(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcCompositeProfileDef::setLabel(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCompositeProfileDef::declaration() const { return *IFC4X3_RC3_IfcCompositeProfileDef_type; }
@@ -14695,7 +14695,7 @@ Ifc4x3_rc3::IfcCompositeProfileDef::IfcCompositeProfileDef(::Ifc4x3_rc3::IfcProf
 
 // Function implementations for IfcCompressor
 boost::optional< ::Ifc4x3_rc3::IfcCompressorTypeEnum::Value > Ifc4x3_rc3::IfcCompressor::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCompressorTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCompressor::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCompressorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCompressorTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCompressor::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCompressorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCompressorTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCompressor::declaration() const { return *IFC4X3_RC3_IfcCompressor_type; }
@@ -14715,7 +14715,7 @@ Ifc4x3_rc3::IfcCompressorType::IfcCompressorType(std::string v1_GlobalId, ::Ifc4
 
 // Function implementations for IfcCondenser
 boost::optional< ::Ifc4x3_rc3::IfcCondenserTypeEnum::Value > Ifc4x3_rc3::IfcCondenser::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCondenserTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCondenser::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCondenserTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCondenserTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCondenser::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCondenserTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCondenserTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCondenser::declaration() const { return *IFC4X3_RC3_IfcCondenser_type; }
@@ -14775,11 +14775,11 @@ Ifc4x3_rc3::IfcConnectionGeometry::IfcConnectionGeometry() : IfcUtil::IfcBaseEnt
 
 // Function implementations for IfcConnectionPointEccentricity
 boost::optional< double > Ifc4x3_rc3::IfcConnectionPointEccentricity::EccentricityInX() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcConnectionPointEccentricity::setEccentricityInX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcConnectionPointEccentricity::setEccentricityInX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcConnectionPointEccentricity::EccentricityInY() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcConnectionPointEccentricity::setEccentricityInY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcConnectionPointEccentricity::setEccentricityInY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcConnectionPointEccentricity::EccentricityInZ() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcConnectionPointEccentricity::setEccentricityInZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcConnectionPointEccentricity::setEccentricityInZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcConnectionPointEccentricity::declaration() const { return *IFC4X3_RC3_IfcConnectionPointEccentricity_type; }
@@ -14827,17 +14827,17 @@ Ifc4x3_rc3::IfcConnectionVolumeGeometry::IfcConnectionVolumeGeometry(::Ifc4x3_rc
 std::string Ifc4x3_rc3::IfcConstraint::Name() const {  std::string v = *data_->getArgument(0); return v; }
 void Ifc4x3_rc3::IfcConstraint::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcConstraint::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcConstraint::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcConstraint::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 ::Ifc4x3_rc3::IfcConstraintEnum::Value Ifc4x3_rc3::IfcConstraint::ConstraintGrade() const {  return ::Ifc4x3_rc3::IfcConstraintEnum::FromString(*data_->getArgument(2)); }
 void Ifc4x3_rc3::IfcConstraint::setConstraintGrade(::Ifc4x3_rc3::IfcConstraintEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcConstraintEnum::ToString(v)));data_->setArgument(2,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcConstraint::ConstraintSource() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcConstraint::setConstraintSource(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcConstraint::setConstraintSource(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 ::Ifc4x3_rc3::IfcActorSelect* Ifc4x3_rc3::IfcConstraint::CreatingActor() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(4)))->as<::Ifc4x3_rc3::IfcActorSelect>(true); }
 void Ifc4x3_rc3::IfcConstraint::setCreatingActor(::Ifc4x3_rc3::IfcActorSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcConstraint::CreationTime() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcConstraint::setCreationTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcConstraint::setCreationTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcConstraint::UserDefinedGrade() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcConstraint::setUserDefinedGrade(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcConstraint::setUserDefinedGrade(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 
 ::Ifc4x3_rc3::IfcExternalReferenceRelationship::list::ptr Ifc4x3_rc3::IfcConstraint::HasExternalReferences() const { return data_->getInverse(IFC4X3_RC3_IfcExternalReferenceRelationship_type, 3)->as<IfcExternalReferenceRelationship>(); }
 ::Ifc4x3_rc3::IfcResourceConstraintRelationship::list::ptr Ifc4x3_rc3::IfcConstraint::PropertiesForConstraint() const { return data_->getInverse(IFC4X3_RC3_IfcResourceConstraintRelationship_type, 2)->as<IfcResourceConstraintRelationship>(); }
@@ -14849,7 +14849,7 @@ Ifc4x3_rc3::IfcConstraint::IfcConstraint(std::string v1_Name, boost::optional< s
 
 // Function implementations for IfcConstructionEquipmentResource
 boost::optional< ::Ifc4x3_rc3::IfcConstructionEquipmentResourceTypeEnum::Value > Ifc4x3_rc3::IfcConstructionEquipmentResource::PredefinedType() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcConstructionEquipmentResourceTypeEnum::FromString(*data_->getArgument(10)); }
-void Ifc4x3_rc3::IfcConstructionEquipmentResource::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcConstructionEquipmentResourceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcConstructionEquipmentResourceTypeEnum::ToString(*v)));data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcConstructionEquipmentResource::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcConstructionEquipmentResourceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcConstructionEquipmentResourceTypeEnum::ToString(*v)));}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcConstructionEquipmentResource::declaration() const { return *IFC4X3_RC3_IfcConstructionEquipmentResource_type; }
@@ -14869,7 +14869,7 @@ Ifc4x3_rc3::IfcConstructionEquipmentResourceType::IfcConstructionEquipmentResour
 
 // Function implementations for IfcConstructionMaterialResource
 boost::optional< ::Ifc4x3_rc3::IfcConstructionMaterialResourceTypeEnum::Value > Ifc4x3_rc3::IfcConstructionMaterialResource::PredefinedType() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcConstructionMaterialResourceTypeEnum::FromString(*data_->getArgument(10)); }
-void Ifc4x3_rc3::IfcConstructionMaterialResource::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcConstructionMaterialResourceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcConstructionMaterialResourceTypeEnum::ToString(*v)));data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcConstructionMaterialResource::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcConstructionMaterialResourceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcConstructionMaterialResourceTypeEnum::ToString(*v)));}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcConstructionMaterialResource::declaration() const { return *IFC4X3_RC3_IfcConstructionMaterialResource_type; }
@@ -14889,7 +14889,7 @@ Ifc4x3_rc3::IfcConstructionMaterialResourceType::IfcConstructionMaterialResource
 
 // Function implementations for IfcConstructionProductResource
 boost::optional< ::Ifc4x3_rc3::IfcConstructionProductResourceTypeEnum::Value > Ifc4x3_rc3::IfcConstructionProductResource::PredefinedType() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcConstructionProductResourceTypeEnum::FromString(*data_->getArgument(10)); }
-void Ifc4x3_rc3::IfcConstructionProductResource::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcConstructionProductResourceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcConstructionProductResourceTypeEnum::ToString(*v)));data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcConstructionProductResource::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcConstructionProductResourceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcConstructionProductResourceTypeEnum::ToString(*v)));}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcConstructionProductResource::declaration() const { return *IFC4X3_RC3_IfcConstructionProductResource_type; }
@@ -14911,7 +14911,7 @@ Ifc4x3_rc3::IfcConstructionProductResourceType::IfcConstructionProductResourceTy
 ::Ifc4x3_rc3::IfcResourceTime* Ifc4x3_rc3::IfcConstructionResource::Usage() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(7)))->as<::Ifc4x3_rc3::IfcResourceTime>(true); }
 void Ifc4x3_rc3::IfcConstructionResource::setUsage(::Ifc4x3_rc3::IfcResourceTime* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(7,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAppliedValue >::ptr > Ifc4x3_rc3::IfcConstructionResource::BaseCosts() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(8); return es->as< ::Ifc4x3_rc3::IfcAppliedValue >(); }
-void Ifc4x3_rc3::IfcConstructionResource::setBaseCosts(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAppliedValue >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcConstructionResource::setBaseCosts(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAppliedValue >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(8,attr);} }
 ::Ifc4x3_rc3::IfcPhysicalQuantity* Ifc4x3_rc3::IfcConstructionResource::BaseQuantity() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(9)))->as<::Ifc4x3_rc3::IfcPhysicalQuantity>(true); }
 void Ifc4x3_rc3::IfcConstructionResource::setBaseQuantity(::Ifc4x3_rc3::IfcPhysicalQuantity* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(9,attr);} }
 
@@ -14923,7 +14923,7 @@ Ifc4x3_rc3::IfcConstructionResource::IfcConstructionResource(std::string v1_Glob
 
 // Function implementations for IfcConstructionResourceType
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAppliedValue >::ptr > Ifc4x3_rc3::IfcConstructionResourceType::BaseCosts() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(9); return es->as< ::Ifc4x3_rc3::IfcAppliedValue >(); }
-void Ifc4x3_rc3::IfcConstructionResourceType::setBaseCosts(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAppliedValue >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcConstructionResourceType::setBaseCosts(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAppliedValue >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(9,attr);} }
 ::Ifc4x3_rc3::IfcPhysicalQuantity* Ifc4x3_rc3::IfcConstructionResourceType::BaseQuantity() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(10)))->as<::Ifc4x3_rc3::IfcPhysicalQuantity>(true); }
 void Ifc4x3_rc3::IfcConstructionResourceType::setBaseQuantity(::Ifc4x3_rc3::IfcPhysicalQuantity* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(10,attr);} }
 
@@ -14935,13 +14935,13 @@ Ifc4x3_rc3::IfcConstructionResourceType::IfcConstructionResourceType(std::string
 
 // Function implementations for IfcContext
 boost::optional< std::string > Ifc4x3_rc3::IfcContext::ObjectType() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcContext::setObjectType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcContext::setObjectType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcContext::LongName() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcContext::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcContext::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcContext::Phase() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcContext::setPhase(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcContext::setPhase(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcRepresentationContext >::ptr > Ifc4x3_rc3::IfcContext::RepresentationContexts() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(7); return es->as< ::Ifc4x3_rc3::IfcRepresentationContext >(); }
-void Ifc4x3_rc3::IfcContext::setRepresentationContexts(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcRepresentationContext >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcContext::setRepresentationContexts(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcRepresentationContext >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(7,attr);} }
 ::Ifc4x3_rc3::IfcUnitAssignment* Ifc4x3_rc3::IfcContext::UnitsInContext() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(8)))->as<::Ifc4x3_rc3::IfcUnitAssignment>(true); }
 void Ifc4x3_rc3::IfcContext::setUnitsInContext(::Ifc4x3_rc3::IfcUnitAssignment* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(8,attr);} }
 
@@ -14966,7 +14966,7 @@ Ifc4x3_rc3::IfcContextDependentUnit::IfcContextDependentUnit(::Ifc4x3_rc3::IfcDi
 
 // Function implementations for IfcControl
 boost::optional< std::string > Ifc4x3_rc3::IfcControl::Identification() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcControl::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcControl::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 
 ::Ifc4x3_rc3::IfcRelAssignsToControl::list::ptr Ifc4x3_rc3::IfcControl::Controls() const { return data_->getInverse(IFC4X3_RC3_IfcRelAssignsToControl_type, 6)->as<IfcRelAssignsToControl>(); }
 
@@ -14977,7 +14977,7 @@ Ifc4x3_rc3::IfcControl::IfcControl(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwn
 
 // Function implementations for IfcController
 boost::optional< ::Ifc4x3_rc3::IfcControllerTypeEnum::Value > Ifc4x3_rc3::IfcController::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcControllerTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcController::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcControllerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcControllerTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcController::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcControllerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcControllerTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcController::declaration() const { return *IFC4X3_RC3_IfcController_type; }
@@ -15020,7 +15020,7 @@ Ifc4x3_rc3::IfcConversionBasedUnitWithOffset::IfcConversionBasedUnitWithOffset(:
 
 // Function implementations for IfcConveyorSegment
 boost::optional< ::Ifc4x3_rc3::IfcConveyorSegmentTypeEnum::Value > Ifc4x3_rc3::IfcConveyorSegment::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcConveyorSegmentTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcConveyorSegment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcConveyorSegmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcConveyorSegmentTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcConveyorSegment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcConveyorSegmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcConveyorSegmentTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcConveyorSegment::declaration() const { return *IFC4X3_RC3_IfcConveyorSegment_type; }
@@ -15040,7 +15040,7 @@ Ifc4x3_rc3::IfcConveyorSegmentType::IfcConveyorSegmentType(std::string v1_Global
 
 // Function implementations for IfcCooledBeam
 boost::optional< ::Ifc4x3_rc3::IfcCooledBeamTypeEnum::Value > Ifc4x3_rc3::IfcCooledBeam::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCooledBeamTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCooledBeam::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCooledBeamTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCooledBeamTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCooledBeam::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCooledBeamTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCooledBeamTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCooledBeam::declaration() const { return *IFC4X3_RC3_IfcCooledBeam_type; }
@@ -15060,7 +15060,7 @@ Ifc4x3_rc3::IfcCooledBeamType::IfcCooledBeamType(std::string v1_GlobalId, ::Ifc4
 
 // Function implementations for IfcCoolingTower
 boost::optional< ::Ifc4x3_rc3::IfcCoolingTowerTypeEnum::Value > Ifc4x3_rc3::IfcCoolingTower::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCoolingTowerTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCoolingTower::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCoolingTowerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCoolingTowerTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCoolingTower::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCoolingTowerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCoolingTowerTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCoolingTower::declaration() const { return *IFC4X3_RC3_IfcCoolingTower_type; }
@@ -15094,11 +15094,11 @@ Ifc4x3_rc3::IfcCoordinateOperation::IfcCoordinateOperation(::Ifc4x3_rc3::IfcCoor
 std::string Ifc4x3_rc3::IfcCoordinateReferenceSystem::Name() const {  std::string v = *data_->getArgument(0); return v; }
 void Ifc4x3_rc3::IfcCoordinateReferenceSystem::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcCoordinateReferenceSystem::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcCoordinateReferenceSystem::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcCoordinateReferenceSystem::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcCoordinateReferenceSystem::GeodeticDatum() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcCoordinateReferenceSystem::setGeodeticDatum(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcCoordinateReferenceSystem::setGeodeticDatum(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcCoordinateReferenceSystem::VerticalDatum() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcCoordinateReferenceSystem::setVerticalDatum(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcCoordinateReferenceSystem::setVerticalDatum(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 ::Ifc4x3_rc3::IfcCoordinateOperation::list::ptr Ifc4x3_rc3::IfcCoordinateReferenceSystem::HasCoordinateOperation() const { return data_->getInverse(IFC4X3_RC3_IfcCoordinateOperation_type, 0)->as<IfcCoordinateOperation>(); }
 
@@ -15121,11 +15121,11 @@ Ifc4x3_rc3::IfcCosine::IfcCosine(::Ifc4x3_rc3::IfcAxis2Placement* v1_Position, d
 
 // Function implementations for IfcCostItem
 boost::optional< ::Ifc4x3_rc3::IfcCostItemTypeEnum::Value > Ifc4x3_rc3::IfcCostItem::PredefinedType() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCostItemTypeEnum::FromString(*data_->getArgument(6)); }
-void Ifc4x3_rc3::IfcCostItem::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCostItemTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCostItemTypeEnum::ToString(*v)));data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcCostItem::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCostItemTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCostItemTypeEnum::ToString(*v)));}data_->setArgument(6,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcCostValue >::ptr > Ifc4x3_rc3::IfcCostItem::CostValues() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(7); return es->as< ::Ifc4x3_rc3::IfcCostValue >(); }
-void Ifc4x3_rc3::IfcCostItem::setCostValues(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcCostValue >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcCostItem::setCostValues(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcCostValue >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(7,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPhysicalQuantity >::ptr > Ifc4x3_rc3::IfcCostItem::CostQuantities() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(8); return es->as< ::Ifc4x3_rc3::IfcPhysicalQuantity >(); }
-void Ifc4x3_rc3::IfcCostItem::setCostQuantities(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPhysicalQuantity >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCostItem::setCostQuantities(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPhysicalQuantity >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCostItem::declaration() const { return *IFC4X3_RC3_IfcCostItem_type; }
@@ -15135,13 +15135,13 @@ Ifc4x3_rc3::IfcCostItem::IfcCostItem(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 
 // Function implementations for IfcCostSchedule
 boost::optional< ::Ifc4x3_rc3::IfcCostScheduleTypeEnum::Value > Ifc4x3_rc3::IfcCostSchedule::PredefinedType() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCostScheduleTypeEnum::FromString(*data_->getArgument(6)); }
-void Ifc4x3_rc3::IfcCostSchedule::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCostScheduleTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCostScheduleTypeEnum::ToString(*v)));data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcCostSchedule::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCostScheduleTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCostScheduleTypeEnum::ToString(*v)));}data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcCostSchedule::Status() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcCostSchedule::setStatus(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcCostSchedule::setStatus(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcCostSchedule::SubmittedOn() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcCostSchedule::setSubmittedOn(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCostSchedule::setSubmittedOn(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcCostSchedule::UpdateDate() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } std::string v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcCostSchedule::setUpdateDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcCostSchedule::setUpdateDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCostSchedule::declaration() const { return *IFC4X3_RC3_IfcCostSchedule_type; }
@@ -15159,7 +15159,7 @@ Ifc4x3_rc3::IfcCostValue::IfcCostValue(boost::optional< std::string > v1_Name, b
 
 // Function implementations for IfcCourse
 boost::optional< ::Ifc4x3_rc3::IfcCourseTypeEnum::Value > Ifc4x3_rc3::IfcCourse::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCourseTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCourse::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCourseTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCourseTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCourse::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCourseTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCourseTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCourse::declaration() const { return *IFC4X3_RC3_IfcCourse_type; }
@@ -15179,7 +15179,7 @@ Ifc4x3_rc3::IfcCourseType::IfcCourseType(std::string v1_GlobalId, ::Ifc4x3_rc3::
 
 // Function implementations for IfcCovering
 boost::optional< ::Ifc4x3_rc3::IfcCoveringTypeEnum::Value > Ifc4x3_rc3::IfcCovering::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCoveringTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCovering::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCoveringTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCoveringTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCovering::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCoveringTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCoveringTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 ::Ifc4x3_rc3::IfcRelCoversSpaces::list::ptr Ifc4x3_rc3::IfcCovering::CoversSpaces() const { return data_->getInverse(IFC4X3_RC3_IfcRelCoversSpaces_type, 5)->as<IfcRelCoversSpaces>(); }
 ::Ifc4x3_rc3::IfcRelCoversBldgElements::list::ptr Ifc4x3_rc3::IfcCovering::CoversElements() const { return data_->getInverse(IFC4X3_RC3_IfcRelCoversBldgElements_type, 5)->as<IfcRelCoversBldgElements>(); }
@@ -15201,7 +15201,7 @@ Ifc4x3_rc3::IfcCoveringType::IfcCoveringType(std::string v1_GlobalId, ::Ifc4x3_r
 
 // Function implementations for IfcCrewResource
 boost::optional< ::Ifc4x3_rc3::IfcCrewResourceTypeEnum::Value > Ifc4x3_rc3::IfcCrewResource::PredefinedType() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCrewResourceTypeEnum::FromString(*data_->getArgument(10)); }
-void Ifc4x3_rc3::IfcCrewResource::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCrewResourceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCrewResourceTypeEnum::ToString(*v)));data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcCrewResource::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCrewResourceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCrewResourceTypeEnum::ToString(*v)));}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCrewResource::declaration() const { return *IFC4X3_RC3_IfcCrewResource_type; }
@@ -15247,7 +15247,7 @@ void Ifc4x3_rc3::IfcCurrencyRelationship::setRelatedMonetaryUnit(::Ifc4x3_rc3::I
 double Ifc4x3_rc3::IfcCurrencyRelationship::ExchangeRate() const {  double v = *data_->getArgument(4); return v; }
 void Ifc4x3_rc3::IfcCurrencyRelationship::setExchangeRate(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcCurrencyRelationship::RateDateTime() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcCurrencyRelationship::setRateDateTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcCurrencyRelationship::setRateDateTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 ::Ifc4x3_rc3::IfcLibraryInformation* Ifc4x3_rc3::IfcCurrencyRelationship::RateSource() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(6)))->as<::Ifc4x3_rc3::IfcLibraryInformation>(true); }
 void Ifc4x3_rc3::IfcCurrencyRelationship::setRateSource(::Ifc4x3_rc3::IfcLibraryInformation* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 
@@ -15259,7 +15259,7 @@ Ifc4x3_rc3::IfcCurrencyRelationship::IfcCurrencyRelationship(boost::optional< st
 
 // Function implementations for IfcCurtainWall
 boost::optional< ::Ifc4x3_rc3::IfcCurtainWallTypeEnum::Value > Ifc4x3_rc3::IfcCurtainWall::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCurtainWallTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcCurtainWall::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCurtainWallTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCurtainWallTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcCurtainWall::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcCurtainWallTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCurtainWallTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCurtainWall::declaration() const { return *IFC4X3_RC3_IfcCurtainWall_type; }
@@ -15337,7 +15337,7 @@ void Ifc4x3_rc3::IfcCurveStyle::setCurveWidth(::Ifc4x3_rc3::IfcSizeSelect* v) { 
 ::Ifc4x3_rc3::IfcColour* Ifc4x3_rc3::IfcCurveStyle::CurveColour() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcColour>(true); }
 void Ifc4x3_rc3::IfcCurveStyle::setCurveColour(::Ifc4x3_rc3::IfcColour* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< bool > Ifc4x3_rc3::IfcCurveStyle::ModelOrDraughting() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } bool v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcCurveStyle::setModelOrDraughting(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcCurveStyle::setModelOrDraughting(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcCurveStyle::declaration() const { return *IFC4X3_RC3_IfcCurveStyle_type; }
@@ -15347,7 +15347,7 @@ Ifc4x3_rc3::IfcCurveStyle::IfcCurveStyle(boost::optional< std::string > v1_Name,
 
 // Function implementations for IfcCurveStyleFont
 boost::optional< std::string > Ifc4x3_rc3::IfcCurveStyleFont::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcCurveStyleFont::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcCurveStyleFont::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 aggregate_of< ::Ifc4x3_rc3::IfcCurveStyleFontPattern >::ptr Ifc4x3_rc3::IfcCurveStyleFont::PatternList() const {  aggregate_of_instance::ptr es = *data_->getArgument(1); return es->as< ::Ifc4x3_rc3::IfcCurveStyleFontPattern >(); }
 void Ifc4x3_rc3::IfcCurveStyleFont::setPatternList(aggregate_of< ::Ifc4x3_rc3::IfcCurveStyleFontPattern >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(1,attr);} }
 
@@ -15359,7 +15359,7 @@ Ifc4x3_rc3::IfcCurveStyleFont::IfcCurveStyleFont(boost::optional< std::string > 
 
 // Function implementations for IfcCurveStyleFontAndScaling
 boost::optional< std::string > Ifc4x3_rc3::IfcCurveStyleFontAndScaling::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcCurveStyleFontAndScaling::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcCurveStyleFontAndScaling::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 ::Ifc4x3_rc3::IfcCurveStyleFontSelect* Ifc4x3_rc3::IfcCurveStyleFontAndScaling::CurveFont() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(1)))->as<::Ifc4x3_rc3::IfcCurveStyleFontSelect>(true); }
 void Ifc4x3_rc3::IfcCurveStyleFontAndScaling::setCurveFont(::Ifc4x3_rc3::IfcCurveStyleFontSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 double Ifc4x3_rc3::IfcCurveStyleFontAndScaling::CurveFontScaling() const {  double v = *data_->getArgument(2); return v; }
@@ -15395,7 +15395,7 @@ Ifc4x3_rc3::IfcCylindricalSurface::IfcCylindricalSurface(::Ifc4x3_rc3::IfcAxis2P
 
 // Function implementations for IfcDamper
 boost::optional< ::Ifc4x3_rc3::IfcDamperTypeEnum::Value > Ifc4x3_rc3::IfcDamper::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDamperTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcDamper::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDamperTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDamperTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcDamper::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDamperTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDamperTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDamper::declaration() const { return *IFC4X3_RC3_IfcDamper_type; }
@@ -15435,7 +15435,7 @@ void Ifc4x3_rc3::IfcDerivedProfileDef::setParentProfile(::Ifc4x3_rc3::IfcProfile
 ::Ifc4x3_rc3::IfcCartesianTransformationOperator2D* Ifc4x3_rc3::IfcDerivedProfileDef::Operator() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcCartesianTransformationOperator2D>(true); }
 void Ifc4x3_rc3::IfcDerivedProfileDef::setOperator(::Ifc4x3_rc3::IfcCartesianTransformationOperator2D* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDerivedProfileDef::Label() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcDerivedProfileDef::setLabel(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcDerivedProfileDef::setLabel(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDerivedProfileDef::declaration() const { return *IFC4X3_RC3_IfcDerivedProfileDef_type; }
@@ -15449,7 +15449,7 @@ void Ifc4x3_rc3::IfcDerivedUnit::setElements(aggregate_of< ::Ifc4x3_rc3::IfcDeri
 ::Ifc4x3_rc3::IfcDerivedUnitEnum::Value Ifc4x3_rc3::IfcDerivedUnit::UnitType() const {  return ::Ifc4x3_rc3::IfcDerivedUnitEnum::FromString(*data_->getArgument(1)); }
 void Ifc4x3_rc3::IfcDerivedUnit::setUnitType(::Ifc4x3_rc3::IfcDerivedUnitEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcDerivedUnitEnum::ToString(v)));data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDerivedUnit::UserDefinedType() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcDerivedUnit::setUserDefinedType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcDerivedUnit::setUserDefinedType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDerivedUnit::declaration() const { return *IFC4X3_RC3_IfcDerivedUnit_type; }
@@ -15539,7 +15539,7 @@ Ifc4x3_rc3::IfcDirectrixDistanceSweptAreaSolid::IfcDirectrixDistanceSweptAreaSol
 
 // Function implementations for IfcDiscreteAccessory
 boost::optional< ::Ifc4x3_rc3::IfcDiscreteAccessoryTypeEnum::Value > Ifc4x3_rc3::IfcDiscreteAccessory::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDiscreteAccessoryTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcDiscreteAccessory::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDiscreteAccessoryTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDiscreteAccessoryTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcDiscreteAccessory::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDiscreteAccessoryTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDiscreteAccessoryTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDiscreteAccessory::declaration() const { return *IFC4X3_RC3_IfcDiscreteAccessory_type; }
@@ -15559,7 +15559,7 @@ Ifc4x3_rc3::IfcDiscreteAccessoryType::IfcDiscreteAccessoryType(std::string v1_Gl
 
 // Function implementations for IfcDistributionBoard
 boost::optional< ::Ifc4x3_rc3::IfcDistributionBoardTypeEnum::Value > Ifc4x3_rc3::IfcDistributionBoard::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDistributionBoardTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcDistributionBoard::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDistributionBoardTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDistributionBoardTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcDistributionBoard::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDistributionBoardTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDistributionBoardTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDistributionBoard::declaration() const { return *IFC4X3_RC3_IfcDistributionBoard_type; }
@@ -15579,7 +15579,7 @@ Ifc4x3_rc3::IfcDistributionBoardType::IfcDistributionBoardType(std::string v1_Gl
 
 // Function implementations for IfcDistributionChamberElement
 boost::optional< ::Ifc4x3_rc3::IfcDistributionChamberElementTypeEnum::Value > Ifc4x3_rc3::IfcDistributionChamberElement::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDistributionChamberElementTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcDistributionChamberElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDistributionChamberElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDistributionChamberElementTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcDistributionChamberElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDistributionChamberElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDistributionChamberElementTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDistributionChamberElement::declaration() const { return *IFC4X3_RC3_IfcDistributionChamberElement_type; }
@@ -15658,11 +15658,11 @@ Ifc4x3_rc3::IfcDistributionFlowElementType::IfcDistributionFlowElementType(std::
 
 // Function implementations for IfcDistributionPort
 boost::optional< ::Ifc4x3_rc3::IfcFlowDirectionEnum::Value > Ifc4x3_rc3::IfcDistributionPort::FlowDirection() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcFlowDirectionEnum::FromString(*data_->getArgument(7)); }
-void Ifc4x3_rc3::IfcDistributionPort::setFlowDirection(boost::optional< ::Ifc4x3_rc3::IfcFlowDirectionEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFlowDirectionEnum::ToString(*v)));data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcDistributionPort::setFlowDirection(boost::optional< ::Ifc4x3_rc3::IfcFlowDirectionEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFlowDirectionEnum::ToString(*v)));}data_->setArgument(7,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcDistributionPortTypeEnum::Value > Ifc4x3_rc3::IfcDistributionPort::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDistributionPortTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcDistributionPort::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDistributionPortTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDistributionPortTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcDistributionPort::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDistributionPortTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDistributionPortTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcDistributionSystemEnum::Value > Ifc4x3_rc3::IfcDistributionPort::SystemType() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDistributionSystemEnum::FromString(*data_->getArgument(9)); }
-void Ifc4x3_rc3::IfcDistributionPort::setSystemType(boost::optional< ::Ifc4x3_rc3::IfcDistributionSystemEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDistributionSystemEnum::ToString(*v)));data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcDistributionPort::setSystemType(boost::optional< ::Ifc4x3_rc3::IfcDistributionSystemEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDistributionSystemEnum::ToString(*v)));}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDistributionPort::declaration() const { return *IFC4X3_RC3_IfcDistributionPort_type; }
@@ -15672,9 +15672,9 @@ Ifc4x3_rc3::IfcDistributionPort::IfcDistributionPort(std::string v1_GlobalId, ::
 
 // Function implementations for IfcDistributionSystem
 boost::optional< std::string > Ifc4x3_rc3::IfcDistributionSystem::LongName() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcDistributionSystem::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcDistributionSystem::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcDistributionSystemEnum::Value > Ifc4x3_rc3::IfcDistributionSystem::PredefinedType() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDistributionSystemEnum::FromString(*data_->getArgument(6)); }
-void Ifc4x3_rc3::IfcDistributionSystem::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDistributionSystemEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDistributionSystemEnum::ToString(*v)));data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcDistributionSystem::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDistributionSystemEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDistributionSystemEnum::ToString(*v)));}data_->setArgument(6,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDistributionSystem::declaration() const { return *IFC4X3_RC3_IfcDistributionSystem_type; }
@@ -15688,35 +15688,35 @@ void Ifc4x3_rc3::IfcDocumentInformation::setIdentification(std::string v) { {Ifc
 std::string Ifc4x3_rc3::IfcDocumentInformation::Name() const {  std::string v = *data_->getArgument(1); return v; }
 void Ifc4x3_rc3::IfcDocumentInformation::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDocumentInformation::Description() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcDocumentInformation::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDocumentInformation::Location() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcDocumentInformation::setLocation(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setLocation(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDocumentInformation::Purpose() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcDocumentInformation::setPurpose(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setPurpose(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDocumentInformation::IntendedUse() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcDocumentInformation::setIntendedUse(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setIntendedUse(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDocumentInformation::Scope() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcDocumentInformation::setScope(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setScope(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDocumentInformation::Revision() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcDocumentInformation::setRevision(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setRevision(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 ::Ifc4x3_rc3::IfcActorSelect* Ifc4x3_rc3::IfcDocumentInformation::DocumentOwner() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(8)))->as<::Ifc4x3_rc3::IfcActorSelect>(true); }
 void Ifc4x3_rc3::IfcDocumentInformation::setDocumentOwner(::Ifc4x3_rc3::IfcActorSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(8,attr);} }
 boost::optional< aggregate_of_instance::ptr > Ifc4x3_rc3::IfcDocumentInformation::Editors() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } aggregate_of_instance::ptr v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcDocumentInformation::setEditors(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setEditors(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDocumentInformation::CreationTime() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } std::string v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcDocumentInformation::setCreationTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setCreationTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDocumentInformation::LastRevisionTime() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } std::string v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcDocumentInformation::setLastRevisionTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setLastRevisionTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDocumentInformation::ElectronicFormat() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } std::string v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcDocumentInformation::setElectronicFormat(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setElectronicFormat(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDocumentInformation::ValidFrom() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return boost::none; } std::string v = *data_->getArgument(13); return v; }
-void Ifc4x3_rc3::IfcDocumentInformation::setValidFrom(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(13,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setValidFrom(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(13,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDocumentInformation::ValidUntil() const { if(!data_->getArgument(14) || data_->getArgument(14)->isNull()) { return boost::none; } std::string v = *data_->getArgument(14); return v; }
-void Ifc4x3_rc3::IfcDocumentInformation::setValidUntil(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(14,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setValidUntil(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(14,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcDocumentConfidentialityEnum::Value > Ifc4x3_rc3::IfcDocumentInformation::Confidentiality() const { if(!data_->getArgument(15) || data_->getArgument(15)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDocumentConfidentialityEnum::FromString(*data_->getArgument(15)); }
-void Ifc4x3_rc3::IfcDocumentInformation::setConfidentiality(boost::optional< ::Ifc4x3_rc3::IfcDocumentConfidentialityEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDocumentConfidentialityEnum::ToString(*v)));data_->setArgument(15,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setConfidentiality(boost::optional< ::Ifc4x3_rc3::IfcDocumentConfidentialityEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDocumentConfidentialityEnum::ToString(*v)));}data_->setArgument(15,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcDocumentStatusEnum::Value > Ifc4x3_rc3::IfcDocumentInformation::Status() const { if(!data_->getArgument(16) || data_->getArgument(16)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDocumentStatusEnum::FromString(*data_->getArgument(16)); }
-void Ifc4x3_rc3::IfcDocumentInformation::setStatus(boost::optional< ::Ifc4x3_rc3::IfcDocumentStatusEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDocumentStatusEnum::ToString(*v)));data_->setArgument(16,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformation::setStatus(boost::optional< ::Ifc4x3_rc3::IfcDocumentStatusEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDocumentStatusEnum::ToString(*v)));}data_->setArgument(16,attr);} }
 
 ::Ifc4x3_rc3::IfcRelAssociatesDocument::list::ptr Ifc4x3_rc3::IfcDocumentInformation::DocumentInfoForObjects() const { return data_->getInverse(IFC4X3_RC3_IfcRelAssociatesDocument_type, 5)->as<IfcRelAssociatesDocument>(); }
 ::Ifc4x3_rc3::IfcDocumentReference::list::ptr Ifc4x3_rc3::IfcDocumentInformation::HasDocumentReferences() const { return data_->getInverse(IFC4X3_RC3_IfcDocumentReference_type, 4)->as<IfcDocumentReference>(); }
@@ -15734,7 +15734,7 @@ void Ifc4x3_rc3::IfcDocumentInformationRelationship::setRelatingDocument(::Ifc4x
 aggregate_of< ::Ifc4x3_rc3::IfcDocumentInformation >::ptr Ifc4x3_rc3::IfcDocumentInformationRelationship::RelatedDocuments() const {  aggregate_of_instance::ptr es = *data_->getArgument(3); return es->as< ::Ifc4x3_rc3::IfcDocumentInformation >(); }
 void Ifc4x3_rc3::IfcDocumentInformationRelationship::setRelatedDocuments(aggregate_of< ::Ifc4x3_rc3::IfcDocumentInformation >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDocumentInformationRelationship::RelationshipType() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcDocumentInformationRelationship::setRelationshipType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcDocumentInformationRelationship::setRelationshipType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDocumentInformationRelationship::declaration() const { return *IFC4X3_RC3_IfcDocumentInformationRelationship_type; }
@@ -15744,7 +15744,7 @@ Ifc4x3_rc3::IfcDocumentInformationRelationship::IfcDocumentInformationRelationsh
 
 // Function implementations for IfcDocumentReference
 boost::optional< std::string > Ifc4x3_rc3::IfcDocumentReference::Description() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcDocumentReference::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcDocumentReference::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 ::Ifc4x3_rc3::IfcDocumentInformation* Ifc4x3_rc3::IfcDocumentReference::ReferencedDocument() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(4)))->as<::Ifc4x3_rc3::IfcDocumentInformation>(true); }
 void Ifc4x3_rc3::IfcDocumentReference::setReferencedDocument(::Ifc4x3_rc3::IfcDocumentInformation* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
 
@@ -15757,15 +15757,15 @@ Ifc4x3_rc3::IfcDocumentReference::IfcDocumentReference(boost::optional< std::str
 
 // Function implementations for IfcDoor
 boost::optional< double > Ifc4x3_rc3::IfcDoor::OverallHeight() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcDoor::setOverallHeight(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcDoor::setOverallHeight(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcDoor::OverallWidth() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcDoor::setOverallWidth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcDoor::setOverallWidth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcDoorTypeEnum::Value > Ifc4x3_rc3::IfcDoor::PredefinedType() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDoorTypeEnum::FromString(*data_->getArgument(10)); }
-void Ifc4x3_rc3::IfcDoor::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDoorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDoorTypeEnum::ToString(*v)));data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcDoor::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDoorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDoorTypeEnum::ToString(*v)));}data_->setArgument(10,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcDoorTypeOperationEnum::Value > Ifc4x3_rc3::IfcDoor::OperationType() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDoorTypeOperationEnum::FromString(*data_->getArgument(11)); }
-void Ifc4x3_rc3::IfcDoor::setOperationType(boost::optional< ::Ifc4x3_rc3::IfcDoorTypeOperationEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDoorTypeOperationEnum::ToString(*v)));data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcDoor::setOperationType(boost::optional< ::Ifc4x3_rc3::IfcDoorTypeOperationEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDoorTypeOperationEnum::ToString(*v)));}data_->setArgument(11,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDoor::UserDefinedOperationType() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } std::string v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcDoor::setUserDefinedOperationType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcDoor::setUserDefinedOperationType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDoor::declaration() const { return *IFC4X3_RC3_IfcDoor_type; }
@@ -15775,31 +15775,31 @@ Ifc4x3_rc3::IfcDoor::IfcDoor(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHist
 
 // Function implementations for IfcDoorLiningProperties
 boost::optional< double > Ifc4x3_rc3::IfcDoorLiningProperties::LiningDepth() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcDoorLiningProperties::setLiningDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcDoorLiningProperties::setLiningDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcDoorLiningProperties::LiningThickness() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } double v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcDoorLiningProperties::setLiningThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcDoorLiningProperties::setLiningThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcDoorLiningProperties::ThresholdDepth() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } double v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcDoorLiningProperties::setThresholdDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcDoorLiningProperties::setThresholdDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcDoorLiningProperties::ThresholdThickness() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcDoorLiningProperties::setThresholdThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcDoorLiningProperties::setThresholdThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcDoorLiningProperties::TransomThickness() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcDoorLiningProperties::setTransomThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcDoorLiningProperties::setTransomThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcDoorLiningProperties::TransomOffset() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcDoorLiningProperties::setTransomOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcDoorLiningProperties::setTransomOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcDoorLiningProperties::LiningOffset() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcDoorLiningProperties::setLiningOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcDoorLiningProperties::setLiningOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcDoorLiningProperties::ThresholdOffset() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } double v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcDoorLiningProperties::setThresholdOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcDoorLiningProperties::setThresholdOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcDoorLiningProperties::CasingThickness() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } double v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcDoorLiningProperties::setCasingThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcDoorLiningProperties::setCasingThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcDoorLiningProperties::CasingDepth() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return boost::none; } double v = *data_->getArgument(13); return v; }
-void Ifc4x3_rc3::IfcDoorLiningProperties::setCasingDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(13,attr);} }
+void Ifc4x3_rc3::IfcDoorLiningProperties::setCasingDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(13,attr);} }
 ::Ifc4x3_rc3::IfcShapeAspect* Ifc4x3_rc3::IfcDoorLiningProperties::ShapeAspectStyle() const { if(!data_->getArgument(14) || data_->getArgument(14)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(14)))->as<::Ifc4x3_rc3::IfcShapeAspect>(true); }
 void Ifc4x3_rc3::IfcDoorLiningProperties::setShapeAspectStyle(::Ifc4x3_rc3::IfcShapeAspect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(14,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcDoorLiningProperties::LiningToPanelOffsetX() const { if(!data_->getArgument(15) || data_->getArgument(15)->isNull()) { return boost::none; } double v = *data_->getArgument(15); return v; }
-void Ifc4x3_rc3::IfcDoorLiningProperties::setLiningToPanelOffsetX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(15,attr);} }
+void Ifc4x3_rc3::IfcDoorLiningProperties::setLiningToPanelOffsetX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(15,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcDoorLiningProperties::LiningToPanelOffsetY() const { if(!data_->getArgument(16) || data_->getArgument(16)->isNull()) { return boost::none; } double v = *data_->getArgument(16); return v; }
-void Ifc4x3_rc3::IfcDoorLiningProperties::setLiningToPanelOffsetY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(16,attr);} }
+void Ifc4x3_rc3::IfcDoorLiningProperties::setLiningToPanelOffsetY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(16,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDoorLiningProperties::declaration() const { return *IFC4X3_RC3_IfcDoorLiningProperties_type; }
@@ -15809,11 +15809,11 @@ Ifc4x3_rc3::IfcDoorLiningProperties::IfcDoorLiningProperties(std::string v1_Glob
 
 // Function implementations for IfcDoorPanelProperties
 boost::optional< double > Ifc4x3_rc3::IfcDoorPanelProperties::PanelDepth() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcDoorPanelProperties::setPanelDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcDoorPanelProperties::setPanelDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 ::Ifc4x3_rc3::IfcDoorPanelOperationEnum::Value Ifc4x3_rc3::IfcDoorPanelProperties::PanelOperation() const {  return ::Ifc4x3_rc3::IfcDoorPanelOperationEnum::FromString(*data_->getArgument(5)); }
 void Ifc4x3_rc3::IfcDoorPanelProperties::setPanelOperation(::Ifc4x3_rc3::IfcDoorPanelOperationEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcDoorPanelOperationEnum::ToString(v)));data_->setArgument(5,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcDoorPanelProperties::PanelWidth() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } double v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcDoorPanelProperties::setPanelWidth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcDoorPanelProperties::setPanelWidth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 ::Ifc4x3_rc3::IfcDoorPanelPositionEnum::Value Ifc4x3_rc3::IfcDoorPanelProperties::PanelPosition() const {  return ::Ifc4x3_rc3::IfcDoorPanelPositionEnum::FromString(*data_->getArgument(7)); }
 void Ifc4x3_rc3::IfcDoorPanelProperties::setPanelPosition(::Ifc4x3_rc3::IfcDoorPanelPositionEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcDoorPanelPositionEnum::ToString(v)));data_->setArgument(7,attr);} }
 ::Ifc4x3_rc3::IfcShapeAspect* Ifc4x3_rc3::IfcDoorPanelProperties::ShapeAspectStyle() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(8)))->as<::Ifc4x3_rc3::IfcShapeAspect>(true); }
@@ -15855,9 +15855,9 @@ void Ifc4x3_rc3::IfcDoorType::setPredefinedType(::Ifc4x3_rc3::IfcDoorTypeEnum::V
 ::Ifc4x3_rc3::IfcDoorTypeOperationEnum::Value Ifc4x3_rc3::IfcDoorType::OperationType() const {  return ::Ifc4x3_rc3::IfcDoorTypeOperationEnum::FromString(*data_->getArgument(10)); }
 void Ifc4x3_rc3::IfcDoorType::setOperationType(::Ifc4x3_rc3::IfcDoorTypeOperationEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcDoorTypeOperationEnum::ToString(v)));data_->setArgument(10,attr);} }
 boost::optional< bool > Ifc4x3_rc3::IfcDoorType::ParameterTakesPrecedence() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } bool v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcDoorType::setParameterTakesPrecedence(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcDoorType::setParameterTakesPrecedence(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcDoorType::UserDefinedOperationType() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } std::string v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcDoorType::setUserDefinedOperationType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcDoorType::setUserDefinedOperationType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDoorType::declaration() const { return *IFC4X3_RC3_IfcDoorType_type; }
@@ -15883,7 +15883,7 @@ Ifc4x3_rc3::IfcDraughtingPreDefinedCurveFont::IfcDraughtingPreDefinedCurveFont(s
 
 // Function implementations for IfcDuctFitting
 boost::optional< ::Ifc4x3_rc3::IfcDuctFittingTypeEnum::Value > Ifc4x3_rc3::IfcDuctFitting::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDuctFittingTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcDuctFitting::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDuctFittingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDuctFittingTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcDuctFitting::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDuctFittingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDuctFittingTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDuctFitting::declaration() const { return *IFC4X3_RC3_IfcDuctFitting_type; }
@@ -15903,7 +15903,7 @@ Ifc4x3_rc3::IfcDuctFittingType::IfcDuctFittingType(std::string v1_GlobalId, ::If
 
 // Function implementations for IfcDuctSegment
 boost::optional< ::Ifc4x3_rc3::IfcDuctSegmentTypeEnum::Value > Ifc4x3_rc3::IfcDuctSegment::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDuctSegmentTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcDuctSegment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDuctSegmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDuctSegmentTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcDuctSegment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDuctSegmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDuctSegmentTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDuctSegment::declaration() const { return *IFC4X3_RC3_IfcDuctSegment_type; }
@@ -15923,7 +15923,7 @@ Ifc4x3_rc3::IfcDuctSegmentType::IfcDuctSegmentType(std::string v1_GlobalId, ::If
 
 // Function implementations for IfcDuctSilencer
 boost::optional< ::Ifc4x3_rc3::IfcDuctSilencerTypeEnum::Value > Ifc4x3_rc3::IfcDuctSilencer::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDuctSilencerTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcDuctSilencer::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDuctSilencerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDuctSilencerTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcDuctSilencer::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcDuctSilencerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDuctSilencerTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcDuctSilencer::declaration() const { return *IFC4X3_RC3_IfcDuctSilencer_type; }
@@ -15943,7 +15943,7 @@ Ifc4x3_rc3::IfcDuctSilencerType::IfcDuctSilencerType(std::string v1_GlobalId, ::
 
 // Function implementations for IfcEarthworksCut
 boost::optional< ::Ifc4x3_rc3::IfcEarthworksCutTypeEnum::Value > Ifc4x3_rc3::IfcEarthworksCut::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcEarthworksCutTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcEarthworksCut::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcEarthworksCutTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEarthworksCutTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcEarthworksCut::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcEarthworksCutTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEarthworksCutTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcEarthworksCut::declaration() const { return *IFC4X3_RC3_IfcEarthworksCut_type; }
@@ -15961,7 +15961,7 @@ Ifc4x3_rc3::IfcEarthworksElement::IfcEarthworksElement(std::string v1_GlobalId, 
 
 // Function implementations for IfcEarthworksFill
 boost::optional< ::Ifc4x3_rc3::IfcEarthworksFillTypeEnum::Value > Ifc4x3_rc3::IfcEarthworksFill::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcEarthworksFillTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcEarthworksFill::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcEarthworksFillTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEarthworksFillTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcEarthworksFill::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcEarthworksFillTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEarthworksFillTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcEarthworksFill::declaration() const { return *IFC4X3_RC3_IfcEarthworksFill_type; }
@@ -16005,7 +16005,7 @@ Ifc4x3_rc3::IfcEdgeLoop::IfcEdgeLoop(aggregate_of< ::Ifc4x3_rc3::IfcOrientedEdge
 
 // Function implementations for IfcElectricAppliance
 boost::optional< ::Ifc4x3_rc3::IfcElectricApplianceTypeEnum::Value > Ifc4x3_rc3::IfcElectricAppliance::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcElectricApplianceTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcElectricAppliance::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricApplianceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricApplianceTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcElectricAppliance::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricApplianceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricApplianceTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcElectricAppliance::declaration() const { return *IFC4X3_RC3_IfcElectricAppliance_type; }
@@ -16025,7 +16025,7 @@ Ifc4x3_rc3::IfcElectricApplianceType::IfcElectricApplianceType(std::string v1_Gl
 
 // Function implementations for IfcElectricDistributionBoard
 boost::optional< ::Ifc4x3_rc3::IfcElectricDistributionBoardTypeEnum::Value > Ifc4x3_rc3::IfcElectricDistributionBoard::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcElectricDistributionBoardTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcElectricDistributionBoard::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricDistributionBoardTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricDistributionBoardTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcElectricDistributionBoard::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricDistributionBoardTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricDistributionBoardTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcElectricDistributionBoard::declaration() const { return *IFC4X3_RC3_IfcElectricDistributionBoard_type; }
@@ -16045,7 +16045,7 @@ Ifc4x3_rc3::IfcElectricDistributionBoardType::IfcElectricDistributionBoardType(s
 
 // Function implementations for IfcElectricFlowStorageDevice
 boost::optional< ::Ifc4x3_rc3::IfcElectricFlowStorageDeviceTypeEnum::Value > Ifc4x3_rc3::IfcElectricFlowStorageDevice::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcElectricFlowStorageDeviceTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcElectricFlowStorageDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricFlowStorageDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricFlowStorageDeviceTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcElectricFlowStorageDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricFlowStorageDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricFlowStorageDeviceTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcElectricFlowStorageDevice::declaration() const { return *IFC4X3_RC3_IfcElectricFlowStorageDevice_type; }
@@ -16065,7 +16065,7 @@ Ifc4x3_rc3::IfcElectricFlowStorageDeviceType::IfcElectricFlowStorageDeviceType(s
 
 // Function implementations for IfcElectricFlowTreatmentDevice
 boost::optional< ::Ifc4x3_rc3::IfcElectricFlowTreatmentDeviceTypeEnum::Value > Ifc4x3_rc3::IfcElectricFlowTreatmentDevice::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcElectricFlowTreatmentDeviceTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcElectricFlowTreatmentDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricFlowTreatmentDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricFlowTreatmentDeviceTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcElectricFlowTreatmentDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricFlowTreatmentDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricFlowTreatmentDeviceTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcElectricFlowTreatmentDevice::declaration() const { return *IFC4X3_RC3_IfcElectricFlowTreatmentDevice_type; }
@@ -16085,7 +16085,7 @@ Ifc4x3_rc3::IfcElectricFlowTreatmentDeviceType::IfcElectricFlowTreatmentDeviceTy
 
 // Function implementations for IfcElectricGenerator
 boost::optional< ::Ifc4x3_rc3::IfcElectricGeneratorTypeEnum::Value > Ifc4x3_rc3::IfcElectricGenerator::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcElectricGeneratorTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcElectricGenerator::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricGeneratorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricGeneratorTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcElectricGenerator::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricGeneratorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricGeneratorTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcElectricGenerator::declaration() const { return *IFC4X3_RC3_IfcElectricGenerator_type; }
@@ -16105,7 +16105,7 @@ Ifc4x3_rc3::IfcElectricGeneratorType::IfcElectricGeneratorType(std::string v1_Gl
 
 // Function implementations for IfcElectricMotor
 boost::optional< ::Ifc4x3_rc3::IfcElectricMotorTypeEnum::Value > Ifc4x3_rc3::IfcElectricMotor::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcElectricMotorTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcElectricMotor::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricMotorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricMotorTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcElectricMotor::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricMotorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricMotorTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcElectricMotor::declaration() const { return *IFC4X3_RC3_IfcElectricMotor_type; }
@@ -16125,7 +16125,7 @@ Ifc4x3_rc3::IfcElectricMotorType::IfcElectricMotorType(std::string v1_GlobalId, 
 
 // Function implementations for IfcElectricTimeControl
 boost::optional< ::Ifc4x3_rc3::IfcElectricTimeControlTypeEnum::Value > Ifc4x3_rc3::IfcElectricTimeControl::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcElectricTimeControlTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcElectricTimeControl::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricTimeControlTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricTimeControlTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcElectricTimeControl::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElectricTimeControlTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElectricTimeControlTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcElectricTimeControl::declaration() const { return *IFC4X3_RC3_IfcElectricTimeControl_type; }
@@ -16145,7 +16145,7 @@ Ifc4x3_rc3::IfcElectricTimeControlType::IfcElectricTimeControlType(std::string v
 
 // Function implementations for IfcElement
 boost::optional< std::string > Ifc4x3_rc3::IfcElement::Tag() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcElement::setTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcElement::setTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 
 ::Ifc4x3_rc3::IfcRelFillsElement::list::ptr Ifc4x3_rc3::IfcElement::FillsVoids() const { return data_->getInverse(IFC4X3_RC3_IfcRelFillsElement_type, 5)->as<IfcRelFillsElement>(); }
 ::Ifc4x3_rc3::IfcRelConnectsElements::list::ptr Ifc4x3_rc3::IfcElement::ConnectedTo() const { return data_->getInverse(IFC4X3_RC3_IfcRelConnectsElements_type, 5)->as<IfcRelConnectsElements>(); }
@@ -16166,9 +16166,9 @@ Ifc4x3_rc3::IfcElement::IfcElement(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwn
 
 // Function implementations for IfcElementAssembly
 boost::optional< ::Ifc4x3_rc3::IfcAssemblyPlaceEnum::Value > Ifc4x3_rc3::IfcElementAssembly::AssemblyPlace() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcAssemblyPlaceEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcElementAssembly::setAssemblyPlace(boost::optional< ::Ifc4x3_rc3::IfcAssemblyPlaceEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAssemblyPlaceEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcElementAssembly::setAssemblyPlace(boost::optional< ::Ifc4x3_rc3::IfcAssemblyPlaceEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcAssemblyPlaceEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcElementAssemblyTypeEnum::Value > Ifc4x3_rc3::IfcElementAssembly::PredefinedType() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcElementAssemblyTypeEnum::FromString(*data_->getArgument(9)); }
-void Ifc4x3_rc3::IfcElementAssembly::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElementAssemblyTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElementAssemblyTypeEnum::ToString(*v)));data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcElementAssembly::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcElementAssemblyTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElementAssemblyTypeEnum::ToString(*v)));}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcElementAssembly::declaration() const { return *IFC4X3_RC3_IfcElementAssembly_type; }
@@ -16204,7 +16204,7 @@ Ifc4x3_rc3::IfcElementComponentType::IfcElementComponentType(std::string v1_Glob
 
 // Function implementations for IfcElementQuantity
 boost::optional< std::string > Ifc4x3_rc3::IfcElementQuantity::MethodOfMeasurement() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcElementQuantity::setMethodOfMeasurement(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcElementQuantity::setMethodOfMeasurement(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 aggregate_of< ::Ifc4x3_rc3::IfcPhysicalQuantity >::ptr Ifc4x3_rc3::IfcElementQuantity::Quantities() const {  aggregate_of_instance::ptr es = *data_->getArgument(5); return es->as< ::Ifc4x3_rc3::IfcPhysicalQuantity >(); }
 void Ifc4x3_rc3::IfcElementQuantity::setQuantities(aggregate_of< ::Ifc4x3_rc3::IfcPhysicalQuantity >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(5,attr);} }
 
@@ -16216,7 +16216,7 @@ Ifc4x3_rc3::IfcElementQuantity::IfcElementQuantity(std::string v1_GlobalId, ::If
 
 // Function implementations for IfcElementType
 boost::optional< std::string > Ifc4x3_rc3::IfcElementType::ElementType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcElementType::setElementType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcElementType::setElementType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcElementType::declaration() const { return *IFC4X3_RC3_IfcElementType_type; }
@@ -16276,7 +16276,7 @@ Ifc4x3_rc3::IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType(std::st
 
 // Function implementations for IfcEngine
 boost::optional< ::Ifc4x3_rc3::IfcEngineTypeEnum::Value > Ifc4x3_rc3::IfcEngine::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcEngineTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcEngine::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcEngineTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEngineTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcEngine::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcEngineTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEngineTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcEngine::declaration() const { return *IFC4X3_RC3_IfcEngine_type; }
@@ -16296,7 +16296,7 @@ Ifc4x3_rc3::IfcEngineType::IfcEngineType(std::string v1_GlobalId, ::Ifc4x3_rc3::
 
 // Function implementations for IfcEvaporativeCooler
 boost::optional< ::Ifc4x3_rc3::IfcEvaporativeCoolerTypeEnum::Value > Ifc4x3_rc3::IfcEvaporativeCooler::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcEvaporativeCoolerTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcEvaporativeCooler::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcEvaporativeCoolerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEvaporativeCoolerTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcEvaporativeCooler::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcEvaporativeCoolerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEvaporativeCoolerTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcEvaporativeCooler::declaration() const { return *IFC4X3_RC3_IfcEvaporativeCooler_type; }
@@ -16316,7 +16316,7 @@ Ifc4x3_rc3::IfcEvaporativeCoolerType::IfcEvaporativeCoolerType(std::string v1_Gl
 
 // Function implementations for IfcEvaporator
 boost::optional< ::Ifc4x3_rc3::IfcEvaporatorTypeEnum::Value > Ifc4x3_rc3::IfcEvaporator::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcEvaporatorTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcEvaporator::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcEvaporatorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEvaporatorTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcEvaporator::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcEvaporatorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEvaporatorTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcEvaporator::declaration() const { return *IFC4X3_RC3_IfcEvaporator_type; }
@@ -16336,11 +16336,11 @@ Ifc4x3_rc3::IfcEvaporatorType::IfcEvaporatorType(std::string v1_GlobalId, ::Ifc4
 
 // Function implementations for IfcEvent
 boost::optional< ::Ifc4x3_rc3::IfcEventTypeEnum::Value > Ifc4x3_rc3::IfcEvent::PredefinedType() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcEventTypeEnum::FromString(*data_->getArgument(7)); }
-void Ifc4x3_rc3::IfcEvent::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcEventTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEventTypeEnum::ToString(*v)));data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcEvent::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcEventTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEventTypeEnum::ToString(*v)));}data_->setArgument(7,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcEventTriggerTypeEnum::Value > Ifc4x3_rc3::IfcEvent::EventTriggerType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcEventTriggerTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcEvent::setEventTriggerType(boost::optional< ::Ifc4x3_rc3::IfcEventTriggerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEventTriggerTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcEvent::setEventTriggerType(boost::optional< ::Ifc4x3_rc3::IfcEventTriggerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcEventTriggerTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcEvent::UserDefinedEventTriggerType() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } std::string v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcEvent::setUserDefinedEventTriggerType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcEvent::setUserDefinedEventTriggerType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 ::Ifc4x3_rc3::IfcEventTime* Ifc4x3_rc3::IfcEvent::EventOccurenceTime() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(10)))->as<::Ifc4x3_rc3::IfcEventTime>(true); }
 void Ifc4x3_rc3::IfcEvent::setEventOccurenceTime(::Ifc4x3_rc3::IfcEventTime* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(10,attr);} }
 
@@ -16352,13 +16352,13 @@ Ifc4x3_rc3::IfcEvent::IfcEvent(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHi
 
 // Function implementations for IfcEventTime
 boost::optional< std::string > Ifc4x3_rc3::IfcEventTime::ActualDate() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcEventTime::setActualDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcEventTime::setActualDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcEventTime::EarlyDate() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcEventTime::setEarlyDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcEventTime::setEarlyDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcEventTime::LateDate() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcEventTime::setLateDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcEventTime::setLateDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcEventTime::ScheduleDate() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcEventTime::setScheduleDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcEventTime::setScheduleDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcEventTime::declaration() const { return *IFC4X3_RC3_IfcEventTime_type; }
@@ -16372,7 +16372,7 @@ void Ifc4x3_rc3::IfcEventType::setPredefinedType(::Ifc4x3_rc3::IfcEventTypeEnum:
 ::Ifc4x3_rc3::IfcEventTriggerTypeEnum::Value Ifc4x3_rc3::IfcEventType::EventTriggerType() const {  return ::Ifc4x3_rc3::IfcEventTriggerTypeEnum::FromString(*data_->getArgument(10)); }
 void Ifc4x3_rc3::IfcEventType::setEventTriggerType(::Ifc4x3_rc3::IfcEventTriggerTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcEventTriggerTypeEnum::ToString(v)));data_->setArgument(10,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcEventType::UserDefinedEventTriggerType() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } std::string v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcEventType::setUserDefinedEventTriggerType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcEventType::setUserDefinedEventTriggerType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcEventType::declaration() const { return *IFC4X3_RC3_IfcEventType_type; }
@@ -16382,9 +16382,9 @@ Ifc4x3_rc3::IfcEventType::IfcEventType(std::string v1_GlobalId, ::Ifc4x3_rc3::If
 
 // Function implementations for IfcExtendedProperties
 boost::optional< std::string > Ifc4x3_rc3::IfcExtendedProperties::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcExtendedProperties::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcExtendedProperties::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcExtendedProperties::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcExtendedProperties::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcExtendedProperties::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 aggregate_of< ::Ifc4x3_rc3::IfcProperty >::ptr Ifc4x3_rc3::IfcExtendedProperties::Properties() const {  aggregate_of_instance::ptr es = *data_->getArgument(2); return es->as< ::Ifc4x3_rc3::IfcProperty >(); }
 void Ifc4x3_rc3::IfcExtendedProperties::setProperties(aggregate_of< ::Ifc4x3_rc3::IfcProperty >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(2,attr);} }
 
@@ -16404,11 +16404,11 @@ Ifc4x3_rc3::IfcExternalInformation::IfcExternalInformation() : IfcUtil::IfcBaseE
 
 // Function implementations for IfcExternalReference
 boost::optional< std::string > Ifc4x3_rc3::IfcExternalReference::Location() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcExternalReference::setLocation(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcExternalReference::setLocation(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcExternalReference::Identification() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcExternalReference::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcExternalReference::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcExternalReference::Name() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcExternalReference::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcExternalReference::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 ::Ifc4x3_rc3::IfcExternalReferenceRelationship::list::ptr Ifc4x3_rc3::IfcExternalReference::ExternalReferenceForResources() const { return data_->getInverse(IFC4X3_RC3_IfcExternalReferenceRelationship_type, 2)->as<IfcExternalReferenceRelationship>(); }
 
@@ -16431,7 +16431,7 @@ Ifc4x3_rc3::IfcExternalReferenceRelationship::IfcExternalReferenceRelationship(b
 
 // Function implementations for IfcExternalSpatialElement
 boost::optional< ::Ifc4x3_rc3::IfcExternalSpatialElementTypeEnum::Value > Ifc4x3_rc3::IfcExternalSpatialElement::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcExternalSpatialElementTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcExternalSpatialElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcExternalSpatialElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcExternalSpatialElementTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcExternalSpatialElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcExternalSpatialElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcExternalSpatialElementTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 ::Ifc4x3_rc3::IfcRelSpaceBoundary::list::ptr Ifc4x3_rc3::IfcExternalSpatialElement::BoundedBy() const { return data_->getInverse(IFC4X3_RC3_IfcRelSpaceBoundary_type, 4)->as<IfcRelSpaceBoundary>(); }
 
@@ -16587,17 +16587,17 @@ Ifc4x3_rc3::IfcFacilityPart::IfcFacilityPart(std::string v1_GlobalId, ::Ifc4x3_r
 
 // Function implementations for IfcFailureConnectionCondition
 boost::optional< double > Ifc4x3_rc3::IfcFailureConnectionCondition::TensionFailureX() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } double v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcFailureConnectionCondition::setTensionFailureX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcFailureConnectionCondition::setTensionFailureX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcFailureConnectionCondition::TensionFailureY() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcFailureConnectionCondition::setTensionFailureY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcFailureConnectionCondition::setTensionFailureY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcFailureConnectionCondition::TensionFailureZ() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcFailureConnectionCondition::setTensionFailureZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcFailureConnectionCondition::setTensionFailureZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcFailureConnectionCondition::CompressionFailureX() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcFailureConnectionCondition::setCompressionFailureX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcFailureConnectionCondition::setCompressionFailureX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcFailureConnectionCondition::CompressionFailureY() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } double v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcFailureConnectionCondition::setCompressionFailureY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcFailureConnectionCondition::setCompressionFailureY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcFailureConnectionCondition::CompressionFailureZ() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } double v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcFailureConnectionCondition::setCompressionFailureZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcFailureConnectionCondition::setCompressionFailureZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcFailureConnectionCondition::declaration() const { return *IFC4X3_RC3_IfcFailureConnectionCondition_type; }
@@ -16607,7 +16607,7 @@ Ifc4x3_rc3::IfcFailureConnectionCondition::IfcFailureConnectionCondition(boost::
 
 // Function implementations for IfcFan
 boost::optional< ::Ifc4x3_rc3::IfcFanTypeEnum::Value > Ifc4x3_rc3::IfcFan::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcFanTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcFan::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFanTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFanTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcFan::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFanTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFanTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcFan::declaration() const { return *IFC4X3_RC3_IfcFan_type; }
@@ -16627,7 +16627,7 @@ Ifc4x3_rc3::IfcFanType::IfcFanType(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwn
 
 // Function implementations for IfcFastener
 boost::optional< ::Ifc4x3_rc3::IfcFastenerTypeEnum::Value > Ifc4x3_rc3::IfcFastener::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcFastenerTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcFastener::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFastenerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFastenerTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcFastener::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFastenerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFastenerTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcFastener::declaration() const { return *IFC4X3_RC3_IfcFastener_type; }
@@ -16675,7 +16675,7 @@ Ifc4x3_rc3::IfcFeatureElementSubtraction::IfcFeatureElementSubtraction(std::stri
 aggregate_of_instance::ptr Ifc4x3_rc3::IfcFillAreaStyle::FillStyles() const {  aggregate_of_instance::ptr v = *data_->getArgument(1); return v; }
 void Ifc4x3_rc3::IfcFillAreaStyle::setFillStyles(aggregate_of_instance::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< bool > Ifc4x3_rc3::IfcFillAreaStyle::ModelOrDraughting() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } bool v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcFillAreaStyle::setModelOrDraughting(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcFillAreaStyle::setModelOrDraughting(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcFillAreaStyle::declaration() const { return *IFC4X3_RC3_IfcFillAreaStyle_type; }
@@ -16717,7 +16717,7 @@ Ifc4x3_rc3::IfcFillAreaStyleTiles::IfcFillAreaStyleTiles(aggregate_of< ::Ifc4x3_
 
 // Function implementations for IfcFilter
 boost::optional< ::Ifc4x3_rc3::IfcFilterTypeEnum::Value > Ifc4x3_rc3::IfcFilter::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcFilterTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcFilter::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFilterTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFilterTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcFilter::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFilterTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFilterTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcFilter::declaration() const { return *IFC4X3_RC3_IfcFilter_type; }
@@ -16737,7 +16737,7 @@ Ifc4x3_rc3::IfcFilterType::IfcFilterType(std::string v1_GlobalId, ::Ifc4x3_rc3::
 
 // Function implementations for IfcFireSuppressionTerminal
 boost::optional< ::Ifc4x3_rc3::IfcFireSuppressionTerminalTypeEnum::Value > Ifc4x3_rc3::IfcFireSuppressionTerminal::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcFireSuppressionTerminalTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcFireSuppressionTerminal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFireSuppressionTerminalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFireSuppressionTerminalTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcFireSuppressionTerminal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFireSuppressionTerminalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFireSuppressionTerminalTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcFireSuppressionTerminal::declaration() const { return *IFC4X3_RC3_IfcFireSuppressionTerminal_type; }
@@ -16799,7 +16799,7 @@ Ifc4x3_rc3::IfcFlowFittingType::IfcFlowFittingType(std::string v1_GlobalId, ::If
 
 // Function implementations for IfcFlowInstrument
 boost::optional< ::Ifc4x3_rc3::IfcFlowInstrumentTypeEnum::Value > Ifc4x3_rc3::IfcFlowInstrument::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcFlowInstrumentTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcFlowInstrument::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFlowInstrumentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFlowInstrumentTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcFlowInstrument::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFlowInstrumentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFlowInstrumentTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcFlowInstrument::declaration() const { return *IFC4X3_RC3_IfcFlowInstrument_type; }
@@ -16819,7 +16819,7 @@ Ifc4x3_rc3::IfcFlowInstrumentType::IfcFlowInstrumentType(std::string v1_GlobalId
 
 // Function implementations for IfcFlowMeter
 boost::optional< ::Ifc4x3_rc3::IfcFlowMeterTypeEnum::Value > Ifc4x3_rc3::IfcFlowMeter::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcFlowMeterTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcFlowMeter::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFlowMeterTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFlowMeterTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcFlowMeter::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFlowMeterTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFlowMeterTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcFlowMeter::declaration() const { return *IFC4X3_RC3_IfcFlowMeter_type; }
@@ -16919,7 +16919,7 @@ Ifc4x3_rc3::IfcFlowTreatmentDeviceType::IfcFlowTreatmentDeviceType(std::string v
 
 // Function implementations for IfcFooting
 boost::optional< ::Ifc4x3_rc3::IfcFootingTypeEnum::Value > Ifc4x3_rc3::IfcFooting::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcFootingTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcFooting::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFootingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFootingTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcFooting::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFootingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFootingTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcFooting::declaration() const { return *IFC4X3_RC3_IfcFooting_type; }
@@ -16955,7 +16955,7 @@ Ifc4x3_rc3::IfcFurnishingElementType::IfcFurnishingElementType(std::string v1_Gl
 
 // Function implementations for IfcFurniture
 boost::optional< ::Ifc4x3_rc3::IfcFurnitureTypeEnum::Value > Ifc4x3_rc3::IfcFurniture::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcFurnitureTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcFurniture::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFurnitureTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFurnitureTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcFurniture::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFurnitureTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFurnitureTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcFurniture::declaration() const { return *IFC4X3_RC3_IfcFurniture_type; }
@@ -16967,7 +16967,7 @@ Ifc4x3_rc3::IfcFurniture::IfcFurniture(std::string v1_GlobalId, ::Ifc4x3_rc3::If
 ::Ifc4x3_rc3::IfcAssemblyPlaceEnum::Value Ifc4x3_rc3::IfcFurnitureType::AssemblyPlace() const {  return ::Ifc4x3_rc3::IfcAssemblyPlaceEnum::FromString(*data_->getArgument(9)); }
 void Ifc4x3_rc3::IfcFurnitureType::setAssemblyPlace(::Ifc4x3_rc3::IfcAssemblyPlaceEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcAssemblyPlaceEnum::ToString(v)));data_->setArgument(9,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcFurnitureTypeEnum::Value > Ifc4x3_rc3::IfcFurnitureType::PredefinedType() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcFurnitureTypeEnum::FromString(*data_->getArgument(10)); }
-void Ifc4x3_rc3::IfcFurnitureType::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFurnitureTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFurnitureTypeEnum::ToString(*v)));data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcFurnitureType::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcFurnitureTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcFurnitureTypeEnum::ToString(*v)));}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcFurnitureType::declaration() const { return *IFC4X3_RC3_IfcFurnitureType_type; }
@@ -16977,7 +16977,7 @@ Ifc4x3_rc3::IfcFurnitureType::IfcFurnitureType(std::string v1_GlobalId, ::Ifc4x3
 
 // Function implementations for IfcGeographicElement
 boost::optional< ::Ifc4x3_rc3::IfcGeographicElementTypeEnum::Value > Ifc4x3_rc3::IfcGeographicElement::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcGeographicElementTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcGeographicElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcGeographicElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcGeographicElementTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcGeographicElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcGeographicElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcGeographicElementTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcGeographicElement::declaration() const { return *IFC4X3_RC3_IfcGeographicElement_type; }
@@ -17007,7 +17007,7 @@ Ifc4x3_rc3::IfcGeometricCurveSet::IfcGeometricCurveSet(aggregate_of_instance::pt
 int Ifc4x3_rc3::IfcGeometricRepresentationContext::CoordinateSpaceDimension() const {  int v = *data_->getArgument(2); return v; }
 void Ifc4x3_rc3::IfcGeometricRepresentationContext::setCoordinateSpaceDimension(int v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcGeometricRepresentationContext::Precision() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcGeometricRepresentationContext::setPrecision(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcGeometricRepresentationContext::setPrecision(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 ::Ifc4x3_rc3::IfcAxis2Placement* Ifc4x3_rc3::IfcGeometricRepresentationContext::WorldCoordinateSystem() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(4)))->as<::Ifc4x3_rc3::IfcAxis2Placement>(true); }
 void Ifc4x3_rc3::IfcGeometricRepresentationContext::setWorldCoordinateSystem(::Ifc4x3_rc3::IfcAxis2Placement* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
 ::Ifc4x3_rc3::IfcDirection* Ifc4x3_rc3::IfcGeometricRepresentationContext::TrueNorth() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(5)))->as<::Ifc4x3_rc3::IfcDirection>(true); }
@@ -17033,11 +17033,11 @@ Ifc4x3_rc3::IfcGeometricRepresentationItem::IfcGeometricRepresentationItem() : I
 ::Ifc4x3_rc3::IfcGeometricRepresentationContext* Ifc4x3_rc3::IfcGeometricRepresentationSubContext::ParentContext() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(6)))->as<::Ifc4x3_rc3::IfcGeometricRepresentationContext>(true); }
 void Ifc4x3_rc3::IfcGeometricRepresentationSubContext::setParentContext(::Ifc4x3_rc3::IfcGeometricRepresentationContext* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcGeometricRepresentationSubContext::TargetScale() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcGeometricRepresentationSubContext::setTargetScale(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcGeometricRepresentationSubContext::setTargetScale(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 ::Ifc4x3_rc3::IfcGeometricProjectionEnum::Value Ifc4x3_rc3::IfcGeometricRepresentationSubContext::TargetView() const {  return ::Ifc4x3_rc3::IfcGeometricProjectionEnum::FromString(*data_->getArgument(8)); }
 void Ifc4x3_rc3::IfcGeometricRepresentationSubContext::setTargetView(::Ifc4x3_rc3::IfcGeometricProjectionEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcGeometricProjectionEnum::ToString(v)));data_->setArgument(8,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcGeometricRepresentationSubContext::UserDefinedTargetView() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } std::string v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcGeometricRepresentationSubContext::setUserDefinedTargetView(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcGeometricRepresentationSubContext::setUserDefinedTargetView(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcGeometricRepresentationSubContext::declaration() const { return *IFC4X3_RC3_IfcGeometricRepresentationSubContext_type; }
@@ -17113,9 +17113,9 @@ void Ifc4x3_rc3::IfcGrid::setUAxes(aggregate_of< ::Ifc4x3_rc3::IfcGridAxis >::pt
 aggregate_of< ::Ifc4x3_rc3::IfcGridAxis >::ptr Ifc4x3_rc3::IfcGrid::VAxes() const {  aggregate_of_instance::ptr es = *data_->getArgument(8); return es->as< ::Ifc4x3_rc3::IfcGridAxis >(); }
 void Ifc4x3_rc3::IfcGrid::setVAxes(aggregate_of< ::Ifc4x3_rc3::IfcGridAxis >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(8,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcGridAxis >::ptr > Ifc4x3_rc3::IfcGrid::WAxes() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(9); return es->as< ::Ifc4x3_rc3::IfcGridAxis >(); }
-void Ifc4x3_rc3::IfcGrid::setWAxes(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcGridAxis >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcGrid::setWAxes(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcGridAxis >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(9,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcGridTypeEnum::Value > Ifc4x3_rc3::IfcGrid::PredefinedType() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcGridTypeEnum::FromString(*data_->getArgument(10)); }
-void Ifc4x3_rc3::IfcGrid::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcGridTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcGridTypeEnum::ToString(*v)));data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcGrid::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcGridTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcGridTypeEnum::ToString(*v)));}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcGrid::declaration() const { return *IFC4X3_RC3_IfcGrid_type; }
@@ -17125,7 +17125,7 @@ Ifc4x3_rc3::IfcGrid::IfcGrid(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHist
 
 // Function implementations for IfcGridAxis
 boost::optional< std::string > Ifc4x3_rc3::IfcGridAxis::AxisTag() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcGridAxis::setAxisTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcGridAxis::setAxisTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 ::Ifc4x3_rc3::IfcCurve* Ifc4x3_rc3::IfcGridAxis::AxisCurve() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(1)))->as<::Ifc4x3_rc3::IfcCurve>(true); }
 void Ifc4x3_rc3::IfcGridAxis::setAxisCurve(::Ifc4x3_rc3::IfcCurve* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 bool Ifc4x3_rc3::IfcGridAxis::SameSense() const {  bool v = *data_->getArgument(2); return v; }
@@ -17176,7 +17176,7 @@ Ifc4x3_rc3::IfcHalfSpaceSolid::IfcHalfSpaceSolid(::Ifc4x3_rc3::IfcSurface* v1_Ba
 
 // Function implementations for IfcHeatExchanger
 boost::optional< ::Ifc4x3_rc3::IfcHeatExchangerTypeEnum::Value > Ifc4x3_rc3::IfcHeatExchanger::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcHeatExchangerTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcHeatExchanger::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcHeatExchangerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcHeatExchangerTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcHeatExchanger::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcHeatExchangerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcHeatExchangerTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcHeatExchanger::declaration() const { return *IFC4X3_RC3_IfcHeatExchanger_type; }
@@ -17196,7 +17196,7 @@ Ifc4x3_rc3::IfcHeatExchangerType::IfcHeatExchangerType(std::string v1_GlobalId, 
 
 // Function implementations for IfcHumidifier
 boost::optional< ::Ifc4x3_rc3::IfcHumidifierTypeEnum::Value > Ifc4x3_rc3::IfcHumidifier::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcHumidifierTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcHumidifier::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcHumidifierTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcHumidifierTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcHumidifier::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcHumidifierTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcHumidifierTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcHumidifier::declaration() const { return *IFC4X3_RC3_IfcHumidifier_type; }
@@ -17224,11 +17224,11 @@ void Ifc4x3_rc3::IfcIShapeProfileDef::setWebThickness(double v) { {IfcWrite::Ifc
 double Ifc4x3_rc3::IfcIShapeProfileDef::FlangeThickness() const {  double v = *data_->getArgument(6); return v; }
 void Ifc4x3_rc3::IfcIShapeProfileDef::setFlangeThickness(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcIShapeProfileDef::FilletRadius() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcIShapeProfileDef::setFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcIShapeProfileDef::setFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcIShapeProfileDef::FlangeEdgeRadius() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcIShapeProfileDef::setFlangeEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcIShapeProfileDef::setFlangeEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcIShapeProfileDef::FlangeSlope() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcIShapeProfileDef::setFlangeSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcIShapeProfileDef::setFlangeSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcIShapeProfileDef::declaration() const { return *IFC4X3_RC3_IfcIShapeProfileDef_type; }
@@ -17268,7 +17268,7 @@ Ifc4x3_rc3::IfcImpactProtectionDeviceType::IfcImpactProtectionDeviceType(std::st
 
 // Function implementations for IfcInclinedReferenceSweptAreaSolid
 boost::optional< bool > Ifc4x3_rc3::IfcInclinedReferenceSweptAreaSolid::FixedAxisVertical() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } bool v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcInclinedReferenceSweptAreaSolid::setFixedAxisVertical(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcInclinedReferenceSweptAreaSolid::setFixedAxisVertical(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcInclinedReferenceSweptAreaSolid::declaration() const { return *IFC4X3_RC3_IfcInclinedReferenceSweptAreaSolid_type; }
@@ -17280,7 +17280,7 @@ Ifc4x3_rc3::IfcInclinedReferenceSweptAreaSolid::IfcInclinedReferenceSweptAreaSol
 ::Ifc4x3_rc3::IfcTessellatedFaceSet* Ifc4x3_rc3::IfcIndexedColourMap::MappedTo() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(0)))->as<::Ifc4x3_rc3::IfcTessellatedFaceSet>(true); }
 void Ifc4x3_rc3::IfcIndexedColourMap::setMappedTo(::Ifc4x3_rc3::IfcTessellatedFaceSet* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcIndexedColourMap::Opacity() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } double v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcIndexedColourMap::setOpacity(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcIndexedColourMap::setOpacity(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 ::Ifc4x3_rc3::IfcColourRgbList* Ifc4x3_rc3::IfcIndexedColourMap::Colours() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(2)))->as<::Ifc4x3_rc3::IfcColourRgbList>(true); }
 void Ifc4x3_rc3::IfcIndexedColourMap::setColours(::Ifc4x3_rc3::IfcColourRgbList* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 std::vector< int > /*[1:?]*/ Ifc4x3_rc3::IfcIndexedColourMap::ColourIndex() const {  std::vector< int > /*[1:?]*/ v = *data_->getArgument(3); return v; }
@@ -17296,9 +17296,9 @@ Ifc4x3_rc3::IfcIndexedColourMap::IfcIndexedColourMap(::Ifc4x3_rc3::IfcTessellate
 ::Ifc4x3_rc3::IfcCartesianPointList* Ifc4x3_rc3::IfcIndexedPolyCurve::Points() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(0)))->as<::Ifc4x3_rc3::IfcCartesianPointList>(true); }
 void Ifc4x3_rc3::IfcIndexedPolyCurve::setPoints(::Ifc4x3_rc3::IfcCartesianPointList* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< aggregate_of_instance::ptr > Ifc4x3_rc3::IfcIndexedPolyCurve::Segments() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } aggregate_of_instance::ptr v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcIndexedPolyCurve::setSegments(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcIndexedPolyCurve::setSegments(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< bool > Ifc4x3_rc3::IfcIndexedPolyCurve::SelfIntersect() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } bool v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcIndexedPolyCurve::setSelfIntersect(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcIndexedPolyCurve::setSelfIntersect(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcIndexedPolyCurve::declaration() const { return *IFC4X3_RC3_IfcIndexedPolyCurve_type; }
@@ -17341,7 +17341,7 @@ Ifc4x3_rc3::IfcIndexedTextureMap::IfcIndexedTextureMap(aggregate_of< ::Ifc4x3_rc
 
 // Function implementations for IfcIndexedTriangleTextureMap
 boost::optional< std::vector< std::vector< int > > > Ifc4x3_rc3::IfcIndexedTriangleTextureMap::TexCoordIndex() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::vector< std::vector< int > > v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcIndexedTriangleTextureMap::setTexCoordIndex(boost::optional< std::vector< std::vector< int > > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcIndexedTriangleTextureMap::setTexCoordIndex(boost::optional< std::vector< std::vector< int > > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcIndexedTriangleTextureMap::declaration() const { return *IFC4X3_RC3_IfcIndexedTriangleTextureMap_type; }
@@ -17351,7 +17351,7 @@ Ifc4x3_rc3::IfcIndexedTriangleTextureMap::IfcIndexedTriangleTextureMap(aggregate
 
 // Function implementations for IfcInterceptor
 boost::optional< ::Ifc4x3_rc3::IfcInterceptorTypeEnum::Value > Ifc4x3_rc3::IfcInterceptor::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcInterceptorTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcInterceptor::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcInterceptorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcInterceptorTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcInterceptor::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcInterceptorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcInterceptorTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcInterceptor::declaration() const { return *IFC4X3_RC3_IfcInterceptor_type; }
@@ -17379,13 +17379,13 @@ Ifc4x3_rc3::IfcIntersectionCurve::IfcIntersectionCurve(::Ifc4x3_rc3::IfcCurve* v
 
 // Function implementations for IfcInventory
 boost::optional< ::Ifc4x3_rc3::IfcInventoryTypeEnum::Value > Ifc4x3_rc3::IfcInventory::PredefinedType() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcInventoryTypeEnum::FromString(*data_->getArgument(5)); }
-void Ifc4x3_rc3::IfcInventory::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcInventoryTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcInventoryTypeEnum::ToString(*v)));data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcInventory::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcInventoryTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcInventoryTypeEnum::ToString(*v)));}data_->setArgument(5,attr);} }
 ::Ifc4x3_rc3::IfcActorSelect* Ifc4x3_rc3::IfcInventory::Jurisdiction() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(6)))->as<::Ifc4x3_rc3::IfcActorSelect>(true); }
 void Ifc4x3_rc3::IfcInventory::setJurisdiction(::Ifc4x3_rc3::IfcActorSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPerson >::ptr > Ifc4x3_rc3::IfcInventory::ResponsiblePersons() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(7); return es->as< ::Ifc4x3_rc3::IfcPerson >(); }
-void Ifc4x3_rc3::IfcInventory::setResponsiblePersons(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPerson >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcInventory::setResponsiblePersons(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPerson >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcInventory::LastUpdateDate() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcInventory::setLastUpdateDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcInventory::setLastUpdateDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 ::Ifc4x3_rc3::IfcCostValue* Ifc4x3_rc3::IfcInventory::CurrentValue() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(9)))->as<::Ifc4x3_rc3::IfcCostValue>(true); }
 void Ifc4x3_rc3::IfcInventory::setCurrentValue(::Ifc4x3_rc3::IfcCostValue* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(9,attr);} }
 ::Ifc4x3_rc3::IfcCostValue* Ifc4x3_rc3::IfcInventory::OriginalValue() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(10)))->as<::Ifc4x3_rc3::IfcCostValue>(true); }
@@ -17421,7 +17421,7 @@ Ifc4x3_rc3::IfcIrregularTimeSeriesValue::IfcIrregularTimeSeriesValue(std::string
 
 // Function implementations for IfcJunctionBox
 boost::optional< ::Ifc4x3_rc3::IfcJunctionBoxTypeEnum::Value > Ifc4x3_rc3::IfcJunctionBox::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcJunctionBoxTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcJunctionBox::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcJunctionBoxTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcJunctionBoxTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcJunctionBox::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcJunctionBoxTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcJunctionBoxTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcJunctionBox::declaration() const { return *IFC4X3_RC3_IfcJunctionBox_type; }
@@ -17463,15 +17463,15 @@ Ifc4x3_rc3::IfcKerbType::IfcKerbType(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 double Ifc4x3_rc3::IfcLShapeProfileDef::Depth() const {  double v = *data_->getArgument(3); return v; }
 void Ifc4x3_rc3::IfcLShapeProfileDef::setDepth(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcLShapeProfileDef::Width() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcLShapeProfileDef::setWidth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcLShapeProfileDef::setWidth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 double Ifc4x3_rc3::IfcLShapeProfileDef::Thickness() const {  double v = *data_->getArgument(5); return v; }
 void Ifc4x3_rc3::IfcLShapeProfileDef::setThickness(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(5,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcLShapeProfileDef::FilletRadius() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } double v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcLShapeProfileDef::setFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcLShapeProfileDef::setFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcLShapeProfileDef::EdgeRadius() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcLShapeProfileDef::setEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcLShapeProfileDef::setEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcLShapeProfileDef::LegSlope() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcLShapeProfileDef::setLegSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcLShapeProfileDef::setLegSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcLShapeProfileDef::declaration() const { return *IFC4X3_RC3_IfcLShapeProfileDef_type; }
@@ -17481,7 +17481,7 @@ Ifc4x3_rc3::IfcLShapeProfileDef::IfcLShapeProfileDef(::Ifc4x3_rc3::IfcProfileTyp
 
 // Function implementations for IfcLaborResource
 boost::optional< ::Ifc4x3_rc3::IfcLaborResourceTypeEnum::Value > Ifc4x3_rc3::IfcLaborResource::PredefinedType() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcLaborResourceTypeEnum::FromString(*data_->getArgument(10)); }
-void Ifc4x3_rc3::IfcLaborResource::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcLaborResourceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcLaborResourceTypeEnum::ToString(*v)));data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcLaborResource::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcLaborResourceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcLaborResourceTypeEnum::ToString(*v)));}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcLaborResource::declaration() const { return *IFC4X3_RC3_IfcLaborResource_type; }
@@ -17513,7 +17513,7 @@ Ifc4x3_rc3::IfcLagTime::IfcLagTime(boost::optional< std::string > v1_Name, boost
 
 // Function implementations for IfcLamp
 boost::optional< ::Ifc4x3_rc3::IfcLampTypeEnum::Value > Ifc4x3_rc3::IfcLamp::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcLampTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcLamp::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcLampTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcLampTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcLamp::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcLampTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcLampTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcLamp::declaration() const { return *IFC4X3_RC3_IfcLamp_type; }
@@ -17535,15 +17535,15 @@ Ifc4x3_rc3::IfcLampType::IfcLampType(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 std::string Ifc4x3_rc3::IfcLibraryInformation::Name() const {  std::string v = *data_->getArgument(0); return v; }
 void Ifc4x3_rc3::IfcLibraryInformation::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcLibraryInformation::Version() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcLibraryInformation::setVersion(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcLibraryInformation::setVersion(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 ::Ifc4x3_rc3::IfcActorSelect* Ifc4x3_rc3::IfcLibraryInformation::Publisher() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(2)))->as<::Ifc4x3_rc3::IfcActorSelect>(true); }
 void Ifc4x3_rc3::IfcLibraryInformation::setPublisher(::Ifc4x3_rc3::IfcActorSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcLibraryInformation::VersionDate() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcLibraryInformation::setVersionDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcLibraryInformation::setVersionDate(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcLibraryInformation::Location() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcLibraryInformation::setLocation(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcLibraryInformation::setLocation(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcLibraryInformation::Description() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcLibraryInformation::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcLibraryInformation::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 
 ::Ifc4x3_rc3::IfcRelAssociatesLibrary::list::ptr Ifc4x3_rc3::IfcLibraryInformation::LibraryInfoForObjects() const { return data_->getInverse(IFC4X3_RC3_IfcRelAssociatesLibrary_type, 5)->as<IfcRelAssociatesLibrary>(); }
 ::Ifc4x3_rc3::IfcLibraryReference::list::ptr Ifc4x3_rc3::IfcLibraryInformation::HasLibraryReferences() const { return data_->getInverse(IFC4X3_RC3_IfcLibraryReference_type, 5)->as<IfcLibraryReference>(); }
@@ -17555,9 +17555,9 @@ Ifc4x3_rc3::IfcLibraryInformation::IfcLibraryInformation(std::string v1_Name, bo
 
 // Function implementations for IfcLibraryReference
 boost::optional< std::string > Ifc4x3_rc3::IfcLibraryReference::Description() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcLibraryReference::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcLibraryReference::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcLibraryReference::Language() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcLibraryReference::setLanguage(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcLibraryReference::setLanguage(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 ::Ifc4x3_rc3::IfcLibraryInformation* Ifc4x3_rc3::IfcLibraryReference::ReferencedLibrary() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(5)))->as<::Ifc4x3_rc3::IfcLibraryInformation>(true); }
 void Ifc4x3_rc3::IfcLibraryReference::setReferencedLibrary(::Ifc4x3_rc3::IfcLibraryInformation* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(5,attr);} }
 
@@ -17584,7 +17584,7 @@ Ifc4x3_rc3::IfcLightDistributionData::IfcLightDistributionData(double v1_MainPla
 
 // Function implementations for IfcLightFixture
 boost::optional< ::Ifc4x3_rc3::IfcLightFixtureTypeEnum::Value > Ifc4x3_rc3::IfcLightFixture::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcLightFixtureTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcLightFixture::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcLightFixtureTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcLightFixtureTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcLightFixture::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcLightFixtureTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcLightFixtureTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcLightFixture::declaration() const { return *IFC4X3_RC3_IfcLightFixture_type; }
@@ -17616,13 +17616,13 @@ Ifc4x3_rc3::IfcLightIntensityDistribution::IfcLightIntensityDistribution(::Ifc4x
 
 // Function implementations for IfcLightSource
 boost::optional< std::string > Ifc4x3_rc3::IfcLightSource::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcLightSource::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcLightSource::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 ::Ifc4x3_rc3::IfcColourRgb* Ifc4x3_rc3::IfcLightSource::LightColour() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(1)))->as<::Ifc4x3_rc3::IfcColourRgb>(true); }
 void Ifc4x3_rc3::IfcLightSource::setLightColour(::Ifc4x3_rc3::IfcColourRgb* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcLightSource::AmbientIntensity() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcLightSource::setAmbientIntensity(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcLightSource::setAmbientIntensity(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcLightSource::Intensity() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcLightSource::setIntensity(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcLightSource::setIntensity(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcLightSource::declaration() const { return *IFC4X3_RC3_IfcLightSource_type; }
@@ -17690,7 +17690,7 @@ Ifc4x3_rc3::IfcLightSourcePositional::IfcLightSourcePositional(boost::optional< 
 ::Ifc4x3_rc3::IfcDirection* Ifc4x3_rc3::IfcLightSourceSpot::Orientation() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(9)))->as<::Ifc4x3_rc3::IfcDirection>(true); }
 void Ifc4x3_rc3::IfcLightSourceSpot::setOrientation(::Ifc4x3_rc3::IfcDirection* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcLightSourceSpot::ConcentrationExponent() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcLightSourceSpot::setConcentrationExponent(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcLightSourceSpot::setConcentrationExponent(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 double Ifc4x3_rc3::IfcLightSourceSpot::SpreadAngle() const {  double v = *data_->getArgument(11); return v; }
 void Ifc4x3_rc3::IfcLightSourceSpot::setSpreadAngle(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(11,attr);} }
 double Ifc4x3_rc3::IfcLightSourceSpot::BeamWidthAngle() const {  double v = *data_->getArgument(12); return v; }
@@ -17744,7 +17744,7 @@ Ifc4x3_rc3::IfcLinearPositioningElement::IfcLinearPositioningElement(std::string
 
 // Function implementations for IfcLiquidTerminal
 boost::optional< ::Ifc4x3_rc3::IfcLiquidTerminalTypeEnum::Value > Ifc4x3_rc3::IfcLiquidTerminal::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcLiquidTerminalTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcLiquidTerminal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcLiquidTerminalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcLiquidTerminalTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcLiquidTerminal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcLiquidTerminalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcLiquidTerminalTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcLiquidTerminal::declaration() const { return *IFC4X3_RC3_IfcLiquidTerminal_type; }
@@ -17798,15 +17798,15 @@ void Ifc4x3_rc3::IfcMapConversion::setNorthings(double v) { {IfcWrite::IfcWriteA
 double Ifc4x3_rc3::IfcMapConversion::OrthogonalHeight() const {  double v = *data_->getArgument(4); return v; }
 void Ifc4x3_rc3::IfcMapConversion::setOrthogonalHeight(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcMapConversion::XAxisAbscissa() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } double v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcMapConversion::setXAxisAbscissa(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcMapConversion::setXAxisAbscissa(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcMapConversion::XAxisOrdinate() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } double v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcMapConversion::setXAxisOrdinate(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcMapConversion::setXAxisOrdinate(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcMapConversion::Scale() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcMapConversion::setScale(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcMapConversion::setScale(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcMapConversion::ScaleY() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcMapConversion::setScaleY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcMapConversion::setScaleY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcMapConversion::ScaleZ() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcMapConversion::setScaleZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcMapConversion::setScaleZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMapConversion::declaration() const { return *IFC4X3_RC3_IfcMapConversion_type; }
@@ -17828,7 +17828,7 @@ Ifc4x3_rc3::IfcMappedItem::IfcMappedItem(::Ifc4x3_rc3::IfcRepresentationMap* v1_
 
 // Function implementations for IfcMarineFacility
 boost::optional< ::Ifc4x3_rc3::IfcMarineFacilityTypeEnum::Value > Ifc4x3_rc3::IfcMarineFacility::PredefinedType() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcMarineFacilityTypeEnum::FromString(*data_->getArgument(9)); }
-void Ifc4x3_rc3::IfcMarineFacility::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMarineFacilityTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMarineFacilityTypeEnum::ToString(*v)));data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcMarineFacility::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMarineFacilityTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMarineFacilityTypeEnum::ToString(*v)));}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMarineFacility::declaration() const { return *IFC4X3_RC3_IfcMarineFacility_type; }
@@ -17840,9 +17840,9 @@ Ifc4x3_rc3::IfcMarineFacility::IfcMarineFacility(std::string v1_GlobalId, ::Ifc4
 std::string Ifc4x3_rc3::IfcMaterial::Name() const {  std::string v = *data_->getArgument(0); return v; }
 void Ifc4x3_rc3::IfcMaterial::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterial::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcMaterial::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcMaterial::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterial::Category() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcMaterial::setCategory(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcMaterial::setCategory(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 ::Ifc4x3_rc3::IfcMaterialDefinitionRepresentation::list::ptr Ifc4x3_rc3::IfcMaterial::HasRepresentation() const { return data_->getInverse(IFC4X3_RC3_IfcMaterialDefinitionRepresentation_type, 3)->as<IfcMaterialDefinitionRepresentation>(); }
 ::Ifc4x3_rc3::IfcMaterialRelationship::list::ptr Ifc4x3_rc3::IfcMaterial::IsRelatedWith() const { return data_->getInverse(IFC4X3_RC3_IfcMaterialRelationship_type, 3)->as<IfcMaterialRelationship>(); }
@@ -17867,15 +17867,15 @@ Ifc4x3_rc3::IfcMaterialClassificationRelationship::IfcMaterialClassificationRela
 
 // Function implementations for IfcMaterialConstituent
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialConstituent::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcMaterialConstituent::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcMaterialConstituent::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialConstituent::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcMaterialConstituent::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcMaterialConstituent::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 ::Ifc4x3_rc3::IfcMaterial* Ifc4x3_rc3::IfcMaterialConstituent::Material() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(2)))->as<::Ifc4x3_rc3::IfcMaterial>(true); }
 void Ifc4x3_rc3::IfcMaterialConstituent::setMaterial(::Ifc4x3_rc3::IfcMaterial* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcMaterialConstituent::Fraction() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcMaterialConstituent::setFraction(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcMaterialConstituent::setFraction(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialConstituent::Category() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcMaterialConstituent::setCategory(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcMaterialConstituent::setCategory(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 ::Ifc4x3_rc3::IfcMaterialConstituentSet::list::ptr Ifc4x3_rc3::IfcMaterialConstituent::ToMaterialConstituentSet() const { return data_->getInverse(IFC4X3_RC3_IfcMaterialConstituentSet_type, 2)->as<IfcMaterialConstituentSet>(); }
 
@@ -17886,11 +17886,11 @@ Ifc4x3_rc3::IfcMaterialConstituent::IfcMaterialConstituent(boost::optional< std:
 
 // Function implementations for IfcMaterialConstituentSet
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialConstituentSet::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcMaterialConstituentSet::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcMaterialConstituentSet::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialConstituentSet::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcMaterialConstituentSet::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcMaterialConstituentSet::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcMaterialConstituent >::ptr > Ifc4x3_rc3::IfcMaterialConstituentSet::MaterialConstituents() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(2); return es->as< ::Ifc4x3_rc3::IfcMaterialConstituent >(); }
-void Ifc4x3_rc3::IfcMaterialConstituentSet::setMaterialConstituents(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcMaterialConstituent >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcMaterialConstituentSet::setMaterialConstituents(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcMaterialConstituent >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(2,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMaterialConstituentSet::declaration() const { return *IFC4X3_RC3_IfcMaterialConstituentSet_type; }
@@ -17925,15 +17925,15 @@ void Ifc4x3_rc3::IfcMaterialLayer::setMaterial(::Ifc4x3_rc3::IfcMaterial* v) { {
 double Ifc4x3_rc3::IfcMaterialLayer::LayerThickness() const {  double v = *data_->getArgument(1); return v; }
 void Ifc4x3_rc3::IfcMaterialLayer::setLayerThickness(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< boost::logic::tribool > Ifc4x3_rc3::IfcMaterialLayer::IsVentilated() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } boost::logic::tribool v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcMaterialLayer::setIsVentilated(boost::optional< boost::logic::tribool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcMaterialLayer::setIsVentilated(boost::optional< boost::logic::tribool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialLayer::Name() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcMaterialLayer::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcMaterialLayer::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialLayer::Description() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcMaterialLayer::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcMaterialLayer::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialLayer::Category() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcMaterialLayer::setCategory(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcMaterialLayer::setCategory(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< int > Ifc4x3_rc3::IfcMaterialLayer::Priority() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } int v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcMaterialLayer::setPriority(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcMaterialLayer::setPriority(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 
 ::Ifc4x3_rc3::IfcMaterialLayerSet::list::ptr Ifc4x3_rc3::IfcMaterialLayer::ToMaterialLayerSet() const { return data_->getInverse(IFC4X3_RC3_IfcMaterialLayerSet_type, 0)->as<IfcMaterialLayerSet>(); }
 
@@ -17946,9 +17946,9 @@ Ifc4x3_rc3::IfcMaterialLayer::IfcMaterialLayer(::Ifc4x3_rc3::IfcMaterial* v1_Mat
 aggregate_of< ::Ifc4x3_rc3::IfcMaterialLayer >::ptr Ifc4x3_rc3::IfcMaterialLayerSet::MaterialLayers() const {  aggregate_of_instance::ptr es = *data_->getArgument(0); return es->as< ::Ifc4x3_rc3::IfcMaterialLayer >(); }
 void Ifc4x3_rc3::IfcMaterialLayerSet::setMaterialLayers(aggregate_of< ::Ifc4x3_rc3::IfcMaterialLayer >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialLayerSet::LayerSetName() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcMaterialLayerSet::setLayerSetName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcMaterialLayerSet::setLayerSetName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialLayerSet::Description() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcMaterialLayerSet::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcMaterialLayerSet::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMaterialLayerSet::declaration() const { return *IFC4X3_RC3_IfcMaterialLayerSet_type; }
@@ -17966,7 +17966,7 @@ void Ifc4x3_rc3::IfcMaterialLayerSetUsage::setDirectionSense(::Ifc4x3_rc3::IfcDi
 double Ifc4x3_rc3::IfcMaterialLayerSetUsage::OffsetFromReferenceLine() const {  double v = *data_->getArgument(3); return v; }
 void Ifc4x3_rc3::IfcMaterialLayerSetUsage::setOffsetFromReferenceLine(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcMaterialLayerSetUsage::ReferenceExtent() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcMaterialLayerSetUsage::setReferenceExtent(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcMaterialLayerSetUsage::setReferenceExtent(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMaterialLayerSetUsage::declaration() const { return *IFC4X3_RC3_IfcMaterialLayerSetUsage_type; }
@@ -17998,17 +17998,17 @@ Ifc4x3_rc3::IfcMaterialList::IfcMaterialList(aggregate_of< ::Ifc4x3_rc3::IfcMate
 
 // Function implementations for IfcMaterialProfile
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialProfile::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcMaterialProfile::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcMaterialProfile::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialProfile::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcMaterialProfile::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcMaterialProfile::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 ::Ifc4x3_rc3::IfcMaterial* Ifc4x3_rc3::IfcMaterialProfile::Material() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(2)))->as<::Ifc4x3_rc3::IfcMaterial>(true); }
 void Ifc4x3_rc3::IfcMaterialProfile::setMaterial(::Ifc4x3_rc3::IfcMaterial* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 ::Ifc4x3_rc3::IfcProfileDef* Ifc4x3_rc3::IfcMaterialProfile::Profile() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcProfileDef>(true); }
 void Ifc4x3_rc3::IfcMaterialProfile::setProfile(::Ifc4x3_rc3::IfcProfileDef* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< int > Ifc4x3_rc3::IfcMaterialProfile::Priority() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } int v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcMaterialProfile::setPriority(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcMaterialProfile::setPriority(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialProfile::Category() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcMaterialProfile::setCategory(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcMaterialProfile::setCategory(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 
 ::Ifc4x3_rc3::IfcMaterialProfileSet::list::ptr Ifc4x3_rc3::IfcMaterialProfile::ToMaterialProfileSet() const { return data_->getInverse(IFC4X3_RC3_IfcMaterialProfileSet_type, 2)->as<IfcMaterialProfileSet>(); }
 
@@ -18019,9 +18019,9 @@ Ifc4x3_rc3::IfcMaterialProfile::IfcMaterialProfile(boost::optional< std::string 
 
 // Function implementations for IfcMaterialProfileSet
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialProfileSet::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcMaterialProfileSet::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcMaterialProfileSet::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialProfileSet::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcMaterialProfileSet::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcMaterialProfileSet::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 aggregate_of< ::Ifc4x3_rc3::IfcMaterialProfile >::ptr Ifc4x3_rc3::IfcMaterialProfileSet::MaterialProfiles() const {  aggregate_of_instance::ptr es = *data_->getArgument(2); return es->as< ::Ifc4x3_rc3::IfcMaterialProfile >(); }
 void Ifc4x3_rc3::IfcMaterialProfileSet::setMaterialProfiles(aggregate_of< ::Ifc4x3_rc3::IfcMaterialProfile >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(2,attr);} }
 ::Ifc4x3_rc3::IfcCompositeProfileDef* Ifc4x3_rc3::IfcMaterialProfileSet::CompositeProfile() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcCompositeProfileDef>(true); }
@@ -18037,9 +18037,9 @@ Ifc4x3_rc3::IfcMaterialProfileSet::IfcMaterialProfileSet(boost::optional< std::s
 ::Ifc4x3_rc3::IfcMaterialProfileSet* Ifc4x3_rc3::IfcMaterialProfileSetUsage::ForProfileSet() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(0)))->as<::Ifc4x3_rc3::IfcMaterialProfileSet>(true); }
 void Ifc4x3_rc3::IfcMaterialProfileSetUsage::setForProfileSet(::Ifc4x3_rc3::IfcMaterialProfileSet* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< int > Ifc4x3_rc3::IfcMaterialProfileSetUsage::CardinalPoint() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } int v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcMaterialProfileSetUsage::setCardinalPoint(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcMaterialProfileSetUsage::setCardinalPoint(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcMaterialProfileSetUsage::ReferenceExtent() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcMaterialProfileSetUsage::setReferenceExtent(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcMaterialProfileSetUsage::setReferenceExtent(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMaterialProfileSetUsage::declaration() const { return *IFC4X3_RC3_IfcMaterialProfileSetUsage_type; }
@@ -18051,7 +18051,7 @@ Ifc4x3_rc3::IfcMaterialProfileSetUsage::IfcMaterialProfileSetUsage(::Ifc4x3_rc3:
 ::Ifc4x3_rc3::IfcMaterialProfileSet* Ifc4x3_rc3::IfcMaterialProfileSetUsageTapering::ForProfileEndSet() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcMaterialProfileSet>(true); }
 void Ifc4x3_rc3::IfcMaterialProfileSetUsageTapering::setForProfileEndSet(::Ifc4x3_rc3::IfcMaterialProfileSet* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< int > Ifc4x3_rc3::IfcMaterialProfileSetUsageTapering::CardinalEndPoint() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } int v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcMaterialProfileSetUsageTapering::setCardinalEndPoint(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcMaterialProfileSetUsageTapering::setCardinalEndPoint(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMaterialProfileSetUsageTapering::declaration() const { return *IFC4X3_RC3_IfcMaterialProfileSetUsageTapering_type; }
@@ -18085,7 +18085,7 @@ void Ifc4x3_rc3::IfcMaterialRelationship::setRelatingMaterial(::Ifc4x3_rc3::IfcM
 aggregate_of< ::Ifc4x3_rc3::IfcMaterial >::ptr Ifc4x3_rc3::IfcMaterialRelationship::RelatedMaterials() const {  aggregate_of_instance::ptr es = *data_->getArgument(3); return es->as< ::Ifc4x3_rc3::IfcMaterial >(); }
 void Ifc4x3_rc3::IfcMaterialRelationship::setRelatedMaterials(aggregate_of< ::Ifc4x3_rc3::IfcMaterial >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMaterialRelationship::Expression() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcMaterialRelationship::setExpression(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcMaterialRelationship::setExpression(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMaterialRelationship::declaration() const { return *IFC4X3_RC3_IfcMaterialRelationship_type; }
@@ -18116,11 +18116,11 @@ Ifc4x3_rc3::IfcMeasureWithUnit::IfcMeasureWithUnit(::Ifc4x3_rc3::IfcValue* v1_Va
 
 // Function implementations for IfcMechanicalFastener
 boost::optional< double > Ifc4x3_rc3::IfcMechanicalFastener::NominalDiameter() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcMechanicalFastener::setNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcMechanicalFastener::setNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcMechanicalFastener::NominalLength() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcMechanicalFastener::setNominalLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcMechanicalFastener::setNominalLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcMechanicalFastenerTypeEnum::Value > Ifc4x3_rc3::IfcMechanicalFastener::PredefinedType() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcMechanicalFastenerTypeEnum::FromString(*data_->getArgument(10)); }
-void Ifc4x3_rc3::IfcMechanicalFastener::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMechanicalFastenerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMechanicalFastenerTypeEnum::ToString(*v)));data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcMechanicalFastener::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMechanicalFastenerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMechanicalFastenerTypeEnum::ToString(*v)));}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMechanicalFastener::declaration() const { return *IFC4X3_RC3_IfcMechanicalFastener_type; }
@@ -18132,9 +18132,9 @@ Ifc4x3_rc3::IfcMechanicalFastener::IfcMechanicalFastener(std::string v1_GlobalId
 ::Ifc4x3_rc3::IfcMechanicalFastenerTypeEnum::Value Ifc4x3_rc3::IfcMechanicalFastenerType::PredefinedType() const {  return ::Ifc4x3_rc3::IfcMechanicalFastenerTypeEnum::FromString(*data_->getArgument(9)); }
 void Ifc4x3_rc3::IfcMechanicalFastenerType::setPredefinedType(::Ifc4x3_rc3::IfcMechanicalFastenerTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcMechanicalFastenerTypeEnum::ToString(v)));data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcMechanicalFastenerType::NominalDiameter() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcMechanicalFastenerType::setNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcMechanicalFastenerType::setNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcMechanicalFastenerType::NominalLength() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } double v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcMechanicalFastenerType::setNominalLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcMechanicalFastenerType::setNominalLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMechanicalFastenerType::declaration() const { return *IFC4X3_RC3_IfcMechanicalFastenerType_type; }
@@ -18144,7 +18144,7 @@ Ifc4x3_rc3::IfcMechanicalFastenerType::IfcMechanicalFastenerType(std::string v1_
 
 // Function implementations for IfcMedicalDevice
 boost::optional< ::Ifc4x3_rc3::IfcMedicalDeviceTypeEnum::Value > Ifc4x3_rc3::IfcMedicalDevice::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcMedicalDeviceTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcMedicalDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMedicalDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMedicalDeviceTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcMedicalDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMedicalDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMedicalDeviceTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMedicalDevice::declaration() const { return *IFC4X3_RC3_IfcMedicalDevice_type; }
@@ -18164,7 +18164,7 @@ Ifc4x3_rc3::IfcMedicalDeviceType::IfcMedicalDeviceType(std::string v1_GlobalId, 
 
 // Function implementations for IfcMember
 boost::optional< ::Ifc4x3_rc3::IfcMemberTypeEnum::Value > Ifc4x3_rc3::IfcMember::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcMemberTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcMember::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMemberTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMemberTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcMember::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMemberTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMemberTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMember::declaration() const { return *IFC4X3_RC3_IfcMember_type; }
@@ -18194,7 +18194,7 @@ Ifc4x3_rc3::IfcMemberType::IfcMemberType(std::string v1_GlobalId, ::Ifc4x3_rc3::
 ::Ifc4x3_rc3::IfcBenchmarkEnum::Value Ifc4x3_rc3::IfcMetric::Benchmark() const {  return ::Ifc4x3_rc3::IfcBenchmarkEnum::FromString(*data_->getArgument(7)); }
 void Ifc4x3_rc3::IfcMetric::setBenchmark(::Ifc4x3_rc3::IfcBenchmarkEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcBenchmarkEnum::ToString(v)));data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcMetric::ValueSource() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcMetric::setValueSource(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcMetric::setValueSource(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 ::Ifc4x3_rc3::IfcMetricValueSelect* Ifc4x3_rc3::IfcMetric::DataValue() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(9)))->as<::Ifc4x3_rc3::IfcMetricValueSelect>(true); }
 void Ifc4x3_rc3::IfcMetric::setDataValue(::Ifc4x3_rc3::IfcMetricValueSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(9,attr);} }
 ::Ifc4x3_rc3::IfcReference* Ifc4x3_rc3::IfcMetric::ReferencePath() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(10)))->as<::Ifc4x3_rc3::IfcReference>(true); }
@@ -18216,7 +18216,7 @@ Ifc4x3_rc3::IfcMirroredProfileDef::IfcMirroredProfileDef(::Ifc4x3_rc3::IfcProfil
 
 // Function implementations for IfcMobileTelecommunicationsAppliance
 boost::optional< ::Ifc4x3_rc3::IfcMobileTelecommunicationsApplianceTypeEnum::Value > Ifc4x3_rc3::IfcMobileTelecommunicationsAppliance::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcMobileTelecommunicationsApplianceTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcMobileTelecommunicationsAppliance::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMobileTelecommunicationsApplianceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMobileTelecommunicationsApplianceTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcMobileTelecommunicationsAppliance::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMobileTelecommunicationsApplianceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMobileTelecommunicationsApplianceTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMobileTelecommunicationsAppliance::declaration() const { return *IFC4X3_RC3_IfcMobileTelecommunicationsAppliance_type; }
@@ -18246,7 +18246,7 @@ Ifc4x3_rc3::IfcMonetaryUnit::IfcMonetaryUnit(std::string v1_Currency) : IfcUtil:
 
 // Function implementations for IfcMooringDevice
 boost::optional< ::Ifc4x3_rc3::IfcMooringDeviceTypeEnum::Value > Ifc4x3_rc3::IfcMooringDevice::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcMooringDeviceTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcMooringDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMooringDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMooringDeviceTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcMooringDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMooringDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMooringDeviceTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMooringDevice::declaration() const { return *IFC4X3_RC3_IfcMooringDevice_type; }
@@ -18266,7 +18266,7 @@ Ifc4x3_rc3::IfcMooringDeviceType::IfcMooringDeviceType(std::string v1_GlobalId, 
 
 // Function implementations for IfcMotorConnection
 boost::optional< ::Ifc4x3_rc3::IfcMotorConnectionTypeEnum::Value > Ifc4x3_rc3::IfcMotorConnection::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcMotorConnectionTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcMotorConnection::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMotorConnectionTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMotorConnectionTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcMotorConnection::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcMotorConnectionTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcMotorConnectionTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcMotorConnection::declaration() const { return *IFC4X3_RC3_IfcMotorConnection_type; }
@@ -18298,7 +18298,7 @@ Ifc4x3_rc3::IfcNamedUnit::IfcNamedUnit(::Ifc4x3_rc3::IfcDimensionalExponents* v1
 
 // Function implementations for IfcNavigationElement
 boost::optional< ::Ifc4x3_rc3::IfcNavigationElementTypeEnum::Value > Ifc4x3_rc3::IfcNavigationElement::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcNavigationElementTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcNavigationElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcNavigationElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcNavigationElementTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcNavigationElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcNavigationElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcNavigationElementTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcNavigationElement::declaration() const { return *IFC4X3_RC3_IfcNavigationElement_type; }
@@ -18318,7 +18318,7 @@ Ifc4x3_rc3::IfcNavigationElementType::IfcNavigationElementType(std::string v1_Gl
 
 // Function implementations for IfcObject
 boost::optional< std::string > Ifc4x3_rc3::IfcObject::ObjectType() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcObject::setObjectType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcObject::setObjectType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 ::Ifc4x3_rc3::IfcRelDefinesByObject::list::ptr Ifc4x3_rc3::IfcObject::IsDeclaredBy() const { return data_->getInverse(IFC4X3_RC3_IfcRelDefinesByObject_type, 4)->as<IfcRelDefinesByObject>(); }
 ::Ifc4x3_rc3::IfcRelDefinesByObject::list::ptr Ifc4x3_rc3::IfcObject::Declares() const { return data_->getInverse(IFC4X3_RC3_IfcRelDefinesByObject_type, 5)->as<IfcRelDefinesByObject>(); }
@@ -18358,13 +18358,13 @@ Ifc4x3_rc3::IfcObjectPlacement::IfcObjectPlacement(::Ifc4x3_rc3::IfcObjectPlacem
 
 // Function implementations for IfcObjective
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcConstraint >::ptr > Ifc4x3_rc3::IfcObjective::BenchmarkValues() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(7); return es->as< ::Ifc4x3_rc3::IfcConstraint >(); }
-void Ifc4x3_rc3::IfcObjective::setBenchmarkValues(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcConstraint >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcObjective::setBenchmarkValues(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcConstraint >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(7,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcLogicalOperatorEnum::Value > Ifc4x3_rc3::IfcObjective::LogicalAggregator() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcLogicalOperatorEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcObjective::setLogicalAggregator(boost::optional< ::Ifc4x3_rc3::IfcLogicalOperatorEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcLogicalOperatorEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcObjective::setLogicalAggregator(boost::optional< ::Ifc4x3_rc3::IfcLogicalOperatorEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcLogicalOperatorEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 ::Ifc4x3_rc3::IfcObjectiveEnum::Value Ifc4x3_rc3::IfcObjective::ObjectiveQualifier() const {  return ::Ifc4x3_rc3::IfcObjectiveEnum::FromString(*data_->getArgument(9)); }
 void Ifc4x3_rc3::IfcObjective::setObjectiveQualifier(::Ifc4x3_rc3::IfcObjectiveEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcObjectiveEnum::ToString(v)));data_->setArgument(9,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcObjective::UserDefinedQualifier() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } std::string v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcObjective::setUserDefinedQualifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcObjective::setUserDefinedQualifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcObjective::declaration() const { return *IFC4X3_RC3_IfcObjective_type; }
@@ -18374,7 +18374,7 @@ Ifc4x3_rc3::IfcObjective::IfcObjective(std::string v1_Name, boost::optional< std
 
 // Function implementations for IfcOccupant
 boost::optional< ::Ifc4x3_rc3::IfcOccupantTypeEnum::Value > Ifc4x3_rc3::IfcOccupant::PredefinedType() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcOccupantTypeEnum::FromString(*data_->getArgument(6)); }
-void Ifc4x3_rc3::IfcOccupant::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcOccupantTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcOccupantTypeEnum::ToString(*v)));data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcOccupant::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcOccupantTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcOccupantTypeEnum::ToString(*v)));}data_->setArgument(6,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcOccupant::declaration() const { return *IFC4X3_RC3_IfcOccupant_type; }
@@ -18422,7 +18422,7 @@ Ifc4x3_rc3::IfcOffsetCurve3D::IfcOffsetCurve3D(::Ifc4x3_rc3::IfcCurve* v1_BasisC
 aggregate_of< ::Ifc4x3_rc3::IfcPointByDistanceExpression >::ptr Ifc4x3_rc3::IfcOffsetCurveByDistances::OffsetValues() const {  aggregate_of_instance::ptr es = *data_->getArgument(1); return es->as< ::Ifc4x3_rc3::IfcPointByDistanceExpression >(); }
 void Ifc4x3_rc3::IfcOffsetCurveByDistances::setOffsetValues(aggregate_of< ::Ifc4x3_rc3::IfcPointByDistanceExpression >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcOffsetCurveByDistances::Tag() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcOffsetCurveByDistances::setTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcOffsetCurveByDistances::setTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcOffsetCurveByDistances::declaration() const { return *IFC4X3_RC3_IfcOffsetCurveByDistances_type; }
@@ -18438,7 +18438,7 @@ void Ifc4x3_rc3::IfcOpenCrossProfileDef::setWidths(std::vector< double > /*[1:?]
 std::vector< double > /*[1:?]*/ Ifc4x3_rc3::IfcOpenCrossProfileDef::Slopes() const {  std::vector< double > /*[1:?]*/ v = *data_->getArgument(4); return v; }
 void Ifc4x3_rc3::IfcOpenCrossProfileDef::setSlopes(std::vector< double > /*[1:?]*/ v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
 boost::optional< std::vector< std::string > /*[2:?]*/ > Ifc4x3_rc3::IfcOpenCrossProfileDef::Tags() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::vector< std::string > /*[2:?]*/ v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcOpenCrossProfileDef::setTags(boost::optional< std::vector< std::string > /*[2:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcOpenCrossProfileDef::setTags(boost::optional< std::vector< std::string > /*[2:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcOpenCrossProfileDef::declaration() const { return *IFC4X3_RC3_IfcOpenCrossProfileDef_type; }
@@ -18456,7 +18456,7 @@ Ifc4x3_rc3::IfcOpenShell::IfcOpenShell(aggregate_of< ::Ifc4x3_rc3::IfcFace >::pt
 
 // Function implementations for IfcOpeningElement
 boost::optional< ::Ifc4x3_rc3::IfcOpeningElementTypeEnum::Value > Ifc4x3_rc3::IfcOpeningElement::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcOpeningElementTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcOpeningElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcOpeningElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcOpeningElementTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcOpeningElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcOpeningElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcOpeningElementTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 ::Ifc4x3_rc3::IfcRelFillsElement::list::ptr Ifc4x3_rc3::IfcOpeningElement::HasFillings() const { return data_->getInverse(IFC4X3_RC3_IfcRelFillsElement_type, 4)->as<IfcRelFillsElement>(); }
 
@@ -18475,15 +18475,15 @@ Ifc4x3_rc3::IfcOpeningStandardCase::IfcOpeningStandardCase(std::string v1_Global
 
 // Function implementations for IfcOrganization
 boost::optional< std::string > Ifc4x3_rc3::IfcOrganization::Identification() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcOrganization::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcOrganization::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 std::string Ifc4x3_rc3::IfcOrganization::Name() const {  std::string v = *data_->getArgument(1); return v; }
 void Ifc4x3_rc3::IfcOrganization::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcOrganization::Description() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcOrganization::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcOrganization::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcActorRole >::ptr > Ifc4x3_rc3::IfcOrganization::Roles() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(3); return es->as< ::Ifc4x3_rc3::IfcActorRole >(); }
-void Ifc4x3_rc3::IfcOrganization::setRoles(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcActorRole >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcOrganization::setRoles(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcActorRole >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(3,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAddress >::ptr > Ifc4x3_rc3::IfcOrganization::Addresses() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(4); return es->as< ::Ifc4x3_rc3::IfcAddress >(); }
-void Ifc4x3_rc3::IfcOrganization::setAddresses(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAddress >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcOrganization::setAddresses(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAddress >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(4,attr);} }
 
 ::Ifc4x3_rc3::IfcOrganizationRelationship::list::ptr Ifc4x3_rc3::IfcOrganization::IsRelatedBy() const { return data_->getInverse(IFC4X3_RC3_IfcOrganizationRelationship_type, 3)->as<IfcOrganizationRelationship>(); }
 ::Ifc4x3_rc3::IfcOrganizationRelationship::list::ptr Ifc4x3_rc3::IfcOrganization::Relates() const { return data_->getInverse(IFC4X3_RC3_IfcOrganizationRelationship_type, 2)->as<IfcOrganizationRelationship>(); }
@@ -18528,7 +18528,7 @@ Ifc4x3_rc3::IfcOuterBoundaryCurve::IfcOuterBoundaryCurve(aggregate_of< ::Ifc4x3_
 
 // Function implementations for IfcOutlet
 boost::optional< ::Ifc4x3_rc3::IfcOutletTypeEnum::Value > Ifc4x3_rc3::IfcOutlet::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcOutletTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcOutlet::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcOutletTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcOutletTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcOutlet::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcOutletTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcOutletTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcOutlet::declaration() const { return *IFC4X3_RC3_IfcOutlet_type; }
@@ -18552,11 +18552,11 @@ void Ifc4x3_rc3::IfcOwnerHistory::setOwningUser(::Ifc4x3_rc3::IfcPersonAndOrgani
 ::Ifc4x3_rc3::IfcApplication* Ifc4x3_rc3::IfcOwnerHistory::OwningApplication() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(1)))->as<::Ifc4x3_rc3::IfcApplication>(true); }
 void Ifc4x3_rc3::IfcOwnerHistory::setOwningApplication(::Ifc4x3_rc3::IfcApplication* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcStateEnum::Value > Ifc4x3_rc3::IfcOwnerHistory::State() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcStateEnum::FromString(*data_->getArgument(2)); }
-void Ifc4x3_rc3::IfcOwnerHistory::setState(boost::optional< ::Ifc4x3_rc3::IfcStateEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcStateEnum::ToString(*v)));data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcOwnerHistory::setState(boost::optional< ::Ifc4x3_rc3::IfcStateEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcStateEnum::ToString(*v)));}data_->setArgument(2,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcChangeActionEnum::Value > Ifc4x3_rc3::IfcOwnerHistory::ChangeAction() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcChangeActionEnum::FromString(*data_->getArgument(3)); }
-void Ifc4x3_rc3::IfcOwnerHistory::setChangeAction(boost::optional< ::Ifc4x3_rc3::IfcChangeActionEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcChangeActionEnum::ToString(*v)));data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcOwnerHistory::setChangeAction(boost::optional< ::Ifc4x3_rc3::IfcChangeActionEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcChangeActionEnum::ToString(*v)));}data_->setArgument(3,attr);} }
 boost::optional< int > Ifc4x3_rc3::IfcOwnerHistory::LastModifiedDate() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } int v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcOwnerHistory::setLastModifiedDate(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcOwnerHistory::setLastModifiedDate(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 ::Ifc4x3_rc3::IfcPersonAndOrganization* Ifc4x3_rc3::IfcOwnerHistory::LastModifyingUser() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(5)))->as<::Ifc4x3_rc3::IfcPersonAndOrganization>(true); }
 void Ifc4x3_rc3::IfcOwnerHistory::setLastModifyingUser(::Ifc4x3_rc3::IfcPersonAndOrganization* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(5,attr);} }
 ::Ifc4x3_rc3::IfcApplication* Ifc4x3_rc3::IfcOwnerHistory::LastModifyingApplication() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(6)))->as<::Ifc4x3_rc3::IfcApplication>(true); }
@@ -18592,7 +18592,7 @@ Ifc4x3_rc3::IfcPath::IfcPath(aggregate_of< ::Ifc4x3_rc3::IfcOrientedEdge >::ptr 
 
 // Function implementations for IfcPavement
 boost::optional< ::Ifc4x3_rc3::IfcPavementTypeEnum::Value > Ifc4x3_rc3::IfcPavement::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcPavementTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcPavement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPavementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPavementTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcPavement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPavementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPavementTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPavement::declaration() const { return *IFC4X3_RC3_IfcPavement_type; }
@@ -18626,7 +18626,7 @@ Ifc4x3_rc3::IfcPcurve::IfcPcurve(::Ifc4x3_rc3::IfcSurface* v1_BasisSurface, ::If
 std::string Ifc4x3_rc3::IfcPerformanceHistory::LifeCyclePhase() const {  std::string v = *data_->getArgument(6); return v; }
 void Ifc4x3_rc3::IfcPerformanceHistory::setLifeCyclePhase(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcPerformanceHistoryTypeEnum::Value > Ifc4x3_rc3::IfcPerformanceHistory::PredefinedType() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcPerformanceHistoryTypeEnum::FromString(*data_->getArgument(7)); }
-void Ifc4x3_rc3::IfcPerformanceHistory::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPerformanceHistoryTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPerformanceHistoryTypeEnum::ToString(*v)));data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcPerformanceHistory::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPerformanceHistoryTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPerformanceHistoryTypeEnum::ToString(*v)));}data_->setArgument(7,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPerformanceHistory::declaration() const { return *IFC4X3_RC3_IfcPerformanceHistory_type; }
@@ -18640,9 +18640,9 @@ void Ifc4x3_rc3::IfcPermeableCoveringProperties::setOperationType(::Ifc4x3_rc3::
 ::Ifc4x3_rc3::IfcWindowPanelPositionEnum::Value Ifc4x3_rc3::IfcPermeableCoveringProperties::PanelPosition() const {  return ::Ifc4x3_rc3::IfcWindowPanelPositionEnum::FromString(*data_->getArgument(5)); }
 void Ifc4x3_rc3::IfcPermeableCoveringProperties::setPanelPosition(::Ifc4x3_rc3::IfcWindowPanelPositionEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcWindowPanelPositionEnum::ToString(v)));data_->setArgument(5,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcPermeableCoveringProperties::FrameDepth() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } double v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcPermeableCoveringProperties::setFrameDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcPermeableCoveringProperties::setFrameDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcPermeableCoveringProperties::FrameThickness() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcPermeableCoveringProperties::setFrameThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcPermeableCoveringProperties::setFrameThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 ::Ifc4x3_rc3::IfcShapeAspect* Ifc4x3_rc3::IfcPermeableCoveringProperties::ShapeAspectStyle() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(8)))->as<::Ifc4x3_rc3::IfcShapeAspect>(true); }
 void Ifc4x3_rc3::IfcPermeableCoveringProperties::setShapeAspectStyle(::Ifc4x3_rc3::IfcShapeAspect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(8,attr);} }
 
@@ -18654,11 +18654,11 @@ Ifc4x3_rc3::IfcPermeableCoveringProperties::IfcPermeableCoveringProperties(std::
 
 // Function implementations for IfcPermit
 boost::optional< ::Ifc4x3_rc3::IfcPermitTypeEnum::Value > Ifc4x3_rc3::IfcPermit::PredefinedType() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcPermitTypeEnum::FromString(*data_->getArgument(6)); }
-void Ifc4x3_rc3::IfcPermit::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPermitTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPermitTypeEnum::ToString(*v)));data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcPermit::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPermitTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPermitTypeEnum::ToString(*v)));}data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPermit::Status() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcPermit::setStatus(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcPermit::setStatus(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPermit::LongDescription() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcPermit::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcPermit::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPermit::declaration() const { return *IFC4X3_RC3_IfcPermit_type; }
@@ -18668,21 +18668,21 @@ Ifc4x3_rc3::IfcPermit::IfcPermit(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwner
 
 // Function implementations for IfcPerson
 boost::optional< std::string > Ifc4x3_rc3::IfcPerson::Identification() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcPerson::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcPerson::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPerson::FamilyName() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcPerson::setFamilyName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcPerson::setFamilyName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPerson::GivenName() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcPerson::setGivenName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcPerson::setGivenName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc3::IfcPerson::MiddleNames() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::vector< std::string > /*[1:?]*/ v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcPerson::setMiddleNames(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcPerson::setMiddleNames(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc3::IfcPerson::PrefixTitles() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::vector< std::string > /*[1:?]*/ v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcPerson::setPrefixTitles(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcPerson::setPrefixTitles(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc3::IfcPerson::SuffixTitles() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::vector< std::string > /*[1:?]*/ v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcPerson::setSuffixTitles(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcPerson::setSuffixTitles(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcActorRole >::ptr > Ifc4x3_rc3::IfcPerson::Roles() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(6); return es->as< ::Ifc4x3_rc3::IfcActorRole >(); }
-void Ifc4x3_rc3::IfcPerson::setRoles(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcActorRole >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcPerson::setRoles(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcActorRole >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(6,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAddress >::ptr > Ifc4x3_rc3::IfcPerson::Addresses() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(7); return es->as< ::Ifc4x3_rc3::IfcAddress >(); }
-void Ifc4x3_rc3::IfcPerson::setAddresses(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAddress >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcPerson::setAddresses(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcAddress >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(7,attr);} }
 
 ::Ifc4x3_rc3::IfcPersonAndOrganization::list::ptr Ifc4x3_rc3::IfcPerson::EngagedIn() const { return data_->getInverse(IFC4X3_RC3_IfcPersonAndOrganization_type, 0)->as<IfcPersonAndOrganization>(); }
 
@@ -18697,7 +18697,7 @@ void Ifc4x3_rc3::IfcPersonAndOrganization::setThePerson(::Ifc4x3_rc3::IfcPerson*
 ::Ifc4x3_rc3::IfcOrganization* Ifc4x3_rc3::IfcPersonAndOrganization::TheOrganization() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(1)))->as<::Ifc4x3_rc3::IfcOrganization>(true); }
 void Ifc4x3_rc3::IfcPersonAndOrganization::setTheOrganization(::Ifc4x3_rc3::IfcOrganization* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcActorRole >::ptr > Ifc4x3_rc3::IfcPersonAndOrganization::Roles() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(2); return es->as< ::Ifc4x3_rc3::IfcActorRole >(); }
-void Ifc4x3_rc3::IfcPersonAndOrganization::setRoles(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcActorRole >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcPersonAndOrganization::setRoles(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcActorRole >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(2,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPersonAndOrganization::declaration() const { return *IFC4X3_RC3_IfcPersonAndOrganization_type; }
@@ -18711,9 +18711,9 @@ void Ifc4x3_rc3::IfcPhysicalComplexQuantity::setHasQuantities(aggregate_of< ::If
 std::string Ifc4x3_rc3::IfcPhysicalComplexQuantity::Discrimination() const {  std::string v = *data_->getArgument(3); return v; }
 void Ifc4x3_rc3::IfcPhysicalComplexQuantity::setDiscrimination(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPhysicalComplexQuantity::Quality() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcPhysicalComplexQuantity::setQuality(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcPhysicalComplexQuantity::setQuality(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPhysicalComplexQuantity::Usage() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcPhysicalComplexQuantity::setUsage(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcPhysicalComplexQuantity::setUsage(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPhysicalComplexQuantity::declaration() const { return *IFC4X3_RC3_IfcPhysicalComplexQuantity_type; }
@@ -18725,7 +18725,7 @@ Ifc4x3_rc3::IfcPhysicalComplexQuantity::IfcPhysicalComplexQuantity(std::string v
 std::string Ifc4x3_rc3::IfcPhysicalQuantity::Name() const {  std::string v = *data_->getArgument(0); return v; }
 void Ifc4x3_rc3::IfcPhysicalQuantity::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPhysicalQuantity::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcPhysicalQuantity::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcPhysicalQuantity::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 
 ::Ifc4x3_rc3::IfcExternalReferenceRelationship::list::ptr Ifc4x3_rc3::IfcPhysicalQuantity::HasExternalReferences() const { return data_->getInverse(IFC4X3_RC3_IfcExternalReferenceRelationship_type, 3)->as<IfcExternalReferenceRelationship>(); }
 ::Ifc4x3_rc3::IfcPhysicalComplexQuantity::list::ptr Ifc4x3_rc3::IfcPhysicalQuantity::PartOfComplex() const { return data_->getInverse(IFC4X3_RC3_IfcPhysicalComplexQuantity_type, 2)->as<IfcPhysicalComplexQuantity>(); }
@@ -18747,9 +18747,9 @@ Ifc4x3_rc3::IfcPhysicalSimpleQuantity::IfcPhysicalSimpleQuantity(std::string v1_
 
 // Function implementations for IfcPile
 boost::optional< ::Ifc4x3_rc3::IfcPileTypeEnum::Value > Ifc4x3_rc3::IfcPile::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcPileTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcPile::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPileTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPileTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcPile::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPileTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPileTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcPileConstructionEnum::Value > Ifc4x3_rc3::IfcPile::ConstructionType() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcPileConstructionEnum::FromString(*data_->getArgument(9)); }
-void Ifc4x3_rc3::IfcPile::setConstructionType(boost::optional< ::Ifc4x3_rc3::IfcPileConstructionEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPileConstructionEnum::ToString(*v)));data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcPile::setConstructionType(boost::optional< ::Ifc4x3_rc3::IfcPileConstructionEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPileConstructionEnum::ToString(*v)));}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPile::declaration() const { return *IFC4X3_RC3_IfcPile_type; }
@@ -18769,7 +18769,7 @@ Ifc4x3_rc3::IfcPileType::IfcPileType(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 
 // Function implementations for IfcPipeFitting
 boost::optional< ::Ifc4x3_rc3::IfcPipeFittingTypeEnum::Value > Ifc4x3_rc3::IfcPipeFitting::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcPipeFittingTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcPipeFitting::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPipeFittingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPipeFittingTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcPipeFitting::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPipeFittingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPipeFittingTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPipeFitting::declaration() const { return *IFC4X3_RC3_IfcPipeFitting_type; }
@@ -18789,7 +18789,7 @@ Ifc4x3_rc3::IfcPipeFittingType::IfcPipeFittingType(std::string v1_GlobalId, ::If
 
 // Function implementations for IfcPipeSegment
 boost::optional< ::Ifc4x3_rc3::IfcPipeSegmentTypeEnum::Value > Ifc4x3_rc3::IfcPipeSegment::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcPipeSegmentTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcPipeSegment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPipeSegmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPipeSegmentTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcPipeSegment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPipeSegmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPipeSegmentTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPipeSegment::declaration() const { return *IFC4X3_RC3_IfcPipeSegment_type; }
@@ -18873,7 +18873,7 @@ Ifc4x3_rc3::IfcPlant::IfcPlant(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHi
 
 // Function implementations for IfcPlate
 boost::optional< ::Ifc4x3_rc3::IfcPlateTypeEnum::Value > Ifc4x3_rc3::IfcPlate::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcPlateTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcPlate::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPlateTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPlateTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcPlate::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPlateTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPlateTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPlate::declaration() const { return *IFC4X3_RC3_IfcPlate_type; }
@@ -18911,11 +18911,11 @@ Ifc4x3_rc3::IfcPoint::IfcPoint() : IfcGeometricRepresentationItem((IfcEntityInst
 ::Ifc4x3_rc3::IfcCurveMeasureSelect* Ifc4x3_rc3::IfcPointByDistanceExpression::DistanceAlong() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(0)))->as<::Ifc4x3_rc3::IfcCurveMeasureSelect>(true); }
 void Ifc4x3_rc3::IfcPointByDistanceExpression::setDistanceAlong(::Ifc4x3_rc3::IfcCurveMeasureSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcPointByDistanceExpression::OffsetLateral() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } double v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcPointByDistanceExpression::setOffsetLateral(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcPointByDistanceExpression::setOffsetLateral(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcPointByDistanceExpression::OffsetVertical() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcPointByDistanceExpression::setOffsetVertical(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcPointByDistanceExpression::setOffsetVertical(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcPointByDistanceExpression::OffsetLongitudinal() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcPointByDistanceExpression::setOffsetLongitudinal(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcPointByDistanceExpression::setOffsetLongitudinal(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 ::Ifc4x3_rc3::IfcCurve* Ifc4x3_rc3::IfcPointByDistanceExpression::BasisCurve() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(4)))->as<::Ifc4x3_rc3::IfcCurve>(true); }
 void Ifc4x3_rc3::IfcPointByDistanceExpression::setBasisCurve(::Ifc4x3_rc3::IfcCurve* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
 
@@ -18975,11 +18975,11 @@ Ifc4x3_rc3::IfcPolygonalBoundedHalfSpace::IfcPolygonalBoundedHalfSpace(::Ifc4x3_
 
 // Function implementations for IfcPolygonalFaceSet
 boost::optional< bool > Ifc4x3_rc3::IfcPolygonalFaceSet::Closed() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } bool v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcPolygonalFaceSet::setClosed(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcPolygonalFaceSet::setClosed(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 aggregate_of< ::Ifc4x3_rc3::IfcIndexedPolygonalFace >::ptr Ifc4x3_rc3::IfcPolygonalFaceSet::Faces() const {  aggregate_of_instance::ptr es = *data_->getArgument(2); return es->as< ::Ifc4x3_rc3::IfcIndexedPolygonalFace >(); }
 void Ifc4x3_rc3::IfcPolygonalFaceSet::setFaces(aggregate_of< ::Ifc4x3_rc3::IfcIndexedPolygonalFace >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(2,attr);} }
 boost::optional< std::vector< int > /*[1:?]*/ > Ifc4x3_rc3::IfcPolygonalFaceSet::PnIndex() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::vector< int > /*[1:?]*/ v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcPolygonalFaceSet::setPnIndex(boost::optional< std::vector< int > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcPolygonalFaceSet::setPnIndex(boost::optional< std::vector< int > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPolygonalFaceSet::declaration() const { return *IFC4X3_RC3_IfcPolygonalFaceSet_type; }
@@ -19001,11 +19001,11 @@ Ifc4x3_rc3::IfcPolyline::IfcPolyline(aggregate_of< ::Ifc4x3_rc3::IfcCartesianPoi
 ::Ifc4x3_rc3::IfcPlacement* Ifc4x3_rc3::IfcPolynomialCurve::Position() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(0)))->as<::Ifc4x3_rc3::IfcPlacement>(true); }
 void Ifc4x3_rc3::IfcPolynomialCurve::setPosition(::Ifc4x3_rc3::IfcPlacement* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< std::vector< double > /*[2:?]*/ > Ifc4x3_rc3::IfcPolynomialCurve::CoefficientsX() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::vector< double > /*[2:?]*/ v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcPolynomialCurve::setCoefficientsX(boost::optional< std::vector< double > /*[2:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcPolynomialCurve::setCoefficientsX(boost::optional< std::vector< double > /*[2:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::vector< double > /*[2:?]*/ > Ifc4x3_rc3::IfcPolynomialCurve::CoefficientsY() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::vector< double > /*[2:?]*/ v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcPolynomialCurve::setCoefficientsY(boost::optional< std::vector< double > /*[2:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcPolynomialCurve::setCoefficientsY(boost::optional< std::vector< double > /*[2:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< std::vector< double > /*[2:?]*/ > Ifc4x3_rc3::IfcPolynomialCurve::CoefficientsZ() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::vector< double > /*[2:?]*/ v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcPolynomialCurve::setCoefficientsZ(boost::optional< std::vector< double > /*[2:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcPolynomialCurve::setCoefficientsZ(boost::optional< std::vector< double > /*[2:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPolynomialCurve::declaration() const { return *IFC4X3_RC3_IfcPolynomialCurve_type; }
@@ -19036,19 +19036,19 @@ Ifc4x3_rc3::IfcPositioningElement::IfcPositioningElement(std::string v1_GlobalId
 
 // Function implementations for IfcPostalAddress
 boost::optional< std::string > Ifc4x3_rc3::IfcPostalAddress::InternalLocation() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcPostalAddress::setInternalLocation(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcPostalAddress::setInternalLocation(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc3::IfcPostalAddress::AddressLines() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::vector< std::string > /*[1:?]*/ v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcPostalAddress::setAddressLines(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcPostalAddress::setAddressLines(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPostalAddress::PostalBox() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcPostalAddress::setPostalBox(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcPostalAddress::setPostalBox(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPostalAddress::Town() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcPostalAddress::setTown(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcPostalAddress::setTown(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPostalAddress::Region() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcPostalAddress::setRegion(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcPostalAddress::setRegion(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPostalAddress::PostalCode() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcPostalAddress::setPostalCode(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcPostalAddress::setPostalCode(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPostalAddress::Country() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } std::string v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcPostalAddress::setCountry(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcPostalAddress::setCountry(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPostalAddress::declaration() const { return *IFC4X3_RC3_IfcPostalAddress_type; }
@@ -19118,11 +19118,11 @@ Ifc4x3_rc3::IfcPresentationItem::IfcPresentationItem() : IfcUtil::IfcBaseEntity(
 std::string Ifc4x3_rc3::IfcPresentationLayerAssignment::Name() const {  std::string v = *data_->getArgument(0); return v; }
 void Ifc4x3_rc3::IfcPresentationLayerAssignment::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPresentationLayerAssignment::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcPresentationLayerAssignment::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcPresentationLayerAssignment::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 aggregate_of_instance::ptr Ifc4x3_rc3::IfcPresentationLayerAssignment::AssignedItems() const {  aggregate_of_instance::ptr v = *data_->getArgument(2); return v; }
 void Ifc4x3_rc3::IfcPresentationLayerAssignment::setAssignedItems(aggregate_of_instance::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPresentationLayerAssignment::Identifier() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcPresentationLayerAssignment::setIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcPresentationLayerAssignment::setIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPresentationLayerAssignment::declaration() const { return *IFC4X3_RC3_IfcPresentationLayerAssignment_type; }
@@ -19148,7 +19148,7 @@ Ifc4x3_rc3::IfcPresentationLayerWithStyle::IfcPresentationLayerWithStyle(std::st
 
 // Function implementations for IfcPresentationStyle
 boost::optional< std::string > Ifc4x3_rc3::IfcPresentationStyle::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcPresentationStyle::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcPresentationStyle::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPresentationStyle::declaration() const { return *IFC4X3_RC3_IfcPresentationStyle_type; }
@@ -19158,7 +19158,7 @@ Ifc4x3_rc3::IfcPresentationStyle::IfcPresentationStyle(boost::optional< std::str
 
 // Function implementations for IfcProcedure
 boost::optional< ::Ifc4x3_rc3::IfcProcedureTypeEnum::Value > Ifc4x3_rc3::IfcProcedure::PredefinedType() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcProcedureTypeEnum::FromString(*data_->getArgument(7)); }
-void Ifc4x3_rc3::IfcProcedure::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcProcedureTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProcedureTypeEnum::ToString(*v)));data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcProcedure::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcProcedureTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProcedureTypeEnum::ToString(*v)));}data_->setArgument(7,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcProcedure::declaration() const { return *IFC4X3_RC3_IfcProcedure_type; }
@@ -19178,9 +19178,9 @@ Ifc4x3_rc3::IfcProcedureType::IfcProcedureType(std::string v1_GlobalId, ::Ifc4x3
 
 // Function implementations for IfcProcess
 boost::optional< std::string > Ifc4x3_rc3::IfcProcess::Identification() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcProcess::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcProcess::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcProcess::LongDescription() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcProcess::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcProcess::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 
 ::Ifc4x3_rc3::IfcRelSequence::list::ptr Ifc4x3_rc3::IfcProcess::IsPredecessorTo() const { return data_->getInverse(IFC4X3_RC3_IfcRelSequence_type, 4)->as<IfcRelSequence>(); }
 ::Ifc4x3_rc3::IfcRelSequence::list::ptr Ifc4x3_rc3::IfcProcess::IsSuccessorFrom() const { return data_->getInverse(IFC4X3_RC3_IfcRelSequence_type, 5)->as<IfcRelSequence>(); }
@@ -19218,9 +19218,9 @@ Ifc4x3_rc3::IfcProductDefinitionShape::IfcProductDefinitionShape(boost::optional
 
 // Function implementations for IfcProductRepresentation
 boost::optional< std::string > Ifc4x3_rc3::IfcProductRepresentation::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcProductRepresentation::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcProductRepresentation::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcProductRepresentation::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcProductRepresentation::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcProductRepresentation::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 aggregate_of< ::Ifc4x3_rc3::IfcRepresentation >::ptr Ifc4x3_rc3::IfcProductRepresentation::Representations() const {  aggregate_of_instance::ptr es = *data_->getArgument(2); return es->as< ::Ifc4x3_rc3::IfcRepresentation >(); }
 void Ifc4x3_rc3::IfcProductRepresentation::setRepresentations(aggregate_of< ::Ifc4x3_rc3::IfcRepresentation >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(2,attr);} }
 
@@ -19234,7 +19234,7 @@ Ifc4x3_rc3::IfcProductRepresentation::IfcProductRepresentation(boost::optional< 
 ::Ifc4x3_rc3::IfcProfileTypeEnum::Value Ifc4x3_rc3::IfcProfileDef::ProfileType() const {  return ::Ifc4x3_rc3::IfcProfileTypeEnum::FromString(*data_->getArgument(0)); }
 void Ifc4x3_rc3::IfcProfileDef::setProfileType(::Ifc4x3_rc3::IfcProfileTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcProfileTypeEnum::ToString(v)));data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcProfileDef::ProfileName() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcProfileDef::setProfileName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcProfileDef::setProfileName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 
 ::Ifc4x3_rc3::IfcExternalReferenceRelationship::list::ptr Ifc4x3_rc3::IfcProfileDef::HasExternalReference() const { return data_->getInverse(IFC4X3_RC3_IfcExternalReferenceRelationship_type, 3)->as<IfcExternalReferenceRelationship>(); }
 ::Ifc4x3_rc3::IfcProfileProperties::list::ptr Ifc4x3_rc3::IfcProfileDef::HasProperties() const { return data_->getInverse(IFC4X3_RC3_IfcProfileProperties_type, 3)->as<IfcProfileProperties>(); }
@@ -19272,11 +19272,11 @@ Ifc4x3_rc3::IfcProjectLibrary::IfcProjectLibrary(std::string v1_GlobalId, ::Ifc4
 
 // Function implementations for IfcProjectOrder
 boost::optional< ::Ifc4x3_rc3::IfcProjectOrderTypeEnum::Value > Ifc4x3_rc3::IfcProjectOrder::PredefinedType() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcProjectOrderTypeEnum::FromString(*data_->getArgument(6)); }
-void Ifc4x3_rc3::IfcProjectOrder::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcProjectOrderTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProjectOrderTypeEnum::ToString(*v)));data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcProjectOrder::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcProjectOrderTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProjectOrderTypeEnum::ToString(*v)));}data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcProjectOrder::Status() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcProjectOrder::setStatus(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcProjectOrder::setStatus(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcProjectOrder::LongDescription() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcProjectOrder::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcProjectOrder::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcProjectOrder::declaration() const { return *IFC4X3_RC3_IfcProjectOrder_type; }
@@ -19286,9 +19286,9 @@ Ifc4x3_rc3::IfcProjectOrder::IfcProjectOrder(std::string v1_GlobalId, ::Ifc4x3_r
 
 // Function implementations for IfcProjectedCRS
 boost::optional< std::string > Ifc4x3_rc3::IfcProjectedCRS::MapProjection() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcProjectedCRS::setMapProjection(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcProjectedCRS::setMapProjection(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcProjectedCRS::MapZone() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcProjectedCRS::setMapZone(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcProjectedCRS::setMapZone(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 ::Ifc4x3_rc3::IfcNamedUnit* Ifc4x3_rc3::IfcProjectedCRS::MapUnit() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(6)))->as<::Ifc4x3_rc3::IfcNamedUnit>(true); }
 void Ifc4x3_rc3::IfcProjectedCRS::setMapUnit(::Ifc4x3_rc3::IfcNamedUnit* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 
@@ -19300,7 +19300,7 @@ Ifc4x3_rc3::IfcProjectedCRS::IfcProjectedCRS(std::string v1_Name, boost::optiona
 
 // Function implementations for IfcProjectionElement
 boost::optional< ::Ifc4x3_rc3::IfcProjectionElementTypeEnum::Value > Ifc4x3_rc3::IfcProjectionElement::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcProjectionElementTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcProjectionElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcProjectionElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProjectionElementTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcProjectionElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcProjectionElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProjectionElementTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcProjectionElement::declaration() const { return *IFC4X3_RC3_IfcProjectionElement_type; }
@@ -19312,7 +19312,7 @@ Ifc4x3_rc3::IfcProjectionElement::IfcProjectionElement(std::string v1_GlobalId, 
 std::string Ifc4x3_rc3::IfcProperty::Name() const {  std::string v = *data_->getArgument(0); return v; }
 void Ifc4x3_rc3::IfcProperty::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcProperty::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcProperty::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcProperty::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 
 ::Ifc4x3_rc3::IfcPropertySet::list::ptr Ifc4x3_rc3::IfcProperty::PartOfPset() const { return data_->getInverse(IFC4X3_RC3_IfcPropertySet_type, 4)->as<IfcPropertySet>(); }
 ::Ifc4x3_rc3::IfcPropertyDependencyRelationship::list::ptr Ifc4x3_rc3::IfcProperty::PropertyForDependance() const { return data_->getInverse(IFC4X3_RC3_IfcPropertyDependencyRelationship_type, 2)->as<IfcPropertyDependencyRelationship>(); }
@@ -19367,7 +19367,7 @@ void Ifc4x3_rc3::IfcPropertyDependencyRelationship::setDependingProperty(::Ifc4x
 ::Ifc4x3_rc3::IfcProperty* Ifc4x3_rc3::IfcPropertyDependencyRelationship::DependantProperty() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcProperty>(true); }
 void Ifc4x3_rc3::IfcPropertyDependencyRelationship::setDependantProperty(::Ifc4x3_rc3::IfcProperty* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPropertyDependencyRelationship::Expression() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcPropertyDependencyRelationship::setExpression(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcPropertyDependencyRelationship::setExpression(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPropertyDependencyRelationship::declaration() const { return *IFC4X3_RC3_IfcPropertyDependencyRelationship_type; }
@@ -19377,7 +19377,7 @@ Ifc4x3_rc3::IfcPropertyDependencyRelationship::IfcPropertyDependencyRelationship
 
 // Function implementations for IfcPropertyEnumeratedValue
 boost::optional< aggregate_of_instance::ptr > Ifc4x3_rc3::IfcPropertyEnumeratedValue::EnumerationValues() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } aggregate_of_instance::ptr v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcPropertyEnumeratedValue::setEnumerationValues(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcPropertyEnumeratedValue::setEnumerationValues(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 ::Ifc4x3_rc3::IfcPropertyEnumeration* Ifc4x3_rc3::IfcPropertyEnumeratedValue::EnumerationReference() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcPropertyEnumeration>(true); }
 void Ifc4x3_rc3::IfcPropertyEnumeratedValue::setEnumerationReference(::Ifc4x3_rc3::IfcPropertyEnumeration* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 
@@ -19403,7 +19403,7 @@ Ifc4x3_rc3::IfcPropertyEnumeration::IfcPropertyEnumeration(std::string v1_Name, 
 
 // Function implementations for IfcPropertyListValue
 boost::optional< aggregate_of_instance::ptr > Ifc4x3_rc3::IfcPropertyListValue::ListValues() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } aggregate_of_instance::ptr v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcPropertyListValue::setListValues(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcPropertyListValue::setListValues(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 ::Ifc4x3_rc3::IfcUnit* Ifc4x3_rc3::IfcPropertyListValue::Unit() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcUnit>(true); }
 void Ifc4x3_rc3::IfcPropertyListValue::setUnit(::Ifc4x3_rc3::IfcUnit* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 
@@ -19415,7 +19415,7 @@ Ifc4x3_rc3::IfcPropertyListValue::IfcPropertyListValue(std::string v1_Name, boos
 
 // Function implementations for IfcPropertyReferenceValue
 boost::optional< std::string > Ifc4x3_rc3::IfcPropertyReferenceValue::UsageName() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcPropertyReferenceValue::setUsageName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcPropertyReferenceValue::setUsageName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 ::Ifc4x3_rc3::IfcObjectReferenceSelect* Ifc4x3_rc3::IfcPropertyReferenceValue::PropertyReference() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcObjectReferenceSelect>(true); }
 void Ifc4x3_rc3::IfcPropertyReferenceValue::setPropertyReference(::Ifc4x3_rc3::IfcObjectReferenceSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 
@@ -19448,9 +19448,9 @@ Ifc4x3_rc3::IfcPropertySetDefinition::IfcPropertySetDefinition(std::string v1_Gl
 
 // Function implementations for IfcPropertySetTemplate
 boost::optional< ::Ifc4x3_rc3::IfcPropertySetTemplateTypeEnum::Value > Ifc4x3_rc3::IfcPropertySetTemplate::TemplateType() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcPropertySetTemplateTypeEnum::FromString(*data_->getArgument(4)); }
-void Ifc4x3_rc3::IfcPropertySetTemplate::setTemplateType(boost::optional< ::Ifc4x3_rc3::IfcPropertySetTemplateTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPropertySetTemplateTypeEnum::ToString(*v)));data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcPropertySetTemplate::setTemplateType(boost::optional< ::Ifc4x3_rc3::IfcPropertySetTemplateTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPropertySetTemplateTypeEnum::ToString(*v)));}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPropertySetTemplate::ApplicableEntity() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcPropertySetTemplate::setApplicableEntity(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcPropertySetTemplate::setApplicableEntity(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 aggregate_of< ::Ifc4x3_rc3::IfcPropertyTemplate >::ptr Ifc4x3_rc3::IfcPropertySetTemplate::HasPropertyTemplates() const {  aggregate_of_instance::ptr es = *data_->getArgument(6); return es->as< ::Ifc4x3_rc3::IfcPropertyTemplate >(); }
 void Ifc4x3_rc3::IfcPropertySetTemplate::setHasPropertyTemplates(aggregate_of< ::Ifc4x3_rc3::IfcPropertyTemplate >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(6,attr);} }
 
@@ -19475,17 +19475,17 @@ Ifc4x3_rc3::IfcPropertySingleValue::IfcPropertySingleValue(std::string v1_Name, 
 
 // Function implementations for IfcPropertyTableValue
 boost::optional< aggregate_of_instance::ptr > Ifc4x3_rc3::IfcPropertyTableValue::DefiningValues() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } aggregate_of_instance::ptr v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcPropertyTableValue::setDefiningValues(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcPropertyTableValue::setDefiningValues(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< aggregate_of_instance::ptr > Ifc4x3_rc3::IfcPropertyTableValue::DefinedValues() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } aggregate_of_instance::ptr v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcPropertyTableValue::setDefinedValues(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcPropertyTableValue::setDefinedValues(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcPropertyTableValue::Expression() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcPropertyTableValue::setExpression(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcPropertyTableValue::setExpression(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 ::Ifc4x3_rc3::IfcUnit* Ifc4x3_rc3::IfcPropertyTableValue::DefiningUnit() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(5)))->as<::Ifc4x3_rc3::IfcUnit>(true); }
 void Ifc4x3_rc3::IfcPropertyTableValue::setDefiningUnit(::Ifc4x3_rc3::IfcUnit* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(5,attr);} }
 ::Ifc4x3_rc3::IfcUnit* Ifc4x3_rc3::IfcPropertyTableValue::DefinedUnit() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(6)))->as<::Ifc4x3_rc3::IfcUnit>(true); }
 void Ifc4x3_rc3::IfcPropertyTableValue::setDefinedUnit(::Ifc4x3_rc3::IfcUnit* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcCurveInterpolationEnum::Value > Ifc4x3_rc3::IfcPropertyTableValue::CurveInterpolation() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcCurveInterpolationEnum::FromString(*data_->getArgument(7)); }
-void Ifc4x3_rc3::IfcPropertyTableValue::setCurveInterpolation(boost::optional< ::Ifc4x3_rc3::IfcCurveInterpolationEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCurveInterpolationEnum::ToString(*v)));data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcPropertyTableValue::setCurveInterpolation(boost::optional< ::Ifc4x3_rc3::IfcCurveInterpolationEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcCurveInterpolationEnum::ToString(*v)));}data_->setArgument(7,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPropertyTableValue::declaration() const { return *IFC4X3_RC3_IfcPropertyTableValue_type; }
@@ -19513,7 +19513,7 @@ Ifc4x3_rc3::IfcPropertyTemplateDefinition::IfcPropertyTemplateDefinition(std::st
 
 // Function implementations for IfcProtectiveDevice
 boost::optional< ::Ifc4x3_rc3::IfcProtectiveDeviceTypeEnum::Value > Ifc4x3_rc3::IfcProtectiveDevice::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcProtectiveDeviceTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcProtectiveDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcProtectiveDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProtectiveDeviceTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcProtectiveDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcProtectiveDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProtectiveDeviceTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcProtectiveDevice::declaration() const { return *IFC4X3_RC3_IfcProtectiveDevice_type; }
@@ -19523,7 +19523,7 @@ Ifc4x3_rc3::IfcProtectiveDevice::IfcProtectiveDevice(std::string v1_GlobalId, ::
 
 // Function implementations for IfcProtectiveDeviceTrippingUnit
 boost::optional< ::Ifc4x3_rc3::IfcProtectiveDeviceTrippingUnitTypeEnum::Value > Ifc4x3_rc3::IfcProtectiveDeviceTrippingUnit::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcProtectiveDeviceTrippingUnitTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcProtectiveDeviceTrippingUnit::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcProtectiveDeviceTrippingUnitTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProtectiveDeviceTrippingUnitTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcProtectiveDeviceTrippingUnit::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcProtectiveDeviceTrippingUnitTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProtectiveDeviceTrippingUnitTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcProtectiveDeviceTrippingUnit::declaration() const { return *IFC4X3_RC3_IfcProtectiveDeviceTrippingUnit_type; }
@@ -19555,7 +19555,7 @@ Ifc4x3_rc3::IfcProtectiveDeviceType::IfcProtectiveDeviceType(std::string v1_Glob
 ::Ifc4x3_rc3::IfcObjectTypeEnum::Value Ifc4x3_rc3::IfcProxy::ProxyType() const {  return ::Ifc4x3_rc3::IfcObjectTypeEnum::FromString(*data_->getArgument(7)); }
 void Ifc4x3_rc3::IfcProxy::setProxyType(::Ifc4x3_rc3::IfcObjectTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcObjectTypeEnum::ToString(v)));data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcProxy::Tag() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcProxy::setTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcProxy::setTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcProxy::declaration() const { return *IFC4X3_RC3_IfcProxy_type; }
@@ -19565,7 +19565,7 @@ Ifc4x3_rc3::IfcProxy::IfcProxy(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHi
 
 // Function implementations for IfcPump
 boost::optional< ::Ifc4x3_rc3::IfcPumpTypeEnum::Value > Ifc4x3_rc3::IfcPump::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcPumpTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcPump::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPumpTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPumpTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcPump::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcPumpTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcPumpTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcPump::declaration() const { return *IFC4X3_RC3_IfcPump_type; }
@@ -19587,7 +19587,7 @@ Ifc4x3_rc3::IfcPumpType::IfcPumpType(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 double Ifc4x3_rc3::IfcQuantityArea::AreaValue() const {  double v = *data_->getArgument(3); return v; }
 void Ifc4x3_rc3::IfcQuantityArea::setAreaValue(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcQuantityArea::Formula() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcQuantityArea::setFormula(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcQuantityArea::setFormula(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcQuantityArea::declaration() const { return *IFC4X3_RC3_IfcQuantityArea_type; }
@@ -19599,7 +19599,7 @@ Ifc4x3_rc3::IfcQuantityArea::IfcQuantityArea(std::string v1_Name, boost::optiona
 double Ifc4x3_rc3::IfcQuantityCount::CountValue() const {  double v = *data_->getArgument(3); return v; }
 void Ifc4x3_rc3::IfcQuantityCount::setCountValue(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcQuantityCount::Formula() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcQuantityCount::setFormula(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcQuantityCount::setFormula(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcQuantityCount::declaration() const { return *IFC4X3_RC3_IfcQuantityCount_type; }
@@ -19611,7 +19611,7 @@ Ifc4x3_rc3::IfcQuantityCount::IfcQuantityCount(std::string v1_Name, boost::optio
 double Ifc4x3_rc3::IfcQuantityLength::LengthValue() const {  double v = *data_->getArgument(3); return v; }
 void Ifc4x3_rc3::IfcQuantityLength::setLengthValue(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcQuantityLength::Formula() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcQuantityLength::setFormula(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcQuantityLength::setFormula(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcQuantityLength::declaration() const { return *IFC4X3_RC3_IfcQuantityLength_type; }
@@ -19631,7 +19631,7 @@ Ifc4x3_rc3::IfcQuantitySet::IfcQuantitySet(std::string v1_GlobalId, ::Ifc4x3_rc3
 double Ifc4x3_rc3::IfcQuantityTime::TimeValue() const {  double v = *data_->getArgument(3); return v; }
 void Ifc4x3_rc3::IfcQuantityTime::setTimeValue(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcQuantityTime::Formula() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcQuantityTime::setFormula(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcQuantityTime::setFormula(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcQuantityTime::declaration() const { return *IFC4X3_RC3_IfcQuantityTime_type; }
@@ -19643,7 +19643,7 @@ Ifc4x3_rc3::IfcQuantityTime::IfcQuantityTime(std::string v1_Name, boost::optiona
 double Ifc4x3_rc3::IfcQuantityVolume::VolumeValue() const {  double v = *data_->getArgument(3); return v; }
 void Ifc4x3_rc3::IfcQuantityVolume::setVolumeValue(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcQuantityVolume::Formula() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcQuantityVolume::setFormula(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcQuantityVolume::setFormula(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcQuantityVolume::declaration() const { return *IFC4X3_RC3_IfcQuantityVolume_type; }
@@ -19655,7 +19655,7 @@ Ifc4x3_rc3::IfcQuantityVolume::IfcQuantityVolume(std::string v1_Name, boost::opt
 double Ifc4x3_rc3::IfcQuantityWeight::WeightValue() const {  double v = *data_->getArgument(3); return v; }
 void Ifc4x3_rc3::IfcQuantityWeight::setWeightValue(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcQuantityWeight::Formula() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcQuantityWeight::setFormula(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcQuantityWeight::setFormula(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcQuantityWeight::declaration() const { return *IFC4X3_RC3_IfcQuantityWeight_type; }
@@ -19665,7 +19665,7 @@ Ifc4x3_rc3::IfcQuantityWeight::IfcQuantityWeight(std::string v1_Name, boost::opt
 
 // Function implementations for IfcRail
 boost::optional< ::Ifc4x3_rc3::IfcRailTypeEnum::Value > Ifc4x3_rc3::IfcRail::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcRailTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcRail::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRailTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRailTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcRail::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRailTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRailTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcRail::declaration() const { return *IFC4X3_RC3_IfcRail_type; }
@@ -19685,7 +19685,7 @@ Ifc4x3_rc3::IfcRailType::IfcRailType(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 
 // Function implementations for IfcRailing
 boost::optional< ::Ifc4x3_rc3::IfcRailingTypeEnum::Value > Ifc4x3_rc3::IfcRailing::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcRailingTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcRailing::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRailingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRailingTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcRailing::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRailingTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRailingTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcRailing::declaration() const { return *IFC4X3_RC3_IfcRailing_type; }
@@ -19705,7 +19705,7 @@ Ifc4x3_rc3::IfcRailingType::IfcRailingType(std::string v1_GlobalId, ::Ifc4x3_rc3
 
 // Function implementations for IfcRailway
 boost::optional< ::Ifc4x3_rc3::IfcRailwayTypeEnum::Value > Ifc4x3_rc3::IfcRailway::PredefinedType() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcRailwayTypeEnum::FromString(*data_->getArgument(9)); }
-void Ifc4x3_rc3::IfcRailway::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRailwayTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRailwayTypeEnum::ToString(*v)));data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcRailway::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRailwayTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRailwayTypeEnum::ToString(*v)));}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcRailway::declaration() const { return *IFC4X3_RC3_IfcRailway_type; }
@@ -19715,7 +19715,7 @@ Ifc4x3_rc3::IfcRailway::IfcRailway(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwn
 
 // Function implementations for IfcRamp
 boost::optional< ::Ifc4x3_rc3::IfcRampTypeEnum::Value > Ifc4x3_rc3::IfcRamp::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcRampTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcRamp::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRampTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRampTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcRamp::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRampTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRampTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcRamp::declaration() const { return *IFC4X3_RC3_IfcRamp_type; }
@@ -19725,7 +19725,7 @@ Ifc4x3_rc3::IfcRamp::IfcRamp(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHist
 
 // Function implementations for IfcRampFlight
 boost::optional< ::Ifc4x3_rc3::IfcRampFlightTypeEnum::Value > Ifc4x3_rc3::IfcRampFlight::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcRampFlightTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcRampFlight::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRampFlightTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRampFlightTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcRampFlight::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRampFlightTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRampFlightTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcRampFlight::declaration() const { return *IFC4X3_RC3_IfcRampFlight_type; }
@@ -19777,9 +19777,9 @@ Ifc4x3_rc3::IfcRationalBSplineSurfaceWithKnots::IfcRationalBSplineSurfaceWithKno
 double Ifc4x3_rc3::IfcRectangleHollowProfileDef::WallThickness() const {  double v = *data_->getArgument(5); return v; }
 void Ifc4x3_rc3::IfcRectangleHollowProfileDef::setWallThickness(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(5,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcRectangleHollowProfileDef::InnerFilletRadius() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } double v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcRectangleHollowProfileDef::setInnerFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcRectangleHollowProfileDef::setInnerFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcRectangleHollowProfileDef::OuterFilletRadius() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcRectangleHollowProfileDef::setOuterFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcRectangleHollowProfileDef::setOuterFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcRectangleHollowProfileDef::declaration() const { return *IFC4X3_RC3_IfcRectangleHollowProfileDef_type; }
@@ -19839,19 +19839,19 @@ Ifc4x3_rc3::IfcRectangularTrimmedSurface::IfcRectangularTrimmedSurface(::Ifc4x3_
 ::Ifc4x3_rc3::IfcRecurrenceTypeEnum::Value Ifc4x3_rc3::IfcRecurrencePattern::RecurrenceType() const {  return ::Ifc4x3_rc3::IfcRecurrenceTypeEnum::FromString(*data_->getArgument(0)); }
 void Ifc4x3_rc3::IfcRecurrencePattern::setRecurrenceType(::Ifc4x3_rc3::IfcRecurrenceTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcRecurrenceTypeEnum::ToString(v)));data_->setArgument(0,attr);} }
 boost::optional< std::vector< int > /*[1:?]*/ > Ifc4x3_rc3::IfcRecurrencePattern::DayComponent() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::vector< int > /*[1:?]*/ v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcRecurrencePattern::setDayComponent(boost::optional< std::vector< int > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcRecurrencePattern::setDayComponent(boost::optional< std::vector< int > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::vector< int > /*[1:?]*/ > Ifc4x3_rc3::IfcRecurrencePattern::WeekdayComponent() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::vector< int > /*[1:?]*/ v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcRecurrencePattern::setWeekdayComponent(boost::optional< std::vector< int > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcRecurrencePattern::setWeekdayComponent(boost::optional< std::vector< int > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< std::vector< int > /*[1:?]*/ > Ifc4x3_rc3::IfcRecurrencePattern::MonthComponent() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::vector< int > /*[1:?]*/ v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcRecurrencePattern::setMonthComponent(boost::optional< std::vector< int > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcRecurrencePattern::setMonthComponent(boost::optional< std::vector< int > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< int > Ifc4x3_rc3::IfcRecurrencePattern::Position() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } int v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcRecurrencePattern::setPosition(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcRecurrencePattern::setPosition(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< int > Ifc4x3_rc3::IfcRecurrencePattern::Interval() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } int v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcRecurrencePattern::setInterval(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcRecurrencePattern::setInterval(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< int > Ifc4x3_rc3::IfcRecurrencePattern::Occurrences() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } int v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcRecurrencePattern::setOccurrences(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcRecurrencePattern::setOccurrences(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcTimePeriod >::ptr > Ifc4x3_rc3::IfcRecurrencePattern::TimePeriods() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(7); return es->as< ::Ifc4x3_rc3::IfcTimePeriod >(); }
-void Ifc4x3_rc3::IfcRecurrencePattern::setTimePeriods(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcTimePeriod >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcRecurrencePattern::setTimePeriods(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcTimePeriod >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(7,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcRecurrencePattern::declaration() const { return *IFC4X3_RC3_IfcRecurrencePattern_type; }
@@ -19861,13 +19861,13 @@ Ifc4x3_rc3::IfcRecurrencePattern::IfcRecurrencePattern(::Ifc4x3_rc3::IfcRecurren
 
 // Function implementations for IfcReference
 boost::optional< std::string > Ifc4x3_rc3::IfcReference::TypeIdentifier() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcReference::setTypeIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcReference::setTypeIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcReference::AttributeIdentifier() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcReference::setAttributeIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcReference::setAttributeIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcReference::InstanceName() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcReference::setInstanceName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcReference::setInstanceName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< std::vector< int > /*[1:?]*/ > Ifc4x3_rc3::IfcReference::ListPositions() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::vector< int > /*[1:?]*/ v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcReference::setListPositions(boost::optional< std::vector< int > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcReference::setListPositions(boost::optional< std::vector< int > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 ::Ifc4x3_rc3::IfcReference* Ifc4x3_rc3::IfcReference::InnerReference() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(4)))->as<::Ifc4x3_rc3::IfcReference>(true); }
 void Ifc4x3_rc3::IfcReference::setInnerReference(::Ifc4x3_rc3::IfcReference* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
 
@@ -19879,9 +19879,9 @@ Ifc4x3_rc3::IfcReference::IfcReference(boost::optional< std::string > v1_TypeIde
 
 // Function implementations for IfcReferent
 boost::optional< ::Ifc4x3_rc3::IfcReferentTypeEnum::Value > Ifc4x3_rc3::IfcReferent::PredefinedType() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcReferentTypeEnum::FromString(*data_->getArgument(7)); }
-void Ifc4x3_rc3::IfcReferent::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcReferentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReferentTypeEnum::ToString(*v)));data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcReferent::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcReferentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReferentTypeEnum::ToString(*v)));}data_->setArgument(7,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReferent::RestartDistance() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcReferent::setRestartDistance(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcReferent::setRestartDistance(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcReferent::declaration() const { return *IFC4X3_RC3_IfcReferent_type; }
@@ -19903,7 +19903,7 @@ Ifc4x3_rc3::IfcRegularTimeSeries::IfcRegularTimeSeries(std::string v1_Name, boos
 
 // Function implementations for IfcReinforcedSoil
 boost::optional< ::Ifc4x3_rc3::IfcReinforcedSoilTypeEnum::Value > Ifc4x3_rc3::IfcReinforcedSoil::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcReinforcedSoilTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcReinforcedSoil::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcReinforcedSoilTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReinforcedSoilTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcReinforcedSoil::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcReinforcedSoilTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReinforcedSoilTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcReinforcedSoil::declaration() const { return *IFC4X3_RC3_IfcReinforcedSoil_type; }
@@ -19917,13 +19917,13 @@ void Ifc4x3_rc3::IfcReinforcementBarProperties::setTotalCrossSectionArea(double 
 std::string Ifc4x3_rc3::IfcReinforcementBarProperties::SteelGrade() const {  std::string v = *data_->getArgument(1); return v; }
 void Ifc4x3_rc3::IfcReinforcementBarProperties::setSteelGrade(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::Value > Ifc4x3_rc3::IfcReinforcementBarProperties::BarSurface() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::FromString(*data_->getArgument(2)); }
-void Ifc4x3_rc3::IfcReinforcementBarProperties::setBarSurface(boost::optional< ::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::ToString(*v)));data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcReinforcementBarProperties::setBarSurface(boost::optional< ::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::ToString(*v)));}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcementBarProperties::EffectiveDepth() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcReinforcementBarProperties::setEffectiveDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcReinforcementBarProperties::setEffectiveDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcementBarProperties::NominalBarDiameter() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcReinforcementBarProperties::setNominalBarDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcReinforcementBarProperties::setNominalBarDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcementBarProperties::BarCount() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } double v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcReinforcementBarProperties::setBarCount(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcReinforcementBarProperties::setBarCount(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcReinforcementBarProperties::declaration() const { return *IFC4X3_RC3_IfcReinforcementBarProperties_type; }
@@ -19933,7 +19933,7 @@ Ifc4x3_rc3::IfcReinforcementBarProperties::IfcReinforcementBarProperties(double 
 
 // Function implementations for IfcReinforcementDefinitionProperties
 boost::optional< std::string > Ifc4x3_rc3::IfcReinforcementDefinitionProperties::DefinitionType() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcReinforcementDefinitionProperties::setDefinitionType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcReinforcementDefinitionProperties::setDefinitionType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 aggregate_of< ::Ifc4x3_rc3::IfcSectionReinforcementProperties >::ptr Ifc4x3_rc3::IfcReinforcementDefinitionProperties::ReinforcementSectionDefinitions() const {  aggregate_of_instance::ptr es = *data_->getArgument(5); return es->as< ::Ifc4x3_rc3::IfcSectionReinforcementProperties >(); }
 void Ifc4x3_rc3::IfcReinforcementDefinitionProperties::setReinforcementSectionDefinitions(aggregate_of< ::Ifc4x3_rc3::IfcSectionReinforcementProperties >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(5,attr);} }
 
@@ -19945,15 +19945,15 @@ Ifc4x3_rc3::IfcReinforcementDefinitionProperties::IfcReinforcementDefinitionProp
 
 // Function implementations for IfcReinforcingBar
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingBar::NominalDiameter() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcReinforcingBar::setNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcReinforcingBar::setNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingBar::CrossSectionArea() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcReinforcingBar::setCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcReinforcingBar::setCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingBar::BarLength() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } double v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcReinforcingBar::setBarLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcReinforcingBar::setBarLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcReinforcingBarTypeEnum::Value > Ifc4x3_rc3::IfcReinforcingBar::PredefinedType() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcReinforcingBarTypeEnum::FromString(*data_->getArgument(12)); }
-void Ifc4x3_rc3::IfcReinforcingBar::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcReinforcingBarTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReinforcingBarTypeEnum::ToString(*v)));data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcReinforcingBar::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcReinforcingBarTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReinforcingBarTypeEnum::ToString(*v)));}data_->setArgument(12,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::Value > Ifc4x3_rc3::IfcReinforcingBar::BarSurface() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::FromString(*data_->getArgument(13)); }
-void Ifc4x3_rc3::IfcReinforcingBar::setBarSurface(boost::optional< ::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::ToString(*v)));data_->setArgument(13,attr);} }
+void Ifc4x3_rc3::IfcReinforcingBar::setBarSurface(boost::optional< ::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::ToString(*v)));}data_->setArgument(13,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcReinforcingBar::declaration() const { return *IFC4X3_RC3_IfcReinforcingBar_type; }
@@ -19965,17 +19965,17 @@ Ifc4x3_rc3::IfcReinforcingBar::IfcReinforcingBar(std::string v1_GlobalId, ::Ifc4
 ::Ifc4x3_rc3::IfcReinforcingBarTypeEnum::Value Ifc4x3_rc3::IfcReinforcingBarType::PredefinedType() const {  return ::Ifc4x3_rc3::IfcReinforcingBarTypeEnum::FromString(*data_->getArgument(9)); }
 void Ifc4x3_rc3::IfcReinforcingBarType::setPredefinedType(::Ifc4x3_rc3::IfcReinforcingBarTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcReinforcingBarTypeEnum::ToString(v)));data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingBarType::NominalDiameter() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcReinforcingBarType::setNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcReinforcingBarType::setNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingBarType::CrossSectionArea() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } double v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcReinforcingBarType::setCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcReinforcingBarType::setCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingBarType::BarLength() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } double v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcReinforcingBarType::setBarLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcReinforcingBarType::setBarLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::Value > Ifc4x3_rc3::IfcReinforcingBarType::BarSurface() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::FromString(*data_->getArgument(13)); }
-void Ifc4x3_rc3::IfcReinforcingBarType::setBarSurface(boost::optional< ::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::ToString(*v)));data_->setArgument(13,attr);} }
+void Ifc4x3_rc3::IfcReinforcingBarType::setBarSurface(boost::optional< ::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReinforcingBarSurfaceEnum::ToString(*v)));}data_->setArgument(13,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcReinforcingBarType::BendingShapeCode() const { if(!data_->getArgument(14) || data_->getArgument(14)->isNull()) { return boost::none; } std::string v = *data_->getArgument(14); return v; }
-void Ifc4x3_rc3::IfcReinforcingBarType::setBendingShapeCode(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(14,attr);} }
+void Ifc4x3_rc3::IfcReinforcingBarType::setBendingShapeCode(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(14,attr);} }
 boost::optional< aggregate_of_instance::ptr > Ifc4x3_rc3::IfcReinforcingBarType::BendingParameters() const { if(!data_->getArgument(15) || data_->getArgument(15)->isNull()) { return boost::none; } aggregate_of_instance::ptr v = *data_->getArgument(15); return v; }
-void Ifc4x3_rc3::IfcReinforcingBarType::setBendingParameters(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(15,attr);} }
+void Ifc4x3_rc3::IfcReinforcingBarType::setBendingParameters(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(15,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcReinforcingBarType::declaration() const { return *IFC4X3_RC3_IfcReinforcingBarType_type; }
@@ -19985,7 +19985,7 @@ Ifc4x3_rc3::IfcReinforcingBarType::IfcReinforcingBarType(std::string v1_GlobalId
 
 // Function implementations for IfcReinforcingElement
 boost::optional< std::string > Ifc4x3_rc3::IfcReinforcingElement::SteelGrade() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcReinforcingElement::setSteelGrade(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcReinforcingElement::setSteelGrade(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcReinforcingElement::declaration() const { return *IFC4X3_RC3_IfcReinforcingElement_type; }
@@ -20003,23 +20003,23 @@ Ifc4x3_rc3::IfcReinforcingElementType::IfcReinforcingElementType(std::string v1_
 
 // Function implementations for IfcReinforcingMesh
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMesh::MeshLength() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcReinforcingMesh::setMeshLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMesh::setMeshLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMesh::MeshWidth() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcReinforcingMesh::setMeshWidth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMesh::setMeshWidth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMesh::LongitudinalBarNominalDiameter() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } double v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcReinforcingMesh::setLongitudinalBarNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMesh::setLongitudinalBarNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMesh::TransverseBarNominalDiameter() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } double v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcReinforcingMesh::setTransverseBarNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMesh::setTransverseBarNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMesh::LongitudinalBarCrossSectionArea() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return boost::none; } double v = *data_->getArgument(13); return v; }
-void Ifc4x3_rc3::IfcReinforcingMesh::setLongitudinalBarCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(13,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMesh::setLongitudinalBarCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(13,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMesh::TransverseBarCrossSectionArea() const { if(!data_->getArgument(14) || data_->getArgument(14)->isNull()) { return boost::none; } double v = *data_->getArgument(14); return v; }
-void Ifc4x3_rc3::IfcReinforcingMesh::setTransverseBarCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(14,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMesh::setTransverseBarCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(14,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMesh::LongitudinalBarSpacing() const { if(!data_->getArgument(15) || data_->getArgument(15)->isNull()) { return boost::none; } double v = *data_->getArgument(15); return v; }
-void Ifc4x3_rc3::IfcReinforcingMesh::setLongitudinalBarSpacing(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(15,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMesh::setLongitudinalBarSpacing(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(15,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMesh::TransverseBarSpacing() const { if(!data_->getArgument(16) || data_->getArgument(16)->isNull()) { return boost::none; } double v = *data_->getArgument(16); return v; }
-void Ifc4x3_rc3::IfcReinforcingMesh::setTransverseBarSpacing(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(16,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMesh::setTransverseBarSpacing(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(16,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcReinforcingMeshTypeEnum::Value > Ifc4x3_rc3::IfcReinforcingMesh::PredefinedType() const { if(!data_->getArgument(17) || data_->getArgument(17)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcReinforcingMeshTypeEnum::FromString(*data_->getArgument(17)); }
-void Ifc4x3_rc3::IfcReinforcingMesh::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcReinforcingMeshTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReinforcingMeshTypeEnum::ToString(*v)));data_->setArgument(17,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMesh::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcReinforcingMeshTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcReinforcingMeshTypeEnum::ToString(*v)));}data_->setArgument(17,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcReinforcingMesh::declaration() const { return *IFC4X3_RC3_IfcReinforcingMesh_type; }
@@ -20031,25 +20031,25 @@ Ifc4x3_rc3::IfcReinforcingMesh::IfcReinforcingMesh(std::string v1_GlobalId, ::If
 ::Ifc4x3_rc3::IfcReinforcingMeshTypeEnum::Value Ifc4x3_rc3::IfcReinforcingMeshType::PredefinedType() const {  return ::Ifc4x3_rc3::IfcReinforcingMeshTypeEnum::FromString(*data_->getArgument(9)); }
 void Ifc4x3_rc3::IfcReinforcingMeshType::setPredefinedType(::Ifc4x3_rc3::IfcReinforcingMeshTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcReinforcingMeshTypeEnum::ToString(v)));data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMeshType::MeshLength() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcReinforcingMeshType::setMeshLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMeshType::setMeshLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMeshType::MeshWidth() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } double v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcReinforcingMeshType::setMeshWidth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMeshType::setMeshWidth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMeshType::LongitudinalBarNominalDiameter() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } double v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcReinforcingMeshType::setLongitudinalBarNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMeshType::setLongitudinalBarNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMeshType::TransverseBarNominalDiameter() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return boost::none; } double v = *data_->getArgument(13); return v; }
-void Ifc4x3_rc3::IfcReinforcingMeshType::setTransverseBarNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(13,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMeshType::setTransverseBarNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(13,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMeshType::LongitudinalBarCrossSectionArea() const { if(!data_->getArgument(14) || data_->getArgument(14)->isNull()) { return boost::none; } double v = *data_->getArgument(14); return v; }
-void Ifc4x3_rc3::IfcReinforcingMeshType::setLongitudinalBarCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(14,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMeshType::setLongitudinalBarCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(14,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMeshType::TransverseBarCrossSectionArea() const { if(!data_->getArgument(15) || data_->getArgument(15)->isNull()) { return boost::none; } double v = *data_->getArgument(15); return v; }
-void Ifc4x3_rc3::IfcReinforcingMeshType::setTransverseBarCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(15,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMeshType::setTransverseBarCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(15,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMeshType::LongitudinalBarSpacing() const { if(!data_->getArgument(16) || data_->getArgument(16)->isNull()) { return boost::none; } double v = *data_->getArgument(16); return v; }
-void Ifc4x3_rc3::IfcReinforcingMeshType::setLongitudinalBarSpacing(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(16,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMeshType::setLongitudinalBarSpacing(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(16,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcReinforcingMeshType::TransverseBarSpacing() const { if(!data_->getArgument(17) || data_->getArgument(17)->isNull()) { return boost::none; } double v = *data_->getArgument(17); return v; }
-void Ifc4x3_rc3::IfcReinforcingMeshType::setTransverseBarSpacing(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(17,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMeshType::setTransverseBarSpacing(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(17,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcReinforcingMeshType::BendingShapeCode() const { if(!data_->getArgument(18) || data_->getArgument(18)->isNull()) { return boost::none; } std::string v = *data_->getArgument(18); return v; }
-void Ifc4x3_rc3::IfcReinforcingMeshType::setBendingShapeCode(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(18,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMeshType::setBendingShapeCode(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(18,attr);} }
 boost::optional< aggregate_of_instance::ptr > Ifc4x3_rc3::IfcReinforcingMeshType::BendingParameters() const { if(!data_->getArgument(19) || data_->getArgument(19)->isNull()) { return boost::none; } aggregate_of_instance::ptr v = *data_->getArgument(19); return v; }
-void Ifc4x3_rc3::IfcReinforcingMeshType::setBendingParameters(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(19,attr);} }
+void Ifc4x3_rc3::IfcReinforcingMeshType::setBendingParameters(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(19,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcReinforcingMeshType::declaration() const { return *IFC4X3_RC3_IfcReinforcingMeshType_type; }
@@ -20073,7 +20073,7 @@ Ifc4x3_rc3::IfcRelAggregates::IfcRelAggregates(std::string v1_GlobalId, ::Ifc4x3
 aggregate_of< ::Ifc4x3_rc3::IfcObjectDefinition >::ptr Ifc4x3_rc3::IfcRelAssigns::RelatedObjects() const {  aggregate_of_instance::ptr es = *data_->getArgument(4); return es->as< ::Ifc4x3_rc3::IfcObjectDefinition >(); }
 void Ifc4x3_rc3::IfcRelAssigns::setRelatedObjects(aggregate_of< ::Ifc4x3_rc3::IfcObjectDefinition >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(4,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcObjectTypeEnum::Value > Ifc4x3_rc3::IfcRelAssigns::RelatedObjectsType() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcObjectTypeEnum::FromString(*data_->getArgument(5)); }
-void Ifc4x3_rc3::IfcRelAssigns::setRelatedObjectsType(boost::optional< ::Ifc4x3_rc3::IfcObjectTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcObjectTypeEnum::ToString(*v)));data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcRelAssigns::setRelatedObjectsType(boost::optional< ::Ifc4x3_rc3::IfcObjectTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcObjectTypeEnum::ToString(*v)));}data_->setArgument(5,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcRelAssigns::declaration() const { return *IFC4X3_RC3_IfcRelAssigns_type; }
@@ -20187,7 +20187,7 @@ Ifc4x3_rc3::IfcRelAssociatesClassification::IfcRelAssociatesClassification(std::
 
 // Function implementations for IfcRelAssociatesConstraint
 boost::optional< std::string > Ifc4x3_rc3::IfcRelAssociatesConstraint::Intent() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcRelAssociatesConstraint::setIntent(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcRelAssociatesConstraint::setIntent(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 ::Ifc4x3_rc3::IfcConstraint* Ifc4x3_rc3::IfcRelAssociatesConstraint::RelatingConstraint() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(6)))->as<::Ifc4x3_rc3::IfcConstraint>(true); }
 void Ifc4x3_rc3::IfcRelAssociatesConstraint::setRelatingConstraint(::Ifc4x3_rc3::IfcConstraint* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 
@@ -20323,7 +20323,7 @@ void Ifc4x3_rc3::IfcRelConnectsStructuralMember::setAppliedCondition(::Ifc4x3_rc
 ::Ifc4x3_rc3::IfcStructuralConnectionCondition* Ifc4x3_rc3::IfcRelConnectsStructuralMember::AdditionalConditions() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(7)))->as<::Ifc4x3_rc3::IfcStructuralConnectionCondition>(true); }
 void Ifc4x3_rc3::IfcRelConnectsStructuralMember::setAdditionalConditions(::Ifc4x3_rc3::IfcStructuralConnectionCondition* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(7,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcRelConnectsStructuralMember::SupportedLength() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcRelConnectsStructuralMember::setSupportedLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcRelConnectsStructuralMember::setSupportedLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 ::Ifc4x3_rc3::IfcAxis2Placement3D* Ifc4x3_rc3::IfcRelConnectsStructuralMember::ConditionCoordinateSystem() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(9)))->as<::Ifc4x3_rc3::IfcAxis2Placement3D>(true); }
 void Ifc4x3_rc3::IfcRelConnectsStructuralMember::setConditionCoordinateSystem(::Ifc4x3_rc3::IfcAxis2Placement3D* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(9,attr);} }
 
@@ -20347,7 +20347,7 @@ Ifc4x3_rc3::IfcRelConnectsWithEccentricity::IfcRelConnectsWithEccentricity(std::
 aggregate_of< ::Ifc4x3_rc3::IfcElement >::ptr Ifc4x3_rc3::IfcRelConnectsWithRealizingElements::RealizingElements() const {  aggregate_of_instance::ptr es = *data_->getArgument(7); return es->as< ::Ifc4x3_rc3::IfcElement >(); }
 void Ifc4x3_rc3::IfcRelConnectsWithRealizingElements::setRealizingElements(aggregate_of< ::Ifc4x3_rc3::IfcElement >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcRelConnectsWithRealizingElements::ConnectionType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcRelConnectsWithRealizingElements::setConnectionType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcRelConnectsWithRealizingElements::setConnectionType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcRelConnectsWithRealizingElements::declaration() const { return *IFC4X3_RC3_IfcRelConnectsWithRealizingElements_type; }
@@ -20499,7 +20499,7 @@ void Ifc4x3_rc3::IfcRelInterferesElements::setRelatedElement(::Ifc4x3_rc3::IfcIn
 ::Ifc4x3_rc3::IfcConnectionGeometry* Ifc4x3_rc3::IfcRelInterferesElements::InterferenceGeometry() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(6)))->as<::Ifc4x3_rc3::IfcConnectionGeometry>(true); }
 void Ifc4x3_rc3::IfcRelInterferesElements::setInterferenceGeometry(::Ifc4x3_rc3::IfcConnectionGeometry* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcRelInterferesElements::InterferenceType() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcRelInterferesElements::setInterferenceType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcRelInterferesElements::setInterferenceType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::logic::tribool Ifc4x3_rc3::IfcRelInterferesElements::ImpliedOrder() const {  boost::logic::tribool v = *data_->getArgument(8); return v; }
 void Ifc4x3_rc3::IfcRelInterferesElements::setImpliedOrder(boost::logic::tribool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(8,attr);} }
 
@@ -20565,9 +20565,9 @@ void Ifc4x3_rc3::IfcRelSequence::setRelatedProcess(::Ifc4x3_rc3::IfcProcess* v) 
 ::Ifc4x3_rc3::IfcLagTime* Ifc4x3_rc3::IfcRelSequence::TimeLag() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(6)))->as<::Ifc4x3_rc3::IfcLagTime>(true); }
 void Ifc4x3_rc3::IfcRelSequence::setTimeLag(::Ifc4x3_rc3::IfcLagTime* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcSequenceEnum::Value > Ifc4x3_rc3::IfcRelSequence::SequenceType() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSequenceEnum::FromString(*data_->getArgument(7)); }
-void Ifc4x3_rc3::IfcRelSequence::setSequenceType(boost::optional< ::Ifc4x3_rc3::IfcSequenceEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSequenceEnum::ToString(*v)));data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcRelSequence::setSequenceType(boost::optional< ::Ifc4x3_rc3::IfcSequenceEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSequenceEnum::ToString(*v)));}data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcRelSequence::UserDefinedSequenceType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcRelSequence::setUserDefinedSequenceType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcRelSequence::setUserDefinedSequenceType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcRelSequence::declaration() const { return *IFC4X3_RC3_IfcRelSequence_type; }
@@ -20661,9 +20661,9 @@ Ifc4x3_rc3::IfcReparametrisedCompositeCurveSegment::IfcReparametrisedCompositeCu
 ::Ifc4x3_rc3::IfcRepresentationContext* Ifc4x3_rc3::IfcRepresentation::ContextOfItems() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(0)))->as<::Ifc4x3_rc3::IfcRepresentationContext>(true); }
 void Ifc4x3_rc3::IfcRepresentation::setContextOfItems(::Ifc4x3_rc3::IfcRepresentationContext* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcRepresentation::RepresentationIdentifier() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcRepresentation::setRepresentationIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcRepresentation::setRepresentationIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcRepresentation::RepresentationType() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcRepresentation::setRepresentationType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcRepresentation::setRepresentationType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 aggregate_of< ::Ifc4x3_rc3::IfcRepresentationItem >::ptr Ifc4x3_rc3::IfcRepresentation::Items() const {  aggregate_of_instance::ptr es = *data_->getArgument(3); return es->as< ::Ifc4x3_rc3::IfcRepresentationItem >(); }
 void Ifc4x3_rc3::IfcRepresentation::setItems(aggregate_of< ::Ifc4x3_rc3::IfcRepresentationItem >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(3,attr);} }
 
@@ -20678,9 +20678,9 @@ Ifc4x3_rc3::IfcRepresentation::IfcRepresentation(::Ifc4x3_rc3::IfcRepresentation
 
 // Function implementations for IfcRepresentationContext
 boost::optional< std::string > Ifc4x3_rc3::IfcRepresentationContext::ContextIdentifier() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcRepresentationContext::setContextIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcRepresentationContext::setContextIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcRepresentationContext::ContextType() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcRepresentationContext::setContextType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcRepresentationContext::setContextType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 
 ::Ifc4x3_rc3::IfcRepresentation::list::ptr Ifc4x3_rc3::IfcRepresentationContext::RepresentationsInContext() const { return data_->getInverse(IFC4X3_RC3_IfcRepresentation_type, 0)->as<IfcRepresentation>(); }
 
@@ -20715,9 +20715,9 @@ Ifc4x3_rc3::IfcRepresentationMap::IfcRepresentationMap(::Ifc4x3_rc3::IfcAxis2Pla
 
 // Function implementations for IfcResource
 boost::optional< std::string > Ifc4x3_rc3::IfcResource::Identification() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcResource::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcResource::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcResource::LongDescription() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcResource::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcResource::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 
 ::Ifc4x3_rc3::IfcRelAssignsToResource::list::ptr Ifc4x3_rc3::IfcResource::ResourceOf() const { return data_->getInverse(IFC4X3_RC3_IfcRelAssignsToResource_type, 6)->as<IfcRelAssignsToResource>(); }
 
@@ -20752,9 +20752,9 @@ Ifc4x3_rc3::IfcResourceConstraintRelationship::IfcResourceConstraintRelationship
 
 // Function implementations for IfcResourceLevelRelationship
 boost::optional< std::string > Ifc4x3_rc3::IfcResourceLevelRelationship::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcResourceLevelRelationship::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcResourceLevelRelationship::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcResourceLevelRelationship::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcResourceLevelRelationship::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcResourceLevelRelationship::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcResourceLevelRelationship::declaration() const { return *IFC4X3_RC3_IfcResourceLevelRelationship_type; }
@@ -20764,35 +20764,35 @@ Ifc4x3_rc3::IfcResourceLevelRelationship::IfcResourceLevelRelationship(boost::op
 
 // Function implementations for IfcResourceTime
 boost::optional< std::string > Ifc4x3_rc3::IfcResourceTime::ScheduleWork() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setScheduleWork(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setScheduleWork(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcResourceTime::ScheduleUsage() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setScheduleUsage(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setScheduleUsage(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcResourceTime::ScheduleStart() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setScheduleStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setScheduleStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcResourceTime::ScheduleFinish() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setScheduleFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setScheduleFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcResourceTime::ScheduleContour() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setScheduleContour(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setScheduleContour(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcResourceTime::LevelingDelay() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setLevelingDelay(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setLevelingDelay(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< bool > Ifc4x3_rc3::IfcResourceTime::IsOverAllocated() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } bool v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setIsOverAllocated(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setIsOverAllocated(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcResourceTime::StatusTime() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } std::string v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setStatusTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setStatusTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcResourceTime::ActualWork() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } std::string v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setActualWork(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setActualWork(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcResourceTime::ActualUsage() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } double v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setActualUsage(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setActualUsage(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcResourceTime::ActualStart() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return boost::none; } std::string v = *data_->getArgument(13); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setActualStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(13,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setActualStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(13,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcResourceTime::ActualFinish() const { if(!data_->getArgument(14) || data_->getArgument(14)->isNull()) { return boost::none; } std::string v = *data_->getArgument(14); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setActualFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(14,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setActualFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(14,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcResourceTime::RemainingWork() const { if(!data_->getArgument(15) || data_->getArgument(15)->isNull()) { return boost::none; } std::string v = *data_->getArgument(15); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setRemainingWork(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(15,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setRemainingWork(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(15,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcResourceTime::RemainingUsage() const { if(!data_->getArgument(16) || data_->getArgument(16)->isNull()) { return boost::none; } double v = *data_->getArgument(16); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setRemainingUsage(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(16,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setRemainingUsage(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(16,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcResourceTime::Completion() const { if(!data_->getArgument(17) || data_->getArgument(17)->isNull()) { return boost::none; } double v = *data_->getArgument(17); return v; }
-void Ifc4x3_rc3::IfcResourceTime::setCompletion(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(17,attr);} }
+void Ifc4x3_rc3::IfcResourceTime::setCompletion(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(17,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcResourceTime::declaration() const { return *IFC4X3_RC3_IfcResourceTime_type; }
@@ -20848,7 +20848,7 @@ Ifc4x3_rc3::IfcRightCircularCylinder::IfcRightCircularCylinder(::Ifc4x3_rc3::Ifc
 
 // Function implementations for IfcRoad
 boost::optional< ::Ifc4x3_rc3::IfcRoadTypeEnum::Value > Ifc4x3_rc3::IfcRoad::PredefinedType() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcRoadTypeEnum::FromString(*data_->getArgument(9)); }
-void Ifc4x3_rc3::IfcRoad::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRoadTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRoadTypeEnum::ToString(*v)));data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcRoad::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRoadTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRoadTypeEnum::ToString(*v)));}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcRoad::declaration() const { return *IFC4X3_RC3_IfcRoad_type; }
@@ -20858,7 +20858,7 @@ Ifc4x3_rc3::IfcRoad::IfcRoad(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHist
 
 // Function implementations for IfcRoof
 boost::optional< ::Ifc4x3_rc3::IfcRoofTypeEnum::Value > Ifc4x3_rc3::IfcRoof::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcRoofTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcRoof::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRoofTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRoofTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcRoof::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcRoofTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcRoofTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcRoof::declaration() const { return *IFC4X3_RC3_IfcRoof_type; }
@@ -20882,9 +20882,9 @@ void Ifc4x3_rc3::IfcRoot::setGlobalId(std::string v) { {IfcWrite::IfcWriteArgume
 ::Ifc4x3_rc3::IfcOwnerHistory* Ifc4x3_rc3::IfcRoot::OwnerHistory() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(1)))->as<::Ifc4x3_rc3::IfcOwnerHistory>(true); }
 void Ifc4x3_rc3::IfcRoot::setOwnerHistory(::Ifc4x3_rc3::IfcOwnerHistory* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcRoot::Name() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcRoot::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcRoot::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcRoot::Description() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcRoot::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcRoot::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcRoot::declaration() const { return *IFC4X3_RC3_IfcRoot_type; }
@@ -20904,7 +20904,7 @@ Ifc4x3_rc3::IfcRoundedRectangleProfileDef::IfcRoundedRectangleProfileDef(::Ifc4x
 
 // Function implementations for IfcSIUnit
 boost::optional< ::Ifc4x3_rc3::IfcSIPrefix::Value > Ifc4x3_rc3::IfcSIUnit::Prefix() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSIPrefix::FromString(*data_->getArgument(2)); }
-void Ifc4x3_rc3::IfcSIUnit::setPrefix(boost::optional< ::Ifc4x3_rc3::IfcSIPrefix::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSIPrefix::ToString(*v)));data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcSIUnit::setPrefix(boost::optional< ::Ifc4x3_rc3::IfcSIPrefix::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSIPrefix::ToString(*v)));}data_->setArgument(2,attr);} }
 ::Ifc4x3_rc3::IfcSIUnitName::Value Ifc4x3_rc3::IfcSIUnit::Name() const {  return ::Ifc4x3_rc3::IfcSIUnitName::FromString(*data_->getArgument(3)); }
 void Ifc4x3_rc3::IfcSIUnit::setName(::Ifc4x3_rc3::IfcSIUnitName::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcSIUnitName::ToString(v)));data_->setArgument(3,attr);} }
 
@@ -20916,7 +20916,7 @@ Ifc4x3_rc3::IfcSIUnit::IfcSIUnit(::Ifc4x3_rc3::IfcUnitEnum::Value v2_UnitType, b
 
 // Function implementations for IfcSanitaryTerminal
 boost::optional< ::Ifc4x3_rc3::IfcSanitaryTerminalTypeEnum::Value > Ifc4x3_rc3::IfcSanitaryTerminal::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSanitaryTerminalTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcSanitaryTerminal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSanitaryTerminalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSanitaryTerminalTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcSanitaryTerminal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSanitaryTerminalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSanitaryTerminalTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSanitaryTerminal::declaration() const { return *IFC4X3_RC3_IfcSanitaryTerminal_type; }
@@ -20936,11 +20936,11 @@ Ifc4x3_rc3::IfcSanitaryTerminalType::IfcSanitaryTerminalType(std::string v1_Glob
 
 // Function implementations for IfcSchedulingTime
 boost::optional< std::string > Ifc4x3_rc3::IfcSchedulingTime::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcSchedulingTime::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcSchedulingTime::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcDataOriginEnum::Value > Ifc4x3_rc3::IfcSchedulingTime::DataOrigin() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcDataOriginEnum::FromString(*data_->getArgument(1)); }
-void Ifc4x3_rc3::IfcSchedulingTime::setDataOrigin(boost::optional< ::Ifc4x3_rc3::IfcDataOriginEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDataOriginEnum::ToString(*v)));data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcSchedulingTime::setDataOrigin(boost::optional< ::Ifc4x3_rc3::IfcDataOriginEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcDataOriginEnum::ToString(*v)));}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcSchedulingTime::UserDefinedDataOrigin() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcSchedulingTime::setUserDefinedDataOrigin(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcSchedulingTime::setUserDefinedDataOrigin(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSchedulingTime::declaration() const { return *IFC4X3_RC3_IfcSchedulingTime_type; }
@@ -20960,9 +20960,9 @@ Ifc4x3_rc3::IfcSeamCurve::IfcSeamCurve(::Ifc4x3_rc3::IfcCurve* v1_Curve3D, aggre
 double Ifc4x3_rc3::IfcSecondOrderPolynomialSpiral::QuadraticTerm() const {  double v = *data_->getArgument(1); return v; }
 void Ifc4x3_rc3::IfcSecondOrderPolynomialSpiral::setQuadraticTerm(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcSecondOrderPolynomialSpiral::LinearTerm() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcSecondOrderPolynomialSpiral::setLinearTerm(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcSecondOrderPolynomialSpiral::setLinearTerm(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcSecondOrderPolynomialSpiral::ConstantTerm() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcSecondOrderPolynomialSpiral::setConstantTerm(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcSecondOrderPolynomialSpiral::setConstantTerm(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSecondOrderPolynomialSpiral::declaration() const { return *IFC4X3_RC3_IfcSecondOrderPolynomialSpiral_type; }
@@ -20990,7 +20990,7 @@ void Ifc4x3_rc3::IfcSectionReinforcementProperties::setLongitudinalStartPosition
 double Ifc4x3_rc3::IfcSectionReinforcementProperties::LongitudinalEndPosition() const {  double v = *data_->getArgument(1); return v; }
 void Ifc4x3_rc3::IfcSectionReinforcementProperties::setLongitudinalEndPosition(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcSectionReinforcementProperties::TransversePosition() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcSectionReinforcementProperties::setTransversePosition(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcSectionReinforcementProperties::setTransversePosition(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 ::Ifc4x3_rc3::IfcReinforcingBarRoleEnum::Value Ifc4x3_rc3::IfcSectionReinforcementProperties::ReinforcementRole() const {  return ::Ifc4x3_rc3::IfcReinforcingBarRoleEnum::FromString(*data_->getArgument(3)); }
 void Ifc4x3_rc3::IfcSectionReinforcementProperties::setReinforcementRole(::Ifc4x3_rc3::IfcReinforcingBarRoleEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcReinforcingBarRoleEnum::ToString(v)));data_->setArgument(3,attr);} }
 ::Ifc4x3_rc3::IfcSectionProperties* Ifc4x3_rc3::IfcSectionReinforcementProperties::SectionDefinition() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(4)))->as<::Ifc4x3_rc3::IfcSectionProperties>(true); }
@@ -21083,7 +21083,7 @@ Ifc4x3_rc3::IfcSegmentedReferenceCurve::IfcSegmentedReferenceCurve(aggregate_of<
 
 // Function implementations for IfcSensor
 boost::optional< ::Ifc4x3_rc3::IfcSensorTypeEnum::Value > Ifc4x3_rc3::IfcSensor::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSensorTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcSensor::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSensorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSensorTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcSensor::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSensorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSensorTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSensor::declaration() const { return *IFC4X3_RC3_IfcSensor_type; }
@@ -21103,7 +21103,7 @@ Ifc4x3_rc3::IfcSensorType::IfcSensorType(std::string v1_GlobalId, ::Ifc4x3_rc3::
 
 // Function implementations for IfcShadingDevice
 boost::optional< ::Ifc4x3_rc3::IfcShadingDeviceTypeEnum::Value > Ifc4x3_rc3::IfcShadingDevice::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcShadingDeviceTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcShadingDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcShadingDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcShadingDeviceTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcShadingDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcShadingDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcShadingDeviceTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcShadingDevice::declaration() const { return *IFC4X3_RC3_IfcShadingDevice_type; }
@@ -21125,9 +21125,9 @@ Ifc4x3_rc3::IfcShadingDeviceType::IfcShadingDeviceType(std::string v1_GlobalId, 
 aggregate_of< ::Ifc4x3_rc3::IfcShapeModel >::ptr Ifc4x3_rc3::IfcShapeAspect::ShapeRepresentations() const {  aggregate_of_instance::ptr es = *data_->getArgument(0); return es->as< ::Ifc4x3_rc3::IfcShapeModel >(); }
 void Ifc4x3_rc3::IfcShapeAspect::setShapeRepresentations(aggregate_of< ::Ifc4x3_rc3::IfcShapeModel >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcShapeAspect::Name() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcShapeAspect::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcShapeAspect::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcShapeAspect::Description() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcShapeAspect::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcShapeAspect::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::logic::tribool Ifc4x3_rc3::IfcShapeAspect::ProductDefinitional() const {  boost::logic::tribool v = *data_->getArgument(3); return v; }
 void Ifc4x3_rc3::IfcShapeAspect::setProductDefinitional(boost::logic::tribool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 ::Ifc4x3_rc3::IfcProductRepresentationSelect* Ifc4x3_rc3::IfcShapeAspect::PartOfProductDefinitionShape() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(4)))->as<::Ifc4x3_rc3::IfcProductRepresentationSelect>(true); }
@@ -21169,7 +21169,7 @@ Ifc4x3_rc3::IfcShellBasedSurfaceModel::IfcShellBasedSurfaceModel(aggregate_of_in
 
 // Function implementations for IfcSign
 boost::optional< ::Ifc4x3_rc3::IfcSignTypeEnum::Value > Ifc4x3_rc3::IfcSign::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSignTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcSign::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSignTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSignTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcSign::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSignTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSignTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSign::declaration() const { return *IFC4X3_RC3_IfcSign_type; }
@@ -21189,7 +21189,7 @@ Ifc4x3_rc3::IfcSignType::IfcSignType(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 
 // Function implementations for IfcSignal
 boost::optional< ::Ifc4x3_rc3::IfcSignalTypeEnum::Value > Ifc4x3_rc3::IfcSignal::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSignalTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcSignal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSignalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSignalTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcSignal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSignalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSignalTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSignal::declaration() const { return *IFC4X3_RC3_IfcSignal_type; }
@@ -21217,11 +21217,11 @@ Ifc4x3_rc3::IfcSimpleProperty::IfcSimpleProperty(std::string v1_Name, boost::opt
 
 // Function implementations for IfcSimplePropertyTemplate
 boost::optional< ::Ifc4x3_rc3::IfcSimplePropertyTemplateTypeEnum::Value > Ifc4x3_rc3::IfcSimplePropertyTemplate::TemplateType() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSimplePropertyTemplateTypeEnum::FromString(*data_->getArgument(4)); }
-void Ifc4x3_rc3::IfcSimplePropertyTemplate::setTemplateType(boost::optional< ::Ifc4x3_rc3::IfcSimplePropertyTemplateTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSimplePropertyTemplateTypeEnum::ToString(*v)));data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcSimplePropertyTemplate::setTemplateType(boost::optional< ::Ifc4x3_rc3::IfcSimplePropertyTemplateTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSimplePropertyTemplateTypeEnum::ToString(*v)));}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcSimplePropertyTemplate::PrimaryMeasureType() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcSimplePropertyTemplate::setPrimaryMeasureType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcSimplePropertyTemplate::setPrimaryMeasureType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcSimplePropertyTemplate::SecondaryMeasureType() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcSimplePropertyTemplate::setSecondaryMeasureType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcSimplePropertyTemplate::setSecondaryMeasureType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 ::Ifc4x3_rc3::IfcPropertyEnumeration* Ifc4x3_rc3::IfcSimplePropertyTemplate::Enumerators() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(7)))->as<::Ifc4x3_rc3::IfcPropertyEnumeration>(true); }
 void Ifc4x3_rc3::IfcSimplePropertyTemplate::setEnumerators(::Ifc4x3_rc3::IfcPropertyEnumeration* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(7,attr);} }
 ::Ifc4x3_rc3::IfcUnit* Ifc4x3_rc3::IfcSimplePropertyTemplate::PrimaryUnit() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(8)))->as<::Ifc4x3_rc3::IfcUnit>(true); }
@@ -21229,9 +21229,9 @@ void Ifc4x3_rc3::IfcSimplePropertyTemplate::setPrimaryUnit(::Ifc4x3_rc3::IfcUnit
 ::Ifc4x3_rc3::IfcUnit* Ifc4x3_rc3::IfcSimplePropertyTemplate::SecondaryUnit() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(9)))->as<::Ifc4x3_rc3::IfcUnit>(true); }
 void Ifc4x3_rc3::IfcSimplePropertyTemplate::setSecondaryUnit(::Ifc4x3_rc3::IfcUnit* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(9,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcSimplePropertyTemplate::Expression() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } std::string v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcSimplePropertyTemplate::setExpression(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcSimplePropertyTemplate::setExpression(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcStateEnum::Value > Ifc4x3_rc3::IfcSimplePropertyTemplate::AccessState() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcStateEnum::FromString(*data_->getArgument(11)); }
-void Ifc4x3_rc3::IfcSimplePropertyTemplate::setAccessState(boost::optional< ::Ifc4x3_rc3::IfcStateEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcStateEnum::ToString(*v)));data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcSimplePropertyTemplate::setAccessState(boost::optional< ::Ifc4x3_rc3::IfcStateEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcStateEnum::ToString(*v)));}data_->setArgument(11,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSimplePropertyTemplate::declaration() const { return *IFC4X3_RC3_IfcSimplePropertyTemplate_type; }
@@ -21253,13 +21253,13 @@ Ifc4x3_rc3::IfcSine::IfcSine(::Ifc4x3_rc3::IfcAxis2Placement* v1_Position, doubl
 
 // Function implementations for IfcSite
 boost::optional< std::vector< int > /*[3:4]*/ > Ifc4x3_rc3::IfcSite::RefLatitude() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } std::vector< int > /*[3:4]*/ v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcSite::setRefLatitude(boost::optional< std::vector< int > /*[3:4]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcSite::setRefLatitude(boost::optional< std::vector< int > /*[3:4]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< std::vector< int > /*[3:4]*/ > Ifc4x3_rc3::IfcSite::RefLongitude() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } std::vector< int > /*[3:4]*/ v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcSite::setRefLongitude(boost::optional< std::vector< int > /*[3:4]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcSite::setRefLongitude(boost::optional< std::vector< int > /*[3:4]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcSite::RefElevation() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } double v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcSite::setRefElevation(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcSite::setRefElevation(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcSite::LandTitleNumber() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } std::string v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcSite::setLandTitleNumber(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcSite::setLandTitleNumber(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 ::Ifc4x3_rc3::IfcPostalAddress* Ifc4x3_rc3::IfcSite::SiteAddress() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(13)))->as<::Ifc4x3_rc3::IfcPostalAddress>(true); }
 void Ifc4x3_rc3::IfcSite::setSiteAddress(::Ifc4x3_rc3::IfcPostalAddress* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(13,attr);} }
 
@@ -21271,7 +21271,7 @@ Ifc4x3_rc3::IfcSite::IfcSite(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHist
 
 // Function implementations for IfcSlab
 boost::optional< ::Ifc4x3_rc3::IfcSlabTypeEnum::Value > Ifc4x3_rc3::IfcSlab::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSlabTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcSlab::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSlabTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSlabTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcSlab::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSlabTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSlabTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSlab::declaration() const { return *IFC4X3_RC3_IfcSlab_type; }
@@ -21307,11 +21307,11 @@ Ifc4x3_rc3::IfcSlabType::IfcSlabType(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 
 // Function implementations for IfcSlippageConnectionCondition
 boost::optional< double > Ifc4x3_rc3::IfcSlippageConnectionCondition::SlippageX() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } double v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcSlippageConnectionCondition::setSlippageX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcSlippageConnectionCondition::setSlippageX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcSlippageConnectionCondition::SlippageY() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcSlippageConnectionCondition::setSlippageY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcSlippageConnectionCondition::setSlippageY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcSlippageConnectionCondition::SlippageZ() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcSlippageConnectionCondition::setSlippageZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcSlippageConnectionCondition::setSlippageZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSlippageConnectionCondition::declaration() const { return *IFC4X3_RC3_IfcSlippageConnectionCondition_type; }
@@ -21321,7 +21321,7 @@ Ifc4x3_rc3::IfcSlippageConnectionCondition::IfcSlippageConnectionCondition(boost
 
 // Function implementations for IfcSolarDevice
 boost::optional< ::Ifc4x3_rc3::IfcSolarDeviceTypeEnum::Value > Ifc4x3_rc3::IfcSolarDevice::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSolarDeviceTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcSolarDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSolarDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSolarDeviceTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcSolarDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSolarDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSolarDeviceTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSolarDevice::declaration() const { return *IFC4X3_RC3_IfcSolarDevice_type; }
@@ -21357,9 +21357,9 @@ Ifc4x3_rc3::IfcSolidStratum::IfcSolidStratum(std::string v1_GlobalId, ::Ifc4x3_r
 
 // Function implementations for IfcSpace
 boost::optional< ::Ifc4x3_rc3::IfcSpaceTypeEnum::Value > Ifc4x3_rc3::IfcSpace::PredefinedType() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSpaceTypeEnum::FromString(*data_->getArgument(9)); }
-void Ifc4x3_rc3::IfcSpace::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSpaceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSpaceTypeEnum::ToString(*v)));data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcSpace::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSpaceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSpaceTypeEnum::ToString(*v)));}data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcSpace::ElevationWithFlooring() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcSpace::setElevationWithFlooring(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcSpace::setElevationWithFlooring(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 
 ::Ifc4x3_rc3::IfcRelCoversSpaces::list::ptr Ifc4x3_rc3::IfcSpace::HasCoverings() const { return data_->getInverse(IFC4X3_RC3_IfcRelCoversSpaces_type, 4)->as<IfcRelCoversSpaces>(); }
 ::Ifc4x3_rc3::IfcRelSpaceBoundary::list::ptr Ifc4x3_rc3::IfcSpace::BoundedBy() const { return data_->getInverse(IFC4X3_RC3_IfcRelSpaceBoundary_type, 4)->as<IfcRelSpaceBoundary>(); }
@@ -21371,7 +21371,7 @@ Ifc4x3_rc3::IfcSpace::IfcSpace(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHi
 
 // Function implementations for IfcSpaceHeater
 boost::optional< ::Ifc4x3_rc3::IfcSpaceHeaterTypeEnum::Value > Ifc4x3_rc3::IfcSpaceHeater::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSpaceHeaterTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcSpaceHeater::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSpaceHeaterTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSpaceHeaterTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcSpaceHeater::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSpaceHeaterTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSpaceHeaterTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSpaceHeater::declaration() const { return *IFC4X3_RC3_IfcSpaceHeater_type; }
@@ -21393,7 +21393,7 @@ Ifc4x3_rc3::IfcSpaceHeaterType::IfcSpaceHeaterType(std::string v1_GlobalId, ::If
 ::Ifc4x3_rc3::IfcSpaceTypeEnum::Value Ifc4x3_rc3::IfcSpaceType::PredefinedType() const {  return ::Ifc4x3_rc3::IfcSpaceTypeEnum::FromString(*data_->getArgument(9)); }
 void Ifc4x3_rc3::IfcSpaceType::setPredefinedType(::Ifc4x3_rc3::IfcSpaceTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcSpaceTypeEnum::ToString(v)));data_->setArgument(9,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcSpaceType::LongName() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } std::string v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcSpaceType::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcSpaceType::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSpaceType::declaration() const { return *IFC4X3_RC3_IfcSpaceType_type; }
@@ -21403,7 +21403,7 @@ Ifc4x3_rc3::IfcSpaceType::IfcSpaceType(std::string v1_GlobalId, ::Ifc4x3_rc3::If
 
 // Function implementations for IfcSpatialElement
 boost::optional< std::string > Ifc4x3_rc3::IfcSpatialElement::LongName() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcSpatialElement::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcSpatialElement::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 
 ::Ifc4x3_rc3::IfcRelContainedInSpatialStructure::list::ptr Ifc4x3_rc3::IfcSpatialElement::ContainsElements() const { return data_->getInverse(IFC4X3_RC3_IfcRelContainedInSpatialStructure_type, 5)->as<IfcRelContainedInSpatialStructure>(); }
 ::Ifc4x3_rc3::IfcRelServicesBuildings::list::ptr Ifc4x3_rc3::IfcSpatialElement::ServicedBySystems() const { return data_->getInverse(IFC4X3_RC3_IfcRelServicesBuildings_type, 5)->as<IfcRelServicesBuildings>(); }
@@ -21416,7 +21416,7 @@ Ifc4x3_rc3::IfcSpatialElement::IfcSpatialElement(std::string v1_GlobalId, ::Ifc4
 
 // Function implementations for IfcSpatialElementType
 boost::optional< std::string > Ifc4x3_rc3::IfcSpatialElementType::ElementType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcSpatialElementType::setElementType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcSpatialElementType::setElementType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSpatialElementType::declaration() const { return *IFC4X3_RC3_IfcSpatialElementType_type; }
@@ -21426,7 +21426,7 @@ Ifc4x3_rc3::IfcSpatialElementType::IfcSpatialElementType(std::string v1_GlobalId
 
 // Function implementations for IfcSpatialStructureElement
 boost::optional< ::Ifc4x3_rc3::IfcElementCompositionEnum::Value > Ifc4x3_rc3::IfcSpatialStructureElement::CompositionType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcElementCompositionEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcSpatialStructureElement::setCompositionType(boost::optional< ::Ifc4x3_rc3::IfcElementCompositionEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElementCompositionEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcSpatialStructureElement::setCompositionType(boost::optional< ::Ifc4x3_rc3::IfcElementCompositionEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcElementCompositionEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSpatialStructureElement::declaration() const { return *IFC4X3_RC3_IfcSpatialStructureElement_type; }
@@ -21444,7 +21444,7 @@ Ifc4x3_rc3::IfcSpatialStructureElementType::IfcSpatialStructureElementType(std::
 
 // Function implementations for IfcSpatialZone
 boost::optional< ::Ifc4x3_rc3::IfcSpatialZoneTypeEnum::Value > Ifc4x3_rc3::IfcSpatialZone::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSpatialZoneTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcSpatialZone::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSpatialZoneTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSpatialZoneTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcSpatialZone::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSpatialZoneTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSpatialZoneTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSpatialZone::declaration() const { return *IFC4X3_RC3_IfcSpatialZone_type; }
@@ -21456,7 +21456,7 @@ Ifc4x3_rc3::IfcSpatialZone::IfcSpatialZone(std::string v1_GlobalId, ::Ifc4x3_rc3
 ::Ifc4x3_rc3::IfcSpatialZoneTypeEnum::Value Ifc4x3_rc3::IfcSpatialZoneType::PredefinedType() const {  return ::Ifc4x3_rc3::IfcSpatialZoneTypeEnum::FromString(*data_->getArgument(9)); }
 void Ifc4x3_rc3::IfcSpatialZoneType::setPredefinedType(::Ifc4x3_rc3::IfcSpatialZoneTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcSpatialZoneTypeEnum::ToString(v)));data_->setArgument(9,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcSpatialZoneType::LongName() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } std::string v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcSpatialZoneType::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcSpatialZoneType::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSpatialZoneType::declaration() const { return *IFC4X3_RC3_IfcSpatialZoneType_type; }
@@ -21496,7 +21496,7 @@ Ifc4x3_rc3::IfcSpiral::IfcSpiral(::Ifc4x3_rc3::IfcAxis2Placement* v1_Position) :
 
 // Function implementations for IfcStackTerminal
 boost::optional< ::Ifc4x3_rc3::IfcStackTerminalTypeEnum::Value > Ifc4x3_rc3::IfcStackTerminal::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcStackTerminalTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcStackTerminal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcStackTerminalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcStackTerminalTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcStackTerminal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcStackTerminalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcStackTerminalTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStackTerminal::declaration() const { return *IFC4X3_RC3_IfcStackTerminal_type; }
@@ -21516,7 +21516,7 @@ Ifc4x3_rc3::IfcStackTerminalType::IfcStackTerminalType(std::string v1_GlobalId, 
 
 // Function implementations for IfcStair
 boost::optional< ::Ifc4x3_rc3::IfcStairTypeEnum::Value > Ifc4x3_rc3::IfcStair::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcStairTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcStair::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcStairTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcStairTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcStair::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcStairTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcStairTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStair::declaration() const { return *IFC4X3_RC3_IfcStair_type; }
@@ -21526,15 +21526,15 @@ Ifc4x3_rc3::IfcStair::IfcStair(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHi
 
 // Function implementations for IfcStairFlight
 boost::optional< int > Ifc4x3_rc3::IfcStairFlight::NumberOfRisers() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } int v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcStairFlight::setNumberOfRisers(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcStairFlight::setNumberOfRisers(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< int > Ifc4x3_rc3::IfcStairFlight::NumberOfTreads() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } int v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcStairFlight::setNumberOfTreads(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcStairFlight::setNumberOfTreads(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStairFlight::RiserHeight() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcStairFlight::setRiserHeight(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcStairFlight::setRiserHeight(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStairFlight::TreadLength() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } double v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcStairFlight::setTreadLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcStairFlight::setTreadLength(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcStairFlightTypeEnum::Value > Ifc4x3_rc3::IfcStairFlight::PredefinedType() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcStairFlightTypeEnum::FromString(*data_->getArgument(12)); }
-void Ifc4x3_rc3::IfcStairFlight::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcStairFlightTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcStairFlightTypeEnum::ToString(*v)));data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcStairFlight::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcStairFlightTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcStairFlightTypeEnum::ToString(*v)));}data_->setArgument(12,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStairFlight::declaration() const { return *IFC4X3_RC3_IfcStairFlight_type; }
@@ -21564,7 +21564,7 @@ Ifc4x3_rc3::IfcStairType::IfcStairType(std::string v1_GlobalId, ::Ifc4x3_rc3::If
 
 // Function implementations for IfcStructuralAction
 boost::optional< bool > Ifc4x3_rc3::IfcStructuralAction::DestabilizingLoad() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } bool v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcStructuralAction::setDestabilizingLoad(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcStructuralAction::setDestabilizingLoad(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStructuralAction::declaration() const { return *IFC4X3_RC3_IfcStructuralAction_type; }
@@ -21591,9 +21591,9 @@ void Ifc4x3_rc3::IfcStructuralAnalysisModel::setPredefinedType(::Ifc4x3_rc3::Ifc
 ::Ifc4x3_rc3::IfcAxis2Placement3D* Ifc4x3_rc3::IfcStructuralAnalysisModel::OrientationOf2DPlane() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(6)))->as<::Ifc4x3_rc3::IfcAxis2Placement3D>(true); }
 void Ifc4x3_rc3::IfcStructuralAnalysisModel::setOrientationOf2DPlane(::Ifc4x3_rc3::IfcAxis2Placement3D* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcStructuralLoadGroup >::ptr > Ifc4x3_rc3::IfcStructuralAnalysisModel::LoadedBy() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(7); return es->as< ::Ifc4x3_rc3::IfcStructuralLoadGroup >(); }
-void Ifc4x3_rc3::IfcStructuralAnalysisModel::setLoadedBy(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcStructuralLoadGroup >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcStructuralAnalysisModel::setLoadedBy(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcStructuralLoadGroup >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(7,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcStructuralResultGroup >::ptr > Ifc4x3_rc3::IfcStructuralAnalysisModel::HasResults() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(8); return es->as< ::Ifc4x3_rc3::IfcStructuralResultGroup >(); }
-void Ifc4x3_rc3::IfcStructuralAnalysisModel::setHasResults(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcStructuralResultGroup >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcStructuralAnalysisModel::setHasResults(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcStructuralResultGroup >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(8,attr);} }
 ::Ifc4x3_rc3::IfcObjectPlacement* Ifc4x3_rc3::IfcStructuralAnalysisModel::SharedPlacement() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(9)))->as<::Ifc4x3_rc3::IfcObjectPlacement>(true); }
 void Ifc4x3_rc3::IfcStructuralAnalysisModel::setSharedPlacement(::Ifc4x3_rc3::IfcObjectPlacement* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(9,attr);} }
 
@@ -21616,7 +21616,7 @@ Ifc4x3_rc3::IfcStructuralConnection::IfcStructuralConnection(std::string v1_Glob
 
 // Function implementations for IfcStructuralConnectionCondition
 boost::optional< std::string > Ifc4x3_rc3::IfcStructuralConnectionCondition::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcStructuralConnectionCondition::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcStructuralConnectionCondition::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStructuralConnectionCondition::declaration() const { return *IFC4X3_RC3_IfcStructuralConnectionCondition_type; }
@@ -21626,7 +21626,7 @@ Ifc4x3_rc3::IfcStructuralConnectionCondition::IfcStructuralConnectionCondition(b
 
 // Function implementations for IfcStructuralCurveAction
 boost::optional< ::Ifc4x3_rc3::IfcProjectedOrTrueLengthEnum::Value > Ifc4x3_rc3::IfcStructuralCurveAction::ProjectedOrTrue() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcProjectedOrTrueLengthEnum::FromString(*data_->getArgument(10)); }
-void Ifc4x3_rc3::IfcStructuralCurveAction::setProjectedOrTrue(boost::optional< ::Ifc4x3_rc3::IfcProjectedOrTrueLengthEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProjectedOrTrueLengthEnum::ToString(*v)));data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcStructuralCurveAction::setProjectedOrTrue(boost::optional< ::Ifc4x3_rc3::IfcProjectedOrTrueLengthEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProjectedOrTrueLengthEnum::ToString(*v)));}data_->setArgument(10,attr);} }
 ::Ifc4x3_rc3::IfcStructuralCurveActivityTypeEnum::Value Ifc4x3_rc3::IfcStructuralCurveAction::PredefinedType() const {  return ::Ifc4x3_rc3::IfcStructuralCurveActivityTypeEnum::FromString(*data_->getArgument(11)); }
 void Ifc4x3_rc3::IfcStructuralCurveAction::setPredefinedType(::Ifc4x3_rc3::IfcStructuralCurveActivityTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcStructuralCurveActivityTypeEnum::ToString(v)));data_->setArgument(11,attr);} }
 
@@ -21695,7 +21695,7 @@ Ifc4x3_rc3::IfcStructuralLinearAction::IfcStructuralLinearAction(std::string v1_
 
 // Function implementations for IfcStructuralLoad
 boost::optional< std::string > Ifc4x3_rc3::IfcStructuralLoad::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcStructuralLoad::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoad::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStructuralLoad::declaration() const { return *IFC4X3_RC3_IfcStructuralLoad_type; }
@@ -21705,7 +21705,7 @@ Ifc4x3_rc3::IfcStructuralLoad::IfcStructuralLoad(boost::optional< std::string > 
 
 // Function implementations for IfcStructuralLoadCase
 boost::optional< std::vector< double > /*[3:3]*/ > Ifc4x3_rc3::IfcStructuralLoadCase::SelfWeightCoefficients() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } std::vector< double > /*[3:3]*/ v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadCase::setSelfWeightCoefficients(boost::optional< std::vector< double > /*[3:3]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadCase::setSelfWeightCoefficients(boost::optional< std::vector< double > /*[3:3]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStructuralLoadCase::declaration() const { return *IFC4X3_RC3_IfcStructuralLoadCase_type; }
@@ -21717,7 +21717,7 @@ Ifc4x3_rc3::IfcStructuralLoadCase::IfcStructuralLoadCase(std::string v1_GlobalId
 aggregate_of< ::Ifc4x3_rc3::IfcStructuralLoadOrResult >::ptr Ifc4x3_rc3::IfcStructuralLoadConfiguration::Values() const {  aggregate_of_instance::ptr es = *data_->getArgument(1); return es->as< ::Ifc4x3_rc3::IfcStructuralLoadOrResult >(); }
 void Ifc4x3_rc3::IfcStructuralLoadConfiguration::setValues(aggregate_of< ::Ifc4x3_rc3::IfcStructuralLoadOrResult >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(1,attr);} }
 boost::optional< std::vector< std::vector< double > > > Ifc4x3_rc3::IfcStructuralLoadConfiguration::Locations() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::vector< std::vector< double > > v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadConfiguration::setLocations(boost::optional< std::vector< std::vector< double > > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadConfiguration::setLocations(boost::optional< std::vector< std::vector< double > > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStructuralLoadConfiguration::declaration() const { return *IFC4X3_RC3_IfcStructuralLoadConfiguration_type; }
@@ -21733,9 +21733,9 @@ void Ifc4x3_rc3::IfcStructuralLoadGroup::setActionType(::Ifc4x3_rc3::IfcActionTy
 ::Ifc4x3_rc3::IfcActionSourceTypeEnum::Value Ifc4x3_rc3::IfcStructuralLoadGroup::ActionSource() const {  return ::Ifc4x3_rc3::IfcActionSourceTypeEnum::FromString(*data_->getArgument(7)); }
 void Ifc4x3_rc3::IfcStructuralLoadGroup::setActionSource(::Ifc4x3_rc3::IfcActionSourceTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcActionSourceTypeEnum::ToString(v)));data_->setArgument(7,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadGroup::Coefficient() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadGroup::setCoefficient(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadGroup::setCoefficient(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcStructuralLoadGroup::Purpose() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } std::string v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadGroup::setPurpose(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadGroup::setPurpose(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 
 ::Ifc4x3_rc3::IfcStructuralResultGroup::list::ptr Ifc4x3_rc3::IfcStructuralLoadGroup::SourceOfResultGroup() const { return data_->getInverse(IFC4X3_RC3_IfcStructuralResultGroup_type, 6)->as<IfcStructuralResultGroup>(); }
 ::Ifc4x3_rc3::IfcStructuralAnalysisModel::list::ptr Ifc4x3_rc3::IfcStructuralLoadGroup::LoadGroupFor() const { return data_->getInverse(IFC4X3_RC3_IfcStructuralAnalysisModel_type, 7)->as<IfcStructuralAnalysisModel>(); }
@@ -21747,17 +21747,17 @@ Ifc4x3_rc3::IfcStructuralLoadGroup::IfcStructuralLoadGroup(std::string v1_Global
 
 // Function implementations for IfcStructuralLoadLinearForce
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadLinearForce::LinearForceX() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } double v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadLinearForce::setLinearForceX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadLinearForce::setLinearForceX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadLinearForce::LinearForceY() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadLinearForce::setLinearForceY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadLinearForce::setLinearForceY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadLinearForce::LinearForceZ() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadLinearForce::setLinearForceZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadLinearForce::setLinearForceZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadLinearForce::LinearMomentX() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadLinearForce::setLinearMomentX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadLinearForce::setLinearMomentX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadLinearForce::LinearMomentY() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } double v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadLinearForce::setLinearMomentY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadLinearForce::setLinearMomentY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadLinearForce::LinearMomentZ() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } double v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadLinearForce::setLinearMomentZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadLinearForce::setLinearMomentZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStructuralLoadLinearForce::declaration() const { return *IFC4X3_RC3_IfcStructuralLoadLinearForce_type; }
@@ -21775,11 +21775,11 @@ Ifc4x3_rc3::IfcStructuralLoadOrResult::IfcStructuralLoadOrResult(boost::optional
 
 // Function implementations for IfcStructuralLoadPlanarForce
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadPlanarForce::PlanarForceX() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } double v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadPlanarForce::setPlanarForceX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadPlanarForce::setPlanarForceX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadPlanarForce::PlanarForceY() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadPlanarForce::setPlanarForceY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadPlanarForce::setPlanarForceY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadPlanarForce::PlanarForceZ() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadPlanarForce::setPlanarForceZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadPlanarForce::setPlanarForceZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStructuralLoadPlanarForce::declaration() const { return *IFC4X3_RC3_IfcStructuralLoadPlanarForce_type; }
@@ -21789,17 +21789,17 @@ Ifc4x3_rc3::IfcStructuralLoadPlanarForce::IfcStructuralLoadPlanarForce(boost::op
 
 // Function implementations for IfcStructuralLoadSingleDisplacement
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::DisplacementX() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } double v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::setDisplacementX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::setDisplacementX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::DisplacementY() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::setDisplacementY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::setDisplacementY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::DisplacementZ() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::setDisplacementZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::setDisplacementZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::RotationalDisplacementRX() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::setRotationalDisplacementRX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::setRotationalDisplacementRX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::RotationalDisplacementRY() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } double v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::setRotationalDisplacementRY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::setRotationalDisplacementRY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::RotationalDisplacementRZ() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } double v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::setRotationalDisplacementRZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::setRotationalDisplacementRZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::declaration() const { return *IFC4X3_RC3_IfcStructuralLoadSingleDisplacement_type; }
@@ -21809,7 +21809,7 @@ Ifc4x3_rc3::IfcStructuralLoadSingleDisplacement::IfcStructuralLoadSingleDisplace
 
 // Function implementations for IfcStructuralLoadSingleDisplacementDistortion
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleDisplacementDistortion::Distortion() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacementDistortion::setDistortion(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleDisplacementDistortion::setDistortion(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStructuralLoadSingleDisplacementDistortion::declaration() const { return *IFC4X3_RC3_IfcStructuralLoadSingleDisplacementDistortion_type; }
@@ -21819,17 +21819,17 @@ Ifc4x3_rc3::IfcStructuralLoadSingleDisplacementDistortion::IfcStructuralLoadSing
 
 // Function implementations for IfcStructuralLoadSingleForce
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleForce::ForceX() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } double v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleForce::setForceX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleForce::setForceX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleForce::ForceY() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleForce::setForceY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleForce::setForceY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleForce::ForceZ() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleForce::setForceZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleForce::setForceZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleForce::MomentX() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleForce::setMomentX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleForce::setMomentX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleForce::MomentY() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } double v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleForce::setMomentY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleForce::setMomentY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleForce::MomentZ() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } double v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleForce::setMomentZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleForce::setMomentZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStructuralLoadSingleForce::declaration() const { return *IFC4X3_RC3_IfcStructuralLoadSingleForce_type; }
@@ -21839,7 +21839,7 @@ Ifc4x3_rc3::IfcStructuralLoadSingleForce::IfcStructuralLoadSingleForce(boost::op
 
 // Function implementations for IfcStructuralLoadSingleForceWarping
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadSingleForceWarping::WarpingMoment() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadSingleForceWarping::setWarpingMoment(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadSingleForceWarping::setWarpingMoment(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStructuralLoadSingleForceWarping::declaration() const { return *IFC4X3_RC3_IfcStructuralLoadSingleForceWarping_type; }
@@ -21857,11 +21857,11 @@ Ifc4x3_rc3::IfcStructuralLoadStatic::IfcStructuralLoadStatic(boost::optional< st
 
 // Function implementations for IfcStructuralLoadTemperature
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadTemperature::DeltaTConstant() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } double v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadTemperature::setDeltaTConstant(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadTemperature::setDeltaTConstant(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadTemperature::DeltaTY() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadTemperature::setDeltaTY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadTemperature::setDeltaTY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralLoadTemperature::DeltaTZ() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcStructuralLoadTemperature::setDeltaTZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcStructuralLoadTemperature::setDeltaTZ(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStructuralLoadTemperature::declaration() const { return *IFC4X3_RC3_IfcStructuralLoadTemperature_type; }
@@ -21937,7 +21937,7 @@ Ifc4x3_rc3::IfcStructuralResultGroup::IfcStructuralResultGroup(std::string v1_Gl
 
 // Function implementations for IfcStructuralSurfaceAction
 boost::optional< ::Ifc4x3_rc3::IfcProjectedOrTrueLengthEnum::Value > Ifc4x3_rc3::IfcStructuralSurfaceAction::ProjectedOrTrue() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcProjectedOrTrueLengthEnum::FromString(*data_->getArgument(10)); }
-void Ifc4x3_rc3::IfcStructuralSurfaceAction::setProjectedOrTrue(boost::optional< ::Ifc4x3_rc3::IfcProjectedOrTrueLengthEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProjectedOrTrueLengthEnum::ToString(*v)));data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcStructuralSurfaceAction::setProjectedOrTrue(boost::optional< ::Ifc4x3_rc3::IfcProjectedOrTrueLengthEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcProjectedOrTrueLengthEnum::ToString(*v)));}data_->setArgument(10,attr);} }
 ::Ifc4x3_rc3::IfcStructuralSurfaceActivityTypeEnum::Value Ifc4x3_rc3::IfcStructuralSurfaceAction::PredefinedType() const {  return ::Ifc4x3_rc3::IfcStructuralSurfaceActivityTypeEnum::FromString(*data_->getArgument(11)); }
 void Ifc4x3_rc3::IfcStructuralSurfaceAction::setPredefinedType(::Ifc4x3_rc3::IfcStructuralSurfaceActivityTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcStructuralSurfaceActivityTypeEnum::ToString(v)));data_->setArgument(11,attr);} }
 
@@ -21959,7 +21959,7 @@ Ifc4x3_rc3::IfcStructuralSurfaceConnection::IfcStructuralSurfaceConnection(std::
 ::Ifc4x3_rc3::IfcStructuralSurfaceMemberTypeEnum::Value Ifc4x3_rc3::IfcStructuralSurfaceMember::PredefinedType() const {  return ::Ifc4x3_rc3::IfcStructuralSurfaceMemberTypeEnum::FromString(*data_->getArgument(7)); }
 void Ifc4x3_rc3::IfcStructuralSurfaceMember::setPredefinedType(::Ifc4x3_rc3::IfcStructuralSurfaceMemberTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcStructuralSurfaceMemberTypeEnum::ToString(v)));data_->setArgument(7,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcStructuralSurfaceMember::Thickness() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcStructuralSurfaceMember::setThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcStructuralSurfaceMember::setThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStructuralSurfaceMember::declaration() const { return *IFC4X3_RC3_IfcStructuralSurfaceMember_type; }
@@ -21999,7 +21999,7 @@ void Ifc4x3_rc3::IfcStyledItem::setItem(::Ifc4x3_rc3::IfcRepresentationItem* v) 
 aggregate_of< ::Ifc4x3_rc3::IfcPresentationStyle >::ptr Ifc4x3_rc3::IfcStyledItem::Styles() const {  aggregate_of_instance::ptr es = *data_->getArgument(1); return es->as< ::Ifc4x3_rc3::IfcPresentationStyle >(); }
 void Ifc4x3_rc3::IfcStyledItem::setStyles(aggregate_of< ::Ifc4x3_rc3::IfcPresentationStyle >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v)->generalize());data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcStyledItem::Name() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcStyledItem::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcStyledItem::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcStyledItem::declaration() const { return *IFC4X3_RC3_IfcStyledItem_type; }
@@ -22017,7 +22017,7 @@ Ifc4x3_rc3::IfcStyledRepresentation::IfcStyledRepresentation(::Ifc4x3_rc3::IfcRe
 
 // Function implementations for IfcSubContractResource
 boost::optional< ::Ifc4x3_rc3::IfcSubContractResourceTypeEnum::Value > Ifc4x3_rc3::IfcSubContractResource::PredefinedType() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSubContractResourceTypeEnum::FromString(*data_->getArgument(10)); }
-void Ifc4x3_rc3::IfcSubContractResource::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSubContractResourceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSubContractResourceTypeEnum::ToString(*v)));data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcSubContractResource::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSubContractResourceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSubContractResourceTypeEnum::ToString(*v)));}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSubContractResource::declaration() const { return *IFC4X3_RC3_IfcSubContractResource_type; }
@@ -22079,7 +22079,7 @@ Ifc4x3_rc3::IfcSurfaceCurveSweptAreaSolid::IfcSurfaceCurveSweptAreaSolid(::Ifc4x
 
 // Function implementations for IfcSurfaceFeature
 boost::optional< ::Ifc4x3_rc3::IfcSurfaceFeatureTypeEnum::Value > Ifc4x3_rc3::IfcSurfaceFeature::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSurfaceFeatureTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcSurfaceFeature::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSurfaceFeatureTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSurfaceFeatureTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcSurfaceFeature::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSurfaceFeatureTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSurfaceFeatureTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSurfaceFeature::declaration() const { return *IFC4X3_RC3_IfcSurfaceFeature_type; }
@@ -22111,11 +22111,11 @@ Ifc4x3_rc3::IfcSurfaceOfRevolution::IfcSurfaceOfRevolution(::Ifc4x3_rc3::IfcProf
 
 // Function implementations for IfcSurfaceReinforcementArea
 boost::optional< std::vector< double > /*[2:3]*/ > Ifc4x3_rc3::IfcSurfaceReinforcementArea::SurfaceReinforcement1() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::vector< double > /*[2:3]*/ v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcSurfaceReinforcementArea::setSurfaceReinforcement1(boost::optional< std::vector< double > /*[2:3]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcSurfaceReinforcementArea::setSurfaceReinforcement1(boost::optional< std::vector< double > /*[2:3]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::vector< double > /*[2:3]*/ > Ifc4x3_rc3::IfcSurfaceReinforcementArea::SurfaceReinforcement2() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::vector< double > /*[2:3]*/ v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcSurfaceReinforcementArea::setSurfaceReinforcement2(boost::optional< std::vector< double > /*[2:3]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcSurfaceReinforcementArea::setSurfaceReinforcement2(boost::optional< std::vector< double > /*[2:3]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcSurfaceReinforcementArea::ShearReinforcement() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcSurfaceReinforcementArea::setShearReinforcement(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcSurfaceReinforcementArea::setShearReinforcement(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSurfaceReinforcementArea::declaration() const { return *IFC4X3_RC3_IfcSurfaceReinforcementArea_type; }
@@ -22153,9 +22153,9 @@ Ifc4x3_rc3::IfcSurfaceStyleLighting::IfcSurfaceStyleLighting(::Ifc4x3_rc3::IfcCo
 
 // Function implementations for IfcSurfaceStyleRefraction
 boost::optional< double > Ifc4x3_rc3::IfcSurfaceStyleRefraction::RefractionIndex() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } double v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcSurfaceStyleRefraction::setRefractionIndex(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcSurfaceStyleRefraction::setRefractionIndex(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcSurfaceStyleRefraction::DispersionFactor() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } double v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcSurfaceStyleRefraction::setDispersionFactor(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcSurfaceStyleRefraction::setDispersionFactor(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSurfaceStyleRefraction::declaration() const { return *IFC4X3_RC3_IfcSurfaceStyleRefraction_type; }
@@ -22189,7 +22189,7 @@ Ifc4x3_rc3::IfcSurfaceStyleRendering::IfcSurfaceStyleRendering(::Ifc4x3_rc3::Ifc
 ::Ifc4x3_rc3::IfcColourRgb* Ifc4x3_rc3::IfcSurfaceStyleShading::SurfaceColour() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(0)))->as<::Ifc4x3_rc3::IfcColourRgb>(true); }
 void Ifc4x3_rc3::IfcSurfaceStyleShading::setSurfaceColour(::Ifc4x3_rc3::IfcColourRgb* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcSurfaceStyleShading::Transparency() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } double v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcSurfaceStyleShading::setTransparency(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcSurfaceStyleShading::setTransparency(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSurfaceStyleShading::declaration() const { return *IFC4X3_RC3_IfcSurfaceStyleShading_type; }
@@ -22213,11 +22213,11 @@ void Ifc4x3_rc3::IfcSurfaceTexture::setRepeatS(bool v) { {IfcWrite::IfcWriteArgu
 bool Ifc4x3_rc3::IfcSurfaceTexture::RepeatT() const {  bool v = *data_->getArgument(1); return v; }
 void Ifc4x3_rc3::IfcSurfaceTexture::setRepeatT(bool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcSurfaceTexture::Mode() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcSurfaceTexture::setMode(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcSurfaceTexture::setMode(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 ::Ifc4x3_rc3::IfcCartesianTransformationOperator2D* Ifc4x3_rc3::IfcSurfaceTexture::TextureTransform() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcCartesianTransformationOperator2D>(true); }
 void Ifc4x3_rc3::IfcSurfaceTexture::setTextureTransform(::Ifc4x3_rc3::IfcCartesianTransformationOperator2D* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc3::IfcSurfaceTexture::Parameter() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::vector< std::string > /*[1:?]*/ v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcSurfaceTexture::setParameter(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcSurfaceTexture::setParameter(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 ::Ifc4x3_rc3::IfcTextureCoordinate::list::ptr Ifc4x3_rc3::IfcSurfaceTexture::IsMappedBy() const { return data_->getInverse(IFC4X3_RC3_IfcTextureCoordinate_type, 0)->as<IfcTextureCoordinate>(); }
 ::Ifc4x3_rc3::IfcSurfaceStyleWithTextures::list::ptr Ifc4x3_rc3::IfcSurfaceTexture::UsedInStyles() const { return data_->getInverse(IFC4X3_RC3_IfcSurfaceStyleWithTextures_type, 0)->as<IfcSurfaceStyleWithTextures>(); }
@@ -22245,11 +22245,11 @@ void Ifc4x3_rc3::IfcSweptDiskSolid::setDirectrix(::Ifc4x3_rc3::IfcCurve* v) { {I
 double Ifc4x3_rc3::IfcSweptDiskSolid::Radius() const {  double v = *data_->getArgument(1); return v; }
 void Ifc4x3_rc3::IfcSweptDiskSolid::setRadius(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcSweptDiskSolid::InnerRadius() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcSweptDiskSolid::setInnerRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcSweptDiskSolid::setInnerRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcSweptDiskSolid::StartParam() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcSweptDiskSolid::setStartParam(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcSweptDiskSolid::setStartParam(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcSweptDiskSolid::EndParam() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcSweptDiskSolid::setEndParam(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcSweptDiskSolid::setEndParam(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSweptDiskSolid::declaration() const { return *IFC4X3_RC3_IfcSweptDiskSolid_type; }
@@ -22259,7 +22259,7 @@ Ifc4x3_rc3::IfcSweptDiskSolid::IfcSweptDiskSolid(::Ifc4x3_rc3::IfcCurve* v1_Dire
 
 // Function implementations for IfcSweptDiskSolidPolygonal
 boost::optional< double > Ifc4x3_rc3::IfcSweptDiskSolidPolygonal::FilletRadius() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } double v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcSweptDiskSolidPolygonal::setFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcSweptDiskSolidPolygonal::setFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSweptDiskSolidPolygonal::declaration() const { return *IFC4X3_RC3_IfcSweptDiskSolidPolygonal_type; }
@@ -22281,7 +22281,7 @@ Ifc4x3_rc3::IfcSweptSurface::IfcSweptSurface(::Ifc4x3_rc3::IfcProfileDef* v1_Swe
 
 // Function implementations for IfcSwitchingDevice
 boost::optional< ::Ifc4x3_rc3::IfcSwitchingDeviceTypeEnum::Value > Ifc4x3_rc3::IfcSwitchingDevice::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSwitchingDeviceTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcSwitchingDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSwitchingDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSwitchingDeviceTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcSwitchingDevice::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSwitchingDeviceTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSwitchingDeviceTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSwitchingDevice::declaration() const { return *IFC4X3_RC3_IfcSwitchingDevice_type; }
@@ -22311,7 +22311,7 @@ Ifc4x3_rc3::IfcSystem::IfcSystem(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwner
 
 // Function implementations for IfcSystemFurnitureElement
 boost::optional< ::Ifc4x3_rc3::IfcSystemFurnitureElementTypeEnum::Value > Ifc4x3_rc3::IfcSystemFurnitureElement::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSystemFurnitureElementTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcSystemFurnitureElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSystemFurnitureElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSystemFurnitureElementTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcSystemFurnitureElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSystemFurnitureElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSystemFurnitureElementTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSystemFurnitureElement::declaration() const { return *IFC4X3_RC3_IfcSystemFurnitureElement_type; }
@@ -22321,7 +22321,7 @@ Ifc4x3_rc3::IfcSystemFurnitureElement::IfcSystemFurnitureElement(std::string v1_
 
 // Function implementations for IfcSystemFurnitureElementType
 boost::optional< ::Ifc4x3_rc3::IfcSystemFurnitureElementTypeEnum::Value > Ifc4x3_rc3::IfcSystemFurnitureElementType::PredefinedType() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcSystemFurnitureElementTypeEnum::FromString(*data_->getArgument(9)); }
-void Ifc4x3_rc3::IfcSystemFurnitureElementType::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSystemFurnitureElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSystemFurnitureElementTypeEnum::ToString(*v)));data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcSystemFurnitureElementType::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcSystemFurnitureElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcSystemFurnitureElementTypeEnum::ToString(*v)));}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcSystemFurnitureElementType::declaration() const { return *IFC4X3_RC3_IfcSystemFurnitureElementType_type; }
@@ -22339,15 +22339,15 @@ void Ifc4x3_rc3::IfcTShapeProfileDef::setWebThickness(double v) { {IfcWrite::Ifc
 double Ifc4x3_rc3::IfcTShapeProfileDef::FlangeThickness() const {  double v = *data_->getArgument(6); return v; }
 void Ifc4x3_rc3::IfcTShapeProfileDef::setFlangeThickness(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTShapeProfileDef::FilletRadius() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcTShapeProfileDef::setFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcTShapeProfileDef::setFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTShapeProfileDef::FlangeEdgeRadius() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcTShapeProfileDef::setFlangeEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcTShapeProfileDef::setFlangeEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTShapeProfileDef::WebEdgeRadius() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcTShapeProfileDef::setWebEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcTShapeProfileDef::setWebEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTShapeProfileDef::WebSlope() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcTShapeProfileDef::setWebSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcTShapeProfileDef::setWebSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTShapeProfileDef::FlangeSlope() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } double v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcTShapeProfileDef::setFlangeSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcTShapeProfileDef::setFlangeSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTShapeProfileDef::declaration() const { return *IFC4X3_RC3_IfcTShapeProfileDef_type; }
@@ -22357,11 +22357,11 @@ Ifc4x3_rc3::IfcTShapeProfileDef::IfcTShapeProfileDef(::Ifc4x3_rc3::IfcProfileTyp
 
 // Function implementations for IfcTable
 boost::optional< std::string > Ifc4x3_rc3::IfcTable::Name() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcTable::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcTable::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcTableRow >::ptr > Ifc4x3_rc3::IfcTable::Rows() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(1); return es->as< ::Ifc4x3_rc3::IfcTableRow >(); }
-void Ifc4x3_rc3::IfcTable::setRows(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcTableRow >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcTable::setRows(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcTableRow >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(1,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcTableColumn >::ptr > Ifc4x3_rc3::IfcTable::Columns() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(2); return es->as< ::Ifc4x3_rc3::IfcTableColumn >(); }
-void Ifc4x3_rc3::IfcTable::setColumns(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcTableColumn >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcTable::setColumns(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcTableColumn >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(2,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTable::declaration() const { return *IFC4X3_RC3_IfcTable_type; }
@@ -22371,11 +22371,11 @@ Ifc4x3_rc3::IfcTable::IfcTable(boost::optional< std::string > v1_Name, boost::op
 
 // Function implementations for IfcTableColumn
 boost::optional< std::string > Ifc4x3_rc3::IfcTableColumn::Identifier() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } std::string v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcTableColumn::setIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcTableColumn::setIdentifier(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTableColumn::Name() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcTableColumn::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcTableColumn::setName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTableColumn::Description() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcTableColumn::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcTableColumn::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 ::Ifc4x3_rc3::IfcUnit* Ifc4x3_rc3::IfcTableColumn::Unit() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcUnit>(true); }
 void Ifc4x3_rc3::IfcTableColumn::setUnit(::Ifc4x3_rc3::IfcUnit* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 ::Ifc4x3_rc3::IfcReference* Ifc4x3_rc3::IfcTableColumn::ReferencePath() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(4)))->as<::Ifc4x3_rc3::IfcReference>(true); }
@@ -22389,9 +22389,9 @@ Ifc4x3_rc3::IfcTableColumn::IfcTableColumn(boost::optional< std::string > v1_Ide
 
 // Function implementations for IfcTableRow
 boost::optional< aggregate_of_instance::ptr > Ifc4x3_rc3::IfcTableRow::RowCells() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return boost::none; } aggregate_of_instance::ptr v = *data_->getArgument(0); return v; }
-void Ifc4x3_rc3::IfcTableRow::setRowCells(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(0,attr);} }
+void Ifc4x3_rc3::IfcTableRow::setRowCells(boost::optional< aggregate_of_instance::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(0,attr);} }
 boost::optional< bool > Ifc4x3_rc3::IfcTableRow::IsHeading() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } bool v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcTableRow::setIsHeading(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcTableRow::setIsHeading(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTableRow::declaration() const { return *IFC4X3_RC3_IfcTableRow_type; }
@@ -22401,7 +22401,7 @@ Ifc4x3_rc3::IfcTableRow::IfcTableRow(boost::optional< aggregate_of_instance::ptr
 
 // Function implementations for IfcTank
 boost::optional< ::Ifc4x3_rc3::IfcTankTypeEnum::Value > Ifc4x3_rc3::IfcTank::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcTankTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcTank::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTankTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTankTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcTank::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTankTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTankTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTank::declaration() const { return *IFC4X3_RC3_IfcTank_type; }
@@ -22421,17 +22421,17 @@ Ifc4x3_rc3::IfcTankType::IfcTankType(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 
 // Function implementations for IfcTask
 boost::optional< std::string > Ifc4x3_rc3::IfcTask::Status() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcTask::setStatus(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcTask::setStatus(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTask::WorkMethod() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcTask::setWorkMethod(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcTask::setWorkMethod(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 bool Ifc4x3_rc3::IfcTask::IsMilestone() const {  bool v = *data_->getArgument(9); return v; }
 void Ifc4x3_rc3::IfcTask::setIsMilestone(bool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(9,attr);} }
 boost::optional< int > Ifc4x3_rc3::IfcTask::Priority() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } int v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcTask::setPriority(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcTask::setPriority(boost::optional< int > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 ::Ifc4x3_rc3::IfcTaskTime* Ifc4x3_rc3::IfcTask::TaskTime() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(11)))->as<::Ifc4x3_rc3::IfcTaskTime>(true); }
 void Ifc4x3_rc3::IfcTask::setTaskTime(::Ifc4x3_rc3::IfcTaskTime* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(11,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcTaskTypeEnum::Value > Ifc4x3_rc3::IfcTask::PredefinedType() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcTaskTypeEnum::FromString(*data_->getArgument(12)); }
-void Ifc4x3_rc3::IfcTask::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTaskTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTaskTypeEnum::ToString(*v)));data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcTask::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTaskTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTaskTypeEnum::ToString(*v)));}data_->setArgument(12,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTask::declaration() const { return *IFC4X3_RC3_IfcTask_type; }
@@ -22441,39 +22441,39 @@ Ifc4x3_rc3::IfcTask::IfcTask(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHist
 
 // Function implementations for IfcTaskTime
 boost::optional< ::Ifc4x3_rc3::IfcTaskDurationEnum::Value > Ifc4x3_rc3::IfcTaskTime::DurationType() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcTaskDurationEnum::FromString(*data_->getArgument(3)); }
-void Ifc4x3_rc3::IfcTaskTime::setDurationType(boost::optional< ::Ifc4x3_rc3::IfcTaskDurationEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTaskDurationEnum::ToString(*v)));data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setDurationType(boost::optional< ::Ifc4x3_rc3::IfcTaskDurationEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTaskDurationEnum::ToString(*v)));}data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::ScheduleDuration() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setScheduleDuration(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setScheduleDuration(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::ScheduleStart() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setScheduleStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setScheduleStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::ScheduleFinish() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setScheduleFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setScheduleFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::EarlyStart() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setEarlyStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setEarlyStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::EarlyFinish() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setEarlyFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setEarlyFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::LateStart() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } std::string v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setLateStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setLateStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::LateFinish() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } std::string v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setLateFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setLateFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::FreeFloat() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } std::string v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setFreeFloat(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setFreeFloat(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::TotalFloat() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } std::string v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setTotalFloat(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setTotalFloat(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 boost::optional< bool > Ifc4x3_rc3::IfcTaskTime::IsCritical() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return boost::none; } bool v = *data_->getArgument(13); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setIsCritical(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(13,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setIsCritical(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(13,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::StatusTime() const { if(!data_->getArgument(14) || data_->getArgument(14)->isNull()) { return boost::none; } std::string v = *data_->getArgument(14); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setStatusTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(14,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setStatusTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(14,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::ActualDuration() const { if(!data_->getArgument(15) || data_->getArgument(15)->isNull()) { return boost::none; } std::string v = *data_->getArgument(15); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setActualDuration(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(15,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setActualDuration(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(15,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::ActualStart() const { if(!data_->getArgument(16) || data_->getArgument(16)->isNull()) { return boost::none; } std::string v = *data_->getArgument(16); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setActualStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(16,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setActualStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(16,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::ActualFinish() const { if(!data_->getArgument(17) || data_->getArgument(17)->isNull()) { return boost::none; } std::string v = *data_->getArgument(17); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setActualFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(17,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setActualFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(17,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskTime::RemainingTime() const { if(!data_->getArgument(18) || data_->getArgument(18)->isNull()) { return boost::none; } std::string v = *data_->getArgument(18); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setRemainingTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(18,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setRemainingTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(18,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTaskTime::Completion() const { if(!data_->getArgument(19) || data_->getArgument(19)->isNull()) { return boost::none; } double v = *data_->getArgument(19); return v; }
-void Ifc4x3_rc3::IfcTaskTime::setCompletion(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(19,attr);} }
+void Ifc4x3_rc3::IfcTaskTime::setCompletion(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(19,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTaskTime::declaration() const { return *IFC4X3_RC3_IfcTaskTime_type; }
@@ -22495,7 +22495,7 @@ Ifc4x3_rc3::IfcTaskTimeRecurring::IfcTaskTimeRecurring(boost::optional< std::str
 ::Ifc4x3_rc3::IfcTaskTypeEnum::Value Ifc4x3_rc3::IfcTaskType::PredefinedType() const {  return ::Ifc4x3_rc3::IfcTaskTypeEnum::FromString(*data_->getArgument(9)); }
 void Ifc4x3_rc3::IfcTaskType::setPredefinedType(::Ifc4x3_rc3::IfcTaskTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcTaskTypeEnum::ToString(v)));data_->setArgument(9,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTaskType::WorkMethod() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } std::string v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcTaskType::setWorkMethod(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcTaskType::setWorkMethod(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTaskType::declaration() const { return *IFC4X3_RC3_IfcTaskType_type; }
@@ -22505,17 +22505,17 @@ Ifc4x3_rc3::IfcTaskType::IfcTaskType(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 
 // Function implementations for IfcTelecomAddress
 boost::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc3::IfcTelecomAddress::TelephoneNumbers() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::vector< std::string > /*[1:?]*/ v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcTelecomAddress::setTelephoneNumbers(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcTelecomAddress::setTelephoneNumbers(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc3::IfcTelecomAddress::FacsimileNumbers() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::vector< std::string > /*[1:?]*/ v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcTelecomAddress::setFacsimileNumbers(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcTelecomAddress::setFacsimileNumbers(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTelecomAddress::PagerNumber() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcTelecomAddress::setPagerNumber(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcTelecomAddress::setPagerNumber(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc3::IfcTelecomAddress::ElectronicMailAddresses() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::vector< std::string > /*[1:?]*/ v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcTelecomAddress::setElectronicMailAddresses(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcTelecomAddress::setElectronicMailAddresses(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTelecomAddress::WWWHomePageURL() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcTelecomAddress::setWWWHomePageURL(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcTelecomAddress::setWWWHomePageURL(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc3::IfcTelecomAddress::MessagingIDs() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::vector< std::string > /*[1:?]*/ v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcTelecomAddress::setMessagingIDs(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcTelecomAddress::setMessagingIDs(boost::optional< std::vector< std::string > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTelecomAddress::declaration() const { return *IFC4X3_RC3_IfcTelecomAddress_type; }
@@ -22525,21 +22525,21 @@ Ifc4x3_rc3::IfcTelecomAddress::IfcTelecomAddress(boost::optional< ::Ifc4x3_rc3::
 
 // Function implementations for IfcTendon
 boost::optional< ::Ifc4x3_rc3::IfcTendonTypeEnum::Value > Ifc4x3_rc3::IfcTendon::PredefinedType() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcTendonTypeEnum::FromString(*data_->getArgument(9)); }
-void Ifc4x3_rc3::IfcTendon::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTendonTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTendonTypeEnum::ToString(*v)));data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcTendon::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTendonTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTendonTypeEnum::ToString(*v)));}data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTendon::NominalDiameter() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcTendon::setNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcTendon::setNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTendon::CrossSectionArea() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } double v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcTendon::setCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcTendon::setCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTendon::TensionForce() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } double v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcTendon::setTensionForce(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcTendon::setTensionForce(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTendon::PreStress() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return boost::none; } double v = *data_->getArgument(13); return v; }
-void Ifc4x3_rc3::IfcTendon::setPreStress(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(13,attr);} }
+void Ifc4x3_rc3::IfcTendon::setPreStress(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(13,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTendon::FrictionCoefficient() const { if(!data_->getArgument(14) || data_->getArgument(14)->isNull()) { return boost::none; } double v = *data_->getArgument(14); return v; }
-void Ifc4x3_rc3::IfcTendon::setFrictionCoefficient(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(14,attr);} }
+void Ifc4x3_rc3::IfcTendon::setFrictionCoefficient(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(14,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTendon::AnchorageSlip() const { if(!data_->getArgument(15) || data_->getArgument(15)->isNull()) { return boost::none; } double v = *data_->getArgument(15); return v; }
-void Ifc4x3_rc3::IfcTendon::setAnchorageSlip(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(15,attr);} }
+void Ifc4x3_rc3::IfcTendon::setAnchorageSlip(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(15,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTendon::MinCurvatureRadius() const { if(!data_->getArgument(16) || data_->getArgument(16)->isNull()) { return boost::none; } double v = *data_->getArgument(16); return v; }
-void Ifc4x3_rc3::IfcTendon::setMinCurvatureRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(16,attr);} }
+void Ifc4x3_rc3::IfcTendon::setMinCurvatureRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(16,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTendon::declaration() const { return *IFC4X3_RC3_IfcTendon_type; }
@@ -22549,7 +22549,7 @@ Ifc4x3_rc3::IfcTendon::IfcTendon(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwner
 
 // Function implementations for IfcTendonAnchor
 boost::optional< ::Ifc4x3_rc3::IfcTendonAnchorTypeEnum::Value > Ifc4x3_rc3::IfcTendonAnchor::PredefinedType() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcTendonAnchorTypeEnum::FromString(*data_->getArgument(9)); }
-void Ifc4x3_rc3::IfcTendonAnchor::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTendonAnchorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTendonAnchorTypeEnum::ToString(*v)));data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcTendonAnchor::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTendonAnchorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTendonAnchorTypeEnum::ToString(*v)));}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTendonAnchor::declaration() const { return *IFC4X3_RC3_IfcTendonAnchor_type; }
@@ -22591,11 +22591,11 @@ Ifc4x3_rc3::IfcTendonConduitType::IfcTendonConduitType(std::string v1_GlobalId, 
 ::Ifc4x3_rc3::IfcTendonTypeEnum::Value Ifc4x3_rc3::IfcTendonType::PredefinedType() const {  return ::Ifc4x3_rc3::IfcTendonTypeEnum::FromString(*data_->getArgument(9)); }
 void Ifc4x3_rc3::IfcTendonType::setPredefinedType(::Ifc4x3_rc3::IfcTendonTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcTendonTypeEnum::ToString(v)));data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTendonType::NominalDiameter() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcTendonType::setNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcTendonType::setNominalDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTendonType::CrossSectionArea() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } double v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcTendonType::setCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcTendonType::setCrossSectionArea(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcTendonType::SheathDiameter() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } double v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcTendonType::setSheathDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcTendonType::setSheathDiameter(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTendonType::declaration() const { return *IFC4X3_RC3_IfcTendonType_type; }
@@ -22657,7 +22657,7 @@ void Ifc4x3_rc3::IfcTextStyle::setTextStyle(::Ifc4x3_rc3::IfcTextStyleTextModel*
 ::Ifc4x3_rc3::IfcTextFontSelect* Ifc4x3_rc3::IfcTextStyle::TextFontStyle() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcTextFontSelect>(true); }
 void Ifc4x3_rc3::IfcTextStyle::setTextFontStyle(::Ifc4x3_rc3::IfcTextFontSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< bool > Ifc4x3_rc3::IfcTextStyle::ModelOrDraughting() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } bool v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcTextStyle::setModelOrDraughting(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcTextStyle::setModelOrDraughting(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTextStyle::declaration() const { return *IFC4X3_RC3_IfcTextStyle_type; }
@@ -22669,11 +22669,11 @@ Ifc4x3_rc3::IfcTextStyle::IfcTextStyle(boost::optional< std::string > v1_Name, :
 std::vector< std::string > /*[1:?]*/ Ifc4x3_rc3::IfcTextStyleFontModel::FontFamily() const {  std::vector< std::string > /*[1:?]*/ v = *data_->getArgument(1); return v; }
 void Ifc4x3_rc3::IfcTextStyleFontModel::setFontFamily(std::vector< std::string > /*[1:?]*/ v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTextStyleFontModel::FontStyle() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcTextStyleFontModel::setFontStyle(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcTextStyleFontModel::setFontStyle(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTextStyleFontModel::FontVariant() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } std::string v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcTextStyleFontModel::setFontVariant(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcTextStyleFontModel::setFontVariant(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTextStyleFontModel::FontWeight() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcTextStyleFontModel::setFontWeight(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcTextStyleFontModel::setFontWeight(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 ::Ifc4x3_rc3::IfcSizeSelect* Ifc4x3_rc3::IfcTextStyleFontModel::FontSize() const {  return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(5)))->as<::Ifc4x3_rc3::IfcSizeSelect>(true); }
 void Ifc4x3_rc3::IfcTextStyleFontModel::setFontSize(::Ifc4x3_rc3::IfcSizeSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(5,attr);} }
 
@@ -22699,15 +22699,15 @@ Ifc4x3_rc3::IfcTextStyleForDefinedFont::IfcTextStyleForDefinedFont(::Ifc4x3_rc3:
 ::Ifc4x3_rc3::IfcSizeSelect* Ifc4x3_rc3::IfcTextStyleTextModel::TextIndent() const { if(!data_->getArgument(0) || data_->getArgument(0)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(0)))->as<::Ifc4x3_rc3::IfcSizeSelect>(true); }
 void Ifc4x3_rc3::IfcTextStyleTextModel::setTextIndent(::Ifc4x3_rc3::IfcSizeSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTextStyleTextModel::TextAlign() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcTextStyleTextModel::setTextAlign(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcTextStyleTextModel::setTextAlign(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTextStyleTextModel::TextDecoration() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::string v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcTextStyleTextModel::setTextDecoration(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcTextStyleTextModel::setTextDecoration(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 ::Ifc4x3_rc3::IfcSizeSelect* Ifc4x3_rc3::IfcTextStyleTextModel::LetterSpacing() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcSizeSelect>(true); }
 void Ifc4x3_rc3::IfcTextStyleTextModel::setLetterSpacing(::Ifc4x3_rc3::IfcSizeSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 ::Ifc4x3_rc3::IfcSizeSelect* Ifc4x3_rc3::IfcTextStyleTextModel::WordSpacing() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(4)))->as<::Ifc4x3_rc3::IfcSizeSelect>(true); }
 void Ifc4x3_rc3::IfcTextStyleTextModel::setWordSpacing(::Ifc4x3_rc3::IfcSizeSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTextStyleTextModel::TextTransform() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcTextStyleTextModel::setTextTransform(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcTextStyleTextModel::setTextTransform(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 ::Ifc4x3_rc3::IfcSizeSelect* Ifc4x3_rc3::IfcTextStyleTextModel::LineHeight() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(6)))->as<::Ifc4x3_rc3::IfcSizeSelect>(true); }
 void Ifc4x3_rc3::IfcTextStyleTextModel::setLineHeight(::Ifc4x3_rc3::IfcSizeSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 
@@ -22731,7 +22731,7 @@ Ifc4x3_rc3::IfcTextureCoordinate::IfcTextureCoordinate(aggregate_of< ::Ifc4x3_rc
 std::string Ifc4x3_rc3::IfcTextureCoordinateGenerator::Mode() const {  std::string v = *data_->getArgument(1); return v; }
 void Ifc4x3_rc3::IfcTextureCoordinateGenerator::setMode(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< std::vector< double > /*[1:?]*/ > Ifc4x3_rc3::IfcTextureCoordinateGenerator::Parameter() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } std::vector< double > /*[1:?]*/ v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcTextureCoordinateGenerator::setParameter(boost::optional< std::vector< double > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcTextureCoordinateGenerator::setParameter(boost::optional< std::vector< double > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTextureCoordinateGenerator::declaration() const { return *IFC4X3_RC3_IfcTextureCoordinateGenerator_type; }
@@ -22775,11 +22775,11 @@ Ifc4x3_rc3::IfcTextureVertexList::IfcTextureVertexList(std::vector< std::vector<
 double Ifc4x3_rc3::IfcThirdOrderPolynomialSpiral::QubicTerm() const {  double v = *data_->getArgument(1); return v; }
 void Ifc4x3_rc3::IfcThirdOrderPolynomialSpiral::setQubicTerm(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcThirdOrderPolynomialSpiral::QuadraticTerm() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } double v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcThirdOrderPolynomialSpiral::setQuadraticTerm(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcThirdOrderPolynomialSpiral::setQuadraticTerm(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcThirdOrderPolynomialSpiral::LinearTerm() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return boost::none; } double v = *data_->getArgument(3); return v; }
-void Ifc4x3_rc3::IfcThirdOrderPolynomialSpiral::setLinearTerm(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(3,attr);} }
+void Ifc4x3_rc3::IfcThirdOrderPolynomialSpiral::setLinearTerm(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(3,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcThirdOrderPolynomialSpiral::ConstantTerm() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcThirdOrderPolynomialSpiral::setConstantTerm(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcThirdOrderPolynomialSpiral::setConstantTerm(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcThirdOrderPolynomialSpiral::declaration() const { return *IFC4X3_RC3_IfcThirdOrderPolynomialSpiral_type; }
@@ -22803,7 +22803,7 @@ Ifc4x3_rc3::IfcTimePeriod::IfcTimePeriod(std::string v1_StartTime, std::string v
 std::string Ifc4x3_rc3::IfcTimeSeries::Name() const {  std::string v = *data_->getArgument(0); return v; }
 void Ifc4x3_rc3::IfcTimeSeries::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTimeSeries::Description() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::string v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcTimeSeries::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcTimeSeries::setDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 std::string Ifc4x3_rc3::IfcTimeSeries::StartTime() const {  std::string v = *data_->getArgument(2); return v; }
 void Ifc4x3_rc3::IfcTimeSeries::setStartTime(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 std::string Ifc4x3_rc3::IfcTimeSeries::EndTime() const {  std::string v = *data_->getArgument(3); return v; }
@@ -22813,7 +22813,7 @@ void Ifc4x3_rc3::IfcTimeSeries::setTimeSeriesDataType(::Ifc4x3_rc3::IfcTimeSerie
 ::Ifc4x3_rc3::IfcDataOriginEnum::Value Ifc4x3_rc3::IfcTimeSeries::DataOrigin() const {  return ::Ifc4x3_rc3::IfcDataOriginEnum::FromString(*data_->getArgument(5)); }
 void Ifc4x3_rc3::IfcTimeSeries::setDataOrigin(::Ifc4x3_rc3::IfcDataOriginEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcDataOriginEnum::ToString(v)));data_->setArgument(5,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTimeSeries::UserDefinedDataOrigin() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcTimeSeries::setUserDefinedDataOrigin(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcTimeSeries::setUserDefinedDataOrigin(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 ::Ifc4x3_rc3::IfcUnit* Ifc4x3_rc3::IfcTimeSeries::Unit() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(7)))->as<::Ifc4x3_rc3::IfcUnit>(true); }
 void Ifc4x3_rc3::IfcTimeSeries::setUnit(::Ifc4x3_rc3::IfcUnit* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(7,attr);} }
 
@@ -22864,7 +22864,7 @@ Ifc4x3_rc3::IfcToroidalSurface::IfcToroidalSurface(::Ifc4x3_rc3::IfcAxis2Placeme
 
 // Function implementations for IfcTrackElement
 boost::optional< ::Ifc4x3_rc3::IfcTrackElementTypeEnum::Value > Ifc4x3_rc3::IfcTrackElement::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcTrackElementTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcTrackElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTrackElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTrackElementTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcTrackElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTrackElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTrackElementTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTrackElement::declaration() const { return *IFC4X3_RC3_IfcTrackElement_type; }
@@ -22884,7 +22884,7 @@ Ifc4x3_rc3::IfcTrackElementType::IfcTrackElementType(std::string v1_GlobalId, ::
 
 // Function implementations for IfcTransformer
 boost::optional< ::Ifc4x3_rc3::IfcTransformerTypeEnum::Value > Ifc4x3_rc3::IfcTransformer::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcTransformerTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcTransformer::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTransformerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTransformerTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcTransformer::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTransformerTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTransformerTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTransformer::declaration() const { return *IFC4X3_RC3_IfcTransformer_type; }
@@ -22940,13 +22940,13 @@ Ifc4x3_rc3::IfcTrapeziumProfileDef::IfcTrapeziumProfileDef(::Ifc4x3_rc3::IfcProf
 
 // Function implementations for IfcTriangulatedFaceSet
 boost::optional< std::vector< std::vector< double > > > Ifc4x3_rc3::IfcTriangulatedFaceSet::Normals() const { if(!data_->getArgument(1) || data_->getArgument(1)->isNull()) { return boost::none; } std::vector< std::vector< double > > v = *data_->getArgument(1); return v; }
-void Ifc4x3_rc3::IfcTriangulatedFaceSet::setNormals(boost::optional< std::vector< std::vector< double > > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(1,attr);} }
+void Ifc4x3_rc3::IfcTriangulatedFaceSet::setNormals(boost::optional< std::vector< std::vector< double > > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(1,attr);} }
 boost::optional< bool > Ifc4x3_rc3::IfcTriangulatedFaceSet::Closed() const { if(!data_->getArgument(2) || data_->getArgument(2)->isNull()) { return boost::none; } bool v = *data_->getArgument(2); return v; }
-void Ifc4x3_rc3::IfcTriangulatedFaceSet::setClosed(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(2,attr);} }
+void Ifc4x3_rc3::IfcTriangulatedFaceSet::setClosed(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(2,attr);} }
 std::vector< std::vector< int > > Ifc4x3_rc3::IfcTriangulatedFaceSet::CoordIndex() const {  std::vector< std::vector< int > > v = *data_->getArgument(3); return v; }
 void Ifc4x3_rc3::IfcTriangulatedFaceSet::setCoordIndex(std::vector< std::vector< int > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::vector< int > /*[1:?]*/ > Ifc4x3_rc3::IfcTriangulatedFaceSet::PnIndex() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::vector< int > /*[1:?]*/ v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcTriangulatedFaceSet::setPnIndex(boost::optional< std::vector< int > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcTriangulatedFaceSet::setPnIndex(boost::optional< std::vector< int > /*[1:?]*/ > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTriangulatedFaceSet::declaration() const { return *IFC4X3_RC3_IfcTriangulatedFaceSet_type; }
@@ -22984,7 +22984,7 @@ Ifc4x3_rc3::IfcTrimmedCurve::IfcTrimmedCurve(::Ifc4x3_rc3::IfcCurve* v1_BasisCur
 
 // Function implementations for IfcTubeBundle
 boost::optional< ::Ifc4x3_rc3::IfcTubeBundleTypeEnum::Value > Ifc4x3_rc3::IfcTubeBundle::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcTubeBundleTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcTubeBundle::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTubeBundleTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTubeBundleTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcTubeBundle::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcTubeBundleTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcTubeBundleTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcTubeBundle::declaration() const { return *IFC4X3_RC3_IfcTubeBundle_type; }
@@ -23004,9 +23004,9 @@ Ifc4x3_rc3::IfcTubeBundleType::IfcTubeBundleType(std::string v1_GlobalId, ::Ifc4
 
 // Function implementations for IfcTypeObject
 boost::optional< std::string > Ifc4x3_rc3::IfcTypeObject::ApplicableOccurrence() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcTypeObject::setApplicableOccurrence(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcTypeObject::setApplicableOccurrence(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPropertySetDefinition >::ptr > Ifc4x3_rc3::IfcTypeObject::HasPropertySets() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(5); return es->as< ::Ifc4x3_rc3::IfcPropertySetDefinition >(); }
-void Ifc4x3_rc3::IfcTypeObject::setHasPropertySets(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPropertySetDefinition >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcTypeObject::setHasPropertySets(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPropertySetDefinition >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(5,attr);} }
 
 ::Ifc4x3_rc3::IfcRelDefinesByType::list::ptr Ifc4x3_rc3::IfcTypeObject::Types() const { return data_->getInverse(IFC4X3_RC3_IfcRelDefinesByType_type, 5)->as<IfcRelDefinesByType>(); }
 
@@ -23017,11 +23017,11 @@ Ifc4x3_rc3::IfcTypeObject::IfcTypeObject(std::string v1_GlobalId, ::Ifc4x3_rc3::
 
 // Function implementations for IfcTypeProcess
 boost::optional< std::string > Ifc4x3_rc3::IfcTypeProcess::Identification() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcTypeProcess::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcTypeProcess::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTypeProcess::LongDescription() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcTypeProcess::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcTypeProcess::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTypeProcess::ProcessType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcTypeProcess::setProcessType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcTypeProcess::setProcessType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 ::Ifc4x3_rc3::IfcRelAssignsToProcess::list::ptr Ifc4x3_rc3::IfcTypeProcess::OperatesOn() const { return data_->getInverse(IFC4X3_RC3_IfcRelAssignsToProcess_type, 6)->as<IfcRelAssignsToProcess>(); }
 
@@ -23032,9 +23032,9 @@ Ifc4x3_rc3::IfcTypeProcess::IfcTypeProcess(std::string v1_GlobalId, ::Ifc4x3_rc3
 
 // Function implementations for IfcTypeProduct
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcRepresentationMap >::ptr > Ifc4x3_rc3::IfcTypeProduct::RepresentationMaps() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(6); return es->as< ::Ifc4x3_rc3::IfcRepresentationMap >(); }
-void Ifc4x3_rc3::IfcTypeProduct::setRepresentationMaps(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcRepresentationMap >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcTypeProduct::setRepresentationMaps(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcRepresentationMap >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTypeProduct::Tag() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcTypeProduct::setTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcTypeProduct::setTag(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 
 ::Ifc4x3_rc3::IfcRelAssignsToProduct::list::ptr Ifc4x3_rc3::IfcTypeProduct::ReferencedBy() const { return data_->getInverse(IFC4X3_RC3_IfcRelAssignsToProduct_type, 6)->as<IfcRelAssignsToProduct>(); }
 
@@ -23045,11 +23045,11 @@ Ifc4x3_rc3::IfcTypeProduct::IfcTypeProduct(std::string v1_GlobalId, ::Ifc4x3_rc3
 
 // Function implementations for IfcTypeResource
 boost::optional< std::string > Ifc4x3_rc3::IfcTypeResource::Identification() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } std::string v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcTypeResource::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcTypeResource::setIdentification(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTypeResource::LongDescription() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } std::string v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcTypeResource::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcTypeResource::setLongDescription(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcTypeResource::ResourceType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcTypeResource::setResourceType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcTypeResource::setResourceType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 ::Ifc4x3_rc3::IfcRelAssignsToResource::list::ptr Ifc4x3_rc3::IfcTypeResource::ResourceOf() const { return data_->getInverse(IFC4X3_RC3_IfcRelAssignsToResource_type, 6)->as<IfcRelAssignsToResource>(); }
 
@@ -23068,11 +23068,11 @@ void Ifc4x3_rc3::IfcUShapeProfileDef::setWebThickness(double v) { {IfcWrite::Ifc
 double Ifc4x3_rc3::IfcUShapeProfileDef::FlangeThickness() const {  double v = *data_->getArgument(6); return v; }
 void Ifc4x3_rc3::IfcUShapeProfileDef::setFlangeThickness(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcUShapeProfileDef::FilletRadius() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcUShapeProfileDef::setFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcUShapeProfileDef::setFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcUShapeProfileDef::EdgeRadius() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcUShapeProfileDef::setEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcUShapeProfileDef::setEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcUShapeProfileDef::FlangeSlope() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcUShapeProfileDef::setFlangeSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcUShapeProfileDef::setFlangeSlope(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcUShapeProfileDef::declaration() const { return *IFC4X3_RC3_IfcUShapeProfileDef_type; }
@@ -23092,7 +23092,7 @@ Ifc4x3_rc3::IfcUnitAssignment::IfcUnitAssignment(aggregate_of_instance::ptr v1_U
 
 // Function implementations for IfcUnitaryControlElement
 boost::optional< ::Ifc4x3_rc3::IfcUnitaryControlElementTypeEnum::Value > Ifc4x3_rc3::IfcUnitaryControlElement::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcUnitaryControlElementTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcUnitaryControlElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcUnitaryControlElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcUnitaryControlElementTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcUnitaryControlElement::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcUnitaryControlElementTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcUnitaryControlElementTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcUnitaryControlElement::declaration() const { return *IFC4X3_RC3_IfcUnitaryControlElement_type; }
@@ -23112,7 +23112,7 @@ Ifc4x3_rc3::IfcUnitaryControlElementType::IfcUnitaryControlElementType(std::stri
 
 // Function implementations for IfcUnitaryEquipment
 boost::optional< ::Ifc4x3_rc3::IfcUnitaryEquipmentTypeEnum::Value > Ifc4x3_rc3::IfcUnitaryEquipment::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcUnitaryEquipmentTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcUnitaryEquipment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcUnitaryEquipmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcUnitaryEquipmentTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcUnitaryEquipment::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcUnitaryEquipmentTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcUnitaryEquipmentTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcUnitaryEquipment::declaration() const { return *IFC4X3_RC3_IfcUnitaryEquipment_type; }
@@ -23132,7 +23132,7 @@ Ifc4x3_rc3::IfcUnitaryEquipmentType::IfcUnitaryEquipmentType(std::string v1_Glob
 
 // Function implementations for IfcValve
 boost::optional< ::Ifc4x3_rc3::IfcValveTypeEnum::Value > Ifc4x3_rc3::IfcValve::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcValveTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcValve::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcValveTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcValveTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcValve::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcValveTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcValveTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcValve::declaration() const { return *IFC4X3_RC3_IfcValve_type; }
@@ -23192,7 +23192,7 @@ Ifc4x3_rc3::IfcVertexPoint::IfcVertexPoint(::Ifc4x3_rc3::IfcPoint* v1_VertexGeom
 
 // Function implementations for IfcVibrationDamper
 boost::optional< ::Ifc4x3_rc3::IfcVibrationDamperTypeEnum::Value > Ifc4x3_rc3::IfcVibrationDamper::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcVibrationDamperTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcVibrationDamper::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcVibrationDamperTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcVibrationDamperTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcVibrationDamper::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcVibrationDamperTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcVibrationDamperTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcVibrationDamper::declaration() const { return *IFC4X3_RC3_IfcVibrationDamper_type; }
@@ -23202,7 +23202,7 @@ Ifc4x3_rc3::IfcVibrationDamper::IfcVibrationDamper(std::string v1_GlobalId, ::If
 
 // Function implementations for IfcVibrationDamperType
 boost::optional< ::Ifc4x3_rc3::IfcVibrationDamperTypeEnum::Value > Ifc4x3_rc3::IfcVibrationDamperType::PredefinedType() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcVibrationDamperTypeEnum::FromString(*data_->getArgument(9)); }
-void Ifc4x3_rc3::IfcVibrationDamperType::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcVibrationDamperTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcVibrationDamperTypeEnum::ToString(*v)));data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcVibrationDamperType::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcVibrationDamperTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcVibrationDamperTypeEnum::ToString(*v)));}data_->setArgument(9,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcVibrationDamperType::declaration() const { return *IFC4X3_RC3_IfcVibrationDamperType_type; }
@@ -23212,7 +23212,7 @@ Ifc4x3_rc3::IfcVibrationDamperType::IfcVibrationDamperType(std::string v1_Global
 
 // Function implementations for IfcVibrationIsolator
 boost::optional< ::Ifc4x3_rc3::IfcVibrationIsolatorTypeEnum::Value > Ifc4x3_rc3::IfcVibrationIsolator::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcVibrationIsolatorTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcVibrationIsolator::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcVibrationIsolatorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcVibrationIsolatorTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcVibrationIsolator::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcVibrationIsolatorTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcVibrationIsolatorTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcVibrationIsolator::declaration() const { return *IFC4X3_RC3_IfcVibrationIsolator_type; }
@@ -23276,7 +23276,7 @@ Ifc4x3_rc3::IfcVoidStratum::IfcVoidStratum(std::string v1_GlobalId, ::Ifc4x3_rc3
 
 // Function implementations for IfcVoidingFeature
 boost::optional< ::Ifc4x3_rc3::IfcVoidingFeatureTypeEnum::Value > Ifc4x3_rc3::IfcVoidingFeature::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcVoidingFeatureTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcVoidingFeature::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcVoidingFeatureTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcVoidingFeatureTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcVoidingFeature::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcVoidingFeatureTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcVoidingFeatureTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcVoidingFeature::declaration() const { return *IFC4X3_RC3_IfcVoidingFeature_type; }
@@ -23286,7 +23286,7 @@ Ifc4x3_rc3::IfcVoidingFeature::IfcVoidingFeature(std::string v1_GlobalId, ::Ifc4
 
 // Function implementations for IfcWall
 boost::optional< ::Ifc4x3_rc3::IfcWallTypeEnum::Value > Ifc4x3_rc3::IfcWall::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcWallTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcWall::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcWallTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWallTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcWall::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcWallTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWallTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcWall::declaration() const { return *IFC4X3_RC3_IfcWall_type; }
@@ -23322,7 +23322,7 @@ Ifc4x3_rc3::IfcWallType::IfcWallType(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 
 // Function implementations for IfcWasteTerminal
 boost::optional< ::Ifc4x3_rc3::IfcWasteTerminalTypeEnum::Value > Ifc4x3_rc3::IfcWasteTerminal::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcWasteTerminalTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcWasteTerminal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcWasteTerminalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWasteTerminalTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcWasteTerminal::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcWasteTerminalTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWasteTerminalTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcWasteTerminal::declaration() const { return *IFC4X3_RC3_IfcWasteTerminal_type; }
@@ -23350,15 +23350,15 @@ Ifc4x3_rc3::IfcWaterStratum::IfcWaterStratum(std::string v1_GlobalId, ::Ifc4x3_r
 
 // Function implementations for IfcWindow
 boost::optional< double > Ifc4x3_rc3::IfcWindow::OverallHeight() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcWindow::setOverallHeight(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcWindow::setOverallHeight(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcWindow::OverallWidth() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcWindow::setOverallWidth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcWindow::setOverallWidth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcWindowTypeEnum::Value > Ifc4x3_rc3::IfcWindow::PredefinedType() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcWindowTypeEnum::FromString(*data_->getArgument(10)); }
-void Ifc4x3_rc3::IfcWindow::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcWindowTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWindowTypeEnum::ToString(*v)));data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcWindow::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcWindowTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWindowTypeEnum::ToString(*v)));}data_->setArgument(10,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcWindowTypePartitioningEnum::Value > Ifc4x3_rc3::IfcWindow::PartitioningType() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcWindowTypePartitioningEnum::FromString(*data_->getArgument(11)); }
-void Ifc4x3_rc3::IfcWindow::setPartitioningType(boost::optional< ::Ifc4x3_rc3::IfcWindowTypePartitioningEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWindowTypePartitioningEnum::ToString(*v)));data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcWindow::setPartitioningType(boost::optional< ::Ifc4x3_rc3::IfcWindowTypePartitioningEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWindowTypePartitioningEnum::ToString(*v)));}data_->setArgument(11,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcWindow::UserDefinedPartitioningType() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } std::string v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcWindow::setUserDefinedPartitioningType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcWindow::setUserDefinedPartitioningType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcWindow::declaration() const { return *IFC4X3_RC3_IfcWindow_type; }
@@ -23368,29 +23368,29 @@ Ifc4x3_rc3::IfcWindow::IfcWindow(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwner
 
 // Function implementations for IfcWindowLiningProperties
 boost::optional< double > Ifc4x3_rc3::IfcWindowLiningProperties::LiningDepth() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } double v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcWindowLiningProperties::setLiningDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcWindowLiningProperties::setLiningDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcWindowLiningProperties::LiningThickness() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } double v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcWindowLiningProperties::setLiningThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcWindowLiningProperties::setLiningThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcWindowLiningProperties::TransomThickness() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } double v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcWindowLiningProperties::setTransomThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcWindowLiningProperties::setTransomThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcWindowLiningProperties::MullionThickness() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcWindowLiningProperties::setMullionThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcWindowLiningProperties::setMullionThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcWindowLiningProperties::FirstTransomOffset() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcWindowLiningProperties::setFirstTransomOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcWindowLiningProperties::setFirstTransomOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcWindowLiningProperties::SecondTransomOffset() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } double v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcWindowLiningProperties::setSecondTransomOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcWindowLiningProperties::setSecondTransomOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcWindowLiningProperties::FirstMullionOffset() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } double v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcWindowLiningProperties::setFirstMullionOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcWindowLiningProperties::setFirstMullionOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcWindowLiningProperties::SecondMullionOffset() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } double v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcWindowLiningProperties::setSecondMullionOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcWindowLiningProperties::setSecondMullionOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 ::Ifc4x3_rc3::IfcShapeAspect* Ifc4x3_rc3::IfcWindowLiningProperties::ShapeAspectStyle() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(12)))->as<::Ifc4x3_rc3::IfcShapeAspect>(true); }
 void Ifc4x3_rc3::IfcWindowLiningProperties::setShapeAspectStyle(::Ifc4x3_rc3::IfcShapeAspect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(12,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcWindowLiningProperties::LiningOffset() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return boost::none; } double v = *data_->getArgument(13); return v; }
-void Ifc4x3_rc3::IfcWindowLiningProperties::setLiningOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(13,attr);} }
+void Ifc4x3_rc3::IfcWindowLiningProperties::setLiningOffset(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(13,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcWindowLiningProperties::LiningToPanelOffsetX() const { if(!data_->getArgument(14) || data_->getArgument(14)->isNull()) { return boost::none; } double v = *data_->getArgument(14); return v; }
-void Ifc4x3_rc3::IfcWindowLiningProperties::setLiningToPanelOffsetX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(14,attr);} }
+void Ifc4x3_rc3::IfcWindowLiningProperties::setLiningToPanelOffsetX(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(14,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcWindowLiningProperties::LiningToPanelOffsetY() const { if(!data_->getArgument(15) || data_->getArgument(15)->isNull()) { return boost::none; } double v = *data_->getArgument(15); return v; }
-void Ifc4x3_rc3::IfcWindowLiningProperties::setLiningToPanelOffsetY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(15,attr);} }
+void Ifc4x3_rc3::IfcWindowLiningProperties::setLiningToPanelOffsetY(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(15,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcWindowLiningProperties::declaration() const { return *IFC4X3_RC3_IfcWindowLiningProperties_type; }
@@ -23404,9 +23404,9 @@ void Ifc4x3_rc3::IfcWindowPanelProperties::setOperationType(::Ifc4x3_rc3::IfcWin
 ::Ifc4x3_rc3::IfcWindowPanelPositionEnum::Value Ifc4x3_rc3::IfcWindowPanelProperties::PanelPosition() const {  return ::Ifc4x3_rc3::IfcWindowPanelPositionEnum::FromString(*data_->getArgument(5)); }
 void Ifc4x3_rc3::IfcWindowPanelProperties::setPanelPosition(::Ifc4x3_rc3::IfcWindowPanelPositionEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcWindowPanelPositionEnum::ToString(v)));data_->setArgument(5,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcWindowPanelProperties::FrameDepth() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } double v = *data_->getArgument(6); return v; }
-void Ifc4x3_rc3::IfcWindowPanelProperties::setFrameDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcWindowPanelProperties::setFrameDepth(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcWindowPanelProperties::FrameThickness() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcWindowPanelProperties::setFrameThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcWindowPanelProperties::setFrameThickness(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 ::Ifc4x3_rc3::IfcShapeAspect* Ifc4x3_rc3::IfcWindowPanelProperties::ShapeAspectStyle() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(8)))->as<::Ifc4x3_rc3::IfcShapeAspect>(true); }
 void Ifc4x3_rc3::IfcWindowPanelProperties::setShapeAspectStyle(::Ifc4x3_rc3::IfcShapeAspect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(8,attr);} }
 
@@ -23446,9 +23446,9 @@ void Ifc4x3_rc3::IfcWindowType::setPredefinedType(::Ifc4x3_rc3::IfcWindowTypeEnu
 ::Ifc4x3_rc3::IfcWindowTypePartitioningEnum::Value Ifc4x3_rc3::IfcWindowType::PartitioningType() const {  return ::Ifc4x3_rc3::IfcWindowTypePartitioningEnum::FromString(*data_->getArgument(10)); }
 void Ifc4x3_rc3::IfcWindowType::setPartitioningType(::Ifc4x3_rc3::IfcWindowTypePartitioningEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4x3_rc3::IfcWindowTypePartitioningEnum::ToString(v)));data_->setArgument(10,attr);} }
 boost::optional< bool > Ifc4x3_rc3::IfcWindowType::ParameterTakesPrecedence() const { if(!data_->getArgument(11) || data_->getArgument(11)->isNull()) { return boost::none; } bool v = *data_->getArgument(11); return v; }
-void Ifc4x3_rc3::IfcWindowType::setParameterTakesPrecedence(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(11,attr);} }
+void Ifc4x3_rc3::IfcWindowType::setParameterTakesPrecedence(boost::optional< bool > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(11,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcWindowType::UserDefinedPartitioningType() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } std::string v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcWindowType::setUserDefinedPartitioningType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcWindowType::setUserDefinedPartitioningType(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcWindowType::declaration() const { return *IFC4X3_RC3_IfcWindowType_type; }
@@ -23458,11 +23458,11 @@ Ifc4x3_rc3::IfcWindowType::IfcWindowType(std::string v1_GlobalId, ::Ifc4x3_rc3::
 
 // Function implementations for IfcWorkCalendar
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcWorkTime >::ptr > Ifc4x3_rc3::IfcWorkCalendar::WorkingTimes() const { if(!data_->getArgument(6) || data_->getArgument(6)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(6); return es->as< ::Ifc4x3_rc3::IfcWorkTime >(); }
-void Ifc4x3_rc3::IfcWorkCalendar::setWorkingTimes(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcWorkTime >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(6,attr);} }
+void Ifc4x3_rc3::IfcWorkCalendar::setWorkingTimes(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcWorkTime >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(6,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcWorkTime >::ptr > Ifc4x3_rc3::IfcWorkCalendar::ExceptionTimes() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(7); return es->as< ::Ifc4x3_rc3::IfcWorkTime >(); }
-void Ifc4x3_rc3::IfcWorkCalendar::setExceptionTimes(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcWorkTime >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcWorkCalendar::setExceptionTimes(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcWorkTime >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(7,attr);} }
 boost::optional< ::Ifc4x3_rc3::IfcWorkCalendarTypeEnum::Value > Ifc4x3_rc3::IfcWorkCalendar::PredefinedType() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcWorkCalendarTypeEnum::FromString(*data_->getArgument(8)); }
-void Ifc4x3_rc3::IfcWorkCalendar::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcWorkCalendarTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWorkCalendarTypeEnum::ToString(*v)));data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcWorkCalendar::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcWorkCalendarTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWorkCalendarTypeEnum::ToString(*v)));}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcWorkCalendar::declaration() const { return *IFC4X3_RC3_IfcWorkCalendar_type; }
@@ -23474,17 +23474,17 @@ Ifc4x3_rc3::IfcWorkCalendar::IfcWorkCalendar(std::string v1_GlobalId, ::Ifc4x3_r
 std::string Ifc4x3_rc3::IfcWorkControl::CreationDate() const {  std::string v = *data_->getArgument(6); return v; }
 void Ifc4x3_rc3::IfcWorkControl::setCreationDate(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPerson >::ptr > Ifc4x3_rc3::IfcWorkControl::Creators() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } aggregate_of_instance::ptr es = *data_->getArgument(7); return es->as< ::Ifc4x3_rc3::IfcPerson >(); }
-void Ifc4x3_rc3::IfcWorkControl::setCreators(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPerson >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v)->generalize());data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcWorkControl::setCreators(boost::optional< aggregate_of< ::Ifc4x3_rc3::IfcPerson >::ptr > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set((*v)->generalize());}data_->setArgument(7,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcWorkControl::Purpose() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } std::string v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcWorkControl::setPurpose(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcWorkControl::setPurpose(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcWorkControl::Duration() const { if(!data_->getArgument(9) || data_->getArgument(9)->isNull()) { return boost::none; } std::string v = *data_->getArgument(9); return v; }
-void Ifc4x3_rc3::IfcWorkControl::setDuration(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(9,attr);} }
+void Ifc4x3_rc3::IfcWorkControl::setDuration(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(9,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcWorkControl::TotalFloat() const { if(!data_->getArgument(10) || data_->getArgument(10)->isNull()) { return boost::none; } std::string v = *data_->getArgument(10); return v; }
-void Ifc4x3_rc3::IfcWorkControl::setTotalFloat(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(10,attr);} }
+void Ifc4x3_rc3::IfcWorkControl::setTotalFloat(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(10,attr);} }
 std::string Ifc4x3_rc3::IfcWorkControl::StartTime() const {  std::string v = *data_->getArgument(11); return v; }
 void Ifc4x3_rc3::IfcWorkControl::setStartTime(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(11,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcWorkControl::FinishTime() const { if(!data_->getArgument(12) || data_->getArgument(12)->isNull()) { return boost::none; } std::string v = *data_->getArgument(12); return v; }
-void Ifc4x3_rc3::IfcWorkControl::setFinishTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(12,attr);} }
+void Ifc4x3_rc3::IfcWorkControl::setFinishTime(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(12,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcWorkControl::declaration() const { return *IFC4X3_RC3_IfcWorkControl_type; }
@@ -23494,7 +23494,7 @@ Ifc4x3_rc3::IfcWorkControl::IfcWorkControl(std::string v1_GlobalId, ::Ifc4x3_rc3
 
 // Function implementations for IfcWorkPlan
 boost::optional< ::Ifc4x3_rc3::IfcWorkPlanTypeEnum::Value > Ifc4x3_rc3::IfcWorkPlan::PredefinedType() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcWorkPlanTypeEnum::FromString(*data_->getArgument(13)); }
-void Ifc4x3_rc3::IfcWorkPlan::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcWorkPlanTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWorkPlanTypeEnum::ToString(*v)));data_->setArgument(13,attr);} }
+void Ifc4x3_rc3::IfcWorkPlan::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcWorkPlanTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWorkPlanTypeEnum::ToString(*v)));}data_->setArgument(13,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcWorkPlan::declaration() const { return *IFC4X3_RC3_IfcWorkPlan_type; }
@@ -23504,7 +23504,7 @@ Ifc4x3_rc3::IfcWorkPlan::IfcWorkPlan(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcO
 
 // Function implementations for IfcWorkSchedule
 boost::optional< ::Ifc4x3_rc3::IfcWorkScheduleTypeEnum::Value > Ifc4x3_rc3::IfcWorkSchedule::PredefinedType() const { if(!data_->getArgument(13) || data_->getArgument(13)->isNull()) { return boost::none; } return ::Ifc4x3_rc3::IfcWorkScheduleTypeEnum::FromString(*data_->getArgument(13)); }
-void Ifc4x3_rc3::IfcWorkSchedule::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcWorkScheduleTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWorkScheduleTypeEnum::ToString(*v)));data_->setArgument(13,attr);} }
+void Ifc4x3_rc3::IfcWorkSchedule::setPredefinedType(boost::optional< ::Ifc4x3_rc3::IfcWorkScheduleTypeEnum::Value > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(*v,::Ifc4x3_rc3::IfcWorkScheduleTypeEnum::ToString(*v)));}data_->setArgument(13,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcWorkSchedule::declaration() const { return *IFC4X3_RC3_IfcWorkSchedule_type; }
@@ -23516,9 +23516,9 @@ Ifc4x3_rc3::IfcWorkSchedule::IfcWorkSchedule(std::string v1_GlobalId, ::Ifc4x3_r
 ::Ifc4x3_rc3::IfcRecurrencePattern* Ifc4x3_rc3::IfcWorkTime::RecurrencePattern() const { if(!data_->getArgument(3) || data_->getArgument(3)->isNull()) { return nullptr; } return ((IfcUtil::IfcBaseClass*)(*data_->getArgument(3)))->as<::Ifc4x3_rc3::IfcRecurrencePattern>(true); }
 void Ifc4x3_rc3::IfcWorkTime::setRecurrencePattern(::Ifc4x3_rc3::IfcRecurrencePattern* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcWorkTime::Start() const { if(!data_->getArgument(4) || data_->getArgument(4)->isNull()) { return boost::none; } std::string v = *data_->getArgument(4); return v; }
-void Ifc4x3_rc3::IfcWorkTime::setStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(4,attr);} }
+void Ifc4x3_rc3::IfcWorkTime::setStart(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(4,attr);} }
 boost::optional< std::string > Ifc4x3_rc3::IfcWorkTime::Finish() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcWorkTime::setFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcWorkTime::setFinish(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcWorkTime::declaration() const { return *IFC4X3_RC3_IfcWorkTime_type; }
@@ -23536,9 +23536,9 @@ void Ifc4x3_rc3::IfcZShapeProfileDef::setWebThickness(double v) { {IfcWrite::Ifc
 double Ifc4x3_rc3::IfcZShapeProfileDef::FlangeThickness() const {  double v = *data_->getArgument(6); return v; }
 void Ifc4x3_rc3::IfcZShapeProfileDef::setFlangeThickness(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcZShapeProfileDef::FilletRadius() const { if(!data_->getArgument(7) || data_->getArgument(7)->isNull()) { return boost::none; } double v = *data_->getArgument(7); return v; }
-void Ifc4x3_rc3::IfcZShapeProfileDef::setFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(7,attr);} }
+void Ifc4x3_rc3::IfcZShapeProfileDef::setFilletRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(7,attr);} }
 boost::optional< double > Ifc4x3_rc3::IfcZShapeProfileDef::EdgeRadius() const { if(!data_->getArgument(8) || data_->getArgument(8)->isNull()) { return boost::none; } double v = *data_->getArgument(8); return v; }
-void Ifc4x3_rc3::IfcZShapeProfileDef::setEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(8,attr);} }
+void Ifc4x3_rc3::IfcZShapeProfileDef::setEdgeRadius(boost::optional< double > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(8,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcZShapeProfileDef::declaration() const { return *IFC4X3_RC3_IfcZShapeProfileDef_type; }
@@ -23548,7 +23548,7 @@ Ifc4x3_rc3::IfcZShapeProfileDef::IfcZShapeProfileDef(::Ifc4x3_rc3::IfcProfileTyp
 
 // Function implementations for IfcZone
 boost::optional< std::string > Ifc4x3_rc3::IfcZone::LongName() const { if(!data_->getArgument(5) || data_->getArgument(5)->isNull()) { return boost::none; } std::string v = *data_->getArgument(5); return v; }
-void Ifc4x3_rc3::IfcZone::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(*v);data_->setArgument(5,attr);} }
+void Ifc4x3_rc3::IfcZone::setLongName(boost::optional< std::string > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();if (v) {attr->set(*v);}data_->setArgument(5,attr);} }
 
 
 const IfcParse::entity& Ifc4x3_rc3::IfcZone::declaration() const { return *IFC4X3_RC3_IfcZone_type; }

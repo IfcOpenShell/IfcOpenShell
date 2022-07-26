@@ -132,7 +132,7 @@ class UpdateRepresentation(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object.mode == "OBJECT"
+        return context.active_object and context.active_object.mode == "OBJECT"
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
@@ -207,7 +207,10 @@ class UpdateRepresentation(bpy.types.Operator):
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
 
         if tool.Geometry.is_body_representation(new_representation):
-            [tool.Geometry.run_style_add_style(obj=mat) for mat in tool.Geometry.get_object_materials_without_styles(obj)]
+            [
+                tool.Geometry.run_style_add_style(obj=mat)
+                for mat in tool.Geometry.get_object_materials_without_styles(obj)
+            ]
             ifcopenshell.api.run(
                 "style.assign_representation_styles",
                 self.file,
@@ -237,7 +240,7 @@ class UpdateParametricRepresentation(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object.mode == "OBJECT"
+        return context.active_object and context.active_object.mode == "OBJECT"
 
     def execute(self, context):
         self.file = IfcStore.get_file()

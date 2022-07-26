@@ -22,6 +22,7 @@ from ifcopenshell.api.material.data import Data
 from ifcopenshell.api.profile.data import Data as ProfileData
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
+from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialData
 
 
@@ -50,7 +51,7 @@ class BIM_PT_materials(Panel):
             row.operator("bim.disable_editing_materials", text="", icon="CANCEL")
         else:
             row = self.layout.row(align=True)
-            row.prop(self.props, "material_type", text="")
+            prop_with_search(row, self.props, "material_type", text="")
             row.operator("bim.load_materials", text="", icon="IMPORT")
             return
 
@@ -188,9 +189,9 @@ class BIM_PT_object_material(Panel):
             return self.draw_material_ui()
 
         row = self.layout.row(align=True)
-        row.prop(self.props, "material_type", text="")
+        prop_with_search(row, self.props, "material_type", text="")
         if self.props.material_type == "IfcMaterial" or self.props.material_type == "IfcMaterialList":
-            row.prop(self.props, "material", text="")
+            prop_with_search(row, self.props, "material", text="")
         row.operator("bim.assign_material", icon="ADD", text="")
 
     def draw_material_ui(self):
@@ -220,8 +221,7 @@ class BIM_PT_object_material(Panel):
         return self.draw_read_only_single_ui()
 
     def draw_editable_single_ui(self):
-        row = self.layout.row(align=True)
-        row.prop(self.props, "material", text="")
+        prop_with_search(self.layout, self.props, "material", text="")
 
     def draw_read_only_single_ui(self):
         material = Data.materials[self.product_data["id"]]
@@ -242,7 +242,7 @@ class BIM_PT_object_material(Panel):
             row.prop(attribute, "string_value", text=attribute.name)
             row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
         row = self.layout.row(align=True)
-        row.prop(self.props, "material", text="")
+        prop_with_search(row, self.props, "material", text="")
 
         op = row.operator(f"bim.add_{self.set_item_name}", icon="ADD", text="")
         setattr(op, f"{self.set_item_name}_set", self.material_set_id)

@@ -34,6 +34,8 @@ class Ifc2P6:
         self.element_map = {}
         self.hours_per_day = 8
         self.project_tasks = []
+        self.starts = []
+        self.finishes = []
         # P6XML does not understand patterns in holiday dates. Instead, it
         # expects a list of every day that is a holiday between a date range.
         # This allows you to specify the date range where the export should
@@ -51,8 +53,8 @@ class Ifc2P6:
 
         self.schedule = self.file.by_type("IfcWorkSchedule")[0]
 
-        self.create_obs()
-        self.create_calendars()
+        # It seems as though OBSes aren't necessary and cause permission issues on P6 enterprise setups
+        # self.create_obs()
         self.create_projects()
 
         tree = ET.ElementTree(self.root)
@@ -65,14 +67,23 @@ class Ifc2P6:
         ET.SubElement(obs, "Id").text = element.Name or "X"
         ET.SubElement(obs, "Name").text = element.LongName or "Unnamed"
 
-    def create_calendars(self):
+    def create_calendars(self, work_schedule):
         for calendar in self.file.by_type("IfcWorkCalendar"):
-            self.create_calendar(calendar)
+            self.create_calendar(calendar, work_schedule)
 
-    def create_calendar(self, calendar):
-        el = ET.SubElement(self.root, "Calendar")
+    def create_calendar(self, calendar, work_schedule):
+        el = ET.SubElement(self.element_map[work_schedule], "Calendar")
         ET.SubElement(el, "Name").text = calendar.Name or "Unnamed"
         self.link_element(calendar, el)
+        ET.SubElement(el, "BaseCalendarObjectId")
+        ET.SubElement(el, "HoursPerDay").text = "8"
+        ET.SubElement(el, "HoursPerMonth").text = "172"
+        ET.SubElement(el, "HoursPerWeek").text = "40"
+        ET.SubElement(el, "HoursPerYear").text = "2000"
+        ET.SubElement(el, "IsDefault").text = "0"
+        ET.SubElement(el, "IsPersonal").text = "0"
+        ET.SubElement(el, "ProjectObjectId").text = self.id_map[work_schedule]
+        ET.SubElement(el, "Type").text = "Project"
 
         working_week = self.auto_detect_working_week(calendar)
 
@@ -81,13 +92,17 @@ class Ifc2P6:
 
         work_week = ET.SubElement(el, "StandardWorkWeek")
 
-        for day, time_periods in working_week.items():
+        for day in ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]:
             work_hours = ET.SubElement(work_week, "StandardWorkHours")
-            day = ET.SubElement(work_hours, "DayOfWeek").text = day
-            for time_period in time_periods:
-                work_time = ET.SubElement(work_hours, "WorkTime")
-                ET.SubElement(work_time, "Start").text = time_period["Start"]
-                ET.SubElement(work_time, "Finish").text = time_period["Finish"]
+            ET.SubElement(work_hours, "DayOfWeek").text = day
+            if day in working_week:
+                print(working_week)
+                for time_period in working_week[day]:
+                    work_time = ET.SubElement(work_hours, "WorkTime")
+                    ET.SubElement(work_time, "Start").text = time_period["Start"]
+                    ET.SubElement(work_time, "Finish").text = time_period["Finish"]
+            else:
+                ET.SubElement(work_hours, "WorkTime")
 
         holidays = ET.SubElement(el, "HolidayOrExceptions")
         for holiday in self.auto_detect_holidays(calendar):
@@ -110,7 +125,7 @@ class Ifc2P6:
             6: "Saturday",
             7: "Sunday",
         }
-        for working_time in calendar.WorkingTimes:
+        for working_time in calendar.WorkingTimes or []:
             if not working_time.RecurrencePattern or working_time.RecurrencePattern.RecurrenceType != "WEEKLY":
                 continue
 
@@ -152,24 +167,34 @@ class Ifc2P6:
     def create_project(self, work_schedule):
         project = ET.SubElement(self.root, "Project")
         self.link_element(work_schedule, project)
-
-        ET.SubElement(project, "ActivityDefaultCalendarObjectId").text = self.id_map[
-            self.file.by_type("IfcWorkCalendar")[0]
-        ]
+        activity_calendar = ET.SubElement(project, "ActivityDefaultCalendarObjectId")
         ET.SubElement(project, "Name").text = work_schedule.Name or "Unnamed"
         ET.SubElement(project, "Id").text = work_schedule.Identification or "X"
-        ET.SubElement(project, "OBSObjectId").text = self.id_map[self.file.by_type("IfcProject")[0]]
+        data_date = ET.SubElement(project, "DataDate")
+        planned_start_date = ET.SubElement(project, "PlannedStartDate")
+        # ET.SubElement(project, "OBSObjectId").text = self.id_map[self.file.by_type("IfcProject")[0]]
 
+        # Note: order matters for P6 enterprise imports.
+        # Root elements like Name must come first. Then calendar, WBS, activities, and relationships.
+        # Changing the order will result in import failures (but not for all P6 versions, it seems?)
+        self.create_calendars(work_schedule)
         self.project_tasks = []
+        self.activities = []
         self.create_wbs(self.get_subtasks(work_schedule), work_schedule)
+        self.create_activities()
         self.create_relationships(self.project_tasks, work_schedule)
+
+        activity_calendar.text = self.id_map[self.file.by_type("IfcWorkCalendar")[0]]
+        start_date = sorted(self.starts)[0]
+        data_date.text = start_date
+        planned_start_date.text = start_date
 
     def create_wbs(self, tasks, work_schedule, parent=None):
         self.project_tasks.extend(tasks)
         for task in tasks:
             subtasks = self.get_subtasks(task)
-            if not subtasks:
-                self.create_activity(task, work_schedule, parent=parent)
+            if not subtasks and task.TaskTime:
+                self.activities.append({"task": task, "work_schedule": work_schedule, "parent": parent})
                 continue
             wbs = ET.SubElement(self.element_map[work_schedule], "WBS")
             self.link_element(task, wbs)
@@ -181,36 +206,29 @@ class Ifc2P6:
             ET.SubElement(wbs, "ProjectObjectId").text = self.id_map[work_schedule]
             self.create_wbs(subtasks, work_schedule, parent=task)
 
+    def create_activities(self):
+        for activity in self.activities:
+            self.create_activity(activity["task"], activity["work_schedule"], parent=activity["parent"])
+
     def create_activity(self, task, work_schedule, parent=None):
-        if not parent:
-            return
         activity = ET.SubElement(self.element_map[work_schedule], "Activity")
         self.link_element(task, activity)
         ET.SubElement(activity, "Id").text = task.Identification or "X"
         ET.SubElement(activity, "Name").text = task.Name or "Unnamed"
         if parent:
             ET.SubElement(activity, "WBSObjectId").text = self.id_map[parent]
-        if task.TaskTime:
-            if task.TaskTime.ScheduleDuration:
-                duration = ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleDuration)
-                ET.SubElement(activity, "PlannedDuration").text = str(duration.days * self.hours_per_day)
-                ET.SubElement(activity, "RemainingDuration").text = str(duration.days * self.hours_per_day)
-            if task.TaskTime.ScheduleStart:
-                ET.SubElement(activity, "PlannedStartDate").text = task.TaskTime.ScheduleStart
-                ET.SubElement(activity, "StartDate").text = task.TaskTime.ScheduleStart
-            if task.TaskTime.ScheduleFinish:
-                ET.SubElement(activity, "PlannedFinishDate").text = task.TaskTime.ScheduleFinish
-                ET.SubElement(activity, "FinishDate").text = task.TaskTime.ScheduleFinish
-        ET.SubElement(activity, "ProjectObjectId").text = self.id_map[work_schedule]
-        ET.SubElement(activity, "ActualDuration").text = "0"
-        ET.SubElement(activity, "ActualFinishDate")
-        ET.SubElement(activity, "ActualStartDate")
-        calendar = ifcopenshell.util.sequence.derive_calendar(task)
-        ET.SubElement(activity, "CalendarObjectId").text = self.id_map[calendar]
-        ET.SubElement(activity, "DurationPercentComplete").text = "0"
-        ET.SubElement(activity, "Type").text = "Task Dependent"
-        ET.SubElement(activity, "Status").text = "Not Started"
-
+        if task.TaskTime.ScheduleDuration:
+            duration = ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleDuration)
+            ET.SubElement(activity, "PlannedDuration").text = str(duration.days * self.hours_per_day)
+            ET.SubElement(activity, "RemainingDuration").text = str(duration.days * self.hours_per_day)
+        if task.TaskTime.ScheduleStart:
+            ET.SubElement(activity, "PlannedStartDate").text = task.TaskTime.ScheduleStart
+            ET.SubElement(activity, "StartDate").text = task.TaskTime.ScheduleStart
+            self.starts.append(task.TaskTime.ScheduleStart)
+        if task.TaskTime.ScheduleFinish:
+            ET.SubElement(activity, "PlannedFinishDate").text = task.TaskTime.ScheduleFinish
+            ET.SubElement(activity, "FinishDate").text = task.TaskTime.ScheduleFinish
+            self.finishes.append(task.TaskTime.ScheduleFinish)
         data_map = {
             "RemainingEarlyStartDate": task.TaskTime.EarlyStart,
             "RemainingEarlyFinishDate": task.TaskTime.EarlyFinish,
@@ -218,9 +236,19 @@ class Ifc2P6:
             "RemainingLateFinishDate": task.TaskTime.LateFinish,
         }
         for key, value in data_map.items():
-            el = ET.SubElement(activity, "RemainingEarlyStartDate")
+            el = ET.SubElement(activity, key)
             if value:
                 el.text = value
+        ET.SubElement(activity, "ProjectObjectId").text = self.id_map[work_schedule]
+        ET.SubElement(activity, "ActualDuration").text = "0"
+        ET.SubElement(activity, "ActualFinishDate")
+        ET.SubElement(activity, "ActualStartDate")
+        calendar = ifcopenshell.util.sequence.derive_calendar(task)
+        if calendar:
+            ET.SubElement(activity, "CalendarObjectId").text = self.id_map[calendar]
+        ET.SubElement(activity, "DurationPercentComplete").text = "0"
+        ET.SubElement(activity, "Type").text = "Task Dependent"
+        ET.SubElement(activity, "Status").text = "Not Started"
 
     def create_relationships(self, tasks, work_schedule):
         for task in tasks:
