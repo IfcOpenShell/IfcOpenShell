@@ -21,10 +21,10 @@ from blenderbim.bim.module.model.data import AuthoringData
 from bpy.types import PropertyGroup
 
 
-def get_constr_class(self, context):
+def get_ifc_class(self, context):
     if not AuthoringData.is_loaded:
         AuthoringData.load()
-    return AuthoringData.data["constr_classes"]
+    return AuthoringData.data["ifc_classes"]
 
 
 def get_constr_type(self, context):
@@ -40,34 +40,34 @@ def get_constr_type_browser(self, context):
 
 
 def update_icon_id(self, context):
-    constr_class_browser = self.constr_class_browser
+    ifc_class_browser = self.ifc_class_browser
     constr_type_id_browser = self.constr_type_id_browser
-    constr_type_browser = AuthoringData.constr_type_name_by_id(constr_class_browser, constr_type_id_browser)
-    if ((constr_class_browser not in AuthoringData.data["preview_constr_types"]
-            or constr_type_id_browser not in AuthoringData.data["preview_constr_types"][constr_class_browser])
+    constr_type_browser = AuthoringData.constr_type_name_by_id(ifc_class_browser, constr_type_id_browser)
+    if ((ifc_class_browser not in AuthoringData.data["preview_constr_types"]
+            or constr_type_id_browser not in AuthoringData.data["preview_constr_types"][ifc_class_browser])
             and constr_type_browser is not None):
         if not AuthoringData.assetize_constr_type_from_selection():
             return
-    self.icon_id = AuthoringData.data["preview_constr_types"][constr_class_browser][constr_type_id_browser]["icon_id"]
+    self.icon_id = AuthoringData.data["preview_constr_types"][ifc_class_browser][constr_type_id_browser]["icon_id"]
 
 
-def update_constr_class(self, context):
-    AuthoringData.load_constr_classes()
+def update_ifc_class(self, context):
+    AuthoringData.load_ifc_classes()
     AuthoringData.load_constr_types()
     self.constr_type_id = AuthoringData.data["constr_types_ids"][0][0]
 
 
-def update_constr_class_browser(self, context):
-    AuthoringData.load_constr_classes()
+def update_ifc_class_browser(self, context):
+    AuthoringData.load_ifc_classes()
     AuthoringData.load_constr_types_browser()
     props = context.scene.BIMModelProperties
     if props.unfold_constr_types:
-        constr_class_browser = props.constr_class_browser
-        constr_type_info = AuthoringData.constr_type_info(constr_class_browser)
+        ifc_class_browser = props.ifc_class_browser
+        constr_type_info = AuthoringData.constr_type_info(ifc_class_browser)
         if constr_type_info is None or not constr_type_info.fully_loaded:
-            curr_selection = props.constr_class, props.constr_type_id
-            AuthoringData.assetize_constr_class(constr_class_browser)
-            props.constr_class, props.constr_type_id = curr_selection
+            curr_selection = props.ifc_class, props.constr_type_id
+            AuthoringData.assetize_constr_class(ifc_class_browser)
+            props.ifc_class, props.constr_type_id = curr_selection
     else:
         self.constr_type_id_browser = AuthoringData.data["constr_types_ids_browser"][0][0]
 
@@ -78,14 +78,14 @@ def update_constr_type(self, context):
 
 def update_constr_type_by_name(self, context):
     AuthoringData.load_constr_types()
-    constr_type_id = AuthoringData.constr_type_id_by_name(self.constr_class, self.constr_type)
+    constr_type_id = AuthoringData.constr_type_id_by_name(self.ifc_class, self.constr_type)
     if constr_type_id is not None:
         self.constr_type_id = constr_type_id
 
 
 def update_constr_type_browser_by_name(self, context):
     AuthoringData.load_constr_types_browser()
-    constr_type_id_browser = AuthoringData.constr_type_id_by_name(self.constr_class_browser, self.constr_type_browser)
+    constr_type_id_browser = AuthoringData.constr_type_id_by_name(self.ifc_class_browser, self.constr_type_browser)
     if constr_type_id_browser is not None:
         self.constr_type_id_browser = constr_type_id_browser
 
@@ -96,13 +96,13 @@ def update_constr_type_browser(self, context):
 
 
 def update_unfold_constr_type(self, context):
-    update_constr_class_browser(self, context)
+    update_ifc_class_browser(self, context)
 
 
 class BIMModelProperties(PropertyGroup):
-    constr_class: bpy.props.EnumProperty(items=get_constr_class, name="Construction Class", update=update_constr_class)
-    constr_class_browser: bpy.props.EnumProperty(
-        items=get_constr_class, name="Construction Class", update=update_constr_class_browser
+    ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)
+    ifc_class_browser: bpy.props.EnumProperty(
+        items=get_ifc_class, name="Construction Class", update=update_ifc_class_browser
     )
     constr_type: bpy.props.StringProperty(update=update_constr_type_by_name)
     constr_type_id: bpy.props.EnumProperty(
@@ -120,13 +120,13 @@ class BIMModelProperties(PropertyGroup):
     )
     occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
     getter_enum = {
-        "constr_class_browser": get_constr_class,
+        "ifc_class_browser": get_ifc_class,
         "constr_type_browser": get_constr_type_browser
     }
 
 
 def get_constr_type_info(self, context):
-    return AuthoringData.relating_types(constr_class=self.name)
+    return AuthoringData.relating_types(ifc_class=self.name)
 
 
 class ConstrTypeInfo(PropertyGroup):
