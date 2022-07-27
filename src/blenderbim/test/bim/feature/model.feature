@@ -8,7 +8,7 @@ Scenario: Add type instance - add from a mesh
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I set "scene.BIMModelProperties.constr_class" to "IfcWallType"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.constr_type_id" to "{cube}"
     When I press "bim.add_constr_type"
@@ -21,7 +21,7 @@ Scenario: Add type instance - add from an empty
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I set "scene.BIMModelProperties.constr_class" to "IfcWallType"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "empty" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.constr_type_id" to "{empty}"
     When I press "bim.add_constr_type"
@@ -34,7 +34,7 @@ Scenario: Add type instance - add a mesh where existing instances have changed c
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I set "scene.BIMModelProperties.constr_class" to "IfcWallType"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.constr_type_id" to "{cube}"
     And I press "bim.add_constr_type"
@@ -53,10 +53,10 @@ Scenario: Preview one type on the Construction Type Browser
     And I load the demo construction library
     When I display the construction type browser
     And I preview only one asset on the construction type browser
-    And I set "scene.BIMModelProperties.constr_class_browser" to "IfcColumnType"
+    And I set "scene.BIMModelProperties.ifc_class_browser" to "IfcColumnType"
     And I set "scene.BIMModelProperties.constr_type_browser" to "DEMO2"
     And I select the browser construction type
-    Then "scene.BIMModelProperties.constr_class" is "IfcColumnType"
+    Then "scene.BIMModelProperties.ifc_class" is "IfcColumnType"
     And construction type is DEMO2
     And objects starting with "IfcColumn/" do not exist
     And the construction type "IfcColumnType"/"DEMO2" has a preview
@@ -66,8 +66,8 @@ Scenario: Preview one class on the construction type browser
     And I load the demo construction library
     When I display the construction type browser
     And I preview all available assets on the construction type browser
-    And I set "scene.BIMModelProperties.constr_class_browser" to "IfcWallType"
-    Then "scene.BIMModelProperties.constr_class_browser" is "IfcWallType"
+    And I set "scene.BIMModelProperties.ifc_class_browser" to "IfcWallType"
+    Then "scene.BIMModelProperties.ifc_class_browser" is "IfcWallType"
     And objects starting with "IfcWall/" do not exist
     And all construction types for "IfcWallType" have a preview
 
@@ -76,7 +76,7 @@ Scenario: Add one type from the Construction Type Browser
     And I load the demo construction library
     When I display the construction type browser
     And I preview only one asset on the construction type browser
-    And I set "scene.BIMModelProperties.constr_class_browser" to "IfcColumnType"
+    And I set "scene.BIMModelProperties.ifc_class_browser" to "IfcColumnType"
     And I set "scene.BIMModelProperties.constr_type_browser" to "DEMO2"
     And I add the browser construction type
     Then the object "IfcColumn/Column" exists

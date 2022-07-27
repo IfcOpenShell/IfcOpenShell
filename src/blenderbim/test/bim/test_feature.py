@@ -575,27 +575,27 @@ def the_object_name_has_no_modifiers(name):
     assert len(the_object_name_exists(name).modifiers) == 0
 
 
-@then(parsers.parse('the construction type "{constr_class}"/"{constr_type}" has a preview'))
-def the_construction_type_has_a_preview(constr_class, constr_type):
+@then(parsers.parse('the construction type "{ifc_class}"/"{constr_type}" has a preview'))
+def the_construction_type_has_a_preview(ifc_class, constr_type):
     if "preview_constr_types" not in AuthoringData.data:
         assert False, 'There are no previews loaded'
     preview_constr_types = AuthoringData.data["preview_constr_types"]
-    if constr_class not in preview_constr_types:
-        assert False, f'Construction class {constr_class} has no available previews'
-    constr_type_id = AuthoringData.constr_type_id_by_name(constr_class, constr_type)
+    if ifc_class not in preview_constr_types:
+        assert False, f'Construction class {ifc_class} has no available previews'
+    constr_type_id = AuthoringData.constr_type_id_by_name(ifc_class, constr_type)
     if constr_type_id is None:
-        assert False, f'No construction type {constr_class}/{constr_type} was found'
-    if constr_type_id not in preview_constr_types[constr_class]:
-        assert False, f'Construction type {constr_class}/{constr_type} has no available previews'
-    preview_data = preview_constr_types[constr_class][constr_type_id]
+        assert False, f'No construction type {ifc_class}/{constr_type} was found'
+    if constr_type_id not in preview_constr_types[ifc_class]:
+        assert False, f'Construction type {ifc_class}/{constr_type} has no available previews'
+    preview_data = preview_constr_types[ifc_class][constr_type_id]
     if 'icon_id' not in preview_data:
-        assert False, f'Construction type {constr_class}/{constr_type} has a preview, but no assigned icon_id'
+        assert False, f'Construction type {ifc_class}/{constr_type} has a preview, but no assigned icon_id'
     icon_id = preview_data["icon_id"]
     if not isinstance(icon_id, int):
-        assert False, f'Construction type {constr_class}/{constr_type} has an invalid icon_id {icon_id}'
+        assert False, f'Construction type {ifc_class}/{constr_type} has an invalid icon_id {icon_id}'
     # Note: icon_id must be > 0 in UI mode, but asset_generate_preview() doesn't work headlessly -> skipping for now
     # if icon_id == 0:
-    #     assert False, f'Construction type {constr_class}/{constr_type} has the default null value for icon_id'
+    #     assert False, f'Construction type {ifc_class}/{constr_type} has the default null value for icon_id'
     assert True
 
 
@@ -605,16 +605,16 @@ def there_is_a_construction_type_preview():
     assert props.icon_id > 0, f"There isn't a Construction Type preview"
 
 
-@then(parsers.parse('all construction types for "{constr_class}" have a preview'))
-def all_construction_types_have_a_preview(constr_class):
+@then(parsers.parse('all construction types for "{ifc_class}" have a preview'))
+def all_construction_types_have_a_preview(ifc_class):
     if "preview_constr_types" not in AuthoringData.data:
         assert False, 'There are no previews loaded'
     preview_constr_types = AuthoringData.data["preview_constr_types"]
-    if constr_class not in preview_constr_types:
-        assert False, f'Construction class {constr_class} has no available previews'
-    constr_class_occurrences = AuthoringData.constr_class_entities(constr_class)
+    if ifc_class not in preview_constr_types:
+        assert False, f'Construction class {ifc_class} has no available previews'
+    constr_class_occurrences = AuthoringData.constr_class_entities(ifc_class)
     for constr_class_entity in constr_class_occurrences:
-        the_construction_type_has_a_preview(constr_class, constr_class_entity.Name)
+        the_construction_type_has_a_preview(ifc_class, constr_class_entity.Name)
 
 
 @given("I load the demo construction library")
@@ -647,7 +647,7 @@ def i_preview_all_construction_types():
 def i_select_the_active_construction_type():
     props = bpy.context.scene.BIMModelProperties
     bpy.ops.bim.select_construction_type(
-        constr_class=props.constr_class_browser, constr_type_id=props.constr_type_id_browser
+        ifc_class=props.ifc_class_browser, constr_type_id=props.constr_type_id_browser
     )
 
 
@@ -656,14 +656,14 @@ def i_select_the_active_construction_type():
 def i_add_the_active_construction_type():
     props = bpy.context.scene.BIMModelProperties
     bpy.ops.bim.add_constr_type(
-        constr_class=props.constr_class_browser, constr_type_id=int(props.constr_type_id_browser)
+        ifc_class=props.ifc_class_browser, constr_type_id=int(props.constr_type_id_browser)
     )
 
 
 @then(parsers.parse("browser construction type is {constr_type_name}"))
 def browser_construction_type(constr_type_name):
     props = bpy.context.scene.BIMModelProperties
-    constr_type_browser = AuthoringData.constr_type_name_by_id(props.constr_class_browser, props.constr_type_id_browser)
+    constr_type_browser = AuthoringData.constr_type_name_by_id(props.ifc_class_browser, props.constr_type_id_browser)
     assert constr_type_browser == constr_type_name, (f"Construction Type is a {constr_type_browser}, not " +
                                                      f"a {constr_type_name}")
 
@@ -671,7 +671,7 @@ def browser_construction_type(constr_type_name):
 @then(parsers.parse("construction type is {constr_type_name}"))
 def construction_type(constr_type_name):
     props = bpy.context.scene.BIMModelProperties
-    constr_type = AuthoringData.constr_type_name_by_id(props.constr_class, props.constr_type_id)
+    constr_type = AuthoringData.constr_type_name_by_id(props.ifc_class, props.constr_type_id)
     assert constr_type == constr_type_name, f"Construction Type is a {constr_type}, not a {constr_type_name}"
 
 
