@@ -58,12 +58,12 @@ def add_empty_type_button(self, context):
 
 
 class AddConstrType(bpy.types.Operator):
-    bl_idname = "bim.add_constr_type"
+    bl_idname = "bim.add_relating_type"
     bl_label = "Add"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add Type Instance to the model"
     ifc_class: bpy.props.StringProperty()
-    constr_type_id: bpy.props.IntProperty()
+    relating_type_id: bpy.props.IntProperty()
     from_invoke: bpy.props.BoolProperty(default=False)
 
     def invoke(self, context, event):
@@ -77,28 +77,28 @@ class AddConstrType(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMModelProperties
         ifc_class = self.ifc_class or props.ifc_class
-        constr_type_id = self.constr_type_id or props.constr_type_id
+        relating_type_id = self.relating_type_id or props.relating_type_id
 
-        if not ifc_class or not constr_type_id:
+        if not ifc_class or not relating_type_id:
             return {"FINISHED"}
 
         if self.from_invoke:
             props.ifc_class = self.ifc_class
-            props.constr_type_id = str(self.constr_type_id)
+            props.relating_type_id = str(self.relating_type_id)
 
         self.file = IfcStore.get_file()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
-        constr_type = self.file.by_id(int(constr_type_id))
-        material = ifcopenshell.util.element.get_material(constr_type)
+        relating_type = self.file.by_id(int(relating_type_id))
+        material = ifcopenshell.util.element.get_material(relating_type)
 
         if material and material.is_a("IfcMaterialProfileSet"):
-            if profile.DumbProfileGenerator(constr_type).generate():
+            if profile.DumbProfileGenerator(relating_type).generate():
                 return {"FINISHED"}
         elif material and material.is_a("IfcMaterialLayerSet"):
-            if self.generate_layered_element(ifc_class, constr_type):
+            if self.generate_layered_element(ifc_class, relating_type):
                 return {"FINISHED"}
-        if constr_type.is_a("IfcFlowSegmentType") and not constr_type.RepresentationMaps:
-            if mep.MepGenerator(constr_type).generate():
+        if relating_type.is_a("IfcFlowSegmentType") and not relating_type.RepresentationMaps:
+            if mep.MepGenerator(relating_type).generate():
                 return {"FINISHED"}
 
         building_obj = None
@@ -127,14 +127,14 @@ class AddConstrType(bpy.types.Operator):
         ]
         mesh = bpy.data.meshes.new(name="Instance")
         mesh.from_pydata(verts, edges, faces)
-        obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(constr_type, instance_class), mesh)
+        obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
         obj.location = context.scene.cursor.location
         collection = context.view_layer.active_layer_collection.collection
         collection.objects.link(obj)
         collection_obj = bpy.data.objects.get(collection.name)
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         element = tool.Ifc.get_entity(obj)
-        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=constr_type)
+        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
         if building_obj:
             if instance_class in ["IfcWindow", "IfcDoor"]:
@@ -149,7 +149,7 @@ class AddConstrType(bpy.types.Operator):
                 obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        for port in ifcopenshell.util.system.get_ports(constr_type):
+        for port in ifcopenshell.util.system.get_ports(relating_type):
             mat = ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement)
             mat[0][3] *= unit_scale
             mat[1][3] *= unit_scale
@@ -188,7 +188,7 @@ class AddConstrType(bpy.types.Operator):
 
 
 class DisplayConstrTypes(bpy.types.Operator):
-    bl_idname = "bim.display_constr_types"
+    bl_idname = "bim.display_relating_types"
     bl_label = "Browse Construction Types"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Display all available Construction Types to add new instances"
@@ -199,15 +199,15 @@ class DisplayConstrTypes(bpy.types.Operator):
     def invoke(self, context, event):
         if not AuthoringData.is_loaded:
             AuthoringData.load()
-        AuthoringData.setup_constr_type_browser()
+        AuthoringData.setup_relating_type_browser()
         props = context.scene.BIMModelProperties
-        if props.unfold_constr_types:
+        if props.unfold_relating_types:
             ifc_class = props.ifc_class_browser
-            constr_type_info = AuthoringData.constr_type_info(ifc_class)
-            if constr_type_info is None or not constr_type_info.fully_loaded:
+            relating_type_info = AuthoringData.relating_type_info(ifc_class)
+            if relating_type_info is None or not relating_type_info.fully_loaded:
                 AuthoringData.assetize_constr_class(ifc_class)
         else:
-            prop.update_constr_type_browser(props, context)
+            prop.update_relating_type_browser(props, context)
         min_width = 250
         width_scaling = 5 ** -1
         width = max([min_width, int(width_scaling * context.region.width)])
@@ -216,7 +216,7 @@ class DisplayConstrTypes(bpy.types.Operator):
     def draw(self, context):
         props = context.scene.BIMModelProperties
         header_data = self.draw_header(props)
-        if props.unfold_constr_types:
+        if props.unfold_relating_types:
             self.draw_by_ifc_class(props, header_data)
         else:
             self.draw_by_ifc_class_and_type(props, header_data)
@@ -228,7 +228,7 @@ class DisplayConstrTypes(bpy.types.Operator):
         split = inner_layout.split(align=True, factor=2./3)
         col1 = split.column(align=True)
         row = col1.row()
-        row.prop(data=props, property="unfold_constr_types", text="Preview All Construction Types")
+        row.prop(data=props, property="unfold_relating_types", text="Preview All Construction Types")
         col1.row().separator(factor=1)
         row = col1.row()
         row.label(text="Select Construction Type:")
@@ -244,7 +244,7 @@ class DisplayConstrTypes(bpy.types.Operator):
         col2 = split.column(align=True)
         subsplit = col2.split(factor=0.9)
         subcol = [subsplit.column() for _ in range(2)][-1]
-        subcol.operator("bim.help_constr_types", text="", icon="QUESTION")
+        subcol.operator("bim.help_relating_types", text="", icon="QUESTION")
         col2.row().separator(factor=1)
         return {"enabled": enabled, "layout": inner_layout, "col1": col1, "col2": col2}
 
@@ -256,9 +256,9 @@ class DisplayConstrTypes(bpy.types.Operator):
         layout.row().label(text="Construction Types:", icon="FILE_3D")
         layout.row().separator(factor=0.25)
         flow = layout.grid_flow(row_major=True, columns=num_cols, even_columns=True, even_rows=True, align=True)
-        constr_types_browser = AuthoringData.constr_types_browser()
-        num_types = len(constr_types_browser)
-        for idx, (constr_type_id_browser, name, desc) in enumerate(constr_types_browser):
+        relating_types_browser = AuthoringData.relating_types_browser()
+        num_types = len(relating_types_browser)
+        for idx, (relating_type_id_browser, name, desc) in enumerate(relating_types_browser):
             outer_col = flow.column()
             box = outer_col.box()
             row = box.row()
@@ -269,8 +269,8 @@ class DisplayConstrTypes(bpy.types.Operator):
                 preview_constr_types = AuthoringData.data["preview_constr_types"]
                 if ifc_class_browser in preview_constr_types:
                     preview_ifc_class = preview_constr_types[ifc_class_browser]
-                    if constr_type_id_browser in preview_ifc_class:
-                        icon_id = preview_ifc_class[constr_type_id_browser]["icon_id"]
+                    if relating_type_id_browser in preview_ifc_class:
+                        icon_id = preview_ifc_class[relating_type_id_browser]["icon_id"]
                         row.template_icon(icon_value=icon_id, scale=6.)
             box.row().separator(factor=0.2)
             row = box.row()
@@ -278,13 +278,13 @@ class DisplayConstrTypes(bpy.types.Operator):
             col = split.column()
             op = col.operator("bim.select_construction_type", icon="RIGHTARROW_THIN")
             op.ifc_class = ifc_class_browser
-            op.constr_type_id = constr_type_id_browser
+            op.relating_type_id = relating_type_id_browser
             col = split.column()
-            op = col.operator("bim.add_constr_type", icon="ADD")
+            op = col.operator("bim.add_relating_type", icon="ADD")
             op.from_invoke = True
             op.ifc_class = ifc_class_browser
-            if constr_type_id_browser.isnumeric():
-                op.constr_type_id = int(constr_type_id_browser)
+            if relating_type_id_browser.isnumeric():
+                op.relating_type_id = int(relating_type_id_browser)
             factor = 2 if idx + 1 < math.ceil(num_types / num_cols) else 1.5
             outer_col.row().separator(factor=factor)
         last_row_cols = num_types % num_cols
@@ -295,11 +295,11 @@ class DisplayConstrTypes(bpy.types.Operator):
     def draw_by_ifc_class_and_type(self, props, header_data):
         enabled, col1, col2 = [header_data[key] for key in ["enabled", "col1", "col2"]]
         ifc_class_browser = props.ifc_class_browser
-        constr_type_id_browser = props.constr_type_id_browser
-        if AuthoringData.data["constr_types_ids_browser"]:
+        relating_type_id_browser = props.relating_type_id_browser
+        if AuthoringData.data["relating_types_ids_browser"]:
             subsplit = col1.split(factor=1. / 3)
             subsplit.column().row().label(text="Construction Type:", icon="FILE_3D")
-            prop_with_search(subsplit.column(), props, "constr_type_id_browser", text="")
+            prop_with_search(subsplit.column(), props, "relating_type_id_browser", text="")
             col1.row().separator()
         else:
             enabled = False
@@ -308,12 +308,12 @@ class DisplayConstrTypes(bpy.types.Operator):
         row.enabled = enabled
         op = row.operator("bim.select_construction_type", icon="RIGHTARROW_THIN")
         op.ifc_class = ifc_class_browser
-        op.constr_type_id = constr_type_id_browser
-        op = row.operator("bim.add_constr_type", icon="ADD")
+        op.relating_type_id = relating_type_id_browser
+        op = row.operator("bim.add_relating_type", icon="ADD")
         op.from_invoke = True
         op.ifc_class = ifc_class_browser
-        if constr_type_id_browser.isnumeric():
-            op.constr_type_id = int(constr_type_id_browser)
+        if relating_type_id_browser.isnumeric():
+            op.relating_type_id = int(relating_type_id_browser)
         col2.row().separator(factor=1.25)
         split = col2.split(factor=0.025)
         col = [split.column() for _ in range(2)][-1]
@@ -329,7 +329,7 @@ class SelectConstructionType(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Pick Type Instance as selection for subsequent operations"
     ifc_class: bpy.props.StringProperty()
-    constr_type_id: bpy.props.StringProperty()
+    relating_type_id: bpy.props.StringProperty()
 
     def invoke(self, context, event):
         close_operator_panel(event)
@@ -339,14 +339,14 @@ class SelectConstructionType(bpy.types.Operator):
         props = context.scene.BIMModelProperties
         if self.ifc_class != "":
             props.ifc_class = self.ifc_class
-            AuthoringData.load_constr_types()
-        if self.constr_type_id != "":
-            props.constr_type_id = self.constr_type_id
+            AuthoringData.load_relating_types()
+        if self.relating_type_id != "":
+            props.relating_type_id = self.relating_type_id
         return {"FINISHED"}
 
 
 class HelpConstrTypes(bpy.types.Operator):
-    bl_idname = "bim.help_constr_types"
+    bl_idname = "bim.help_relating_types"
     bl_label = "Construction Types Help"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Click to read some contextual help"

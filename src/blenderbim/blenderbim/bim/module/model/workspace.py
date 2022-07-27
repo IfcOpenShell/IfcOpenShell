@@ -63,18 +63,18 @@ class BimTool(WorkSpaceTool):
             return
 
         ifc_classes = AuthoringData.data["ifc_classes"]
-        constr_types_ids = AuthoringData.data["constr_types_ids"]
+        relating_types_ids = AuthoringData.data["relating_types_ids"]
 
         if is_tool_header:
-            row.operator("bim.help_constr_types", text="", icon="QUESTION")
+            row.operator("bim.help_relating_types", text="", icon="QUESTION")
 
         if ifc_classes and is_tool_header:
             row.label(text="", icon="BLANK1")
-            row.operator("bim.display_constr_types", icon="COLLAPSEMENU")
+            row.operator("bim.display_relating_types", icon="COLLAPSEMENU")
 
         ifc_class = props.ifc_class
-        constr_type_id = props.constr_type_id
-        constr_type = AuthoringData.constr_type_name_by_id(ifc_class, constr_type_id)
+        relating_type_id = props.relating_type_id
+        relating_type = AuthoringData.relating_type_name_by_id(ifc_class, relating_type_id)
 
         if is_tool_header:
             row.label(text="", icon="BLANK1")
@@ -86,18 +86,18 @@ class BimTool(WorkSpaceTool):
                 row.label(text="", icon="FILE_VOLUME")
                 row.label(text=ifc_class)
                 row.label(text="", icon="FILE_3D")
-                row.label(text=f"{constr_type}  ")
+                row.label(text=f"{relating_type}  ")
             else:
                 row.label(text=f" Add instance")
         else:
             txt_ifc_class = ifc_class if ifc_classes else "No Construction Class"
-            txt_constr_type = constr_type if constr_types_ids else "No Construction Type"
+            txt_relating_type = relating_type if relating_types_ids else "No Construction Type"
             row = layout.row(align=True)
             row.label(text="Selected Construction Type:")
             row = layout.row(align=True)
             row.label(text=txt_ifc_class, icon="FILE_VOLUME")
             row = layout.row(align=True)
-            row.label(text=txt_constr_type, icon="FILE_3D")
+            row.label(text=txt_relating_type, icon="FILE_3D")
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_A")
@@ -184,7 +184,7 @@ class Hotkey(bpy.types.Operator):
         return {"FINISHED"}
 
     def hotkey_S_A(self):
-        bpy.ops.bim.add_constr_type()
+        bpy.ops.bim.add_relating_type()
 
     def hotkey_S_C(self):
         if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
