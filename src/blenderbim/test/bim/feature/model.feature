@@ -10,8 +10,8 @@ Scenario: Add type instance - add from a mesh
     And I press "bim.assign_class"
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I set "scene.BIMModelProperties.constr_type_id" to "{cube}"
-    When I press "bim.add_constr_type"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
+    When I press "bim.add_relating_type"
     Then the object "IfcWall/Wall" exists
 
 Scenario: Add type instance - add from an empty
@@ -23,8 +23,8 @@ Scenario: Add type instance - add from an empty
     And I press "bim.assign_class"
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "empty" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I set "scene.BIMModelProperties.constr_type_id" to "{empty}"
-    When I press "bim.add_constr_type"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{empty}"
+    When I press "bim.add_relating_type"
     Then the object "IfcWall/Wall" exists
 
 Scenario: Add type instance - add a mesh where existing instances have changed context
@@ -36,15 +36,15 @@ Scenario: Add type instance - add a mesh where existing instances have changed c
     And I press "bim.assign_class"
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I set "scene.BIMModelProperties.constr_type_id" to "{cube}"
-    And I press "bim.add_constr_type"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
+    And I press "bim.add_relating_type"
     And the object "IfcWall/Wall" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcWall/Wall" is selected
     And the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.TargetView == 'PLAN_VIEW'][0].id()"
     And I set "scene.BIMRootProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     And the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
-    When I press "bim.add_constr_type"
+    When I press "bim.add_relating_type"
     Then the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
     And the object "IfcWall/Wall.001" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
 
@@ -54,7 +54,7 @@ Scenario: Preview one type on the Construction Type Browser
     When I display the construction type browser
     And I preview only one asset on the construction type browser
     And I set "scene.BIMModelProperties.ifc_class_browser" to "IfcColumnType"
-    And I set "scene.BIMModelProperties.constr_type_browser" to "DEMO2"
+    And I set "scene.BIMModelProperties.relating_type_browser" to "DEMO2"
     And I select the browser construction type
     Then "scene.BIMModelProperties.ifc_class" is "IfcColumnType"
     And construction type is DEMO2
@@ -77,7 +77,7 @@ Scenario: Add one type from the Construction Type Browser
     When I display the construction type browser
     And I preview only one asset on the construction type browser
     And I set "scene.BIMModelProperties.ifc_class_browser" to "IfcColumnType"
-    And I set "scene.BIMModelProperties.constr_type_browser" to "DEMO2"
+    And I set "scene.BIMModelProperties.relating_type_browser" to "DEMO2"
     And I add the browser construction type
     Then the object "IfcColumn/Column" exists
 
