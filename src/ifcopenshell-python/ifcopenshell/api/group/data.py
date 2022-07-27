@@ -27,6 +27,7 @@ class Data:
         cls.is_loaded = False
         cls.products = {}
         cls.groups = {}
+        cls.group_tree = {}
 
     @classmethod
     def load(cls, file):
@@ -37,7 +38,10 @@ class Data:
                 for rel in group.IsGroupedBy:
                     for product in rel.RelatedObjects:
                         cls.products.setdefault(product.id(), []).append(group.id())
+            cls.group_tree.setdefault(group.id(), [])
+            if
             data = group.get_info()
+            data["HasAssignments"] = group.HasAssignments
             del data["OwnerHistory"]
             cls.groups[group.id()] = data
         cls.is_loaded = True

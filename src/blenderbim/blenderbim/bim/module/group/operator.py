@@ -23,6 +23,7 @@ import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.group.data import Data
 from ifcopenshell.util.selector import Selector
+import json
 
 
 class LoadGroups(bpy.types.Operator):
@@ -32,14 +33,37 @@ class LoadGroups(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMGroupProperties
+        expanded_groups = [int(i) for i in json.loads(context.scene.ExpandedGroups.json_string)]
         props.groups.clear()
+        ifc = IfcStore.get_file()
+
         for ifc_definition_id, group in Data.groups.items():
-            new = props.groups.add()
-            new.ifc_definition_id = ifc_definition_id
-            new.name = group["Name"]
-            new.selection_query = group["Description"].split("*selector*")[1] if group["Description"] else ""
+            if not group["HasAssignments"]:
+                new = props.groups.add()
+                new.ifc_definition_id = ifc_definition_id
+                new.name = group["Name"]
+                new.selection_query = group["Description"].split("*selector*")[1] if group["Description"] else ""
+                
+                if ifc_definition_id in expanded_groups:
+                    sub_groups = [g for g in Data.products if ifc.by_id(g).is_a("IfcGroup")]
+                    for g in sub_groups:
+                        new = props.groups.add()
+                        new.ifc_definition_id = g
+                        new.name = Data.groups[g]["Name"]
+                        new.selection_query = Data.groups[g]["Description"].split("*selector*")[1] if Data.groups[g]["Description"] else ""
+                        new.tree_depth += 1
+                        
+                    
+                # for ass in group["HasAssignments"]:
+                #     for obj in ass.RelatedObjects:
+                #         if obj.is_a("IfcGroup"):
+                #             new2 = new.sub_groups.add()
+                #             new2.name = obj.Name
+                #             new2.ifc_definition_id = obj.id()
+
         props.is_editing = True
         bpy.ops.bim.disable_editing_group()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -67,6 +91,32 @@ class AddGroup(bpy.types.Operator):
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_groups()
         bpy.ops.bim.enable_editing_group(group=result.id())
+        return {"FINISHED"}
+    
+
+class AddGroupToGroup(bpy.types.Operator):
+    bl_idname = "bim.add_group_to_group"
+    bl_label = "Add Group to Group"
+    bl_options = {"REGISTER", "UNDO"}
+    group: bpy.props.IntProperty(name="Group ID")
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        result = ifcopenshell.api.run("group.add_group", self.file)
+        test = ifcopenshell.api.run(
+            "group.assign_group",
+            IfcStore.get_file(),
+            **{
+               "product": [result],
+               "group" : self.file.by_id(self.group)
+            }
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_groups()
+        # bpy.ops.bim.enable_editing_group(group=result.id())
         return {"FINISHED"}
 
 
@@ -112,6 +162,21 @@ class RemoveGroup(bpy.types.Operator):
         bpy.ops.bim.load_groups()
         return {"FINISHED"}
 
+
+class ExpandSubGroup(bpy.types.Operator):
+    bl_idname = "bim.expand_subgroup"
+    bl_label = "Show Subgroups"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        props = context.scene.BIMGroupProperties
+        group_to_show = props.groups[self.index].ifc_definition_id
+        bpy.ops.bim.load_groups(show_group=group_to_show)
+        return {"FINISHED"}
 
 class EnableEditingGroup(bpy.types.Operator):
     bl_idname = "bim.enable_editing_group"

@@ -19,6 +19,7 @@
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
+import json
 from bpy.props import (
     PointerProperty,
     StringProperty,
@@ -30,13 +31,24 @@ from bpy.props import (
     CollectionProperty,
 )
 
+def update_json(self, context):
+    json_string = json.loads(context.scene.ExpandedGroups.json_string)
+    json_string.setdefault(self.ifc_definition_id, []) if self.is_expanded else json_string.pop(self.ifc_definition_id, None)
+    context.scene.ExpandedGroups.json_string = json.dumps(json_string)
+    a="a"
+
+class ExpandedGroups(StrProperty):
+    json_string: StringProperty(name="JSON String", update=update_json, default="{}")
 
 class Group(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     selection_query: StringProperty(name="Selection Query")
+    is_expanded: BoolProperty(name="Is Expanded", default=False, update=update_json)
+    has_children: BoolProperty(name="Has Children", default=False)
+    tree_depth: IntProperty(name="Tree Depth")
+    json: StringProperty(name="Group Tree", default="")
     
-
 class BIMGroupProperties(PropertyGroup):
     group_attributes: CollectionProperty(name="Group Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing", default=False)
@@ -44,3 +56,4 @@ class BIMGroupProperties(PropertyGroup):
     groups: CollectionProperty(name="Groups", type=Group)
     active_group_index: IntProperty(name="Active Group Index")
     active_group_id: IntProperty(name="Active Group Id")
+                
