@@ -47,6 +47,10 @@ class BIM_PT_work_plans(Panel):
         self.props = context.scene.BIMWorkPlanProperties
 
         row = self.layout.row()
+        row.label(
+        text="{} Work Plans Found".format(len(Data.work_plans.items())),
+        icon="MOD_SIMPLIFY",
+        )
         row.operator("bim.add_work_plan", icon="ADD")
 
         for work_plan_id, work_plan in Data.work_plans.items():

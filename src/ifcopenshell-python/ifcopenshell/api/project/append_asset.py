@@ -51,7 +51,25 @@ class Usecase:
     def append_material(self):
         if [e for e in self.file.by_type("IfcMaterial") if e.Name == self.settings["element"].Name]:
             return
-        return self.file.add(self.settings["element"])
+        self.whitelisted_inverse_attributes = {"IfcMaterial": ["HasProperties", "HasRepresentation"]}
+        element = self.add_element(self.settings["element"])
+        if not element.HasRepresentation:
+            return element
+        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        added_contexts = [
+            e
+            for e in self.file.traverse(element.HasRepresentation[0])
+            if e.is_a() == "IfcGeometricRepresentationSubContext"
+        ]
+        for added_context in added_contexts:
+            equivalent_existing_context = self.get_equivalent_existing_context(added_context)
+            if not equivalent_existing_context:
+                equivalent_existing_context = self.create_equivalent_context(added_context)
+            for inverse in self.file.get_inverse(added_context):
+                ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
+        for added_context in added_contexts:
+            ifcopenshell.util.element.remove_deep(self.file, added_context)
+        return element
 
     def append_cost_schedule(self):
         element = self.get_existing_element()
