@@ -21,7 +21,7 @@ from . import handler, prop, ui, grid, product, wall, slab, stair, opening, pie,
 
 classes = (
     product.AddEmptyType,
-    product.AddConstrType,
+    product.AddConstrTypeInstance,
     product.DisplayConstrTypes,
     product.SelectConstructionType,
     product.HelpConstrTypes,

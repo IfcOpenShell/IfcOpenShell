@@ -11,7 +11,7 @@ Scenario: Add type instance - add from a mesh
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
-    When I press "bim.add_relating_type"
+    When I press "bim.add_constr_type_instance"
     Then the object "IfcWall/Wall" exists
 
 Scenario: Add type instance - add from an empty
@@ -24,7 +24,7 @@ Scenario: Add type instance - add from an empty
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "empty" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{empty}"
-    When I press "bim.add_relating_type"
+    When I press "bim.add_constr_type_instance"
     Then the object "IfcWall/Wall" exists
 
 Scenario: Add type instance - add a mesh where existing instances have changed context
@@ -37,14 +37,14 @@ Scenario: Add type instance - add a mesh where existing instances have changed c
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
-    And I press "bim.add_relating_type"
+    And I press "bim.add_constr_type_instance"
     And the object "IfcWall/Wall" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcWall/Wall" is selected
     And the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.TargetView == 'PLAN_VIEW'][0].id()"
     And I set "scene.BIMRootProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     And the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
-    When I press "bim.add_relating_type"
+    When I press "bim.add_constr_type_instance"
     Then the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
     And the object "IfcWall/Wall.001" data is a "Annotation2D" representation of "Plan/Annotation/PLAN_VIEW"
 
