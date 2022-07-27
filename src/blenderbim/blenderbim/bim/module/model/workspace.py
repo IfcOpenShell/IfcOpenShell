@@ -184,7 +184,7 @@ class Hotkey(bpy.types.Operator):
         return {"FINISHED"}
 
     def hotkey_S_A(self):
-        bpy.ops.bim.add_relating_type()
+        bpy.ops.bim.add_constr_type_instance()
 
     def hotkey_S_C(self):
         if self.has_ifc_class and self.props.ifc_class == "IfcWallType":

@@ -57,8 +57,8 @@ def add_empty_type_button(self, context):
     self.layout.operator(AddEmptyType.bl_idname, icon="FILE_3D")
 
 
-class AddConstrType(bpy.types.Operator):
-    bl_idname = "bim.add_relating_type"
+class AddConstrTypeInstance(bpy.types.Operator):
+    bl_idname = "bim.add_constr_type_instance"
     bl_label = "Add"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add Type Instance to the model"
@@ -280,7 +280,7 @@ class DisplayConstrTypes(bpy.types.Operator):
             op.ifc_class = ifc_class_browser
             op.relating_type_id = relating_type_id_browser
             col = split.column()
-            op = col.operator("bim.add_relating_type", icon="ADD")
+            op = col.operator("bim.add_constr_type_instance", icon="ADD")
             op.from_invoke = True
             op.ifc_class = ifc_class_browser
             if relating_type_id_browser.isnumeric():
@@ -309,7 +309,7 @@ class DisplayConstrTypes(bpy.types.Operator):
         op = row.operator("bim.select_construction_type", icon="RIGHTARROW_THIN")
         op.ifc_class = ifc_class_browser
         op.relating_type_id = relating_type_id_browser
-        op = row.operator("bim.add_relating_type", icon="ADD")
+        op = row.operator("bim.add_constr_type_instance", icon="ADD")
         op.from_invoke = True
         op.ifc_class = ifc_class_browser
         if relating_type_id_browser.isnumeric():

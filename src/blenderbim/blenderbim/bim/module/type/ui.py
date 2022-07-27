@@ -88,4 +88,4 @@ class BIM_PT_type(Panel):
 
 
 def add_object_button(self, context):
-    self.layout.operator("bim.add_relating_type", icon="PLUGIN")
+    self.layout.operator("bim.add_constr_type_instance", icon="PLUGIN")

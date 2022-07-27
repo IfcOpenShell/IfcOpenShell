@@ -655,7 +655,7 @@ def i_select_the_active_construction_type():
 @when("I add the browser construction type")
 def i_add_the_active_construction_type():
     props = bpy.context.scene.BIMModelProperties
-    bpy.ops.bim.add_relating_type(
+    bpy.ops.bim.add_constr_type_instance(
         ifc_class=props.ifc_class_browser, relating_type_id=int(props.relating_type_id_browser)
     )
 

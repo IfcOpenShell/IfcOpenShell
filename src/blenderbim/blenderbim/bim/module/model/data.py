@@ -170,13 +170,13 @@ class AuthoringData:
     @classmethod
     def new_relating_type(cls, ifc_class=None, relating_type_id=None):
         if ifc_class is None:
-            bpy.ops.bim.add_relating_type(
+            bpy.ops.bim.add_constr_type_instance(
                 ifc_class=cls.props.ifc_class_browser, relating_type_id=int(cls.props.relating_type_id_browser)
             )
         else:
             cls.props.ifc_class = ifc_class
             cls.props.relating_type_id = str(relating_type_id)
-            bpy.ops.bim.add_relating_type()
+            bpy.ops.bim.add_constr_type_instance()
         return bpy.context.selected_objects[-1]
 
     @staticmethod
