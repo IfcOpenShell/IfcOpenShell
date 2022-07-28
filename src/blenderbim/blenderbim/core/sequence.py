@@ -17,35 +17,28 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# def load_work_plans(ifc, sequence):
-#     pass
-
 def add_work_plan(ifc, sequence):
     ifc.run("sequence.add_work_plan")
-    sequence.load_sequence_data()
+    sequence.load_work_plans()
 
 def remove_work_plan(ifc, sequence, work_plan=None):
     ifc.run("sequence.remove_work_plan",**{"work_plan": ifc.get().by_id(work_plan)})
-    sequence.load_sequence_data()
+    sequence.load_work_plans()
 
 def load_work_plan_attributes(sequence, work_plan=None):
-    data = sequence.get_work_plan_attributes(work_plan)
+    data = sequence.get_ifc_work_plan_attributes(work_plan)
     sequence.load_work_plan_attributes(data)
 
 def enable_editing_work_plan(sequence, work_plan=None):
     load_work_plan_attributes(sequence, work_plan)
     sequence.enable_editing_work_plan(work_plan)
-    print("Yassine Is back in the game")
 
 def disable_editing_work_plan(sequence):
     sequence.disable_editing_work_plan()
 
 def edit_work_plan(ifc, sequence):
-    work_plan = sequence.get_current_work_plan()
-    attributes = sequence.get_current_work_plan_attributes()
+    work_plan = sequence.get_current_ifc_work_plan()
+    attributes = sequence.get_work_plan_attributes()
     ifc.run("sequence.edit_work_plan",**{"work_plan": work_plan, "attributes": attributes})
-    disable_editing_work_plan(sequence)
-    sequence.load_sequence_data()
-
-    
-   
+    sequence.disable_editing_work_plan()
+    sequence.load_work_plans()
