@@ -21,6 +21,7 @@ from . import ui, prop, operator
 
 classes = (
     operator.LoadGroups,
+    operator.ToggleGroup,
     operator.DisableGroupEditingUI,
     operator.AddGroup,
     operator.AddGroupToGroup,
@@ -29,7 +30,6 @@ classes = (
     operator.ToggleAssigningGroup,
     operator.AssignGroup,
     operator.UnassignGroup,
-    operator.ExpandSubGroup,
     operator.EnableEditingGroup,
     operator.DisableEditingGroup,
     operator.SelectGroupProducts,
