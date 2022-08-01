@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
 from bpy.types import Panel, Operator
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.helper import prop_with_search, layout_with_margins, close_operator_panel
@@ -44,9 +45,9 @@ class BIM_PT_authoring(Panel):
 
 
 class DisplayConstrTypesUI(Operator):
-    bl_idname = "bim.display_relating_types_ui"
+    bl_idname = "bim.display_constr_types_ui"
     bl_label = "Browse Construction Types"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options = {"REGISTER"}
     bl_description = "Display all available Construction Types to add new instances"
 
     def execute(self, context):
@@ -77,14 +78,14 @@ class DisplayConstrTypesUI(Operator):
         col1.row().separator(factor=1.5)
         enabled = True
         if AuthoringData.data["ifc_classes"]:
-            subsplit = col1.split(factor=1.0 / 3)
-            subsplit.column().row().label(text="Construction Class:", icon="FILE_VOLUME")
-            prop_with_search(subsplit.column(), props, "ifc_class_browser", text="")
+            row = col1.row()
+            row.label(text="", icon="FILE_VOLUME")
+            prop_with_search(row, props, "ifc_class_browser", text="")
             col1.row().separator()
         else:
             enabled = False
         col2 = split.column(align=True)
-        subsplit = col2.split(factor=0.9)
+        subsplit = col2.split(factor=0.8)
         subcol = [subsplit.column() for _ in range(2)][-1]
         subcol.operator("bim.help_relating_types", text="", icon="QUESTION")
         col2.row().separator(factor=1)
@@ -94,8 +95,6 @@ class DisplayConstrTypesUI(Operator):
         enabled, layout = [header_data[key] for key in ["enabled", "layout"]]
         ifc_class_browser = props.ifc_class_browser
         num_cols = 3
-        layout.row().separator(factor=0.25)
-        layout.row().label(text="Construction Types:", icon="FILE_3D")
         layout.row().separator(factor=0.25)
         flow = layout.grid_flow(row_major=True, columns=num_cols, even_columns=True, even_rows=True, align=True)
         relating_types_browser = AuthoringData.relating_types_browser()
@@ -116,13 +115,7 @@ class DisplayConstrTypesUI(Operator):
                         row.template_icon(icon_value=icon_id, scale=6.0)
             box.row().separator(factor=0.2)
             row = box.row()
-            split = row.split(factor=0.5)
-            col = split.column()
-            op = col.operator("bim.select_construction_type", icon="RIGHTARROW_THIN")
-            op.ifc_class = ifc_class_browser
-            op.relating_type_id = relating_type_id_browser
-            col = split.column()
-            op = col.operator("bim.add_constr_type_instance", icon="ADD")
+            op = row.operator("bim.add_constr_type_instance", icon="ADD")
             op.from_invoke = True
             op.ifc_class = ifc_class_browser
             if relating_type_id_browser.isnumeric():
@@ -139,18 +132,16 @@ class DisplayConstrTypesUI(Operator):
         ifc_class_browser = props.ifc_class_browser
         relating_type_id_browser = props.relating_type_id_browser
         if AuthoringData.data["relating_types_ids_browser"]:
-            subsplit = col1.split(factor=1.0 / 3)
-            subsplit.column().row().label(text="Construction Type:", icon="FILE_3D")
-            prop_with_search(subsplit.column(), props, "relating_type_id_browser", text="")
+            row = col1.row()
+            row.label(text="", icon="FILE_3D")
+            prop_with_search(row, props, "relating_type_id_browser", text="")
             col1.row().separator()
         else:
             enabled = False
         col1.row().separator(factor=4.75)
         row = col1.row()
         row.enabled = enabled
-        op = row.operator("bim.select_construction_type", icon="RIGHTARROW_THIN")
-        op.ifc_class = ifc_class_browser
-        op.relating_type_id = relating_type_id_browser
+        row.label(text="", icon="BLANK1")
         op = row.operator("bim.add_constr_type_instance", icon="ADD")
         op.from_invoke = True
         op.ifc_class = ifc_class_browser

@@ -70,7 +70,7 @@ class BimTool(WorkSpaceTool):
 
         if ifc_classes and is_tool_header:
             row.label(text="", icon="BLANK1")
-            row.operator("bim.display_relating_types", icon="COLLAPSEMENU")
+            row.operator("bim.display_constr_types", icon="COLLAPSEMENU")
 
         ifc_class = props.ifc_class
         relating_type_id = props.relating_type_id
