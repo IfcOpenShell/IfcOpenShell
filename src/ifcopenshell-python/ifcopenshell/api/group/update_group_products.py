@@ -16,18 +16,37 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.api
+
 
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
         self.settings = {
-            "group": None, 
+            "group": None,
             "products": None,
-            }
+        }
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        rel = self.settings["group"].IsGroupedBy[0]
-        rel.RelatedObjects = self.settings["products"]
+        if not self.settings["group"].IsGroupedBy:
+            return self.file.create_entity(
+                "IfcRelAssignsToGroup",
+                **{
+                    "GlobalId": ifcopenshell.guid.new(),
+                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    "RelatedObjects": self.settings["products"],
+                    "RelatingGroup": self.settings["group"],
+                }
+            )
+        else:
+            # assumes 1:1 cardinality, will need to be updated to reflect IFC4 changes
+            # where the cardinality is 0:? - vulevukusej
+            rel = self.settings["group"].IsGroupedBy[0]
+            existing_sub_groups = [g for g in rel.RelatedObjects if g.is_a("IfcGroup")]
 
+            rel.RelatedObjects = self.settings["products"]
+            for g in existing_sub_groups:
+                rel.RelatedObjects.add(g)

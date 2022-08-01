@@ -41,13 +41,18 @@ class LoadGroups(bpy.types.Operator):
             context.scene.ExpandedGroups.json_string = "{}"
 
         for ifc_definition_id, group in Data.groups.items():
-            if not group["HasAssignments"]:
+            if not group["HasAssignments"]:          
                 new = self.props.groups.add()
                 new.ifc_definition_id = ifc_definition_id
                 new.name = group["Name"]
                 new.selection_query = group["Description"].split("*selector*")[1] if group["Description"] else ""
-                new.has_children = True if len(group["IsGroupedBy"]) != 0 else False
                 new.tree_depth = 0
+
+                if group["IsGroupedBy"]:
+                    #  assumes 1:1 cardinality, will need to be updated to reflect IFC4 changes
+                    # where the cardinality is 0:? - vulevukusej     
+                    sub_groups = [g for g in group["IsGroupedBy"][0].RelatedObjects if g.is_a("IfcGroup")]
+                    new.has_children = True if len(sub_groups) != 0 else False
 
                 if self.is_refresh:
                     self.recursively_load_sub_groups(ifc_definition_id, new)
@@ -65,6 +70,7 @@ class LoadGroups(bpy.types.Operator):
             return
         else:
             parent.is_expanded = True
+            parent.has_children = True
             for group in sub_groups:
                 new = self.props.groups.add()
                 new.ifc_definition_id = group
@@ -144,6 +150,7 @@ class AddGroupToGroup(bpy.types.Operator):
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_groups(is_refresh=True)
+        bpy.ops.bim.disable_group_editing_ui()
         return {"FINISHED"}
 
 
@@ -323,8 +330,9 @@ class UpdateGroup(bpy.types.Operator):
             "group.update_group_products",
             self.file,
             **{
-                "products": new_products,
                 "group": group,
+                "products": new_products,
+                
             }
         )
         Data.load(IfcStore.get_file())

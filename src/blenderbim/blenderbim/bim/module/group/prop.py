@@ -43,7 +43,7 @@ class Group(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     selection_query: StringProperty(name="Selection Query")
     is_expanded: BoolProperty(name="Is Expanded", default=False)
-    has_children: BoolProperty(name="Has Children")
+    has_children: BoolProperty(name="Has Children", default=False)
     tree_depth: IntProperty(name="Tree Depth")
 
 
