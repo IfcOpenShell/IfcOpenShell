@@ -39,7 +39,7 @@ class LoadGroups(bpy.types.Operator):
         self.ifc = IfcStore.get_file()
         if not self.is_refresh:
             context.scene.ExpandedGroups.json_string = "{}"
-        
+
         for ifc_definition_id, group in Data.groups.items():
             if not group["HasAssignments"]:
                 new = self.props.groups.add()
@@ -48,17 +48,19 @@ class LoadGroups(bpy.types.Operator):
                 new.selection_query = group["Description"].split("*selector*")[1] if group["Description"] else ""
                 new.has_children = True if len(group["IsGroupedBy"]) != 0 else False
                 new.tree_depth = 0
-                
+
                 if self.is_refresh:
                     self.recursively_load_sub_groups(ifc_definition_id, new)
-                       
+
         self.props.is_editing = True
         bpy.ops.bim.disable_editing_group()
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
-    
+
     def recursively_load_sub_groups(self, ifc_definition_id, parent):
-        sub_groups = ([k for k,v in Data.products.items() if self.ifc.by_id(k).is_a("IfcGroup") and ifc_definition_id in v])
+        sub_groups = [
+            k for k, v in Data.products.items() if self.ifc.by_id(k).is_a("IfcGroup") and ifc_definition_id in v
+        ]
         if str(ifc_definition_id) not in self.expanded_groups or sub_groups == []:
             return
         else:
@@ -67,7 +69,11 @@ class LoadGroups(bpy.types.Operator):
                 new = self.props.groups.add()
                 new.ifc_definition_id = group
                 new.name = Data.groups[group]["Name"]
-                new.selection_query = Data.groups[group]["Description"].split("*selector*")[1] if Data.groups[group]["Description"] else ""
+                new.selection_query = (
+                    Data.groups[group]["Description"].split("*selector*")[1]
+                    if Data.groups[group]["Description"]
+                    else ""
+                )
                 new.has_children = True if len(Data.groups[group]["IsGroupedBy"]) != 0 else False
                 new.tree_depth = parent.tree_depth + 1
                 self.recursively_load_sub_groups(new.ifc_definition_id, new)
@@ -115,11 +121,11 @@ class AddGroup(bpy.types.Operator):
     def _execute(self, context):
         result = ifcopenshell.api.run("group.add_group", IfcStore.get_file())
         Data.load(IfcStore.get_file())
-        
+
         bpy.ops.bim.load_groups(is_refresh=True)
         bpy.ops.bim.enable_editing_group(group=result.id())
         return {"FINISHED"}
-    
+
 
 class AddGroupToGroup(bpy.types.Operator):
     bl_idname = "bim.add_group_to_group"
@@ -134,12 +140,7 @@ class AddGroupToGroup(bpy.types.Operator):
         self.file = IfcStore.get_file()
         result = ifcopenshell.api.run("group.add_group", self.file)
         ifcopenshell.api.run(
-            "group.assign_group",
-            IfcStore.get_file(),
-            **{
-               "product": [result],
-               "group" : self.file.by_id(self.group)
-            }
+            "group.assign_group", IfcStore.get_file(), **{"product": [result], "group": self.file.by_id(self.group)}
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_groups(is_refresh=True)
@@ -163,10 +164,10 @@ class EditGroup(bpy.types.Operator):
                 attributes[attribute.name] = None
             else:
                 attributes[attribute.name] = attribute.string_value
-                
+
         if self.copy_from_selector:
             attributes["Description"] = context.scene.IFCSelector.selection_query
-            
+
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "group.edit_group", self.file, **{"group": self.file.by_id(props.active_group_id), "attributes": attributes}
@@ -300,6 +301,7 @@ class SelectGroupProducts(bpy.types.Operator):
             if self.group in product_groups:
                 obj.select_set(True)
         return {"FINISHED"}
+
 
 class UpdateGroup(bpy.types.Operator):
     bl_idname = "bim.update_group"

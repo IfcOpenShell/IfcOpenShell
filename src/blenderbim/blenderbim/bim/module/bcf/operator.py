@@ -882,7 +882,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         # Operators with context overrides are used because they are
         # significantly faster than looping through all objects
 
-        exception_global_ids = [v.ifc_guid for v in viewpoint.components.visibility.exceptions]
+        exception_global_ids = {v.ifc_guid for v in viewpoint.components.visibility.exceptions}
 
         if viewpoint.components.visibility.default_visibility:
             old = context.area.type

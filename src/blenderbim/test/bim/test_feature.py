@@ -109,7 +109,6 @@ def i_add_a_new_collection_item(collection):
         assert False, "Collection does not exist"
 
 
-
 @given(parsers.parse('the material "{name}" colour is set to "{colour}"'))
 @when(parsers.parse('the material "{name}" colour is set to "{colour}"'))
 def the_material_name_colour_is_set_to_colour(name, colour):
@@ -578,21 +577,21 @@ def the_object_name_has_no_modifiers(name):
 @then(parsers.parse('the construction type "{ifc_class}"/"{relating_type}" has a preview'))
 def the_construction_type_has_a_preview(ifc_class, relating_type):
     if "preview_constr_types" not in AuthoringData.data:
-        assert False, 'There are no previews loaded'
+        assert False, "There are no previews loaded"
     preview_constr_types = AuthoringData.data["preview_constr_types"]
     if ifc_class not in preview_constr_types:
-        assert False, f'Construction class {ifc_class} has no available previews'
+        assert False, f"Construction class {ifc_class} has no available previews"
     relating_type_id = AuthoringData.relating_type_id_by_name(ifc_class, relating_type)
     if relating_type_id is None:
-        assert False, f'No construction type {ifc_class}/{relating_type} was found'
+        assert False, f"No construction type {ifc_class}/{relating_type} was found"
     if relating_type_id not in preview_constr_types[ifc_class]:
-        assert False, f'Construction type {ifc_class}/{relating_type} has no available previews'
+        assert False, f"Construction type {ifc_class}/{relating_type} has no available previews"
     preview_data = preview_constr_types[ifc_class][relating_type_id]
-    if 'icon_id' not in preview_data:
-        assert False, f'Construction type {ifc_class}/{relating_type} has a preview, but no assigned icon_id'
+    if "icon_id" not in preview_data:
+        assert False, f"Construction type {ifc_class}/{relating_type} has a preview, but no assigned icon_id"
     icon_id = preview_data["icon_id"]
     if not isinstance(icon_id, int):
-        assert False, f'Construction type {ifc_class}/{relating_type} has an invalid icon_id {icon_id}'
+        assert False, f"Construction type {ifc_class}/{relating_type} has an invalid icon_id {icon_id}"
     # Note: icon_id must be > 0 in UI mode, but asset_generate_preview() doesn't work headlessly -> skipping for now
     # if icon_id == 0:
     #     assert False, f'Construction type {ifc_class}/{relating_type} has the default null value for icon_id'
@@ -608,10 +607,10 @@ def there_is_a_construction_type_preview():
 @then(parsers.parse('all construction types for "{ifc_class}" have a preview'))
 def all_construction_types_have_a_preview(ifc_class):
     if "preview_constr_types" not in AuthoringData.data:
-        assert False, 'There are no previews loaded'
+        assert False, "There are no previews loaded"
     preview_constr_types = AuthoringData.data["preview_constr_types"]
     if ifc_class not in preview_constr_types:
-        assert False, f'Construction class {ifc_class} has no available previews'
+        assert False, f"Construction class {ifc_class} has no available previews"
     constr_class_occurrences = AuthoringData.constr_class_entities(ifc_class)
     for constr_class_entity in constr_class_occurrences:
         the_construction_type_has_a_preview(ifc_class, constr_class_entity.Name)
@@ -620,14 +619,14 @@ def all_construction_types_have_a_preview(ifc_class):
 @given("I load the demo construction library")
 @when("I load the demo construction library")
 def i_add_a_construction_library():
-    lib_path = './blenderbim/bim/data/libraries/IFC4 Demo Library.ifc'
+    lib_path = "./blenderbim/bim/data/libraries/IFC4 Demo Library.ifc"
     bpy.ops.bim.select_library_file(filepath=lib_path, append_all=True)
 
 
 @given("I display the construction type browser")
 @when("I display the construction type browser")
 def i_display_the_construction_type_browser():
-    bpy.ops.bim.display_relating_types('INVOKE_DEFAULT')
+    bpy.ops.bim.display_relating_types("INVOKE_DEFAULT")
 
 
 @given("I preview only one asset on the construction type browser")
@@ -663,9 +662,12 @@ def i_add_the_active_construction_type():
 @then(parsers.parse("browser construction type is {relating_type_name}"))
 def browser_construction_type(relating_type_name):
     props = bpy.context.scene.BIMModelProperties
-    relating_type_browser = AuthoringData.relating_type_name_by_id(props.ifc_class_browser, props.relating_type_id_browser)
-    assert relating_type_browser == relating_type_name, (f"Construction Type is a {relating_type_browser}, not " +
-                                                     f"a {relating_type_name}")
+    relating_type_browser = AuthoringData.relating_type_name_by_id(
+        props.ifc_class_browser, props.relating_type_id_browser
+    )
+    assert relating_type_browser == relating_type_name, (
+        f"Construction Type is a {relating_type_browser}, not " + f"a {relating_type_name}"
+    )
 
 
 @then(parsers.parse("construction type is {relating_type_name}"))

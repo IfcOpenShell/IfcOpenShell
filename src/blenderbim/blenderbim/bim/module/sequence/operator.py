@@ -1850,7 +1850,6 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         self.total_frames = self.calculate_total_frames(context)
         self.preprocess_tasks()
 
-
         for obj in bpy.data.objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
@@ -1861,7 +1860,6 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
                 elif product_frame["relationship"] == "output":
                     self.animate_output(obj, product_frame)
         self.add_text_animation_handler()
-
 
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
