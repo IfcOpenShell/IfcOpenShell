@@ -626,7 +626,7 @@ def i_add_a_construction_library():
 @given("I display the construction type browser")
 @when("I display the construction type browser")
 def i_display_the_construction_type_browser():
-    bpy.ops.bim.display_relating_types("INVOKE_DEFAULT")
+    bpy.ops.bim.display_constr_types("INVOKE_DEFAULT")
 
 
 @given("I preview only one asset on the construction type browser")
@@ -641,32 +641,12 @@ def i_preview_all_construction_types():
     bpy.context.scene.BIMModelProperties.unfold_relating_types = True
 
 
-@given("I select the browser construction type")
-@when("I select the browser construction type")
-def i_select_the_active_construction_type():
-    props = bpy.context.scene.BIMModelProperties
-    bpy.ops.bim.select_construction_type(
-        ifc_class=props.ifc_class_browser, relating_type_id=props.relating_type_id_browser
-    )
-
-
-@given("I add the browser construction type")
-@when("I add the browser construction type")
+@given("I add the construction type")
+@when("I add the construction type")
 def i_add_the_active_construction_type():
     props = bpy.context.scene.BIMModelProperties
     bpy.ops.bim.add_constr_type_instance(
-        ifc_class=props.ifc_class_browser, relating_type_id=int(props.relating_type_id_browser)
-    )
-
-
-@then(parsers.parse("browser construction type is {relating_type_name}"))
-def browser_construction_type(relating_type_name):
-    props = bpy.context.scene.BIMModelProperties
-    relating_type_browser = AuthoringData.relating_type_name_by_id(
-        props.ifc_class_browser, props.relating_type_id_browser
-    )
-    assert relating_type_browser == relating_type_name, (
-        f"Construction Type is a {relating_type_browser}, not " + f"a {relating_type_name}"
+        ifc_class=props.ifc_class, relating_type_id=int(props.relating_type_id)
     )
 
 
