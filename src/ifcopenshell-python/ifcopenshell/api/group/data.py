@@ -38,6 +38,8 @@ class Data:
                     for product in rel.RelatedObjects:
                         cls.products.setdefault(product.id(), []).append(group.id())
             data = group.get_info()
+            data["HasAssignments"] = group.HasAssignments
+            data["IsGroupedBy"] = group.IsGroupedBy
             del data["OwnerHistory"]
             cls.groups[group.id()] = data
         cls.is_loaded = True
