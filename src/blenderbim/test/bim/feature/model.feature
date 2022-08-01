@@ -53,11 +53,9 @@ Scenario: Preview one type on the Construction Type Browser
     And I load the demo construction library
     When I display the construction type browser
     And I preview only one asset on the construction type browser
-    And I set "scene.BIMModelProperties.ifc_class_browser" to "IfcColumnType"
-    And I set "scene.BIMModelProperties.relating_type_browser" to "DEMO2"
-    And I select the browser construction type
-    Then "scene.BIMModelProperties.ifc_class" is "IfcColumnType"
-    And construction type is DEMO2
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    And I set "scene.BIMModelProperties.relating_type" to "DEMO2"
+    Then construction type is DEMO2
     And objects starting with "IfcColumn/" do not exist
     And the construction type "IfcColumnType"/"DEMO2" has a preview
 
@@ -66,8 +64,8 @@ Scenario: Preview one class on the construction type browser
     And I load the demo construction library
     When I display the construction type browser
     And I preview all available assets on the construction type browser
-    And I set "scene.BIMModelProperties.ifc_class_browser" to "IfcWallType"
-    Then "scene.BIMModelProperties.ifc_class_browser" is "IfcWallType"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    Then "scene.BIMModelProperties.ifc_class" is "IfcWallType"
     And objects starting with "IfcWall/" do not exist
     And all construction types for "IfcWallType" have a preview
 
@@ -76,9 +74,9 @@ Scenario: Add one type from the Construction Type Browser
     And I load the demo construction library
     When I display the construction type browser
     And I preview only one asset on the construction type browser
-    And I set "scene.BIMModelProperties.ifc_class_browser" to "IfcColumnType"
-    And I set "scene.BIMModelProperties.relating_type_browser" to "DEMO2"
-    And I add the browser construction type
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    And I set "scene.BIMModelProperties.relating_type" to "DEMO2"
+    And I add the construction type
     Then the object "IfcColumn/Column" exists
 
 Scenario: Add grid
