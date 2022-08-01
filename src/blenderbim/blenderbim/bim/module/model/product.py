@@ -17,7 +17,6 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import math
 import mathutils
 import ifcopenshell
 import ifcopenshell.api
@@ -185,9 +184,9 @@ class AddConstrTypeInstance(bpy.types.Operator):
 
 
 class DisplayConstrTypes(bpy.types.Operator):
-    bl_idname = "bim.display_relating_types"
+    bl_idname = "bim.display_constr_types"
     bl_label = "Browse Construction Types"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options = {"REGISTER"}
     bl_description = "Display all available Construction Types to add new instances"
 
     def invoke(self, context, event):
@@ -202,7 +201,7 @@ class DisplayConstrTypes(bpy.types.Operator):
                 AuthoringData.assetize_constr_class(ifc_class)
         else:
             prop.update_relating_type_browser(props, context)
-        bpy.ops.bim.display_relating_types_ui("INVOKE_DEFAULT")
+        bpy.ops.bim.display_constr_types_ui("INVOKE_DEFAULT")
         return {"FINISHED"}
 
 
