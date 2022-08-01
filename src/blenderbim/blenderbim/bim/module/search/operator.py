@@ -25,6 +25,7 @@ from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import close_operator_panel
+from blenderbim.bim.module.group import ui
 from itertools import cycle
 from bpy.types import PropertyGroup, Operator
 from bpy.props import (
@@ -646,23 +647,48 @@ class AddToIfcGroup(Operator):
     bl_idname = "bim.add_to_ifc_group"
     bl_label = "Add to IFC Group"
     group_name: StringProperty(name="Group Name")
-
+    
     def invoke(self, context, event):
+        bpy.ops.bim.load_groups()
         return context.window_manager.invoke_props_dialog(self, width=400)
     
     def draw(self, context):
-        layout = self.layout
-        layout.prop(self, "group_name")
+        self.props = context.scene.BIMGroupProperties
+        row = self.layout.row()
+        row.operator("bim.add_group")
+        
+        self.layout.template_list(
+                "BIM_UL_groups",
+                "",
+                self.props,
+                "groups",
+                self.props,
+                "active_group_index",
+            )
+        
+        if self.props.active_group_id:
+            for attribute in self.props.group_attributes:
+                if attribute.name in ["Name", "Description"]:
+                    row = self.layout.row(align=True)
+                    row.prop(attribute, "string_value", text=attribute.name)
         
     def execute(self, context):
-        self.file = IfcStore.get_file()
-        ifc_selector = context.scene.IfcSelectorProperties
-        selector_query_syntax = ifc_selector.selector_query_syntax
+        active_group_index = self.props.active_group_index
+        ifc_definition_id = self.props.groups[active_group_index].ifc_definition_id
         
-        group = ifcopenshell.api.run("group.add_group", self.file, **{"Name": self.group_name, "Description": f'*selector*{selector_query_syntax}*selector*'})
-        objects = Selector.parse(self.file, selector_query_syntax)
-
-        ifcopenshell.api.run("group.assign_group", self.file, **{"product": objects, "group": group})
-        Data.load(IfcStore.get_file())
+        bpy.ops.bim.enable_editing_group(group=ifc_definition_id)   
         
+        selector_query_syntax = context.scene.IfcSelectorProperties.selector_query_syntax
+        
+        for attribute in self.props.group_attributes:
+            if attribute.name == "Description":
+                if "*selector*" not in attribute.string_value:
+                    attribute.string_value += f" *selector*{selector_query_syntax}*selector*"
+                else:
+                    new_description = attribute.string_value.split("*selector*")
+                    new_description[1] = selector_query_syntax
+                    attribute.string_value = "*selector*".join(new_description)
+        
+        bpy.ops.bim.edit_group()
+        bpy.ops.bim.disable_group_editing_ui()
         return {"FINISHED"}
