@@ -23,7 +23,6 @@ classes = (
     product.AddEmptyType,
     product.AddConstrTypeInstance,
     product.DisplayConstrTypes,
-    product.SelectConstructionType,
     product.AlignProduct,
     product.DynamicallyVoidProduct,
     workspace.Hotkey,
