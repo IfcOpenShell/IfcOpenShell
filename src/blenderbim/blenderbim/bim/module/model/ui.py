@@ -16,54 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.model.data import AuthoringData
 
 
 class BIM_PT_authoring(Panel):
-    bl_idname = "BIM_PT_authoring"
-    bl_label = "Authoring"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BlenderBIM"
-
-    @classmethod
-    def poll(cls, context):
-        return IfcStore.get_file()
-
-    def draw(self, context):
-        if not AuthoringData.is_loaded:
-            AuthoringData.load()
-
-        props = context.scene.BIMModelProperties
-        col = self.layout.column(align=True)
-        enabled = True
-
-        if AuthoringData.data["ifc_classes"]:
-            col.prop(props, "ifc_class", text="", icon="FILE_VOLUME")
-        else:
-            col.label(text="No IFC Class", icon="FILE_VOLUME")
-            enabled = False
-        if AuthoringData.data["relating_types"]:
-            col.prop(props, "relating_type", text="", icon="FILE_3D")
-        else:
-            col.label(text="No Relating Type", icon="FILE_3D")
-            enabled = False
-        row = col.row()
-        row.operator("bim.add_type_instance", icon="ADD")
-        row.enabled = enabled
-
-
-class BIM_PT_authoring_architectural(Panel):
     bl_label = "Architectural"
-    bl_idname = "BIM_PT_authoring_architectural"
-    bl_options = {"DEFAULT_CLOSED"}
+    bl_idname = "BIM_PT_authoring"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "BlenderBIM"
-    bl_parent_id = "BIM_PT_authoring"
 
     def draw(self, context):
         row = self.layout.row(align=True)

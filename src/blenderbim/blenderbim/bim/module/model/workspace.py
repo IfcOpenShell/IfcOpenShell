@@ -55,28 +55,56 @@ class BimTool(WorkSpaceTool):
         if not AuthoringData.is_loaded and IfcStore.get_file():
             AuthoringData.load()
 
+        props = context.scene.BIMModelProperties
+        is_tool_header = context.region.type == "TOOL_HEADER"
         row = layout.row(align=True)
         if not IfcStore.get_file():
             row.label(text="No IFC Project", icon="ERROR")
             return
-        props = context.scene.BIMModelProperties
-        if AuthoringData.data["ifc_classes"]:
-            row.prop(props, "ifc_class", text="")
+
+        ifc_classes = AuthoringData.data["ifc_classes"]
+        relating_types_ids = AuthoringData.data["relating_types_ids"]
+
+        if is_tool_header:
+            row.operator("bim.help_relating_types", text="", icon="QUESTION")
+
+        if ifc_classes and is_tool_header:
+            row.label(text="", icon="BLANK1")
+            row.operator("bim.display_relating_types", icon="COLLAPSEMENU")
+
+        ifc_class = props.ifc_class
+        relating_type_id = props.relating_type_id
+        relating_type = AuthoringData.relating_type_name_by_id(ifc_class, relating_type_id)
+
+        if is_tool_header:
+            row.label(text="", icon="BLANK1")
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_A")
+            if ifc_classes:
+                row.label(text=f" Add")
+                row.label(text="", icon="FILE_VOLUME")
+                row.label(text=ifc_class)
+                row.label(text="", icon="FILE_3D")
+                row.label(text=f"{relating_type}  ")
+            else:
+                row.label(text=f" Add instance")
         else:
-            row.label(text="No IFC Class")
-        if AuthoringData.data["relating_types"]:
-            row.prop(props, "relating_type", text="")
-        else:
-            row.label(text="No Relating Type")
-
-        row.label(text="", icon="BLANK1")
-
-        row = layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="Add Type Instance", icon="EVENT_A")
+            txt_ifc_class = ifc_class if ifc_classes else "No Construction Class"
+            txt_relating_type = relating_type if relating_types_ids else "No Construction Type"
+            row = layout.row(align=True)
+            row.label(text="Selected Construction Type:")
+            row = layout.row(align=True)
+            row.label(text=txt_ifc_class, icon="FILE_VOLUME")
+            row = layout.row(align=True)
+            row.label(text=txt_relating_type, icon="FILE_3D")
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_A")
+            row.label(text=f" Add Type Instance")
 
         if AuthoringData.data["ifc_classes"]:
-            if props.ifc_class == "IfcWallType":
+            if ifc_class == "IfcWallType":
                 row = layout.row()
                 row.label(text="Join")
                 row = layout.row(align=True)
@@ -98,7 +126,7 @@ class BimTool(WorkSpaceTool):
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="Split", icon="EVENT_S")
 
-            if props.ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
+            if ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
                 row = layout.row()
                 row.label(text="Join")
                 row = layout.row(align=True)
@@ -156,7 +184,7 @@ class Hotkey(bpy.types.Operator):
         return {"FINISHED"}
 
     def hotkey_S_A(self):
-        bpy.ops.bim.add_type_instance()
+        bpy.ops.bim.add_constr_type_instance()
 
     def hotkey_S_C(self):
         if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
