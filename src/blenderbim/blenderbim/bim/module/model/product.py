@@ -192,34 +192,15 @@ class DisplayConstrTypes(bpy.types.Operator):
     def invoke(self, context, event):
         if not AuthoringData.is_loaded:
             AuthoringData.load()
-        AuthoringData.setup_relating_type_browser()
         props = context.scene.BIMModelProperties
         if props.unfold_relating_types:
-            ifc_class = props.ifc_class_browser
+            ifc_class = props.ifc_class
             relating_type_info = AuthoringData.relating_type_info(ifc_class)
             if relating_type_info is None or not relating_type_info.fully_loaded:
                 AuthoringData.assetize_constr_class(ifc_class)
         else:
-            prop.update_relating_type_browser(props, context)
+            prop.update_relating_type(props, context)
         bpy.ops.bim.display_constr_types_ui("INVOKE_DEFAULT")
-        return {"FINISHED"}
-
-
-class SelectConstructionType(bpy.types.Operator):
-    bl_idname = "bim.select_construction_type"
-    bl_label = "Select"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Pick Type Instance as selection for subsequent operations"
-    ifc_class: bpy.props.StringProperty()
-    relating_type_id: bpy.props.StringProperty()
-
-    def execute(self, context):
-        props = context.scene.BIMModelProperties
-        if self.ifc_class != "":
-            props.ifc_class = self.ifc_class
-            AuthoringData.load_relating_types()
-        if self.relating_type_id != "":
-            props.relating_type_id = self.relating_type_id
         return {"FINISHED"}
 
 
