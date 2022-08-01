@@ -16,54 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.bim.module.type.prop as type_prop
-from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
+from bpy.types import Panel, Operator
 from blenderbim.bim.module.model.data import AuthoringData
+from blenderbim.bim.helper import prop_with_search, layout_with_margins, close_operator_panel
 
 
 class BIM_PT_authoring(Panel):
-    bl_idname = "BIM_PT_authoring"
-    bl_label = "Authoring"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BlenderBIM"
-
-    @classmethod
-    def poll(cls, context):
-        return IfcStore.get_file()
-
-    def draw(self, context):
-        if not AuthoringData.is_loaded:
-            AuthoringData.load()
-
-        props = context.scene.BIMModelProperties
-        col = self.layout.column(align=True)
-        enabled = True
-
-        if AuthoringData.data["ifc_classes"]:
-            col.prop(props, "ifc_class", text="", icon="FILE_VOLUME")
-        else:
-            col.label(text="No IFC Class", icon="FILE_VOLUME")
-            enabled = False
-        if AuthoringData.data["relating_types"]:
-            col.prop(props, "relating_type", text="", icon="FILE_3D")
-        else:
-            col.label(text="No Relating Type", icon="FILE_3D")
-            enabled = False
-        row = col.row()
-        row.operator("bim.add_type_instance", icon="ADD")
-        row.enabled = enabled
-
-
-class BIM_PT_authoring_architectural(Panel):
     bl_label = "Architectural"
-    bl_idname = "BIM_PT_authoring_architectural"
-    bl_options = {"DEFAULT_CLOSED"}
+    bl_idname = "BIM_PT_authoring"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "BlenderBIM"
-    bl_parent_id = "BIM_PT_authoring"
 
     def draw(self, context):
         row = self.layout.row(align=True)
@@ -78,3 +41,178 @@ class BIM_PT_authoring_architectural(Panel):
         row = self.layout.row(align=True)
         row.operator("bim.flip_wall", icon="ORIENTATION_NORMAL", text="Flip")
         row.operator("bim.split_wall", icon="MOD_PHYSICS", text="Split")
+
+
+class DisplayConstrTypesUI(Operator):
+    bl_idname = "bim.display_relating_types_ui"
+    bl_label = "Browse Construction Types"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Display all available Construction Types to add new instances"
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_popup(self)
+
+    def draw(self, context):
+        props = context.scene.BIMModelProperties
+        header_data = self.draw_header(props)
+        if props.unfold_relating_types:
+            self.draw_by_ifc_class(props, header_data)
+        else:
+            self.draw_by_ifc_class_and_type(props, header_data)
+
+    def draw_header(self, props):
+        layout = self.layout
+        inner_layout = layout
+        inner_layout.row().separator(factor=0.75)
+        split = inner_layout.split(align=True, factor=2.0 / 3)
+        col1 = split.column(align=True)
+        row = col1.row()
+        row.prop(data=props, property="unfold_relating_types", text="Preview All Construction Types")
+        col1.row().separator(factor=1)
+        row = col1.row()
+        row.label(text="Select Construction Type:")
+        col1.row().separator(factor=1.5)
+        enabled = True
+        if AuthoringData.data["ifc_classes"]:
+            subsplit = col1.split(factor=1.0 / 3)
+            subsplit.column().row().label(text="Construction Class:", icon="FILE_VOLUME")
+            prop_with_search(subsplit.column(), props, "ifc_class_browser", text="")
+            col1.row().separator()
+        else:
+            enabled = False
+        col2 = split.column(align=True)
+        subsplit = col2.split(factor=0.9)
+        subcol = [subsplit.column() for _ in range(2)][-1]
+        subcol.operator("bim.help_relating_types", text="", icon="QUESTION")
+        col2.row().separator(factor=1)
+        return {"enabled": enabled, "layout": inner_layout, "col1": col1, "col2": col2}
+
+    def draw_by_ifc_class(self, props, header_data):
+        enabled, layout = [header_data[key] for key in ["enabled", "layout"]]
+        ifc_class_browser = props.ifc_class_browser
+        num_cols = 3
+        layout.row().separator(factor=0.25)
+        layout.row().label(text="Construction Types:", icon="FILE_3D")
+        layout.row().separator(factor=0.25)
+        flow = layout.grid_flow(row_major=True, columns=num_cols, even_columns=True, even_rows=True, align=True)
+        relating_types_browser = AuthoringData.relating_types_browser()
+        num_types = len(relating_types_browser)
+        for idx, (relating_type_id_browser, name, desc) in enumerate(relating_types_browser):
+            outer_col = flow.column()
+            box = outer_col.box()
+            row = box.row()
+            row.label(text=name, icon="FILE_3D")
+            row.alignment = "CENTER"
+            row = box.row()
+            if enabled:
+                preview_constr_types = AuthoringData.data["preview_constr_types"]
+                if ifc_class_browser in preview_constr_types:
+                    preview_ifc_class = preview_constr_types[ifc_class_browser]
+                    if relating_type_id_browser in preview_ifc_class:
+                        icon_id = preview_ifc_class[relating_type_id_browser]["icon_id"]
+                        row.template_icon(icon_value=icon_id, scale=6.0)
+            box.row().separator(factor=0.2)
+            row = box.row()
+            split = row.split(factor=0.5)
+            col = split.column()
+            op = col.operator("bim.select_construction_type", icon="RIGHTARROW_THIN")
+            op.ifc_class = ifc_class_browser
+            op.relating_type_id = relating_type_id_browser
+            col = split.column()
+            op = col.operator("bim.add_constr_type_instance", icon="ADD")
+            op.from_invoke = True
+            op.ifc_class = ifc_class_browser
+            if relating_type_id_browser.isnumeric():
+                op.relating_type_id = int(relating_type_id_browser)
+            factor = 2 if idx + 1 < math.ceil(num_types / num_cols) else 1.5
+            outer_col.row().separator(factor=factor)
+        last_row_cols = num_types % num_cols
+        if last_row_cols != 0:
+            for _ in range(num_cols - last_row_cols):
+                flow.column()
+
+    def draw_by_ifc_class_and_type(self, props, header_data):
+        enabled, col1, col2 = [header_data[key] for key in ["enabled", "col1", "col2"]]
+        ifc_class_browser = props.ifc_class_browser
+        relating_type_id_browser = props.relating_type_id_browser
+        if AuthoringData.data["relating_types_ids_browser"]:
+            subsplit = col1.split(factor=1.0 / 3)
+            subsplit.column().row().label(text="Construction Type:", icon="FILE_3D")
+            prop_with_search(subsplit.column(), props, "relating_type_id_browser", text="")
+            col1.row().separator()
+        else:
+            enabled = False
+        col1.row().separator(factor=4.75)
+        row = col1.row()
+        row.enabled = enabled
+        op = row.operator("bim.select_construction_type", icon="RIGHTARROW_THIN")
+        op.ifc_class = ifc_class_browser
+        op.relating_type_id = relating_type_id_browser
+        op = row.operator("bim.add_constr_type_instance", icon="ADD")
+        op.from_invoke = True
+        op.ifc_class = ifc_class_browser
+        if relating_type_id_browser.isnumeric():
+            op.relating_type_id = int(relating_type_id_browser)
+        col2.row().separator(factor=1.25)
+        split = col2.split(factor=0.025)
+        col = [split.column() for _ in range(2)][-1]
+        box = col.box()
+        if enabled:
+            box.template_icon(icon_value=props.icon_id, scale=5.6)
+        col1.row().separator(factor=1)
+
+
+class HelpConstrTypes(Operator):
+    bl_idname = "bim.help_relating_types"
+    bl_label = "Construction Types Help"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Click to read some contextual help"
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_popup(self, width=510)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.row().separator(factor=0.5)
+        row = layout.row()
+        row.alignment = "CENTER"
+        row.label(text="BlenderBIM Help", icon="BLENDER")
+        layout.row().separator(factor=0.5)
+
+        row = layout_with_margins(layout.row()).row()
+        row.label(text="Overview:", icon="KEYTYPE_MOVING_HOLD_VEC")
+        self.draw_lines(layout, self.message_summary)
+        layout.row().separator()
+
+        row = layout_with_margins(layout.row()).row()
+        row.label(text="Further support:", icon="KEYTYPE_MOVING_HOLD_VEC")
+        layout.row().separator(factor=0.5)
+        row = layout_with_margins(layout).row()
+        op = row.operator("bim.open_upstream", text="Homepage", icon="HOME")
+        op.page = "home"
+        op = row.operator("bim.open_upstream", text="Docs", icon="DOCUMENTS")
+        op.page = "docs"
+        op = row.operator("bim.open_upstream", text="Wiki", icon="CURRENT_FILE")
+        op.page = "wiki"
+        op = row.operator("bim.open_upstream", text="Community", icon="COMMUNITY")
+        op.page = "community"
+        layout.row().separator()
+
+    def draw_lines(self, layout, lines):
+        box = layout_with_margins(layout).box()
+        for line in lines:
+            row = box.row()
+            row.label(text=f"  {line}")
+
+    @property
+    def message_summary(self):
+        return [
+            "The Construction Type Browser allows to preview and add new instances to the model.",
+            "For further support, please click on the Documentation link below.",
+        ]

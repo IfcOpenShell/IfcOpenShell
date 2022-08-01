@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import math
 import mathutils
 import ifcopenshell
 import ifcopenshell.api
@@ -29,9 +30,11 @@ import blenderbim.core.type
 import blenderbim.core.geometry
 from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.model.data import AuthoringData
 from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
+from . import prop
 
 
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
@@ -53,13 +56,17 @@ def add_empty_type_button(self, context):
     self.layout.operator(AddEmptyType.bl_idname, icon="FILE_3D")
 
 
-class AddTypeInstance(bpy.types.Operator):
-    bl_idname = "bim.add_type_instance"
-    bl_label = "Add Type Instance"
+class AddConstrTypeInstance(bpy.types.Operator):
+    bl_idname = "bim.add_constr_type_instance"
+    bl_label = "Add"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Add the selected Type Instance to the model"
+    bl_description = "Add Type Instance to the model"
     ifc_class: bpy.props.StringProperty()
-    relating_type: bpy.props.IntProperty()
+    relating_type_id: bpy.props.IntProperty()
+    from_invoke: bpy.props.BoolProperty(default=False)
+
+    def invoke(self, context, event):
+        return self.execute(context)
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
@@ -67,10 +74,14 @@ class AddTypeInstance(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMModelProperties
         ifc_class = self.ifc_class or props.ifc_class
-        relating_type_id = self.relating_type or props.relating_type
+        relating_type_id = self.relating_type_id or props.relating_type_id
 
         if not ifc_class or not relating_type_id:
             return {"FINISHED"}
+
+        if self.from_invoke:
+            props.ifc_class = self.ifc_class
+            props.relating_type_id = str(self.relating_type_id)
 
         self.file = IfcStore.get_file()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
@@ -150,7 +161,8 @@ class AddTypeInstance(bpy.types.Operator):
         context.view_layer.objects.active = obj
         return {"FINISHED"}
 
-    def generate_layered_element(self, ifc_class, relating_type):
+    @staticmethod
+    def generate_layered_element(ifc_class, relating_type):
         layer_set_direction = None
 
         parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
@@ -170,6 +182,46 @@ class AddTypeInstance(bpy.types.Operator):
                 return True
         else:
             pass  # Dumb block generator? Eh? :)
+
+
+class DisplayConstrTypes(bpy.types.Operator):
+    bl_idname = "bim.display_relating_types"
+    bl_label = "Browse Construction Types"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Display all available Construction Types to add new instances"
+
+    def invoke(self, context, event):
+        if not AuthoringData.is_loaded:
+            AuthoringData.load()
+        AuthoringData.setup_relating_type_browser()
+        props = context.scene.BIMModelProperties
+        if props.unfold_relating_types:
+            ifc_class = props.ifc_class_browser
+            relating_type_info = AuthoringData.relating_type_info(ifc_class)
+            if relating_type_info is None or not relating_type_info.fully_loaded:
+                AuthoringData.assetize_constr_class(ifc_class)
+        else:
+            prop.update_relating_type_browser(props, context)
+        bpy.ops.bim.display_relating_types_ui("INVOKE_DEFAULT")
+        return {"FINISHED"}
+
+
+class SelectConstructionType(bpy.types.Operator):
+    bl_idname = "bim.select_construction_type"
+    bl_label = "Select"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Pick Type Instance as selection for subsequent operations"
+    ifc_class: bpy.props.StringProperty()
+    relating_type_id: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMModelProperties
+        if self.ifc_class != "":
+            props.ifc_class = self.ifc_class
+            AuthoringData.load_relating_types()
+        if self.relating_type_id != "":
+            props.relating_type_id = self.relating_type_id
+        return {"FINISHED"}
 
 
 class AlignProduct(bpy.types.Operator):
