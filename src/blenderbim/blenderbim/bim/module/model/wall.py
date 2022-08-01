@@ -820,6 +820,7 @@ class DumbWallGenerator:
         try:
             obj.select_set(True)
         except RuntimeError:
+
             def msg(self, context):
                 txt = "The created object could not be assigned to a collection. "
                 txt += "Has any IfcSpatialElement been deleted?"

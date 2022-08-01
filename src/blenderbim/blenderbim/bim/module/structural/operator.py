@@ -662,7 +662,9 @@ class AddStructuralLoadGroup(bpy.types.Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         load_group = ifcopenshell.api.run("structural.add_structural_load_group", self.file)
-        ifcopenshell.api.run("group.assign_group", self.file, product=[load_group], group=self.file.by_id(self.load_case))
+        ifcopenshell.api.run(
+            "group.assign_group", self.file, product=[load_group], group=self.file.by_id(self.load_case)
+        )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 

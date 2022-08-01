@@ -91,9 +91,7 @@ class AuthoringData:
 
     @classmethod
     def relating_types(cls, ifc_class=None):
-        return [
-            (str(e.id()), e.Name, e.Description or "") for e in cls.constr_class_entities(ifc_class=ifc_class)
-        ]
+        return [(str(e.id()), e.Name, e.Description or "") for e in cls.constr_class_entities(ifc_class=ifc_class)]
 
     @classmethod
     def relating_types_browser(cls):
@@ -116,8 +114,10 @@ class AuthoringData:
         for constr_class_entity in constr_class_occurrences:
 
             ### handle asset regeneration when library entity is updated ¿?
-            if (ifc_class not in preview_constr_types
-                    or str(constr_class_entity.id()) not in preview_constr_types[ifc_class]):
+            if (
+                ifc_class not in preview_constr_types
+                or str(constr_class_entity.id()) not in preview_constr_types[ifc_class]
+            ):
                 obj = tool.Ifc.get_object(constr_class_entity)
                 cls.assetize_object(obj, ifc_class, constr_class_entity)
         relating_type_info = cls.relating_type_info(ifc_class)
@@ -127,10 +127,10 @@ class AuthoringData:
     def assetize_object(cls, obj, ifc_class, ifc_class_entity, from_selection=False):
         relating_type_id = ifc_class_entity.id()
         to_be_deleted = False
-        if obj.type == 'EMPTY':
+        if obj.type == "EMPTY":
             kwargs = {}
             if not from_selection:
-                kwargs.update({'ifc_class': ifc_class, 'relating_type_id': relating_type_id})
+                kwargs.update({"ifc_class": ifc_class, "relating_type_id": relating_type_id})
             new_obj = cls.new_relating_type(**kwargs)
             if new_obj is not None:
                 to_be_deleted = True

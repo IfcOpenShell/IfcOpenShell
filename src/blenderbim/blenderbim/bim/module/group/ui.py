@@ -122,10 +122,8 @@ class BIM_UL_groups(UIList):
                 row.label(text="", icon="BLANK1")
             if item.has_children:
                 op = row.operator(
-                    "bim.toggle_group", 
-                    icon="TRIA_DOWN" if item.is_expanded else "TRIA_RIGHT", 
-                    text="", 
-                    emboss=False)
+                    "bim.toggle_group", icon="TRIA_DOWN" if item.is_expanded else "TRIA_RIGHT", text="", emboss=False
+                )
                 op.ifc_definition_id = item.ifc_definition_id
                 op.index = index
                 op.option = "Collapse" if item.is_expanded else "Expand"
@@ -173,10 +171,8 @@ class BIM_UL_object_groups(UIList):
                 row.label(text="", icon="BLANK1")
             if item.has_children:
                 op = row.operator(
-                    "bim.toggle_group", 
-                    icon="TRIA_DOWN" if item.is_expanded else "TRIA_RIGHT", 
-                    text="", 
-                    emboss=False)
+                    "bim.toggle_group", icon="TRIA_DOWN" if item.is_expanded else "TRIA_RIGHT", text="", emboss=False
+                )
                 op.ifc_definition_id = item.ifc_definition_id
                 op.index = index
                 op.option = "Collapse" if item.is_expanded else "Expand"

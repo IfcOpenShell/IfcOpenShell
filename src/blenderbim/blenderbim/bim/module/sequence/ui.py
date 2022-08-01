@@ -49,8 +49,8 @@ class BIM_PT_work_plans(Panel):
 
         row = self.layout.row()
         row.label(
-        text="{} Work Plans Found".format(SequenceData.number_of_work_plans_loaded),
-        icon="TEXT",
+            text="{} Work Plans Found".format(SequenceData.number_of_work_plans_loaded),
+            icon="TEXT",
         )
         row.operator("bim.add_work_plan", icon="ADD")
 

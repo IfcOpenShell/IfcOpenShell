@@ -80,19 +80,25 @@ class Sequence(blenderbim.core.tool.Sequence):
     def load_work_plan_attributes(cls, data):
         props = bpy.context.scene.BIMWorkPlanProperties
         props.work_plan_attributes.clear()
-        blenderbim.bim.helper.import_attributes("IfcWorkPlan", props.work_plan_attributes, data, tool.Sequence.import_attributes)
+        blenderbim.bim.helper.import_attributes(
+            "IfcWorkPlan", props.work_plan_attributes, data, tool.Sequence.import_attributes
+        )
 
+    @classmethod
     def import_attributes(name, prop, data):
         if name in ["CreationDate", "StartTime", "FinishTime"]:
             prop.string_value = "" if prop.is_null else data[name].isoformat()
             return True
-    
+
     @classmethod
     def get_work_plan_attributes(cls):
         props = bpy.context.scene.BIMWorkPlanProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.work_plan_attributes, tool.Sequence.export_attributes)
+        attributes = blenderbim.bim.helper.export_attributes(
+            props.work_plan_attributes, tool.Sequence.export_attributes
+        )
         return attributes
 
+    @classmethod
     def export_attributes(attributes, prop):
         if "Date" in prop.name or "Time" in prop.name:
             if prop.is_null:

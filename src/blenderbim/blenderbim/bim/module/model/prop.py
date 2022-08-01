@@ -43,9 +43,10 @@ def update_icon_id(self, context):
     ifc_class_browser = self.ifc_class_browser
     relating_type_id_browser = self.relating_type_id_browser
     relating_type_browser = AuthoringData.relating_type_name_by_id(ifc_class_browser, relating_type_id_browser)
-    if ((ifc_class_browser not in AuthoringData.data["preview_constr_types"]
-            or relating_type_id_browser not in AuthoringData.data["preview_constr_types"][ifc_class_browser])
-            and relating_type_browser is not None):
+    if (
+        ifc_class_browser not in AuthoringData.data["preview_constr_types"]
+        or relating_type_id_browser not in AuthoringData.data["preview_constr_types"][ifc_class_browser]
+    ) and relating_type_browser is not None:
         if not AuthoringData.assetize_relating_type_from_selection():
             return
     self.icon_id = AuthoringData.data["preview_constr_types"][ifc_class_browser][relating_type_id_browser]["icon_id"]
@@ -85,7 +86,9 @@ def update_relating_type_by_name(self, context):
 
 def update_relating_type_browser_by_name(self, context):
     AuthoringData.load_relating_types_browser()
-    relating_type_id_browser = AuthoringData.relating_type_id_by_name(self.ifc_class_browser, self.relating_type_browser)
+    relating_type_id_browser = AuthoringData.relating_type_id_by_name(
+        self.ifc_class_browser, self.relating_type_browser
+    )
     if relating_type_id_browser is not None:
         self.relating_type_id_browser = relating_type_id_browser
 
@@ -119,10 +122,7 @@ class BIMModelProperties(PropertyGroup):
         name="Occurrence Name Style",
     )
     occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
-    getter_enum = {
-        "ifc_class_browser": get_ifc_class,
-        "relating_type_browser": get_relating_type_browser
-    }
+    getter_enum = {"ifc_class_browser": get_ifc_class, "relating_type_browser": get_relating_type_browser}
 
 
 def get_relating_type_info(self, context):
@@ -131,9 +131,5 @@ def get_relating_type_info(self, context):
 
 class ConstrTypeInfo(PropertyGroup):
     name: bpy.props.StringProperty(name="Construction class")
-    relating_type: bpy.props.EnumProperty(
-        name="Construction type", items=get_relating_type_info
-    )
+    relating_type: bpy.props.EnumProperty(name="Construction type", items=get_relating_type_info)
     fully_loaded: bpy.props.BoolProperty(default=False)
-
-

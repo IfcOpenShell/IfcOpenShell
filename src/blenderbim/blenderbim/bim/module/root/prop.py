@@ -93,6 +93,7 @@ def get_ifc_classes_suggestions():
         IfcClassData.load()
     return IfcClassData.data["ifc_classes_suggestions"]
 
+
 def get_contexts(self, context):
     if not IfcClassData.is_loaded:
         IfcClassData.load()
