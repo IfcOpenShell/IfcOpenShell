@@ -108,7 +108,6 @@ class AddGroup(bpy.types.Operator):
     bl_idname = "bim.add_group"
     bl_label = "Add New Group"
     bl_options = {"REGISTER", "UNDO"}
-    skip_editing: bpy.props.BoolProperty(default=False)
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
@@ -116,12 +115,9 @@ class AddGroup(bpy.types.Operator):
     def _execute(self, context):
         result = ifcopenshell.api.run("group.add_group", IfcStore.get_file())
         Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_groups(is_refresh=True)
-        if self.skip_editing:
-            context.BIMGroupProperties.active_group_id = result.id()
-        else:
-            bpy.ops.bim.enable_editing_group(group=result.id())
         
+        bpy.ops.bim.load_groups(is_refresh=True)
+        bpy.ops.bim.enable_editing_group(group=result.id())
         return {"FINISHED"}
     
 
@@ -147,6 +143,7 @@ class AddGroupToGroup(bpy.types.Operator):
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_groups(is_refresh=True)
+        bpy.ops.bim.disable_group_editing_ui()
         return {"FINISHED"}
 
 

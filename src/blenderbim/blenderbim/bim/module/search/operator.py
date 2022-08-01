@@ -649,12 +649,13 @@ class AddToIfcGroup(Operator):
     group_name: StringProperty(name="Group Name")
     
     def invoke(self, context, event):
+        bpy.ops.bim.load_groups()
         return context.window_manager.invoke_props_dialog(self, width=400)
     
     def draw(self, context):
         self.props = context.scene.BIMGroupProperties
         row = self.layout.row()
-        row.operator("bim.add_group").skip_editing = True
+        row.operator("bim.add_group")
         
         self.layout.template_list(
                 "BIM_UL_groups",
@@ -667,12 +668,27 @@ class AddToIfcGroup(Operator):
         
         if self.props.active_group_id:
             for attribute in self.props.group_attributes:
-                if attribute.name == "Name":
+                if attribute.name in ["Name", "Description"]:
                     row = self.layout.row(align=True)
                     row.prop(attribute, "string_value", text=attribute.name)
         
     def execute(self, context):
         active_group_index = self.props.active_group_index
         ifc_definition_id = self.props.groups[active_group_index].ifc_definition_id
-        self.props
+        
+        bpy.ops.bim.enable_editing_group(group=ifc_definition_id)   
+        
+        selector_query_syntax = context.scene.IfcSelectorProperties.selector_query_syntax
+        
+        for attribute in self.props.group_attributes:
+            if attribute.name == "Description":
+                if "*selector*" not in attribute.string_value:
+                    attribute.string_value += f" *selector*{selector_query_syntax}*selector*"
+                else:
+                    new_description = attribute.string_value.split("*selector*")
+                    new_description[1] = selector_query_syntax
+                    attribute.string_value = "*selector*".join(new_description)
+        
+        bpy.ops.bim.edit_group()
+        bpy.ops.bim.disable_group_editing_ui()
         return {"FINISHED"}
