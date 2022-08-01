@@ -143,7 +143,6 @@ class AddGroupToGroup(bpy.types.Operator):
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_groups(is_refresh=True)
-        bpy.ops.bim.disable_group_editing_ui()
         return {"FINISHED"}
 
 
