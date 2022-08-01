@@ -42,7 +42,6 @@ class AuthoringData:
         cls.props = bpy.context.scene.BIMModelProperties
         cls.load_ifc_classes()
         cls.load_relating_types()
-        cls.load_relating_types_browser()
         cls.load_preview_constr_types()
 
     @classmethod
@@ -52,10 +51,6 @@ class AuthoringData:
     @classmethod
     def load_relating_types(cls):
         cls.data["relating_types_ids"] = cls.relating_types()
-
-    @classmethod
-    def load_relating_types_browser(cls):
-        cls.data["relating_types_ids_browser"] = cls.relating_types_browser()
 
     @classmethod
     def load_preview_constr_types(cls):
@@ -92,10 +87,6 @@ class AuthoringData:
     @classmethod
     def relating_types(cls, ifc_class=None):
         return [(str(e.id()), e.Name, e.Description or "") for e in cls.constr_class_entities(ifc_class=ifc_class)]
-
-    @classmethod
-    def relating_types_browser(cls):
-        return cls.relating_types(ifc_class=cls.props.ifc_class_browser)
 
     @staticmethod
     def new_relating_type_info(ifc_class):
@@ -147,11 +138,11 @@ class AuthoringData:
 
     @classmethod
     def assetize_relating_type_from_selection(cls):
-        ifc_class_browser = cls.props.ifc_class_browser
-        relating_type_id_browser = cls.props.relating_type_id_browser
-        constr_class_occurrences = cls.constr_class_entities(ifc_class=ifc_class_browser)
+        ifc_class= cls.props.ifc_class
+        relating_type_id = cls.props.relating_type_id
+        constr_class_occurrences = cls.constr_class_entities(ifc_class=ifc_class)
         constr_class_occurrences = [
-            entity for entity in constr_class_occurrences if entity.id() == int(relating_type_id_browser)
+            entity for entity in constr_class_occurrences if entity.id() == int(relating_type_id)
         ]
         if len(constr_class_occurrences) == 0:
             return False
@@ -159,7 +150,7 @@ class AuthoringData:
         obj = tool.Ifc.get_object(constr_class_entity)
         if obj is None:
             return False
-        cls.assetize_object(obj, ifc_class_browser, constr_class_entity, from_selection=True)
+        cls.assetize_object(obj, ifc_class, constr_class_entity, from_selection=True)
         return True
 
     @staticmethod
@@ -171,11 +162,13 @@ class AuthoringData:
     def new_relating_type(cls, ifc_class=None, relating_type_id=None):
         if ifc_class is None:
             bpy.ops.bim.add_constr_type_instance(
-                ifc_class=cls.props.ifc_class_browser, relating_type_id=int(cls.props.relating_type_id_browser)
+                ifc_class=cls.props.ifc_class, relating_type_id=int(cls.props.relating_type_id)
             )
         else:
+            cls.props.updating = True
             cls.props.ifc_class = ifc_class
             cls.props.relating_type_id = str(relating_type_id)
+            cls.props.updating = False
             bpy.ops.bim.add_constr_type_instance()
         return bpy.context.selected_objects[-1]
 
@@ -192,13 +185,3 @@ class AuthoringData:
     def relating_type_id_by_name(cls, ifc_class, relating_type):
         relating_types = [ct[0] for ct in cls.relating_types(ifc_class=ifc_class) if ct[1] == relating_type]
         return None if len(relating_types) == 0 else relating_types[0]
-
-    @classmethod
-    def consolidate_relating_type(cls):
-        cls.props.ifc_class = cls.props.ifc_class_browser
-        cls.props.relating_type_id = cls.props.relating_type_id_browser
-
-    @classmethod
-    def setup_relating_type_browser(cls):
-        cls.props.ifc_class_browser = cls.props.ifc_class
-        cls.props.relating_type_id_browser = cls.props.relating_type_id

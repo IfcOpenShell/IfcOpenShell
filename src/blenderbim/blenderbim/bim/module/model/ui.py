@@ -80,7 +80,7 @@ class DisplayConstrTypesUI(Operator):
         if AuthoringData.data["ifc_classes"]:
             row = col1.row()
             row.label(text="", icon="FILE_VOLUME")
-            prop_with_search(row, props, "ifc_class_browser", text="")
+            prop_with_search(row, props, "ifc_class", text="")
             col1.row().separator()
         else:
             enabled = False
@@ -93,13 +93,13 @@ class DisplayConstrTypesUI(Operator):
 
     def draw_by_ifc_class(self, props, header_data):
         enabled, layout = [header_data[key] for key in ["enabled", "layout"]]
-        ifc_class_browser = props.ifc_class_browser
+        ifc_class = props.ifc_class
         num_cols = 3
         layout.row().separator(factor=0.25)
         flow = layout.grid_flow(row_major=True, columns=num_cols, even_columns=True, even_rows=True, align=True)
-        relating_types_browser = AuthoringData.relating_types_browser()
-        num_types = len(relating_types_browser)
-        for idx, (relating_type_id_browser, name, desc) in enumerate(relating_types_browser):
+        relating_types = AuthoringData.relating_types()
+        num_types = len(relating_types)
+        for idx, (relating_type_id, name, desc) in enumerate(relating_types):
             outer_col = flow.column()
             box = outer_col.box()
             row = box.row()
@@ -108,18 +108,18 @@ class DisplayConstrTypesUI(Operator):
             row = box.row()
             if enabled:
                 preview_constr_types = AuthoringData.data["preview_constr_types"]
-                if ifc_class_browser in preview_constr_types:
-                    preview_ifc_class = preview_constr_types[ifc_class_browser]
-                    if relating_type_id_browser in preview_ifc_class:
-                        icon_id = preview_ifc_class[relating_type_id_browser]["icon_id"]
+                if ifc_class in preview_constr_types:
+                    preview_ifc_class = preview_constr_types[ifc_class]
+                    if relating_type_id in preview_ifc_class:
+                        icon_id = preview_ifc_class[relating_type_id]["icon_id"]
                         row.template_icon(icon_value=icon_id, scale=6.0)
             box.row().separator(factor=0.2)
             row = box.row()
             op = row.operator("bim.add_constr_type_instance", icon="ADD")
             op.from_invoke = True
-            op.ifc_class = ifc_class_browser
-            if relating_type_id_browser.isnumeric():
-                op.relating_type_id = int(relating_type_id_browser)
+            op.ifc_class = ifc_class
+            if relating_type_id.isnumeric():
+                op.relating_type_id = int(relating_type_id)
             factor = 2 if idx + 1 < math.ceil(num_types / num_cols) else 1.5
             outer_col.row().separator(factor=factor)
         last_row_cols = num_types % num_cols
@@ -129,12 +129,12 @@ class DisplayConstrTypesUI(Operator):
 
     def draw_by_ifc_class_and_type(self, props, header_data):
         enabled, col1, col2 = [header_data[key] for key in ["enabled", "col1", "col2"]]
-        ifc_class_browser = props.ifc_class_browser
-        relating_type_id_browser = props.relating_type_id_browser
-        if AuthoringData.data["relating_types_ids_browser"]:
+        ifc_class = props.ifc_class
+        relating_type_id = props.relating_type_id
+        if AuthoringData.data["relating_types_ids"]:
             row = col1.row()
             row.label(text="", icon="FILE_3D")
-            prop_with_search(row, props, "relating_type_id_browser", text="")
+            prop_with_search(row, props, "relating_type_id", text="")
             col1.row().separator()
         else:
             enabled = False
@@ -144,9 +144,9 @@ class DisplayConstrTypesUI(Operator):
         row.label(text="", icon="BLANK1")
         op = row.operator("bim.add_constr_type_instance", icon="ADD")
         op.from_invoke = True
-        op.ifc_class = ifc_class_browser
-        if relating_type_id_browser.isnumeric():
-            op.relating_type_id = int(relating_type_id_browser)
+        op.ifc_class = ifc_class
+        if relating_type_id.isnumeric():
+            op.relating_type_id = int(relating_type_id)
         col2.row().separator(factor=1.25)
         split = col2.split(factor=0.025)
         col = [split.column() for _ in range(2)][-1]
