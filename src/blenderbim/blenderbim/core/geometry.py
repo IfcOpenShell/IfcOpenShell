@@ -120,8 +120,8 @@ def get_representation_ifc_parameters(geometry, obj=None, should_sync_changes_fi
 
 def remove_representation(ifc, geometry, obj=None, representation=None):
     element = ifc.get_entity(obj)
-    if geometry.is_mapped_representation(representation) or geometry.is_type_product(element):
-        type = geometry.get_element_type(element)
+    type = geometry.get_element_type(element)
+    if type and (geometry.is_mapped_representation(representation) or geometry.is_type_product(element)):
         representation = geometry.resolve_mapped_representation(representation)
         data = geometry.get_representation_data(representation)
         if data and geometry.has_data_users(data):
