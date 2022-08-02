@@ -45,10 +45,12 @@ class Usecase:
             self.add_to_existing_relationship()
         else:
             reference = self.file.createIfcClassificationReference(
-                Identification=self.settings["identification"],
-                Name=self.settings["name"],
-                ReferencedSource=self.settings["classification"],
+                Name=self.settings["name"], ReferencedSource=self.settings["classification"]
             )
+            if self.file.schema == "IFC2X3":
+                reference.ItemReference = self.settings["identification"]
+            else:
+                reference.Identification = self.settings["identification"]
             self.add_new_relationship(reference)
         return reference
 
