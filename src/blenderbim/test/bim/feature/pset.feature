@@ -85,7 +85,7 @@ Scenario: Copy property to selected - copy property
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And additionally the object "IfcWall/Cube.001" is selected
-    And I set "active_object.PsetProperties.pset_name" to "Pset_BuildingElementCommon"
+    And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
     And I press "bim.add_pset(obj='IfcWall/Cube.001', obj_type='Object')"
     And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
     And I press "bim.enable_pset_editing(obj='IfcWall/Cube.001', obj_type='Object', pset_id={pset})"

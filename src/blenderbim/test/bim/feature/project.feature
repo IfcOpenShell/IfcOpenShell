@@ -308,6 +308,18 @@ Scenario: Link IFC
     And the object "IfcBuildingStorey/Ground Floor" exists
     And the object "IfcBuildingStorey/Level 1" exists
 
+Scenario: Toggle link visibility - wireframe mode
+    Given an empty IFC project
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
+    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.blend', mode='WIREFRAME')"
+    Then nothing happens
+
+Scenario: Toggle link visibility - visible mode
+    Given an empty IFC project
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
+    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.blend', mode='VISIBLE')"
+    Then nothing happens
+
 Scenario: Unload link
     Given an empty Blender session
     And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
