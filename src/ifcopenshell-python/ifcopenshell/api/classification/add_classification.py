@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -31,6 +31,13 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        if isinstance(self.settings["classification"], str):
+            classification = self.file.createIfcClassification(Name=self.settings["classification"])
+            self.relate_to_project(classification)
+            return classification
+        return self.add_from_library()
+
+    def add_from_library(self):
         edition_date = None
         if self.settings["classification"].EditionDate:
             edition_date = ifcopenshell.util.date.ifc2datetime(self.settings["classification"].EditionDate)
@@ -47,17 +54,20 @@ class Usecase:
         else:
             result.EditionDate = ifcopenshell.util.date.datetime2ifc(edition_date, "IfcDate")
 
-        self.file.create_entity(
-            "IfcRelAssociatesClassification",
-            **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "RelatedObjects": [self.file.by_type("IfcProject")[0]],
-                "RelatingClassification": result,
-            }
-        )
+        self.relate_to_project(result)
+
         return result  # See bug #1272
+
         try:
             result = self.file.add(self.settings["classification"])
         except:
             migrator = ifcopenshell.util.schema.Migrator()
             result = migrator.migrate(self.settings["classification"], self.file)
+
+    def relate_to_project(self, classification):
+        self.file.create_entity(
+            "IfcRelAssociatesClassification",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=[self.file.by_type("IfcProject")[0]],
+            RelatingClassification=classification,
+        )
