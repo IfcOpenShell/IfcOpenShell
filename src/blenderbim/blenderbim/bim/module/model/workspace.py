@@ -19,6 +19,7 @@
 import os
 import bpy
 import blenderbim.bim.module.type.prop as type_prop
+from blenderbim.bim.helper import prop_with_search, close_operator_panel
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
@@ -65,43 +66,55 @@ class BimTool(WorkSpaceTool):
         ifc_classes = AuthoringData.data["ifc_classes"]
         relating_types_ids = AuthoringData.data["relating_types_ids"]
 
-        if is_tool_header:
-            row.operator("bim.help_relating_types", text="", icon="QUESTION")
-
-        if ifc_classes and is_tool_header:
-            row.label(text="", icon="BLANK1")
-            row.operator("bim.display_constr_types", icon="COLLAPSEMENU")
-
         ifc_class = props.ifc_class
         relating_type_id = props.relating_type_id
         relating_type = AuthoringData.relating_type_name_by_id(ifc_class, relating_type_id)
 
         if is_tool_header:
-            row.label(text="", icon="BLANK1")
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_A")
             if ifc_classes:
-                row.label(text=f" Add")
                 row.label(text="", icon="FILE_VOLUME")
                 row.label(text=ifc_class)
                 row.label(text="", icon="FILE_3D")
                 row.label(text=f"{relating_type}  ")
-            else:
-                row.label(text=f" Add instance")
+                row.operator("bim.display_constr_types", icon="TRIA_DOWN", text="")
+                row.operator("bim.display_constr_types", icon="VIEW_ORTHO", text="")
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_A")
+            row.label(text=f" Add")
         else:
             txt_ifc_class = ifc_class if ifc_classes else "No Construction Class"
             txt_relating_type = relating_type if relating_types_ids else "No Construction Type"
             row = layout.row(align=True)
-            row.label(text="Selected Construction Type:")
-            row = layout.row(align=True)
             row.label(text=txt_ifc_class, icon="FILE_VOLUME")
             row = layout.row(align=True)
             row.label(text=txt_relating_type, icon="FILE_3D")
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_A")
-            row.label(text=f" Add Type Instance")
+
+            if AuthoringData.data["ifc_classes"]:
+                row = layout.row()
+                row.label(text="", icon="FILE_VOLUME")
+                prop_with_search(row, props, "ifc_class", text="")
+
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_A")
+                row.label(text=f" Add Type Instance")
+
+            ifc_class = props.ifc_class
+            relating_type_id = props.relating_type_id
+            if AuthoringData.data["relating_types_ids"]:
+                row = layout.row()
+                row.label(text="", icon="FILE_3D")
+                prop_with_search(row, props, "relating_type_id", text="")
+
+            box = layout.box()
+            box.template_icon(icon_value=props.icon_id, scale=7)
+            row = layout.row()
+            op = row.operator("bim.add_constr_type_instance", icon="ADD")
+            op.from_invoke = True
+            op.ifc_class = ifc_class
+            if relating_type_id.isnumeric():
+                op.relating_type_id = int(relating_type_id)
 
         if AuthoringData.data["ifc_classes"]:
             if ifc_class == "IfcWallType":
@@ -129,6 +142,16 @@ class BimTool(WorkSpaceTool):
             if ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
                 row = layout.row()
                 row.label(text="Join")
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="Extend", icon="EVENT_E")
+
+            if props.ifc_class in (
+                "IfcCableCarrierSegmentType",
+                "IfcCableSegmentType",
+                "IfcDuctSegmentType",
+                "IfcPipeSegmentType",
+            ):
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="Extend", icon="EVENT_E")

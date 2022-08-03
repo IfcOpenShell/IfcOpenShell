@@ -118,17 +118,6 @@ def prop_with_search(layout, data, prop_name, **kwargs):
     op.prop_name = prop_name
 
 
-def layout_with_margins(layout, margin_left=0.025, margin_right=None):
-    margin_right = margin_left if margin_right is None else margin_right
-    split = layout.split(factor=margin_left, align=True)
-    cols = [split.column() for _ in range(2)]
-    cols[0].label(text="")
-    subsplit = cols[-1].split(factor=(1. - margin_right), align=True)
-    subcol = subsplit.column()
-    subsplit.column().label(text="")
-    return subcol
-
-
 def get_enum_items(data, prop_name, context):
     # Retrieve items from a dynamic EnumProperty, which is otherwise not supported
     # Or throws an error in the console when the items callback returns an empty list
