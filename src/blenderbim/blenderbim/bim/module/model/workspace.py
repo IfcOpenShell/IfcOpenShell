@@ -23,6 +23,7 @@ from blenderbim.bim.helper import prop_with_search, close_operator_panel
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
+from blenderbim.bim.module.model import prop
 
 
 class BimTool(WorkSpaceTool):
@@ -53,70 +54,80 @@ class BimTool(WorkSpaceTool):
     )
 
     def draw_settings(context, layout, tool):
-        if not AuthoringData.is_loaded and IfcStore.get_file():
-            AuthoringData.load()
-
         props = context.scene.BIMModelProperties
         is_tool_header = context.region.type == "TOOL_HEADER"
+        is_sidebar = context.region.type == "UI"
+
         row = layout.row(align=True)
         if not IfcStore.get_file():
             row.label(text="No IFC Project", icon="ERROR")
             return
 
-        ifc_classes = AuthoringData.data["ifc_classes"]
-        relating_types_ids = AuthoringData.data["relating_types_ids"]
+        if not AuthoringData.is_loaded:
+            AuthoringData.load()
+
+        ifc_classes = AuthoringData.data[
+            "ifc_classes"] if "ifc_classes" in AuthoringData.data else False
+        relating_types_ids = AuthoringData.data[
+            "relating_types_ids"] if "relating_types_ids" in AuthoringData.data else False
+
+        if ifc_classes and relating_types_ids and not props.icon_id:
+            # hack Dion won't like to show a preview also on the first time the sidebar is shown
+            bpy.app.timers.register(lambda: prop.update_relating_type(props, context))
 
         ifc_class = props.ifc_class
         relating_type_id = props.relating_type_id
-        relating_type = AuthoringData.relating_type_name_by_id(ifc_class, relating_type_id)
 
         if is_tool_header:
+            row = layout.row(align=True)
             if ifc_classes:
                 row.label(text="", icon="FILE_VOLUME")
-                row.label(text=ifc_class)
+                row.prop(data=props, property="ifc_class", text="")
+            else:
+                row.label(text="No Construction Class", icon="FILE_VOLUME")
+            row = layout.row(align=True)
+            if relating_types_ids:
                 row.label(text="", icon="FILE_3D")
-                row.label(text=f"{relating_type}  ")
+                row.prop(data=props, property="relating_type_id", text="")
+            else:
+                row.label(text="No Construction Type", icon="FILE_3D")
+            if ifc_classes:
+                row = layout.row()
                 row.operator("bim.display_constr_types", icon="TRIA_DOWN", text="")
-                row.operator("bim.display_constr_types", icon="VIEW_ORTHO", text="")
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_A")
             row.label(text=f" Add")
         else:
-            txt_ifc_class = ifc_class if ifc_classes else "No Construction Class"
-            txt_relating_type = relating_type if relating_types_ids else "No Construction Type"
             row = layout.row(align=True)
-            row.label(text=txt_ifc_class, icon="FILE_VOLUME")
-            row = layout.row(align=True)
-            row.label(text=txt_relating_type, icon="FILE_3D")
-
-            if AuthoringData.data["ifc_classes"]:
-                row = layout.row()
+            if ifc_classes:
                 row.label(text="", icon="FILE_VOLUME")
                 prop_with_search(row, props, "ifc_class", text="")
+            else:
+                row.label(text="No Construction Class", icon="FILE_VOLUME")
+            row = layout.row(align=True)
+            if relating_types_ids:
+                row.label(text="", icon="FILE_3D")
+                prop_with_search(row, props, "relating_type_id", text="")
+            else:
+                row.label(text="No Construction Type", icon="FILE_3D")
+            if is_sidebar and ifc_classes and relating_types_ids:
+                box = layout.box()
+                box.template_icon(icon_value=props.icon_id, scale=8)
+                row = layout.row()
+                op = row.operator("bim.add_constr_type_instance", icon="ADD")
+                op.from_invoke = True
+                op.ifc_class = ifc_class
+                if relating_type_id.isnumeric():
+                    op.relating_type_id = int(relating_type_id)
 
+            if ifc_classes:
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_A")
                 row.label(text=f" Add Type Instance")
 
-            ifc_class = props.ifc_class
-            relating_type_id = props.relating_type_id
-            if AuthoringData.data["relating_types_ids"]:
-                row = layout.row()
-                row.label(text="", icon="FILE_3D")
-                prop_with_search(row, props, "relating_type_id", text="")
-
-            box = layout.box()
-            box.template_icon(icon_value=props.icon_id, scale=7)
-            row = layout.row()
-            op = row.operator("bim.add_constr_type_instance", icon="ADD")
-            op.from_invoke = True
-            op.ifc_class = ifc_class
-            if relating_type_id.isnumeric():
-                op.relating_type_id = int(relating_type_id)
-
-        if AuthoringData.data["ifc_classes"]:
+        if ifc_classes:
             if ifc_class == "IfcWallType":
                 row = layout.row()
                 row.label(text="Join")
