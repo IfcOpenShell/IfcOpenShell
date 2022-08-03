@@ -380,7 +380,7 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer.material_creator.load_existing_materials()
         self.import_type_materials(element, ifc_importer)
         self.import_type_styles(element, ifc_importer)
-        ifc_importer.create_type_product(element)
+        ifc_importer.create_element_type(element)
         ifc_importer.place_objects_in_collections()
 
     def import_type_materials(self, element, ifc_importer):

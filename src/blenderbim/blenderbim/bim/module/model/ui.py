@@ -19,7 +19,7 @@
 import math
 from bpy.types import Panel, Operator
 from blenderbim.bim.module.model.data import AuthoringData
-from blenderbim.bim.helper import prop_with_search, layout_with_margins, close_operator_panel
+from blenderbim.bim.helper import prop_with_search, close_operator_panel
 
 
 class BIM_PT_authoring(Panel):
@@ -58,45 +58,29 @@ class DisplayConstrTypesUI(Operator):
 
     def draw(self, context):
         props = context.scene.BIMModelProperties
-        header_data = self.draw_header(props)
+        self.draw_header(props)
         if props.unfold_relating_types:
-            self.draw_by_ifc_class(props, header_data)
+            self.draw_by_ifc_class(props)
         else:
-            self.draw_by_ifc_class_and_type(props, header_data)
+            self.draw_by_ifc_class_and_type(props)
+        self.draw_footer(props)
 
     def draw_header(self, props):
-        layout = self.layout
-        inner_layout = layout
-        inner_layout.row().separator(factor=0.75)
-        split = inner_layout.split(align=True, factor=2.0 / 3)
-        col1 = split.column(align=True)
-        row = col1.row()
-        row.prop(data=props, property="unfold_relating_types", text="Preview All Construction Types")
-        col1.row().separator(factor=1)
-        row = col1.row()
-        row.label(text="Select Construction Type:")
-        col1.row().separator(factor=1.5)
-        enabled = True
         if AuthoringData.data["ifc_classes"]:
-            row = col1.row()
+            row = self.layout.row()
             row.label(text="", icon="FILE_VOLUME")
             prop_with_search(row, props, "ifc_class", text="")
-            col1.row().separator()
-        else:
-            enabled = False
-        col2 = split.column(align=True)
-        subsplit = col2.split(factor=0.8)
-        subcol = [subsplit.column() for _ in range(2)][-1]
-        subcol.operator("bim.help_relating_types", text="", icon="QUESTION")
-        col2.row().separator(factor=1)
-        return {"enabled": enabled, "layout": inner_layout, "col1": col1, "col2": col2}
 
-    def draw_by_ifc_class(self, props, header_data):
-        enabled, layout = [header_data[key] for key in ["enabled", "layout"]]
+    def draw_footer(self, props):
+        row = self.layout.row()
+        row.prop(data=props, property="unfold_relating_types", text="Show more")
+        row.operator("bim.help_relating_types", text="", icon="QUESTION")
+
+    def draw_by_ifc_class(self, props):
         ifc_class = props.ifc_class
         num_cols = 3
-        layout.row().separator(factor=0.25)
-        flow = layout.grid_flow(row_major=True, columns=num_cols, even_columns=True, even_rows=True, align=True)
+        self.layout.row().separator(factor=0.25)
+        flow = self.layout.grid_flow(row_major=True, columns=num_cols, even_columns=True, even_rows=True, align=True)
         relating_types = AuthoringData.relating_types()
         num_types = len(relating_types)
         for idx, (relating_type_id, name, desc) in enumerate(relating_types):
@@ -106,14 +90,12 @@ class DisplayConstrTypesUI(Operator):
             row.label(text=name, icon="FILE_3D")
             row.alignment = "CENTER"
             row = box.row()
-            if enabled:
-                preview_constr_types = AuthoringData.data["preview_constr_types"]
-                if ifc_class in preview_constr_types:
-                    preview_ifc_class = preview_constr_types[ifc_class]
-                    if relating_type_id in preview_ifc_class:
-                        icon_id = preview_ifc_class[relating_type_id]["icon_id"]
-                        row.template_icon(icon_value=icon_id, scale=6.0)
-            box.row().separator(factor=0.2)
+            preview_constr_types = AuthoringData.data["preview_constr_types"]
+            if ifc_class in preview_constr_types:
+                preview_ifc_class = preview_constr_types[ifc_class]
+                if relating_type_id in preview_ifc_class:
+                    icon_id = preview_ifc_class[relating_type_id]["icon_id"]
+                    row.template_icon(icon_value=icon_id, scale=6.0)
             row = box.row()
             op = row.operator("bim.add_constr_type_instance", icon="ADD")
             op.from_invoke = True
@@ -121,39 +103,26 @@ class DisplayConstrTypesUI(Operator):
             if relating_type_id.isnumeric():
                 op.relating_type_id = int(relating_type_id)
             factor = 2 if idx + 1 < math.ceil(num_types / num_cols) else 1.5
-            outer_col.row().separator(factor=factor)
         last_row_cols = num_types % num_cols
         if last_row_cols != 0:
             for _ in range(num_cols - last_row_cols):
                 flow.column()
 
-    def draw_by_ifc_class_and_type(self, props, header_data):
-        enabled, col1, col2 = [header_data[key] for key in ["enabled", "col1", "col2"]]
+    def draw_by_ifc_class_and_type(self, props):
         ifc_class = props.ifc_class
         relating_type_id = props.relating_type_id
         if AuthoringData.data["relating_types_ids"]:
-            row = col1.row()
+            row = self.layout.row()
             row.label(text="", icon="FILE_3D")
             prop_with_search(row, props, "relating_type_id", text="")
-            col1.row().separator()
-        else:
-            enabled = False
-        col1.row().separator(factor=4.75)
-        row = col1.row()
-        row.enabled = enabled
-        row.label(text="", icon="BLANK1")
+        box = self.layout.box()
+        box.template_icon(icon_value=props.icon_id, scale=7)
+        row = self.layout.row()
         op = row.operator("bim.add_constr_type_instance", icon="ADD")
         op.from_invoke = True
         op.ifc_class = ifc_class
         if relating_type_id.isnumeric():
             op.relating_type_id = int(relating_type_id)
-        col2.row().separator(factor=1.25)
-        split = col2.split(factor=0.025)
-        col = [split.column() for _ in range(2)][-1]
-        box = col.box()
-        if enabled:
-            box.template_icon(icon_value=props.icon_id, scale=5.6)
-        col1.row().separator(factor=1)
 
 
 class HelpConstrTypes(Operator):
@@ -176,15 +145,15 @@ class HelpConstrTypes(Operator):
         row.label(text="BlenderBIM Help", icon="BLENDER")
         layout.row().separator(factor=0.5)
 
-        row = layout_with_margins(layout.row()).row()
+        row = layout.row().row()
         row.label(text="Overview:", icon="KEYTYPE_MOVING_HOLD_VEC")
         self.draw_lines(layout, self.message_summary)
         layout.row().separator()
 
-        row = layout_with_margins(layout.row()).row()
+        row = layout.row().row()
         row.label(text="Further support:", icon="KEYTYPE_MOVING_HOLD_VEC")
         layout.row().separator(factor=0.5)
-        row = layout_with_margins(layout).row()
+        row = layout.row()
         op = row.operator("bim.open_upstream", text="Homepage", icon="HOME")
         op.page = "home"
         op = row.operator("bim.open_upstream", text="Docs", icon="DOCUMENTS")
@@ -196,7 +165,7 @@ class HelpConstrTypes(Operator):
         layout.row().separator()
 
     def draw_lines(self, layout, lines):
-        box = layout_with_margins(layout).box()
+        box = layout.box()
         for line in lines:
             row = box.row()
             row.label(text=f"  {line}")
