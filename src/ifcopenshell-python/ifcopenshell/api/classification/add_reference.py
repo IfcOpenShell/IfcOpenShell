@@ -42,7 +42,7 @@ class Usecase:
     def add_from_identification(self):
         reference = self.get_existing_reference(self.settings["identification"])
         if reference:
-            self.add_to_existing_relationship()
+            self.add_to_existing_relationship(reference)
         else:
             reference = self.file.createIfcClassificationReference(
                 Name=self.settings["name"], ReferencedSource=self.settings["classification"]
@@ -63,7 +63,7 @@ class Usecase:
         reference = self.get_existing_reference(identification)
 
         if reference:
-            self.add_to_existing_relationship()
+            self.add_to_existing_relationship(reference)
             return reference
 
         migrator = ifcopenshell.util.schema.Migrator()

@@ -40,6 +40,19 @@ class TestAddReference(test.bootstrap.IFC4):
         assert references[0].Name == "Foobar"
         assert references[0].ReferencedSource == self.file.by_type("IfcClassification")[0]
 
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "classification.add_reference",
+            self.file,
+            product=element2,
+            identification="X",
+            name="Foobar",
+            classification=result,
+        )
+        assert list(ifcopenshell.util.classification.get_references(element2))[0].Identification == "X"
+        assert list(ifcopenshell.util.classification.get_references(element2))[0].Name == "Foobar"
+        assert list(ifcopenshell.util.classification.get_references(element2))[0] == references[0]
+
     def test_adding_a_reference_from_a_library(self):
         library = ifcopenshell.file()
         classification = library.createIfcClassification(Name="Name")
