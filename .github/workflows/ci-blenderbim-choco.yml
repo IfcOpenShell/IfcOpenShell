@@ -1,4 +1,4 @@
-name: Publish-blenderbim-multiplatform
+name: Publish-blenderbim-chocolatey package
 
 on:
   schedule:
@@ -91,3 +91,8 @@ jobs:
           mono /opt/chocolatey/choco.exe setapikey --key="$CHOCO_TOKEN" --source="https://push.chocolatey.org/" --allow-unofficial # &&
           echo __choco push &&
           mono /opt/chocolatey/choco.exe push --source="https://push.chocolatey.org/" --key="$CHOCO_TOKEN" --allow-unofficial --verbose
+
+      - name: Inform user about not packaging
+        if: ${{steps.do_choco.outputs.choco_release}} != 'do_choco_release'
+        run: |
+          echo "no releases found today ${{ env.DATE }}, therefore choco packaging is skipped."
