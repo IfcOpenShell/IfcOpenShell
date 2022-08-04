@@ -20,7 +20,6 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.EditBlenderCollection,
     operator.ActivateIfcClassFilter,
     operator.ActivateIfcBuildingStoreyFilter,
     operator.ColourByAttribute,

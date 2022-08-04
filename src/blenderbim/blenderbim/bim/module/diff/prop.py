@@ -30,10 +30,16 @@ from bpy.props import (
     CollectionProperty,
 )
 
+class Relationships(PropertyGroup):
+    relationship: EnumProperty(
+        name="Relationship",
+        items=[(r,r,r) for r in ["type", "property", "container", "aggregate", "classification"]],
+    )
 
 class DiffProperties(PropertyGroup):
     diff_json_file: StringProperty(default="", name="Diff JSON File")
     diff_old_file: StringProperty(default="", name="Diff Old IFC File")
     diff_new_file: StringProperty(default="", name="Diff New IFC File")
-    diff_relationships: StringProperty(default="", name="Diff Relationships")
+    diff_relationships: CollectionProperty(type=Relationships, name="Diff Relationships")
     diff_filter_elements: StringProperty(default="", name="Diff Filter")
+    diff_result: StringProperty(default="", name="Diff Result")

@@ -69,22 +69,6 @@ def does_keyword_exist(pattern, string, context):
         return True
 
 
-class EditBlenderCollection(Operator):
-    bl_idname = "bim.edit_blender_collection"
-    bl_label = "Add or Remove blender collection item"
-    bl_options = {"REGISTER", "UNDO"}
-    option: StringProperty()
-    collection: StringProperty()
-    index: IntProperty()
-
-    def execute(self, context):
-        if self.option == "add":
-            getattr(context.bim_prop_group, self.collection).add()
-        else:
-            getattr(context.bim_prop_group, self.collection).remove(self.index)
-        return {"FINISHED"}
-
-
 class SelectGlobalId(Operator):
     """Click to select the objects that match with the given Global ID"""
 
@@ -562,7 +546,7 @@ class FilterModelElements(Operator):
                 if obj.BIMObjectProperties.ifc_definition_id in sel_element_ids:
                     obj.hide_set(True)
 
-
+#This needs to be moved into ui code, I know ;) - vulevukusej
 class IfcSelector(Operator):
     """Select elements in model with IFC Selector"""
 
@@ -581,7 +565,6 @@ class IfcSelector(Operator):
 
     def draw(self, context):
         from . import ui
-
         ui.IfcSelectorUI.draw(context, self.layout)
 
 

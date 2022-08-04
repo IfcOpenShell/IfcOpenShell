@@ -114,10 +114,11 @@ class ExecuteIfcDiff(bpy.types.Operator):
             context.scene.DiffProperties.diff_old_file,
             context.scene.DiffProperties.diff_new_file,
             self.filepath,
-            context.scene.DiffProperties.diff_relationships.split(),
+            [r.relationship for r in context.scene.DiffProperties.diff_relationships],
             context.scene.DiffProperties.diff_filter_elements,
         )
-        ifc_diff.diff()
+        diff = ifc_diff.diff()
         ifc_diff.export()
         context.scene.DiffProperties.diff_json_file = self.filepath
+        context.scene.DiffProperties.diff_result = diff
         return {"FINISHED"}

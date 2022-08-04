@@ -595,3 +595,18 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                         values = [values]
                     for value in values:
                         self.add_item(identifier=key, name=key + " (" + value + ")")
+                        
+class EditBlenderCollection(bpy.types.Operator):
+    bl_idname = "bim.edit_blender_collection"
+    bl_label = "Add or Remove blender collection item"
+    bl_options = {"REGISTER", "UNDO"}
+    option: bpy.props.StringProperty(description="add or remove item from collection")
+    collection: bpy.props.StringProperty(description="collection to be edited")
+    index: bpy.props.IntProperty(description="index of item to be removed")
+
+    def execute(self, context):
+        if self.option == "add":
+            getattr(context.bim_prop_group, self.collection).add()
+        else:
+            getattr(context.bim_prop_group, self.collection).remove(self.index)
+        return {"FINISHED"}
