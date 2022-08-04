@@ -34,7 +34,7 @@ from deepdiff import DeepDiff
 
 
 class IfcDiff:
-    def __init__(self, old_file, new_file, output_file, relationships=None, is_shallow=True, filter_elements:None):
+    def __init__(self, old_file, new_file, output_file, relationships=None, is_shallow=True, filter_elements=None):
         self.old_file = old_file
         self.new_file = new_file
         self.output_file = output_file
