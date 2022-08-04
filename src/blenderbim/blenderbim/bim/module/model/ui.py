@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
 from bpy.types import Panel, Operator
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
@@ -54,34 +53,19 @@ class DisplayConstrTypesUI(Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_popup(self)
+        return context.window_manager.invoke_popup(self, width=550)
 
     def draw(self, context):
         props = context.scene.BIMModelProperties
-        self.draw_header(props)
-        if props.unfold_relating_types:
-            self.draw_by_ifc_class(props)
-        else:
-            self.draw_by_ifc_class_and_type(props)
-        self.draw_footer(props)
-
-    def draw_header(self, props):
         if AuthoringData.data["ifc_classes"]:
             row = self.layout.row()
             row.label(text="", icon="FILE_VOLUME")
-            prop_with_search(row, props, "ifc_class", text="")
-
-    def draw_footer(self, props):
-        row = self.layout.row()
-        row.prop(data=props, property="unfold_relating_types", text="Show more")
-        row.operator("bim.help_relating_types", text="", icon="QUESTION")
-
-    def draw_by_ifc_class(self, props):
-        ifc_class = props.ifc_class
+            prop_with_search(row, props, "ifc_class_browser", text="")
+        ifc_class = props.ifc_class_browser
         num_cols = 3
         self.layout.row().separator(factor=0.25)
         flow = self.layout.grid_flow(row_major=True, columns=num_cols, even_columns=True, even_rows=True, align=True)
-        relating_types = AuthoringData.relating_types()
+        relating_types = AuthoringData.relating_types_browser()
         num_types = len(relating_types)
         for idx, (relating_type_id, name, desc) in enumerate(relating_types):
             outer_col = flow.column()
@@ -102,27 +86,13 @@ class DisplayConstrTypesUI(Operator):
             op.ifc_class = ifc_class
             if relating_type_id.isnumeric():
                 op.relating_type_id = int(relating_type_id)
-            factor = 2 if idx + 1 < math.ceil(num_types / num_cols) else 1.5
         last_row_cols = num_types % num_cols
         if last_row_cols != 0:
             for _ in range(num_cols - last_row_cols):
                 flow.column()
-
-    def draw_by_ifc_class_and_type(self, props):
-        ifc_class = props.ifc_class
-        relating_type_id = props.relating_type_id
-        if AuthoringData.data["relating_types_ids"]:
-            row = self.layout.row()
-            row.label(text="", icon="FILE_3D")
-            prop_with_search(row, props, "relating_type_id", text="")
-        box = self.layout.box()
-        box.template_icon(icon_value=props.icon_id, scale=7)
         row = self.layout.row()
-        op = row.operator("bim.add_constr_type_instance", icon="ADD")
-        op.from_invoke = True
-        op.ifc_class = ifc_class
-        if relating_type_id.isnumeric():
-            op.relating_type_id = int(relating_type_id)
+        row.alignment = "RIGHT"
+        row.operator("bim.help_relating_types", text="", icon="QUESTION")
 
 
 class HelpConstrTypes(Operator):
