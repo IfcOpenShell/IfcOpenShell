@@ -42,6 +42,7 @@ class AuthoringData:
         cls.props = bpy.context.scene.BIMModelProperties
         cls.load_ifc_classes()
         cls.load_relating_types()
+        cls.load_relating_types_browser()
         cls.load_preview_constr_types()
 
     @classmethod
@@ -51,6 +52,10 @@ class AuthoringData:
     @classmethod
     def load_relating_types(cls):
         cls.data["relating_types_ids"] = cls.relating_types()
+
+    @classmethod
+    def load_relating_types_browser(cls):
+        cls.data["relating_types_browser_ids"] = cls.relating_types_browser()
 
     @classmethod
     def load_preview_constr_types(cls):
@@ -87,6 +92,10 @@ class AuthoringData:
     @classmethod
     def relating_types(cls, ifc_class=None):
         return [(str(e.id()), e.Name, e.Description or "") for e in cls.constr_class_entities(ifc_class=ifc_class)]
+
+    @classmethod
+    def relating_types_browser(cls):
+        return cls.relating_types(ifc_class=cls.props.ifc_class_browser)
 
     @staticmethod
     def new_relating_type_info(ifc_class):
@@ -137,9 +146,9 @@ class AuthoringData:
                 col.objects.unlink(obj)
 
     @classmethod
-    def assetize_relating_type_from_selection(cls):
-        ifc_class= cls.props.ifc_class
-        relating_type_id = cls.props.relating_type_id
+    def assetize_relating_type_from_selection(cls, browser=False):
+        ifc_class = cls.props.ifc_class_browser if browser else cls.props.ifc_class
+        relating_type_id = cls.props.relating_type_id_browser if browser else cls.props.relating_type_id
         constr_class_occurrences = cls.constr_class_entities(ifc_class=ifc_class)
         constr_class_occurrences = [
             entity for entity in constr_class_occurrences if entity.id() == int(relating_type_id)
