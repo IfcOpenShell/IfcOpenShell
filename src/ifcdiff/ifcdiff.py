@@ -34,7 +34,7 @@ from deepdiff import DeepDiff
 
 
 class IfcDiff:
-    def __init__(self, old_file, new_file, output_file, relationships=None, is_shallow=True):
+    def __init__(self, old_file, new_file, output_file, relationships=None, is_shallow=True, filter_elements:None):
         self.old_file = old_file
         self.new_file = new_file
         self.output_file = output_file
@@ -43,6 +43,7 @@ class IfcDiff:
         self.relationships = relationships
         self.precision = 1e-4
         self.is_shallow = is_shallow
+        self.filter_elements = filter_elements
 
     def diff(self):
         print("# IFC Diff")
