@@ -210,9 +210,9 @@ endif
 
 	# Required by IFCDiff
 	mkdir dist/working
-	cd dist/working && wget https://github.com/Moult/deepdiff/archive/master.zip
-	cd dist/working && unzip master.zip
-	cp -r dist/working/deepdiff-master/deepdiff dist/blenderbim/libs/site/packages/
+	cd dist/working && wget https://files.pythonhosted.org/packages/0f/ca/caead2949fbb824c7142e3774fa841aa853bb4d4331b440da8c8514dfc6f/deepdiff-5.8.1.tar.gz
+	cd dist/working && tar -xzvf deepdiff*
+	cp -r dist/working/deepdiff-5.8.1/deepdiff dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by deepdiff
