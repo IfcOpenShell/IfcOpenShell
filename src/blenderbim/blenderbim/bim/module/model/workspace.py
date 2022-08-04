@@ -73,6 +73,7 @@ class BimTool(WorkSpaceTool):
 
         if ifc_classes and relating_types_ids and not props.icon_id:
             # hack Dion won't like to show a preview also on the first time the sidebar is shown
+            bpy.app.timers.register(lambda: prop.update_ifc_class_browser(props, context))
             bpy.app.timers.register(lambda: prop.update_relating_type(props, context))
 
         ifc_class = props.ifc_class
