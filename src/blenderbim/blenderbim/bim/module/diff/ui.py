@@ -48,6 +48,9 @@ class BIM_PT_diff(Panel):
 
         row = layout.row(align=True)
         row.prop(bim_properties, "diff_relationships")
+        
+        row = layout.row(align=True)
+        row.prop(bim_properties, "diff_filter_elements")
 
         row = layout.row()
         row.operator("bim.execute_ifc_diff")
