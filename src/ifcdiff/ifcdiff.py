@@ -29,6 +29,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.classification
+import ifcopenshell.util.selector
 from deepdiff import DeepDiff
 
 
@@ -50,8 +51,13 @@ class IfcDiff:
 
         self.precision = self.get_precision()
 
-        old_elements = set(e.GlobalId for e in self.old.by_type("IfcProduct"))
-        new_elements = set(e.GlobalId for e in self.new.by_type("IfcProduct"))
+        if self.filter_elements:
+            selector = ifcopenshell.util.selector.Selector()
+            old_elements = set(e.GlobalId for e in selector.parse(self.old, self.filter_elements))
+            new_elements = set(e.GlobalId for e in selector.parse(self.new, self.filter_elements))
+        else:   
+            old_elements = set(e.GlobalId for e in self.old.by_type("IfcProduct"))
+            new_elements = set(e.GlobalId for e in self.new.by_type("IfcProduct"))
 
         self.deleted_elements = old_elements - new_elements
         self.added_elements = new_elements - old_elements
