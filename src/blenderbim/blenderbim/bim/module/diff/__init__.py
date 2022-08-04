@@ -25,6 +25,7 @@ classes = (
     operator.SelectDiffOldFile,
     operator.SelectDiffNewFile,
     operator.ExecuteIfcDiff,
+    prop.Relationships,
     prop.DiffProperties,
     ui.BIM_PT_diff,
 )
