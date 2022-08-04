@@ -76,7 +76,6 @@ jobs:
           echo   sha256sum_blenderbim_py310_win_zip: $sha256sum_blenderbim_py310_win_zip &&
           python3 choco/blenderbim/fill_dynamic_parameters.py &&
           echo __build choco with mono &&
-          sudo apt update && sudo apt install git wget gzip tar mono-devel -y &&
           wget "https://github.com/chocolatey/choco/archive/refs/tags/$choco_version.tar.gz" --quiet &&
           tar -xzf "$choco_version.tar.gz" &&
           cd choco-$choco_version &&
@@ -96,4 +95,3 @@ jobs:
         if: ${{steps.do_choco.outputs.choco_release}} != 'do_choco_release'
         run: |
           echo "no releases found today ${{ env.DATE }}, therefore choco packaging is skipped."
-
