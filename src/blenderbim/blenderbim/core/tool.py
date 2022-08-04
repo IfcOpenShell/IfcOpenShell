@@ -422,6 +422,19 @@ class Selector:
 
 
 @interface
+class Sequence:
+    def get_work_plans(cls): pass
+    def load_work_plans(cls): pass
+    def enable_editing_work_plan(cls, work_plan): pass
+    def disable_editing_work_plan(cls): pass
+    def get_current_ifc_work_plan(cls): pass
+    def get_ifc_work_plan_attributes(cls): pass
+    def load_work_plan_attributes(cls): pass
+    def import_attributes(cls): pass
+    def export_attributes(cls): pass
+
+
+@interface
 class Spatial:
     def can_contain(cls, structure_obj, element_obj): pass
     def disable_editing(cls, obj): pass

@@ -92,7 +92,6 @@ class FilterCategory(PropertyGroup):
 
 class Link(PropertyGroup):
     name: StringProperty(name="Name")
-    collection: PointerProperty(name="Collection", type=bpy.types.Collection)
     is_loaded: BoolProperty(name="Is Loaded", default=False)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)

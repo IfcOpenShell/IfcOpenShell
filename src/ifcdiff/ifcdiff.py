@@ -29,14 +29,15 @@ import decimal
 
 
 class IfcDiff:
-    def __init__(self, old_file, new_file, output_file, inverse_classes=None):
+    def __init__(self, old_file, new_file, output_file, inverse_classes=None, is_shallow=False):
         self.old_file = old_file
         self.new_file = new_file
         self.output_file = output_file
         self.change_register = {}
-        self.representation_ids = []
+        self.representation_ids = set()
         self.inverse_classes = inverse_classes
         self.precision = 2
+        self.is_shallow = is_shallow
 
     def diff(self):
         print("# IFC Diff")
@@ -61,16 +62,18 @@ class IfcDiff:
 
         for global_id in same_elements:
             total_diffed += 1
-            print("{}/{} diffed ...".format(total_diffed, total_same_elements), end="\r", flush=True)
+            if total_diffed % 250 == 0:
+                print("{}/{} diffed ...".format(total_diffed, total_same_elements), end="\r", flush=True)
             old_element = self.old.by_id(global_id)
             new_element = self.new.by_id(global_id)
-            self.diff_element(old_element, new_element)
-            self.diff_element_inverse_relationships(old_element, new_element)
-
+            if self.diff_element(old_element, new_element) and self.is_shallow:
+                continue
+            if self.diff_element_inverse_relationships(old_element, new_element) and self.is_shallow:
+                continue
             representation_id = self.get_representation_id(new_element)
             if representation_id in self.representation_ids:
                 continue
-            self.representation_ids.append(representation_id)
+            self.representation_ids.add(representation_id)
             self.diff_element_geometry(old_element, new_element)
 
         print(" - {} item(s) were changed either geometrically or with data".format(len(self.change_register.keys())))
@@ -114,15 +117,16 @@ class IfcDiff:
             significant_digits=self.precision,
             ignore_string_type_changes=True,
             ignore_numeric_type_changes=True,
-            exclude_regex_paths=[
+            exclude_regex_paths={
                 r"root.*id$",
                 r".*Representation.*",
                 r".*OwnerHistory.*",
                 r".*ObjectPlacement.*",
-            ],
+            },
         )
         if diff and new_element.GlobalId:
             self.change_register.setdefault(new_element.GlobalId, {}).update(diff)
+            return True
 
     def diff_element_inverse_relationships(self, old_element, new_element):
         if not self.inverse_classes:
@@ -154,6 +158,7 @@ class IfcDiff:
         )
         if diff and new_element.GlobalId:
             self.change_register.setdefault(new_element.GlobalId, {}).update(diff)
+            return True
 
     def diff_element_geometry(self, old_element, new_element):
         try:
@@ -161,16 +166,6 @@ class IfcDiff:
                 old_element.ObjectPlacement,
                 new_element.ObjectPlacement,
                 terminate_on_first=True,
-                significant_digits=self.precision,
-                ignore_string_type_changes=True,
-                ignore_numeric_type_changes=True,
-                exclude_regex_paths=r"root.*id$",
-            )
-            DeepDiff(
-                old_element.Representation,
-                new_element.Representation,
-                terminate_on_first=True,
-                skip_after_n=1000,  # Arbitrary value to "skim" check
                 significant_digits=self.precision,
                 ignore_string_type_changes=True,
                 ignore_numeric_type_changes=True,
@@ -193,6 +188,19 @@ class IfcDiff:
                 ignore_string_type_changes=True,
                 ignore_numeric_type_changes=True,
                 exclude_regex_paths=r"root.*id$",
+            )
+            DeepDiff(
+                old_element.Representation.get_info_2(recursive=True),
+                new_element.Representation.get_info_2(recursive=True),
+                terminate_on_first=True,
+                skip_after_n=500,  # Arbitrary value to "skim" check
+                significant_digits=self.precision,
+                ignore_string_type_changes=True,
+                ignore_numeric_type_changes=True,
+                exclude_regex_paths=[
+                    r"root.*id']$",
+                    r".*ContextOfItems.*",
+                ],
             )
         except:
             if new_element.GlobalId:
