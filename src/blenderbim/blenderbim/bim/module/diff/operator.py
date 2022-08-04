@@ -115,6 +115,7 @@ class ExecuteIfcDiff(bpy.types.Operator):
             context.scene.DiffProperties.diff_new_file,
             self.filepath,
             context.scene.DiffProperties.diff_relationships.split(),
+            context.scene.DiffProperties.diff_filter_elements,
         )
         ifc_diff.diff()
         ifc_diff.export()
