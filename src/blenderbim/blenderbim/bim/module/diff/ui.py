@@ -18,6 +18,8 @@
 
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
+import json
 
 
 class BIM_PT_diff(Panel):
@@ -48,15 +50,52 @@ class BIM_PT_diff(Panel):
 
         row = layout.row(align=True)
         row.prop(bim_properties, "diff_relationships")
+        row.context_pointer_set("bim_prop_group", bim_properties)
+        add = row.operator("bim.edit_blender_collection", icon="ADD", text="")
+        add.option = "add"
+        add.collection = "diff_relationships"
+        
+        for index, r in enumerate(bim_properties.diff_relationships):
+            row = layout.row(align=True)
+            row.context_pointer_set("bim_prop_group", bim_properties)
+            row.prop(r, "relationship", text=" ")
+            remove = row.operator("bim.edit_blender_collection", icon="REMOVE", text="")
+            remove.option = "remove"
+            remove.collection = "diff_relationships"
+            remove.index = index
         
         row = layout.row(align=True)
         row.prop(bim_properties, "diff_filter_elements")
+        row.operator("bim.ifc_selector", icon="FILTER", text="")
 
         row = layout.row()
         row.operator("bim.execute_ifc_diff")
+        if bim_properties.diff_result:
+            row = layout.row()
+            row.alignment = "CENTER"
+            row.label(text=bim_properties.diff_result)
 
         # TODO: show if there ifc diff operation is sucessful
         row = layout.row(align=True)
         row.prop(bim_properties, "diff_json_file")
         row.operator("bim.select_diff_json_file", icon="FILE_FOLDER", text="")
         row.operator("bim.visualise_diff", icon="HIDE_OFF", text="")
+        
+
+        # Show diff results #
+        if bim_properties.diff_json_file:
+            with open(context.scene.DiffProperties.diff_json_file, "r") as file:
+                results = json.load(file)   
+            if results:
+                row = layout.row()
+                row = layout.row()
+                row.label(text="Diff Results:")
+                for g in results["changed"]:
+                    obj = tool.Ifc.get_entity(context.active_object)
+                    if obj.GlobalId == g:
+                        for k,v in results["changed"][g].items():
+                            row = layout.row()
+                            row.alignment = "LEFT"
+                            row.label(text=f"{str(k).upper()}: {str(v)}")
+
+                            
