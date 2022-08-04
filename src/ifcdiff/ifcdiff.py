@@ -89,6 +89,7 @@ class IfcDiff:
         print(" - {} item(s) were changed either geometrically or with data".format(len(self.change_register.keys())))
         print("# Diff finished in {:.2f} seconds".format(time.time() - start))
         logging.disable(logging.NOTSET)
+        return f"# Diff finished in {time.time() - start:.2f} seconds"
 
     def export(self):
         with open(self.output_file, "w", encoding="utf-8") as diff_file:
