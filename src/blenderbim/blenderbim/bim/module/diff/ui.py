@@ -18,6 +18,7 @@
 
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.diff.data import DiffData
 import blenderbim.tool as tool
 import json
 
@@ -32,6 +33,9 @@ class BIM_PT_diff(Panel):
     bl_parent_id = "BIM_PT_quality_control"
 
     def draw(self, context):
+        if not DiffData.is_loaded:
+            DiffData.load()
+
         layout = self.layout
         layout.use_property_split = True
 
@@ -81,21 +85,10 @@ class BIM_PT_diff(Panel):
         row.operator("bim.select_diff_json_file", icon="FILE_FOLDER", text="")
         row.operator("bim.visualise_diff", icon="HIDE_OFF", text="")
         
-
-        # Show diff results #
-        if bim_properties.diff_json_file:
-            with open(context.scene.DiffProperties.diff_json_file, "r") as file:
-                results = json.load(file)   
-            if results:
+        if DiffData.data["changes"]:
+            row = layout.row()
+            row.label(text="Diff Results:")
+            for key, value in DiffData.data["changes"].items():
                 row = layout.row()
-                row = layout.row()
-                row.label(text="Diff Results:")
-                for g in results["changed"]:
-                    obj = tool.Ifc.get_entity(context.active_object)
-                    if obj.GlobalId == g:
-                        for k,v in results["changed"][g].items():
-                            row = layout.row()
-                            row.alignment = "LEFT"
-                            row.label(text=f"{str(k).upper()}: {str(v)}")
-
-                            
+                row.label(text=key)
+                row.label(text=value)
