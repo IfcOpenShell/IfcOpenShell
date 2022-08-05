@@ -49,17 +49,19 @@ class VisualiseDiff(bpy.types.Operator):
         with open(context.scene.DiffProperties.diff_json_file, "r") as file:
             diff = json.load(file)
         for obj in context.visible_objects:
-            obj.color = (1.0, 1.0, 1.0, 0.2)
+            obj.color = (1.0, 1.0, 1.0, 1.0)
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            global_id = element.GlobalId
+            global_id = getattr(element, "GlobalId", None)
+            if not global_id:
+                continue
             if global_id in diff["deleted"]:
-                obj.color = (1.0, 0.0, 0.0, 0.2)
+                obj.color = (1.0, 0.0, 0.0, 1.0)
             elif global_id in diff["added"]:
-                obj.color = (0.0, 1.0, 0.0, 0.2)
+                obj.color = (0.0, 1.0, 0.0, 1.0)
             elif global_id in diff["changed"]:
-                obj.color = (0.0, 0.0, 1.0, 0.2)
+                obj.color = (0.0, 0.0, 1.0, 1.0)
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
