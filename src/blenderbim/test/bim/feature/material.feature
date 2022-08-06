@@ -111,6 +111,17 @@ Scenario: Assign material - Assign a material profile set
     And I press "bim.assign_material"
     Then nothing happens
 
+Scenario: Assign material - Assign a material constituent set
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "bim.add_material(obj='')"
+    When I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialConstituentSet"
+    And I press "bim.assign_material"
+    Then nothing happens
+
 Scenario: Select by material
     Given an empty IFC project
     And I press "bim.load_materials"

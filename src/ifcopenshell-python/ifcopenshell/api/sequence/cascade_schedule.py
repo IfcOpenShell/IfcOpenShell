@@ -32,7 +32,20 @@ class Usecase:
         self.calendar_cache = {}
         self.cascade_task(self.settings["task"], is_first_task=True)
 
-    def cascade_task(self, task, is_first_task=False):
+    def cascade_task(self, task, is_first_task=False, task_sequence=None):
+        if task_sequence is None:
+            task_sequence = []
+
+        if task in task_sequence:
+            print("Warning! Recursive sequence is as follows:")
+            for i, debug_task in enumerate(task_sequence):
+                if i == 0:
+                    print("Starting at", debug_task)
+                else:
+                    print("... is a predecessor to ...", debug_task)
+            print("... which is cyclically a predecessor to ...", task)
+            raise RecursionError("Recursive tasks found. Could not cascade schedule.")
+
         if not task.TaskTime:
             return
 
@@ -170,7 +183,7 @@ class Usecase:
             )
 
         for rel in task.IsPredecessorTo:
-            self.cascade_task(rel.RelatedProcess)
+            self.cascade_task(rel.RelatedProcess, task_sequence=task_sequence + [task])
 
     def get_lag_time_days(self, lag_time):
         return ifcopenshell.util.date.ifc2datetime(lag_time.LagValue.wrappedValue).days

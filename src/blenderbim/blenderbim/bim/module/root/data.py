@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections import defaultdict
 import bpy
 import ifcopenshell.util.element
 import blenderbim.tool as tool
+from blenderbim.bim.ifc import IfcStore
 
 
 def refresh():
@@ -35,6 +37,7 @@ class IfcClassData:
         cls.data = {}
         cls.data["ifc_products"] = cls.ifc_products()
         cls.data["ifc_classes"] = cls.ifc_classes()
+        cls.data["ifc_classes_suggestions"] = cls.ifc_classes_suggestions()
         cls.data["contexts"] = cls.contexts()
         cls.data["has_entity"] = cls.has_entity()
         cls.data["name"] = cls.name()
@@ -73,6 +76,41 @@ class IfcClassData:
         if ifc_product == "IfcElementType":
             names.extend(("IfcDoorStyle", "IfcWindowStyle"))
         return [(c, c, "") for c in sorted(names)]
+
+    @classmethod
+    def ifc_classes_suggestions(cls):
+        suggestions = defaultdict(list)
+        suggestions.update(
+            {
+                "IfcWall": ["Glazing", "Glass", "Pane"],
+                "IfcWindow": ["Glazing", "Glass", "Pane"],
+                "IfcPlate": ["Glazing", "Glass", "Pane"],
+                "IfcFurniture": ["Signage"],
+                "IfcSlab": ["Hob"],
+                "IfcCovering": ["Flashing", "Capping"],
+                "IfcCableSegment": ["Lighting Rod"],
+                "IfcSensor": ["Card Reader", "Fob Reader"],
+                "IfcSwitchingDevice": ["Reed Switch", "Electric Isolating Switch"],
+                "IfcActuator": ["Electric Strike"],
+                "IfcAirTerminalBox": ["VAV Box"],
+                "IfcUnitaryEquipment": ["Fan Coil Unit"],
+            }
+        )
+        file = IfcStore.get_file()
+        if file:
+            for ifc_class in cls.ifc_classes():
+                ifc_class = ifc_class[0]
+                declaration = IfcStore.get_schema().declaration_by_name(ifc_class)
+                for attribute in declaration.attributes():
+                    if attribute.name() == "PredefinedType":
+                        for e in attribute.type_of_attribute().declared_type().enumeration_items():
+                            if e in (
+                                "NOTDEFINED",
+                                "USERDEFINED",
+                            ):
+                                continue
+                            suggestions[ifc_class].append(e.title())
+        return suggestions
 
     @classmethod
     def contexts(cls):

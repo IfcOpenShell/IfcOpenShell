@@ -38,11 +38,14 @@ def draw_attribute(attribute, layout, copy_operator=None):
     if not value_name:
         layout.label(text=attribute.name)
         return
-    layout.prop(
-        attribute,
-        value_name,
-        text=attribute.name,
-    )
+    if value_name == "enum_value":
+        prop_with_search(layout, attribute, "enum_value", text=attribute.name)
+    else:
+        layout.prop(
+            attribute,
+            value_name,
+            text=attribute.name,
+        )
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
     if copy_operator:
@@ -103,6 +106,39 @@ def export_attributes(props, callback=None):
             continue  # Our job is done
         attributes[prop.name] = prop.get_value()
     return attributes
+
+
+def prop_with_search(layout, data, prop_name, **kwargs):
+    # kwargs are layout.prop arguments (text, icon, etc.)
+    row = layout.row(align=True)
+    # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
+    row.context_pointer_set(name="data", data=data)
+    row.prop(data, prop_name, **kwargs)
+    op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
+    op.prop_name = prop_name
+
+
+def get_enum_items(data, prop_name, context):
+    # Retrieve items from a dynamic EnumProperty, which is otherwise not supported
+    # Or throws an error in the console when the items callback returns an empty list
+    # See https://blender.stackexchange.com/q/215781/86891
+    prop = data.__annotations__[prop_name]
+    items = prop.keywords.get("items")
+    if items is None:
+        return
+    if not isinstance(items, (list, tuple)):
+        # items are retrieved through a callback, not a static list :
+        items = items(data, context)
+    return items
+
+
+# hack to close popup
+# https://blender.stackexchange.com/a/202576/130742
+def close_operator_panel(event):
+    x, y = event.mouse_x, event.mouse_y
+    bpy.context.window.cursor_warp(10, 10)
+    move_back = lambda: bpy.context.window.cursor_warp(x, y)
+    bpy.app.timers.register(move_back, first_interval=0.01)
 
 
 class IfcHeaderExtractor:

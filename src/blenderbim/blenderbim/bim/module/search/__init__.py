@@ -31,18 +31,33 @@ classes = (
     operator.SelectGlobalId,
     operator.SelectIfcClass,
     operator.SelectPset,
+    operator.UnhideAllElements,
+    operator.FilterModelElements,
+    operator.IfcSelector,
+    operator.SaveSelectorQuery,
+    operator.OpenQueryLibrary,
+    operator.LoadQuery,
+    operator.AddToIfcGroup,
     prop.BIMFilterClasses,
     prop.BIMFilterBuildingStoreys,
     prop.BIMSearchProperties,
+    prop.SearchCollection,
+    prop.SearchQueryFilter,
+    prop.SearchQuery,
+    prop.SearchQueryGroup,
+    prop.IfcSelectorProperties,
     ui.BIM_PT_search,
     ui.BIM_UL_ifc_class_filter,
     ui.BIM_UL_ifc_building_storey_filter,
+    ui.BIM_PT_IFCSelector,
 )
 
 
 def register():
     bpy.types.Scene.BIMSearchProperties = bpy.props.PointerProperty(type=prop.BIMSearchProperties)
+    bpy.types.Scene.IfcSelectorProperties = bpy.props.PointerProperty(type=prop.IfcSelectorProperties)
 
 
 def unregister():
     del bpy.types.Scene.BIMSearchProperties
+    del bpy.types.Scene.IfcSelectorProperties

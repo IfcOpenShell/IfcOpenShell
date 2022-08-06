@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>, 2022 Yassine Oualid <yassine@sigmadimensions.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -28,6 +28,8 @@ import webbrowser
 import ifcopenshell.api
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
+import blenderbim.core.sequence as core
+import blenderbim.tool as tool
 import blenderbim.bim.helper
 import blenderbim.bim.module.sequence.helper as helper
 from datetime import datetime
@@ -52,7 +54,7 @@ def animate_text(scene, context):
     data.body = frame_date.date().isoformat()
 
 
-class AddWorkPlan(bpy.types.Operator):
+class AddWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_work_plan"
     bl_label = "Add Work Plan"
     bl_options = {"REGISTER", "UNDO"}
@@ -61,12 +63,11 @@ class AddWorkPlan(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        ifcopenshell.api.run("sequence.add_work_plan", IfcStore.get_file())
-        Data.load(IfcStore.get_file())
+        core.add_work_plan(tool.Ifc, tool.Sequence)
         return {"FINISHED"}
 
 
-class EditWorkPlan(bpy.types.Operator):
+class EditWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_work_plan"
     bl_options = {"REGISTER", "UNDO"}
     bl_label = "Edit Work Plan"
@@ -75,34 +76,11 @@ class EditWorkPlan(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        props = context.scene.BIMWorkPlanProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.work_plan_attributes, self.export_attributes)
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.edit_work_plan",
-            self.file,
-            **{"work_plan": self.file.by_id(props.active_work_plan_id), "attributes": attributes},
-        )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.disable_editing_work_plan()
+        core.edit_work_plan(tool.Ifc, tool.Sequence)
         return {"FINISHED"}
 
-    def export_attributes(self, attributes, prop):
-        if "Date" in prop.name or "Time" in prop.name:
-            if prop.is_null:
-                attributes[prop.name] = None
-                return True
-            attributes[prop.name] = helper.parse_datetime(prop.string_value)
-            return True
-        elif prop.name == "Duration" or prop.name == "TotalFloat":
-            if prop.is_null:
-                attributes[prop.name] = None
-                return True
-            attributes[prop.name] = helper.parse_duration(prop.string_value)
-            return True
 
-
-class RemoveWorkPlan(bpy.types.Operator):
+class RemoveWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_work_plan"
     bl_label = "Remove Work Plan"
     bl_options = {"REGISTER", "UNDO"}
@@ -112,9 +90,7 @@ class RemoveWorkPlan(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run("sequence.remove_work_plan", self.file, **{"work_plan": self.file.by_id(self.work_plan)})
-        Data.load(self.file)
+        core.remove_work_plan(tool.Ifc, tool.Sequence, work_plan=self.work_plan)
         return {"FINISHED"}
 
 
@@ -125,21 +101,8 @@ class EnableEditingWorkPlan(bpy.types.Operator):
     work_plan: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMWorkPlanProperties
-        props.work_plan_attributes.clear()
-
-        data = Data.work_plans[self.work_plan]
-
-        blenderbim.bim.helper.import_attributes("IfcWorkPlan", props.work_plan_attributes, data, self.import_attributes)
-
-        props.active_work_plan_id = self.work_plan
-        props.editing_type = "ATTRIBUTES"
+        core.enable_editing_work_plan(tool.Sequence, work_plan=self.work_plan)
         return {"FINISHED"}
-
-    def import_attributes(self, name, prop, data):
-        if name in ["CreationDate", "StartTime", "FinishTime"]:
-            prop.string_value = "" if prop.is_null else data[name].isoformat()
-            return True
 
 
 class DisableEditingWorkPlan(bpy.types.Operator):
@@ -148,7 +111,7 @@ class DisableEditingWorkPlan(bpy.types.Operator):
     bl_label = "Disable Editing Work Plan"
 
     def execute(self, context):
-        context.scene.BIMWorkPlanProperties.active_work_plan_id = 0
+        core.disable_editing_work_plan(tool.Sequence)
         return {"FINISHED"}
 
 
@@ -624,6 +587,7 @@ class EditTaskTime(bpy.types.Operator):
             if prop.is_null:
                 attributes[prop.name] = None
                 return True
+            # TODO make this parse PT32 as P4D
             attributes[prop.name] = helper.parse_duration(prop.string_value)
             return True
 
@@ -1885,6 +1849,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         self.start_frame = 1
         self.total_frames = self.calculate_total_frames(context)
         self.preprocess_tasks()
+
         for obj in bpy.data.objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
@@ -1931,7 +1896,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
             self.animate_consumption(obj, product_frame)
 
     def animate_output(self, obj, product_frame):
-        if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION"]:
+        if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION", "NOTDEFINED"]:
             self.animate_creation(obj, product_frame)
         elif product_frame["type"] in ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"]:
             self.animate_destruction(obj, product_frame)

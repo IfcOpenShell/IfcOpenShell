@@ -82,7 +82,8 @@ class Collector(blenderbim.core.tool.Collector):
         if obj.users_collection != (object_collection,):
             for collection in obj.users_collection:
                 collection.objects.unlink(obj)
-            object_collection.objects.link(obj)
+            if object_collection is not None:
+                object_collection.objects.link(obj)
 
         if collection_collection and collection_collection.children.find(object_collection.name) == -1:
             if bpy.context.scene.collection.children.find(object_collection.name) != -1:

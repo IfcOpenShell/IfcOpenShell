@@ -483,6 +483,15 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				}
 			}
 
+			if (!ifc_representation) {
+				if (reps->size()) {
+					// Return a random representation
+					ifc_representation = *reps->begin();
+				} else {
+					throw IfcParse::IfcException("No suitable IfcRepresentation found");
+				}
+			}
+
 			// Read precision for found representation's context
 			auto context = ifc_representation->ContextOfItems();
 			if (context->template as<typename Schema::IfcGeometricRepresentationSubContext>()) {
@@ -497,15 +506,6 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					p = 1.e-7;
 				}
 				kernel.setValue(IfcGeom::Kernel::GV_PRECISION, p);
-			}
-
-			if (!ifc_representation) {
-				if (reps->size()) {
-					// Return a random representation
-					ifc_representation = *reps->begin();
-				} else {
-					throw IfcParse::IfcException("No suitable IfcRepresentation found");
-				}
 			}
 
 			IfcGeom::BRepElement* brep = kernel.convert(settings, ifc_representation, product);
@@ -584,6 +584,21 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		#ifdef HAS_SCHEMA_4x3_rc2
 		if (schema_name == "IFC4X3_RC2") {
 			return helper_fn_create_shape<Ifc4x3_rc2>(settings, instance, representation);
+		}
+		#endif
+		#ifdef HAS_SCHEMA_4x3_rc3
+		if (schema_name == "IFC4X3_RC3") {
+			return helper_fn_create_shape<Ifc4x3_rc3>(settings, instance, representation);
+		}
+		#endif
+		#ifdef HAS_SCHEMA_4x3_rc4
+		if (schema_name == "IFC4X3_RC4") {
+			return helper_fn_create_shape<Ifc4x3_rc4>(settings, instance, representation);
+		}
+		#endif
+		#ifdef HAS_SCHEMA_4x3
+		if (schema_name == "IFC4X3") {
+			return helper_fn_create_shape<Ifc4x3>(settings, instance, representation);
 		}
 		#endif
 		

@@ -620,12 +620,15 @@ function(files_for_ifc_version IFC_VERSION RESULT_NAME)
 endfunction()
 
 if(NOT SCHEMA_VERSIONS)
-    set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4")
+    set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2" "4x3_rc3" "4x3_rc4" "4x3")
 endif()
 
 foreach(s ${SCHEMA_VERSIONS})
 	add_definitions(-DHAS_SCHEMA_${s})
 endforeach()
+
+string(REPLACE ";" ")(" schema_version_seq "(${SCHEMA_VERSIONS})")
+ADD_DEFINITIONS(-DSCHEMA_SEQ=${schema_version_seq})
 
 if(COMPILE_SCHEMA)
 	# @todo, this appears to be untested at the moment
@@ -696,7 +699,7 @@ if (BUILD_IFCGEOM)
 	endforeach()
 	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 endif()
-if (BUILD_CONVERT)
+if (BUILD_CONVERT OR BUILD_IFCPYTHON)
 	foreach(s ${SCHEMA_VERSIONS})
 		set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} Serializers_ifc${s})
 	endforeach()
@@ -769,7 +772,7 @@ TARGET_LINK_LIBRARIES(IfcGeom IfcParse ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREA
 
 endif(BUILD_IFCGEOM)
 
-if (BUILD_CONVERT)
+if (BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 # Serializers
 file(GLOB SERIALIZERS_H_FILES ../src/serializers/*.h)
@@ -789,6 +792,10 @@ add_library(Serializers ${SERIALIZERS_FILES})
 set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS ${CONVERT_PRECISION}" VERSION "0.6.0" SOVERSION "0.6")
 
 TARGET_LINK_LIBRARIES(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
+
+endif(BUILD_CONVERT or BUILD_IFCPYTHON)
+
+if (BUILD_CONVERT)
 
 # IfcConvert
 file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)

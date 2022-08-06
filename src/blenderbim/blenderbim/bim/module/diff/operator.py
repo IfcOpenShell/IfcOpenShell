@@ -20,6 +20,7 @@ import bpy
 import ifccsv
 import ifcopenshell
 import json
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -44,21 +45,23 @@ class VisualiseDiff(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        # ifc_file = IfcStore.get_file() # In case we get from Store
-        ifc_file = ifcopenshell.open(context.scene.DiffProperties.diff_new_file)  # for Now refer to the new file
+        ifc_file = tool.Ifc.get()
         with open(context.scene.DiffProperties.diff_json_file, "r") as file:
             diff = json.load(file)
         for obj in context.visible_objects:
-            obj.color = (1.0, 1.0, 1.0, 0.2)
-            global_id = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId
+            obj.color = (1.0, 1.0, 1.0, 1.0)
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            global_id = getattr(element, "GlobalId", None)
             if not global_id:
                 continue
             if global_id in diff["deleted"]:
-                obj.color = (1.0, 0.0, 0.0, 0.2)
+                obj.color = (1.0, 0.0, 0.0, 1.0)
             elif global_id in diff["added"]:
-                obj.color = (0.0, 1.0, 0.0, 0.2)
+                obj.color = (0.0, 1.0, 0.0, 1.0)
             elif global_id in diff["changed"]:
-                obj.color = (0.0, 0.0, 1.0, 0.2)
+                obj.color = (0.0, 0.0, 1.0, 1.0)
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
@@ -113,9 +116,11 @@ class ExecuteIfcDiff(bpy.types.Operator):
             context.scene.DiffProperties.diff_old_file,
             context.scene.DiffProperties.diff_new_file,
             self.filepath,
-            context.scene.DiffProperties.diff_relationships.split(),
+            [r.relationship for r in context.scene.DiffProperties.diff_relationships],
+            context.scene.DiffProperties.diff_filter_elements,
         )
-        ifc_diff.diff()
+        diff = ifc_diff.diff()
         ifc_diff.export()
         context.scene.DiffProperties.diff_json_file = self.filepath
+        context.scene.DiffProperties.diff_result = diff
         return {"FINISHED"}

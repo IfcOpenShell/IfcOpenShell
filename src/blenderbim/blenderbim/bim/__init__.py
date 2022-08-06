@@ -92,7 +92,9 @@ classes = [
     operator.SelectIfcFile,
     operator.SelectSchemaDir,
     operator.SelectURIAttribute,
+    operator.EditBlenderCollection,
     prop.StrProperty,
+    operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
     prop.ObjProperty,
     prop.Attribute,
     prop.ModuleVisibility,

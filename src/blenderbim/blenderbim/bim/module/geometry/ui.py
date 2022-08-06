@@ -19,6 +19,7 @@
 import bpy
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.geometry.data import RepresentationsData, DerivedPlacementsData
 
 
@@ -50,7 +51,7 @@ class BIM_PT_representations(Panel):
             layout.label(text="No representations found")
 
         row = layout.row(align=True)
-        row.prop(context.scene.BIMRootProperties, "contexts", text="")
+        prop_with_search(row, context.scene.BIMRootProperties, "contexts", text="")
         row.operator("bim.add_representation", icon="ADD", text="")
 
         for representation in RepresentationsData.data["representations"]:

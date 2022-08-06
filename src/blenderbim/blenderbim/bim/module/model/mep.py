@@ -65,14 +65,14 @@ class MepGenerator:
 
     def create_rectangle_segment(self):
         verts = [
-            Vector((- self.width / 2, self.height / 2, 0)),
-            Vector((- self.width / 2, - self.height / 2, 0)),
-            Vector((- self.width / 2, self.height / 2, self.length)),
-            Vector((- self.width / 2, - self.height / 2, self.length)),
+            Vector((-self.width / 2, self.height / 2, 0)),
+            Vector((-self.width / 2, -self.height / 2, 0)),
+            Vector((-self.width / 2, self.height / 2, self.length)),
+            Vector((-self.width / 2, -self.height / 2, self.length)),
             Vector((self.width / 2, self.height / 2, 0)),
-            Vector((self.width / 2, - self.height / 2, 0)),
+            Vector((self.width / 2, -self.height / 2, 0)),
             Vector((self.width / 2, self.height / 2, self.length)),
-            Vector((self.width / 2, - self.height / 2, self.length)),
+            Vector((self.width / 2, -self.height / 2, self.length)),
         ]
         faces = [
             [1, 3, 2, 0],
@@ -114,5 +114,13 @@ class MepGenerator:
             tool.Ifc.run("system.assign_port", element=element, port=port)
             tool.Ifc.run("geometry.edit_object_placement", product=port, matrix=obj.matrix_world @ mat, is_si=True)
 
-        obj.select_set(True)
+        try:
+            obj.select_set(True)
+        except RuntimeError:
+            def msg(self, context):
+                txt = "The created object could not be assigned to a collection. "
+                txt += "Has any IfcSpatialElement been deleted?"
+                self.layout.label(text=txt)
+
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
         return obj

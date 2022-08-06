@@ -31,7 +31,7 @@ import blenderbim.core.root as core
 import blenderbim.tool as tool
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.root.prop import get_contexts
+from blenderbim.bim.helper import get_enum_items
 
 
 class Operator:
@@ -127,12 +127,13 @@ class AssignClass(bpy.types.Operator, Operator):
     ifc_representation_class: bpy.props.StringProperty()
 
     def _execute(self, context):
+        props = context.scene.BIMRootProperties
         objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        ifc_class = self.ifc_class or context.scene.BIMRootProperties.ifc_class
+        ifc_class = self.ifc_class or props.ifc_class
         predefined_type = self.userdefined_type if self.predefined_type == "USERDEFINED" else self.predefined_type
         ifc_context = self.context_id
-        if not ifc_context and get_contexts(self, context):
-            ifc_context = int(context.scene.BIMRootProperties.contexts or "0") or None
+        if not ifc_context and get_enum_items(props, "contexts", context):
+            ifc_context = int(props.contexts or "0") or None
         if ifc_context:
             ifc_context = tool.Ifc.get().by_id(ifc_context)
         active_object = context.active_object

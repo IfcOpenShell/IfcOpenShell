@@ -2,143 +2,53 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+
+#define EXTERNAL_DEFS_1(r, data, elem) \
+	IfcUtil::IfcBaseClass* BOOST_PP_CAT(tesselate_Ifc, elem)(const TopoDS_Shape& shape, double deflection);
+
+#define EXTERNAL_DEFS_2(r, data, elem) \
+	IfcUtil::IfcBaseClass* BOOST_PP_CAT(serialise_Ifc, elem)(const TopoDS_Shape& shape, bool advanced);
+
+#define CONDITIONAL_CALL(r, data, elem) \
+	if (schema_name_lower == BOOST_PP_STRINGIZE(BOOST_PP_CAT(elem,))) { \
+		return BOOST_PP_CAT(METHOD_NAME, elem)(shape, arg_2); \
+	}
+
 namespace IfcGeom {
-#ifdef HAS_SCHEMA_2x3
-	extern IfcUtil::IfcBaseClass* tesselate_Ifc2x3(const TopoDS_Shape& shape, double deflection);
-	extern IfcUtil::IfcBaseClass* serialise_Ifc2x3(const TopoDS_Shape& shape, bool advanced);
-#endif
-
-#ifdef HAS_SCHEMA_4
-	extern IfcUtil::IfcBaseClass* tesselate_Ifc4(const TopoDS_Shape& shape, double deflection);
-	extern IfcUtil::IfcBaseClass* serialise_Ifc4(const TopoDS_Shape& shape, bool advanced);
-#endif
-
-#ifdef HAS_SCHEMA_4x1
-	extern IfcUtil::IfcBaseClass* tesselate_Ifc4x1(const TopoDS_Shape& shape, double deflection);
-	extern IfcUtil::IfcBaseClass* serialise_Ifc4x1(const TopoDS_Shape& shape, bool advanced);
-#endif
-
-#ifdef HAS_SCHEMA_4x2
-	extern IfcUtil::IfcBaseClass* tesselate_Ifc4x2(const TopoDS_Shape& shape, double deflection);
-	extern IfcUtil::IfcBaseClass* serialise_Ifc4x2(const TopoDS_Shape& shape, bool advanced);
-#endif
-
-#ifdef HAS_SCHEMA_4x3_rc1
-	extern IfcUtil::IfcBaseClass* tesselate_Ifc4x3_rc1(const TopoDS_Shape& shape, double deflection);
-	extern IfcUtil::IfcBaseClass* serialise_Ifc4x3_rc1(const TopoDS_Shape& shape, bool advanced);
-#endif
-
-#ifdef HAS_SCHEMA_4x3_rc2
-	extern IfcUtil::IfcBaseClass* tesselate_Ifc4x3_rc2(const TopoDS_Shape& shape, double deflection);
-	extern IfcUtil::IfcBaseClass* serialise_Ifc4x3_rc2(const TopoDS_Shape& shape, bool advanced);
-#endif
+	BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS_1, , SCHEMA_SEQ);
+	BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS_2, , SCHEMA_SEQ);
 }
 
-template <typename Fn, typename T>
-IfcUtil::IfcBaseClass* execute_based_on_schema(
-#ifdef HAS_SCHEMA_2x3
-	Fn fn_2x3,
-#endif
-#ifdef HAS_SCHEMA_4
-	Fn fn_4,
-#endif
-#ifdef HAS_SCHEMA_4x1
-	Fn fn_4x1,
-#endif
-#ifdef HAS_SCHEMA_4x2
-	Fn fn_4x2,
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-	Fn fn_4x3_rc1,
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-	Fn fn_4x3_rc2,
-#endif
-	const std::string& schema_name, const TopoDS_Shape& shape, T t)
-{
+#define METHOD_NAME tesselate_Ifc
+
+IfcUtil::IfcBaseClass* IfcGeom::tesselate(const std::string& schema_name, const TopoDS_Shape& shape, double arg_2) {
 	// @todo an ugly hack to guarantee schemas are initialised.
 	try {
 		IfcParse::schema_by_name("IFC2X3");
 	} catch (IfcParse::IfcException&) {}
 
-	const std::string schema_name_lower = boost::to_lower_copy(schema_name);
+	const std::string schema_name_lower = boost::to_lower_copy(schema_name.substr(3));
 
-#ifdef HAS_SCHEMA_2x3
-	if (schema_name_lower == "ifc2x3") {
-		return fn_2x3(shape, t);
-	}
-#endif
-#ifdef HAS_SCHEMA_4
-	if (schema_name_lower == "ifc4") {
-		return fn_4(shape, t);
-	}
-#endif
-#ifdef HAS_SCHEMA_4x1
-	if (schema_name_lower == "ifc4x1") {
-		return fn_4x1(shape, t);
-	}
-#endif
-#ifdef HAS_SCHEMA_4x2
-	if (schema_name_lower == "ifc4x2") {
-		return fn_4x2(shape, t);
-	}
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-	if (schema_name_lower == "ifc4x3_rc1") {
-		return fn_4x3_rc1(shape, t);
-	}
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-	if (schema_name_lower == "ifc4x3_rc2") {
-		return fn_4x3_rc2(shape, t);
-	}
-#endif
+	BOOST_PP_SEQ_FOR_EACH(CONDITIONAL_CALL, , SCHEMA_SEQ);
 
 	throw IfcParse::IfcException("No geometry serialization available for " + schema_name);
 }
 
-IfcUtil::IfcBaseClass* IfcGeom::tesselate(const std::string& schema_name, const TopoDS_Shape& shape, double deflection) {
-	return execute_based_on_schema(
-#ifdef HAS_SCHEMA_2x3
-		IfcGeom::tesselate_Ifc2x3,
-#endif
-#ifdef HAS_SCHEMA_4
-		IfcGeom::tesselate_Ifc4,
-#endif
-#ifdef HAS_SCHEMA_4x1
-		IfcGeom::tesselate_Ifc4x1,
-#endif
-#ifdef HAS_SCHEMA_4x2
-		IfcGeom::tesselate_Ifc4x2,
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-		IfcGeom::tesselate_Ifc4x3_rc1,
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-		IfcGeom::tesselate_Ifc4x3_rc2,
-#endif
-		schema_name, shape, deflection);
-}
+#undef METHOD_NAME
+#define METHOD_NAME serialise_Ifc
 
-IfcUtil::IfcBaseClass* IfcGeom::serialise(const std::string& schema_name, const TopoDS_Shape& shape, bool advanced) {
-	return execute_based_on_schema(
-#ifdef HAS_SCHEMA_2x3
-		IfcGeom::serialise_Ifc2x3,
-#endif
-#ifdef HAS_SCHEMA_4
-		IfcGeom::serialise_Ifc4,
-#endif
-#ifdef HAS_SCHEMA_4x1
-		IfcGeom::serialise_Ifc4x1,
-#endif
-#ifdef HAS_SCHEMA_4x2
-		IfcGeom::serialise_Ifc4x2,
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-		IfcGeom::serialise_Ifc4x3_rc1,
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-		IfcGeom::serialise_Ifc4x3_rc2,
-#endif
-		schema_name, shape, advanced);
+IfcUtil::IfcBaseClass* IfcGeom::serialise(const std::string& schema_name, const TopoDS_Shape& shape, bool arg_2) {
+	// @todo an ugly hack to guarantee schemas are initialised.
+	try {
+		IfcParse::schema_by_name("IFC2X3");
+	} catch (IfcParse::IfcException&) {}
+
+	const std::string schema_name_lower = boost::to_lower_copy(schema_name.substr(3));
+
+	BOOST_PP_SEQ_FOR_EACH(CONDITIONAL_CALL, , SCHEMA_SEQ);
+
+	throw IfcParse::IfcException("No geometry serialization available for " + schema_name);
 }

@@ -170,6 +170,24 @@
 				</xs:complexType>
 			</xs:element>
 			<xs:element name="partOf" minOccurs="0" maxOccurs="unbounded">
+                <!-- Proposed definition
+                <xs:sequence>
+                    <xs:element name="entity" type="ids:idsValue"/>
+                </xs:sequence>
+				<xs:complexType>
+					<xs:attribute name="relationship" use="required">
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:enumeration value="IfcRelAggregates"/>
+								<xs:enumeration value="IfcRelAssignsToGroup"/>
+								<xs:enumeration value="IfcRelContainedInSpatialStructure"/>
+								<xs:enumeration value="IfcRelNests"/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:attribute>
+				</xs:complexType>
+                -->
+                <!-- Current definition -->
 				<xs:complexType>
 					<xs:attribute name="entity" use="required">
 						<xs:simpleType>

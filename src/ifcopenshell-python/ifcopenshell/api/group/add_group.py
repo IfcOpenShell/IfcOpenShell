@@ -23,7 +23,10 @@ import ifcopenshell.api
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {}
+        self.settings = {
+            "Name": "Unnamed",
+            "Description": "",
+        }
         for key, value in settings.items():
             self.settings[key] = value
 
@@ -33,6 +36,7 @@ class Usecase:
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                "Name": "Unnamed",
+                "Name": self.settings["Name"],
+                "Description": self.settings["Description"],
             }
         )

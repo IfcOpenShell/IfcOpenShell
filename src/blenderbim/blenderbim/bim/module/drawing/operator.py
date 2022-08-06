@@ -41,12 +41,28 @@ import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.export_ifc
 from lxml import etree
 from mathutils import Vector
+from timeit import default_timer as timer
 from blenderbim.bim.module.drawing.prop import RasterStyleProperty
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.group.data import Data as GroupData
 from ifcopenshell.api.pset.data import Data as PsetData
 
 cwd = os.path.dirname(os.path.realpath(__file__))
+
+
+class profile:
+    """
+    A python context manager timing utility
+    """
+
+    def __init__(self, task):
+        self.task = task
+
+    def __enter__(self):
+        self.start = timer()
+
+    def __exit__(self, *args):
+        print(self.task, timer() - self.start)
 
 
 def open_with_user_command(user_command, path):
@@ -115,34 +131,39 @@ class CreateDrawing(bpy.types.Operator):
         self.camera = context.scene.camera
         self.camera_element = tool.Ifc.get_entity(self.camera)
         self.file = IfcStore.get_file()
-        self.time = None
-        start = time.time()
-        self.profile_code("Start drawing generation process")
-        self.props = context.scene.DocProperties
-        self.cprops = self.camera.data.BIMCameraProperties
-        self.drawing_name = self.file.by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
-        self.get_scale()
-        if self.cprops.update_representation(self.camera):
-            bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
 
-        self.svg_writer = svgwriter.SvgWriter()
-        self.svg_writer.human_scale = self.human_scale
-        self.svg_writer.scale = self.scale
-        self.svg_writer.data_dir = context.scene.BIMProperties.data_dir
-        self.svg_writer.camera = self.camera
-        self.svg_writer.camera_width, self.svg_writer.camera_height = self.get_camera_dimensions()
-        self.svg_writer.camera_projection = tuple(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
+        with profile("Drawing generation process"):
 
-        underlay_svg = self.generate_underlay(context)
-        self.profile_code("Generate underlay")
-        linework_svg = self.generate_linework(context)
-        self.profile_code("Generate linework")
-        annotation_svg = self.generate_annotation(context)
-        self.profile_code("Generate annotation")
-        svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
-        self.profile_code("Combine SVG layers")
+            with profile("Initialize drawing generation process"):
+                self.props = context.scene.DocProperties
+                self.cprops = self.camera.data.BIMCameraProperties
+                self.drawing_name = self.file.by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
+                self.get_scale()
+                if self.cprops.update_representation(self.camera):
+                    bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
+
+                self.svg_writer = svgwriter.SvgWriter()
+                self.svg_writer.human_scale = self.human_scale
+                self.svg_writer.scale = self.scale
+                self.svg_writer.data_dir = context.scene.BIMProperties.data_dir
+                self.svg_writer.camera = self.camera
+                self.svg_writer.camera_width, self.svg_writer.camera_height = self.get_camera_dimensions()
+                self.svg_writer.camera_projection = tuple(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
+
+            with profile("Generate underlay"):
+                underlay_svg = self.generate_underlay(context)
+
+            with profile("Generate linework"):
+                linework_svg = self.generate_linework(context)
+
+            with profile("Generate annotation"):
+                annotation_svg = self.generate_annotation(context)
+
+            with profile("Combine SVG layers"):
+                svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
+
         open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
-        print("Total Time: {:.2f}".format(time.time() - start))
+
         return {"FINISHED"}
 
     def get_camera_dimensions(self):
@@ -154,12 +175,6 @@ class CreateDrawing(bpy.types.Operator):
             height = self.camera.data.ortho_scale
             width = height / render.resolution_y * render.resolution_x
         return width, height
-
-    def profile_code(self, message):
-        if not self.time:
-            self.time = time.time()
-        print("{} :: {:.2f}".format(message, time.time() - self.time))
-        self.time = time.time()
 
     def combine_svgs(self, context, underlay, linework, annotation):
         # Hacky :)
@@ -255,13 +270,14 @@ class CreateDrawing(bpy.types.Operator):
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
 
-        # All very hackish whilst prototyping
-        exporter = blenderbim.bim.export_ifc.IfcExporter(None)
-        exporter.file = tool.Ifc.get()
-        invalidated_guids = exporter.sync_deletions()
-        invalidated_elements = exporter.sync_all_objects()
-        invalidated_elements += exporter.sync_edited_objects()
-        [invalidated_guids.append(e.GlobalId) for e in invalidated_elements if hasattr(e, "GlobalId")]
+        with profile("sync"):
+            # All very hackish whilst prototyping
+            exporter = blenderbim.bim.export_ifc.IfcExporter(None)
+            exporter.file = tool.Ifc.get()
+            invalidated_guids = exporter.sync_deletions()
+            invalidated_elements = exporter.sync_all_objects()
+            invalidated_elements += exporter.sync_edited_objects()
+            [invalidated_guids.append(e.GlobalId) for e in invalidated_elements if hasattr(e, "GlobalId")]
 
         # If we have already calculated it in the SVG in the past, don't recalculate
         edited_guids = set()
@@ -312,40 +328,46 @@ class CreateDrawing(bpy.types.Operator):
             cache = IfcStore.get_cache()
             [cache.remove(guid) for guid in invalidated_guids]
 
-            if target_view_contexts and elements:
-                geom_settings = ifcopenshell.geom.settings(
-                    DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
-                )
-                geom_settings.set_context_ids(target_view_contexts)
-                it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
-                it.set_cache(cache)
-                processed = set()
-                for elem in self.yield_from_iterator(it):
-                    processed.add(ifc.by_id(elem.id))
-                    self.serialiser.write(elem)
-                elements -= processed
+            with profile("Processing target view context"):
+                if target_view_contexts and elements:
+                    geom_settings = ifcopenshell.geom.settings(
+                        DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
+                    )
+                    geom_settings.set_context_ids(target_view_contexts)
+                    it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
+                    it.set_cache(cache)
+                    processed = set()
+                    for elem in self.yield_from_iterator(it):
+                        processed.add(ifc.by_id(elem.id))
+                        self.serialiser.write(elem)
+                    elements -= processed
 
-            if body_contexts and elements:
+            with profile("Processing body context"):
+                if body_contexts and elements:
+                    geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
+                    geom_settings.set_context_ids(body_contexts)
+                    it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
+                    it.set_cache(cache)
+                    for elem in self.yield_from_iterator(it):
+                        self.serialiser.write(elem)
+
+            with profile("Camera element"):
+                # @todo tfk: is this needed?
                 geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
-                geom_settings.set_context_ids(body_contexts)
-                it = ifcopenshell.geom.iterator(geom_settings, ifc, multiprocessing.cpu_count(), include=elements)
-                it.set_cache(cache)
+                it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
                 for elem in self.yield_from_iterator(it):
                     self.serialiser.write(elem)
 
-            geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
-            it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
-            for elem in self.yield_from_iterator(it):
-                self.serialiser.write(elem)
-
-        self.serialiser.finalize()
+        with profile("Finalizing"):
+            self.serialiser.finalize()
         results = self.svg_buffer.get_value()
 
-        root = etree.fromstring(results)
-        self.enrich_linework_with_metadata(root)
-        self.move_projection_to_bottom(root)
-        with open(svg_path, "wb") as svg:
-            svg.write(etree.tostring(root))
+        with profile("Post processing"):
+            root = etree.fromstring(results)
+            self.enrich_linework_with_metadata(root)
+            self.move_projection_to_bottom(root)
+            with open(svg_path, "wb") as svg:
+                svg.write(etree.tostring(root))
 
         return svg_path
 
@@ -487,8 +509,11 @@ class AddAnnotation(bpy.types.Operator, Operator):
     def _execute(self, context):
         drawing = tool.Ifc.get_entity(context.scene.camera)
         if not drawing:
+            self.report({"WARNING"}, "Not a BIM camera")
             return
-        core.add_annotation(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing, object_type=self.object_type)
+        r = core.add_annotation(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing, object_type=self.object_type)
+        if isinstance(r, str):
+            self.report({"WARNING"}, r)
 
 
 class AddSheet(bpy.types.Operator, Operator):

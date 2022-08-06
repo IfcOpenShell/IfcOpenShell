@@ -71,6 +71,7 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
     bl_description = "Select an IFC file that can be used as a library"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
+    append_all: bpy.props.BoolProperty(default=False)
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
@@ -87,6 +88,8 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
         bpy.ops.bim.refresh_library()
         if context.area:
             context.area.tag_redraw()
+        if self.append_all:
+            bpy.ops.bim.append_entire_library()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -104,6 +107,9 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
     def commit(self, data):
         IfcStore.library_path = data["filepath"]
         IfcStore.library_file = ifcopenshell.open(data["filepath"])
+
+    def draw(self, context):
+        self.layout.prop(self, "append_all", text="Append Entire Library")
 
 
 class RefreshLibrary(bpy.types.Operator):
@@ -282,16 +288,43 @@ class SaveLibraryFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AppendEntireLibrary(bpy.types.Operator):
+    bl_idname = "bim.append_entire_library"
+    bl_label = "Append Entiry Library"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        self.library = IfcStore.library_file
+
+        lib_elements = ifcopenshell.util.selector.Selector().parse(
+            self.library, ".IfcTypeProduct | .IfcMaterial | .IfcCostSchedule| .IfcProfileDef"
+        )
+        for element in lib_elements:
+            bpy.ops.bim.append_library_element(definition=element.id())
+        return {"FINISHED"}
+
+
 class AppendLibraryElement(bpy.types.Operator):
     bl_idname = "bim.append_library_element"
     bl_label = "Append Library Element"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Append element to the current project"
     definition: bpy.props.IntProperty()
     prop_index: bpy.props.IntProperty()
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        poll = bool(IfcStore.get_file())
+        if bpy.app.version > (3, 0, 0) and not poll:
+            cls.poll_message_set("Please create or load a project first.")
+        return poll
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
@@ -347,7 +380,7 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer.material_creator.load_existing_materials()
         self.import_type_materials(element, ifc_importer)
         self.import_type_styles(element, ifc_importer)
-        ifc_importer.create_type_product(element)
+        ifc_importer.create_element_type(element)
         ifc_importer.place_objects_in_collections()
 
     def import_type_materials(self, element, ifc_importer):
@@ -633,16 +666,20 @@ class LinkIfc(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Link a Blender file"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.blend;*.blend1", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def execute(self, context):
-        new = context.scene.BIMProjectProperties.links.add()
-        filepath = self.filepath
-        if self.use_relative_path:
-            filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
-        new.name = filepath
-        bpy.ops.bim.load_link(filepath=self.filepath)
+        files = [self.filepath] if self.filepath else [f.name for f in self.files]
+        for filename in files:
+            filepath = os.path.join(self.directory, filename)
+            new = context.scene.BIMProjectProperties.links.add()
+            if self.use_relative_path:
+                filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
+            new.name = filepath
+            bpy.ops.bim.load_link(filepath=filepath)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -708,7 +745,6 @@ class LoadLink(bpy.types.Operator):
                     continue
                 bpy.data.scenes[0].collection.children.link(child)
         link = context.scene.BIMProjectProperties.links.get(filepath)
-        link.collection = child
         link.is_loaded = True
         return {"FINISHED"}
 
@@ -731,23 +767,25 @@ class ToggleLinkVisibility(bpy.types.Operator):
         return {"FINISHED"}
 
     def toggle_wireframe(self, link):
-        objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, link.collection.all_objects)
-        for i,obj in enumerate(objs):
-            if i == 0:
-                if obj.display_type == "WIRE":
-                    display_type = "TEXTURED"
-                else:
-                    display_type = "WIRE"
-            obj.display_type = display_type
-        link.is_wireframe = display_type == "WIRE"
+        for collection in self.get_linked_collections():
+            objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, collection.all_objects)
+            for i, obj in enumerate(objs):
+                if i == 0:
+                    if obj.display_type == "WIRE":
+                        display_type = "TEXTURED"
+                    else:
+                        display_type = "WIRE"
+                obj.display_type = display_type
+            link.is_wireframe = display_type == "WIRE"
 
     def toggle_visibility(self, link):
+        linked_collections = self.get_linked_collections()
         queue = [bpy.context.view_layer.layer_collection]
         layer_collection = None
 
         while queue:
             layer = queue.pop()
-            if layer.collection == link.collection:
+            if layer.collection in linked_collections:
                 layer_collection = layer
                 break
             queue.extend(list(layer.children))
@@ -755,6 +793,11 @@ class ToggleLinkVisibility(bpy.types.Operator):
         if layer_collection:
             layer_collection.exclude = not layer_collection.exclude
             link.is_hidden = layer_collection.exclude
+
+    def get_linked_collections(self):
+        return  [
+            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.link
+        ]
 
 
 class ExportIFC(bpy.types.Operator):
