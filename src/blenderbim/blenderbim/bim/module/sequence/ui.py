@@ -24,6 +24,7 @@ from blenderbim.bim.helper import draw_attributes
 from ifcopenshell.api.sequence.data import Data
 from ifcopenshell.api.resource.data import Data as ResourceData
 import blenderbim.bim.module.sequence.helper as helper
+from blenderbim.bim.module.sequence.data import SequenceData
 from datetime import datetime
 
 
@@ -42,14 +43,18 @@ class BIM_PT_work_plans(Panel):
         return file and file.schema != "IFC2X3"
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not SequenceData.is_loaded:
+            SequenceData.load()
         self.props = context.scene.BIMWorkPlanProperties
 
         row = self.layout.row()
+        row.label(
+            text="{} Work Plans Found".format(SequenceData.number_of_work_plans_loaded),
+            icon="TEXT",
+        )
         row.operator("bim.add_work_plan", icon="ADD")
 
-        for work_plan_id, work_plan in Data.work_plans.items():
+        for work_plan_id, work_plan in SequenceData.work_plans.items():
             self.draw_work_plan_ui(work_plan_id, work_plan)
 
     def draw_work_plan_ui(self, work_plan_id, work_plan):

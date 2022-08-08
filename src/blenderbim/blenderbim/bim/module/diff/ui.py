@@ -18,6 +18,9 @@
 
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.diff.data import DiffData
+import blenderbim.tool as tool
+import json
 
 
 class BIM_PT_diff(Panel):
@@ -30,6 +33,9 @@ class BIM_PT_diff(Panel):
     bl_parent_id = "BIM_PT_quality_control"
 
     def draw(self, context):
+        if not DiffData.is_loaded:
+            DiffData.load()
+
         layout = self.layout
         layout.use_property_split = True
 
@@ -48,12 +54,41 @@ class BIM_PT_diff(Panel):
 
         row = layout.row(align=True)
         row.prop(bim_properties, "diff_relationships")
+        row.context_pointer_set("bim_prop_group", bim_properties)
+        add = row.operator("bim.edit_blender_collection", icon="ADD", text="")
+        add.option = "add"
+        add.collection = "diff_relationships"
+        
+        for index, r in enumerate(bim_properties.diff_relationships):
+            row = layout.row(align=True)
+            row.context_pointer_set("bim_prop_group", bim_properties)
+            row.prop(r, "relationship", text=" ")
+            remove = row.operator("bim.edit_blender_collection", icon="REMOVE", text="")
+            remove.option = "remove"
+            remove.collection = "diff_relationships"
+            remove.index = index
+        
+        row = layout.row(align=True)
+        row.prop(bim_properties, "diff_filter_elements")
+        row.operator("bim.ifc_selector", icon="FILTER", text="")
 
         row = layout.row()
         row.operator("bim.execute_ifc_diff")
+        if bim_properties.diff_result:
+            row = layout.row()
+            row.alignment = "CENTER"
+            row.label(text=bim_properties.diff_result)
 
         # TODO: show if there ifc diff operation is sucessful
         row = layout.row(align=True)
         row.prop(bim_properties, "diff_json_file")
         row.operator("bim.select_diff_json_file", icon="FILE_FOLDER", text="")
         row.operator("bim.visualise_diff", icon="HIDE_OFF", text="")
+        
+        if DiffData.data["changes"]:
+            row = layout.row()
+            row.label(text="Diff Results:")
+            for key, value in DiffData.data["changes"].items():
+                row = layout.row()
+                row.label(text=key)
+                row.label(text=value)

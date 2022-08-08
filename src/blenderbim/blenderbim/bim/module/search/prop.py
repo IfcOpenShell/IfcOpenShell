@@ -175,6 +175,7 @@ class SearchCollection(PropertyGroup):
     global_id: StringProperty()
     query: StringProperty()
 
+
 class IfcSelector:
     and_or: EnumProperty(
         items=[(i, i, i) for i in ["and", "or"]],
@@ -231,9 +232,9 @@ class SearchQueryGroup(PropertyGroup, IfcSelector):
 class IfcSelectorProperties(PropertyGroup, IfcSelector):
     groups: CollectionProperty(type=SearchQueryGroup)
     selector_query_syntax: StringProperty()
-    
+
     query_library: CollectionProperty(type=SearchCollection)
     active_query: StringProperty()
-    
+
     active_query: StringProperty()
     manual_override: BoolProperty(default=False, description="Toggle to allow manual typing of query-syntax")

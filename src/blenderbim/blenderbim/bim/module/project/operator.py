@@ -380,7 +380,7 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer.material_creator.load_existing_materials()
         self.import_type_materials(element, ifc_importer)
         self.import_type_styles(element, ifc_importer)
-        ifc_importer.create_type_product(element)
+        ifc_importer.create_element_type(element)
         ifc_importer.place_objects_in_collections()
 
     def import_type_materials(self, element, ifc_importer):
@@ -672,13 +672,14 @@ class LinkIfc(bpy.types.Operator):
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def execute(self, context):
-        for file in self.files:
-            filepath = os.path.join(self.directory, file.name)
+        files = [self.filepath] if self.filepath else [f.name for f in self.files]
+        for filename in files:
+            filepath = os.path.join(self.directory, filename)
             new = context.scene.BIMProjectProperties.links.add()
             if self.use_relative_path:
                 filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
             new.name = filepath
-            bpy.ops.bim.load_link(filepath=self.filepath)
+            bpy.ops.bim.load_link(filepath=filepath)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -744,7 +745,6 @@ class LoadLink(bpy.types.Operator):
                     continue
                 bpy.data.scenes[0].collection.children.link(child)
         link = context.scene.BIMProjectProperties.links.get(filepath)
-        link.collection = child
         link.is_loaded = True
         return {"FINISHED"}
 
@@ -767,23 +767,25 @@ class ToggleLinkVisibility(bpy.types.Operator):
         return {"FINISHED"}
 
     def toggle_wireframe(self, link):
-        objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, link.collection.all_objects)
-        for i, obj in enumerate(objs):
-            if i == 0:
-                if obj.display_type == "WIRE":
-                    display_type = "TEXTURED"
-                else:
-                    display_type = "WIRE"
-            obj.display_type = display_type
-        link.is_wireframe = display_type == "WIRE"
+        for collection in self.get_linked_collections():
+            objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, collection.all_objects)
+            for i, obj in enumerate(objs):
+                if i == 0:
+                    if obj.display_type == "WIRE":
+                        display_type = "TEXTURED"
+                    else:
+                        display_type = "WIRE"
+                obj.display_type = display_type
+            link.is_wireframe = display_type == "WIRE"
 
     def toggle_visibility(self, link):
+        linked_collections = self.get_linked_collections()
         queue = [bpy.context.view_layer.layer_collection]
         layer_collection = None
 
         while queue:
             layer = queue.pop()
-            if layer.collection == link.collection:
+            if layer.collection in linked_collections:
                 layer_collection = layer
                 break
             queue.extend(list(layer.children))
@@ -791,6 +793,11 @@ class ToggleLinkVisibility(bpy.types.Operator):
         if layer_collection:
             layer_collection.exclude = not layer_collection.exclude
             link.is_hidden = layer_collection.exclude
+
+    def get_linked_collections(self):
+        return  [
+            c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.link
+        ]
 
 
 class ExportIFC(bpy.types.Operator):

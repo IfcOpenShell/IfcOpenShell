@@ -62,7 +62,7 @@ class Usecase:
                 break # We have an infinite loop due to a cyclic graph
 
         if is_cyclic:
-            raise Exception("Task graph is cyclic and so critical path method cannot be performed.")
+            raise RecursionError("Task graph is cyclic and so critical path method cannot be performed.")
             return
 
         self.pending_nodes = set(self.g.nodes)

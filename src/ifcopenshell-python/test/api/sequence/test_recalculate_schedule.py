@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
 import datetime
 import test.bootstrap
 import ifcopenshell.api
@@ -28,6 +29,20 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         task = ifcopenshell.api.run("sequence.add_task", self.file)
         ifcopenshell.api.run("sequence.recalculate_schedule", self.file, work_schedule=self.work_schedule)
         assert task.TaskTime is None
+
+    def test_catching_cyclic_relationships(self):
+        self._add_work_schedule()
+        task = self._create_task("P1D")
+        task2 = self._create_task("P2D")
+        task3 = self._create_task("P2D")
+        task4 = self._create_task("P2D")
+        self._create_sequence(task, task2, "FINISH_START")
+        self._create_sequence(task, task4, "FINISH_START")
+        self._create_sequence(task2, task3, "FINISH_START")
+        with pytest.raises(RecursionError):
+            self._create_sequence(task3, task2, "FINISH_START")
+        with pytest.raises(RecursionError):
+            ifcopenshell.api.run("sequence.recalculate_schedule", self.file, work_schedule=self.work_schedule)
 
     def test_recalculating_for_a_single_task(self):
         self._add_work_schedule()
