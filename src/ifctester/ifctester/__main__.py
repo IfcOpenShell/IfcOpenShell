@@ -51,6 +51,8 @@ if args.reporter == "Console":
     engine = reporter.Console(specs, use_colour=not args.no_color)
 elif args.reporter == "Json":
     engine = reporter.Json(specs)
+elif args.reporter == "Html":
+    engine = reporter.Html(specs)
 
 engine.report()
 
