@@ -18,8 +18,11 @@
 
 import os
 import sys
+import math
 import logging
+import datetime
 
+cwd = os.path.dirname(os.path.realpath(__file__))
 
 class Reporter:
     def __init__(self, ids):
@@ -150,11 +153,14 @@ class Json(Reporter):
                 }
             )
         total = len(specification.applicable_entities)
+        total_successes = total - len(specification.failed_entities)
+        percentage = math.floor((total_successes / total) * 100) if total else "N/A"
         return {
             "name": specification.name,
             "status": specification.status,
-            "total_successes": total - len(specification.failed_entities),
+            "total_successes": total_successes,
             "total": total,
+            "percentage": percentage,
             "required": specification.minOccurs != 0,
             "requirements": requirements,
         }
@@ -170,6 +176,32 @@ class Json(Reporter):
         with open(filepath, "w") as outfile:
             return json.dump(self.results, outfile)
 
+
+class Html(Json):
+    def __init__(self, ids):
+        super().__init__(ids)
+        self.results = {}
+
+    def report(self):
+        self.results["title"] = self.ids.info.get("title", "Untitled IDS")
+        self.results["time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.results["specifications"] = []
+        for specification in self.ids.specifications:
+            self.results["specifications"].append(self.report_specification(specification))
+        return self.results
+
+    def to_string(self):
+        import pystache
+
+        with open(os.path.join(cwd, "templates", "report.html"), "r") as file:
+            return pystache.render(file.read(), self.results)
+
+    def to_file(self, filepath):
+        import pystache
+
+        with open(os.path.join(cwd, "templates", "report.html"), "r") as file:
+            with open(filepath, "w") as outfile:
+                return outfile.write(pystache.render(file.read(), self.results))
 
 
 class BcfHandler(logging.StreamHandler):
