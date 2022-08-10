@@ -1,6 +1,6 @@
-import sys
-import re
 import datetime
+import re
+import sys
 from urllib import request
 
 
@@ -22,7 +22,7 @@ if sys.argv[1] == "--do_choco_release?":
         print("do_choco_release", end="")
 
 
-elif sys.argv[1] == "--latest_blender_release_min_maj_pat?":
+elif sys.argv[1] == "--latest_blender_release_maj_min_pat?":
     re_blender_version_min_maj_pat = r"Latest Version.+<span>Blender (\d+\.\d+\.\d+)</span>"
     url = "https://community.chocolatey.org/packages/blender"
     resp = request_repo_info(url)
@@ -32,7 +32,7 @@ elif sys.argv[1] == "--latest_blender_release_min_maj_pat?":
         print(found[0], end="")
 
 
-elif sys.argv[1] == "--latest_blender_release_min_maj?":
+elif sys.argv[1] == "--latest_blender_release_maj_min?":
     re_blender_version_min_maj = r"Latest Version.+<span>Blender (\d+\.\d+)\..+</span>"
     url = "https://community.chocolatey.org/packages/blender"
     resp = request_repo_info(url)
@@ -40,6 +40,7 @@ elif sys.argv[1] == "--latest_blender_release_min_maj?":
     found = re.findall(re_blender_version_min_maj, html_txt)
     if found:
         print(found[0], end="")
+
 
 elif sys.argv[1] == "--latest_blender_python_version_maj_min?":
     # get latest blender version first
