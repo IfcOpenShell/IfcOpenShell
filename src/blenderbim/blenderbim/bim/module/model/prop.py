@@ -36,7 +36,7 @@ def get_relating_type(self, context):
 def get_relating_type_browser(self, context):
     if not AuthoringData.is_loaded:
         AuthoringData.load()
-    return AuthoringData.data["relating_types_browser_ids"]
+    return AuthoringData.data["relating_types_ids_browser"]
 
 
 def update_icon_id(self, context, browser=False):
@@ -49,16 +49,14 @@ def update_icon_id(self, context, browser=False):
     ) and relating_type is not None:
         if not AuthoringData.assetize_relating_type_from_selection(browser=browser):
             return
-    if ifc_class not in AuthoringData.data["preview_constr_types"]:
-        pass
     self.icon_id = AuthoringData.data["preview_constr_types"][ifc_class][relating_type_id]["icon_id"]
 
 
 def update_ifc_class(self, context):
     AuthoringData.load_ifc_classes()
     AuthoringData.load_relating_types()
-    if self.updating:
-        return
+    if not self.updating:
+        update_icon_id(self, context)
 
 
 def update_ifc_class_browser(self, context):

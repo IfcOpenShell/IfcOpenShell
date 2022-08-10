@@ -55,7 +55,7 @@ class AuthoringData:
 
     @classmethod
     def load_relating_types_browser(cls):
-        cls.data["relating_types_browser_ids"] = cls.relating_types_browser()
+        cls.data["relating_types_ids_browser"] = cls.relating_types_browser()
 
     @classmethod
     def load_preview_constr_types(cls):
@@ -105,8 +105,10 @@ class AuthoringData:
 
     @classmethod
     def assetize_constr_class(cls, ifc_class=None):
+        selected_ifc_class = cls.props.ifc_class
+        selected_relating_type_id = cls.props.relating_type_id
         if ifc_class is None:
-            ifc_class = cls.props.ifc_class
+            ifc_class = cls.props.ifc_class_browser
         relating_type_info = cls.relating_type_info(ifc_class)
         _ = cls.new_relating_type_info(ifc_class) if relating_type_info is None else relating_type_info
         constr_class_occurrences = cls.constr_class_entities(ifc_class)
@@ -122,6 +124,10 @@ class AuthoringData:
                 cls.assetize_object(obj, ifc_class, constr_class_entity)
         relating_type_info = cls.relating_type_info(ifc_class)
         relating_type_info.fully_loaded = True
+        cls.props.updating = True
+        cls.props.ifc_class = selected_ifc_class
+        cls.props.relating_type_id = selected_relating_type_id
+        cls.props.updating = False
 
     @classmethod
     def assetize_object(cls, obj, ifc_class, ifc_class_entity, from_selection=False):

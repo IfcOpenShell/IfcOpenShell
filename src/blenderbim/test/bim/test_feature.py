@@ -629,18 +629,6 @@ def i_display_the_construction_type_browser():
     bpy.ops.bim.display_constr_types("INVOKE_DEFAULT")
 
 
-@given("I preview only one asset on the construction type browser")
-@when("I preview only one asset on the construction type browser")
-def i_preview_one_construction_type():
-    bpy.context.scene.BIMModelProperties.unfold_relating_types = False
-
-
-@given("I preview all available assets on the construction type browser")
-@when("I preview all available assets on the construction type browser")
-def i_preview_all_construction_types():
-    bpy.context.scene.BIMModelProperties.unfold_relating_types = True
-
-
 @given("I add the construction type")
 @when("I add the construction type")
 def i_add_the_active_construction_type():
