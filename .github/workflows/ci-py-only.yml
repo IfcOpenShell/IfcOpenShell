@@ -11,17 +11,8 @@ on:
   pull_request:
 
 jobs:
-  activate:
-    runs-on: ubuntu-latest
-    if: |
-      github.repository == 'Krande/IfcOpenShell' &&
-      !contains(github.event.head_commit.message, 'skip ci')
-    steps:
-      - run: echo ok go
-
   build:
     runs-on: ubuntu-20.04
-    needs: activate
     steps:
       - uses: actions/checkout@v2
         with:
