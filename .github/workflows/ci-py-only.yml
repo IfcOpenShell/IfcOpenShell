@@ -14,7 +14,7 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'IfcOpenShell/IfcOpenShell' &&
+      github.repository == 'Krande/IfcOpenShell' &&
       !contains(github.event.head_commit.message, 'skip ci')
     steps:
       - run: echo ok go
