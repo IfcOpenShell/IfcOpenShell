@@ -16,6 +16,8 @@
 #include <Geom_BezierCurve.hxx>
 #include <Geom_TrimmedCurve.hxx>
 
+#include <Standard_Version.hxx>
+
 #include "IfcGeom.h"
 
 template <typename T, typename U>
@@ -695,10 +697,16 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(tesselate_)(const TopoDS_Shape& s
 				IfcSchema::IfcCartesianPoint* cpnt = new IfcSchema::IfcCartesianPoint(xyz);
 				vertices.push_back(cpnt);
 			}
+#if OCC_VERSION_HEX < 0x70600
 			const Poly_Array1OfTriangle& triangles = tri->Triangles();
 			for (int i = 1; i <= triangles.Length(); ++i) {
 				int n1, n2, n3;
 				triangles(i).Get(n1, n2, n3);
+#else
+			for (int i = 1; i <= tri->NbTriangles(); ++i) {
+				int n1, n2, n3;
+				tri->Triangle(i).Get(n1, n2, n3);
+#endif
 				IfcSchema::IfcCartesianPoint::list::ptr points(new IfcSchema::IfcCartesianPoint::list);
 				points->push(vertices[n1 - 1]);
 				points->push(vertices[n2 - 1]);

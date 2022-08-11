@@ -29,9 +29,11 @@
 #include <TopExp.hxx>
 #include <BRep_Tool.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
-#include <BRepAdaptor_CompCurve.hxx>
 #include <Standard_Version.hxx>
+#if OCC_VERSION_HEX < 0x70600
 #include <BRepAdaptor_HCompCurve.hxx>
+#endif
+#include <BRepAdaptor_CompCurve.hxx>
 #include <Approx_Curve3d.hxx>
 #include "../ifcgeom/IfcGeom.h"
 
