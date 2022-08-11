@@ -460,8 +460,8 @@ class IDSFacet extends HTMLElement {
 
         var name = this.idsElement.getElementsByTagNameNS(ns, 'name')[0];
         var value = this.getIdsValue(name);
-        if (value.type == 'simpleValue') {
-            var content = this.capitalise(value.content.toLowerCase().replace('ifc', ''))
+        if (value.type == 'simpleValue' || value.type == 'enumeration') {
+            var content = this.capitalise(value.content.toLowerCase().replaceAll('ifc', ''))
             parameters.name = '<ids-param filter="entityName">' + content + '</ids-param>';
             this.params.push(value.param);
         }

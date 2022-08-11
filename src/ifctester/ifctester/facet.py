@@ -366,7 +366,7 @@ class Property(Facet):
                 props[pset_name] = {}
                 if isinstance(self.name, str):
                     prop = pset_props.get(self.name)
-                    if prop:
+                    if prop is not None and prop != "":
                         props[pset_name][self.name] = prop
                 else:
                     props[pset_name] = {k: v for k, v in pset_props.items() if k == self.name}
