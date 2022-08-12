@@ -51,9 +51,7 @@ Scenario: Add type instance - add a mesh where existing instances have changed c
 Scenario: Preview one type on the Construction Type Browser
     Given an empty IFC project
     And I load the demo construction library
-    When I display the construction type browser
-    And I preview only one asset on the construction type browser
-    And I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    When I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
     And I set "scene.BIMModelProperties.relating_type" to "DEMO2"
     Then construction type is DEMO2
     And objects starting with "IfcColumn/" do not exist
@@ -63,18 +61,14 @@ Scenario: Preview one class on the construction type browser
     Given an empty IFC project
     And I load the demo construction library
     When I display the construction type browser
-    And I preview all available assets on the construction type browser
-    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
-    Then "scene.BIMModelProperties.ifc_class" is "IfcWallType"
-    And objects starting with "IfcWall/" do not exist
+    And I set "scene.BIMModelProperties.ifc_class_browser" to "IfcWallType"
+    Then objects starting with "IfcWall/" do not exist
     And all construction types for "IfcWallType" have a preview
 
 Scenario: Add one type from the Construction Type Browser
     Given an empty IFC project
     And I load the demo construction library
-    When I display the construction type browser
-    And I preview only one asset on the construction type browser
-    And I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    When I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
     And I set "scene.BIMModelProperties.relating_type" to "DEMO2"
     And I add the construction type
     Then the object "IfcColumn/Column" exists

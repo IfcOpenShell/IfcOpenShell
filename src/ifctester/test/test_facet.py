@@ -840,6 +840,10 @@ class TestProperty:
         run("", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
         run("", facet=facet, inst=element, expected=True)
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcBoolean(True)})
+        run("", facet=facet, inst=element, expected=True)
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": False})
+        run("", facet=facet, inst=element, expected=True)
 
         # A simple value checks an exact case-sensitive match
         facet = Property(propertySet="Foo_Bar", name="Foo", value="Bar")
