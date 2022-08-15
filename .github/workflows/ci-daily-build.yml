@@ -15,8 +15,17 @@ on:
       - completed
 
 jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+      - name: Set env
+        run: echo ok go
+
   test:
     name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
+    needs: activate
     runs-on: ${{ matrix.platform.distver }}
     defaults:
       run:
