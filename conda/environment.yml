@@ -1,0 +1,14 @@
+name: conda-build
+channels:
+  - conda-forge
+dependencies:
+  - conda-build
+  - conda-verify
+  - anaconda-client
+  - ninja
+  - doxygen
+  - ripgrep
+  - pip
+  - pip:
+      - --extra-index-url https://lief.s3-website.fr-par.scw.cloud/latest
+      - lief==0.13.0.dev0
