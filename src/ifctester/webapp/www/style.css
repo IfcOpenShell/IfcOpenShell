@@ -63,6 +63,11 @@ a {
 a:hover {
     color: #7fc8f8;
 }
+ids-container {
+    float: left;
+    width: 950px;
+    height: 100%;
+}
 .ids {
     width: 700px;
     height: calc(100%);
