@@ -83,6 +83,8 @@ class SelectGlobalId(Operator):
         global_id = self.global_id or props.global_id
         entity = ifc_file.by_guid(global_id)
         obj = tool.Ifc.get_object(entity)
+        if not obj:
+            self.report({"ERROR"}, "No object found")
         obj.select_set(True)
         bpy.context.view_layer.objects.active = obj
         return {"FINISHED"}

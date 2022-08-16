@@ -672,7 +672,7 @@ class LinkIfc(bpy.types.Operator):
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def execute(self, context):
-        files = [self.filepath] if self.filepath else [f.name for f in self.files]
+        files = [f.name for f in self.files] if self.files else [self.filepath]
         for filename in files:
             filepath = os.path.join(self.directory, filename)
             new = context.scene.BIMProjectProperties.links.add()
