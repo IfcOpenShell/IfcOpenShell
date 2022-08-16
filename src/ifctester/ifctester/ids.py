@@ -185,7 +185,8 @@ class Specification:
             if not isinstance(facets, list):
                 facets = [facets]
             for facet_xml in facets:
-                facet = globals()[name.capitalize()]().parse(facet_xml)
+                name_capitalised = name[0].upper() + name[1:]
+                facet = globals()[name_capitalised]().parse(facet_xml)
                 results.append(facet)
         return results
 
