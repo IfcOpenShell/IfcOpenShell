@@ -91,9 +91,10 @@ Using the BlenderBIM Add-on
 
 The BlenderBIM Add-on is a Blender based graphical interface to IfcOpenShell.
 Other than providing a graphical IFC authoring platform, it also comes with
-IfcOpenShell and a Python shell built-in. This means you don't need to install
-Python first, and you also can compare your IfcOpenShell scripting to what you
-see with a visual model viewer.
+IfcOpenShell, its utilities, and a Python shell built-in. This means you don't
+need to install Python first, and you also can compare your IfcOpenShell
+scripting to what you see with a visual model viewer, or use a graphical
+interface to access the IfcOpenShell utilities.
 
 1. Install the BlenderBIM Add-on by following the `BlenderBIM Add-on
    installation documentation
