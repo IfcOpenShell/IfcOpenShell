@@ -30,9 +30,9 @@ class Obj2Ifc:
     def __init__(self, path):
         self.path = path
 
-    def execute(self):
+    def execute(self, version="IFC4"):
         self.basename = Path(self.path).stem
-        self.create_ifc_file()
+        self.create_ifc_file(version)
         mesh_set = pymeshlab.MeshSet()
         mesh_set.load_new_mesh(self.path)
 
@@ -87,10 +87,10 @@ class Obj2Ifc:
             # OBJ swaps Y and Z axis
             return [coordinates[0], -coordinates[2], coordinates[1]]
 
-    def create_ifc_file(self):
-        self.file = ifcopenshell.api.run("project.create_file", version="IFC2X3")
+    def create_ifc_file(self, version):
+        self.file = ifcopenshell.api.run("project.create_file", version=version)
         person = ifcopenshell.api.run("owner.add_person", self.file)
-        person.Id = person.GivenName = None
+        person[0] = person.GivenName = None
         person.FamilyName = "user"
         org = ifcopenshell.api.run("owner.add_organisation", self.file)
         org.Id = None

@@ -30,9 +30,9 @@ class Obj2Ifc:
     def __init__(self, path):
         self.path = path
 
-    def execute(self):
+    def execute(self, version="IFC4"):
         self.basename = Path(self.path).stem
-        self.create_ifc_file()
+        self.create_ifc_file(version)
         self.scene = pywavefront.Wavefront(self.path, create_materials=True, collect_faces=True)
         for mesh in self.scene.mesh_list:
             ifc_faces = []
@@ -73,10 +73,10 @@ class Obj2Ifc:
             ifcopenshell.api.run("spatial.assign_container", self.file, product=product, relating_structure=self.storey)
         self.file.write(self.path.replace(".obj", ".ifc"))
 
-    def create_ifc_file(self):
-        self.file = ifcopenshell.api.run("project.create_file", version="IFC2X3")
+    def create_ifc_file(self, version):
+        self.file = ifcopenshell.api.run("project.create_file", version=version)
         person = ifcopenshell.api.run("owner.add_person", self.file)
-        person.Id = person.GivenName = None
+        person[0] = person.GivenName = None
         person.FamilyName = "user"
         org = ifcopenshell.api.run("owner.add_organisation", self.file)
         org.Id = None
