@@ -17,11 +17,11 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import json
 import ifccsv
 import ifcopenshell
-import json
+import blenderbim.bim.handler
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
 
 
 class SelectDiffJsonFile(bpy.types.Operator):
@@ -29,6 +29,7 @@ class SelectDiffJsonFile(bpy.types.Operator):
     bl_label = "Select Diff JSON File"
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
 
     def execute(self, context):
         context.scene.DiffProperties.diff_json_file = self.filepath
@@ -72,9 +73,10 @@ class SelectDiffOldFile(bpy.types.Operator):
     bl_label = "Select Diff Old File"
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
 
     def execute(self, context):
-        context.scene.DiffProperties.diff_old_file = self.filepath
+        context.scene.DiffProperties.old_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -87,9 +89,10 @@ class SelectDiffNewFile(bpy.types.Operator):
     bl_label = "Select Diff New File"
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
 
     def execute(self, context):
-        context.scene.DiffProperties.diff_new_file = self.filepath
+        context.scene.DiffProperties.new_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -113,14 +116,14 @@ class ExecuteIfcDiff(bpy.types.Operator):
         import ifcdiff
 
         ifc_diff = ifcdiff.IfcDiff(
-            context.scene.DiffProperties.diff_old_file,
-            context.scene.DiffProperties.diff_new_file,
+            context.scene.DiffProperties.old_file,
+            context.scene.DiffProperties.new_file,
             self.filepath,
             [r.relationship for r in context.scene.DiffProperties.diff_relationships],
             context.scene.DiffProperties.diff_filter_elements,
         )
-        diff = ifc_diff.diff()
+        ifc_diff.diff()
         ifc_diff.export()
         context.scene.DiffProperties.diff_json_file = self.filepath
-        context.scene.DiffProperties.diff_result = diff
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
