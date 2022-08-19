@@ -238,8 +238,12 @@ class Selector:
     def filter_element(cls, element, element_value, comparison, value):
         if comparison.startswith("not"):
             return not cls.filter_element(element, element_value, comparison[3:], value)
+        elif comparison == "equal" and isinstance(element_value, list):
+            return value in element_value
         elif comparison == "equal":
             return element_value == value
+        elif comparison == "contains" and isinstance(element_value, list):
+            return bool([ev for ev in element_value if value in str(ev)])
         elif comparison == "contains":
             return value in str(element_value)
         elif comparison == "morethan":
