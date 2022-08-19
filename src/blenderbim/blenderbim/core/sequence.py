@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>, 2022 Yassine Oualid <yassine@sigmadimensions.com>
+# Copyright (C) 2021, 2022 Dion Moult <dion@thinkmoult.com>, Yassine Oualid <yassine@sigmadimensions.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -23,17 +23,12 @@ def add_work_plan(ifc, sequence):
 
 
 def remove_work_plan(ifc, sequence, work_plan=None):
-    ifc.run("sequence.remove_work_plan", **{"work_plan": ifc.get().by_id(work_plan)})
+    ifc.run("sequence.remove_work_plan", work_plan=work_plan)
     sequence.load_work_plans()
 
 
-def load_work_plan_attributes(sequence, work_plan=None):
-    data = sequence.get_ifc_work_plan_attributes(work_plan)
-    sequence.load_work_plan_attributes(data)
-
-
 def enable_editing_work_plan(sequence, work_plan=None):
-    load_work_plan_attributes(sequence, work_plan)
+    sequence.load_work_plan_attributes(work_plan)
     sequence.enable_editing_work_plan(work_plan)
 
 
@@ -44,6 +39,6 @@ def disable_editing_work_plan(sequence):
 def edit_work_plan(ifc, sequence):
     work_plan = sequence.get_current_ifc_work_plan()
     attributes = sequence.get_work_plan_attributes()
-    ifc.run("sequence.edit_work_plan", **{"work_plan": work_plan, "attributes": attributes})
+    ifc.run("sequence.edit_work_plan", work_plan=work_plan, attributes=attributes)
     sequence.disable_editing_work_plan()
     sequence.load_work_plans()
