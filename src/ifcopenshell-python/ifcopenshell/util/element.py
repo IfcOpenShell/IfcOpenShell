@@ -23,7 +23,7 @@ def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True):
     """Retrieve property sets, their related properties' names & values and ids.
 
     :param element: The IFC Element entity
-    :param psets_only: Default as False. Set to true if only property sets are needed. 
+    :param psets_only: Default as False. Set to true if only property sets are needed.
     :param qtos_only: Default as False. Set to true if only quantities are needed.
     :param should_inherit: Default as True. Set to false if you don't want to inherit property sets from the Type.
     :return: dictionnary: key, value pair of psets' names and their properties' names & values
@@ -133,7 +133,7 @@ def get_predefined_type(element):
 def get_type(element):
     """
     Retrieves the Element Type entity related to an element entity.
-    
+
     :param element: The IFC Element entity
     :return: The Element Type entity defining the element
 
@@ -178,7 +178,7 @@ def get_material(element, should_skip_usage=False, should_inherit=True):
 def get_elements_by_material(ifc_file, material):
     """
     Retrieves the elements related to a material.
-    
+
     :param ifc_file: The IFC file
     :param material: The IFC Material entity
     :return: The elements related to the material
@@ -212,7 +212,7 @@ def get_elements_by_material(ifc_file, material):
 def get_elements_by_style(ifc_file, style):
     """
     Retrieves the elements related to a style.
-    
+
     :param ifc_file: The IFC file
     :param style: The IFC Style entity
     :return: The elements related to the style
@@ -282,17 +282,22 @@ def get_layers(ifc_file, element):
 
 def get_container(element, should_get_direct=False):
     """
-    Retrieves the container of an element.
-    
-    :param element: The IFC element
-    :param should_get_direct: If True, the container of the element is returned. If False, the aggregate's container is returned
-    :return: The container of the element, or its aggregate's container.
+    Retrieves the spatial structure container of an element.
 
+    :param element: The IFC element
+    :type element: ifcopenshell.entity_instance.entity_instance
+    :param should_get_direct: If True, a result is only returned if the element
+        is directly contained in a spatial structure element. If False, an
+        indirect spatial container may be returned, such as if an element is a
+        part of an aggregate, and then if that aggregate is contained in a
+        spatial structure element.
+    :type should_get_direct: bool
+    :return: The direct or indirect container of the element or None.
 
     Example::
-    element = file.by_type("IfcWall")[0]
-    container = ifcopenshell.util.element.get_container(element)
 
+        element = file.by_type("IfcWall")[0]
+        container = ifcopenshell.util.element.get_container(element)
     """
     if should_get_direct:
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
@@ -305,17 +310,33 @@ def get_container(element, should_get_direct=False):
             return element.ContainedInStructure[0].RelatingStructure
 
 
+def get_referenced_structures(element):
+    """
+    Retreives a list of referenced structural elements
+
+    :param element: The IFC element
+    :type element: ifcopenshell.entity_instance.entity_instance
+
+    Example::
+
+        element = file.by_type("IfcWall")[0]
+        print(ifcopenshell.util.element.get_referenced_structures(element))
+    """
+    if hasattr(element, "ReferencedInStructures"):
+        return [r.RelatingStructure for r in element.ReferencedInStructures]
+
+
 def get_decomposition(element):
     """
     Retrieves the decomposition of an element.
-    
+
     :param element: The IFC element
     :return: The decomposition of the element
 
     Example::
-    element = file.by_type("IfcProject")[0]
-    decomposition = ifcopenshell.util.element.get_decomposition(element)
 
+        element = file.by_type("IfcProject")[0]
+        decomposition = ifcopenshell.util.element.get_decomposition(element)
     """
     queue = [element]
     results = []
@@ -333,7 +354,7 @@ def get_decomposition(element):
 def get_aggregate(element):
     """
     Retrieves the aggregate of an element.
-    
+
     :param element: The IFC element
     :return: The aggregate of the element
 
@@ -349,14 +370,14 @@ def get_aggregate(element):
 def get_parts(element):
     """
     Retrieves the parts of an element.
-    
+
     :param element: The IFC element
     :return: The parts of the element
 
     Example::
     element = file.by_type("IfcElementAssembly")[0]
     parts = ifcopenshell.util.element.get_parts(element)
-    
+
     """
     if hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
         return element.IsDecomposedBy[0].RelatedObjects
