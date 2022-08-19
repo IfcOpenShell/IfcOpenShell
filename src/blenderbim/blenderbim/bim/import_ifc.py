@@ -326,7 +326,11 @@ class IfcImporter:
             self.elements = [e for e in self.elements if e.Representation and not e.is_a("IfcFeatureElement")]
 
         self.elements = set(self.elements[offset:offset_limit])
-        self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
+
+        if self.ifc_import_settings.has_filter or offset or offset_limit < len(self.elements):
+            self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
+        else:
+            self.element_types = set(self.file.by_type("IfcElementType"))
 
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
             self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)

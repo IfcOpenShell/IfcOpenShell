@@ -169,14 +169,14 @@ class MaterialPsetProperties(PropertyGroup):
 class TaskPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
     qto_name: EnumProperty(items=getTaskQtoNames, name="Qto Name")
 
 
 class ResourcePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
+    properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=getResourcePsetNames, name="Pset Name")
     qto_name: EnumProperty(items=getResourceQtoNames, name="Qto Name")
 
