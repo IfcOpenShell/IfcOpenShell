@@ -63,7 +63,7 @@ Scenario: Enable pset editing - work schedule
     And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
     When I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='WorkSchedule')"
 
-Scenario: Enable pset editing - resource
+Scenario: Enable pset editing - resource with time series properties
     Given an empty IFC project
     And I press "bim.load_resources"
     And I press "bim.add_resource(ifc_class='IfcSubContractResource', resource=0)"
@@ -71,6 +71,31 @@ Scenario: Enable pset editing - resource
     And I press "bim.add_pset(obj_type='Resource')"
     And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
     When I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Resource')"
+    Then nothing happens
+
+Scenario: Enable pset editing - resource with regular single properties
+    Given an empty IFC project
+    And I press "bim.load_resources"
+    And I press "bim.add_resource(ifc_class='IfcCrewResource', resource=0)"
+    And the variable "resource" is "{ifc}.by_type('IfcCrewResource')[-1].id()"
+    And I press "bim.add_resource(ifc_class='IfcLaborResource', resource={resource})"
+    And I set "scene.BIMResourceProperties.active_resource_index" to "1"
+    And I set "scene.ResourcePsetProperties.pset_name" to "EPset_Productivity"
+    And I press "bim.add_pset(obj_type='Resource')"
+    And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
+    When I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Resource')"
+    Then nothing happens
+
+Scenario: Enable pset editing - task
+    Given an empty IFC project
+    And I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_tasks(work_schedule={work_schedule})"
+    And I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And I set "scene.TaskPsetProperties.qto_name" to "Qto_TaskBaseQuantities"
+    And I press "bim.add_qto(obj_type='Task')"
+    And the variable "pset" is "{ifc}.by_type('IfcElementQuantity')[-1].id()"
+    When I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Task')"
     Then nothing happens
 
 Scenario: Copy property to selected - copy property
