@@ -27,26 +27,18 @@ import blenderbim.bim.module.sequence.helper as helper
 
 class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
-    def get_work_plans(cls):
-        work_plans = {}
-        for work_plan in tool.Ifc.get().by_type("IfcWorkPlan"):
-            work_plans[work_plan.id()] = {"Name": work_plan.Name}
-        return work_plans
-
-    @classmethod
     def load_work_plans(cls):
-        work_plans = tool.Sequence.get_work_plans()
         props = bpy.context.scene.BIMWorkPlanProperties
         props.work_plans.clear()
-        for ifc_definition_id, work_plan in work_plans.items():
+        for work_plan in tool.Ifc.get().by_type("IfcWorkPlan"):
             new = props.work_plans.add()
-            new.ifc_definition_id = ifc_definition_id
-            new.name = work_plan["Name"] or "Unnamed"
+            new.ifc_definition_id = work_plan.id()
+            new.name = work_plan.Name or "Unnamed"
 
     @classmethod
     def enable_editing_work_plan(cls, work_plan):
         if work_plan:
-            bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id = work_plan
+            bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id = work_plan.id()
             bpy.context.scene.BIMWorkPlanProperties.editing_type = "ATTRIBUTES"
 
     @classmethod
@@ -55,60 +47,34 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_current_ifc_work_plan(cls):
-        active_work_plan = bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id
-        ifc_work_plan = tool.Ifc.get().by_id(active_work_plan)
-        return ifc_work_plan
+        return tool.Ifc.get().by_id(bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id)
 
     @classmethod
-    def get_ifc_work_plan_attributes(cls, work_plan):
-        if work_plan:
-            ifc_work_plan = tool.Ifc.get().by_id(work_plan)
-            data = ifc_work_plan.get_info()
-            del data["OwnerHistory"]
-            if data["Creators"]:
-                data["Creators"] = [p.id() for p in data["Creators"]]
-            data["CreationDate"] = ifcopenshell.util.date.ifc2datetime(data["CreationDate"])
-            data["StartTime"] = ifcopenshell.util.date.ifc2datetime(data["StartTime"])
-            if data["FinishTime"]:
-                data["FinishTime"] = ifcopenshell.util.date.ifc2datetime(data["FinishTime"])
-            data["IsDecomposedBy"] = []
-            for rel in ifc_work_plan.IsDecomposedBy:
-                data["IsDecomposedBy"].extend([o.id() for o in rel.RelatedObjects])
-            return data
+    def load_work_plan_attributes(cls, work_plan):
+        def callback(name, prop, data):
+            if name in ["CreationDate", "StartTime", "FinishTime"]:
+                prop.string_value = "" if prop.is_null else data[name]
+                return True
 
-    @classmethod
-    def load_work_plan_attributes(cls, data):
         props = bpy.context.scene.BIMWorkPlanProperties
         props.work_plan_attributes.clear()
-        blenderbim.bim.helper.import_attributes(
-            "IfcWorkPlan", props.work_plan_attributes, data, tool.Sequence.import_attributes
-        )
-
-    @classmethod
-    def import_attributes(name, prop, data):
-        if name in ["CreationDate", "StartTime", "FinishTime"]:
-            prop.string_value = "" if prop.is_null else data[name].isoformat()
-            return True
+        blenderbim.bim.helper.import_attributes2(work_plan, props.work_plan_attributes, callback)
 
     @classmethod
     def get_work_plan_attributes(cls):
-        props = bpy.context.scene.BIMWorkPlanProperties
-        attributes = blenderbim.bim.helper.export_attributes(
-            props.work_plan_attributes, tool.Sequence.export_attributes
-        )
-        return attributes
+        def callback(attributes, prop):
+            if "Date" in prop.name or "Time" in prop.name:
+                if prop.is_null:
+                    attributes[prop.name] = None
+                    return True
+                attributes[prop.name] = helper.parse_datetime(prop.string_value)
+                return True
+            elif prop.name == "Duration" or prop.name == "TotalFloat":
+                if prop.is_null:
+                    attributes[prop.name] = None
+                    return True
+                attributes[prop.name] = helper.parse_duration(prop.string_value)
+                return True
 
-    @classmethod
-    def export_attributes(attributes, prop):
-        if "Date" in prop.name or "Time" in prop.name:
-            if prop.is_null:
-                attributes[prop.name] = None
-                return True
-            attributes[prop.name] = helper.parse_datetime(prop.string_value)
-            return True
-        elif prop.name == "Duration" or prop.name == "TotalFloat":
-            if prop.is_null:
-                attributes[prop.name] = None
-                return True
-            attributes[prop.name] = helper.parse_duration(prop.string_value)
-            return True
+        props = bpy.context.scene.BIMWorkPlanProperties
+        return blenderbim.bim.helper.export_attributes(props.work_plan_attributes, callback)

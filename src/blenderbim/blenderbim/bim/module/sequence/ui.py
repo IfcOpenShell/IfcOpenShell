@@ -52,7 +52,7 @@ class BIM_PT_work_plans(Panel):
             text="{} Work Plans Found".format(SequenceData.number_of_work_plans_loaded),
             icon="TEXT",
         )
-        row.operator("bim.add_work_plan", icon="ADD")
+        row.operator("bim.add_work_plan", icon="ADD", text="")
 
         for work_plan_id, work_plan in SequenceData.work_plans.items():
             self.draw_work_plan_ui(work_plan_id, work_plan)

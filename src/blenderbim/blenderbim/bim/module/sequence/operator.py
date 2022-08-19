@@ -59,12 +59,8 @@ class AddWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add Work Plan"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
         core.add_work_plan(tool.Ifc, tool.Sequence)
-        return {"FINISHED"}
 
 
 class EditWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
@@ -72,12 +68,8 @@ class EditWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_label = "Edit Work Plan"
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
         core.edit_work_plan(tool.Ifc, tool.Sequence)
-        return {"FINISHED"}
 
 
 class RemoveWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
@@ -86,33 +78,27 @@ class RemoveWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     work_plan: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
     def _execute(self, context):
-        core.remove_work_plan(tool.Ifc, tool.Sequence, work_plan=self.work_plan)
-        return {"FINISHED"}
+        core.remove_work_plan(tool.Ifc, tool.Sequence, work_plan=tool.Ifc.get().by_id(self.work_plan))
 
 
-class EnableEditingWorkPlan(bpy.types.Operator):
+class EnableEditingWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_work_plan"
     bl_label = "Enable Editing Work Plan"
     bl_options = {"REGISTER", "UNDO"}
     work_plan: bpy.props.IntProperty()
 
-    def execute(self, context):
-        core.enable_editing_work_plan(tool.Sequence, work_plan=self.work_plan)
-        return {"FINISHED"}
+    def _execute(self, context):
+        core.enable_editing_work_plan(tool.Sequence, work_plan=tool.Ifc.get().by_id(self.work_plan))
 
 
-class DisableEditingWorkPlan(bpy.types.Operator):
+class DisableEditingWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_work_plan"
     bl_options = {"REGISTER", "UNDO"}
     bl_label = "Disable Editing Work Plan"
 
-    def execute(self, context):
+    def _execute(self, context):
         core.disable_editing_work_plan(tool.Sequence)
-        return {"FINISHED"}
 
 
 class EnableEditingWorkPlanSchedules(bpy.types.Operator):
