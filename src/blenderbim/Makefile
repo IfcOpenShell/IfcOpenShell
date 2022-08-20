@@ -143,6 +143,8 @@ endif
 	cd dist/working && . env/bin/activate && pip install babel
 	cd dist/working && . env/bin/activate && ./env/bin/pybabel compile -d ./IfcOpenShell-0.7.0/src/ifcbimtester/bimtester/locale/
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcbimtester/bimtester dist/blenderbim/libs/site/packages/
+	# Provides IFCTester functionality
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifctester/ifctester dist/blenderbim/libs/site/packages/
 	# Provides IFCCOBie functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifccobie/* dist/blenderbim/libs/site/packages/
 	# Provides IFCDiff functionality
@@ -238,16 +240,16 @@ endif
 
 	# Required by bcf
 	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/bb/41/ad9ce53bb978b68af8ae415293cafc89b165b8ad55a593725299dca76729/xmlschema-1.1.1.tar.gz
+	cd dist/working && wget https://files.pythonhosted.org/packages/5b/ef/f97c3e1a7efa00e989a793fe15297214fc95ad7d9e3810586bd08ce9f0f3/xmlschema-2.0.2.tar.gz
 	cd dist/working && tar -xzvf xmlschema*
-	cp -r dist/working/xmlschema-1.1.1/xmlschema dist/blenderbim/libs/site/packages/
+	cp -r dist/working/xmlschema-2.0.2/xmlschema dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by bcf
 	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/12/f9/f9960222d5274944b01391749e55e4dcdf28d8f0c108b64ac931ceff6fdb/elementpath-1.4.3.tar.gz
+	cd dist/working && wget https://files.pythonhosted.org/packages/11/bc/5afb61dd5d863e5cf77cd952445c50c17e65953405986f19e97e4389692a/elementpath-3.0.2.tar.gz
 	cd dist/working && tar -xzvf elementpath*
-	cp -r dist/working/elementpath-1.4.3/elementpath dist/blenderbim/libs/site/packages/
+	cp -r dist/working/elementpath-3.0.2/elementpath dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by bcf

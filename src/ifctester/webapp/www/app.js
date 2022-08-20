@@ -5,6 +5,31 @@ feather.replace()
 var ns = 'http://standards.buildingsmart.org/IDS';
 var xs = 'http://www.w3.org/2001/XMLSchema';
 
+class IDSNew extends HTMLElement {
+    connectedCallback() {
+        this.addEventListener('click', this.click);
+    }
+
+    click(e) {
+        var ifcTester = this.closest('ifc-tester');
+        var template = ifcTester.getElementsByTagName('template')[0];
+        console.log(template);
+        ifcTester.appendChild(template.content.cloneNode(true));
+        feather.replace();
+    }
+}
+
+class IDSClose extends HTMLElement {
+    connectedCallback() {
+        this.addEventListener('click', this.click);
+    }
+
+    click(e) {
+        var container = this.closest('ids-container');
+        container.parentElement.removeChild(container);
+    }
+}
+
 class IDSContainer extends HTMLElement {
     connectedCallback() {
         this.filename = 'specifications.ids';
@@ -460,8 +485,8 @@ class IDSFacet extends HTMLElement {
 
         var name = this.idsElement.getElementsByTagNameNS(ns, 'name')[0];
         var value = this.getIdsValue(name);
-        if (value.type == 'simpleValue') {
-            var content = this.capitalise(value.content.toLowerCase().replace('ifc', ''))
+        if (value.type == 'simpleValue' || value.type == 'enumeration') {
+            var content = this.capitalise(value.content.toLowerCase().replaceAll('ifc', ''))
             parameters.name = '<ids-param filter="entityName">' + content + '</ids-param>';
             this.params.push(value.param);
         }
@@ -943,9 +968,11 @@ class IDSAudit extends HTMLElement {
     }
 }
 
+window.customElements.define('ids-new', IDSNew);
 window.customElements.define('ids-container', IDSContainer);
 window.customElements.define('ids-loader', IDSLoader);
 window.customElements.define('ids-save', IDSSave);
+window.customElements.define('ids-close', IDSClose);
 window.customElements.define('ids-audit', IDSAudit);
 window.customElements.define('ids-info', IDSInfo);
 window.customElements.define('ids-info-element', IDSInfoElement);

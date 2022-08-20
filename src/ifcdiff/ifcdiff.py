@@ -34,6 +34,38 @@ from deepdiff import DeepDiff
 
 
 class IfcDiff:
+    """Main IfcDiff application
+
+    If you are using IfcDiff as a library, this is the class you should use.
+
+    :param old_file: Filepath to the old file
+    :type old_file: string
+    :param new_file: Filepath to the new file
+    :type new_file: string
+    :param output_file: Filepath to the output JSON file to store the diff
+        results
+    :type output_file: string
+    :param relationships: List of relationships to check. An empty list means
+        that only geometry and attributes are compared.
+    :type relationships: list[string]
+    :param is_shallow: True if you want only the first difference to be listed.
+        False if you want all differences to be checked. Choosing False means
+        that comparisons will take longer.
+    :type is_shallow: bool
+    :param filter_elements: An IFC filter query if you only want to compare a
+        subset of elements. For example: ``.IfcWall`` to only compare walls.
+    :type filter_elements: string
+
+    Example::
+
+        from ifcdiff import IfcDiff
+
+        ifc_diff = IfcDiff("/path/to/old.ifc", "/path/to/new.ifc", "/path/to/diff.json")
+        ifc_diff.diff()
+        print(ifc_diff.change_register)
+        ifc_diff.export()
+    """
+
     def __init__(self, old_file, new_file, output_file, relationships=None, is_shallow=True, filter_elements=None):
         self.old_file = old_file
         self.new_file = new_file
@@ -56,7 +88,7 @@ class IfcDiff:
             selector = ifcopenshell.util.selector.Selector()
             old_elements = set(e.GlobalId for e in selector.parse(self.old, self.filter_elements))
             new_elements = set(e.GlobalId for e in selector.parse(self.new, self.filter_elements))
-        else:   
+        else:
             old_elements = set(e.GlobalId for e in self.old.by_type("IfcProduct"))
             new_elements = set(e.GlobalId for e in self.new.by_type("IfcProduct"))
 
@@ -89,7 +121,6 @@ class IfcDiff:
         print(" - {} item(s) were changed either geometrically or with data".format(len(self.change_register.keys())))
         print("# Diff finished in {:.2f} seconds".format(time.time() - start))
         logging.disable(logging.NOTSET)
-        return f"# Diff finished in {time.time() - start:.2f} seconds"
 
     def export(self):
         with open(self.output_file, "w", encoding="utf-8") as diff_file:
@@ -101,7 +132,6 @@ class IfcDiff:
                 },
                 diff_file,
                 indent=4,
-                cls=DiffEncoder,
             )
 
     def load(self):
@@ -173,9 +203,9 @@ class IfcDiff:
     def diff_element_geometry(self, old, new):
         old_placement = ifcopenshell.util.placement.get_local_placement(old.ObjectPlacement)
         new_placement = ifcopenshell.util.placement.get_local_placement(new.ObjectPlacement)
-        if not np.allclose(old_placement[:,3], new_placement[:,3], atol=self.precision):
+        if not np.allclose(old_placement[:, 3], new_placement[:, 3], atol=self.precision):
             return True
-        if not np.allclose(old_placement[0:3,0:3], new_placement[0:3,0:3], atol=1e-2):
+        if not np.allclose(old_placement[0:3, 0:3], new_placement[0:3, 0:3], atol=1e-2):
             return True
         old_openings = [o.RelatedOpeningElement.GlobalId for o in getattr(old, "HasOpenings", []) or []]
         new_openings = [o.RelatedOpeningElement.GlobalId for o in getattr(new, "HasOpenings", []) or []]
@@ -218,7 +248,7 @@ class IfcDiff:
                 new_item.get_info_2(recursive=True),
                 custom_operators=[DiffTerminator()] if self.is_shallow else [],
                 math_epsilon=self.precision,
-                exclude_regex_paths=[r".*id']$"]
+                exclude_regex_paths=[r".*id']$"],
             )
         except:
             return True
@@ -247,14 +277,6 @@ class DiffTerminator:
     def give_up_diffing(self, level, diff_instance) -> bool:
         if any(diff_instance.tree.values()):
             raise Exception("Terminated")
-
-
-class DiffEncoder(json.JSONEncoder):
-    def default(self, obj):
-        try:
-            return json.JSONEncoder.default(self, obj)
-        except:
-            return str(obj)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 from blenderbim.bim.prop import StrProperty
-from blenderbim.bim.module.diff.data import DiffData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -32,20 +30,11 @@ from bpy.props import (
 )
 
 
-def update_diff_json_file(self, context):
-    DiffData.data["diff_json"] = DiffData.diff_json()
+def purge():
+    pass
 
 
-class Relationships(PropertyGroup):
-    relationship: EnumProperty(
-        name="Relationship",
-        items=[(r, r.capitalize(), r) for r in ["type", "property", "container", "aggregate", "classification"]],
-    )
-
-
-class DiffProperties(PropertyGroup):
-    diff_json_file: StringProperty(default="", name="JSON Output", update=update_diff_json_file)
-    old_file: StringProperty(default="", name="Old IFC File")
-    new_file: StringProperty(default="", name="New IFC File")
-    diff_relationships: CollectionProperty(type=Relationships, name="Relationships")
-    diff_filter_elements: StringProperty(default="", name="Filter")
+class IfcTesterProperties(PropertyGroup):
+    specs: StringProperty(default="", name="IDS File")
+    ifc_file: StringProperty(default="", name="IFC File")
+    should_load_from_memory: BoolProperty(default=False, name="Load from Memory")

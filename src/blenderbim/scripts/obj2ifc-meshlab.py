@@ -19,7 +19,7 @@
 
 # This can be packaged with `pyinstaller --onefile --hidden-import numpy --collect-all ifcopenshell --clean obj2ifc.py`
 import argparse
-import pywavefront
+import pymeshlab
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.owner.settings
@@ -33,16 +33,25 @@ class Obj2Ifc:
     def execute(self, version="IFC4"):
         self.basename = Path(self.path).stem
         self.create_ifc_file(version)
-        self.scene = pywavefront.Wavefront(self.path, create_materials=True, collect_faces=True)
-        for mesh in self.scene.mesh_list:
+        mesh_set = pymeshlab.MeshSet()
+        mesh_set.load_new_mesh(self.path)
+
+        self.format = None
+        if self.path.lower().endswith(".obj"):
+            self.format = "obj"
+
+        for mesh in mesh_set:
+            faces = mesh.face_matrix()
+            vertices = mesh.vertex_matrix()
+
             ifc_faces = []
-            for face in mesh.faces:
+            for face in faces:
                 ifc_faces.append(
                     self.file.createIfcFace(
                         [
                             self.file.createIfcFaceOuterBound(
                                 self.file.createIfcPolyLoop(
-                                    [self.file.createIfcCartesianPoint(self.scene.vertices[index]) for index in face]
+                                    [self.file.createIfcCartesianPoint(self.get_coordinates(vertices[index].tolist())) for index in face]
                                 ),
                                 True,
                             )
@@ -65,13 +74,18 @@ class Obj2Ifc:
                 "IfcBuildingElementProxy",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "Name": mesh.name or self.basename,
+                    "Name": mesh.label() or self.basename,
                     "ObjectPlacement": self.placement,
                     "Representation": representation,
                 }
             )
             ifcopenshell.api.run("spatial.assign_container", self.file, product=product, relating_structure=self.storey)
-        self.file.write(self.path.replace(".obj", ".ifc"))
+        self.file.write(self.path + ".ifc")
+
+    def get_coordinates(self, coordinates):
+        if self.format == "obj":
+            # OBJ swaps Y and Z axis
+            return [coordinates[0], -coordinates[2], coordinates[1]]
 
     def create_ifc_file(self, version):
         self.file = ifcopenshell.api.run("project.create_file", version=version)

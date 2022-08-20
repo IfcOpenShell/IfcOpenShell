@@ -62,6 +62,7 @@ modules = {
     "clash": None,
     "lca": None,
     "csv": None,
+    "tester": None,
     "bimtester": None,
     "diff": None,
     "patch": None,
