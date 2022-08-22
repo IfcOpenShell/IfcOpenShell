@@ -55,13 +55,15 @@ class BIM_PT_spatial(Panel):
             if props.containers and props.active_container_index < len(props.containers):
                 op = row.operator("bim.assign_container", icon="CHECKMARK")
                 op.structure = props.containers[props.active_container_index].ifc_definition_id
+            row.operator("bim.reference_structure", icon="LINKED", text="")
+            row.operator("bim.dereference_structure", icon="UNLINKED", text="")
             row.operator("bim.copy_to_container", icon="COPYDOWN", text="")
             row.operator("bim.disable_editing_container", icon="CANCEL", text="")
 
             self.layout.template_list("BIM_UL_containers", "", props, "containers", props, "active_container_index")
         else:
             row = self.layout.row(align=True)
-            if SpatialData.data["is_contained"]:
+            if SpatialData.data["label"]:
                 row.label(text=SpatialData.data["label"])
                 row.operator("bim.select_container", icon="TRACKER", text="")
                 row.operator("bim.select_similar_container", icon="RESTRICT_SELECT_OFF", text="")
@@ -71,6 +73,9 @@ class BIM_PT_spatial(Panel):
             else:
                 row.label(text="This object is not spatially contained")
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
+            for reference in SpatialData.data["references"]:
+                row = self.layout.row()
+                row.label(text=reference, icon="LINKED")
 
 
 class BIM_UL_containers(UIList):

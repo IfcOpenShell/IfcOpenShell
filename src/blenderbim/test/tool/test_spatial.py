@@ -92,6 +92,25 @@ class TestCanContain(NewFile):
         assert subject.can_contain(structure_obj, element_obj) is True
 
 
+class TestCanReference(NewFile):
+    def test_an_element_can_reference_a_spatial_element(self):
+        ifc = ifcopenshell.file()
+        assert subject.can_reference(ifc.createIfcSite(), ifc.createIfcWall()) is True
+
+    def test_an_element_can_reference_a_spatial_element_ifc2x3(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        assert subject.can_reference(ifc.createIfcSite(), ifc.createIfcWall()) is True
+
+    def test_a_non_spatial_element_cannot_reference_anything(self):
+        ifc = ifcopenshell.file()
+        assert subject.can_reference(ifc.createIfcWall(), ifc.createIfcWall()) is False
+
+    def test_a_non_element_cannot_reference_anything(self):
+        ifc = ifcopenshell.file()
+        assert subject.can_reference(ifc.createIfcSite(), ifc.createIfcTask()) is False
+
+
 class TestDisableEditing(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)

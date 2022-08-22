@@ -33,9 +33,9 @@ class SpatialData:
     def load(cls):
         cls.data = {
             "parent_container_id": cls.get_parent_container_id(),
-            "is_contained": cls.is_contained(),
             "is_directly_contained": cls.is_directly_contained(),
-            "label": cls.get_label(),
+            "label": cls.label(),
+            "references": cls.references(),
         }
         cls.is_loaded = True
 
@@ -50,17 +50,18 @@ class SpatialData:
         return container.Decomposes[0].RelatingObject.id()
 
     @classmethod
-    def is_contained(cls):
-        return ifcopenshell.util.element.get_container(tool.Ifc.get_entity(bpy.context.active_object))
-
-    @classmethod
-    def get_label(cls):
+    def label(cls):
         container = ifcopenshell.util.element.get_container(tool.Ifc.get_entity(bpy.context.active_object))
         if container:
             label = f"{container.is_a()}/{container.Name or ''}"
             if not cls.is_directly_contained():
                 label += "*"
             return label
+
+    @classmethod
+    def references(cls):
+        results = ifcopenshell.util.element.get_referenced_structures(tool.Ifc.get_entity(bpy.context.active_object))
+        return sorted([f"{r.is_a()}/{r.Name or ''}" for r in results])
 
     @classmethod
     def is_directly_contained(cls):
