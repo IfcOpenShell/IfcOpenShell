@@ -40,13 +40,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 	TopoDS_Shape face;
 	if ( !convert_face(l->SweptArea(),face) ) return false;
 
-#ifdef PERMISSIVE_EXTRUSION
-	if (abs(height) < getValue(GV_PRECISION)) {
-		shape = face;
-		return true;
-	}
-#endif
-
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
@@ -55,6 +48,20 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
 	}
+
+#ifdef PERMISSIVE_EXTRUSION
+	if (abs(height) < getValue(GV_PRECISION)) {
+		shape = face;
+
+		if (has_position && !shape.IsNull()) {
+			// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+			// and therefore has a unit scale factor
+			shape.Move(trsf);
+		}
+
+		return true;
+	}
+#endif
 
 	gp_Dir dir;
 	convert(l->ExtrudedDirection(),dir);
