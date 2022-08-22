@@ -223,7 +223,7 @@ class TestAddDrawing:
         ifc.run(
             "group.edit_group", group="group", attributes={"Name": "name", "ObjectType": "DRAWING"}
         ).should_be_called()
-        ifc.run("group.assign_group", group="group", product=["element"]).should_be_called()
+        ifc.run("group.assign_group", group="group", products=["element"]).should_be_called()
         collector.assign("obj").should_be_called()
         ifc.run("pset.add_pset", product="element", name="EPset_Drawing").should_be_called().will_return("pset")
         ifc.run(
@@ -293,7 +293,7 @@ class TestAddAnnotation:
             ifc_representation_class="ifc_representation_class",
         ).should_be_called().will_return("element")
         drawing.get_drawing_group("drawing").should_be_called().will_return("group")
-        ifc.run("group.assign_group", group="group", product=["element"]).should_be_called()
+        ifc.run("group.assign_group", group="group", products=["element"]).should_be_called()
         collector.assign("obj").should_be_called()
         drawing.enable_editing("obj").should_be_called()
         subject.add_annotation(ifc, collector, drawing, drawing="drawing", object_type="object_type")
