@@ -102,7 +102,7 @@ class Collector(blenderbim.core.tool.Collector):
             if element.is_a("IfcSpatialStructureElement"):
                 return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
         else:
-            if element.is_a("IfcSpatialElement"):
+            if element.is_a("IfcSpatialStructureElement") or element.is_a("IfcExternalSpatialStructureElement"):
                 return bpy.data.collections.get(obj.name, bpy.data.collections.new(obj.name))
 
         if element.is_a("IfcGrid"):
