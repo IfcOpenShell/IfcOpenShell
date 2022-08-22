@@ -324,6 +324,7 @@ def get_referenced_structures(element):
     """
     if hasattr(element, "ReferencedInStructures"):
         return [r.RelatingStructure for r in element.ReferencedInStructures]
+    return []
 
 
 def get_decomposition(element):
