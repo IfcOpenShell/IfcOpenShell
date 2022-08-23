@@ -62,7 +62,7 @@ def refreshScenarios(self, context):
 
 
 class BimTesterProperties(PropertyGroup):
-    feature: StringProperty(default="", name="Feature / IDS", update=refreshScenarios)
+    feature: StringProperty(default="", name="Feature", update=refreshScenarios)
     steps: StringProperty(default="", name="Custom Steps")
     ifc_file: StringProperty(default="", name="IFC File")
     audit_ifc_class: EnumProperty(items=get_ifc_classes, name="Audit Class")
