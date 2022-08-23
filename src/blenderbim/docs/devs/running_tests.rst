@@ -6,14 +6,20 @@ Running tests
 The BlenderBIM Add-on has three layers of tests for each of its three technology
 layers. These roughly form a test pyramid, moving from many abstract domain
 logic tests, to low-level concrete unit tests, to a minimal number of UI and
-smoke tests. These tests use ``pytest`` as the test framework and runner, so you
-will need to install ``pytest``.
+smoke tests.
+
+These tests use ``pytest`` as the test framework and runner, so install it:
+
+.. code-block:: bash
+
+    $ pip install pytest
 
 All development is expected to use test driven development, and so we expect
 test coverage to be 100% where it is technically possible to test.
 
 When running tests, Makefile targets are provided for convenience so you can
-type in a simple command without knowing the internals.
+type in a simple command without knowing the internals. This means you can run
+tests by using the ``make`` command.
 
 Because the BlenderBIM Add-on depends on IfcOpenShell, it is advised to also run
 tests for IfcOpenShell and its Python bindings, which is not covered in this
@@ -35,7 +41,11 @@ similar.
 .. code-block:: bash
 
     $ cd src/blenderbim/
+
     $ make test-core
+
+    # If you're on Windows, and don't want to use make, use:
+    $ pytest -p no:pytest-blender test/core
 
 Tool tests
 ----------
@@ -46,6 +56,15 @@ following dependencies:
 * pytest-blender, accessible to your system's Python
 * Blender executable, accessible to pytest-blender on your system's Python
   (e.g.  through the ``blender`` command in your path)
+
+.. code-block:: bash
+
+    $ pip install pytest-blender
+    # Check that "Blender" is in your system's path
+    $ blender
+
+In addition, you will need to install these dependencies for Blender:
+
 * pytest, accessible to your Blender Python
 * pytest-bdd, accessible to your Blender Python
 
@@ -68,8 +87,13 @@ of all concrete functions.
 .. code-block:: bash
 
     $ cd src/blenderbim/
+
     $ make test-tool # Test everything
     $ make test-tool MODULE=foo # Only test a single module
+
+    # If you're on Windows, and don't want to use make, use:
+    $ pytest test/tool # Test everything
+    $ pytest test/tool/test_foo.py # Only test a single module
 
 BlenderBIM Add-on tests
 -----------------------
@@ -78,10 +102,15 @@ The BIM layer acts as a full integration test. It is not possible to fully test
 the UI, as we cannot reliably emit interface signals, nor read the interface as
 a DOM of sorts. The best we can do is to call Blender operators as a smoke test,
 and also check simple property and scene changes. It has the same dependencies
-as the tool tests.
+as the tool tests, so follow the instructions in the section above.
 
 .. code-block:: bash
 
     $ cd src/blenderbim/
+
     $ make test-bim # Test everything
     $ make test-bim MODULE=foo # Only test a single module
+
+    # If you're on Windows, and don't want to use make, use:
+    $ pytest test/bim # Test everything
+    $ pytest test/bim -m "foo" ./ --maxfail=1 # Only test a single module
