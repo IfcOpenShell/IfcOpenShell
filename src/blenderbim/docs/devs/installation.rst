@@ -81,9 +81,13 @@ changes, you'll need to fix your setup manually. But this is relatively rare.
     $ cd IfcOpenShell
 
     # Remove the Blender add-on Python code
+    $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/core/
+    $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/tool/
     $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/bim/
 
     # Replace them with links to the Git repository
+    $ ln -s src/blenderbim/blenderbim/core /path/to/blender/X.XX/scripts/addons/blenderbim/core
+    $ ln -s src/blenderbim/blenderbim/tool /path/to/blender/X.XX/scripts/addons/blenderbim/tool
     $ ln -s src/blenderbim/blenderbim/bim /path/to/blender/X.XX/scripts/addons/blenderbim/bim
 
     # Remove the IfcOpenShell dependency Python code
@@ -102,9 +106,13 @@ On Windows:
     $ cd IfcOpenShell
 
     # Remove the Blender add-on Python code
+    $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\core\"
+    $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\tool\"
     $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\bim\"
 
     # Replace them with links to the Git repository
+    $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\core" "src\blenderbim\blenderbim\core"
+    $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\tool" "src\blenderbim\blenderbim\tool"
     $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\bim" "src\blenderbim\blenderbim\bim"
 
     # Remove the IfcOpenShell dependency Python code
@@ -117,11 +125,9 @@ On Windows:
 
 
 After you modify your code in the Git repository, you will need to restart
-Blender for the changes to take effect. In ``Edit > Preferences > Add-ons`` you
-will see that the version number of the BlenderBIM Add-on has changed to
-``0.0.999999``, which represents an un-versioned BlenderBIM Add-on.
+Blender for the changes to take effect.
 
-There is a useful Blender Addon that adds a Reboot button in File menù.
+There is a useful Blender Addon that adds a Reboot button in File menu.
 In this way, it's possible to directly restart Blender and test the modified source code.
 The add on is available `here <https://blenderartists.org/uploads/short-url/yto1sjw7pqDRVNQzpVLmn51PEDN.zip>`__
 (check also the related forum discussion `here <https://blenderartists.org/t/reboot-blender-addon/640465/13>`__)
@@ -145,12 +151,14 @@ Blender add-on conventions. Within this folder, you'll find the following file
 structure:
 ::
 
-    bim/ (core code)
+    core/ (Blender agnostic core code)
+    tool/ (Blender specific logic)
+    bim/ (Blender specific UI)
     libs/ (dependencies)
     __init__.py
 
 This corresponds to the structure found in the source code `here
-<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/blenderbim/blenderbim>`__.
+<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/blenderbim/blenderbim>`__.
 
 The BlenderBIM Add-on is complex, and requires many dependencies, including
 Python modules, binaries, and static assets. When packaged for users, these
@@ -159,7 +167,7 @@ dependencies are bundled with the add-on for convenience.
 If you choose to install the BlenderBIM Add-on and use your own system
 dependencies, the source of truth for how dependencies are bundled are found in
 the `Makefile
-<https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.6.0/src/blenderbim/Makefile>`__.
+<https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/src/blenderbim/Makefile>`__.
 
 Required Python modules to be stored in ``libs/site/packages/`` are:
 ::
@@ -202,7 +210,7 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
 Notes:
 
 1. ``ifcopenshell`` almost always requires the latest version due to the fast paced nature of the add-on development.
-2. ``behave`` requires `patches <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcbimtester/patch>`__.
+2. ``behave`` requires `patches <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcbimtester/patch>`__.
 3. ``ifcjson`` can be found `here <https://github.com/IFCJSON-Team/IFC2JSON_python/tree/master/file_converters>`__.
 
 Required static assets are:
