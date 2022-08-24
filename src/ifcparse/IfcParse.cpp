@@ -1094,11 +1094,7 @@ void IfcEntityInstanceData::load() const {
 	static std::recursive_mutex m;
 	std::lock_guard<std::recursive_mutex> lk(m);
 
-	// type_ is 0 for header entities which have their size predetermined in code
 	Argument** tmp_data = nullptr;
-	if (type_ != 0) {
-		tmp_data = new Argument*[getArgumentCount()]{};
-	}
 	
 	if (file->parsing_complete()) {
 		// only when parsing is fully complete we need to seek to the instance, otherwise
@@ -1109,13 +1105,18 @@ void IfcEntityInstanceData::load() const {
 		file->tokens->Next();
 	}
 
-	size_t n = file->load(id(), type_ ? type_->as_entity() : nullptr, tmp_data, getArgumentCount());
+	// type_ is 0 for header entities which have their size predetermined in code
+	// in that we have attributes_ pre-constructed to the correct size in the constructor
+	// in the other case load() will use a vector internally to grow to the size found in the file
+	size_t n = file->load(id(), type_ ? type_->as_entity() : nullptr, type_ ? tmp_data : attributes_, getArgumentCount());
 	if (n != getArgumentCount()) {
 		Logger::Error("Wrong number of attributes on instance with id #" + boost::lexical_cast<std::string>(id_));
 	}
 	file->try_read_semicolon();
 	// @todo does this need to be atomic somehow?
-	attributes_ = tmp_data;
+	if (tmp_data) {
+		attributes_ = tmp_data;
+	}
 }
 
 namespace {
