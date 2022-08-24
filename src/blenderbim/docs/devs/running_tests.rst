@@ -4,9 +4,11 @@ Running tests
 =============
 
 The BlenderBIM Add-on has three layers of tests for each of its three technology
-layers. These roughly form a test pyramid, moving from many abstract domain
-logic tests, to low-level concrete unit tests, to a minimal number of UI and
-smoke tests.
+layers:
+
+1. **Core tests**: abstract domain logic unit tests agnostic of Blender
+2. **Tool tests**: low-level concrete unit tests dependant on Blender
+3. **BIM tests**: high-level integration UI and smoke tests dependant on Blender
 
 These tests use ``pytest`` as the test framework and runner, so install it:
 
@@ -41,9 +43,7 @@ similar.
 .. code-block:: bash
 
     $ cd src/blenderbim/
-
     $ make test-core
-
     # If you're on Windows, and don't want to use make, use:
     $ pytest -p no:pytest-blender test/core
 
@@ -63,13 +63,31 @@ following dependencies:
     # Check that "Blender" is in your system's path
     $ blender
 
+On Windows, you can add Blender to the system path by doing:
+
+1. Open the start menu and launch **Control Panel** > **System** >  **Edit the
+   system environment variables**
+2. In the **System Properties** window, under the **Advanced** tab press
+   **Environment Variables**. This will open a dialog showing a list of all your
+   variables.
+3. In the **System Variables** section select the entry named **Path**, and
+   press **Edit...**. This will open a new dialog showing all the directories
+   stored in the **Path** variable.
+4. Press **New** and browse to the directory where your **blender.exe** is
+   located, such as in ``C:\Program Files\Blender Foundation\Blender 3.2``.
+
 In addition, you will need to install these dependencies for Blender:
 
 * pytest, accessible to your Blender Python
 * pytest-bdd, accessible to your Blender Python
 
-You can install the dependencies by running the ``scripts/setup_pytest.py``
-script in Blender.
+You can install the dependencies by running the ``setup_pytest.py`` script in
+Blender:
+
+1. Launch Blender
+2. Load ``src/blenderbim/scripts/setup_pytest.py`` in the Blender text editor
+3. Run the script by pressing ``Text > Run Script``.
+4. Check the Blender console for any errors or success messages.
 
 .. warning::
 
@@ -87,10 +105,8 @@ of all concrete functions.
 .. code-block:: bash
 
     $ cd src/blenderbim/
-
     $ make test-tool # Test everything
     $ make test-tool MODULE=foo # Only test a single module
-
     # If you're on Windows, and don't want to use make, use:
     $ pytest test/tool # Test everything
     $ pytest test/tool/test_foo.py # Only test a single module
@@ -101,16 +117,16 @@ BlenderBIM Add-on tests
 The BIM layer acts as a full integration test. It is not possible to fully test
 the UI, as we cannot reliably emit interface signals, nor read the interface as
 a DOM of sorts. The best we can do is to call Blender operators as a smoke test,
-and also check simple property and scene changes. It has the same dependencies
-as the tool tests, so follow the instructions in the section above.
+and also check simple property and scene changes.
+
+Before running these tests, follow the instructions for running tool tests
+above.
 
 .. code-block:: bash
 
     $ cd src/blenderbim/
-
     $ make test-bim # Test everything
     $ make test-bim MODULE=foo # Only test a single module
-
     # If you're on Windows, and don't want to use make, use:
     $ pytest test/bim # Test everything
     $ pytest test/bim -m "foo" ./ --maxfail=1 # Only test a single module
