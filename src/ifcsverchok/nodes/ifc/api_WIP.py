@@ -48,8 +48,8 @@ class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
         # update is not getting run rn
         try:
             module_usecase = self.get_module_usecase()
-            #if module_usecase:
-            self.generate_node(*module_usecase)
+            if module_usecase:
+                self.generate_node(*module_usecase)
         except:
             raise Exception(
                 f"Couldn't run generate_node(). Module usecase: {module_usecase}"
@@ -61,7 +61,7 @@ class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
     usecase: StringProperty(update=updateNode)
 
     def sv_init(self, context):
-        input_socket = self.inputs.new("SvStringsSocket", "usecase").use_prop = True
+        self.inputs.new("SvStringsSocket", "usecase").use_prop = True
         # input_socket.tooltip = "ifcopenshell.api usecase, written like 'module.usecase' \n E.g.: 'project.create_file'"
         self.outputs.new("SvVerticesSocket", "file")
 
@@ -73,10 +73,10 @@ class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
         print("process")
         module_usecase = self.get_module_usecase()
         if module_usecase:
-            self.generate_node(*module_usecase) # does this actually add to self.inputs?
+            self.generate_node(*module_usecase) 
             self.sv_input_names = [i.name for i in self.inputs]
-            #super().process() # super().process() uses zip_long_repeat() which doesn't take objects like bmesh
-            self.process()
+            super().process() # super().process() uses zip_long_repeat() which doesn't take objects like bmesh
+            
 
     def get_module_usecase(self):
         usecase = self.inputs["usecase"].sv_get()[0][0]
@@ -96,9 +96,9 @@ class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
             self.inputs.remove(self.inputs[-1])
 
         for name in args:
-            print("name type", type(name))
+            # print("name type", type(name))
             setattr(SvIfcApiWIP, str(name), StringProperty(name=str(name), update=updateNode))
-            self.inputs.new("SvStringsSocket", str(name)).use_prop = True
+            self.inputs.new("SvStringsSocket", str(name))
 
     def process_ifc(self, usecase, *setting_values):
         if usecase:
