@@ -63,6 +63,9 @@ def nodes_index():
                 ("ifc.get_attribute", "SvIfcGetAttribute"),
                 ("ifc.select_blender_objects", "SvIfcSelectBlenderObjects"),
                 ("ifc.api", "SvIfcApi"),
+                ("ifc.bmesh_to_ifc", "SvIfcBMeshToIfcGeo"),
+                ("ifc.create_project", "SvIfcCreateProject"),
+
             ],
         )
     ]
