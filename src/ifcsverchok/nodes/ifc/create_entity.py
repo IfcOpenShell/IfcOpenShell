@@ -54,16 +54,17 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
                 self.generate_inputs(ifc_class)
             try:
                 for i in range(0, len(self.inputs)):
-                    self.inputs[i].sv_get()
+                    input = self.inputs[i].sv_get()
             except:
                 # This occurs when a blender save file is reloaded
                 self.generate_inputs(ifc_class)
 
             for i in range(0, self.entity_schema.attribute_count()):
                 self.sv_input_names.append(self.entity_schema.attribute_by_index(i).name())
-        super().process()
-
+        self.process()
+    
     def generate_inputs(self, ifc_class):
+        # print("generate_inputs...")
         while len(self.inputs) > 2:
             self.inputs.remove(self.inputs[-1])
         for i in range(0, self.entity_schema.attribute_count()):
@@ -77,12 +78,16 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         for i in range(0, len(entity)):
             try:
                 value = attributes[i]
+                # print("value (attribute[i]): ", value, "|value type: ", type(value))
                 if isinstance(value, str) and value == "":
                     value = None
             except:
                 value = None
             if value is None and entity.is_a("IfcRoot") and i == 0:
                 value = ifcopenshell.guid.new()
+            if value is not None and entity.attribute_name(i) == "Representation":
+                value = file.createIfcProductDefinitionShape(None, None, Representations = [value])
+                #product_shape = ifcopenshell.api.run("geometry.assign_representation", file, product =  , representation = value)
             if value is not None:
                 value = self.cast_value(self.entity_schema.attribute_by_index(i), value)
             try:
@@ -93,6 +98,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
                         ifc_class, entity.attribute_name(i), value
                     )
                 )
+            
         self.outputs["file"].sv_set([[file]])
         self.outputs["entity"].sv_set([[entity]])
 

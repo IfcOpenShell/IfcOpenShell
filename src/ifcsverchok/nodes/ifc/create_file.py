@@ -1,4 +1,3 @@
-
 # IfcSverchok - IFC Sverchok extension
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #

@@ -26,6 +26,8 @@ from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
 
+from sverchok.data_structure import zip_long_repeat
+
 
 class SvIfcCreateShapeRefresh(bpy.types.Operator):
     bl_idname = "node.sv_ifc_create_shape_refresh"
@@ -57,8 +59,22 @@ class SvIfcCreateShape(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.
     def process(self):
         self.sv_input_names = ["file", "entity"]
         super().process()
+    
+    def process_helper(self):
+        print("Hello from helper")
+        sv_inputs_nested = []
+        for name in self.sv_input_names:
+            sv_inputs_nested.append(self.inputs[name].sv_get())
+            print(24*"#","\n", "sv_input: ", self.inputs[name].sv_get(), "input type: ", type(self.inputs[name].sv_get()), "\n", "#"*24)
+        for sv_input_nested in zip_long_repeat(*sv_inputs_nested):
+            for sv_input in zip_long_repeat(*sv_input_nested):
+                sv_input = list(sv_input)
+                print(24*"#","\n", "sv_input post zip_long_repeat: ", sv_input, "input type: ", type(sv_input), "\n", "#"*24)
+                self.process_ifc(*sv_input)
 
     def process_ifc(self, file, entity):
+        print("process ifc...")
+        print("entity: ", entity)
         try:
             if not entity.is_a("IfcProduct"):
                 return

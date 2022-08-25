@@ -24,7 +24,7 @@ import ifcsverchok.helper
 from bpy.props import StringProperty, EnumProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
-
+import importlib
 
 
 
@@ -42,26 +42,27 @@ class SvIfcTooltip(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
+class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
 
     def update_usecase(self, context):
+        # update is not getting run rn
         try:
             module_usecase = self.get_module_usecase()
-            if module_usecase:
-                self.generate_node(*module_usecase)
+            #if module_usecase:
+            self.generate_node(*module_usecase)
         except:
             raise Exception(
                 f"Couldn't run generate_node(). Module usecase: {module_usecase}"
             )
 
-    bl_idname = "SvIfcApi"
-    bl_label = "IFC API"
+    bl_idname = "SvIfcApiWIP"
+    bl_label = "IFC API WIP"
     tooltip: StringProperty(name="Tooltip")
     usecase: StringProperty(update=updateNode)
 
     def sv_init(self, context):
         input_socket = self.inputs.new("SvStringsSocket", "usecase").use_prop = True
-        input_socket.tooltip = "ifcopenshell.api usecase, written like 'module.usecase' \n E.g.: 'project.create_file'"
+        # input_socket.tooltip = "ifcopenshell.api usecase, written like 'module.usecase' \n E.g.: 'project.create_file'"
         self.outputs.new("SvVerticesSocket", "file")
 
     def draw_buttons(self, context, layout):
@@ -72,9 +73,10 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
         print("process")
         module_usecase = self.get_module_usecase()
         if module_usecase:
-            self.generate_node(*module_usecase)
+            self.generate_node(*module_usecase) # does this actually add to self.inputs?
             self.sv_input_names = [i.name for i in self.inputs]
-            super().process() # super().process() uses zip_long_repeat() which doesn't take objects like bmesh
+            #super().process() # super().process() uses zip_long_repeat() which doesn't take objects like bmesh
+            self.process()
 
     def get_module_usecase(self):
         usecase = self.inputs["usecase"].sv_get()[0][0]
@@ -82,23 +84,21 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
             return usecase.split(".")
 
     def generate_node(self, module, usecase):
-        try:
-            node_data = ifcopenshell.api.extract_docs(module, usecase)
-        except:
-            raise Exception("Node not yet implemented:", module, usecase)
-            return
+        importlib.import_module(f"ifcopenshell.api.{module}.{usecase}")
+        init_func = getattr(getattr(ifcopenshell.api, module), usecase).Usecase.__init__
+        if "settings" in init_func.__code__.co_varnames:
+            args = list(init_func.__code__.co_consts[3])
+            args.insert(0, 'file')
+        else:
+            args = ['file']
+        
         while len(self.inputs) > 1:
             self.inputs.remove(self.inputs[-1])
 
-        self.tooltip = ""
-        for name, data in node_data["inputs"].items():
-            setattr(SvIfcApi, name, StringProperty(name=name, update=updateNode))
-            self.inputs.new("SvStringsSocket", name).use_prop = True
-            if "default" in data:
-                self.tooltip = f"{name} ({data['default']}): {data['description']}\n"
-            else:
-                self.tooltip = f"{name}: {data['description']}\n"
-        self.tooltip = self.tooltip.strip()
+        for name in args:
+            print("name type", type(name))
+            setattr(SvIfcApiWIP, str(name), StringProperty(name=str(name), update=updateNode))
+            self.inputs.new("SvStringsSocket", str(name)).use_prop = True
 
     def process_ifc(self, usecase, *setting_values):
         if usecase:
@@ -110,9 +110,9 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
 
 def register():
     bpy.utils.register_class(SvIfcTooltip)
-    bpy.utils.register_class(SvIfcApi)
+    bpy.utils.register_class(SvIfcApiWIP)
 
 
 def unregister():
-    bpy.utils.unregister_class(SvIfcApi)
+    bpy.utils.unregister_class(SvIfcApiWIP)
     bpy.utils.unregister_class(SvIfcTooltip)
