@@ -122,6 +122,10 @@ and also check simple property and scene changes.
 Before running these tests, follow the instructions for running tool tests
 above.
 
+You will also need to enable the **Sun Position** add-on, as it is required to
+test georeferencing features: ``Edit > Preferences > Add-ons`` and enable
+**Lighting: Sun Position**.
+
 .. code-block:: bash
 
     $ cd src/blenderbim/

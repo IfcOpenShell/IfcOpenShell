@@ -60,20 +60,15 @@ uninstalling the old add-on, and installing a new build is a slow process.
 Although it works, it is very slow, so we do not recommend it.
 
 A more rapid approach is to follow the **Unstable installation** method, as this
-provides all dependencies for you out of the box.  Then, we can replace certain
-Python files that tend to be updated frequently with those from the Git
-repository. We're going to use symlinks (Windows users can use ``mklink``), so
-we can code in our Git repository, and see the changes in our Blender
-installation (you will need to restart Blender to see changes).
+provides all dependencies for you out of the box.
 
-In addition, we're also going to replace the Python code of the IfcOpenShell
-dependency with our Git repository, since most of the BlenderBIM Add-on
-functionality is agnostic of Blender, and is actually part of IfcOpenShell.
-Therefore, we need to keep this dependency highly updated as well.
+Once you've done this, you can replace certain Python files that tend to be
+updated frequently with those from the Git repository. We're going to use
+symlinks (Windows users can use ``mklink``), so we can code in our Git
+repository, and see the changes in our Blender installation (you will need to
+restart Blender to see changes).
 
-The downside with this approach is that if a new dependency is added, or a
-compiled dependency version requirement has changed, or the build system
-changes, you'll need to fix your setup manually. But this is relatively rare.
+For Linux or Mac:
 
 ::
 
@@ -98,7 +93,14 @@ changes, you'll need to fix your setup manually. But this is relatively rare.
     $ ln -s src/ifcopenshell-python/ifcopenshell/api /path/to/blender/X.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/api
     $ ln -s src/ifcopenshell-python/ifcopenshell/util /path/to/blender/X.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/util
 
-On Windows:
+    # Manually download some third party dependencies
+    $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/data/gantt
+	$ wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
+	$ wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
+    $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/schema
+	$ wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
+
+Or, if you're on Windows:
 
 ::
 
@@ -123,15 +125,31 @@ On Windows:
     $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api" "src\ifcopenshell-python\ifcopenshell\api"
     $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util" "src\ifcopenshell-python\ifcopenshell\util"
 
+    # Manually download some third party dependencies
+    $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/data/gantt
+	$ curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -outfile jsgantt.js
+	$ curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -outfile jsgantt.css
+    $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/schema
+	$ curl https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -outfile Brick.ttl
 
 After you modify your code in the Git repository, you will need to restart
 Blender for the changes to take effect.
 
-There is a useful Blender Addon that adds a Reboot button in File menu.
-In this way, it's possible to directly restart Blender and test the modified source code.
-The add on is available `here <https://blenderartists.org/uploads/short-url/yto1sjw7pqDRVNQzpVLmn51PEDN.zip>`__
-(check also the related forum discussion `here <https://blenderartists.org/t/reboot-blender-addon/640465/13>`__)
-There is also a VS Code called `Blender Development <https://marketplace.visualstudio.com/items?itemName=JacquesLucke.blender-development>`__ that has a similar functionality.
+The downside with this approach is that if a new dependency is added, or a
+compiled dependency version requirement has changed, or the build system
+changes, you'll need to fix your setup manually. But this is relatively rare.
+
+.. seealso::
+
+    There is a `useful Blender Addon
+    <https://blenderartists.org/uploads/short-url/yto1sjw7pqDRVNQzpVLmn51PEDN.zip>`__
+    (see `forum thread
+    <https://blenderartists.org/t/reboot-blender-addon/640465/13>`__`) that adds
+    a Reboot button in File menu.  In this way, it's possible to directly
+    restart Blender and test the modified source code.  There is also a VS Code
+    add-on called `Blender Development
+    <https://marketplace.visualstudio.com/items?itemName=JacquesLucke.blender-development>`__
+    that has a similar functionality.
 
 
 Distro installation
