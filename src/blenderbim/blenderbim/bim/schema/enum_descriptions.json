@@ -980,7 +980,7 @@
         "POSITIVE": "Direction defined to be positive."
     },
     "IfcMechanicalFastenerTypeEnum": {
-        "ANCHORBOLT": "A special bolt which is anchored into concrete, stone, or brickwork.",
+        "ANCHORBOLT": "A special bolt which is anchored into conrete, stone, or brickwork.",
         "BOLT": "A threaded cylindrical rod that engages with a similarly threaded hole in a nut or any other part to form a fastener. The mechanical fastener often also includes one or more washers and one or more nuts.",
         "DOWEL": "A cylindrical rod that is driven into holes of the connected pieces.",
         "NAIL": "A thin pointed piece of metal that is hammered into materials as a fastener.",

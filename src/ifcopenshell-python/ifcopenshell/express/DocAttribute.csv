@@ -44,16 +44,14 @@ A location within a building (e.g. 3rd Floor) Building name (e.g. Interoperabili
 (e.g. 6400) Street name (e.g. Alliance Boulevard). Typical content of address lines may vary in different 
 countries.
 </small></blockquote>
-</EPM-HTML>
-"
+</EPM-HTML>"
 82;PostalBox;An address that is implied by an identifiable mail drop.
 83;Town;The name of a town.
 84;Region;"<EPM-HTML>
 The name of a region.
 <blockquote><small>NOTE: The counties of the United Kingdom and the states of North America are examples of regions.
 </small></blockquote>
-</EPM-HTML>
-"
+</EPM-HTML>"
 85;PostalCode;The code that is used by the country's postal service.
 86;Country;The name of a country.
 89;TelephoneNumbers;The list of telephone numbers at which telephone messages may be received.
@@ -72,21 +70,18 @@ all such information may be referenced from a single page that is termed the hom
 104;FamilyName;"<EPM-HTML>
 The name by which the family identity of the person may be recognized.
 <blockquote><small>NOTE: Depending on geographical location and culture, family name may appear either as the first or last component of a name.</small></blockquote>
-</EPM-HTML>
-"
+</EPM-HTML>"
 105;GivenName;"<EPM-HTML>
 The name by which a person is known within a family and by which he or she may be familiarly recognized.
 <blockquote><small>NOTE: Depending on geographical location and culture, given name may appear either as the first or last component of a name.</small></blockquote>
-</EPM-HTML>
-"
+</EPM-HTML>"
 106;MiddleNames;"<EPM-HTML>
 Additional names given to a person that enable their identification apart from others who may have the same or similar family and given names.
 <blockquote><small>NOTE: Middle names are not normally used in familiar communication but may be asserted to provide additional 
 identification of a particular person if necessary. They may be particularly useful in situations where the person concerned has a 
 family name that occurs commonly in the geographical region.
 </small></blockquote>
-</EPM-HTML>
-"
+</EPM-HTML>"
 107;PrefixTitles;The word, or group of words, which specify the person's social and/or professional standing and appear before his/her names.
 108;SuffixTitles;The word, or group of words, which specify the person's social and/or professional standing and appear after his/her names.
 109;Roles;Roles played by the person.
@@ -94,8 +89,7 @@ family name that occurs commonly in the geographical region.
 Postal and telecommunication addresses of a person.
 <blockquote><small>NOTE - A person may have several addresses.
 </small></blockquote>
-</EPM-HTML>
-"
+</EPM-HTML>"
 111;EngagedIn;The inverse relationship to IfcPersonAndOrganization relationships in which IfcPerson is engaged.
 114;ThePerson;The person who is related to the organization.
 115;TheOrganization;The organization to which the person is related.
@@ -103,16 +97,14 @@ Postal and telecommunication addresses of a person.
 
 Roles played by the person within the context of an organization.  These may differ from the roles in <i>ThePerson.Roles</i> which may be asserted without organizational context.
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 118;Name;The word or group of words by which the relationship is referred to.
 119;Description;Text that relates the nature of the relationship.
 120;RelatingOrganization;Organization which is the relating part of the relationship between organizations.
 121;RelatedOrganizations;The other, possibly dependent, organizations which are the related parts of the relationship between organizations.
 124;Identifier;A computer interpretable identifier by which the approval is known.
 125;Name;A human readable name given to an approval.
-126;Description;"A general textual description of a design, work task, plan, etc. that is being approved for. 
-"
+126;Description;"A general textual description of a design, work task, plan, etc. that is being approved for. "
 127;TimeOfApproval;"<EPM-HTML>
 Date and time when the result of the approval process is produced.
 <blockquote>
@@ -168,7 +160,7 @@ Resource objects that are approved.
 144;RelatingApproval;The approval for the resource objects selected.
 147;LifeCyclePhase;Describes the applicable building life-cycle phase. Typical values should be DESIGNDEVELOPMENT, SCHEMATICDEVELOPMENT, CONSTRUCTIONDOCUMENT, CONSTRUCTION, ASBUILT, COMMISSIONING, OPERATION, etc.
 148;PredefinedType;"<EPM-HTML>
-Predefined generic type for a performance history that is specified in an enumeration.
+Predefined generic type for a performace history that is specified in an enumeration.
 <blockquote> 
   <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been added at the end of the entity definition.</font>
   </small>
@@ -183,8 +175,7 @@ Predefined generic type for a performance history that is specified in an enumer
 
 <blockquote><small><font color=""#FF0000"">Note IFC2x Edition 4 CHANGE: New underlying type <i>IfcDate</i> using ISO 8601 representation.</font></small></blockquote>
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 159;TimeSeriesScheduleType;Defines the type of schedule, such as DAILY, WEEKLY, MONTHLY or ANNUALLY.
 160;TimeSeries;The time series is used to represent the values at discrete points in time that define the schedule. For example, a 24-hour occupancy schedule would be a regular time series with a start time at midnight, end time at (the following) midnight, and with 24 values indicating the occupancy load for each hour of the 24-hour period.
 163;PredefinedType;Subtype of pile.
@@ -223,10 +214,8 @@ Shape code per a standard like ACI 315, ISO 3766, or a similar standard.  It is 
 250;PredefinedType;The predefined type is always MESH.
 253;NominalDiameter;The nominal diameter defining the cross-section size of the reinforcing bar.
 254;CrossSectionArea;The effective cross-section area of the reinforcing bar.
-255;BarLength;"The total length of the reinforcing bar. The total length of bended bars are calculated according to local standards with corrections for the bends.
-"
-256;BarSurface;"Indicator for whether the bar surface is plain or textured.
-"
+255;BarLength;"The total length of the reinforcing bar. The total length of bended bars are calculated according to local standards with corrections for the bends."
+256;BarSurface;"Indicator for whether the bar surface is plain or textured."
 257;PredefinedType;The predefined type is always BAR.
 259;MeshLength;The overall length of the mesh measured in its longitudinal direction.
 260;MeshWidth;The overall width of the mesh measured in its transversal direction.
@@ -338,8 +327,7 @@ IFC2x4 CHANGE&nbsp; The cardinality has changed to 0..n to allow reuse of instan
 </EPM-HTML>"
 340;UsageName;"<EPM-HTML>Usage description of the <I>IfcComplexProperty</I> within the property set which references the <I>IfcComplexProperty</I>.
 <BLOCKQUOTE> <FONT SIZE=""-1"">NOTE: Consider a complex property for glazing properties. The <I>Name</I> attribute of the <I>IfcComplexProperty</I> could be <I>Pset_GlazingProperties</I>, and the UsageName attribute could be <I>OuterGlazingPane</I>.</FONT></BLOCKQUOTE>
-</EPM-HTML>
-"
+</EPM-HTML>"
 341;HasProperties;"<EPM-HTML>
 Set of properties that can be used within this complex property (may include other complex properties).
 </EPM-HTML>"
@@ -494,8 +482,7 @@ A formula by which the quantity has been calculated. It can be assigned in addit
 453;Quality;Additional indication of a quality of the quantities that are grouped under this physical complex quantity.
 454;Usage;Additional indication of a usage type of the quantities that are grouped under this physical complex quantity.
 463;ServicesBuildings;"<EPM-HTML>Reference to the <strike>building</strike> spatial structure via the objectified relationship <i>IfcRelServicesBuildings</i>, which is serviced by the system.
-</EPM-HTML>
-"
+</EPM-HTML>"
 465;LongName;"<EPM-HTML>
 Long name for a zone, used for informal purposes. It should be used, if available, in conjunction with the inherited <i>Name</i> attribute.
 <blockquote>
@@ -512,8 +499,7 @@ The geometric shape representation of the connection geometry that is provided i
 </EPM-HTML>"
 471;RelatingElement;"<EPM-HTML>
 Reference to a subtype of <i>IfcElement</i> that is connected by the connection relationship in the role of <i>RelatingElement</i>.
-</EPM-HTML>
-"
+</EPM-HTML>"
 472;RelatedElement;"<EPM-HTML>
 Reference to a subtype of <i>IfcElement</i> that is connected by the connection relationship in the role of <i>RelatedElement</i>.
 </EPM-HTML>"
@@ -532,19 +518,15 @@ IFC2x4 CHANGE&nbsp; The attribute has been changed to be mandatory.
     </font>
   </small>
 </blockquote>
-</EPM-HTML>
-"
+</EPM-HTML>"
 479;ConnectionGeometry;"<EPM-HTML>
 Physical representation of the space boundary. Provided as a <u>curve or</u> surface given within the LCS of the space.
 <blockquote><small><font color=""#ff0000"">
 IFC2x PLATFORM CHANGE&nbsp; The data type has been changed from <i>IfcConnectionSurfaceGeometry</i> to <i>IfcConnectionGeometry</i> with upward compatibility for file based exchange.
 </font></small></blockquote>
-</EPM-HTML>
-"
-480;PhysicalOrVirtualBoundary;"Defines, whether the Space Boundary is physical (Physical) or virtual (Virtual).
-"
-481;InternalOrExternalBoundary;"Defines, whether the Space Boundary is internal (Internal), or external, i.e. adjacent to open space (that can be an partially enclosed space, such as terrace (External).
-"
+</EPM-HTML>"
+480;PhysicalOrVirtualBoundary;"Defines, whether the Space Boundary is physical (Physical) or virtual (Virtual)."
+481;InternalOrExternalBoundary;"Defines, whether the Space Boundary is internal (Internal), or external, i.e. adjacent to open space (that can be an partially enclosed space, such as terrace (External)."
 484;ParentBoundary;"<EPM-HTML>
 Reference to the host, or parent, space boundary within which this inner boundary is defined.
 </EPM-HTML>"
@@ -597,7 +579,7 @@ NOTE&nbsp; Coverings are often managed by the space, and not by the building ele
 Reference to a set of <i>IfcRelSpaceBoundary</i>'s that defines the physical or virtual delimitation of that space against physical or virtual boundaries.
 </EPM-HTML>"
 506;CompositionType;"<EPM-HTML>
-Denotes, whether the predefined spatial structure element represents itself, or an aggregate (complex) or a part (part). The interpretation is given separately for each subtype of spatial structure element. If no <em>CompositionType</em> is asserted, the default value 'ELEMENT' applies.
+Denotes, whether the predefined spatial structure element represents itself, or an aggregate (complex) or a part (part). The interpretation is given separately for each subtype of spatial structure element. If no <em>CompositionType</em> is asserted, the dafault value 'ELEMENT' applies.
 <blockquote>
   <p>
     <span style=""font-size:smaller;color=red"">
@@ -647,10 +629,8 @@ IFC2x Edition 4 CHANGE&nbsp; The inverse attribute has been promoted to the new 
 526;FillsVoids;"<EPM-HTML>
 Reference to the <i>IfcRelFillsElement</i> Relationship that puts the element as a filling into the opening created within another element.
 </EPM-HTML>
-
-"
-527;ConnectedTo;"Reference to the element connection relationship. The relationship then refers to the other element to which this element is connected to.
-"
+"
+527;ConnectedTo;"Reference to the element connection relationship. The relationship then refers to the other element to which this element is connected to."
 528;IsInterferedByElements;"<EPM-HTML>
 Reference to the interference relationship to indicate the element that is interfered. The relationship, if provided, indicates that this element has an interference with one or many other elements.
 <blockquote><small>
@@ -680,18 +660,14 @@ IFC2x Edition 3 CHANGE&nbsp; The inverse attribute has been added with upward co
 </EPM-HTML>"
 532;HasOpenings;"<EPM-HTML>
 Reference to the <i>IfcRelVoidsElement</i> relationship that creates an opening in an element. An element can incorporate zero-to-many openings. For each opening, that voids the element, a new relationship <i>IfcRelVoidsElement</i> is generated.
-</EPM-HTML>
-"
+</EPM-HTML>"
 533;IsConnectionRealization;"<EPM-HTML>
 Reference to the connection relationship with realizing element. The relationship, if provided, assigns this element as the realizing element to the connection, which provides the physical manifestation of the connection relationship.
-</EPM-HTML>
-"
+</EPM-HTML>"
 534;ProvidesBoundaries;"<EPM-HTML>
 Reference to space boundaries by virtue of the objectified relationship <i>IfcRelSpaceBoundary</i>. It defines the concept of an element bounding spaces.
-</EPM-HTML>
-"
-535;ConnectedFrom;"Reference to the element connection relationship. The relationship then refers to the other element that is connected to this element.
-"
+</EPM-HTML>"
+535;ConnectedFrom;"Reference to the element connection relationship. The relationship then refers to the other element that is connected to this element."
 536;ContainedInStructure;"<EPM-HTML>
 Containment relationship to the spatial structure element, to which the element is primarily associated. This containment relationship has to be hierachical, i.e. an element may only be assigned directly to zero or one spatial structure. 
 </EPM-HTML>"
@@ -751,8 +727,7 @@ Reference to an <i>IfcElement</i>, or <i>IfcElementType</i> that has ports assig
 </font></small>
 </blockquote>
 </EPM-HTML>"
-627;ContainedIn;"Reference to the element to port connection relationship. The relationship then refers to the element in which this port is contained.
-"
+627;ContainedIn;"Reference to the element to port connection relationship. The relationship then refers to the element in which this port is contained."
 628;ConnectedFrom;Reference to a port that is connected by the objectified relationship.
 629;ConnectedTo;Reference to the port connection relationship. The relationship then refers to the other port to which this port is connected.
 631;RelatingPort;Reference to the first port that is connected by the objectified relationship.
@@ -774,7 +749,7 @@ IFC2x4 CHANGE&nbsp; The attribute has been changed to be optional.
 Reference to the <I>IfcRelProjectsElement</I> relationship that uses this <I>IfcFeatureElementAddition</I> to create a volume addition at an element. The <I>IfcFeatureElementAddition</I> can only be used to create a single addition at a single element using Boolean addition operation.
 </EPM-HTML>"
 651;PredefinedType;"<EPM-HTML>
-Predefined generic type for a projection element that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for a projection element that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 <blockquote> 
   <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been added at the end of the entity definition.</font></small>
 </blockquote>
@@ -796,8 +771,7 @@ IFC2x4 CHANGE&nbsp
 Renamed to <em>RelatingElement</em>.</span>
   </p>
 </blockquote>
-</EPM-HTML>
-"
+</EPM-HTML>"
 660;RelatedOpening;"<EPM-HTML>
 Reference to the <strike>opening</strike> feature subtraction element which defines a void in the associated <strike>opening</strike> element.
 <blockquote>
@@ -812,18 +786,15 @@ Renamed to <em>RelatedOpening</em>.</span>
 
 
 </EPM-HTML>"
-663;VoidsElements;"Reference to the Voids Relationship that uses this Opening Element to create a void within an Element. The Opening Element can only be used to create a single void within a single Element.
-"
+663;VoidsElements;"Reference to the Voids Relationship that uses this Opening Element to create a void within an Element. The Opening Element can only be used to create a single void within a single Element."
 668;PredefinedType;"<EPM-HTML>
-Predefined generic type for an opening that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for an opening that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 <blockquote> 
   <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been added at the end of the entity definition.</font></small>
 </blockquote>
 </EPM-HTML>"
-669;HasFillings;"Reference to the Filling Relationship that is used to assign Elements as Fillings for this Opening Element. The Opening Element can be filled with zero-to-many Elements.
-"
-677;RelatingOpeningElement;"Opening Element being filled by virtue of this relationship.
-"
+669;HasFillings;"Reference to the Filling Relationship that is used to assign Elements as Fillings for this Opening Element. The Opening Element can be filled with zero-to-many Elements."
+677;RelatingOpeningElement;"Opening Element being filled by virtue of this relationship."
 678;RelatedBuildingElement;"<EPM-HTML>
 Reference to <strike>building</strike> element that occupies fully or partially the associated opening.
 <blockquote><small><font color=""#ff0000"">
@@ -879,8 +850,7 @@ Set of <strike>elements</strike> products, which are contained within this level
 <blockquote><font color=""#ff0000""><small>
 IFC2x PLATFORM CHANGE&nbsp; The data type has been changed from <i>IfcElement</i> to <i>IfcProduct</i> with upward compatibility
 <small></font></blockquote>
-</EPM-HTML>
-"
+</EPM-HTML>"
 709;RelatingStructure;"<EPM-HTML>
 Spatial structure element, within which the element is contained. Any element can only be contained within one element of the project spatial structure.
 </EPM-HTML>"
@@ -902,8 +872,7 @@ Predefined generic types for an external spatial element that are specified in a
 727;BoundedBy;"<EPM-HTML>
 Reference to a set of <i>IfcRelSpaceBoundary</i>'s that defines the physical or virtual delimitation of that external spacial element against physical or virtual boundaries.
 </EPM-HTML>"
-736;RelatingSystem;"System that services the Buildings. 
-"
+736;RelatingSystem;"System that services the Buildings. "
 737;RelatedBuildings;"<EPM-HTML>
 Spatial structure elements (including site, building, storeys) that are serviced by the system.
 <blockquote>
@@ -928,8 +897,7 @@ World Longitude at reference point (most likely defined in legal description). D
 <font size=""-1"">Example: Chicago Harbor Light has according to WGS84 a longitude -87.35.40 (or 87.35.40W) and a latitude 41.53.30 (or 41.53.30N).</font>
 </BLOCKQUOTE>
 </EPM-HTML>"
-747;RefElevation;"Datum elevation relative to sea level.
-"
+747;RefElevation;"Datum elevation relative to sea level."
 748;LandTitleNumber;The land title number (designation of the site within a regional system).
 749;SiteAddress;Address given to the site for postal purposes.
 766;MethodOfMeasurement;"<EPM-HTML>Name of the method of measurement used to calculate the element quantity. The method of measurement attribute has to be made recognizable by further agreements.
@@ -985,8 +953,7 @@ References to the decomposition relationship being a nesting. It determines that
 IFC2x4 CHANGE&nbsp; The inverse attribute datatype has been added and separated from <i>Decomposes</i> defined at <i>IfcObjectDefinition</i>.
 </span></small></p></blockquote>
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 800;IsNestedBy;"<EPM-HTML>
 References to the decomposition relationship being a nesting. It determines that this object definition is the whole within an ordered whole/part decomposition relationship. An object or object type can be nested by several other objects (occurrences or types).
 
@@ -994,8 +961,7 @@ References to the decomposition relationship being a nesting. It determines that
 IFC2x4 CHANGE&nbsp; The inverse attribute datatype has been added and separated from <i>IsDecomposedBy</i> defined at <i>IfcObjectDefinition</i>.
 </span></small></p></blockquote>
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 801;HasContext;"<EPM-HTML>
 References to the context providing context information such as project unit or representation context. It should only be asserted for the uppermost non-spatial object.
 
@@ -1011,8 +977,7 @@ References to the decomposition relationship being an aggregation. It determines
 IFC2x4 CHANGE&nbsp; The inverse attribute datatype has been changed from the supertype <i>IfcRelDecomposes</i> to subtype <i>IfcRelAggregates</i>.
 </span></small></p></blockquote>
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 803;Decomposes;"<EPM-HTML>
 References to the decomposition relationship being an aggregation. It determines that this object definition is a part within an unordered whole/part decomposition relationship. An object definitions can only be part of a single decomposition (to allow hierarchical strutures only).
 
@@ -1020,11 +985,9 @@ References to the decomposition relationship being an aggregation. It determines
 IFC2x4 CHANGE&nbsp; The inverse attribute datatype has been changed from the supertype <i>IfcRelDecomposes</i> to subtype <i>IfcRelAggregates</i>.
 </span></small></p></blockquote>
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 804;HasAssociations;Reference to the relationship objects, that associates external references or other resource definitions to the object.. Examples are the association to library, documentation or classification.
-809;GlobalId;"Assignment of a globally unique identifier within the entire software world.
-"
+809;GlobalId;"Assignment of a globally unique identifier within the entire software world."
 810;OwnerHistory;"<EPM-HTML>
 Assignment of the information about the current ownership of that object, including owning actor, application, local identification and information captured about the recent changes of the object, 
 
@@ -1036,8 +999,7 @@ NOTE only the last modification in stored - either as addition, deletion or modi
 IFC2x4 CHANGE&nbsp; The attribute has been changed to be OPTIONAL.
 </font></small></blockquote>
 </EPM-HTML>"
-811;Name;"Optional name for use by the participating software systems or users. For some subtypes of IfcRoot the insertion of the Name attribute may be required. This would be enforced by a where rule.
-"
+811;Name;"Optional name for use by the participating software systems or users. For some subtypes of IfcRoot the insertion of the Name attribute may be required. This would be enforced by a where rule."
 812;Description;Optional description, provided for exchanging informative comments.
 818;HasContext;
 819;HasAssociations;Reference to the relationship IfcRelAssociates and thus to those externally defined concepts, like classifications, documents, or library information, which are associated to the property definition.
@@ -1056,8 +1018,7 @@ Reference to the relation to one or many object occurrences that are characteriz
 IFC2x4 CHANGE Inverse attribute renamed from PropertyDefinitionOf with upward compatibility for file-based exchange.
 </font></small></blockquote>
 </EPM-HTML>"
-826;HasProperties;"Contained set of properties. For property sets defined as part of the IFC Object model, the property objects within a property set are defined as part of the standard. If a property is not contained within the set of predefined properties, its value has not been set at this time.
-"
+826;HasProperties;"Contained set of properties. For property sets defined as part of the IFC Object model, the property objects within a property set are defined as part of the standard. If a property is not contained within the set of predefined properties, its value has not been set at this time."
 827;IsDefinedBy;"<EPM-HTML>
 Relation to the property set template, via the objectified relationship <i>IfcRelDefinesByTemplate</i>, that, if given, provides the definition template for the property set and its properties. 
 <blockquote><small><font color=""#ff0000"">
@@ -1235,20 +1196,14 @@ Reference to the <i>IfcControl</i> that applies a control upon objects.
       </small>
     </blockquote>
 </EPM-HTML>"
-915;Controls;"Reference to the relationship that associates the control to the object(s) being controlled.
-"
-917;RelatingActor;"Reference to the information about the actor. It comprises the information about the person or organization and its addresses.
-"
-918;ActingRole;"Role of the actor played within the context of the assignment to the object(s).
-"
-921;TheActor;"Information about the actor.
-"
-922;IsActingUpon;"Reference to the relationship that associates the actor to an object.
-"
+915;Controls;"Reference to the relationship that associates the control to the object(s) being controlled."
+917;RelatingActor;"Reference to the information about the actor. It comprises the information about the person or organization and its addresses."
+918;ActingRole;"Role of the actor played within the context of the assignment to the object(s)."
+921;TheActor;"Information about the actor."
+922;IsActingUpon;"Reference to the relationship that associates the actor to an object."
 925;RelatingGroup;"<EPM-HTML>
 Reference to group that contains all assigned group members.
-</EPM-HTML>
-"
+</EPM-HTML>"
 928;Factor;"<EPM-HTML>
 Factor provided as a ratio measure that identifies the fraction or weighted factor that applies to the group assignment.
 </EPM-HTML>"
@@ -1273,8 +1228,7 @@ The object definitions, either object occurrences or object types, that are bein
 IFC2x4 CHANGE&nbsp; The attribute has been demoted from the supertype <i>IfcRelDecomposes</i> and defines the non-ordered set of parts within the aggregation.
 </font></small></blockquote>
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 948;RelatingObject;"<EPM-HTML>
 The object definition, either an non-product object type or a non-product object occurrence, that represents the nest. It is the whole within the whole/part relationship.
 
@@ -1290,8 +1244,7 @@ The object definitions, either non-product object occurrences or non-product obj
 IFC2x4 CHANGE&nbsp; The attribute has been demoted from the supertype <i>IfcRelDecomposes</i> and defines the ordered set of parts within the nest.
 </font></small></blockquote>
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 955;RelatedObjects;"<EPM-HTML>
 Set of object or property definitions to which the external references or information is associated. It includes object and type objects, property set templates, property templates and property sets and contexts.
 <blockquote>
@@ -1318,8 +1271,7 @@ Long name for the context as used for reference purposes.
 </EPM-HTML>"
 975;Phase;"<EPM-HTML>
 Current project phase, or life-cycle phase of this project. Applicable values have to be agreed upon by view definitions or implementer agreements.
-</EPM-HTML> 
-"
+</EPM-HTML> "
 976;RepresentationContexts;"<EPM-HTML>
 Context of the representations used within the context. When the context is a project and it includes shape representations for its components, one or several geometric representation contexts need to be included that define e.g. the world coordinate system, the coordinate space dimensions, and/or the precision factor.
 <blockquote><small><font color=""#ff0000"">
@@ -1336,14 +1288,12 @@ IFC2x4 CHANGE&nbsp; The attribute has been changed to be optional. Change made w
 Reference to the <em>IfcRelDeclares</em> relationship that assigns the uppermost entities of includes hierarchies to this context instance.
 <blockquote>
   <small>
-    NOTE&nbsp; the spatial hierarchy is assigned to <em>IfcProject</em> using the <em>IfcRelAggregates</i> relationship. This is a single exception due to compatibility reasons with earlier releases.
+    NOTE&nbsp; the spatial hiearchy is assigned to <em>IfcProject</em> using the <em>IfcRelAggregates</i> relationship. This is a single exception due to compatibility reasons with earlier releases.
   </small>
 </blockquote>
 </EPM-HTML>"
-986;RelatedObjects;"Reference to the objects (or single object) to which the property definition applies.
-"
-987;RelatingPropertyDefinition;"Reference to the property set definition for that object or set of objects.
-"
+986;RelatedObjects;"Reference to the objects (or single object) to which the property definition applies."
+987;RelatingPropertyDefinition;"Reference to the property set definition for that object or set of objects."
 989;RelatedObjects;"<EPM-HTML>
 Objects being part of an object occurrence decomposition, acting as the ""reflecting parts"" in the relationship.
 </EPM-HTML>"
@@ -1467,16 +1417,12 @@ Information about the access state of the property. It determines whether a prop
 
 </ul>
 </EPM-HTML>"
-1047;ProxyType;"High level (and only) semantic meaning attached to the IfcProxy, defining the basic construct type behind the Proxy, e.g. Product or Process.
-"
+1047;ProxyType;"High level (and only) semantic meaning attached to the IfcProxy, defining the basic construct type behind the Proxy, e.g. Product or Process."
 1048;Tag;The tag (or label) identifier at the particular instance of a product, e.g. the serial number, or the position number. It is the identifier at the occurrence level.
-1056;RelatedControlElements;"References control elements which may be used to impart control on the Distribution Element.
-"
-1057;RelatingFlowElement;"Relationship to a distribution flow element
-"
+1056;RelatedControlElements;"References control elements which may be used to impart control on the Distribution Element."
+1057;RelatingFlowElement;"Relationship to a distribution flow element"
 1059;AssignedToFlowElement;Reference through the relationship object to related distribution flow elements.
-1061;FlowDirection;"Enumeration that identifies if this port is a Sink (inlet), a Source (outlet) or both a SinkAndSource.
-"
+1061;FlowDirection;"Enumeration that identifies if this port is a Sink (inlet), a Source (outlet) or both a SinkAndSource."
 1062;PredefinedType;Enumeration that identifies the system type.  If a system type is defined, the port may only be connected to other ports having the same system type.
 1126;PredefinedType;Predefined types of distribution chambers.
 1140;LongName;"<EPM-HTML>
@@ -1507,24 +1453,19 @@ IFC2x4 CHANGE: The attribute name has been changed from <i>RelatedSpace</i> to <
   </font><small>
 </blockquote>
 </EPM-HTML>"
-1239;RelatedCoverings;"Relationship to the set of coverings covering this space.
-"
-1241;RelatingPriorities;"Priorities for connection. It refers to the layers of the RelatingObject.
-"
-1242;RelatedPriorities;"Priorities for connection. It refers to the layers of the RelatedObject.
-"
-1243;RelatedConnectionType;"Indication of the connection type in relation to the path of the RelatingObject.
-"
-1244;RelatingConnectionType;"Indication of the connection type in relation to the path of the RelatingObject.
-"
+1239;RelatedCoverings;"Relationship to the set of coverings covering this space."
+1241;RelatingPriorities;"Priorities for connection. It refers to the layers of the RelatingObject."
+1242;RelatedPriorities;"Priorities for connection. It refers to the layers of the RelatedObject."
+1243;RelatedConnectionType;"Indication of the connection type in relation to the path of the RelatingObject."
+1244;RelatingConnectionType;"Indication of the connection type in relation to the path of the RelatingObject."
 1252;PredefinedType;"<EPM-HTML>
-Predefined generic type for a beam that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for a beam that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 <blockquote> <small>NOTE The <i>PredefinedType</i> shall only be used, if no type object <i>IfcBeamType</i> is assigned, providing its own <i>IfcBeamType.PredefinedType</i>.</small>
 <br>
 <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been added at the end of the entity definition.</font></small></blockquote>
 </EPM-HTML>"
 1268;PredefinedType;"<EPM-HTML>
-Predefined generic type for a column that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for a column that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 <blockquote> <small>NOTE The <i>PredefinedType</i> shall only be used, if no type object <i>IfcColumnType</i> is assigned, providing its own <i>IfcColumnType.PredefinedType</i>.</small>
 <br>
 <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been added at the end of the entity definition.</font></small></blockquote>
@@ -1584,8 +1525,7 @@ IFC2x4 CHANGE  The attribute has been deprecated it shall only be exposed with a
   </font><small>
 </blockquote>
 </EPM-HTML>"
-4142;PointOnRelatedElement;"Point at which connected objects are aligned at the related element, given in the LCS of the related element. If the information is omitted, then the origin of the related element is used.
-"
+4142;PointOnRelatedElement;"Point at which connected objects are aligned at the related element, given in the LCS of the related element. If the information is omitted, then the origin of the related element is used."
 4144;EccentricityInX;"<EPM-HTML>
 Distance in x direction between the two points (or vertex points) engaged in the point connection.
 </EPM-HTML>"
@@ -1598,8 +1538,7 @@ Distance in z direction between the two points (or vertex points) engaged in the
 4151;CurveOnRelatingElement;The bounded curve at which the connected objects are aligned at the relating element, given in the LCS of the relating element.
 4152;CurveOnRelatedElement;The bounded curve at which the connected objects are aligned at the related element, given in the LCS of the related element. If the information is omitted, then the origin of the related element is used.
 4157;SurfaceOnRelatingElement;Surface at which related object is aligned at the relating element, given in the LCS of the relating element.
-4158;SurfaceOnRelatedElement;"Surface at which the relating element is aligned at the related element, given in the LCS of the related element. If the information is omitted, then the origin of the related element is used.
-"
+4158;SurfaceOnRelatedElement;"Surface at which the relating element is aligned at the related element, given in the LCS of the related element. If the information is omitted, then the origin of the related element is used."
 4164;VolumeOnRelatingElement;"<EPM-HTML>
 Volume at which related object overlaps with the relating element, given in the LCS of the relating element.
 </EPM-HTML>"
@@ -1634,12 +1573,10 @@ The reference to a set of <IfcVirtualGridIntersection</i>'s, that connect other 
 </small></blockquote>
 </EPM-HTML>"
 4180;IntersectingAxes;Two grid axes which intersects at exactly one intersection (see also informal proposition at IfcGrid). If attribute OffsetDistances is omitted, the intersection defines the placement or ref direction of a grid placement directly. If OffsetDistances are given, the intersection is defined by the offset curves to the grid axes.
-4181;OffsetDistances;"Offset distances to the grid axes. If given, it defines virtual offset curves to the grid axes. The intersection of the offset curves specify the virtual grid intersection.
-"
+4181;OffsetDistances;"Offset distances to the grid axes. If given, it defines virtual offset curves to the grid axes. The intersection of the offset curves specify the virtual grid intersection."
 4183;PlacementLocation;"<EPM-HTML>
 Placement of the object coordinate system defined by the intersection of two grid axes.
-</EPM-HTML>
-"
+</EPM-HTML>"
 4951;Target;A description of the placement, orientation and (uniform or non-uniform) scaling of the defined symbol.
 4960;AppliesTextures;"<EPM-HTML>
 Reference to the one (or in case of multi textures with identity transformation to geometric surfaces) subtype of <em>IfcSurfaceTexture</em> that is applied to a geometric surface by the texture coordinate transformation.
@@ -1679,33 +1616,22 @@ Th face bound that defines the corresponding list of points along the bounding p
 4968;Coordinates;The first coordinate[1] is the S, the second coordinate[2] is the T parameter value.
 4970;Extent;The extent in the x and y direction of the text literal.
 4971;BoxAlignment;The alignment of the text literal relative to its position.
-4986;Name;"The name given to the light source in presentation.
-"
+4986;Name;"The name given to the light source in presentation."
 4987;LightColour;"Definition from ISO/CD 10303-46:1992: Based on the current lighting model, the colour of the light to be used for shading.
-Definition from VRML97 - ISO/IEC 14772-1:1997: The color field specifies the spectral color properties of both the direct and ambient light emission as an RGB value.
-"
-4988;AmbientIntensity;"Definition from VRML97 - ISO/IEC 14772-1:1997: The ambientIntensity specifies the intensity of the ambient emission from the light. Light intensity may range from 0.0 (no light emission) to 1.0 (full intensity). 
-"
-4989;Intensity;"Definition from VRML97 - ISO/IEC 14772-1:1997: The intensity field specifies the brightness of the direct emission from the ligth. Light intensity may range from 0.0 (no light emission) to 1.0 (full intensity).
-"
+Definition from VRML97 - ISO/IEC 14772-1:1997: The color field specifies the spectral color properties of both the direct and ambient light emission as an RGB value."
+4988;AmbientIntensity;"Definition from VRML97 - ISO/IEC 14772-1:1997: The ambientIntensity specifies the intensity of the ambient emission from the light. Light intensity may range from 0.0 (no light emission) to 1.0 (full intensity). "
+4989;Intensity;"Definition from VRML97 - ISO/IEC 14772-1:1997: The intensity field specifies the brightness of the direct emission from the ligth. Light intensity may range from 0.0 (no light emission) to 1.0 (full intensity)."
 4992;Orientation;"Definition from ISO/CD 10303-46:1992: This direction is the direction of the light source.
-Definition from VRML97 - ISO/IEC 14772-1:1997: The direction field specifies the direction vector of the illumination emanating from the light source in the local coordinate system. Light is emitted along parallel rays from an infinite distance away. 
-"
+Definition from VRML97 - ISO/IEC 14772-1:1997: The direction field specifies the direction vector of the illumination emanating from the light source in the local coordinate system. Light is emitted along parallel rays from an infinite distance away. "
 4995;Position;"Definition from ISO/CD 10303-46:1992: The Cartesian point indicates the position of the light source.
-Definition from VRML97 - ISO/IEC 14772-1:1997: A Point light node illuminates geometry within radius of its location.
-"
+Definition from VRML97 - ISO/IEC 14772-1:1997: A Point light node illuminates geometry within radius of its location."
 4996;Radius;"Definition from IAI: The maximum distance from the light source for a surface still to be illuminated.
-Definition from VRML97 - ISO/IEC 14772-1:1997: A Point light node illuminates geometry within radius of its location.
-"
-4997;ConstantAttenuation;"Definition from ISO/CD 10303-46:1992: This real indicates the value of the attenuation in the lighting equation that is constant.
-"
-4998;DistanceAttenuation;"Definition from ISO/CD 10303-46:1992: This real indicates the value of the attenuation in the lighting equation that proportional to the distance from the light source.
-"
-4999;QuadricAttenuation;"Definition from the IAI: This real indicates the value of the attenuation in the lighting equation that proportional to the square value of the distance from the light source.
-"
+Definition from VRML97 - ISO/IEC 14772-1:1997: A Point light node illuminates geometry within radius of its location."
+4997;ConstantAttenuation;"Definition from ISO/CD 10303-46:1992: This real indicates the value of the attenuation in the lighting equation that is constant."
+4998;DistanceAttenuation;"Definition from ISO/CD 10303-46:1992: This real indicates the value of the attenuation in the lighting equation that proportional to the distance from the light source."
+4999;QuadricAttenuation;"Definition from the IAI: This real indicates the value of the attenuation in the lighting equation that proportional to the square value of the distance from the light source."
 5001;Orientation;"Definition from ISO/CD 10303-46:1992: This is the direction of the axis of the cone of the light source specified in the coordinate space of the representation being projected..
-Definition from VRML97 - ISO/IEC 14772-1:1997: The direction field specifies the direction vector of the light's central axis defined in the local coordinate system.
-"
+Definition from VRML97 - ISO/IEC 14772-1:1997: The direction field specifies the direction vector of the light's central axis defined in the local coordinate system."
 5002;ConcentrationExponent;"Definition from ISO/CD 10303-46:1992: This real is the exponent on the cosine of the angle between the line that starts at the position of the spot light source and is in the direction of the orientation of the spot light source and a line that starts at the position of the spot light source and goes through a point on the surface being shaded.
 NOTE: This attribute does not exists in ISO/IEC 14772-1:1997."
 5654;V2;Second v parametric value.
@@ -1773,19 +1699,19 @@ IFC2x4 CHANGE  The attribute has been deprecated it shall only be exposed with a
   </font><small>
 </EPM-HTML>"
 1397;PredefinedType;"<EPM-HTML>
-Predefined generic type for a stair flight that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for a stair flight that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 <blockquote> <small>NOTE The <i>PredefinedType</i> shall only be used, if no type object <i>IfcStairFlightType</i> is assigned, providing its own <i>IfcStairFlightType.PredefinedType</i>.</small>
 <br>
 <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been added at the end of the entity definition.</font></small></blockquote>
 </EPM-HTML>"
 1409;PredefinedType;"<EPM-HTML>
-Predefined generic type for a ramp flight that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for a ramp flight that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 <blockquote> <small>NOTE The <i>PredefinedType</i> shall only be used, if no type object <i>IfcRampFlightType</i> is assigned, providing its own <i>IfcRampFlightType.PredefinedType</i>.</small>
 <br>
 <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been added at the end of the entity definition.</font></small></blockquote>
 </EPM-HTML>"
 1418;PredefinedType;"<EPM-HTML>
-Predefined generic type for a curtain wall that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for a curtain wall that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 <blockquote> <small>NOTE The <i>PredefinedType</i> shall only be used, if no type object <i>IfcCurtainWallType</i> is assigned, providing its own <i>IfcCurtainWallType.PredefinedType</i>.</small>
 <br>
 <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been added at the end of the entity definition.</font></small></blockquote>
@@ -1804,7 +1730,7 @@ NOTE&nbsp; The body of the door might be taller then the door opening (e.g. in c
 NOTE&nbsp; The body of the door might be wider then the door opening (e.g. in cases where the door lining includes a casing). In these cases the <i>OverallWidth</i> shall still be given as the door opening width, and not as the total width of the door lining.</small></blockquote>
 </EPM-HTML>"
 1438;PredefinedType;"<EPM-HTML>
-Predefined generic type for a door that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for a door that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 <blockquote> <small>NOTE The <i>PredefinedType</i> shall only be used, if no type object <i>IfcDoorType</i> is assigned, providing its own <i>IfcDoorType.PredefinedType</i>.</small>
 <br>
 <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been added at the end of the entity definition.</font></small></blockquote>
@@ -1828,7 +1754,7 @@ NOTE&nbsp; The body of the window might be taller then the window opening (e.g. 
 NOTE&nbsp; The body of the window might be wider then the window opening (e.g. in cases where the window lining includes a casing). In these cases the <i>OverallWidth</i> shall still be given as the window opening width, and not as the total width of the window lining.</small></blockquote>
 </EPM-HTML>"
 1473;PredefinedType;"<EPM-HTML>
-Predefined generic type for a window that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for a window that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 <blockquote> <small>NOTE The <i>PredefinedType</i> shall only be used, if no type object <i>IfcWindowType</i> is assigned, providing its own <i>IfcWindowType.PredefinedType</i>.</small>
 <br>
 <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been added at the end of the entity definition.</font></small></blockquote>
@@ -1844,13 +1770,13 @@ Type defining the general layout of the window in terms of the partitioning of p
 </blockquote>
 </EPM-HTML>"
 1497;PredefinedType;"<EPM-HTML>
-Predefined generic type for a plate that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for a plate that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 <blockquote> <small>NOTE The <i>PredefinedType</i> shall only be used, if no type object <i>IfcPlateType</i> is assigned, providing its own <i>IfcPlateType.PredefinedType</i>.</small>
 <br>
 <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been added at the end of the entity definition.</font></small></blockquote>
 </EPM-HTML>"
 1508;PredefinedType;"<EPM-HTML>
-Predefined generic type for a chimney that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for a chimney that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 <blockquote> <small>NOTE The <i>PredefinedType</i> shall only be used, if no type object <i>IfcChimneyType</i> is assigned, providing its own <i>IfcChimneyType.PredefinedType</i>.</small>
 </blockquote>
 </EPM-HTML>"
@@ -1863,8 +1789,7 @@ Reference to the objectified relationship that handles the relationship of the c
 Reference to the objectified relationship that handles the relationship of the covering to the covered element.
 <blockquote><small><font color=""#ff0000"">IFC2x4 CHANGE  Renamed into <i>CoversElements</i> for consistency.
 </font></small></blockquote>
-</EPM-HTML>
-"
+</EPM-HTML>"
 1544;RelatingBuildingElement;"<EPM-HTML>
 Relationship to the building element that is covered. 
 <blockquote>
@@ -1873,10 +1798,9 @@ IFC2x4 CHANGE: The attribute type has been changed from <i>IfcElement</i> to <i>
   </font><small>
 </blockquote>
 </EPM-HTML>"
-1545;RelatedCoverings;"Relationship to the set of coverings at this element.
-"
+1545;RelatedCoverings;"Relationship to the set of coverings at this element."
 1547;PredefinedType;"<EPM-HTML>
-Predefined generic type for a shading device that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for a shading device that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 <blockquote> <small>NOTE The <i>PredefinedType</i> shall only be used, if no type object <i>IfcShadingDeviceType</i> is assigned, providing its own <i>IfcShadingDeviceType.PredefinedType</i>.</small>
 </blockquote>
 </EPM-HTML>"
@@ -1961,8 +1885,7 @@ IFC2x4 CHANGE Type changed from IfcDateTimeSelect.
     </font> 
   </small> 
 </blockquote> 
-</EPM-HTML> 
-"
+</EPM-HTML> "
 1630;DepreciatedValue;<EPM-HTML>The current value of an asset within the accounting rules and procedures of an organization.</EPM-HTML>
 1632;PredefinedType;"<EPM-HTML>A list of the types of inventories from which that required may be selected.
 <blockquote> 
@@ -1972,8 +1895,7 @@ IFC2x4 CHANGE Attribute made optional.
     </font> 
   </small> 
 </blockquote> 
-</EPM-HTML>
-"
+</EPM-HTML>"
 1633;Jurisdiction;<EPM-HTML>The organizational unit to which the inventory is applicable.</EPM-HTML>
 1634;ResponsiblePersons;<EPM-HTML>Persons who are responsible for the inventory.</EPM-HTML>
 1635;LastUpdateDate;"<EPM-HTML> 
@@ -1985,8 +1907,7 @@ IFC2x4 CHANGE Type changed from IfcDateTimeSelect.
     </font> 
   </small> 
 </blockquote> 
-</EPM-HTML> 
-"
+</EPM-HTML> "
 1636;CurrentValue;<EPM-HTML>An estimate of the current cost value of the inventory.</EPM-HTML>
 1637;OriginalValue;<EPM-HTML>An estimate of the original cost value of the inventory.</EPM-HTML>
 1645;PredefinedType;"<EPM-HTML>Predefined occupant types from which that required may be set.
@@ -2071,8 +1992,7 @@ Pointer to the shape aspect, if given. The shape aspect reflects the part of the
 IFC2x4 CHANGE The attribute is deprecated and shall no longer be used, i.e. the value shall be NIL ($).
 </font><small></blockquote>
 </EPM-HTML>"
-1790;OperationType;"Types of window panel operations. Also used to assign standard symbolic presentations according to national building standards.
-"
+1790;OperationType;"Types of window panel operations. Also used to assign standard symbolic presentations according to national building standards."
 1791;PanelPosition;Position of this panel within the overall window style.
 1792;FrameDepth;Depth of panel frame, measured from front face to back face horizontally (i.e. perpendicular to the window (elevation) plane.
 1793;FrameThickness;Width of panel frame, measured from inside of panel (at glazing) to outside of panel (at lining), i.e. parallel to the window (elevation) plane.
@@ -2114,8 +2034,7 @@ Offset between the lining and the window panel measured along the y-axis of the 
 IFC2x4 CHANGE: New attribute added at the end of the entity definition.
 </font></small></blockquote>
 </EPM-HTML>"
-1835;OperationType;"Types of permeable covering operations. Also used to assign standard symbolic presentations according to national building standards.
-"
+1835;OperationType;"Types of permeable covering operations. Also used to assign standard symbolic presentations according to national building standards."
 1836;PanelPosition;Position of this permeable covering panel within the overall window or door type.
 1837;FrameDepth;Depth of panel frame (used to include the permeable covering), measured from front face to back face horizontally (i.e. perpendicular to the window or door (elevation) plane.
 1838;FrameThickness;Width of panel frame (used to include the permeable covering), measured from inside of panel (at permeable covering) to outside of panel (at lining), i.e. parallel to the window or door (elevation) plane.
@@ -2184,8 +2103,7 @@ Object placement which shall be common to all items and activities which are gro
 <blockquote><font size=""-1"">NOTE&nbsp; Per informal proposition, this attribute is <b>not optional</b> as soon as at least one <i>IfcStructuralItem</i> is grouped into the instance of <i>IfcStructuralAnalysisModel</i>.</font></blockquote>
 
 </EPM-HTML>"
-2023;PredefinedType;"Selects a predefined type for the load group.  It can be differentiated between load groups, load cases, load combinations, or userdefined grouping levels.
-"
+2023;PredefinedType;"Selects a predefined type for the load group.  It can be differentiated between load groups, load cases, load combinations, or userdefined grouping levels."
 2024;ActionType;Type of actions in the group. Normally needed if 'PredefinedType' specifies a LOAD_CASE.
 2025;ActionSource;Source of actions in the group. Normally needed if 'PredefinedType' specifies a LOAD_CASE.
 2026;Coefficient;Load factor. If omitted, a factor is not yet known or not specified. A load factor of 1.0 shall be explicitly exported as Coefficient = 1.0.
@@ -2296,8 +2214,7 @@ The set of <i>IfcGeometricRepresentationSubContexts</i> that refer to this <i>If
 2184;RepresentationType;"<EPM-HTML>
 The description of the type of a representation context. The representation type defines the type of geometry or topology used for representing the product representation. More information is given at the subtypes <i>IfcShapeRepresentation</i> and <i>IfcTopologyRepresentation</i>.<br>
 The supported values for context type are to be specified by implementers agreements.
-</EPM-HTML>
-"
+</EPM-HTML>"
 2185;Items;Set of geometric representation items that are defined for this representation.
 2186;RepresentationMap;"<EPM-HTML>
 Use of the representation within an <i>IfcRepresentationMap</i>. If used, this <i>IfcRepresentation</i> may be assigned to many representations as one of its <i>Items</i> using an <i>IfcMappedItem</i>. Using <i>IfcRepresentationMap</i> is the way to share one representation (often of type <i>IfcShapeRepresentation</i>) by many products.  
@@ -2364,10 +2281,8 @@ is bigger then 1:200 (given as 0.005 within <i>TargetScale</i>).
 2260;Name;"<EPM-HTML>Name by which the coordinate reference system is identified.
 <blockquote><small>Note&nbsp; The name shall be taken from the list recognized by the European Petroleum Survey Group EPSG.
 </small></blockquote>
-</EPM-HTML>
-"
-2261;Description;"<EPM-HTML>Informal description of this coordinate reference system.<br></EPM-HTML>
-"
+</EPM-HTML>"
+2261;Description;"<EPM-HTML>Informal description of this coordinate reference system.<br></EPM-HTML>"
 2262;GeodeticDatum;"<EPM-HTML>
 Name by which this datum is identified. The geodetic datum is associated with the coordinate reference system and indicates the shape and size of the rotation ellipsoid and this ellipsoid's connection and orientation to the actual globe/earth. Examples for geodetic datums include:
 <ul>
@@ -2375,8 +2290,7 @@ Name by which this datum is identified. The geodetic datum is associated with th
   <li>EUREF89</li>
   <li>WSG84</li>
 <ul>
-</EPM-HTML>
-"
+</EPM-HTML>"
 2263;VerticalDatum;"<EPM-HTML>Name by which the vertical datum is identified. The vertical datum is associated with the height axis of the coordinate reference system and indicates the reference plane and fundamental point defining the origin of a height system. Examples for vertical datums include:
 <UL>
   <LI>height above mean sea level at Dover in 1952</LI>
@@ -2498,30 +2412,21 @@ Non-uniform temperature change, specified as the difference of the temperature c
 2399;CompressionFailureY;Compression force in y-direction leading to failure of the connection.
 2400;CompressionFailureZ;Compression force in z-direction leading to failure of the connection.
 2406;CfsFaces;The set of faces arcwise connected along common edges or vertices.
-2419;EdgeStart;"Start point (vertex) of the edge.
-"
-2420;EdgeEnd;"End point (vertex) of the edge. The same vertex can be used for both EdgeStart and EdgeEnd.
-"
-2422;EdgeElement;"Edge entity used to construct this oriented edge.
-"
-2423;Orientation;"BOOLEAN, If TRUE the topological orientation as used coincides with the orientation from start vertex to end vertex of the edge element. If FALSE otherwise.
-"
-2424;EdgeStart;"The start vertex of the oriented edge. It derives from the vertices of the edge element after taking account of the orientation.
-"
-2425;EdgeEnd;"The end vertex of the oriented edge. It derives from the vertices of the edge element after taking account of the orientation.
-"
+2419;EdgeStart;"Start point (vertex) of the edge."
+2420;EdgeEnd;"End point (vertex) of the edge. The same vertex can be used for both EdgeStart and EdgeEnd."
+2422;EdgeElement;"Edge entity used to construct this oriented edge."
+2423;Orientation;"BOOLEAN, If TRUE the topological orientation as used coincides with the orientation from start vertex to end vertex of the edge element. If FALSE otherwise."
+2424;EdgeStart;"The start vertex of the oriented edge. It derives from the vertices of the edge element after taking account of the orientation."
+2425;EdgeEnd;"The end vertex of the oriented edge. It derives from the vertices of the edge element after taking account of the orientation."
 2430;VertexGeometry;The geometric point, which defines the position in geometric space of the vertex.
 2432;EdgeGeometry;"The curve which defines the shape and spatial location of the edge. This curve may be unbounded and is implicitly trimmed by the vertices of the edge; this defines the edge domain. Multiple edges can reference the same curve."
 2433;SameSense;"This logical flag indicates whether (TRUE), or not (FALSE) the senses of the edge and the curve defining the edge geometry are the same. The sense of an edge is from the edge start vertex to the edge end vertex; the sense of a curve is in the direction of increasing parameter."
 2435;ParentEdge;The Edge, or Subedge, which contains the Subedge.
-2438;Bounds;"Boundaries of the face.
-"
+2438;Bounds;"Boundaries of the face."
 2442;FaceSurface;The surface which defines the internal shape of the face. This surface may be unbounded. The domain of the face is defined by this surface and the bounding loops in the inherited attribute SELF\FaceBounds.
 2443;SameSense;This flag indicates whether the sense of the surface normal agrees with (TRUE), or opposes (FALSE), the sense of the topological normal to the face.
-2450;Bound;"The loop which will be used as a face boundary.
-"
-2451;Orientation;"This indicated whether (TRUE) or not (FALSE) the loop has the same sense when used to bound the face as when first defined. If sense is FALSE the senses of all its component oriented edges are implicitly reversed when used in the face.
-"
+2450;Bound;"The loop which will be used as a face boundary."
+2451;Orientation;"This indicated whether (TRUE) or not (FALSE) the loop has the same sense when used to bound the face as when first defined. If sense is FALSE the senses of all its component oriented edges are implicitly reversed when used in the face."
 2458;Polygon;List of points defining the loop. There are no repeated points in the list.
 2461;LoopVertex;The vertex which defines the entire loop.
 2463;EdgeList;A list of oriented edge entities which are concatenated together to form this path.
@@ -2535,8 +2440,7 @@ Non-uniform temperature change, specified as the difference of the temperature c
       usage. Examples of possible status values include 'Not Yet
       Started', 'Started', 'Completed'.
     </blockquote>
-</EPM-HTML>
-"
+</EPM-HTML>"
 2480;WorkMethod;"<EPM-HTML>
     The method of work used in carrying out a task.
     <blockquote>
@@ -2629,8 +2533,7 @@ Non-uniform temperature change, specified as the difference of the temperature c
     Set of times periods that are regarded as an initial set-up
     of working times. Exception times can then further restrict
     these working times.
-</EPM-HTML>
-"
+</EPM-HTML>"
 2566;ExceptionTimes;"<EPM-HTML>
     Set of times periods that define exceptions (non-working
     times) for the given working times including the base
@@ -2647,22 +2550,18 @@ Non-uniform temperature change, specified as the difference of the temperature c
 </EPM-HTML>"
 2576;RelatingProcess;"<EPM-HTML>
     Reference to the process, that is the predecessor.
-</EPM-HTML>
-"
+</EPM-HTML>"
 2577;RelatedProcess;"<EPM-HTML>
    Reference to the process, that is the successor.
-</EPM-HTML>
-"
+</EPM-HTML>"
 2578;TimeLag;"<EPM-HTML>
     Time duration of the sequence, it is the time lag between the
     predecessor and the successor as specified by the
     SequenceType.
-</EPM-HTML>
-"
+</EPM-HTML>"
 2579;SequenceType;"<EPM-HTML>
      The way in which the time lag applies to the sequence.
-</EPM-HTML>
-"
+</EPM-HTML>"
 2580;UserDefinedSequenceType;"<EPM-HTML>
     Allows for specification of user defined type of the sequence
     beyond the enumeration values (START_START, START_FINISH,
@@ -2729,8 +2628,7 @@ IFC2x4 CHANGE Type changed from IfcDateTimeSelect.
     </font> 
   </small> 
 </blockquote> 
-</EPM-HTML> 
-"
+</EPM-HTML> "
 2608;UpdateDate;"<EPM-HTML> 
 The date and time that this cost schedule is updated; this allows tracking the schedule history.
 <blockquote> 
@@ -2740,17 +2638,15 @@ IFC2x4 CHANGE Type changed from IfcDateTimeSelect.
     </font> 
   </small> 
 </blockquote> 
-</EPM-HTML> 
-"
+</EPM-HTML> "
 2620;PredefinedType;"<EPM-HTML>
-Predefined generic type for a project order that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for a project order that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 
 <blockquote>
 <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been made optional.</font></small>
 </blockquote>
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 2621;Status;"<EPM-HTML>The current status of a project order.Examples of status values that might be used for a project order status include:
 <ul>
 <li>PLANNED</li>
@@ -2766,14 +2662,13 @@ Predefined generic type for a project order that is specified in an enumeration.
 A detailed description of the project order describing the work to be completed.
 </EPM-HTML>"
 2632;PredefinedType;"<EPM-HTML>
-Predefined generic type for a cost item that is specified in an enumeration. There may be a property set given specifically for the predefined types.
+Predefined generic type for a cost item that is specified in an enumeration. There may be a property set given specificly for the predefined types.
 
 <blockquote>
 <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been added.</font></small>
 </blockquote>
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 2633;CostValues;"<EPM-HTML>
 Component costs for which the total cost for the cost item is calculated, and then multiplied by the total <i>CostQuantities</i> if provided.  
 
@@ -2785,8 +2680,7 @@ For calculation purposes, the cost values may be directly added unless they have
 <small><font color=""#ff0000"">IFC2x4 CHANGE  The attribute has been added.</font></small>
 </blockquote>
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 2634;CostQuantities;"<EPM-HTML>
 Component quantities of the same type for which the total quantity for the cost item is calculated as the sum.
 <blockquote>
@@ -2795,8 +2689,7 @@ Component quantities of the same type for which the total quantity for the cost 
 </EPM-HTML>
 
 
-
-"
+"
 2639;PredefinedType;"<EPM-HTML>
 Identifies the predefined types of permit that can be granted.
 
@@ -3033,13 +2926,11 @@ Defines types of construction product resources.
 3130;PredefinedType;<EPM-HTML><p>Identifies the predefined types of transformer from which the type required may be set.</p></EPM-HTML>
 3133;PredefinedType;<EPM-HTML><p>Identifies the predefined types of electric motor from which the type required may be set.</p></EPM-HTML>
 3136;PredefinedType;
-3140;PredefinedType;"Defines the type of air to air heat recovery device.
-"
+3140;PredefinedType;"Defines the type of air to air heat recovery device."
 3155;PredefinedType;Defines types of boilers.
 3163;PredefinedType;
 3169;PredefinedType;Defines the typical types of chillers (e.g., air-cooled, water-cooled, etc.).
-3178;PredefinedType;"Defines typical types of coils (e.g., Cooling, Heating, etc.)
-"
+3178;PredefinedType;"Defines typical types of coils (e.g., Cooling, Heating, etc.)"
 3191;PredefinedType;Defines the type of condenser.
 3204;PredefinedType;Defines the type of cooled beam.
 3212;PredefinedType;Defines the typical types of cooling towers (e.g., OpenTower, ClosedTower, CrossFlow, etc.).
@@ -3263,8 +3154,7 @@ Location, where the external source (classification, document or library) can be
     IFC2x4 CHANGE&nbsp; The data type has been changed from <em>IfcLabel</em> to <em>IfcURIReference</em>.
   </span>
 </p></blockquote>
-<EPM-HTML>
-"
+<EPM-HTML>"
 3775;Identification;"<EPM-HTML>
 The <i>Identification</i> provides a unique identifier of the referenced item within the external source (classification, document or library). It may be provided as 
 <ul>
@@ -3464,29 +3354,23 @@ References to the objectified relationships that relate other constraints with t
 3890;PropertiesForConstraint;Reference to the properties to which the constraint is applied.
 3894;BenchmarkValues;A list of any benchmark values used for comparison purposes.
 3895;ResultValues;A list of any resultant values used for comparison purposes.
-3896;ObjectiveQualifier;"Enumeration that qualifies the type of objective constraint.
-"
+3896;ObjectiveQualifier;"Enumeration that qualifies the type of objective constraint."
 3897;UserDefinedQualifier;<EPM-HTML>A user defined value that qualifies the type of objective constraint when ObjectiveQualifier attribute of type <I>IfcObjectiveEnum</I> has value USERDEFINED.</EPM-HTML>
-3900;Benchmark;"Enumeration that identifies the type of benchmark data.
-"
-3901;ValueSource;"Reference source for data values.
-"
-3902;DataValue;"The value with data type defined by the underlying type accesses via <i>IfcMetricValueSelect</i>.
-"
+3900;Benchmark;"Enumeration that identifies the type of benchmark data."
+3901;ValueSource;"Reference source for data values."
+3902;DataValue;"The value with data type defined by the underlying type accesses via <i>IfcMetricValueSelect</i>."
 3938;RelatingConstraint;The constraint that is to be related.
 3939;RelatedResourceObjects;The properties to which a constraint is to be related.
 3942;RelatingConstraint;Constraint with which the other Constraints referenced by attribute RelatedConstraints are related.
 3943;RelatedConstraints;Constraints that are related with the one referenced as RelatingConstraint.
-3946;LogicalAggregator;"Enumeration that identifies the logical type of aggregation.
-"
+3946;LogicalAggregator;"Enumeration that identifies the logical type of aggregation."
 3955;CostType;"<EPM-HTML>Specification of the type of cost type used.
 
 <BLOCKQUOTE>NOTE: There are many possible types of cost value that may be identified. Whilst there is a broad understanding of the meaning of names that may be assigned to different types of costs, there is no general standard for naming cost types nor are there any broadly defined classifications. To allow for any type of cost value, the IfcLabel datatype is assigned.</BLOCKQUOTE>
  
 In the absence of any well defined standard, it is recommended that local agreements should be made to define allowable and understandable cost value types within a project or region.
 </EPM-HTML>
-
-"
+"
 3956;Condition;The condition under which a cost value applies.
 3959;Name;A name or additional clarification given to a cost value.
 3960;Description;The description that may apply additional information about a cost value.
@@ -3495,8 +3379,7 @@ In the absence of any well defined standard, it is recommended that local agreem
 
 Note: As well as the normally expected units of measure such as length, area, volume etc., costs may be based on units of measure which need to be defined e.g. sack, drum, pallet, item etc. Unit costs may be based on quantities greater (or lesser) than a unitary value of the basis measure. For instance, timber may have a unit cost rate per X meters where X > 1; similarly for cable, piping and many other items. The basis number may be either an integer or a real value.
 
-Note: This attribute should be asserted for all circumstances where the cost to be applied is per unit quantity. It may be asserted even for circumstances where an item price is used, in which case the unit cost basis should be by item (or equivalent definition).
-"
+Note: This attribute should be asserted for all circumstances where the cost to be applied is per unit quantity. It may be asserted even for circumstances where an item price is used, in which case the unit cost basis should be by item (or equivalent definition)."
 3963;ApplicableDate;"<EPM-HTML> 
 The date on or from which an applied value is applicable.
 <blockquote> 
@@ -3506,8 +3389,7 @@ IFC2x4 CHANGE Type changed from IfcDateTimeSelect.
     </font> 
   </small> 
 </blockquote> 
-</EPM-HTML> 
-"
+</EPM-HTML> "
 3964;FixedUntilDate;"<EPM-HTML> 
 The date until which applied value is applicable.
 <blockquote> 
@@ -3517,8 +3399,7 @@ IFC2x4 CHANGE Type changed from IfcDateTimeSelect.
     </font> 
   </small> 
 </blockquote> 
-</EPM-HTML> 
-"
+</EPM-HTML> "
 3965;HasExternalReference;"<EPM-HTML> 
 Reference to an external reference, e.g. library, classification, or document information, that is associated to the IfcAppliedValue. 
 <blockquote> 
@@ -3528,8 +3409,7 @@ IFC2x4 CHANGE New inverse attribute.
     </font> 
   </small> 
 </blockquote> 
-</EPM-HTML> 
-"
+</EPM-HTML> "
 3966;ValueOfComponents;The total (or subtotal) value of the components within the applied value relationship expressed as a single applied value.
 3967;IsComponentIn;The value of the single applied value which is used by the applied value relationship to express a complex applied value.
 3974;RelatingMonetaryUnit;The monetary unit from which an exchange is derived. For instance, in the case of a conversion from GBP to USD, the relating monetary unit is GBP.
@@ -3544,8 +3424,7 @@ IFC2x4 CHANGE Type changed from IfcDateTimeSelect. Attribute made optional.
     </font> 
   </small> 
 </blockquote> 
-</EPM-HTML> 
-"
+</EPM-HTML> "
 3978;RateSource;The source from which an exchange rate is obtained.
 3980;ComponentOfTotal;The applied value (total or subtotal) of which the value being considered is a component.
 3981;Components;Applied values that are components of another applied value and from which that applied value may be deduced.
@@ -3615,8 +3494,7 @@ IFC2x4 CHANGE New inverse attribute.
     </font> 
   </small> 
 </blockquote> 
-</EPM-HTML> 
-"
+</EPM-HTML> "
 4018;TimeStep;A duration of time intervals between values.
 4019;Values;The collection of time series values.
 4021;ListValues;A list of time-series values. At least one value is required.
@@ -3639,8 +3517,7 @@ IFC2x4 CHANGE New inverse attribute.
       time from scheduled start date to scheduled finish date.
     </p>
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 4045;ScheduleStart;"<EPM-HTML>
     The date on which a task is scheduled to be started. 
     The value might be measured or somehow calculated, which is defined by
@@ -3771,8 +3648,7 @@ Note: this is not necessarily the same as the task duration (IfcTaskTime.Schedul
 4094;Completion;"Indicates the percent completion of this resource.  If the resource is assigned to a task, then indicates completion of the task on behalf of the resource; if the resource is partitioned into sub-allocations, then indicates overall completion of sub-allocations."
 4096;ActualDate;"<EPM-HTML>
      The date on which an event actually occurs. It is a measured value.
-</EPM-HTML>
-"
+</EPM-HTML>"
 4097;EarlyDate;"<EPM-HTML>
      The earliest date on which an event can occur. It is a calculated value.
 </EPM-HTML>"
@@ -3806,22 +3682,19 @@ Note: this is not necessarily the same as the task duration (IfcTaskTime.Schedul
 </EPM-HTML>"
 4106;DayComponent;"<EPM-HTML>
     The position of the specified day in a month.
-</EPM-HTML>
-"
+</EPM-HTML>"
 4107;WeekdayComponent;"<EPM-HTML>
     The weekday name of the specified day in a week.
 </EPM-HTML>"
 4108;MonthComponent;"<EPM-HTML>
     The position of the specified month in a year.
-</EPM-HTML>
-"
+</EPM-HTML>"
 4109;Position;"<EPM-HTML>
     The position of the specified component, e.g. the 3rd
     (position=3) Tuesday (weekday component) in a month. A
     negative position value is used to define the last position 
     of the component (-1), the next to last position (-2) etc.
-</EPM-HTML>
-"
+</EPM-HTML>"
 4110;Interval;"<EPM-HTML>
     An interval can be given according to the pattern type. An
     interval value of 2 can for instance every two days, weeks,
@@ -3871,8 +3744,7 @@ reduce exchange file size.</font>
 </blockquote>
 </EPM-HTML>"
 4189;ReferencedByPlacements;Placements that are given relative to this placement of an object.
-4191;PlacementRelTo;"Reference to Object that provides the relative placement by its local coordinate system. If it is omitted, then the local placement is given to the WCS, established by the geometric representation context.
-"
+4191;PlacementRelTo;"Reference to Object that provides the relative placement by its local coordinate system. If it is omitted, then the local placement is given to the WCS, established by the geometric representation context."
 4192;RelativePlacement;Geometric placement that defines the transformation from the related coordinate system into the relating. The placement can be either 2D or 3D, depending on the dimension count of the coordinate system.
 4200;Name;"<EPM-HTML>
 Name of the material. 
@@ -3984,13 +3856,12 @@ Indication of whether the material layer represents an air layer (or cavity).
 4223;Description;Definition of the material layer in more descriptive terms than given by attributes Name or Category.
 4224;Category;Category of the material layer, e.g. the role it has in the layer set it belongs to (such as 'load bearing', 'thermal insulation' etc.).
 4225;Priority;"<EPM-HTML>
-The relative priority of the layer, expressed as ratio measure, normalised to 0..1. Controls how layers intersect in connections and corners of building elements: a layer from one element protrudes into (i.e. displaces) a layer from another element in a joint of these elements if the former element's layer has higher priority than the latter. The priorty value for a material layer in an element has to be set and maintained by software applications, in relation to the material layers in connected elements. The usage has to be further specified for each element, especially to avoid simultaneous use with <i>IfcLayerOffset</i>.
+The relative priority of the layer, expressed as ratio measure, normalised to 0..1. Controls how layers intersect in connections and corners of building elements: a layer from one element protrudes into (i.e. displaces) a layer from another element in a joint of these elements if the former element's layer has higher priority than the latter. The priorty value for a material layer in an element has to be set and maintained by software applications, in relation to the material layers in connected elements. The usage has to be further specified for each element, especially to avoid simultanious use with <i>IfcLayerOffset</i>.
 </EPM-HTML>"
 4226;ToMaterialLayerSet;Reference to the material layer set in which the material layer is included.
 4228;OffsetDirection;"<EPM-HTML>
 Orientation of the offset; shall be perpendicular to the parent layer set direction.
-</EPM-HTML>
-"
+</EPM-HTML>"
 4229;OffsetValues;"<EPM-HTML>
 The numerical value of layer offset, in the direction of the axis assigned by the attribute <i>OffsetDirection</i>. The <i>OffsetValues[1]</i> identifies the offset from the lower position along the axis direction (normally the start of the standard extrusion), the <i>OffsetValues[2]</i> identifies the offset from the upper position along the axis direction (normally the end of the standard extrusion),
 </EPM-HTML>"
@@ -4105,8 +3976,7 @@ Denotion whether the material layer set is oriented in positive or negative sens
 4284;OffsetFromReferenceLine;"<EPM-HTML>
 Offset of the material layer set base line (MlsBase) from reference geometry (line or plane) of element. The offset can be positive or negative, unless restricted for a particular building element type in its use definition or by implementer agreement. A positive value means, that the MlsBase is placed on the positive side of the reference line or plane, on the axis established by LayerSetDirection (in case of AXIS2 into the direction of +y, or in case of AXIS2 into the direction of +z). A negative value means that the MlsBase is placed on the negative side, as established by LayerSetDirection (in case of AXIS2 into the direction of -y). <blockquote><small>NOTE&nbsp; the positive or negative sign in the offset only affects the MlsBase placement, it does not have any effect on the application of DirectionSense for orientation of the material layers; also DirectionSense does not change the MlsBase placement.
 </small></blockquote>
-</EPM-HTML>
-"
+</EPM-HTML>"
 4285;ReferenceExtent;"EPM-HTML>
 Extent of the extrusion of the elements body shape representation to which the <em>IfcMaterialLayerSetUsage</em> applies. It is used as the reference value for the upper <em>OffsetValues[2]</em> provided by the <em>IfcMaterialLayerSetWithOffsets</em> subtype for included material layers.
 
@@ -4167,8 +4037,7 @@ Index reference to a significant point in the second section profile. Describes 
 4368;Elements;The group of units and their exponents that define the derived unit.
 4369;UnitType;Name of the derived unit chosen from an enumeration of derived unit types for use in IFC models.
 4370;UserDefinedType;
-4371;Dimensions;"Dimensional exponents derived using the function IfcDerivedDimensionalExponents using (SELF) as the input value.
-"
+4371;Dimensions;"Dimensional exponents derived using the function IfcDerivedDimensionalExponents using (SELF) as the input value."
 4375;Unit;The fixed quantity which is used as the mathematical factor.
 4376;Exponent;The power that is applied to the unit attribute.
 4381;Dimensions;The dimensional exponents of the SI base units by which the named unit is defined.
@@ -4200,8 +4069,7 @@ IFC2x4 CHANGE New inverse attribute.
 
 A positive or negative offset to add after the inherited <i>ConversionFactor</i> was applied.
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 4396;ValueComponent;The value of the physical quantity when expressed in the specified units.
 4397;UnitComponent;The unit in which the physical quantity is expressed.
 4568;Prefix;The SI Prefix for defining decimal multiples and submultiples of the unit.
@@ -4211,8 +4079,7 @@ The word, or group of words, by which the SI unit is referred to.
 
 <blockquote><font size=""-1"">NOTE&nbsp; Even though the SI system's base unit for mass is kilogram, the <i>IfcSIUnit</i> for mass is gram if no <i>Prefix</i> is asserted.</font></blockquote>
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 4570;Dimensions;"<EPM-HTML>
 The dimensional exponents of SI units are derived by function <I>IfcDimensionsForSiUnit</I>.
 </EPM-HTML>"
@@ -4233,8 +4100,7 @@ Code or name of the currency.  Permissible values are the three-letter alphabeti
 4721;StartOfNextHatchLine;"<EPM-HTML>A repetition factor that determines the distance between adjacent hatch lines.
   <blockquote><small><color=""#ff0000"">
 IFC2x Edition 3 CHANGE&nbsp; The attribute type of <i>StartOfNextHatchLine</i> has changed to a SELECT of <i>IfcPositiveLengthMeasure</i> (new) and <i>IfcOneDirectionRepeatFactor</i>.</font></small></blockquote>
-</EPM-HTML>
-"
+</EPM-HTML>"
 4722;PointOfReferenceHatchLine;"<EPM-HTML>
 A Cartesian point which defines the offset of the reference hatch line from the origin of the (virtual) hatching coordinate system. The origin is used for mapping the fill area style hatching onto an annotation fill area or surface. The reference hatch line would then appear with this offset from the fill style target point.<br>
 If not given the reference hatch lines goes through the origin of the (virtual) hatching coordinate system.
@@ -4351,36 +4217,27 @@ for file based exchange.</font><br>
 4826;StyleOfSymbol;The style applied to the symbol for its visual appearance.
 4830;Side;An indication of which side of the surface to apply the style.
 4831;Styles;A collection of different surface styles.
-4849;SurfaceColour;"The colour used to render the surface. The surface colour for visualisation is defined by specifying the intensity of red, green and blue.
-"
+4849;SurfaceColour;"The colour used to render the surface. The surface colour for visualisation is defined by specifying the intensity of red, green and blue."
 4851;Transparency;"Definition from ISO/CD 10303-46: The degree of transparency is indicated by the percentage of light traversing the surface.
-Definition from VRML97 - ISO/IEC 14772-1:1997: The transparency field specifies how ""clear"" an object is, with 1.0 being completely transparent, and 0.0 completely opaque. If not given, the value 0.0 (opaque) is assumed.
-"
+Definition from VRML97 - ISO/IEC 14772-1:1997: The transparency field specifies how ""clear"" an object is, with 1.0 being completely transparent, and 0.0 completely opaque. If not given, the value 0.0 (opaque) is assumed."
 4852;DiffuseColour;"The diffuse part of the reflectance equation can be given as either a colour or a scalar factor.
 The diffuse colour field reflects all light sources depending on the angle of the surface with respect to the light source. The more directly the surface faces the light, the more diffuse light reflects.
-The diffuse factor field specifies how much diffuse light from light sources this surface shall reflect. Diffuse light depends on the angle of the surface with respect to the light source. The more directly the surface faces the light, the more diffuse light reflects. The diffuse colour is then defined by surface colour * diffuse factor.
-"
+The diffuse factor field specifies how much diffuse light from light sources this surface shall reflect. Diffuse light depends on the angle of the surface with respect to the light source. The more directly the surface faces the light, the more diffuse light reflects. The diffuse colour is then defined by surface colour * diffuse factor."
 4853;TransmissionColour;"The transmissive part of the reflectance equation can be given as either a colour or a scalar factor. It only applies to materials which Transparency field is greater than zero.
 The transmissive colour field specifies the colour that passes through a transparant material (like the colour that shines through a glass).
-The transmissive factor defines the transmissive part, the transmissive colour is then defined by surface colour * transmissive factor.
-"
+The transmissive factor defines the transmissive part, the transmissive colour is then defined by surface colour * transmissive factor."
 4854;DiffuseTransmissionColour;"The diffuse transmission part of the reflectance equation can be given as either a colour or a scalar factor. It only applies to materials whose Transparency field is greater than zero.
 The diffuse transmission colour specifies how much diffuse light is reflected at the opposite side of the material surface.
-The diffuse transmission factor field specifies how much diffuse light from light sources this surface shall reflect on the opposite side of the material surface. The diffuse transmissive colour is then defined by surface colour * diffuse transmissive factor.
-"
+The diffuse transmission factor field specifies how much diffuse light from light sources this surface shall reflect on the opposite side of the material surface. The diffuse transmissive colour is then defined by surface colour * diffuse transmissive factor."
 4855;ReflectionColour;"The reflection (or mirror) part of the reflectance equation can be given as either a colour or a scalar factor. Applies to ""glass"" and ""mirror"" reflection models.
 The reflection colour specifies the contribution made by light from the mirror direction, i.e. light being reflected from the surface.
-The reflection factor specifies the amount of contribution made by light from the mirror direction. The reflection colour is then defined by surface colour * reflection factor.
-"
+The reflection factor specifies the amount of contribution made by light from the mirror direction. The reflection colour is then defined by surface colour * reflection factor."
 4856;SpecularColour;"The specular part of the reflectance equation can be given as either a colour or a scalar factor.
 The specular colour determine the specular highlights (e.g., the shiny spots on an apple). When the angle from the light to the surface is close to the angle from the surface to the viewer, the specular colour is added to the diffuse and ambient colour calculations.
 The specular factor defines the specular part, the specular colour is then defined by surface colour * specular factor.
-
-"
-4857;SpecularHighlight;"The exponent or roughness part of the specular reflectance.
-"
-4858;ReflectanceMethod;"Identifies the predefined types of reflectance method from which the method required may be set.
-"
+"
+4857;SpecularHighlight;"The exponent or roughness part of the specular reflectance."
+4858;ReflectanceMethod;"Identifies the predefined types of reflectance method from which the method required may be set."
 4880;DiffuseTransmissionColour;"<EPM-HTML>
 The degree of diffusion of the transmitted light. In the case of completely transparent materials there is no diffusion. The greater the diffusing power, the smaller the direct component of the transmitted light, up to the point where only diffuse light is produced.A value of 1 means totally diffuse for that colour part of the light.
 <blockquote><small>The factor can be measured physically and has three ratios for the red, green and blue part of the light.
@@ -4516,22 +4373,14 @@ A set of inner curves that define the inner boundaries of the fill area. The are
 </EPM-HTML>"
 4950;Definition;An implicit description of the symbol, either predefined or externally defined.
 5003;SpreadAngle;"Definition from ISO/CD 10303-46:1992: This planar angle measure is the angle between the line that starts at the position of the spot light source and is in the direction of the spot light source and any line on the boundary of the cone of influence.
-Definition from VRML97 - ISO/IEC 14772-1:1997: The cutOffAngle (name of spread angle in VRML) field specifies the outer bound of the solid angle. The light source does not emit light outside of this solid angle.
-"
-5004;BeamWidthAngle;"Definition from VRML97 - ISO/IEC 14772-1:1997: The beamWidth field specifies an inner solid angle in which the light source emits light at uniform full intensity. The light source's emission intensity drops off from the inner solid angle (beamWidthAngle) to the outer solid angle (spreadAngle).
-"
-5006;Position;"The position of the light source. It is used to orientate the light distribution curves.
-"
-5007;ColourAppearance;"Artificial light sources are classified in terms of their color appearance. To the human eye they all appear to be white; the difference can only be detected by direct comparison. Visual performance is not directly affected by differences in color appearance.
-"
-5008;ColourTemperature;"The color temperature of any source of radiation is defined as the temperature (in Kelvin) of a black-body or Planckian radiator whose radiation has the same chromaticity as the source of radiation. Often the values are only approximate color temperatures as the black-body radiator cannot emit radiation of every chromaticity value. The color temperatures of the commonest artificial light sources range from less than 3000K (warm white) to 4000K (intermediate) and over 5000K (daylight).
-"
-5009;LuminousFlux;"Luminous flux is a photometric measure of radiant flux, i.e. the volume of light emitted from a light source. Luminous flux is measured either for the interior as a whole or for a part of the interior (partial luminous flux for a solid angle). All other photometric parameters are derivatives of luminous flux. Luminous flux is measured in lumens (lm). The luminous flux is given as a nominal value for each lamp.
-"
-5010;LightEmissionSource;"Identifies the types of light emitter from which the type required may be set.
-"
-5011;LightDistributionDataSource;"The data source from which light distribution data is obtained.
-"
+Definition from VRML97 - ISO/IEC 14772-1:1997: The cutOffAngle (name of spread angle in VRML) field specifies the outer bound of the solid angle. The light source does not emit light outside of this solid angle."
+5004;BeamWidthAngle;"Definition from VRML97 - ISO/IEC 14772-1:1997: The beamWidth field specifies an inner solid angle in which the light source emits light at uniform full intensity. The light source's emission intensity drops off from the inner solid angle (beamWidthAngle) to the outer solid angle (spreadAngle)."
+5006;Position;"The position of the light source. It is used to orientate the light distribution curves."
+5007;ColourAppearance;"Artificial light sources are classified in terms of their color appearance. To the human eye they all appear to be white; the difference can only be detected by direct comparison. Visual performance is not directly affected by differences in color appearance."
+5008;ColourTemperature;"The color temperature of any source of radiation is defined as the temperature (in Kelvin) of a black-body or Planckian radiator whose radiation has the same chromaticity as the source of radiation. Often the values are only approximate color temperatures as the black-body radiator cannot emit radiation of every chromaticity value. The color temperatures of the commonest artificial light sources range from less than 3000K (warm white) to 4000K (intermediate) and over 5000K (daylight)."
+5009;LuminousFlux;"Luminous flux is a photometric measure of radiant flux, i.e. the volume of light emitted from a light source. Luminous flux is measured either for the interior as a whole or for a part of the interior (partial luminous flux for a solid angle). All other photometric parameters are derivatives of luminous flux. Luminous flux is measured in lumens (lm). The luminous flux is given as a nominal value for each lamp."
+5010;LightEmissionSource;"Identifies the types of light emitter from which the type required may be set."
+5011;LightDistributionDataSource;"The data source from which light distribution data is obtained."
 5028;LightDistributionCurve;Standardized  light distribution curve used to define the luminous intensity of the light in all directions.
 5029;DistributionData;"<EPM-HTML>
 <P>Light distribution data applied to the light source. It is defined by a list of main plane angles (B or C according to the light distribution curve chosen) that includes (for each B or C angle) a second list of secondary plane angles (the &#946; or &#947; angles) and the according luminous intensity distribution measures.
@@ -4563,15 +4412,13 @@ IFC2x4 CHANGE&nbsp; The data type has been changed from <em>IfcPresentationStyle
   </small>
 </blockquote>
 </EPM-HTML>"
-5067;Position;"Position coordinate system of the parameterized profile definition. If unspecified, no translation and no rotation is applied.
-"
+5067;Position;"Position coordinate system of the parameterized profile definition. If unspecified, no translation and no rotation is applied."
 5074;ProfileType;Defines the type of geometry into which this profile definition shall be resolved, either a curve or a surface area. In case of curve the profile should be referenced by a swept surface, in case of area the profile should be referenced by a swept area solid.
 5075;ProfileName;"<EPM-HTML>
 
 Human-readable name of the profile, for example according to a standard profile table. As noted above, machine-readable standardized profile designations should be provided in <i>IfcExternalReference.ItemReference</i>.
 
-</EPM-HTML>
-"
+</EPM-HTML>"
 5076;HasExternalReference;"<EPM-HTML>
 Reference to external information, e.g. library, classification, or document information, which is associated with the profile.
 <blockquote>
@@ -4678,8 +4525,7 @@ Constant thickness applied along the center line.
 5228;ReinforcementRole;The role, purpose or usage of the reinforcement, i.e. the kind of loads and stresses it is intended to carry, defined for the section reinforcement properties.
 5229;SectionDefinition;Definition of the cross section profile and longitudinal section type.
 5230;CrossSectionReinforcementDefinitions;The set of reinforcment properties attached to a section reinforcement properties definition.
-5244;ApplicationDeveloper;"Name of the application developer, being requested to be member of the IAI.
-"
+5244;ApplicationDeveloper;"Name of the application developer, being requested to be member of the IAI."
 5245;Version;The version number of this software as specified by the developer of the application.
 5246;ApplicationFullName;The full name of the application as specified by the application developer.
 5247;ApplicationIdentifier;Short identifying name for the application.
@@ -4719,8 +4565,7 @@ The second operand specified for the operation.
 5309;Dim;The space dimensionality of this class, it is always 3
 5311;Enclosure;"<EPM-HTML>
 The box which bounds the resulting solid of the Boolean operation involving the half space solid for computational purposes only.
-</EPM-HTML>
-"
+</EPM-HTML>"
 5314;Corner;Location of the bottom left corner (having the minimum values).
 5315;XDim;Length attribute (measured along the edge parallel to the X Axis)
 5316;YDim;Width attribute (measured along the edge parallel to the Y Axis)
@@ -4907,13 +4752,11 @@ representation is mapped."
 5516;LocalOrigin;The required translation, specified as a cartesian point. The actual translation included in the transformation is from the geometric origin to the local origin.
 5517;Scale;The scaling value specified for the transformation.
 5518;Scl;The derived scale S of the transformation, equal to scale if that exists, or 1.0 otherwise.
-5519;Dim;"The space dimensionality of this class, determined by the space dimensionality of the local origin.
-"
+5519;Dim;"The space dimensionality of this class, determined by the space dimensionality of the local origin."
 5523;U;The list of mutually orthogonal, normalized vectors defining the transformation matrix T. They are derived from the explicit attributes Axis1 and Axis2 in that order.
 5528;Scale2;The scaling value specified for the transformation along the axis 2. This is normally the y scale factor.
 5529;Scl2;The derived scale S(2) of the transformation along the axis 2 (normally the y axis), equal to Scale2 if that exists, or equal to the derived Scl1 (normally the x axis scale factor) otherwise.
-5532;DirectionRatios;"The components in the direction of X axis (DirectionRatios[1]), of Y axis (DirectionRatios[2]), and of Z axis (DirectionRatios[3]) 
-"
+5532;DirectionRatios;"The components in the direction of X axis (DirectionRatios[1]), of Y axis (DirectionRatios[2]), and of Z axis (DirectionRatios[3]) "
 5533;Dim;The space dimensionality of this class, defined by the number of real in the list of DirectionRatios.
 5536;Axis3;The exact direction of U[3], the derived Z axis direction.
 5537;U;The list of mutually orthogonal, normalized vectors defining the transformation matrix T. They are derived from the explicit attributes Axis3, Axis1, and Axis2 in that order.
@@ -4921,17 +4764,14 @@ representation is mapped."
 5544;Scale3;The scaling value specified for the transformation along the axis 3. This is normally the z scale factor.
 5545;Scl2;The derived scale S(2) of the transformation along the axis 2 (normally the y axis), equal to Scale2 if that exists, or equal to the derived Scl1 (normally the x axis scale factor) otherwise.
 5546;Scl3;The derived scale S(3) of the transformation along the axis 3 (normally the z axis), equal to Scale3 if that exists, or equal to the derived Scl1 (normally the x axis scale factor) otherwise.
-5550;Coordinates;"The first, second, and third coordinate of the point location. If placed in a two or three dimensional rectangular Cartesian coordinate system, Coordinates[1] is the X coordinate, Coordinates[2] is the Y coordinate, and Coordinates[3] is the Z coordinate.
-"
-5551;Dim;"The space dimensionality of this class, determined by the number of coordinates in the List of Coordinates.
-"
+5550;Coordinates;"The first, second, and third coordinate of the point location. If placed in a two or three dimensional rectangular Cartesian coordinate system, Coordinates[1] is the X coordinate, Coordinates[2] is the Y coordinate, and Coordinates[3] is the Z coordinate."
+5551;Dim;"The space dimensionality of this class, determined by the number of coordinates in the List of Coordinates."
 5558;BasisCurve;The curve to which point parameter relates.
 5559;PointParameter;The parameter value of the point location.
 5560;Dim;The space dimensionality of this class, determined by the space dimensionality of the basis curve.
 5568;Dim;The space dimensionality of this abstract class, defined differently for all subtypes, i.e. for IfcLine, IfcConic and IfcBoundedCurve.
 5576;Segments;"The component bounded curves, their transitions and senses. The transition attribute for the last segment defines the transition between the end of the last segment and the start of the first; this transition attribute may take the value discontinuous, which indicates an open curve."
-5577;SelfIntersect;"Indication of whether the curve intersects itself or not; this is for information only.
-"
+5577;SelfIntersect;"Indication of whether the curve intersects itself or not; this is for information only."
 5578;NSegments;The number of component curves.
 5579;ClosedCurve;"Indication whether the curve is closed or not; this is derived from the transition code of the last segment."
 5584;BasisSurface;"<EPM-HTML>
@@ -4946,8 +4786,7 @@ The space dimensionality of IfcSurface. It is always a three-dimensional geometr
   </small>
 </blockquote>
 </EPM-HTML>"
-5598;Position;"The position and orientation of the surface. This attribute is used in the definition of the parameterization of the surface.
-"
+5598;Position;"The position and orientation of the surface. This attribute is used in the definition of the parameterization of the surface."
 5601;Radius;"<EPM-HTML>
 The radius of the cylindrical surface.
 </EPM-HTML>"
@@ -5033,8 +4872,7 @@ The supplied values of the weights.
 5771;Weights;"<EPM-HTML>
 The array of weights associated with the control points. This is derived from the weights data.
 </EPM-HTML>"
-5784;Position;"The location and orientation of the conic. Further details of the interpretation of this attribute are given for the individual subtypes."" 
-"
+5784;Position;"The location and orientation of the conic. Further details of the interpretation of this attribute are given for the individual subtypes."" "
 5786;Radius;The radius of the circle, which shall be greater than zero.
 5788;SemiAxis1;The first radius of the ellipse which shall be positive. Placement.Axes[1] gives the direction of the SemiAxis1.
 5789;SemiAxis2;The second radius of the ellipse which shall be positive.
