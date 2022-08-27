@@ -2,7 +2,7 @@ Undo system
 ===========
 
 Supporting undo and redo is quite a complex problem because the Blender undo
-system only keeps track of changes occuring in the Blender system. However,
+system only keeps track of changes occurring in the Blender system. However,
 changes actually occur in two other locations that Blender doesn't know about:
 the IFC dataset, and the BlenderBIM Add-on system that synchronises Blender and
 the IFC dataset.

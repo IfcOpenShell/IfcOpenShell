@@ -88,17 +88,17 @@ class BoundingBox:
     def intersect(self, bb):
         retVal = False
         if self.vertex != None and bb.vertex != None:
-            # check all the faces of this object for a seperation axis
+            # check all the faces of this object for a separation axis
             for i, f in enumerate(self.face):
                 d = f.normal
                 if self.whichSide(bb.vertex, d, f.vertex[0]) > 0:
-                    return False  # all the vertexes are on the +ve side of the face
+                    return False  # all the vertices are on the +ve side of the face
 
             # now do it again for the other objects faces
             for i, f in enumerate(bb.face):
                 d = f.normal
                 if self.whichSide(self.vertex, d, f.vertex[0]) > 0:
-                    return False  # all the vertexes are on the +ve side of the face
+                    return False  # all the vertices are on the +ve side of the face
 
             # do edge checks
             for e1 in self.edge:
@@ -139,7 +139,7 @@ def format_distance(value, isArea=False, hide_units=True):
 
     value *= scaleFactor
 
-    # Imperial Formating
+    # Imperial Formatting
     if unit_system == "IMPERIAL":
         precision = bpy.context.scene.BIMProperties.imperial_precision
         if precision == "NONE":
@@ -152,7 +152,7 @@ def format_distance(value, isArea=False, hide_units=True):
         base = int(precision)
         decInches = value * toInches
 
-        # Seperate ft and inches
+        # Separate ft and inches
         # Unless Inches are the specified Length Unit
         if unit_length != "INCHES":
             feet = math.floor(decInches / inPerFoot)
@@ -160,7 +160,7 @@ def format_distance(value, isArea=False, hide_units=True):
         else:
             feet = 0
 
-        # Seperate Fractional Inches
+        # Separate Fractional Inches
         inches = math.floor(decInches)
         if inches != 0:
             frac = round(base * (decInches - inches))
@@ -202,7 +202,7 @@ def format_distance(value, isArea=False, hide_units=True):
         else:
             tx_dist = str("%1.3f" % (value * toInches / inPerFoot)) + " sq. ft."
 
-    # METRIC FORMATING
+    # METRIC FORMATTING
     elif unit_system == "METRIC":
         precision = bpy.context.scene.BIMProperties.metric_precision
         if precision != 0:

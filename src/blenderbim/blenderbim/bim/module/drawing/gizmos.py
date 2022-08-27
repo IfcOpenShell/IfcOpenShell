@@ -317,7 +317,7 @@ class OffsetHandle:
         base = Vector((0, 0, 0))
         axis = Vector((0, 0, 1))
 
-        # projecttion of the arrow to a plane, perpendicular to view ray
+        # projection of the arrow to a plane, perpendicular to view ray
         axis_proj = axis - ray_norm * axis.dot(ray_norm)
 
         # intersection of the axis with the plane through view origin perpendicular to the arrow projection

@@ -63,7 +63,7 @@ Northings, and Orthogonal Height in the **IFC Georeferencing** panel.
 
 When **Local engineering coordinates** are used, typically the architect will
 nominate a local origin and model geometry will be drawn orthogonally (i.e.
-along the X and Y axis). This local origin often correlates with a site bounary,
+along the X and Y axis). This local origin often correlates with a site boundary,
 surveyed point, or grid intersection. This means that the model's coordinates
 are typically smaller numbers and correlate to surface distance measurements,
 not Eastings and Northings, and the model's +Y axis will point to **Project
@@ -205,7 +205,7 @@ True north
 
 When **Local engineering coordinates** are used, the model's +Y axis points to
 **Project North** for the convenience of drafting. When **Map Coordinates** are
-used, the model's +Y axis points to **Grid North** for the neccessity of
+used, the model's +Y axis points to **Grid North** for the necessity of
 surveying.
 
 **Project North** and **Grid North** is different to **True North**. The angle

@@ -1195,7 +1195,7 @@ class AddSectionsAnnotations(bpy.types.Operator):
         ]
 
         def sideview(cam):
-            # leftmost and righmost points of camera view area, local coords
+            # leftmost and rightmost points of camera view area, local coords
             xmin, xmax, _, _, _, _ = helper.ortho_view_frame(cam.data, margin=0)
             proj = camera.matrix_world.inverted() @ cam.matrix_world
             p_l = proj @ Vector((xmin, 0, 0))

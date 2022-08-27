@@ -475,14 +475,14 @@ endif
 	cp -r dist/working/IFC2JSON_python-master/file_converters/ifcjson dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Provides OpenLCA fucntionality
+	# Provides OpenLCA functionality
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/85/33/f91b96e9e8608ff65a003b692e8a9cdd60f2178f60617e5b1d21334c009c/olca-ipc-0.0.10.tar.gz
 	cd dist/working && tar -xzvf olca-ipc*
 	cd dist/working/olca-ipc-0.0.10/ && cp -r olca ../../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Provides Brickschema fucntionality
+	# Provides Brickschema functionality
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/ca/37/8309da9a72407d2f5eb5489c197ac3cfe96ee3ccba1902d2a0ecc7843f92/brickschema-0.5.1.tar.gz
 	cd dist/working && tar -xzvf brickschema*

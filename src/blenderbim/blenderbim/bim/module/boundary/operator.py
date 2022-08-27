@@ -49,7 +49,7 @@ class Loader:
         if not boundary.ConnectionGeometry:
             return None
         surface = boundary.ConnectionGeometry.SurfaceOnRelatingElement
-        # workaround for unvalid geometry provided by Revit. See https://github.com/IfcOpenShell/IfcOpenShell/issues/635#issuecomment-770366838
+        # workaround for invalid geometry provided by Revit. See https://github.com/IfcOpenShell/IfcOpenShell/issues/635#issuecomment-770366838
         if surface.is_a("IfcCurveBoundedPlane") and not getattr(surface, "InnerBoundaries", None):
             surface.InnerBoundaries = ()
         shape = ifcopenshell.geom.create_shape(self.settings, surface)

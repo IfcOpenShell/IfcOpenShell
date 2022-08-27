@@ -451,7 +451,7 @@ class EditHeader(bpy.types.Operator):
     bl_idname = "bim.edit_header"
     bl_label = "Edit Header"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Save header informations"
+    bl_description = "Save header information"
 
     @classmethod
     def poll(cls, context):
@@ -507,7 +507,7 @@ class DisableEditingHeader(bpy.types.Operator):
     bl_idname = "bim.disable_editing_header"
     bl_label = "Disable Editing Header"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Cancel unsaved header informations"
+    bl_description = "Cancel unsaved header information"
 
     def execute(self, context):
         context.scene.BIMProjectProperties.is_editing = False
