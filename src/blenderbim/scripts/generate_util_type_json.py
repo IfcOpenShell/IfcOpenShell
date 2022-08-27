@@ -49,7 +49,7 @@ with open(filepath) as fp:
             entity_to_type_map.setdefault(entity, []).append(type_class)
         line = fp.readline()
 
-# This type of hacky express parsing doesn't accomodate subtypes, so...
+# This type of hacky express parsing doesn't accommodate subtypes, so...
 
 
 def get_inherited_map(declaration):

@@ -156,7 +156,7 @@ class GbxmlExporter:
     def create_opening(self, object, polygon, parent):
         opening = self.gbxml.add_element(parent, "Opening")
         opening.set("id", "opening-{}-{}".format(object.name, polygon.index))
-        opening.set("windowTypeIdRef", "STD_EX11")  # harcoded
+        opening.set("windowTypeIdRef", "STD_EX11")  # hardcoded
         opening.set("openingType", "FixedWindow")  # hardcoded
         planar_geometry = self.gbxml.add_element(opening, "PlanarGeometry")
         self.create_poly_loop(object, polygon, planar_geometry)

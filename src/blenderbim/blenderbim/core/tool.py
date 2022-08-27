@@ -22,7 +22,7 @@ import inspect
 # fmt: off
 # pylint: skip-file
 
-# This interface class and decorator is magic syntatic sugar to allow concise interface definitions
+# This interface class and decorator is magic syntactic sugar to allow concise interface definitions
 # If we didn't do this, Python is unnecessarily verbose, which I find distracting. Don't black this file :)
 class Interface(abc.ABC): pass
 def interface(cls):
