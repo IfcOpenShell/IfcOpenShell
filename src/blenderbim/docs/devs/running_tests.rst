@@ -7,8 +7,8 @@ The BlenderBIM Add-on has three layers of tests for each of its three technology
 layers:
 
 1. **Core tests**: abstract domain logic unit tests agnostic of Blender
-2. **Tool tests**: low-level concrete unit tests dependant on Blender
-3. **BIM tests**: high-level integration UI and smoke tests dependant on Blender
+2. **Tool tests**: low-level concrete unit tests dependent on Blender
+3. **BIM tests**: high-level integration UI and smoke tests dependent on Blender
 
 These tests use ``pytest`` as the test framework and runner, so install it:
 
