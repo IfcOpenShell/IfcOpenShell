@@ -181,7 +181,7 @@ set PY_VER_MAJOR_MINOR=%PYTHON_VERSION:~0,3%
 set PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR:.=%
 set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
 
-:: Cache last used CMake generator and configurable depedency dirs for other scripts to use
+:: Cache last used CMake generator and configurable dependency dirs for other scripts to use
 :: This is consolidated at the beginning of the script so that the script can be partially
 :: executed by jumping (using goto) to different labels.
 if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
