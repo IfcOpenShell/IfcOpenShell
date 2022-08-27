@@ -435,6 +435,7 @@ class Sequence:
 @interface
 class Spatial:
     def can_contain(cls, structure_obj, element_obj): pass
+    def can_reference(cls, structure, element): pass
     def disable_editing(cls, obj): pass
     def duplicate_object_and_data(cls, obj): pass
     def enable_editing(cls, obj): pass

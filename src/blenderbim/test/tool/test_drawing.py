@@ -260,7 +260,7 @@ class TestGetDrawingGroup(NewFile):
         tool.Ifc.set(ifc)
         element = ifc.createIfcAnnotation()
         group = ifcopenshell.api.run("group.add_group", ifc)
-        ifcopenshell.api.run("group.assign_group", ifc, product=[element], group=group)
+        ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
         assert subject.get_drawing_group(element) == group
 
 
@@ -280,7 +280,7 @@ class TestGetGroupElements(NewFile):
         tool.Ifc.set(ifc)
         element = ifc.createIfcAnnotation()
         group = ifcopenshell.api.run("group.add_group", ifc)
-        ifcopenshell.api.run("group.assign_group", ifc, product=[element], group=group)
+        ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
         assert subject.get_group_elements(group) == (element,)
 
 

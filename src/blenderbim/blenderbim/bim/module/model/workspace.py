@@ -89,7 +89,7 @@ class BimTool(WorkSpaceTool):
             row = layout.row(align=True)
             if relating_types_ids:
                 row.label(text="", icon="FILE_3D")
-                row.prop(data=props, property="relating_type_id", text="")
+                prop_with_search(row, props, "relating_type_id", text="")
             else:
                 row.label(text="No Construction Type", icon="FILE_3D")
             if ifc_classes:
