@@ -25,7 +25,7 @@ Dependencies
 * [Boost](http://www.boost.org/)
 * [Open Cascade](https://dev.opencascade.org/) - *optional*, but required for building IfcGeom
   ([official](https://dev.opencascade.org/release), "OCCT", or [community edition](https://github.com/tpaviot/oce), "OCE")  
-  For converting IFC representation items into BRep solids and tesselated meshes
+  For converting IFC representation items into BRep solids and tessellated meshes
 * [OpenCOLLADA](https://github.com/khronosGroup/OpenCOLLADA/) - *optional*  
   For IfcConvert to be able to write tessellated Collada (.dae) files
 * [SWIG](http://www.swig.org/) and [Python](https://www.python.org/) - *optional*  
@@ -89,7 +89,7 @@ The following instructions are for Ubuntu, modify as required for other operatin
 can be experimented with and studied for pointers for other operating systems, but note that this script is not currently
 meant to be used for a typical IfcOpenShell workspace setup.
 
-Note 1: It is recommeded to use OCCT for IfcOpenShell. You could use OCE as well, but sometimes it may lag behind OCCT and 
+Note 1: It is recommended to use OCCT for IfcOpenShell. You could use OCE as well, but sometimes it may lag behind OCCT and 
 therefore not compile with the latest IfcOpenShell.
 
 Note 2: where `make -j` is written, add a number roughly equal to the amount of CPU cores + 1.

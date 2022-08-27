@@ -19,10 +19,10 @@
 
 /********************************************************************************
  *                                                                              *
- * This started as a brief example of how IfcOpenShell can be interfaced from   * 
+ * This started as a brief example of how IfcOpenShell can be interfaced from   *
  * within a C++ context, it has since then evolved into a fullfledged command   *
  * line application that is able to convert geometry in an IFC files into       *
- * several tesselated and topological output formats.                           *
+ * several tessellated and topological output formats.                          *
  *                                                                              *
  ********************************************************************************/
 

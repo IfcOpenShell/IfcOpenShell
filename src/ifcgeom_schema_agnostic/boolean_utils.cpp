@@ -715,7 +715,7 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 		// have already guaranteed they do not intersect. So they are
 		// either fully in or out. Selecting with complete_within=true
 		// will filter out some unnecessary cases. It also means we need
-		// that due this assymetry we need to process all pairs of wire
+		// that due this asymmetry we need to process all pairs of wire
 		// indices and not just the pairs where the first element is less
 		// than the second element.
 		for (auto& other_index : wire_tree.select_box(b, true)) {
