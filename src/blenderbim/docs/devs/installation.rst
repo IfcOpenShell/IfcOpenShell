@@ -6,7 +6,7 @@ There are different methods of installation, depending on your situation.
 1. **Unstable installation** is recommended for power users helping with testing.
 2. **Building from source** is recommended for distributing a build from source.
 3. **Live development environment** is recommended for developers who are actively coding.
-4. **Distro installation** is recommended for those who use a Linux package manager.
+4. **Packaged installation** is recommended for those who use a package manager.
 
 Unstable installation
 ---------------------
@@ -144,7 +144,7 @@ changes, you'll need to fix your setup manually. But this is relatively rare.
     There is a `useful Blender Addon
     <https://blenderartists.org/uploads/short-url/yto1sjw7pqDRVNQzpVLmn51PEDN.zip>`__
     (see `forum thread
-    <https://blenderartists.org/t/reboot-blender-addon/640465/13>`__`) that adds
+    <https://blenderartists.org/t/reboot-blender-addon/640465/13>`__) that adds
     a Reboot button in File menu.  In this way, it's possible to directly
     restart Blender and test the modified source code.  There is also a VS Code
     add-on called `Blender Development
@@ -155,7 +155,8 @@ changes, you'll need to fix your setup manually. But this is relatively rare.
 Distro installation
 -------------------
 
-Those on Arch Linux can check out this `AUR package <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
+- **Arch Linux**: `Stable <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
+- **Chocolatey on Windows**: `Unstable <https://community.chocolatey.org/packages/blenderbim-nightly/>`__.
 
 Tips for package managers
 -------------------------
