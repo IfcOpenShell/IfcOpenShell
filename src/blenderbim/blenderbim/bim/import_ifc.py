@@ -1107,6 +1107,7 @@ class IfcImporter:
                     polyline.points[-1].co = representation["matrix"] @ mathutils.Vector(v2)
 
         curve.bevel_depth = self.unit_scale * item.Radius
+        curve.use_fill_caps = True
         return curve
 
     def create_native_annotation(self, element, mesh_name):
