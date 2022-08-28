@@ -264,7 +264,7 @@ int main() {
 	
 	// Up until now we have only used simple extrusions for the creation of the geometry. For the 
 	// ground mesh of the IfcSite we will use a Nurbs surface created in Open Cascade. The surface 
-	// will be tesselated using the deflection specified.
+	// will be tessellated using the deflection specified.
 	TopoDS_Shape shape;
 	createGroundShape(shape);
 	IfcSchema::IfcProductDefinitionShape* ground_representation = IfcGeom::tesselate(STRINGIFY(IfcSchema), shape, 100.)->as<IfcSchema::IfcProductDefinitionShape>();
