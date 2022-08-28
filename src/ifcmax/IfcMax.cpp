@@ -27,7 +27,7 @@
 
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
-#include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
 
 static const int NUM_MATERIAL_SLOTS = 24;
 
@@ -235,9 +235,13 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 #endif
 
 	IfcParse::IfcFile file(fn_mb);
-	IfcGeom::Iterator<float> iterator(settings, &file);
+	
+	//IfcGeom::Iterator<float> iterator(settings, &file);
+
+	IfcGeom::Iterator* iterator = new IfcGeom::Iterator( settings, &file);
+
     delete fn_mb;
-	if (!iterator.initialize()) return false;
+	if (!iterator->initialize()) return false;
 
 	itfc->ProgressStart(_T("Importing file..."), TRUE, fn, NULL);
 
@@ -247,7 +251,7 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 	std::map<std::vector<std::string>, Mtl*> material_cache;
 
 	do{
-		const IfcGeom::TriangulationElement<float>* o = static_cast<const IfcGeom::TriangulationElement<float>*>(iterator.get());
+		const IfcGeom::TriangulationElement* o = static_cast<const IfcGeom::TriangulationElement*>(iterator->get());
 
 		TSTR o_type = S(o->type());
 		TSTR o_guid = S(o->guid());
@@ -317,14 +321,15 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 		if (m) {
 			node->GetINode()->SetMtl(m);
 		}
-		const std::vector<float>& matrix_data = o->transformation().matrix().data();
+		const std::vector<double>& matrix_data = o->transformation().matrix().data();
+
 		node->SetTransform(0,Matrix3 ( Point3(matrix_data[0],matrix_data[1],matrix_data[2]),Point3(matrix_data[3],matrix_data[4],matrix_data[5]),
 			Point3(matrix_data[6],matrix_data[7],matrix_data[8]),Point3(matrix_data[9],matrix_data[10],matrix_data[11]) ));
 		impitfc->AddNodeToScene(node);
 
-		itfc->ProgressUpdate(iterator.progress(), true, _T(""));
+		itfc->ProgressUpdate(iterator->progress(), true, _T(""));
 
-	} while (iterator.next());
+	} while (iterator->next());
 
 	itfc->ProgressEnd();
 	
