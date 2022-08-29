@@ -95,10 +95,10 @@ For Linux or Mac:
 
     # Manually download some third party dependencies
     $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/data/gantt
-	$ wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
-	$ wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
+    $ wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
+    $ wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
     $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/schema
-	$ wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
+    $ wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
 
 Or, if you're on Windows:
 
@@ -127,10 +127,10 @@ Or, if you're on Windows:
 
     # Manually download some third party dependencies
     $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/data/gantt
-	$ curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -outfile jsgantt.js
-	$ curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -outfile jsgantt.css
+    $ curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -outfile jsgantt.js
+    $ curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -outfile jsgantt.css
     $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/schema
-	$ curl https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -outfile Brick.ttl
+    $ curl https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o Brick.ttl
 
 After you modify your code in the Git repository, you will need to restart
 Blender for the changes to take effect.
