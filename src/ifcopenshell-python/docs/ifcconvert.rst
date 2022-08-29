@@ -1,16 +1,13 @@
 IfcConvert
 ==========
 
-This documentation is free software! You are free to contribute and help write
-this document.
+IfcConvert is a command-line application for converting IFC geometry into
+file formats such as OBJ, DAE, GLB, STP, IGS, XML, and SVG.
 
 .. toctree::
+   :hidden:
    :maxdepth: 1
    :caption: Contents:
 
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   ifcconvert/installation
+   ifcconvert/usage

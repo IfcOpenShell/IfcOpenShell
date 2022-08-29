@@ -56,8 +56,9 @@ Pre-built packages
    compile it yourself manually, but this requires a level of technical
    expertise.
 
-2. Copy the ``ifcopenshell`` directory into your Python path. If you're not sure
-   where your Python path is, run the following code in Python:
+2. Unzip the downloaded file and copy the ``ifcopenshell`` directory into your
+   Python path. If you're not sure where your Python path is, run the following
+   code in Python:
 
    .. code-block:: python
    
