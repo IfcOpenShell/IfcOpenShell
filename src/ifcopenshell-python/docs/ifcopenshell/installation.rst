@@ -1,6 +1,15 @@
 Installation
 ============
 
+If you'd like to work with the C++ core of IfcOpenShell, these guides will show
+you how to compile and install IfcOpenShell.
+
+.. note::
+
+    It is not necessary to compile IfcOpenShell if you only want to use
+    IfcOpenShell-Python, IfcConvert, or the other utilities such as IfcClash or
+    IfcDiff. Compilation is only necessary for C++ developers.
+
 You will need:
 
 - `Git <https://git-scm.com/>`__
