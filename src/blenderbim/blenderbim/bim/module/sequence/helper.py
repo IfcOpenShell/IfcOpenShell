@@ -16,38 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import math
 import isodate
-import datetime
 from dateutil import parser
-from ifcopenshell.api.sequence.data import Data
+import ifcopenshell.util.date as ifcdateutils
 
 
-def derive_date(ifc_definition_id, attribute_name, date=None, is_earliest=False, is_latest=False):
-    task = Data.tasks[ifc_definition_id]
-    if task["TaskTime"]:
-        current_date = Data.task_times[task["TaskTime"]][attribute_name]
+def derive_date(task, attribute_name, date=None, is_earliest=False, is_latest=False):
+    if task.TaskTime:
+        current_date = (
+            ifcdateutils.ifc2datetime(getattr(task.TaskTime, attribute_name))
+            if getattr(task.TaskTime, attribute_name)
+            else ""
+        )
         if current_date:
             return current_date
-    for subtask in task["RelatedObjects"]:
-        current_date = derive_date(subtask, attribute_name, date=date, is_earliest=is_earliest, is_latest=is_latest)
-        if is_earliest:
-            if current_date and (date is None or current_date < date):
-                date = current_date
-        if is_latest:
-            if current_date and (date is None or current_date > date):
-                date = current_date
-    return date
-
-
-def derive_duration(ifc_definition_id, attribute_name):
-    task = Data.tasks[ifc_definition_id]
-    if task["TaskTime"]:
-        current_date = Data.task_times[task["TaskTime"]][attribute_name]
-        if current_date:
-            return current_date
-    for subtask in task["RelatedObjects"]:
+    for subtask in get_nested_tasks(task):
         current_date = derive_date(subtask, attribute_name, date=date, is_earliest=is_earliest, is_latest=is_latest)
         if is_earliest:
             if current_date and (date is None or current_date < date):
@@ -79,3 +62,30 @@ def canonicalise_time(time):
     if not time:
         return "-"
     return time.strftime("%d/%m/%y")
+
+
+def get_nested_tasks(task):
+    tasks = []
+    for rel in task.IsNestedBy:
+        for object in rel.RelatedObjects:
+            if object.is_a("IfcTask"):
+                tasks.append(object)
+    return tasks
+
+
+def get_parent_task(task):
+    return task.Nests[0].RelatingObject if task.Nests and task.Nests[0].RelatingObject.is_a("IfcTask") else None
+
+
+def get_task_work_schedule(task):
+    parent_task = get_parent_task(task)
+    if parent_task:
+        get_task_work_schedule(parent_task)
+    else:
+        schedules = [
+            rel.RelatingControl
+            for rel in task.HasAssignments
+            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule")
+        ]
+        print(f"Returning {schedules}")
+        return schedules

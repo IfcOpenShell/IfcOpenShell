@@ -423,13 +423,79 @@ class Selector:
 
 @interface
 class Sequence:
-    def disable_editing_work_plan(cls): pass
+    def get_work_plan_attributes(cls): pass
+    def load_work_plan_attributes(cls, work_plan): pass
+    def get_nested_tasks(cls, task):pass
     def enable_editing_work_plan(cls, work_plan): pass
-    def export_attributes(cls): pass
-    def get_current_ifc_work_plan(cls): pass
-    def get_ifc_work_plan_attributes(cls): pass
-    def load_work_plan_attributes(cls): pass
-    def load_work_plans(cls): pass
+    def disable_editing_work_plan(cls): pass
+    def enable_editing_work_plan_schedules(cls, work_plan): pass
+    def get_work_schedule_attributes(cls): pass
+    def load_work_schedule_attributes(cls, work_schedule): pass
+    def enable_editing_work_schedule(cls,work_schedule): pass
+    def disable_editing_work_schedule(cls): pass
+    def enable_editing_work_schedule_tasks(cls, work_schedule): pass
+    def create_task_tree(cls, work_schedule): pass
+    def load_task_properties(cls, task): pass
+    def hide_work_plan_hints(cls): pass
+    def show_work_plan_hints(cls): pass
+    def get_active_work_schedule_id(cls): pass
+    def get_selected_resource(cls): pass
+    def expand_task(cls, task): pass
+    def contract_task(cls, task): pass
+    def disable_work_schedule(cls): pass
+    def disable_selecting_deleted_task(cls): pass
+    def get_checked_tasks(cls): pass
+    def get_task_attribute_value(cls, attribute_name): pass
+    def get_active_task(cls): pass
+    def get_task_time(cls, task): pass
+    def load_task_attributes(cls, task): pass
+    def get_selected_products(cls): pass
+    def enable_editing_task(cls, task): pass
+    def get_task_attributes(cls): pass
+    def load_task_time_attributes(cls, task_time): pass
+    def enable_editing_task_time(cls, task): pass
+    def disable_editing_task(cls): pass
+    def get_task_time_attributes(cls): pass
+    def load_task_resources(cls,resources): pass
+    def load_resources(cls): pass 
+    def get_task_inputs(cls, task): pass
+    def load_task_inputs(cls, inputs): pass
+    def load_task_outputs(cls, outputs): pass
+    def get_highlighted_task(cls): pass
+    def get_task_outputs(cls, task): pass
+    def get_task_resources(cls, task):pass
+    def enable_editing_work_calendar_times(cls, work_calendar): pass
+    def load_work_calendar_attributes(cls, work_calendar): pass
+    def enable_editing_work_calendar(cls, work_calendar): pass
+    def disable_editing_work_calendar(cls): pass
+    def get_work_calendar_attributes(cls): pass
+    def load_work_time_attributes(cls, work_time): pass
+    def enable_editing_work_time(cls, work_time): pass
+    def get_work_time_attributes(cls): pass
+    def get_recurrence_pattern_attributes(cls, recurrence_pattern): pass
+    def disable_editing_work_time(cls): pass
+    def get_recurrence_pattern_times(cls): pass
+    def reset_time_period(cls): pass
+    def enable_editing_task_calendar(cls, task): pass
+    def enable_editing_task_sequence(cls, task): pass
+    def disable_editing_task_time(cls): pass
+    def load_rel_sequence_attributes(cls, rel_sequence): pass
+    def enable_editing_rel_sequence_attributes(cls, rel_sequence): pass
+    def load_lag_time_attributes(cls, lag_time): pass
+    def enable_editing_sequence_lag_time(cls, rel_sequence): pass
+    def get_rel_sequence_attributes(cls): pass
+    def disable_editing_rel_sequence(cls): pass
+    def get_lag_time_attributes(cls): pass
+    def select_task_products(cls, products): pass
+    def add_task_column(cls, column_type, name, data_type): pass
+    def remove_task_column(cls, name): pass
+    def set_task_sort_column(cls, column): pass
+    def find_related_output_tasks(cls, column): pass
+    def get_root_task(cls, task): pass
+    def get_task_work_schedule(cls, task): pass
+    def is_work_schedule_active(cls, work_schedule): pass
+    def highlight_task(cls, task): pass
+
 
 
 @interface

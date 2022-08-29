@@ -40,6 +40,7 @@ class LoadResources(bpy.types.Operator):
         self.tprops.resources.clear()
 
         self.contracted_resources = json.loads(self.props.contracted_resources)
+        Data.load(IfcStore.get_file())
         for resource_id, data in Data.resources.items():
             if not data["HasContext"]:
                 continue
@@ -116,7 +117,7 @@ class LoadResourceProperties(bpy.types.Operator):
 
 class DisableEditingResource(bpy.types.Operator):
     bl_idname = "bim.disable_editing_resource"
-    bl_label = "Disable Editing Workplan"
+    bl_label = "Disable Editing Resources"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):

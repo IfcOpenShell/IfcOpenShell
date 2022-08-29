@@ -102,7 +102,8 @@ class EnablePsetEditing(bpy.types.Operator):
     def execute(self, context):
         self.props = get_pset_props(context, self.obj, self.obj_type)
         self.props.properties.clear()
-
+        ifc_definition_id = get_pset_obj_ifc_definition_id(context, self.obj, self.obj_type)
+        Data.load(IfcStore.get_file(), ifc_definition_id)
         data = Data.psets if self.pset_id in Data.psets else Data.qtos
         pset_data = data[self.pset_id]
         self.props.active_pset_name = pset_data["Name"]

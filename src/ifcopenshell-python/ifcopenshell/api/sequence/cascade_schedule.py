@@ -62,7 +62,7 @@ class Usecase:
             predecessor = rel.RelatingProcess
             predecessor_duration = (
                 ifcopenshell.util.date.ifc2datetime(predecessor.TaskTime.ScheduleDuration)
-                if predecessor.TaskTime.ScheduleDuration
+                if predecessor.TaskTime and predecessor.TaskTime.ScheduleDuration
                 else datetime.timedelta()
             )
             if rel.SequenceType == "FINISH_START":

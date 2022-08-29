@@ -57,7 +57,7 @@ Scenario: Enable pset editing - work schedule
     Given an empty IFC project
     And I press "bim.add_work_schedule"
     And the variable "work_schedule" is "{ifc}.by_type('IfcWorkSchedule')[0].id()"
-    And I press "bim.enable_editing_tasks(work_schedule={work_schedule})"
+    And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
     And I set "scene.WorkSchedulePsetProperties.pset_name" to "Pset_WorkControlCommon"
     And I press "bim.add_pset(obj_type='WorkSchedule')"
     And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
@@ -90,7 +90,7 @@ Scenario: Enable pset editing - task
     Given an empty IFC project
     And I press "bim.add_work_schedule"
     And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
-    And I press "bim.enable_editing_tasks(work_schedule={work_schedule})"
+    And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
     And I press "bim.add_summary_task(work_schedule={work_schedule})"
     And I set "scene.TaskPsetProperties.qto_name" to "Qto_TaskBaseQuantities"
     And I press "bim.add_qto(obj_type='Task')"
