@@ -143,7 +143,10 @@ and run your script using the **Text > Run Script** menu or by clicking on the
    interface. `Read more
    <https://blenderbim.org/docs/users/exploring_an_ifc_model.html>`_.
 
+
 Compiling from source
 ---------------------
 
-TODO
+Advanced developers may want to compile IfcOpenShell. Refer to the
+:doc:`IfcOpenShell installation guide <../ifcopenshell/installation>` for
+instructions.
