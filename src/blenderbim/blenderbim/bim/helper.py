@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+# from datetime import date
 import bpy
 import json
 import math
@@ -46,6 +47,11 @@ def draw_attribute(attribute, layout, copy_operator=None):
             value_name,
             text=attribute.name,
         )
+    if "ScheduleDuration" in attribute.name:
+        layout.prop(bpy.context.scene.BIMDuration, "duration_days",text="D")
+        layout.prop(bpy.context.scene.BIMDuration, "duration_hours",text="H")
+        layout.prop(bpy.context.scene.BIMDuration, "duration_minutes",text="M")
+
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
     if copy_operator:
@@ -78,6 +84,7 @@ def import_attribute(attribute, props, data, callback=None):
     new.is_optional = attribute.optional()
     new.data_type = data_type if isinstance(data_type, str) else ""
     is_handled_by_callback = callback(attribute.name(), new, data) if callback else None
+
     if is_handled_by_callback:
         pass  # Our job is done
     elif is_handled_by_callback is False:
@@ -96,8 +103,7 @@ def import_attribute(attribute, props, data, callback=None):
         new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
         if data[attribute.name()]:
             new.enum_value = data[attribute.name()]
-
-
+            
 def export_attributes(props, callback=None):
     attributes = {}
     for prop in props:

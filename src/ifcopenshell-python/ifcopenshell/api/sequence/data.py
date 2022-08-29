@@ -21,7 +21,6 @@ import ifcopenshell.util.date
 
 class Data:
     is_loaded = False
-    work_plans = {}
     work_schedules = {}
     work_calendars = {}
     work_times = {}
@@ -35,7 +34,6 @@ class Data:
     @classmethod
     def purge(cls):
         cls.is_loaded = False
-        cls.work_plans = {}
         cls.work_schedules = {}
         cls.work_calendars = {}
         cls.work_times = {}
@@ -51,7 +49,6 @@ class Data:
         cls._file = file
         if not cls._file:
             return
-        cls.load_work_plans()
         cls.load_work_schedules()
         cls.load_work_calendars()
         cls.load_work_times()
@@ -62,23 +59,6 @@ class Data:
         cls.load_lag_times()
         cls.load_sequences()
         cls.is_loaded = True
-
-    @classmethod
-    def load_work_plans(cls):
-        cls.work_plans = {}
-        for work_plan in cls._file.by_type("IfcWorkPlan"):
-            data = work_plan.get_info()
-            del data["OwnerHistory"]
-            if data["Creators"]:
-                data["Creators"] = [p.id() for p in data["Creators"]]
-            data["CreationDate"] = ifcopenshell.util.date.ifc2datetime(data["CreationDate"])
-            data["StartTime"] = ifcopenshell.util.date.ifc2datetime(data["StartTime"])
-            if data["FinishTime"]:
-                data["FinishTime"] = ifcopenshell.util.date.ifc2datetime(data["FinishTime"])
-            data["IsDecomposedBy"] = []
-            for rel in work_plan.IsDecomposedBy:
-                data["IsDecomposedBy"].extend([o.id() for o in rel.RelatedObjects])
-            cls.work_plans[work_plan.id()] = data
 
     @classmethod
     def load_work_schedules(cls):
