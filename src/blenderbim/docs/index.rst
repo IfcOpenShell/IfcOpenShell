@@ -18,6 +18,7 @@ The BlenderBIM Add-on lets you analyse, create, and modify OpenBIM with Blender.
    users/creating_your_first_ifc
    users/georeferencing
    users/dealing_with_large_models
+   users/other_addons
 
 .. toctree::
    :hidden:
