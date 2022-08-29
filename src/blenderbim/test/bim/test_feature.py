@@ -36,6 +36,8 @@ webbrowser.open = lambda x: True
 
 
 def replace_variables(value):
+    if "{cwd}" in value and os.name == "nt":
+        value = value.replace("/", "\\").replace("{cwd}", os.getcwd()).replace("\\", "\\\\")
     for key, new_value in variables.items():
         value = value.replace("{" + key + "}", str(new_value))
     return value
@@ -633,9 +635,7 @@ def i_display_the_construction_type_browser():
 @when("I add the construction type")
 def i_add_the_active_construction_type():
     props = bpy.context.scene.BIMModelProperties
-    bpy.ops.bim.add_constr_type_instance(
-        ifc_class=props.ifc_class, relating_type_id=int(props.relating_type_id)
-    )
+    bpy.ops.bim.add_constr_type_instance(ifc_class=props.ifc_class, relating_type_id=int(props.relating_type_id))
 
 
 @then(parsers.parse("construction type is {relating_type_name}"))
