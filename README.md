@@ -11,7 +11,6 @@ For more information, see
 
 Service | Status
 --- | ---
-Travis CI | [![Build Status](https://travis-ci.com/IfcOpenShell/IfcOpenShell.svg?branch=v0.6.0)](https://travis-ci.com/IfcOpenShell/IfcOpenShell)
 Anaconda Daily Build | [![Anaconda-Server Badge](https://anaconda.org/ifcopenshell/ifcopenshell/badges/latest_release_date.svg)](https://anaconda.org/ifcopenshell/ifcopenshell)
 Anaconda v0.7.0 Stable | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ifcopenshell/badges/latest_release_date.svg)](https://anaconda.org/conda-forge/ifcopenshell)
 ArchLinux AUR Package | [![AUR Badge](https://img.shields.io/aur/version/ifcopenshell-git)](https://aur.archlinux.org/packages/ifcopenshell-git)
