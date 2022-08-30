@@ -16,6 +16,7 @@ Anaconda v0.7.0 Stable | [![Anaconda-Server Badge](https://anaconda.org/conda-fo
 ArchLinux AUR Package | [![AUR Badge](https://img.shields.io/aur/version/ifcopenshell-git)](https://aur.archlinux.org/packages/ifcopenshell-git)
 BlenderBIM Add-on Chocolatey (under moderation) | [![Chocolatey Badge](https://img.shields.io/chocolatey/v/blenderbim-nightly)](https://community.chocolatey.org/packages/blenderbim-nightly/)
 Sponsor development on OpenCollective | [![Financial Contributors](https://opencollective.com/opensourcebim/tiers/badge.svg)](https://opencollective.com/opensourcebim/)
+Docker hub | [![Docker Pulls](https://img.shields.io/docker/pulls/aecgeeks/ifcopenshell)](https://hub.docker.com/r/aecgeeks/ifcopenshell)
 
 Prerequisites
 -------------
