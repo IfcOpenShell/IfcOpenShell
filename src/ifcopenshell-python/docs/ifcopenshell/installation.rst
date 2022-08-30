@@ -27,10 +27,6 @@ IfcOpenShell depends on:
   and use in the BlenderBIM Add-on
 - (Optional) `HDF5 <https://www.hdfgroup.org/solutions/hdf5>`__ - for caching
   geometry using the HDF5 format
-- (Optional) `3ds Max SDK
-  <http://www.autodesk.com/products/3ds-max/free-trial>`__ - for building the
-  3ds Max plug-in. All recent versions of 3ds Max (2014 and newer) are 64-bit
-  only, so a 64-bit installation is assumed.
 
 Compiling on Linux
 ------------------
@@ -132,7 +128,7 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
               -DOCC_INCLUDE_DIR=/usr/include/ \
 
               # Optional Collada support
-              -COLLADA_SUPPORT=On
+              -DCOLLADA_SUPPORT=On
               -DOPENCOLLADA_INCLUDE_DIR="/usr/local/include/opencollada" \
               -DOPENCOLLADA_LIBRARY_DIR="/usr/local/lib/opencollada"  \
               -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/ \
