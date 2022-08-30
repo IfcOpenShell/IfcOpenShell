@@ -148,8 +148,14 @@ class AuthoringData:
             cls.data["preview_constr_types"][ifc_class] = {}
         cls.data["preview_constr_types"][ifc_class][str(relating_type_id)] = {"icon_id": icon_id, "object": obj}
         if to_be_deleted:
-            for col in obj.users_collection:
-                col.objects.unlink(obj)
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                tool.Ifc.delete(element)
+            tool.Ifc.unlink(obj=obj)
+            # We do not delete the object from the scene, as that breaks Blender's asset system.
+            # Instead, we only "hide" it by unlinking it from all collections.
+            for collection in obj.users_collection:
+                collection.objects.unlink(obj)
 
     @classmethod
     def assetize_relating_type_from_selection(cls, browser=False):
