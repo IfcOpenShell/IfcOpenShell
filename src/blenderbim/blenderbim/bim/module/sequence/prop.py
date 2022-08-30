@@ -287,7 +287,6 @@ class BIMWorkPlanProperties(PropertyGroup):
     active_work_plan_index: IntProperty(name="Active Work Plan Index")
     active_work_plan_id: IntProperty(name="Active Work Plan Id")
     work_schedules: EnumProperty(items=getWorkSchedules, name="Work Schedules")
-    show_work_plan_hints: BoolProperty(name="Show Hints", default=False)
 
 
 class BIMWorkScheduleProperties(PropertyGroup):

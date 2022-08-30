@@ -436,8 +436,6 @@ class Sequence:
     def enable_editing_work_schedule_tasks(cls, work_schedule): pass
     def create_task_tree(cls, work_schedule): pass
     def load_task_properties(cls, task): pass
-    def hide_work_plan_hints(cls): pass
-    def show_work_plan_hints(cls): pass
     def get_active_work_schedule_id(cls): pass
     def get_selected_resource(cls): pass
     def expand_task(cls, task): pass

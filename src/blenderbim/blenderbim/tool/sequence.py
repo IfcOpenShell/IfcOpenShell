@@ -248,14 +248,6 @@ class Sequence(blenderbim.core.tool.Sequence):
         bpy.context.scene.BIMWorkScheduleProperties.is_task_update_enabled = True
 
     @classmethod
-    def hide_work_plan_hints(cls):
-        bpy.context.scene.BIMWorkPlanProperties.show_hints = False
-
-    @classmethod
-    def show_work_plan_hints(cls):
-        bpy.context.scene.BIMWorkPlanProperties.show_hints = True
-
-    @classmethod
     def get_active_work_schedule(cls):
         if not bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
             return None
