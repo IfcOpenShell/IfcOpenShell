@@ -323,7 +323,10 @@ class AddPset(bpy.types.Operator, Operator):
         self.file = IfcStore.get_file()
         pset_name = get_pset_props(context, self.obj, self.obj_type).pset_name
         if self.obj_type == "Object":
-            objects = [o.name for o in context.selected_objects]
+            if context.selected_objects:
+                objects = [o.name for o in context.selected_objects]
+            else:
+                objects = [context.active_object.name]
         else:
             objects = [self.obj]
         for obj in objects:
