@@ -412,8 +412,35 @@ def remove_deep(ifc_file, element):
 
 
 def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
-    # Experimental remove deep proposal. No batch for now until this is more certain. See #1812.
-    # ifc_file.batch()
+    """
+    Recursively purges a subgraph safely, starting at an element
+
+    This should always be used instead of remove_deep. See #1812. The start
+    element must have no inverses. The subgraph to be purged is calculated using
+    all forward relationships determined by the traverse() function.
+
+    The deletion process starts at element and traverses forward through the
+    subgraph. Each subelement is checked for any inverses outside the subgraph.
+    If there are no inverses outside, it may be safely purged. If there are
+    inverses that aren't part of this subgraph, that subelement, and all of its
+    subelements (i.e. that entire branch of subelements) will not be deleted as
+    it is used elsewhere.
+
+    For simple subgraphs, traverse() is sufficient to fully represent all
+    related subelements. When it isn't, the ``also_consider`` argument may be
+    used. These are typically inverses futher down the subelement chain.
+
+    Note that remove_deep2 will _not_ remove elements in also_consider. Instead,
+    it is only used as a consideration for whether or not an element has all
+    inverses fully contained in the subgraph.
+
+    The do_not_delete argument contains all elements that may be part of the
+    subgraph but are protected from deletion.
+
+    :param element: The starting element that defines the subgraph
+    :type element: ifcopenshell.entity_instance.entity_instance
+    """
+    ifc_file.batch()
     to_delete = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
@@ -423,14 +450,15 @@ def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
         subelement = subelement_queue.pop(0)
         if (
             subelement.id()
-            and len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
             and subelement not in do_not_delete
+            and len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
         ):
             to_delete.add(subelement)
             subelement_queue.extend(ifc_file.traverse(subelement, max_levels=1)[1:])
-    for subelement in to_delete:
+    # We delete elements from subgraph in reverse order to allow batching to work
+    for subelement in filter(lambda e: e in to_delete, subgraph[::-1]):
         ifc_file.remove(subelement)
-    # ifc_file.unbatch()
+    ifc_file.unbatch()
 
 
 def copy(ifc_file, element):
