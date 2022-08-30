@@ -42,7 +42,7 @@ def edit_work_plan(ifc, sequence, work_plan=None):
 
 def edit_work_schedule(ifc, sequence, work_schedule=None):
     attributes = sequence.get_work_schedule_attributes()
-    ifc.run("sequence.edit_work_schedule", **{"work_schedule": work_schedule, "attributes": attributes})
+    ifc.run("sequence.edit_work_schedule", work_schedule=work_schedule, attributes=attributes)
     sequence.disable_editing_work_schedule()
 
 
@@ -55,19 +55,16 @@ def add_work_schedule(ifc):
 
 
 def remove_work_schedule(ifc, work_schedule=None):
-    ifc.run("sequence.remove_work_schedule", **{"work_schedule": work_schedule})
+    ifc.run("sequence.remove_work_schedule", work_schedule=work_schedule)
 
 
 def assign_work_schedule(ifc, sequence, work_plan=None, work_schedule=None):
     if work_schedule:
-        sequence.hide_work_plan_hints()
-        return ifc.run("aggregate.assign_object", **{"relating_object": work_plan, "product": work_schedule})
-    else:
-        sequence.show_work_plan_hints()
+        return ifc.run("aggregate.assign_object", relating_object=work_plan, product=work_schedule)
 
 
 def unassign_work_schedule(ifc, work_plan=None, work_schedule=None):
-    ifc.run("aggregate.unassign_object", **{"relating_object": work_plan, "product": work_schedule})
+    ifc.run("aggregate.unassign_object", relating_object=work_plan, product=work_schedule)
 
 
 def enable_editing_work_schedule(sequence, work_schedule=None):
@@ -101,11 +98,10 @@ def contract_task(sequence, task=None):
 
 
 def remove_task(ifc, sequence, task=None):
-    ifc.run("sequence.remove_task", **{"task": task})
+    ifc.run("sequence.remove_task", task=task)
     work_schedule = sequence.get_active_work_schedule()
     sequence.create_task_tree(work_schedule)
     sequence.load_task_properties()
-
     sequence.disable_selecting_deleted_task()
 
 
@@ -118,13 +114,13 @@ def disable_editing_work_schedule(sequence):
 
 
 def add_summary_task(ifc, sequence, work_schedule=None):
-    ifc.run("sequence.add_task", **{"work_schedule": work_schedule})
+    ifc.run("sequence.add_task", work_schedule=work_schedule)
     sequence.create_task_tree(work_schedule)
     sequence.load_task_properties()
 
 
 def add_task(ifc, sequence, parent_task=None):
-    ifc.run("sequence.add_task", **{"parent_task": parent_task})
+    ifc.run("sequence.add_task", parent_task=parent_task)
     work_schedule = sequence.get_active_work_schedule()
     sequence.create_task_tree(work_schedule)
     sequence.load_task_properties()
@@ -137,7 +133,7 @@ def enable_editing_task(sequence, task=None):
 
 def edit_task(ifc, sequence, task=None):
     attributes = sequence.get_task_attributes()
-    ifc.run("sequence.edit_task", **{"task": task, "attributes": attributes})
+    ifc.run("sequence.edit_task", task=task, attributes=attributes)
     sequence.load_task_properties(task=task)
     sequence.disable_editing_task()
 
@@ -146,7 +142,8 @@ def copy_task_attribute(ifc, sequence, attribute_name=None):
     for task in sequence.get_checked_tasks():
         ifc.run(
             "sequence.edit_task",
-            **{"task": task, "attributes": {attribute_name: sequence.get_task_attribute_value(attribute_name)}}
+            task=task,
+            attributes={attribute_name: sequence.get_task_attribute_value(attribute_name)},
         )
         sequence.load_task_properties(task)
 
@@ -158,15 +155,15 @@ def disable_editing_task(sequence):
 def enable_editing_task_time(ifc, sequence, task=None):
     task_time = sequence.get_task_time(task)
     if task_time is None:
-        task_time = ifc.run("sequence.add_task_time", **{"task": task})
+        task_time = ifc.run("sequence.add_task_time", task=task)
     sequence.load_task_time_attributes(task_time)
     sequence.enable_editing_task_time(task)
 
 
 def edit_task_time(ifc, sequence, task_time=None):
     attributes = sequence.get_task_time_attributes()
-    print(task_time)
-    ifc.run("sequence.edit_task_time", **{"task_time": task_time, "attributes": attributes}) # nasty loop goes on when calendar props are messed up
+    # TODO: nasty loop goes on when calendar props are messed up
+    ifc.run("sequence.edit_task_time", task_time=task_time, attributes=attributes)
     task = sequence.get_active_task()
     sequence.load_task_properties(task=task)
     sequence.disable_editing_task_time()
@@ -174,25 +171,25 @@ def edit_task_time(ifc, sequence, task_time=None):
 
 def assign_predecessor(ifc, sequence, task=None):
     predecessor_task = sequence.get_active_task()
-    ifc.run("sequence.assign_sequence", **{"relating_process": task, "related_process": predecessor_task})
+    ifc.run("sequence.assign_sequence", relating_process=task, related_process=predecessor_task)
     sequence.load_task_properties()
 
 
 def unassign_predecessor(ifc, sequence, task=None):
     predecessor_task = sequence.get_active_task()
-    ifc.run("sequence.unassign_sequence", **{"relating_process": task, "related_process": predecessor_task})
+    ifc.run("sequence.unassign_sequence", relating_process=task, related_process=predecessor_task)
     sequence.load_task_properties()
 
 
 def assign_successor(ifc, sequence, task=None):
     successor_task = sequence.get_active_task()
-    ifc.run("sequence.assign_sequence", **{"relating_process": successor_task, "related_process": task})
+    ifc.run("sequence.assign_sequence", relating_process=successor_task, related_process=task)
     sequence.load_task_properties()
 
 
 def unassign_successor(ifc, sequence, task=None):
     successor_task = sequence.get_active_task()
-    ifc.run("sequence.unassign_sequence", **{"relating_process": successor_task, "related_process": task})
+    ifc.run("sequence.unassign_sequence", relating_process=successor_task, related_process=task)
     sequence.load_task_properties()
 
 
@@ -200,7 +197,7 @@ def assign_products(ifc, sequence, task=None, products=None):
     if not products:
         products = sequence.get_selected_products()
     for product in products:
-        ifc.run("sequence.assign_product", **{"relating_product": product, "related_object": task})
+        ifc.run("sequence.assign_product", relating_product=product, related_object=task)
     outputs = sequence.get_task_outputs(task)
     sequence.load_task_outputs(outputs)
 
@@ -209,7 +206,7 @@ def unassign_products(ifc, sequence, task=None, products=None):
     if not products:
         products = sequence.get_selected_products()
     for product in products:
-        ifc.run("sequence.unassign_product", **{"relating_product": product, "related_object": task})
+        ifc.run("sequence.unassign_product", relating_product=product, related_object=task)
     outputs = sequence.get_task_outputs(task)
     sequence.load_task_outputs(outputs)
 
@@ -218,7 +215,7 @@ def assign_input_products(ifc, sequence, task=None, products=None):
     if not products:
         products = sequence.get_selected_products()
     for product in products:
-        ifc.run("sequence.assign_process", **{"relating_process": task, "related_object": product})
+        ifc.run("sequence.assign_process", relating_process=task, related_object=product)
     inputs = sequence.get_task_inputs(task)
     sequence.load_task_inputs(inputs)
 
@@ -227,7 +224,7 @@ def unassign_input_products(ifc, sequence, task=None, products=None):
     if not products:
         products = sequence.get_selected_products()
     for product in products:
-        ifc.run("sequence.unassign_process", **{"relating_process": task, "related_object": product})
+        ifc.run("sequence.unassign_process", relating_process=task, related_object=product)
     inputs = sequence.get_task_inputs(task)
     sequence.load_task_inputs(inputs)
 
@@ -235,17 +232,17 @@ def unassign_input_products(ifc, sequence, task=None, products=None):
 def assign_resource(ifc, sequence, task=None):
     resource = sequence.get_selected_resource()
     sub_resource = ifc.run(
-        "resource.add_resource", **{"parent_resource": resource, "ifc_class": resource.is_a(), "name": resource.Name}
+        "resource.add_resource", parent_resource=resource, ifc_class=resource.is_a(), name=resource.Name
     )
-    ifc.run("sequence.assign_process", **{"relating_process": task, "related_object": sub_resource})
+    ifc.run("sequence.assign_process", relating_process=task, related_object=sub_resource)
     resources = sequence.get_task_resources(task)
     sequence.load_task_resources(resources)
     sequence.load_resources()
 
 
 def unassign_resource(ifc, sequence, task=None, resource=None):
-    ifc.run("sequence.unassign_process", **{"relating_process": task, "related_object": resource})
-    ifc.run("resource.remove_resource", **{"resource": resource})
+    ifc.run("sequence.unassign_process", relating_process=task, related_object=resource)
+    ifc.run("resource.remove_resource", resource=resource)
     resources = sequence.get_task_resources(task)
     sequence.load_task_resources(resources)
     sequence.load_resources()
@@ -270,7 +267,7 @@ def load_task_resources(sequence):
 
 
 def remove_work_calendar(ifc, work_calendar=None):
-    ifc.run("sequence.remove_work_calendar", **{"work_calendar": work_calendar})
+    ifc.run("sequence.remove_work_calendar", work_calendar=work_calendar)
 
 
 def add_work_calendar(ifc):
@@ -279,7 +276,7 @@ def add_work_calendar(ifc):
 
 def edit_work_calendar(ifc, sequence, work_calendar=None):
     attributes = sequence.get_work_calendar_attributes()
-    ifc.run("sequence.edit_work_calendar", **{"work_calendar": work_calendar, "attributes": attributes})
+    ifc.run("sequence.edit_work_calendar", work_calendar=work_calendar, attributes=attributes)
     sequence.disable_editing_work_calendar()
     sequence.load_task_properties()
 
@@ -298,7 +295,7 @@ def enable_editing_work_calendar_times(sequence, work_calendar=None):
 
 
 def add_work_time(ifc, work_calendar=None, time_type=None):
-    return ifc.run("sequence.add_work_time", **{"work_calendar": work_calendar, "time_type": time_type})
+    return ifc.run("sequence.add_work_time", work_calendar=work_calendar, time_type=time_type)
 
 
 def enable_editing_work_time(sequence, work_time=None):
@@ -311,43 +308,38 @@ def disable_editing_work_time(sequence):
 
 
 def remove_work_time(ifc, work_time=None):
-    ifc.run("sequence.remove_work_time", **{"work_time": work_time})
+    ifc.run("sequence.remove_work_time", work_time=work_time)
 
 
 def edit_work_time(ifc, sequence):
     work_time = sequence.get_active_work_time()
-    ifc.run("sequence.edit_work_time", **{"work_time": work_time, "attributes": sequence.get_work_time_attributes()})
+    ifc.run("sequence.edit_work_time", work_time=work_time, attributes=sequence.get_work_time_attributes())
     recurrence_pattern = work_time.RecurrencePattern
     if recurrence_pattern:
         ifc.run(
             "sequence.edit_recurrence_pattern",
-            **{
-                "recurrence_pattern": recurrence_pattern,
-                "attributes": sequence.get_recurrence_pattern_attributes(recurrence_pattern),
-            }
+            recurrence_pattern=recurrence_pattern,
+            attributes=sequence.get_recurrence_pattern_attributes(recurrence_pattern),
         )
     sequence.disable_editing_work_time()
 
 
 def assign_recurrence_pattern(ifc, work_time=None, recurrence_type=None):
-    return ifc.run("sequence.assign_recurrence_pattern", **{"parent": work_time, "recurrence_type": recurrence_type})
+    return ifc.run("sequence.assign_recurrence_pattern", parent=work_time, recurrence_type=recurrence_type)
 
 
 def unassign_recurrence_pattern(ifc, recurrence_pattern=None):
-    ifc.run("sequence.unassign_recurrence_pattern", **{"recurrence_pattern": recurrence_pattern})
+    ifc.run("sequence.unassign_recurrence_pattern", recurrence_pattern=recurrence_pattern)
 
 
 def add_time_period(ifc, sequence, recurrence_pattern=None):
     start_time, end_time = sequence.get_recurrence_pattern_times()
-    ifc.run(
-        "sequence.add_time_period",
-        **{"recurrence_pattern": recurrence_pattern, "start_time": start_time, "end_time": end_time}
-    )
+    ifc.run("sequence.add_time_period", recurrence_pattern=recurrence_pattern, start_time=start_time, end_time=end_time)
     sequence.reset_time_period()
 
 
 def remove_time_period(ifc, time_period=None):
-    ifc.run("sequence.remove_time_period", **{"time_period": time_period})
+    ifc.run("sequence.remove_time_period", time_period=time_period)
 
 
 def enable_editing_task_calendar(sequence, task=None):
@@ -355,14 +347,14 @@ def enable_editing_task_calendar(sequence, task=None):
 
 
 def edit_task_calendar(ifc, sequence, task=None, work_calendar=None):
-    ifc.run("control.assign_control", **{"relating_control": work_calendar, "related_object": task})
-    ifc.run("sequence.cascade_schedule", **{"task": task})
+    ifc.run("control.assign_control", relating_control=work_calendar, related_object=task)
+    ifc.run("sequence.cascade_schedule", task=task)
     sequence.load_task_properties()
 
 
 def remove_task_calendar(ifc, sequence, task=None, work_calendar=None):
-    ifc.run("control.unassign_control", **{"relating_control": work_calendar, "related_object": task})
-    ifc.run("sequence.cascade_schedule", **{"task": task})
+    ifc.run("control.unassign_control", relating_control=work_calendar, related_object=task)
+    ifc.run("sequence.cascade_schedule", task=task)
     sequence.load_task_properties()
 
 
@@ -391,24 +383,24 @@ def enable_editing_sequence_lag_time(sequence, rel_sequence=None, lag_time=None)
 
 
 def unassign_lag_time(ifc, sequence, rel_sequence=None):
-    ifc.run("sequence.unassign_lag_time", **{"rel_sequence": rel_sequence})
+    ifc.run("sequence.unassign_lag_time", rel_sequence=rel_sequence)
     sequence.load_task_properties()
 
 
 def assign_lag_time(ifc, rel_sequence=None):
-    ifc.run("sequence.assign_lag_time", **{"rel_sequence": rel_sequence, "lag_value": "P1D"})
+    ifc.run("sequence.assign_lag_time", rel_sequence=rel_sequence, lag_value="P1D")
 
 
 def edit_sequence_attributes(ifc, sequence, rel_sequence=None):
     attributes = sequence.get_rel_sequence_attributes()
-    ifc.run("sequence.edit_sequence", **{"rel_sequence": rel_sequence, "attributes": attributes})
+    ifc.run("sequence.edit_sequence", rel_sequence=rel_sequence, attributes=attributes)
     sequence.disable_editing_rel_sequence()
     sequence.load_task_properties()
 
 
 def edit_sequence_lag_time(ifc, sequence, lag_time=None):
     attributes = sequence.get_lag_time_attributes()
-    ifc.run("sequence.edit_lag_time", **{"lag_time": lag_time, "attributes": attributes})
+    ifc.run("sequence.edit_lag_time", lag_time=lag_time, attributes=attributes)
     sequence.disable_editing_rel_sequence()
     sequence.load_task_properties()
 
@@ -418,18 +410,17 @@ def disable_editing_rel_sequence(sequence):
 
 
 def select_task_outputs(ifc, sequence, task=None):
-    outputs = sequence.get_task_outputs(task)  ## should this be from the api instead ?
+    outputs = sequence.get_task_outputs(task)
     sequence.select_task_products(outputs)
 
 
 def select_task_inputs(ifc, sequence, task=None):
-    inputs = sequence.get_task_inputs(task)  ## should this be from the api instead ?
-    print(inputs)
+    inputs = sequence.get_task_inputs(task)
     sequence.select_task_products(inputs)
 
 
 def recalculate_schedule(ifc, work_schedule=None):
-    ifc.run("sequence.recalculate_schedule", **{"work_schedule": work_schedule})
+    ifc.run("sequence.recalculate_schedule", work_schedule=work_schedule)
 
 
 def add_task_column(sequence, column_type=None, name=None, data_type=None):
@@ -445,7 +436,7 @@ def set_task_sort_column(sequence, column=None):
 
 
 def calculate_task_duration(ifc, sequence, task=None):
-    ifc.run("sequence.calculate_task_duration", **{"task": task})
+    ifc.run("sequence.calculate_task_duration", task=task)
     work_schedule = sequence.get_active_work_schedule()
     if work_schedule:
         sequence.create_task_tree(work_schedule)

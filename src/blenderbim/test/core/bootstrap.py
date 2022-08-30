@@ -176,6 +176,13 @@ def selector():
 
 
 @pytest.fixture
+def sequence():
+    prophet = Prophecy(blenderbim.core.tool.Sequence)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def spatial():
     prophet = Prophecy(blenderbim.core.tool.Spatial)
     yield prophet

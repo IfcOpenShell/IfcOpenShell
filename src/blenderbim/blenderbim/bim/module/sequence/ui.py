@@ -101,7 +101,7 @@ class BIM_PT_work_plans(Panel):
                 op.work_schedule = int(self.props.work_schedules)
         else:
             row = self.layout.row()
-            row.label(text="Must Create a WorkSchedule First. See Work Schedule Panel", icon="INFO")
+            row.label(text="No schedules found. See Work Schedule Panel", icon="INFO")
 
 
 class BIM_PT_work_schedules(Panel):
