@@ -4038,7 +4038,8 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTo
 
 		a = util::unify(a_input, fuzziness * 1000.);
 
-		Logger::Notice(
+		Logger::Message(
+			Logger::LOG_DEBUG,
 			"Simplified operand A from "s +
 			std::to_string(count(a_input, TopAbs_FACE)) +
 			" to "s +
@@ -4049,7 +4050,8 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_input, const TopTo
 			TopTools_ListIteratorOfListOfShape it(b_input);
 			for (; it.More(); it.Next()) {
 				b.Append(util::unify(it.Value(), fuzziness));
-				Logger::Notice(
+				Logger::Message(
+					Logger::LOG_DEBUG,
 					"Simplified operand B from "s +
 					std::to_string(count(it.Value(), TopAbs_FACE)) +
 					" to "s +

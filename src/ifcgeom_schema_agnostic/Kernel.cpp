@@ -5,6 +5,10 @@
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 
+#include <TopoDS.hxx>
+#include <TopoDS_Vertex.hxx>
+#include <TopoDS_Edge.hxx>
+
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
 
@@ -258,6 +262,16 @@ bool IfcGeom::Kernel::is_manifold(const TopoDS_Shape& a) {
 		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
 
 		for (int i = 1; i <= map.Extent(); ++i) {
+			const TopoDS_Edge& e = TopoDS::Edge(map.FindKey(i));
+
+			TopoDS_Vertex v0, v1;
+			TopExp::Vertices(e, v0, v1);
+			const bool degenerate = !v0.IsNull() && !v1.IsNull() && v0.IsSame(v1);
+
+			if (degenerate) {
+				continue;
+			}
+
 			if (map.FindFromIndex(i).Extent() != 2) {
 				return false;
 			}
