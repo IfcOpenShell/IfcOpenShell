@@ -45,8 +45,18 @@ double IfcGeom::util::min_edge_length(const TopoDS_Shape & a) {
 	double min_edge_len = std::numeric_limits<double>::infinity();
 	TopExp_Explorer exp(a, TopAbs_EDGE);
 	for (; exp.More(); exp.Next()) {
+		const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
+		
+		TopoDS_Vertex v0, v1;
+		TopExp::Vertices(e, v0, v1);
+		if (!v0.IsNull() && !v1.IsNull() && v0.IsSame(v1)) {
+			// Don't consider a 3d-degenerate edge (for example cone apex)
+			// in calculating overall shape min edge length.
+			continue;
+		}
+
 		GProp_GProps prop;
-		BRepGProp::LinearProperties(exp.Current(), prop);
+		BRepGProp::LinearProperties(e, prop);
 		double l = prop.Mass();
 		if (l < min_edge_len) {
 			min_edge_len = l;
