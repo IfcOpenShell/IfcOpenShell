@@ -6,6 +6,7 @@ There are different methods of installation, depending on your situation.
 1. **Pre-built packages** is recommended for users wanting to use the latest IfcOpenShell builds.
 2. **Conda** is recommended for developers using Anaconda.
 3. **Compiling from source** is recommended for developers actively working with the C++ core.
+4. **Packaged installation** is recommended for those who use a package manager.
 
 Pre-built packages
 ------------------
@@ -49,3 +50,8 @@ Compiling from source
 Advanced developers may want to compile IfcOpenShell. Refer to the
 :doc:`IfcOpenShell installation guide <../ifcopenshell/installation>` for
 instructions.
+
+Packaged installation
+---------------------
+
+- **Arch Linux**: `Direct from Git <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
