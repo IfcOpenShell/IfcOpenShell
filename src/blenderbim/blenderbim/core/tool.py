@@ -489,8 +489,7 @@ class Sequence:
     def remove_task_column(cls, name): pass
     def set_task_sort_column(cls, column): pass
     def find_related_output_tasks(cls, column): pass
-    def get_root_task(cls, task): pass
-    def get_task_work_schedule(cls, task): pass
+    def get_work_schedule(cls, task): pass
     def is_work_schedule_active(cls, work_schedule): pass
     def highlight_task(cls, task): pass
 

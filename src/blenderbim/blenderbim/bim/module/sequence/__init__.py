@@ -20,6 +20,8 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.ExpandAllTasks,
+    operator.ContractAllTasks,
     operator.AddSummaryTask,
     operator.AddTask,
     operator.AddTaskColumn,
