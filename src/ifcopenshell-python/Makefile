@@ -4,7 +4,6 @@ PLATFORM:=linux
 
 ifeq ($(PYVERSION), py36)
 PYNUMBER:=36
-ABITAG:=cp36m
 endif
 ifeq ($(PYVERSION), py37)
 PYNUMBER:=37
