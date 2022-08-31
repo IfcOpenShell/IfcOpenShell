@@ -18,8 +18,8 @@ You will need:
 IfcOpenShell depends on:
 
 - `Boost <http://www.boost.org/>`__
-- (Optional) `OpenCascade <https://dev.opencascade.org/>`__ - for building IfcGeom
-  For converting IFC representation items into BRep solids and tessellated meshes
+- `OpenCascade <https://dev.opencascade.org/>`__ - for building IfcGeom For
+  converting IFC representation items into BRep solids and tessellated meshes
 - (Optional) `OpenCOLLADA <https://github.com/khronosGroup/OpenCOLLADA/>`__ -
   for IfcConvert to be able to write tessellated Collada (.dae) files
 - (Optional) `SWIG <http://www.swig.org/>`__ and `Python
