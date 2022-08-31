@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.HighlightProductRelatedTask,
     operator.ExpandAllTasks,
     operator.ContractAllTasks,
     operator.AddSummaryTask,
@@ -127,6 +128,7 @@ classes = (
     ui.BIM_UL_task_resources,
     ui.BIM_UL_task_outputs,
     ui.BIM_UL_tasks,
+    ui.BIM_PT_SequenceToolKit,
 )
 
 
