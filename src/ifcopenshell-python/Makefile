@@ -77,7 +77,7 @@ else
 endif
 	rm -rf dist/working
 	python -m build
-	cd dist && mv ifcopenshell-0.7.0-py3-none-any.whl ifcopenshell-0.7.0-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+	cd dist && mv ifcopenshell_python-0.7.0-py3-none-any.whl ifcopenshell_python-0.7.0-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 	rm -rf dist/ifcopenshell
-	rm -rf dist/ifcopenshell.egg-info
-	rm -rf dist/ifcopenshell-0.7.0.tar.gz
+	rm -rf dist/ifcopenshell_python.egg-info
+	rm -rf dist/ifcopenshell-python-0.7.0.tar.gz
