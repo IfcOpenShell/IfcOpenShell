@@ -24,7 +24,7 @@ RUN echo "deb http://archive.ubuntu.com/ubuntu focal-proposed main restricted" |
     apt-get -qq update; \
     apt-get -y install tzdata dos2unix rsync; \
     apt-get -y install python3 libxml2 libpython3.8 \
-                    libboost-program-options-dev libboost-regex-dev \
+                    libboost-all-dev \
                     libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev \
                     libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
                     libhdf5-serial-dev ; \
