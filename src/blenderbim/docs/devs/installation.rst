@@ -155,7 +155,7 @@ changes, you'll need to fix your setup manually. But this is relatively rare.
 Packaged installation
 ---------------------
 
-- **Arch Linux**: `Stable <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
+- **Arch Linux**: `Direct from Git <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
 - **Chocolatey on Windows**: `Unstable <https://community.chocolatey.org/packages/blenderbim-nightly/>`__.
 
 Tips for package managers

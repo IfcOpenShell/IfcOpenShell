@@ -4,10 +4,11 @@ Installation
 There are different methods of installation, depending on your situation.
 
 1. **Pre-built packages** is recommended for users wanting to use the latest IfcOpenShell builds.
-2. **Pip** is recommended for managing a more stable IfcOpenShell version.
+2. **PyPI** is recommended for developers using Pip.
 3. **Conda** is recommended for developers using Anaconda.
-4. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a graphical interface.
-5. **Compiling from source** is recommended for developers actively working with the C++ core.
+4. **Docker** is recommended for developers using Docker.
+5. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a graphical interface.
+6. **Compiling from source** is recommended for developers actively working with the C++ core.
 
 Pre-built packages
 ------------------
@@ -61,7 +62,7 @@ Pre-built packages
    code in Python:
 
    .. code-block:: python
-   
+
       import sys
       print(sys.path)
 
@@ -77,10 +78,12 @@ Pre-built packages
       print(ifcopenshell.version)
       model = ifcopenshell.file()
 
-Pip
----
+PyPI
+----
 
-TODO
+.. code-block::
+
+    pip install ifcopenshell-python
 
 Conda
 -----
@@ -95,6 +98,17 @@ Conda
 .. note::
 
     Installing IfcOpenShell from Conda will also install IfcConvert.
+
+Docker
+------
+
+.. code-block::
+
+    $ docker run -it aecgeeks/ifcopenshell python3 -c 'import ifcopenshell; print(ifcopenshell.version)'
+
+.. note::
+
+    Installing IfcOpenShell from Docker will also install IfcConvert.
 
 Using the BlenderBIM Add-on
 ---------------------------
