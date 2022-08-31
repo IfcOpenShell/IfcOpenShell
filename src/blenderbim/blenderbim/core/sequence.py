@@ -454,3 +454,17 @@ def calculate_task_duration(ifc, sequence, task=None):
     if work_schedule:
         sequence.create_task_tree(work_schedule)
         sequence.load_task_properties()
+
+
+def highlight_product_related_task(sequence, product_type=None):
+    products = sequence.get_selected_products()
+    if products:
+        if product_type == "Output":
+            tasks = sequence.find_related_output_tasks(products[0])
+        elif product_type == "Input":
+            tasks = sequence.find_related_input_tasks(products[0])
+        for task in tasks:
+            work_schedule = sequence.get_work_schedule(task)
+            is_work_schedule_active = sequence.is_work_schedule_active(work_schedule)
+            if is_work_schedule_active:
+                sequence.highlight_task(task)
