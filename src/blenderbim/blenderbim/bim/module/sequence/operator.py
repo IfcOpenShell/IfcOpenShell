@@ -1507,3 +1507,23 @@ class CalculateTaskDuration(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.calculate_task_duration(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(self.task))
+class ExpandAllTasks(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.expand_all_tasks"
+    bl_label = "Expands all tasks"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Finds the related Task"
+    product_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.expand_all_tasks(tool.Sequence)
+
+
+class ContractAllTasks(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.contract_all_tasks"
+    bl_label = "Expands all tasks"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Finds the related Task"
+    product_type: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.contract_all_tasks(tool.Sequence)

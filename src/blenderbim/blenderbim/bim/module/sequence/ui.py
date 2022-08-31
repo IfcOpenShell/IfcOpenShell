@@ -252,6 +252,9 @@ class BIM_PT_work_schedules(Panel):
             self.props,
             "active_task_index",
         )
+        row = self.layout.row()
+        row.operator("bim.expand_all_tasks", text="Expand All Tasks")
+        row.operator("bim.contract_all_tasks", text="Contract All Tasks")
         if self.props.active_task_id and self.props.editing_task_type == "ATTRIBUTES":
             self.draw_editable_task_attributes_ui()
         elif self.props.active_task_id and self.props.editing_task_type == "CALENDAR":

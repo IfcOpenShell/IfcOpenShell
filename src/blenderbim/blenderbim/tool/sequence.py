@@ -123,7 +123,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def create_task_tree(cls, work_schedule):
-        def get_work_schedule_root_tasks(work_schedule):
+        def get_root_tasks_ids(work_schedule):
             related_objects_ids = []
             if work_schedule.Controls:
                 for rel in work_schedule.Controls:
@@ -136,7 +136,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         props = bpy.context.scene.BIMWorkScheduleProperties
         cls.contracted_tasks = json.loads(props.contracted_tasks)
 
-        related_objects_ids = get_work_schedule_root_tasks(work_schedule)
+        related_objects_ids = get_root_tasks_ids(work_schedule)
         if not related_objects_ids:
             return
         cls.sort_keys = {i: cls.get_sort_key(tool.Ifc.get().by_id(i)) for i in related_objects_ids}
@@ -269,6 +269,19 @@ class Sequence(blenderbim.core.tool.Sequence):
         props.contracted_tasks = json.dumps(contracted_tasks)
 
     @classmethod
+    def expand_all_tasks(cls):
+        bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks = json.dumps([])
+
+    @classmethod
+    def contract_all_tasks(cls):
+        props = bpy.context.scene.BIMWorkScheduleProperties
+        contracted_tasks = json.loads(props.contracted_tasks)
+        for task_item in bpy.context.scene.BIMTaskTreeProperties.tasks:
+            if task_item.is_expanded:
+                contracted_tasks.append(task_item.ifc_definition_id)
+        props.contracted_tasks = json.dumps(contracted_tasks)
+
+    @classmethod
     def contract_task(cls, task):
         props = bpy.context.scene.BIMWorkScheduleProperties
         contracted_tasks = json.loads(props.contracted_tasks)
@@ -310,7 +323,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_task_time(cls, task):
-            return task.TaskTime if task.TaskTime else None
+        return task.TaskTime if task.TaskTime else None
 
     @classmethod
     def load_task_attributes(cls, task):
@@ -342,17 +355,19 @@ class Sequence(blenderbim.core.tool.Sequence):
             if prop.data_type == "string":
                 if name == "ScheduleDuration" and data[name] and isinstance(data[name], str):
                     time_object = ifcopenshell.util.date.ifc2datetime(data[name])
-                    minutes = int(round(time_object.seconds/60 % 60))
-                    hours = (time_object.seconds - minutes*60)/60/60
+                    minutes = int(round(time_object.seconds / 60 % 60))
+                    hours = (time_object.seconds - minutes * 60) / 60 / 60
                     bpy.context.scene.BIMDuration.duration_days = int(time_object.days)
                     bpy.context.scene.BIMDuration.duration_hours = round(hours)
-                    bpy.context.scene.BIMDuration.duration_minutes = minutes # should consider years, months and seconds.
+                    bpy.context.scene.BIMDuration.duration_minutes = (
+                        minutes  # should consider years, months and seconds.
+                    )
                 if isinstance(data[name], datetime):
                     prop.string_value = "" if prop.is_null else data[name].isoformat()
                     if name == "ScheduleDuration":
                         bpy.context.scene.BIMDuration.duration_days = data[name].days
                         bpy.context.scene.BIMDuration.duration_hours = round(data[name].seconds / 60 / 60)
-                        bpy.context.scene.BIMDuration.duration_minutes = data[name].seconds/60 % 60
+                        bpy.context.scene.BIMDuration.duration_minutes = data[name].seconds / 60 % 60
                     return True
                 elif isinstance(data[name], isodate.Duration):
                     prop.string_value = (
@@ -390,7 +405,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                     return True
                 # TODO make this parse PT32 as P4D
                 attributes[prop.name] = helper.parse_duration(prop.string_value)
-                dprops= bpy.context.scene.BIMDuration
+                dprops = bpy.context.scene.BIMDuration
                 duration_days = dprops.duration_days if dprops.duration_days else 0
                 duration_hours = dprops.duration_hours if dprops.duration_hours else 0
                 duration_minutes = dprops.duration_minutes if dprops.duration_minutes else 0
@@ -638,7 +653,6 @@ class Sequence(blenderbim.core.tool.Sequence):
         props.active_sequence_id = rel_sequence.id()
         props.editing_sequence_type = "ATTRIBUTES"
 
-
     @classmethod
     def load_lag_time_attributes(cls, lag_time):
         def callback(name, prop, data):
@@ -716,19 +730,12 @@ class Sequence(blenderbim.core.tool.Sequence):
         return related_tasks
 
     @classmethod
-    def get_root_task(cls, task):
-        return (
-            task
-            if not task.Nests or not task.Nests[0].RelatingObject.is_a("IfcTask")
-            else cls.get_root_task(task.Nests[0].RelatingObject)
-        )
-
-    @classmethod
-    def get_task_work_schedule(cls, task):
-        if task.HasAssignments:
-            for rel in task.HasAssignments:
-                if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
-                    return rel.RelatingControl
+    def get_work_schedule(cls, task):
+        for rel in task.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
+                return rel.RelatingControl
+        for rel in task.Nests or []:
+            return cls.get_work_schedule(rel.RelatingObject)
 
     @classmethod
     def is_work_schedule_active(cls, work_schedule):
@@ -737,10 +744,41 @@ class Sequence(blenderbim.core.tool.Sequence):
         )
 
     @classmethod
+    def get_work_schedule(cls, task):
+        for rel in task.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
+                return rel.RelatingControl
+        for rel in task.Nests or []:
+            return cls.get_work_schedule(rel.RelatingObject)
+
+    @classmethod
+    def expand_ancestors(cls, task):
+        for rel in task.Nests or []:
+            parent_task = rel.RelatingObject if rel.RelatingObject.is_a("IfcTask") else None
+            print(parent_task)
+            contracted_tasks = json.loads(bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks)
+            if parent_task and parent_task.id() in contracted_tasks:
+                contracted_tasks.remove(parent_task.id())
+                bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks = json.dumps(contracted_tasks)
+                cls.expand_ancestors(parent_task)
+
+    @classmethod
     def highlight_task(cls, task):
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        def expand_ancestors(task):
+            for rel in task.Nests or []:
+                parent_task = rel.RelatingObject if rel.RelatingObject.is_a("IfcTask") else None
+                contracted_tasks = json.loads(bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks)
+                if parent_task and parent_task.id() in contracted_tasks:
+                    contracted_tasks.remove(parent_task.id())
+                    bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks = json.dumps(contracted_tasks)
+                    expand_ancestors(parent_task)
+            work_schedule = cls.get_active_work_schedule()
+            cls.create_task_tree(work_schedule)
+            cls.load_task_properties()
+
         task_props = bpy.context.scene.BIMTaskTreeProperties
-        task_id = task.id()
-        task_index = [task.ifc_definition_id for task in task_props.tasks].index(task_id)
-        if task_index:
-            props.active_task_index = task_index
+        displayed_tasks = [item.ifc_definition_id for item in task_props.tasks]
+        if not task.id() in displayed_tasks:
+            expand_ancestors(task)
+        task_index = [item.ifc_definition_id for item in task_props.tasks].index(task.id()) or 0
+        bpy.context.scene.BIMWorkScheduleProperties.active_task_index = task_index

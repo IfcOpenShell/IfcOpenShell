@@ -662,3 +662,55 @@ Scenario: Assign task calendar with no working time
     And I set "scene.BIMWorkScheduleProperties.task_time_attributes.get('ScheduleFinish').string_value" to "2021-01-06"
     And I press "bim.edit_task_time"
     Then nothing happens
+
+Scenario: Contract Task
+    Given an empty IFC project
+    When I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
+    And I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And the variable "summary_task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    When I press "bim.add_task(task={summary_task})"
+    And I press "bim.contract_task(task={summary_task})"
+    Then nothing happens
+
+Scenario: Expand Task
+    Given an empty IFC project
+    When I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
+    And I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And the variable "summary_task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    When I press "bim.add_task(task={summary_task})"
+    And I press "bim.contract_task(task={summary_task})"
+    And I press "bim.expand_task(task={summary_task})"
+    Then nothing happens
+
+Scenario: Contract All Tasks
+    Given an empty IFC project
+    When I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
+    And I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And the variable "summary_task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    When I press "bim.add_task(task={summary_task})"
+    And the variable "nested_task_one" is "IfcStore.get_file().by_type('IfcTask')[1].id()"
+    When I press "bim.add_task(task={summary_task})"
+    And the variable "nested_task_two" is "IfcStore.get_file().by_type('IfcTask')[1].id()"
+    When I press "bim.contract_all_tasks()"
+    Then nothing happens
+
+Scenario: Expand All Tasks
+    Given an empty IFC project
+    When I press "bim.add_work_schedule"
+    And the variable "work_schedule" is "IfcStore.get_file().by_type('IfcWorkSchedule')[0].id()"
+    And I press "bim.enable_editing_work_schedule_tasks(work_schedule={work_schedule})"
+    And I press "bim.add_summary_task(work_schedule={work_schedule})"
+    And the variable "summary_task" is "IfcStore.get_file().by_type('IfcTask')[0].id()"
+    When I press "bim.add_task(task={summary_task})"
+    And the variable "nested_task_one" is "IfcStore.get_file().by_type('IfcTask')[1].id()"
+    When I press "bim.add_task(task={summary_task})"
+    And the variable "nested_task_two" is "IfcStore.get_file().by_type('IfcTask')[1].id()"
+    And I press "bim.contract_all_tasks()"
+    When I press "bim.expand_all_tasks()"
+    Then nothing happens

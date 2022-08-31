@@ -90,12 +90,25 @@ def expand_task(sequence, task=None):
     sequence.load_task_properties()
 
 
+def expand_all_tasks(sequence):
+    sequence.expand_all_tasks()
+    work_schedule = sequence.get_active_work_schedule()
+    sequence.create_task_tree(work_schedule)
+    sequence.load_task_properties()
+
+
 def contract_task(sequence, task=None):
     sequence.contract_task(task)
     work_schedule = sequence.get_active_work_schedule()
     sequence.create_task_tree(work_schedule)
     sequence.load_task_properties()
 
+
+def contract_all_tasks(sequence):
+    sequence.contract_all_tasks()
+    work_schedule = sequence.get_active_work_schedule()
+    sequence.create_task_tree(work_schedule)
+    sequence.load_task_properties()
 
 def remove_task(ifc, sequence, task=None):
     ifc.run("sequence.remove_task", task=task)
