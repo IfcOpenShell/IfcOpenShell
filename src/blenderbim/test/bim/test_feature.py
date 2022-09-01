@@ -29,7 +29,7 @@ from mathutils import Vector
 
 scenarios("feature")
 
-variables = {"cwd": os.getcwd(), "ifc": "IfcStore.get_file()"}
+variables = {"cwd": os.getcwd(), "ifc": "IfcStore.get_file()", "pset_ifc": "IfcStore.pset_template_file"}
 
 # Monkey-patch webbrowser opening since we want to test headlessly
 webbrowser.open = lambda x: True

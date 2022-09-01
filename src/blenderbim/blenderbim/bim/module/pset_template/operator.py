@@ -240,6 +240,7 @@ class AddPropTemplate(bpy.types.Operator, Operator):
             IfcStore.pset_template_file,
             **{"pset_template": IfcStore.pset_template_file.by_id(pset_template_id)}
         )
+        bpy.ops.bim.disable_editing_prop_template()
 
 
 class RemovePropTemplate(bpy.types.Operator, Operator):
@@ -294,7 +295,7 @@ class EditPropTemplate(bpy.types.Operator, Operator):
             "IFCPROPERTYENUMERATION",
             Name=prop.name,
             EnumerationValues=tuple(
-                self.file.create_entity(prop.primary_measure_type, ev[data_type]) for ev in prop.enum_values
+                self.file.create_entity(prop.primary_measure_type, getattr(ev, data_type)) for ev in prop.enum_values
             ),
         )
         return prop_enum
