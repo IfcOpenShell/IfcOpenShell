@@ -21,6 +21,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.util.placement
 
+
 class Patcher:
     def __init__(self, src, file, logger, args=None):
         self.src = src
@@ -31,21 +32,21 @@ class Patcher:
     def patch(self):
         absolute_placements = []
 
-        for product in self.file.by_type('IfcProduct'):
+        for product in self.file.by_type("IfcProduct"):
             if not product.ObjectPlacement:
                 continue
             absolute_placement = self.get_absolute_placement(product.ObjectPlacement)
-            if absolute_placement.is_a('IfcLocalPlacement'):
+            if absolute_placement.is_a("IfcLocalPlacement"):
                 absolute_placements.append(absolute_placement)
         absolute_placements = set(absolute_placements)
 
         transformation = self.identity_matrix()
         if len(self.args) == 4:
-            angle = self.args[3]
+            angle = float(self.args[3])
             if angle:
                 transformation = self.z_rotation_matrix(math.radians(angle), transformation)
         elif len(self.args) == 6:
-            for arg in (("x", self.args[3]), ("y", self.args[4]), ("z", self.args[5])):
+            for arg in (("x", float(self.args[3])), ("y", float(self.args[4])), ("z", float(self.args[5]))):
                 if arg[1]:
                     transformation = getattr(self, f"{arg[0]}_rotation_matrix")(math.radians(arg[1]), transformation)
         transformation[0][3] += float(self.args[0])
