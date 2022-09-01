@@ -27,7 +27,7 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        self.file.create_entity(
+        return self.file.create_entity(
             "IfcPropertySetTemplate",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
