@@ -203,7 +203,8 @@ class file(object):
             self.history.pop(0)
 
     def begin_transaction(self):
-        self.transaction = Transaction(self)
+        if self.history_size:
+            self.transaction = Transaction(self)
 
     def end_transaction(self):
         if self.transaction:
