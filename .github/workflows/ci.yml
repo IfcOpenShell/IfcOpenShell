@@ -3,8 +3,19 @@ name: ci
 on:
   push:
     paths:
-      - 'src/**'
-      - 'test/**'
+      - 'src/ifcblender/**'
+      - 'src/ifcconvert/**'
+      - 'src/ifcgeom/**'
+      - 'src/ifcgeom_schema_agnostic/**'
+      - 'src/ifcgeomserver/**'
+      - 'src/ifcjni/**'
+      - 'src/ifcmax/**'
+      - 'src/ifcopenshell-python/**'
+      - '!src/ifcopenshell-python/docs/**'
+      - 'src/ifcparse/**'
+      - 'src/ifcwrap/**'
+      - 'src/qtviewer/**'
+      - 'src/serializers/**'
       - 'conda/**'
       - 'cmake/**'
       - '.github/workflows/ci.yml'

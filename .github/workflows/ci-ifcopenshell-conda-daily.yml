@@ -1,14 +1,6 @@
-name: ci-ifcopenshell-daily
+name: ci-ifcopenshell-conda-daily
 
 on:
-  push:
-    paths:
-      - src/**
-      - conda/**
-      - .github/workflows/ci-daily-build.yml
-    branches:
-      - pr-daily-builds
-# Only trigger, when the build workflow succeeded
   workflow_run:
     workflows: ["ci"]
     types:
