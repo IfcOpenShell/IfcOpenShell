@@ -29,7 +29,12 @@ from mathutils import Vector
 
 scenarios("feature")
 
-variables = {"cwd": os.getcwd(), "ifc": "IfcStore.get_file()", "pset_ifc": "IfcStore.pset_template_file"}
+variables = {
+    "cwd": os.getcwd(),
+    "ifc": "IfcStore.get_file()",
+    "pset_ifc": "IfcStore.pset_template_file",
+    "classification_ifc": "IfcStore.classification_file",
+}
 
 # Monkey-patch webbrowser opening since we want to test headlessly
 webbrowser.open = lambda x: True
@@ -65,6 +70,17 @@ def an_empty_ifc_project():
     if len(bpy.data.objects) > 0:
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+    bpy.ops.bim.create_project()
+
+
+@given("an empty IFC2X3 project")
+def an_empty_ifc_project():
+    IfcStore.purge()
+    bpy.ops.wm.read_homefile(app_template="")
+    if len(bpy.data.objects) > 0:
+        bpy.data.batch_remove(bpy.data.objects)
+        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+    bpy.context.scene.BIMProjectProperties.export_schema = "IFC2X3"
     bpy.ops.bim.create_project()
 
 

@@ -1,0 +1,18 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_NAME('','2020-04-23T18:09:33',(),(),'IfcOpenShell 0.6.0b0','IfcOpenShell 0.6.0b0','');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROJECTLIBRARY($,$,'FoobarClass',$,$,$,$,$,$);
+#2=IFCCLASSIFICATION('FoobarClass','(FBC)','2000-01-01','Foobar','The Foobar Classification System is a classification system for the construction industry.','http://www.example.org/',('_'));
+#3=IFCRELASSOCIATESCLASSIFICATION('1qt9lErCr5hQsihRukSfaU',$,$,$,(#1),#2);
+#4=IFCCLASSIFICATIONREFERENCE($,'Co','Complexes',#2,$,$);
+#5=IFCCLASSIFICATIONREFERENCE($,'Co_20','Administrative, commercial and protective service complexes',#4,$,$);
+#6=IFCCLASSIFICATIONREFERENCE($,'Co_20_10','Legislative complexes',#5,$,$);
+#7=IFCCLASSIFICATIONREFERENCE($,'Pr','Products',#2,$,$);
+#8=IFCCLASSIFICATIONREFERENCE($,'Pr_15','Preparatory products',#7,$,$);
+#9=IFCCLASSIFICATIONREFERENCE($,'Pr_15_31','Formless preparatory products',#8,$,$);
+ENDSEC;
+END-ISO-10303-21;

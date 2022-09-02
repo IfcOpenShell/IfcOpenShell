@@ -258,3 +258,4 @@ class DisableEditingClassificationReferences(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMClassificationProperties
         props.available_library_references.clear()
+        return {"FINISHED"}
