@@ -47,6 +47,20 @@ class TestGetReferences(test.bootstrap.IFC4):
         )
         assert subject.get_references(element) == set(self.file.by_type("IfcClassificationReference"))
 
+    def test_get_references_of_a_non_rooted_element(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        element = self.file.createIfcMaterial()
+        result = ifcopenshell.api.run("classification.add_classification", self.file, classification="Name")
+        ifcopenshell.api.run(
+            "classification.add_reference",
+            self.file,
+            product=element,
+            identification="X",
+            name="Foobar",
+            classification=result,
+        )
+        assert subject.get_references(element) == set(self.file.by_type("IfcClassificationReference"))
+
     def test_get_inherited_classifications(self):
         library = ifcopenshell.file()
         classification = library.createIfcClassification(Name="Name")

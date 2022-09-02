@@ -21,6 +21,11 @@ import ifcopenshell.util.element
 
 def get_references(element, should_inherit=True):
     results = set()
+    if not element.is_a("IfcRoot"):
+        if hasattr(element, "HasExternalReferences"):
+            return {r.RelatingReference for r in element.HasExternalReferences or []}
+        elif hasattr(element, "HasExternalReference"): # Seriously, IFC?
+            return {r.RelatingReference for r in element.HasExternalReference or []}
     if should_inherit:
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type and element_type != element:
