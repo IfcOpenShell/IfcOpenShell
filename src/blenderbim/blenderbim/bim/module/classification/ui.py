@@ -123,10 +123,11 @@ class BIM_PT_classification_references(Panel):
         if self.sprops.active_library_referenced_source:
             op = row.operator("bim.change_classification_level", text="", icon="FRAME_PREV")
             op.parent_id = self.sprops.active_library_referenced_source
-        op = row.operator("bim.add_classification_reference", text="", icon="ADD")
-        op.reference = self.sprops.available_library_references[
-            self.sprops.active_library_reference_index
-        ].ifc_definition_id
+        if self.sprops.active_library_reference_index < len(self.sprops.available_library_references):
+            op = row.operator("bim.add_classification_reference", text="", icon="ADD")
+            op.reference = self.sprops.available_library_references[
+                self.sprops.active_library_reference_index
+            ].ifc_definition_id
         row.operator("bim.disable_editing_classification_references", text="", icon="CANCEL")
         self.layout.template_list(
             "BIM_UL_classifications",
