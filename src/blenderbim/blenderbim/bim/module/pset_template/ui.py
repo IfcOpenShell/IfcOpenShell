@@ -18,7 +18,6 @@
 
 import bpy
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.pset_template.data import PsetTemplatesData
 

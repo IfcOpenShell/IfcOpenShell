@@ -39,6 +39,8 @@ class IfcStore:
     edited_objs = set()
     pset_template_path = ""
     pset_template_file = None
+    classification_path = ""
+    classification_file = None
     library_path = ""
     library_file = None
     element_listeners = set()
