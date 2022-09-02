@@ -35,15 +35,14 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        self.is_rooted = self.settings["product"].is_a("IfcRoot")
         if self.settings["reference"]:
             return self.add_from_library()
         return self.add_from_identification()
 
     def add_from_identification(self):
         reference = self.get_existing_reference(self.settings["identification"])
-        if reference:
-            self.add_to_existing_relationship(reference)
-        else:
+        if not reference:
             reference = self.file.createIfcClassificationReference(
                 Name=self.settings["name"], ReferencedSource=self.settings["classification"]
             )
@@ -51,6 +50,11 @@ class Usecase:
                 reference.ItemReference = self.settings["identification"]
             else:
                 reference.Identification = self.settings["identification"]
+
+        relationship = self.get_existing_relationship(reference)
+        if relationship:
+            self.add_to_existing_relationship(relationship)
+        else:
             self.add_new_relationship(reference)
         return reference
 
@@ -61,36 +65,39 @@ class Usecase:
             identification = self.settings["reference"].Identification
 
         reference = self.get_existing_reference(identification)
+        if not reference:
+            migrator = ifcopenshell.util.schema.Migrator()
 
-        if reference:
+            if self.settings["is_lightweight"]:
+                old_referenced_source = self.settings["reference"].ReferencedSource
+                self.settings["reference"].ReferencedSource = None
+            else:
+                existing_classification = [
+                    c for c in self.file.by_type("IfcClassification") if c.Name == self.settings["classification"].Name
+                ]
+
+            reference = migrator.migrate(self.settings["reference"], self.file)
+
+            if self.settings["is_lightweight"]:
+                reference.ReferencedSource = self.settings["classification"]
+                self.settings["reference"].ReferencedSource = old_referenced_source
+            elif existing_classification:
+                to_delete = set()
+                for traversed_reference in self.file.traverse(reference):
+                    if traversed_reference.ReferencedSource.is_a("IfcClassification"):
+                        to_delete.add(traversed_reference.ReferencedSource)
+                        traversed_reference.ReferencedSource = existing_classification[0]
+                        break
+                for element in to_delete:
+                    self.file.remove(element)
+
+        relationship = self.get_existing_relationship(reference)
+        if relationship:
             self.add_to_existing_relationship(reference)
-            return reference
-
-        migrator = ifcopenshell.util.schema.Migrator()
-
-        if self.settings["is_lightweight"]:
-            old_referenced_source = self.settings["reference"].ReferencedSource
-            self.settings["reference"].ReferencedSource = None
         else:
-            existing_classification = [
-                c for c in self.file.by_type("IfcClassification") if c.Name == self.settings["classification"].Name
-            ]
+            self.add_new_relationship(reference)
 
-        reference = migrator.migrate(self.settings["reference"], self.file)
-
-        if self.settings["is_lightweight"]:
-            reference.ReferencedSource = self.settings["classification"]
-            self.settings["reference"].ReferencedSource = old_referenced_source
-        elif existing_classification:
-            to_delete = set()
-            for traversed_reference in self.file.traverse(reference):
-                if traversed_reference.ReferencedSource.is_a("IfcClassification"):
-                    to_delete.add(traversed_reference.ReferencedSource)
-                    traversed_reference.ReferencedSource = existing_classification[0]
-                    break
-            for element in to_delete:
-                self.file.remove(element)
-        self.add_new_relationship(reference)
+        return reference
 
     def get_existing_reference(self, identification):
         for reference in self.file.by_type("IfcClassificationReference"):
@@ -102,23 +109,38 @@ class Usecase:
                     return reference
 
     def add_new_relationship(self, reference):
-        self.file.create_entity(
-            "IfcRelAssociatesClassification",
-            GlobalId=ifcopenshell.guid.new(),
-            RelatedObjects=[self.settings["product"]],
-            RelatingClassification=reference,
-        )
+        if self.is_rooted:
+            self.file.create_entity(
+                "IfcRelAssociatesClassification",
+                GlobalId=ifcopenshell.guid.new(),
+                RelatedObjects=[self.settings["product"]],
+                RelatingClassification=reference,
+            )
+        else:
+            self.file.create_entity(
+                "IfcExternalReferenceRelationship",
+                RelatingReference=reference,
+                RelatedResourceObjects=[self.settings["product"]],
+            )
 
-    def add_to_existing_relationship(self, reference):
-        rel = self.get_rel_associates_classification(reference)
-        related_objects = set(rel.RelatedObjects)
-        related_objects.add(self.settings["product"])
-        rel.RelatedObjects = list(related_objects)
+    def add_to_existing_relationship(self, rel):
+        if self.is_rooted:
+            related_objects = set(rel.RelatedObjects)
+            related_objects.add(self.settings["product"])
+            rel.RelatedObjects = list(related_objects)
+        else:
+            related_objects = set(rel.RelatedResourceObjects)
+            related_objects.add(self.settings["product"])
+            rel.RelatedResourceObjects = list(related_objects)
 
-    def get_rel_associates_classification(self, reference):
-        if self.file.schema == "IFC2X3":
-            for association in self.file.by_type("IfcRelAssociatesClassification"):
-                if association.RelatingClassification == reference:
-                    return association
-        elif reference.ClassificationRefForObjects:
-            return reference.ClassificationRefForObjects[0]
+    def get_existing_relationship(self, reference):
+        if self.is_rooted:
+            if self.file.schema == "IFC2X3":
+                for rel in self.file.by_type("IfcRelAssociatesClassification"):
+                    if rel.RelatingClassification == reference:
+                        return rel
+            elif reference.ClassificationRefForObjects:
+                return reference.ClassificationRefForObjects[0]
+        elif self.file.schema != "IFC2X3":
+            if reference.ExternalReferenceForResources:
+                return reference.ExternalReferenceForResources[0]
