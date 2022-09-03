@@ -31,7 +31,7 @@ class Patcher:
         deleted = []
         hashes = {}
         for element in self.file:
-            if element.is_a('IfcRoot'):
+            if element.is_a('IfcRoot') or element.is_a('IfcPropertySingleValue'):
                 continue
             h = hash(tuple(element))
             if h in hashes:
