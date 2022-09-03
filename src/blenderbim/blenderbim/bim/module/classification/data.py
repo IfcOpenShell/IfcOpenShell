@@ -27,6 +27,7 @@ from blenderbim.bim.ifc import IfcStore
 def refresh():
     ClassificationsData.is_loaded = False
     ClassificationReferencesData.is_loaded = False
+    MaterialClassificationsData.is_loaded = False
 
 
 class ClassificationsData:
@@ -61,7 +62,17 @@ class ClassificationsData:
         return [(str(e.id()), e.Name, "") for e in IfcStore.classification_file.by_type("IfcClassification")]
 
 
-class ClassificationReferencesData:
+class ReferencesData:
+    @classmethod
+    def is_available_classification_added(cls):
+        if not IfcStore.classification_file or not IfcStore.classification_file.by_type("IfcClassification"):
+            return False
+        props = bpy.context.scene.BIMClassificationProperties
+        name = IfcStore.classification_file.by_id(int(props.available_classifications)).Name
+        return name in [e.Name for e in tool.Ifc.get().by_type("IfcClassification")]
+
+
+class ClassificationReferencesData(ReferencesData):
     data = {}
     is_loaded = False
 
@@ -82,10 +93,24 @@ class ClassificationReferencesData:
                 results.append(data)
         return results
 
+
+class MaterialClassificationsData(ReferencesData):
+    data = {}
+    is_loaded = False
+
     @classmethod
-    def is_available_classification_added(cls):
-        if not IfcStore.classification_file or not IfcStore.classification_file.by_type("IfcClassification"):
-            return False
-        props = bpy.context.scene.BIMClassificationProperties
-        name = IfcStore.classification_file.by_id(int(props.available_classifications)).Name
-        return name in [e.Name for e in tool.Ifc.get().by_type("IfcClassification")]
+    def load(cls):
+        cls.is_loaded = True
+        cls.data["references"] = cls.references()
+        cls.data["is_available_classification_added"] = cls.is_available_classification_added()
+
+    @classmethod
+    def references(cls):
+        results = []
+        element = tool.Ifc.get_entity(bpy.context.active_object.active_material)
+        if element:
+            for reference in ifcopenshell.util.classification.get_references(element):
+                data = reference.get_info()
+                del data["ReferencedSource"]
+                results.append(data)
+        return results

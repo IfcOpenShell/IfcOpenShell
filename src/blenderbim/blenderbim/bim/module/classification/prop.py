@@ -32,6 +32,7 @@ from bpy.props import (
     CollectionProperty,
 )
 
+
 def get_available_classifications(self, context):
     if not ClassificationsData.is_loaded:
         ClassificationsData.load()

@@ -21,7 +21,11 @@ import blenderbim.tool as tool
 import blenderbim.bim.module.classification.prop as classification_prop
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.classification.data import ClassificationsData, ClassificationReferencesData
+from blenderbim.bim.module.classification.data import (
+    ClassificationsData,
+    ClassificationReferencesData,
+    MaterialClassificationsData,
+)
 
 
 class BIM_PT_classifications(Panel):
@@ -74,25 +78,8 @@ class BIM_PT_classifications(Panel):
         row.operator("bim.remove_classification", text="", icon="X").classification = classification["id"]
 
 
-class BIM_PT_classification_references(Panel):
-    bl_label = "IFC Classification References"
-    bl_idname = "BIM_PT_classification_references"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
-    bl_parent_id = "BIM_PT_object_metadata"
-
-    @classmethod
-    def poll(cls, context):
-        if not context.active_object:
-            return False
-        return bool(tool.Ifc.get_entity(context.active_object))
-
-    def draw(self, context):
-        if not ClassificationReferencesData.is_loaded:
-            ClassificationReferencesData.load()
-
+class ReferenceUI:
+    def draw_ui(self, context):
         obj = context.active_object
         self.oprops = obj.BIMObjectProperties
         self.sprops = context.scene.BIMClassificationProperties
@@ -101,18 +88,18 @@ class BIM_PT_classification_references(Panel):
 
         self.draw_add_ui(context)
 
-        if not ClassificationReferencesData.data["references"]:
+        if not self.data.data["references"]:
             row = self.layout.row(align=True)
             row.label(text="No References")
 
-        for reference in ClassificationReferencesData.data["references"]:
+        for reference in self.data.data["references"]:
             if self.props.active_reference_id == reference["id"]:
                 self.draw_editable_ui()
             else:
-                self.draw_ui(reference)
+                self.draw_reference_ui(reference)
 
     def draw_add_ui(self, context):
-        if not ClassificationReferencesData.data["is_available_classification_added"]:
+        if not self.data.data["is_available_classification_added"]:
             return
         row = self.layout.row(align=True)
         row.prop(self.sprops, "available_classifications", text="")
@@ -125,6 +112,8 @@ class BIM_PT_classification_references(Panel):
             op.parent_id = self.sprops.active_library_referenced_source
         if self.sprops.active_library_reference_index < len(self.sprops.available_library_references):
             op = row.operator("bim.add_classification_reference", text="", icon="ADD")
+            op.obj = self.obj
+            op.obj_type = self.obj_type
             op.reference = self.sprops.available_library_references[
                 self.sprops.active_library_reference_index
             ].ifc_definition_id
@@ -144,7 +133,7 @@ class BIM_PT_classification_references(Panel):
         row.operator("bim.disable_editing_classification_reference", text="", icon="CANCEL")
         blenderbim.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
 
-    def draw_ui(self, reference):
+    def draw_reference_ui(self, reference):
         row = self.layout.row(align=True)
         if self.file.schema == "IFC2X3":
             name = reference["ItemReference"] or "No Identification"
@@ -155,7 +144,60 @@ class BIM_PT_classification_references(Panel):
         if not self.props.active_reference_id:
             op = row.operator("bim.enable_editing_classification_reference", text="", icon="GREASEPENCIL")
             op.reference = reference["id"]
-        row.operator("bim.remove_classification_reference", text="", icon="X").reference = reference["id"]
+        op = row.operator("bim.remove_classification_reference", text="", icon="X")
+        op.reference = reference["id"]
+        op.obj = self.obj
+        op.obj_type = self.obj_type
+
+
+class BIM_PT_classification_references(Panel, ReferenceUI):
+    bl_label = "IFC Classification References"
+    bl_idname = "BIM_PT_classification_references"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_object_metadata"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        return bool(tool.Ifc.get_entity(context.active_object))
+
+    def draw(self, context):
+        if not ClassificationReferencesData.is_loaded:
+            ClassificationReferencesData.load()
+        self.data = ClassificationReferencesData
+        self.obj = context.active_object.name
+        self.obj_type = "Object"
+        self.draw_ui(context)
+
+
+class BIM_PT_material_classifications(Panel, ReferenceUI):
+    bl_label = "IFC Material Classifications"
+    bl_idname = "BIM_PT_material_classifications"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "material"
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
+        try:
+            return bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id)
+        except:
+            return False
+
+    def draw(self, context):
+        if not MaterialClassificationsData.is_loaded:
+            MaterialClassificationsData.load()
+        self.data = MaterialClassificationsData
+        self.obj = context.active_object.active_material.name
+        self.obj_type = "Material"
+        self.draw_ui(context)
 
 
 class BIM_UL_classifications(UIList):
