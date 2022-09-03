@@ -74,6 +74,7 @@ def get_quantity_types(self, context):
 def update_active_resource_index(self, context):
     blenderbim.bim.module.pset.data.refresh()
 
+
 class Resource(PropertyGroup):
     name: StringProperty(name="Name", update=updateResourceName)
     ifc_definition_id: IntProperty(name="IFC Definition ID")

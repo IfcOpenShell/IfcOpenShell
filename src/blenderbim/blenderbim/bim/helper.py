@@ -48,9 +48,9 @@ def draw_attribute(attribute, layout, copy_operator=None):
             text=attribute.name,
         )
     if "ScheduleDuration" in attribute.name:
-        layout.prop(bpy.context.scene.BIMDuration, "duration_days",text="D")
-        layout.prop(bpy.context.scene.BIMDuration, "duration_hours",text="H")
-        layout.prop(bpy.context.scene.BIMDuration, "duration_minutes",text="M")
+        layout.prop(bpy.context.scene.BIMDuration, "duration_days", text="D")
+        layout.prop(bpy.context.scene.BIMDuration, "duration_hours", text="H")
+        layout.prop(bpy.context.scene.BIMDuration, "duration_minutes", text="M")
 
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
@@ -103,7 +103,8 @@ def import_attribute(attribute, props, data, callback=None):
         new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
         if data[attribute.name()]:
             new.enum_value = data[attribute.name()]
-            
+
+
 def export_attributes(props, callback=None):
     attributes = {}
     for prop in props:

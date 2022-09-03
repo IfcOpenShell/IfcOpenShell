@@ -53,4 +53,5 @@ class TestEditWorkPlan:
         sequence.disable_editing_work_plan().should_be_called()
         subject.edit_work_plan(ifc, sequence, work_plan="work_plan")
 
+
 # TODO continue writing tests

@@ -733,15 +733,20 @@ class BIM_PT_work_calendars(Panel):
     def draw_editable_ui(self):
         draw_attributes(self.props.work_calendar_attributes, self.layout)
 
+
 class BIM_PT_SequenceToolKit(Panel):
     bl_label = "Sequence Toolkit"
     bl_idname = "BIM_PT_Sequence_toolkit"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Sequence Toolkit"
-    
+
     def draw(self, context):
         row = self.layout.row()
-        row.operator("bim.highlight_product_related_task", text="Go to Input-related Task ", icon="STYLUS_PRESSURE").product_type = "Input"
+        row.operator(
+            "bim.highlight_product_related_task", text="Go to Input-related Task ", icon="STYLUS_PRESSURE"
+        ).product_type = "Input"
         row = self.layout.row()
-        row.operator("bim.highlight_product_related_task", text="Go to Output-related Task ",icon="STYLUS_PRESSURE").product_type = "Output"
+        row.operator(
+            "bim.highlight_product_related_task", text="Go to Output-related Task ", icon="STYLUS_PRESSURE"
+        ).product_type = "Output"

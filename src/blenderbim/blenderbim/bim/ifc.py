@@ -234,7 +234,6 @@ class IfcStore:
                     data["guid"] = element.GlobalId
                 IfcStore.commit_link_element(data)
 
-
     @staticmethod
     def relink_all_objects():
         if not IfcStore.get_file():

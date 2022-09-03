@@ -795,7 +795,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
             link.is_hidden = layer_collection.exclude
 
     def get_linked_collections(self):
-        return  [
+        return [
             c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.link
         ]
 

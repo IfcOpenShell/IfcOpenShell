@@ -101,8 +101,9 @@ def update_preview_multiple(self, context):
 
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)
-    ifc_class_browser: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class",
-                                              update=update_ifc_class_browser)
+    ifc_class_browser: bpy.props.EnumProperty(
+        items=get_ifc_class, name="Construction Class", update=update_ifc_class_browser
+    )
     relating_type: bpy.props.StringProperty(update=update_relating_type_by_name)
     relating_type_id: bpy.props.EnumProperty(
         items=get_relating_type, name="Construction Type", update=update_relating_type

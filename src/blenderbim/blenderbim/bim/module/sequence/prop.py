@@ -351,10 +351,12 @@ class BIMWorkScheduleProperties(PropertyGroup):
     task_outputs: CollectionProperty(name="Task Outputs", type=TaskProduct)
     active_task_output_index: IntProperty(name="Active Task Output Index")
 
+
 class BIMDuration(PropertyGroup):
     duration_days: IntProperty(name="Days ")
     duration_hours: IntProperty(name="Hours")
     duration_minutes: IntProperty(name="Minutes")
+
 
 class BIMTaskTreeProperties(PropertyGroup):
     # This belongs by itself for performance reasons. https://developer.blender.org/T87737
