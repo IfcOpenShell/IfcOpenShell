@@ -66,16 +66,17 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
 
    .. seealso::
 
-        If OCCT is not available, you can `manually compile OCCT
+        If OCCT is not available, an alternative is to `manually compile OCCT
         <https://dev.opencascade.org/release>`__.
 
-   Alternatively you may use OpenCascade Community Edition (OCE) but it may lag behind OCCT so is not recommended.
+   Another alternative is to use OpenCascade Community Edition (OCE), but it may
+   lag behind OCCT and is no longer actively maintained so is not recommended.
 
    ::
 
         $ sudo apt-get install liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev
 
-   You may also manually compile OCE:
+   As a final alternative, you may also manually compile OCE:
 
    ::
 
@@ -87,6 +88,13 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
         # Replace X with number of CPU cores + 1
         $ make -j X
         $ sudo make install
+
+   .. warning::
+
+    Choose one option only between installing OCCT, installing OCE, or
+    self-compilation. If you install and compile multiple versions of
+    OpenCascade, your system may get confused.
+
 
 4. For building IfcConvert with COLLADA (.dae) support (on by default), OpenCOLLADA is needed:
 
