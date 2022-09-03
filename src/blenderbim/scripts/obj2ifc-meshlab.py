@@ -51,7 +51,12 @@ class Obj2Ifc:
                         [
                             self.file.createIfcFaceOuterBound(
                                 self.file.createIfcPolyLoop(
-                                    [self.file.createIfcCartesianPoint(self.get_coordinates(vertices[index].tolist())) for index in face]
+                                    [
+                                        self.file.createIfcCartesianPoint(
+                                            self.get_coordinates(vertices[index].tolist())
+                                        )
+                                        for index in face
+                                    ]
                                 ),
                                 True,
                             )

@@ -66,10 +66,10 @@ class BimTool(WorkSpaceTool):
         if not AuthoringData.is_loaded:
             AuthoringData.load()
 
-        ifc_classes = AuthoringData.data[
-            "ifc_classes"] if "ifc_classes" in AuthoringData.data else False
-        relating_types_ids = AuthoringData.data[
-            "relating_types_ids"] if "relating_types_ids" in AuthoringData.data else False
+        ifc_classes = AuthoringData.data["ifc_classes"] if "ifc_classes" in AuthoringData.data else False
+        relating_types_ids = (
+            AuthoringData.data["relating_types_ids"] if "relating_types_ids" in AuthoringData.data else False
+        )
 
         if ifc_classes and relating_types_ids and not props.icon_id:
             # hack Dion won't like to show a preview also on the first time the sidebar is shown

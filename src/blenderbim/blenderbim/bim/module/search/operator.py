@@ -548,7 +548,8 @@ class FilterModelElements(Operator):
                 if obj.BIMObjectProperties.ifc_definition_id in sel_element_ids:
                     obj.hide_set(True)
 
-#This needs to be moved into ui code, I know ;) - vulevukusej
+
+# This needs to be moved into ui code, I know ;) - vulevukusej
 class IfcSelector(Operator):
     """Select elements in model with IFC Selector"""
 
@@ -567,6 +568,7 @@ class IfcSelector(Operator):
 
     def draw(self, context):
         from . import ui
+
         ui.IfcSelectorUI.draw(context, self.layout)
 
 
