@@ -1,6 +1,34 @@
 @pset
 Feature: Pset
 
+Scenario: Add pset - object
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
+    When I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
+    Then nothing happens
+
+Scenario: Add pset - multiple objects
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And additionally the object "IfcWall/Cube.001" is selected
+    And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
+    When I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
+    Then nothing happens
+
 Scenario: Enable pset editing - object
     Given an empty IFC project
     And I add a cube
@@ -116,4 +144,36 @@ Scenario: Copy property to selected - copy property
     And I press "bim.enable_pset_editing(obj='IfcWall/Cube.001', obj_type='Object', pset_id={pset})"
     And I set "active_object.PsetProperties.properties[2].metadata.string_value" to "Foo"
     When I press "bim.copy_property_to_selection(name='FireRating')"
+    Then nothing happens
+
+Scenario: Remove pset - object
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
+    And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
+    And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
+    When I press "bim.remove_pset(pset_id={pset}, obj='IfcWall/Cube', obj_type='Object')"
+    Then nothing happens
+
+Scenario: Remove pset - multiple objects
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And additionally the object "IfcWall/Cube.001" is selected
+    And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
+    And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
+    And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
+    When I press "bim.remove_pset(pset_id={pset}, obj='IfcWall/Cube', obj_type='Object')"
     Then nothing happens
