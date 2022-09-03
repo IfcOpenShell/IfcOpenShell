@@ -28,6 +28,7 @@ def refresh():
     ClassificationsData.is_loaded = False
     ClassificationReferencesData.is_loaded = False
     MaterialClassificationsData.is_loaded = False
+    CostClassificationsData.is_loaded = False
 
 
 class ClassificationsData:
@@ -108,6 +109,30 @@ class MaterialClassificationsData(ReferencesData):
     def references(cls):
         results = []
         element = tool.Ifc.get_entity(bpy.context.active_object.active_material)
+        if element:
+            for reference in ifcopenshell.util.classification.get_references(element):
+                data = reference.get_info()
+                del data["ReferencedSource"]
+                results.append(data)
+        return results
+
+
+class CostClassificationsData(ReferencesData):
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data["references"] = cls.references()
+        cls.data["is_available_classification_added"] = cls.is_available_classification_added()
+
+    @classmethod
+    def references(cls):
+        results = []
+        element = tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.cost_items[
+            bpy.context.scene.BIMCostProperties.active_cost_item_index
+        ].ifc_definition_id)
         if element:
             for reference in ifcopenshell.util.classification.get_references(element):
                 data = reference.get_info()

@@ -216,3 +216,34 @@ Scenario: Remove classification reference - material
     And I press "bim.add_classification_reference(reference={reference}, obj='Material', obj_type='Material')"
     When I press "bim.remove_classification_reference(reference={reference}, obj='Material', obj_type='Material')"
     Then nothing happens
+
+Scenario: Add classification reference - cost
+    Given an empty IFC project
+    And I press "bim.load_classification_library(filepath='{cwd}/test/files/classification.ifc')"
+    And the variable "classification" is "{classification_ifc}.by_type('IfcClassification')[0].id()"
+    And I set "scene.BIMClassificationProperties.available_classifications" to "{classification}"
+    And I press "bim.add_classification"
+    And I press "bim.add_cost_schedule"
+    And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
+    And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.change_classification_level(parent_id={classification})"
+    And the variable "reference" is "{classification_ifc}.by_type('IfcClassificationReference')[0].id()"
+    When I press "bim.add_classification_reference(reference={reference}, obj='', obj_type='Cost')"
+    Then nothing happens
+
+Scenario: Remove classification reference - cost
+    Given an empty IFC project
+    And I press "bim.load_classification_library(filepath='{cwd}/test/files/classification.ifc')"
+    And the variable "classification" is "{classification_ifc}.by_type('IfcClassification')[0].id()"
+    And I set "scene.BIMClassificationProperties.available_classifications" to "{classification}"
+    And I press "bim.add_classification"
+    And I press "bim.add_cost_schedule"
+    And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
+    And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
+    And I press "bim.add_summary_cost_item(cost_schedule={cost_schedule})"
+    And I press "bim.change_classification_level(parent_id={classification})"
+    And the variable "reference" is "{classification_ifc}.by_type('IfcClassificationReference')[0].id()"
+    And I press "bim.add_classification_reference(reference={reference}, obj='', obj_type='Cost')"
+    When I press "bim.remove_classification_reference(reference={reference}, obj='', obj_type='Cost')"
+    Then nothing happens

@@ -25,6 +25,7 @@ from blenderbim.bim.module.classification.data import (
     ClassificationsData,
     ClassificationReferencesData,
     MaterialClassificationsData,
+    CostClassificationsData,
 )
 
 
@@ -197,6 +198,30 @@ class BIM_PT_material_classifications(Panel, ReferenceUI):
         self.data = MaterialClassificationsData
         self.obj = context.active_object.active_material.name
         self.obj_type = "Material"
+        self.draw_ui(context)
+
+
+class BIM_PT_cost_classifications(Panel, ReferenceUI):
+    bl_label = "IFC Cost Classifications"
+    bl_idname = "BIM_PT_cost_classifications"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_cost_schedules"
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
+        return bool(context.scene.BIMCostProperties.cost_items)
+
+    def draw(self, context):
+        if not CostClassificationsData.is_loaded:
+            CostClassificationsData.load()
+        self.data = CostClassificationsData
+        self.obj = ""
+        self.obj_type = "Cost"
         self.draw_ui(context)
 
 
