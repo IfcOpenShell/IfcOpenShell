@@ -29,13 +29,20 @@ from mathutils import Vector
 
 scenarios("feature")
 
-variables = {"cwd": os.getcwd(), "ifc": "IfcStore.get_file()"}
+variables = {
+    "cwd": os.getcwd(),
+    "ifc": "IfcStore.get_file()",
+    "pset_ifc": "IfcStore.pset_template_file",
+    "classification_ifc": "IfcStore.classification_file",
+}
 
 # Monkey-patch webbrowser opening since we want to test headlessly
 webbrowser.open = lambda x: True
 
 
 def replace_variables(value):
+    if "{cwd}" in value and os.name == "nt":
+        value = value.replace("/", "\\").replace("{cwd}", os.getcwd()).replace("\\", "\\\\")
     for key, new_value in variables.items():
         value = value.replace("{" + key + "}", str(new_value))
     return value
@@ -63,6 +70,17 @@ def an_empty_ifc_project():
     if len(bpy.data.objects) > 0:
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+    bpy.ops.bim.create_project()
+
+
+@given("an empty IFC2X3 project")
+def an_empty_ifc_project():
+    IfcStore.purge()
+    bpy.ops.wm.read_homefile(app_template="")
+    if len(bpy.data.objects) > 0:
+        bpy.data.batch_remove(bpy.data.objects)
+        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+    bpy.context.scene.BIMProjectProperties.export_schema = "IFC2X3"
     bpy.ops.bim.create_project()
 
 
@@ -633,9 +651,7 @@ def i_display_the_construction_type_browser():
 @when("I add the construction type")
 def i_add_the_active_construction_type():
     props = bpy.context.scene.BIMModelProperties
-    bpy.ops.bim.add_constr_type_instance(
-        ifc_class=props.ifc_class, relating_type_id=int(props.relating_type_id)
-    )
+    bpy.ops.bim.add_constr_type_instance(ifc_class=props.ifc_class, relating_type_id=int(props.relating_type_id))
 
 
 @then(parsers.parse("construction type is {relating_type_name}"))

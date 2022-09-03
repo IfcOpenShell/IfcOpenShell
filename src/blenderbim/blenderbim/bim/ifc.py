@@ -39,6 +39,8 @@ class IfcStore:
     edited_objs = set()
     pset_template_path = ""
     pset_template_file = None
+    classification_path = ""
+    classification_file = None
     library_path = ""
     library_file = None
     element_listeners = set()
@@ -231,7 +233,6 @@ class IfcStore:
                 if hasattr(element, "GlobalId"):
                     data["guid"] = element.GlobalId
                 IfcStore.commit_link_element(data)
-
 
     @staticmethod
     def relink_all_objects():

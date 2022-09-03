@@ -795,7 +795,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
             link.is_hidden = layer_collection.exclude
 
     def get_linked_collections(self):
-        return  [
+        return [
             c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.link
         ]
 
@@ -828,7 +828,16 @@ class ExportIFC(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+        if context.scene.BIMProjectProperties.should_disable_undo_on_save:
+            old_history_size = tool.Ifc.get().history_size
+            old_undo_steps = context.preferences.edit.undo_steps
+            tool.Ifc.get().history_size = 0
+            context.preferences.edit.undo_steps = 0
+        IfcStore.execute_ifc_operator(self, context)
+        if context.scene.BIMProjectProperties.should_disable_undo_on_save:
+            tool.Ifc.get().history_size = old_history_size
+            context.preferences.edit.undo_steps = old_undo_steps
+        return {"FINISHED"}
 
     def _execute(self, context):
         start = time.time()

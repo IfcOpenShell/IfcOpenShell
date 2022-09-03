@@ -14,6 +14,20 @@ Scenario: Create project
     And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
 
+Scenario: Create project - IFC2X3
+    Given an empty Blender session
+    And I set "scene.BIMProjectProperties.export_schema" to "IFC2X3"
+    When I press "bim.create_project"
+    Then an IFC file exists
+    And the object "IfcProject/My Project" is an "IfcProject"
+    And the object "IfcSite/My Site" is an "IfcSite"
+    And the object "IfcBuilding/My Building" is an "IfcBuilding"
+    And the object "IfcBuildingStorey/My Storey" is an "IfcBuildingStorey"
+    And the object "IfcProject/My Project" is in the collection "IfcProject/My Project"
+    And the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
+    And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
+    And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
+
 Scenario: Append library element
     Given an empty IFC project
     When I press "bim.select_library_file(filepath='{cwd}/test/files/basic.ifc')"

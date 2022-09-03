@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+# from datetime import date
 import bpy
 import json
 import math
@@ -46,6 +47,11 @@ def draw_attribute(attribute, layout, copy_operator=None):
             value_name,
             text=attribute.name,
         )
+    if "ScheduleDuration" in attribute.name:
+        layout.prop(bpy.context.scene.BIMDuration, "duration_days", text="D")
+        layout.prop(bpy.context.scene.BIMDuration, "duration_hours", text="H")
+        layout.prop(bpy.context.scene.BIMDuration, "duration_minutes", text="M")
+
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
     if copy_operator:
@@ -78,6 +84,7 @@ def import_attribute(attribute, props, data, callback=None):
     new.is_optional = attribute.optional()
     new.data_type = data_type if isinstance(data_type, str) else ""
     is_handled_by_callback = callback(attribute.name(), new, data) if callback else None
+
     if is_handled_by_callback:
         pass  # Our job is done
     elif is_handled_by_callback is False:
@@ -130,6 +137,31 @@ def get_enum_items(data, prop_name, context):
         # items are retrieved through a callback, not a static list :
         items = items(data, context)
     return items
+
+
+def get_obj_ifc_definition_id(context, obj, obj_type):
+    if obj_type == "Object":
+        return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
+    elif obj_type == "Material":
+        return bpy.data.materials.get(obj).BIMObjectProperties.ifc_definition_id
+    elif obj_type == "Task":
+        return context.scene.BIMTaskTreeProperties.tasks[
+            context.scene.BIMWorkScheduleProperties.active_task_index
+        ].ifc_definition_id
+    elif obj_type == "Cost":
+        return context.scene.BIMCostProperties.cost_items[
+            context.scene.BIMCostProperties.active_cost_item_index
+        ].ifc_definition_id
+    elif obj_type == "Resource":
+        return context.scene.BIMResourceTreeProperties.resources[
+            context.scene.BIMResourceProperties.active_resource_index
+        ].ifc_definition_id
+    elif obj_type == "Profile":
+        return context.scene.BIMProfileProperties.profiles[
+            context.scene.BIMProfileProperties.active_profile_index
+        ].ifc_definition_id
+    elif obj_type == "WorkSchedule":
+        return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
 
 
 # hack to close popup

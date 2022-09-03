@@ -697,6 +697,10 @@ class TestClassification:
             classification=system_a,
             is_lightweight=False,
         )
+        material = ifc.createIfcMaterial(Name="Material")
+        ifcopenshell.api.run(
+            "classification.add_reference", ifc, product=material, reference=ref1, classification=system_a
+        )
 
         facet = Classification()
         run(
@@ -725,6 +729,14 @@ class TestClassification:
             "Values match subreferences if full classifications are used (e.g. EF_25_10 should match EF_25_10_25, EF_25_10_30, etc)",
             facet=facet,
             inst=element22,
+            expected=True,
+        )
+
+        facet = Classification(value="1")
+        run(
+            "Non-rooted resources that have external classification references should also pass",
+            facet=facet,
+            inst=material,
             expected=True,
         )
 
@@ -1161,7 +1173,7 @@ class TestPartOf:
         group = ifcopenshell.api.run("group.add_group", ifc)
         facet = PartOf(entity="IfcGroup")
         run("", facet=facet, inst=element, expected=False)
-        ifcopenshell.api.run("group.assign_group", ifc, product=[element], group=group)
+        ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
         run("", facet=facet, inst=element, expected=True)
 
         # An IfcGroup can be passed by subtypes
@@ -1169,7 +1181,7 @@ class TestPartOf:
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         group = ifc.createIfcInventory()
         facet = PartOf(entity="IfcGroup")
-        ifcopenshell.api.run("group.assign_group", ifc, product=[element], group=group)
+        ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
         run("", facet=facet, inst=element, expected=True)
 
         # An IfcSystem only checks that a system is assigned without any other logic

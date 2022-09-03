@@ -79,7 +79,7 @@ class Obj2Ifc:
         person[0] = person.GivenName = None
         person.FamilyName = "user"
         org = ifcopenshell.api.run("owner.add_organisation", self.file)
-        org.Id = None
+        org[0] = None
         org.Name = "template"
         user = ifcopenshell.api.run("owner.add_person_and_organisation", self.file, person=person, organisation=org)
         application = ifcopenshell.api.run("owner.add_application", self.file)
