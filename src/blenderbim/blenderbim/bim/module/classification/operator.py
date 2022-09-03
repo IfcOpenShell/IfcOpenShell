@@ -163,16 +163,33 @@ class RemoveClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
     obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "classification.remove_reference",
-            self.file,
-            reference=self.file.by_id(self.reference),
-            product=self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-        )
+        if self.obj_type == "Object":
+            if context.selected_objects:
+                objects = [o.name for o in context.selected_objects]
+            else:
+                objects = [context.active_object.name]
+        else:
+            objects = [self.obj]
+
+        identification = tool.Ifc.get().by_id(self.reference)[0]
+
+        for obj in objects:
+            ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, obj, self.obj_type)
+            element = tool.Ifc.get().by_id(ifc_definition_id)
+            references = ifcopenshell.util.classification.get_references(element, should_inherit=False)
+            for reference in references:
+                if reference[0] == identification:
+                    ifcopenshell.api.run(
+                        "classification.remove_reference",
+                        tool.Ifc.get(),
+                        reference=reference,
+                        product=element,
+                    )
+                    break
 
 
 class EditClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
@@ -194,7 +211,8 @@ class EditClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run(
             "classification.edit_reference",
             self.file,
-            reference=self.file.by_id(props.active_reference_id), attributes=attributes,
+            reference=self.file.by_id(props.active_reference_id),
+            attributes=attributes,
         )
         bpy.ops.bim.disable_editing_classification_reference()
 
@@ -205,11 +223,16 @@ class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
     obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
-
+        if self.obj_type == "Object":
+            if context.selected_objects:
+                objects = [o.name for o in context.selected_objects]
+            else:
+                objects = [context.active_object.name]
+        else:
+            objects = [self.obj]
         props = context.scene.BIMClassificationProperties
         classification = None
         classification_name = IfcStore.classification_file.by_id(int(props.available_classifications)).Name
@@ -218,13 +241,17 @@ class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
                 classification = element
                 break
 
-        ifcopenshell.api.run(
-            "classification.add_reference",
-            self.file,
-            reference=IfcStore.classification_file.by_id(self.reference),
-            product=tool.Ifc.get_entity(obj),
-            classification=classification,
-        )
+        for obj in objects:
+            ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, obj, self.obj_type)
+            if not ifc_definition_id:
+                continue
+            ifcopenshell.api.run(
+                "classification.add_reference",
+                tool.Ifc.get(),
+                reference=IfcStore.classification_file.by_id(self.reference),
+                product=tool.Ifc.get().by_id(ifc_definition_id),
+                classification=classification,
+            )
 
 
 class ChangeClassificationLevel(bpy.types.Operator):
