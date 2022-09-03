@@ -138,6 +138,27 @@ def get_enum_items(data, prop_name, context):
     return items
 
 
+def get_obj_ifc_definition_id(context, obj, obj_type):
+    if obj_type == "Object":
+        return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
+    elif obj_type == "Material":
+        return bpy.data.materials.get(obj).BIMObjectProperties.ifc_definition_id
+    elif obj_type == "Task":
+        return context.scene.BIMTaskTreeProperties.tasks[
+            context.scene.BIMWorkScheduleProperties.active_task_index
+        ].ifc_definition_id
+    elif obj_type == "Resource":
+        return context.scene.BIMResourceTreeProperties.resources[
+            context.scene.BIMResourceProperties.active_resource_index
+        ].ifc_definition_id
+    elif obj_type == "Profile":
+        return context.scene.BIMProfileProperties.profiles[
+            context.scene.BIMProfileProperties.active_profile_index
+        ].ifc_definition_id
+    elif obj_type == "WorkSchedule":
+        return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
+
+
 # hack to close popup
 # https://blender.stackexchange.com/a/202576/130742
 def close_operator_panel(event):
