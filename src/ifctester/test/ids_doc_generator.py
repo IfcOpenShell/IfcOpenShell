@@ -21,6 +21,7 @@ import re
 import pytest
 import functools
 import ifcopenshell
+import ifctester
 import test_facet
 from xml.dom.minidom import parseString
 from ifctester import ids
@@ -62,7 +63,7 @@ class DocGenerator:
         basename = f"{result}-" + re.sub("[^0-9a-zA-Z]", "_", name.lower())
 
         # Write IFC to disk
-        f.write(os.path.join(outdir, "files", f"{basename}.ifc"))
+        f.write(os.path.join(outdir, "testcases", f"{basename}.ifc"))
 
         # Create an IDS with the applicability selecting exactly
         # the entity type passed to us in `inst`.
@@ -73,7 +74,7 @@ class DocGenerator:
         specs.specifications.append(spec)
 
         # Write IDS to disk
-        with open(os.path.join(outdir, "files", f"{basename}.ids"), "w", encoding="utf-8") as ids_file:
+        with open(os.path.join(outdir, "testcases", f"{basename}.ids"), "w", encoding="utf-8") as ids_file:
             ids_file.write(specs.to_string())
 
         xml_text = "\n".join(
@@ -122,6 +123,30 @@ for facet, testcases in test_facet.run.testcases.items():
             write("~~~")
             write()
             write(
-                f"[Sample IDS](files/{testcase['basename']}.ids) - [Sample IFC: {testcase['id']}](files/{testcase['basename']}.ifc)"
+                f"[Sample IDS](testcases/{testcase['basename']}.ids) - [Sample IFC: {testcase['id']}](testcases/{testcase['basename']}.ifc)"
             )
             write()
+
+
+specs = ifctester.ids.Ids(
+    title="buildingSMART Sample IDS",
+    copyright="buildingSMART",
+    version="1.0.0",
+    description="These are example specifications for those learning how to use IDS",
+    author="foo@bar.com",
+    date="2022-01-01",
+    purpose="Contractual requirements",
+)
+
+spec = ifctester.ids.Specification(name="Project naming", ifcVersion=["IFC4"], description="Projects shall be named correctly for the purposes of identification, project archival, and model federation.", instructions="Each discipline is responsible for naming their own project.")
+specs.specifications.append(spec)
+spec.applicability.append(ifctester.ids.Entity(name="IFCPROJECT"))
+spec.requirements.append(ifctester.ids.Attribute(name="Name", value="TEST", instructions="The project manager shall confirm the short project code with the client based on their real estate portfolio naming scheme."))
+
+spec = ifctester.ids.Specification(name="Fire rating", ifcVersion=["IFC4"], description="All objects must have a fire rating for building compliance checks and to know the protection strategies needed for any penetrations.", instructions="The architect is responsible for including this data.")
+specs.specifications.append(spec)
+spec.applicability.append(ifctester.ids.Entity(name="IFCWALLTYPE"))
+restriction = ifctester.ids.Restriction(options="(-|[0-9]{2,3})\/(-|[0-9]{2,3})\/(-|[0-9]{2,3})", type="pattern")
+spec.requirements.append(ifctester.ids.Property(propertySet="Pset_WallCommon", name="FireRating", value=restriction, instructions="Fire rating is specified using the Fire Resistance Level as defined in the Australian National Construction Code (NCC) 2019. Valid examples include -/-/-, -/120/120, and 60/60/60"))
+
+specs.to_xml(os.path.join(outdir, "library", "sample.ids"))

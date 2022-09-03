@@ -93,7 +93,7 @@ class Usecase:
 
         relationship = self.get_existing_relationship(reference)
         if relationship:
-            self.add_to_existing_relationship(reference)
+            self.add_to_existing_relationship(relationship)
         else:
             self.add_new_relationship(reference)
 
