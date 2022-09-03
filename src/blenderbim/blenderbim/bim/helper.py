@@ -148,6 +148,10 @@ def get_obj_ifc_definition_id(context, obj, obj_type):
         return context.scene.BIMTaskTreeProperties.tasks[
             context.scene.BIMWorkScheduleProperties.active_task_index
         ].ifc_definition_id
+    elif obj_type == "Cost":
+        return context.scene.BIMCostProperties.cost_items[
+            context.scene.BIMCostProperties.active_cost_item_index
+        ].ifc_definition_id
     elif obj_type == "Resource":
         return context.scene.BIMResourceTreeProperties.resources[
             context.scene.BIMResourceProperties.active_resource_index

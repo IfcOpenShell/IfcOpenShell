@@ -39,6 +39,7 @@ classes = (
     ui.BIM_PT_classifications,
     ui.BIM_PT_classification_references,
     ui.BIM_PT_material_classifications,
+    ui.BIM_PT_cost_classifications,
     ui.BIM_UL_classifications,
 )
 
