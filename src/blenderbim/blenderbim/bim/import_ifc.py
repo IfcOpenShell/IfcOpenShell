@@ -562,8 +562,6 @@ class IfcImporter:
             if grid.Representation:
                 shape = ifcopenshell.geom.create_shape(self.settings_2d, grid)
             grid_obj = self.create_product(grid, shape)
-            grid_obj.lock_location = (True, True, True)
-            grid_obj.lock_rotation = (True, True, True)
             collection = bpy.data.collections.new(self.get_name(grid))
             u_axes = bpy.data.collections.new("UAxes")
             collection.children.link(u_axes)
@@ -581,8 +579,6 @@ class IfcImporter:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
-            obj.lock_location = (True, True, True)
-            obj.lock_rotation = (True, True, True)
             self.link_element(axis, obj)
             self.set_matrix_world(obj, grid_obj.matrix_world)
             grid_collection.objects.link(obj)
