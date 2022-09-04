@@ -49,7 +49,6 @@ class SvIfcCreateProject(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
         
         #project name
         project_name = self.inputs["project_name"].sv_get()[0][0]
-        print("project name:",  project_name)
         self.process_ifc(file, project_name)
         
 
