@@ -49,24 +49,13 @@ class SvIfcBMeshToIfcGeo(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
         self.outputs.new("SvVerticesSocket", "representation")
     
     def draw_buttons(self, context, layout):
-        op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Description?"
+        op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "Blender mesh to Ifc Geometric Representation"
         #op.tooltip = self.tooltip
 
     def process(self):
-        print("Running process...")
-
-        # file
         file = self.inputs["file"].sv_get()[0][0]
-
-        # blender mesh
         blender_object = self.inputs["blender_object"].sv_get()[0]
-        print("blender object: ", blender_object)
-
-        #geometry
         geometry = blender_object.data
-        print("geometry: ", geometry)
-
-        #run process_ifc
         self.process_ifc(file, blender_object, geometry)
 
     def process_ifc(self, file, blender_object, geometry):
@@ -75,7 +64,6 @@ class SvIfcBMeshToIfcGeo(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
             for context in file.by_type("IFCGEOMETRICREPRESENTATIONCONTEXT", include_subtypes=True):
                 if context.get_info()["ContextType"] == "Model" and context.get_info()["ContextIdentifier"] == "Body":
                     repr_context= context
-                    print("pop", context)
                 elif context.get_info()["ContextType"] == "Model":
                     repr_context= context
         except:
@@ -84,7 +72,6 @@ class SvIfcBMeshToIfcGeo(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
             )
         
         representation = [ifcopenshell.api.run("geometry.add_representation", file, should_run_listeners=False,blender_object = blender_object, geometry=geometry, context = repr_context)]
-        print("representation: ", representation)
         try:
             self.outputs["file"].sv_set([[file]])
             self.outputs["representation"].sv_set([representation])

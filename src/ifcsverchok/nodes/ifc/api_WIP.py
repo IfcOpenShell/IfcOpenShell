@@ -28,7 +28,6 @@ import importlib
 
 
 
-
 class SvIfcTooltip(bpy.types.Operator):
     bl_idname = "node.sv_ifc_tooltip"
     bl_label = "IFC Info"
@@ -44,37 +43,48 @@ class SvIfcTooltip(bpy.types.Operator):
 
 class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
 
-    def update_usecase(self, context):
-        # update is not getting run rn
-        try:
-            module_usecase = self.get_module_usecase()
-            if module_usecase:
-                self.generate_node(*module_usecase)
-        except:
-            raise Exception(
-                f"Couldn't run generate_node(). Module usecase: {module_usecase}"
-            )
+    # def update_usecase(self, context):
+    #     # update_usecase is not getting run rn
+#         module_usecase = self.get_module_usecase()
+#         if module_usecase:
+#             self.generate_node(*module_usecase)
 
     bl_idname = "SvIfcApiWIP"
     bl_label = "IFC API WIP"
     tooltip: StringProperty(name="Tooltip")
-    usecase: StringProperty(update=updateNode)
+    usecase: StringProperty(name="usecase", update=updateNode)
+    current_usecase: StringProperty(name="current_usecase")
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "usecase").use_prop = True
-        # input_socket.tooltip = "ifcopenshell.api usecase, written like 'module.usecase' \n E.g.: 'project.create_file'"
+        self.inputs.new("SvStringsSocket", "usecase").prop_name = "usecase"
+        #input_socket.tooltip = "ifcopenshell.api usecase, written like 'module.usecase' \n E.g.: 'project.create_file'"
         self.outputs.new("SvVerticesSocket", "file")
 
     def draw_buttons(self, context, layout):
-        op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False)
-        op.tooltip = self.tooltip
+        op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = "ifcopenshell.api usecase, written like 'module.usecase' \n E.g.: 'project.create_file"
+        # op.tooltip = self.tooltip
 
     def process(self):
-        print("process")
-        module_usecase = self.get_module_usecase()
+        self.sv_input_names = ["usecase"]
+        module_usecase = self.inputs["usecase"].sv_get()[0][0]
         if module_usecase:
-            self.generate_node(*module_usecase) 
+            try:
+                module_usecase = self.get_module_usecase()
+            except:
+                raise Exception(
+                    f"Couldn't run generate_node(). Module usecase: {module_usecase}"
+                )
+            if '.'.join(module_usecase) != self.current_usecase:
+                self.generate_node(*module_usecase)   
+            try:
+                for i in range(0, len(self.inputs)):
+                    input = self.inputs[i].sv_get()
+            except:
+                # This occurs when a blender save file is reloaded
+                self.generate_node(*module_usecase)
+
             self.sv_input_names = [i.name for i in self.inputs]
+
             super().process() # super().process() uses zip_long_repeat() which doesn't take objects like bmesh
             
 
@@ -85,26 +95,45 @@ class SvIfcApiWIP(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
 
     def generate_node(self, module, usecase):
         importlib.import_module(f"ifcopenshell.api.{module}.{usecase}")
-        init_func = getattr(getattr(ifcopenshell.api, module), usecase).Usecase.__init__
-        if "settings" in init_func.__code__.co_varnames:
-            args = list(init_func.__code__.co_consts[3])
-            args.insert(0, 'file')
-        else:
-            args = ['file']
+        local_module = getattr(getattr(ifcopenshell.api, module), usecase)
+
+        node_inputs = {}
+        if hasattr(local_module.Usecase(local_module), "file"):
+            node_inputs["file"] = None
+        node_inputs.update(getattr(local_module.Usecase(local_module), "settings", {}))
+        # print("node inputs: ", node_inputs)
         
         while len(self.inputs) > 1:
             self.inputs.remove(self.inputs[-1])
+        
+        if node_inputs:
+            self.tooltip = ""
+            for name, data in node_inputs.items():
+                setattr(SvIfcApiWIP, name, StringProperty(name=name))
+                self.inputs.new("SvStringsSocket", name).prop_name = name
+                if data is not None:
+                    self.tooltip = f"{name} ({data}): {data}\n"
+                else:
+                    self.tooltip = f"{name}: None\n"
+            self.tooltip = self.tooltip.strip()
+        self.current_usecase = '.'.join([module, usecase])
 
-        for name in args:
-            # print("name type", type(name))
-            setattr(SvIfcApiWIP, str(name), StringProperty(name=str(name), update=updateNode))
-            self.inputs.new("SvStringsSocket", str(name))
 
     def process_ifc(self, usecase, *setting_values):
-        if usecase:
+        
+        if usecase and setting_values:
             settings = dict(zip(self.sv_input_names[1:], setting_values))
             settings = {k: v for k, v in settings.items() if v != ""}
-            self.outputs["file"].sv_set([ifcopenshell.api.run(usecase, **settings)])
+            try:
+                if "file" in settings:
+                    file = settings["file"]
+                    settings.pop("file")
+                    self.outputs["file"].sv_set([ifcopenshell.api.run(usecase, file, **settings)])
+                else:
+                    self.outputs["file"].sv_set([ifcopenshell.api.run(usecase, **settings)])
+            except:
+                raise Exception(f"Couldn't run usecase.")
+                
 
 
 
