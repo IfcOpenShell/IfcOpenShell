@@ -25,6 +25,7 @@ import ifcopenshell.api
 import ifcopenshell.api.owner.settings
 from pathlib import Path
 
+import numpy as np
 
 class Obj2Ifc:
     def __init__(self, path):
@@ -44,9 +45,10 @@ class Obj2Ifc:
             faces = mesh.face_matrix()
             vertices = mesh.vertex_matrix()
 
-            ifc_faces = []
-            for face in faces:
-                ifc_faces.append(
+            
+            ifc_faces = np.zeros([len(faces)], dtype=object)
+            for i, face in enumerate(faces):
+                ifc_faces[i] = (
                     self.file.createIfcFace(
                         [
                             self.file.createIfcFaceOuterBound(
@@ -71,7 +73,7 @@ class Obj2Ifc:
                         self.context,
                         "Body",
                         "Brep",
-                        [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(ifc_faces))],
+                        [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(ifc_faces.tolist()))],
                     )
                 ],
             )
