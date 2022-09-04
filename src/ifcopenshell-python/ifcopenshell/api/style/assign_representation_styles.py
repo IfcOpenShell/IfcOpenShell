@@ -38,7 +38,9 @@ class Usecase:
             for item in element.Items:
                 if not item.is_a("IfcGeometricRepresentationItem"):
                     continue
-                style = self.settings["styles"].pop(0)
+                if self.settings["styles"]:
+                    # If there are more items than styles, fallback to using the last style
+                    style = self.settings["styles"].pop(0)
                 name = style.Name
                 if self.file.schema == "IFC2X3" or self.settings["should_use_presentation_style_assignment"]:
                     style = self.file.createIfcPresentationStyleAssignment([style])

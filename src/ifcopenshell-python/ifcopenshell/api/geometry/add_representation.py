@@ -217,7 +217,9 @@ class Usecase:
         )
 
     def create_variable_representation(self):
-        if isinstance(self.settings["geometry"], bpy.types.Curve):
+        if isinstance(self.settings["geometry"], bpy.types.Curve) and self.settings["geometry"].bevel_depth:
+            return self.create_swept_disk_solid_representation()
+        elif isinstance(self.settings["geometry"], bpy.types.Curve):
             return self.create_curve3d_representation()
         elif isinstance(self.settings["geometry"], bpy.types.Camera):
             return self.create_camera_block_representation()
@@ -271,6 +273,14 @@ class Usecase:
         return (
             self.settings["geometry"].BIMCameraProperties.raster_x
             > self.settings["geometry"].BIMCameraProperties.raster_y
+        )
+
+    def create_swept_disk_solid_representation(self):
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "AdvancedSweptSolid",
+            self.create_swept_disk_solids(),
         )
 
     def create_curve3d_representation(self):
@@ -334,6 +344,14 @@ class Usecase:
             for v in self.settings["geometry"].vertices
         ]
         return self.file.createIfcPolyline([points[i] for i in indices])
+
+    def create_swept_disk_solids(self):
+        curves = self.create_curves()
+        results = []
+        radius = self.convert_si_to_unit(round(self.settings["geometry"].bevel_depth, 3))
+        for curve in curves:
+            results.append(self.file.createIfcSweptDiskSolid(curve, radius))
+        return results
 
     def create_curves(self, should_exclude_faces=False, is_2d=False):
         if isinstance(self.settings["geometry"], bpy.types.Mesh):
