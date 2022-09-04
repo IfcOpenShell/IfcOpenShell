@@ -25,6 +25,7 @@ import ifcopenshell.api
 import ifcopenshell.api.owner.settings
 from pathlib import Path
 
+import numpy as np
 
 class Obj2Ifc:
     def __init__(self, path):
@@ -35,9 +36,11 @@ class Obj2Ifc:
         self.create_ifc_file(version)
         self.scene = pywavefront.Wavefront(self.path, create_materials=True, collect_faces=True)
         for mesh in self.scene.mesh_list:
-            ifc_faces = []
-            for face in mesh.faces:
-                ifc_faces.append(
+            
+            faces = mesh.faces
+            ifc_faces = np.zeros([len(faces)], dtype=object)
+            for i, face in enumerate(faces):
+                ifc_faces[i] = (
                     self.file.createIfcFace(
                         [
                             self.file.createIfcFaceOuterBound(
@@ -57,7 +60,7 @@ class Obj2Ifc:
                         self.context,
                         "Body",
                         "Brep",
-                        [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(ifc_faces))],
+                        [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(ifc_faces.tolist()))],
                     )
                 ],
             )
