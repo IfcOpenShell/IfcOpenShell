@@ -61,10 +61,9 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
 
             for i in range(0, self.entity_schema.attribute_count()):
                 self.sv_input_names.append(self.entity_schema.attribute_by_index(i).name())
-        self.process()
+        super().process()
     
     def generate_inputs(self, ifc_class):
-        # print("generate_inputs...")
         while len(self.inputs) > 2:
             self.inputs.remove(self.inputs[-1])
         for i in range(0, self.entity_schema.attribute_count()):
@@ -78,7 +77,6 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         for i in range(0, len(entity)):
             try:
                 value = attributes[i]
-                # print("value (attribute[i]): ", value, "|value type: ", type(value))
                 if isinstance(value, str) and value == "":
                     value = None
             except:

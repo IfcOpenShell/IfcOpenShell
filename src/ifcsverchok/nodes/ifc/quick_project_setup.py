@@ -64,13 +64,10 @@ class SvIfcQuickProjectSetup(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
 
     def process(self):
         self.sv_input_names = [i.name for i in self.inputs]
-        print("inputnames: ", self.sv_input_names)
         super().process()
 
     def process_ifc(self, *setting_values):
-        print("setting values: ", setting_values)
         settings = dict(zip(self.sv_input_names, setting_values))
-        print("settings: ", settings)
         settings = {k: v for k, v in settings.items() if v != ""}
         file = template.create(
                 filename=settings['filename'],
