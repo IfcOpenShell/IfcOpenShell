@@ -831,7 +831,7 @@ class DumbWallGenerator:
 
 
 def generate_axis(usecase_path, ifc_file, settings):
-    axis_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Axis", "GRAPH_VIEW")
+    axis_context = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Axis", "GRAPH_VIEW")
     if not axis_context:
         return
     obj = settings["blender_object"]
@@ -839,7 +839,7 @@ def generate_axis(usecase_path, ifc_file, settings):
     parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
     if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
         return
-    old_axis = ifcopenshell.util.representation.get_representation(product, "Model", "Axis", "GRAPH_VIEW")
+    old_axis = ifcopenshell.util.representation.get_representation(product, "Plan", "Axis", "GRAPH_VIEW")
     if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
         if old_axis:
             blenderbim.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_axis)
