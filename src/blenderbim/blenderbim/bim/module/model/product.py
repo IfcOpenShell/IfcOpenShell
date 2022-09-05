@@ -100,6 +100,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
         building_obj = None
         if len(context.selected_objects) == 1 and context.active_object:
             building_obj = context.active_object
+            building_element = tool.Ifc.get_entity(building_obj)
 
         # A cube
         verts = [
@@ -131,8 +132,14 @@ class AddConstrTypeInstance(bpy.types.Operator):
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         element = tool.Ifc.get_entity(obj)
         blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+        # Update required as core.type.assign_type may change obj.data
+        bpy.context.view_layer.update()
 
-        if building_obj:
+        if (
+            building_obj
+            and building_element
+            and building_element.is_a() in ["IfcWall", "IfcWallStandardCase", "IfcCovering"]
+        ):
             if instance_class in ["IfcWindow", "IfcDoor"]:
                 # TODO For now we are hardcoding windows and doors as a prototype
                 bpy.ops.bim.add_element_opening(
