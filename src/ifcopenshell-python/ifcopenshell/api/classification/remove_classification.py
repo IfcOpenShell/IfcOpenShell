@@ -32,6 +32,9 @@ class Usecase:
         for rel in self.file.by_type("IfcRelAssociatesClassification"):
             if not rel.RelatingClassification:
                 self.file.remove(rel)
+        for rel in self.file.by_type("IfcExternalReferenceRelationship"):
+            if not rel.RelatingReference:
+                self.file.remove(rel)
 
     def get_references(self, classification):
         results = []
