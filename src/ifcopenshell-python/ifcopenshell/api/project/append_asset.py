@@ -189,12 +189,18 @@ class Usecase:
 
     def create_equivalent_context(self, added_context):
         if added_context.is_a("IfcGeometricRepresentationSubContext"):
+            parent = self.get_equivalent_existing_context(added_context.ParentContext)
+            if not parent:
+                parent = self.create_equivalent_context(added_context.ParentContext)
             return ifcopenshell.api.run(
                 "context.add_context",
-                context=added_context.ContextType,
-                subcontext=added_context.ContextIdentifier,
+                self.file,
+                parent=parent,
+                context_type=added_context.ContextType,
+                context_identifier=added_context.ContextIdentifier,
                 target_view=added_context.TargetView,
             )
         return ifcopenshell.api.run(
-            "context.add_context", context=added_context.ContextType, subcontext=added_context.ContextIdentifier
+            "context.add_context", self.file, context_type=added_context.ContextType,
+            context_identifier=added_context.ContextIdentifier
         )

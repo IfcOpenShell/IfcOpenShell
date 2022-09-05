@@ -68,6 +68,59 @@ class TestAppendAsset(test.bootstrap.IFC4):
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=material)
         assert len(self.file.by_type("IfcMaterial")) == 1
 
+    def test_append_a_material_with_a_representation(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+
+        library = ifcopenshell.api.run("project.create_file")
+        ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject")
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+        style = ifcopenshell.api.run("style.add_style", library)
+        context = ifcopenshell.api.run("context.add_context", library, context_type="Model")
+        ifcopenshell.api.run("style.assign_material_style", library, material=material, style=style, context=context)
+        ifcopenshell.api.run("project.append_asset", self.file, library=library, element=material)
+        assert len(self.file.by_type("IfcMaterial")) == 1
+        assert len(self.file.by_type("IfcGeometricRepresentationContext")) == 1
+        context = self.file.by_type("IfcMaterial")[0].HasRepresentation[0].Representations[0].ContextOfItems
+        assert context.ContextType == "Model"
+
+    def test_append_a_material_with_a_representation_and_reuse_an_existing_context(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        file_context = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
+
+        library = ifcopenshell.api.run("project.create_file")
+        ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject")
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+        style = ifcopenshell.api.run("style.add_style", library)
+        context = ifcopenshell.api.run("context.add_context", library, context_type="Model")
+        ifcopenshell.api.run("style.assign_material_style", library, material=material, style=style, context=context)
+        ifcopenshell.api.run("project.append_asset", self.file, library=library, element=material)
+        assert len(self.file.by_type("IfcMaterial")) == 1
+        assert len(self.file.by_type("IfcGeometricRepresentationContext")) == 1
+        context = self.file.by_type("IfcMaterial")[0].HasRepresentation[0].Representations[0].ContextOfItems
+        assert context == file_context
+
+    def test_append_a_material_with_a_representation_and_reuse_an_existing_context_by_a_new_subcontext(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        file_context = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
+
+        library = ifcopenshell.api.run("project.create_file")
+        ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject")
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+        style = ifcopenshell.api.run("style.add_style", library)
+        context = ifcopenshell.api.run("context.add_context", library, context_type="Model")
+        subcontext = ifcopenshell.api.run("context.add_context", library, context_type="Model",
+                context_identifier="Body", target_view="MODEL_VIEW", parent=context)
+        ifcopenshell.api.run("style.assign_material_style", library, material=material, style=style, context=subcontext)
+        ifcopenshell.api.run("project.append_asset", self.file, library=library, element=material)
+        assert len(self.file.by_type("IfcMaterial")) == 1
+        assert len(self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)) == 1
+        assert len(self.file.by_type("IfcGeometricRepresentationSubContext", include_subtypes=False)) == 1
+        subcontext = self.file.by_type("IfcMaterial")[0].HasRepresentation[0].Representations[0].ContextOfItems
+        assert subcontext.ContextType == "Model"
+        assert subcontext.ContextIdentifier == "Body"
+        assert subcontext.TargetView == "MODEL_VIEW"
+        assert subcontext.ParentContext == file_context
+
     def test_append_a_cost_schedule(self):
         library = ifcopenshell.api.run("project.create_file")
         schedule = ifcopenshell.api.run("cost.add_cost_schedule", library, name="Schedule")
