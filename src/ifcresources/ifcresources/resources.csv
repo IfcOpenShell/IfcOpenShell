@@ -1,0 +1,30 @@
+,,,,,,,Epset_Productivity,Epset_Productivity,Epset_Productivity
+Hierarchy,Identification,Name,Type,BaseCostValue,BaseCostQuantity,QuantityUnit,BaseQuantityConsumed,BaseQuantityProducedName,BaseQuantityProducedValue
+1,1,Self-Production,IfcCrewResource,,,,,,
+,,,,,,,,,
+2,1.1, Concrete Works,IfcLaborResource,,,,,,
+,,,,,,,,,
+3,1.1.1,In-situ Slabs,IfcLaborResource,220,9,hour ,15,GrossArea,10
+3,1.1.2,In-situ Walls,IfcLaborResource,220,9,hour ,18,GrossArea,10
+3,1.1.3,In-situ Beams,IfcLaborResource,220,9,hour ,8,Length,1
+3,1.1.4,In-situ Columns,IfcLaborResource,220,9,hour ,5,Count,1
+3,1.1.5,Finish Concrete,IfcLaborResource,220,9,hour ,5,GrossArea,10
+3,1.1.6,Drainage,IfcLaborResource,220,9,hour ,35,Length,10
+3,1.1.7,Piles Trimming,IfcLaborResource,220,9,hour ,5,Count,1
+3,1.1.8,Pile Caps,IfcLaborResource,220,9,hour ,10,Count,1
+3,1.1.9,Waterproofing/Insulation,IfcLaborResource,220,9,hour ,5,GrossArea,10
+3,1.1.10,Slabs SteelWork,IfcSubContractResource,2500,1000,m3,,GrossWeight,75
+,,,,,,,,,
+2,1.2,Logistics,IfcLaborResource,,,,,,
+,,,,,,,,,
+3,1.2.1,Equipment,IfcConstructionEquipmentResource,,,,,,
+,,,,,,,,,
+4,1.2.1.1,Mobile Crane,IfcConstructionEquipmentResource,,,,,,
+4,1.2.1.2,TC 1,IfcConstructionEquipmentResource,,,,,,
+4,1.2.1.3,TC 2,IfcConstructionEquipmentResource,,,,,,
+,,,,,,,,,
+3,1.2.2,Logistics Team,IfcLaborResource,,,,,,
+,,,,,,,,,
+4,1.2.2.1,Crane Supervisor,IfcLaborResource,,,,,,
+4,1.2.2.2,Crane Driver,IfcLaborResource,,,,,,
+4,1.2.2.3,Slinger/Signaller,IfcLaborResource,,,,,,
