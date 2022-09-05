@@ -27,7 +27,7 @@ def get_file():
     elif args.output:
         ifc = ifcopenshell.file(schema='IFC4')
         ifc.create_entity("IfcWorkPlan")
-        ifc.create_entity("IfcContext")
+        ifc.create_entity("IfcProject")
         ifc.write(args.output)
         ifcfile = ifcopenshell.open(args.output)
     else:
