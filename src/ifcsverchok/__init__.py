@@ -1,4 +1,3 @@
-
 # IfcSverchok - IFC Sverchok extension
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -36,7 +35,10 @@ import sverchok
 from sverchok.core import sv_registration_utils, make_node_list
 from sverchok.utils import auto_gather_node_classes, get_node_class_reference
 from sverchok.menu import SverchNodeItem, SverchNodeCategory, register_node_panels
-from sverchok.utils.extra_categories import register_extra_category_provider, unregister_extra_category_provider
+from sverchok.utils.extra_categories import (
+    register_extra_category_provider,
+    unregister_extra_category_provider,
+)
 from sverchok.ui.nodeview_space_menu import make_extra_category_menus
 from sverchok.utils.logging import info, debug
 
@@ -50,6 +52,7 @@ def nodes_index():
                 ("ifc.read_file", "SvIfcReadFile"),
                 ("ifc.write_file", "SvIfcWriteFile"),
                 ("ifc.create_entity", "SvIfcCreateEntity"),
+                ("ifc.create_entity2", "SvIfcCreateEntity2"),
                 ("ifc.create_shape", "SvIfcCreateShape"),
                 ("ifc.read_entity", "SvIfcReadEntity"),
                 ("ifc.by_id", "SvIfcById"),
@@ -63,8 +66,10 @@ def nodes_index():
                 ("ifc.get_attribute", "SvIfcGetAttribute"),
                 ("ifc.select_blender_objects", "SvIfcSelectBlenderObjects"),
                 ("ifc.api", "SvIfcApi"),
+                ("ifc.api_WIP", "SvIfcApiWIP"),
                 ("ifc.bmesh_to_ifc", "SvIfcBMeshToIfcGeo"),
                 ("ifc.create_project", "SvIfcCreateProject"),
+                ("ifc.quick_project_setup", "SvIfcQuickProjectSetup")
 
             ],
         )
@@ -112,7 +117,10 @@ def make_menu():
             nodetype = item[1]
             rna = get_node_class_reference(nodetype)
             if not rna:
-                info("Node `%s' is not available (probably due to missing dependencies).", nodetype)
+                info(
+                    "Node `%s' is not available (probably due to missing dependencies).",
+                    nodetype,
+                )
             else:
                 node_item = SverchNodeItem.new(nodetype)
                 node_items.append(node_item)
@@ -144,7 +152,9 @@ def register():
     auto_gather_node_classes(extra_nodes)
     menu = make_menu()
     menu_category_provider = SvExCategoryProvider("IFCSVERCHOK", menu)
-    register_extra_category_provider(menu_category_provider)  # if 'IFCSVERCHOK' in nodeitems_utils._node_categories:
+    register_extra_category_provider(
+        menu_category_provider
+    )  # if 'IFCSVERCHOK' in nodeitems_utils._node_categories:
     nodeitems_utils.register_node_categories("IFCSVERCHOK", menu)
     our_menu_classes = make_extra_category_menus()
 
