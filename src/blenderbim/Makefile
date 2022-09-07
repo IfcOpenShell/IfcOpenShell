@@ -16,6 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+PYTHON:=python
+PATCH:=patch
+SED:=sed -i
+ifeq ($(OS),Windows_NT)
+HOSTOS:=win
+else
+UNAME_S:=$(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+HOSTOS:=linux
+endif
+ifeq ($(UNAME_S),Darwin)
+HOSTOS:=macos
+PYTHON:=python3
+PATCH:=patch -d
+SED:=sed -i '' -e
+endif
+endif
+
 VERSION:=`date '+%y%m%d'`
 PYVERSION:=py37
 
@@ -138,7 +156,7 @@ endif
 	# Provides IFCClash functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcclash/ifcclash dist/blenderbim/libs/site/packages/
 	# Provides BIMTester functionality
-	cd dist/working && python -m venv env
+	cd dist/working && $(PYTHON) -m venv env
 	cd dist/working && . env/bin/activate && pip install pybabel
 	cd dist/working && . env/bin/activate && pip install babel
 	cd dist/working && . env/bin/activate && ./env/bin/pybabel compile -d ./IfcOpenShell-0.7.0/src/ifcbimtester/bimtester/locale/
@@ -163,9 +181,9 @@ endif
 
 	# Provides Mustache templating in construction documentation
 	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/d6/fd/eb8c212053addd941cc90baac307c00ac246ac3fce7166b86434c6eae963/pystache-0.5.4.tar.gz
+	cd dist/working && wget https://files.pythonhosted.org/packages/3f/e7/8750ba6c6101d6aa5ceeb20c013adf2c6f3554a12c71d75654b468404bfa/pystache-0.6.0.tar.gz
 	cd dist/working && tar -xzvf pystache*
-	cd dist/working/pystache-0.5.4/ && python setup.py build && cp -r build/lib/pystache ../../blenderbim/libs/site/packages/
+	cd dist/working/pystache-0.6.0/ && $(PYTHON) setup.py build && cp -r build/lib/pystache ../../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Provides SVG export in construction documentation
@@ -283,7 +301,7 @@ endif
 
 	# Required by IFCCityJSON
 	mkdir dist/working
-	cd dist/working && python -m venv env
+	cd dist/working && $(PYTHON) -m venv env
 	cd dist/working && mkdir site-packages
 	cd dist/working && . env/bin/activate && pip install cjio --target=./site-packages
 	cd dist/working/site-packages/ && rm -r *dist-info*
@@ -391,11 +409,11 @@ endif
 	# See bug #1294
 	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.7.0/src/ifcbimtester/patch/model_core.patch
 	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.7.0/src/ifcbimtester/patch/runner_util.patch
-	cd dist/working/ && patch ../blenderbim/libs/site/packages/behave/model_core.py < model_core.patch
-	cd dist/working/ && patch ../blenderbim/libs/site/packages/behave/runner_util.py < runner_util.patch
+	cd dist/working/ && $(PATCH) ../blenderbim/libs/site/packages/behave/model_core.py < model_core.patch
+	cd dist/working/ && $(PATCH) ../blenderbim/libs/site/packages/behave/runner_util.py < runner_util.patch
 	# See bug #2159
 	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.7.0/src/ifcbimtester/patch/junit.patch
-	cd dist/working/ && patch ../blenderbim/libs/site/packages/behave/reporter/junit.py < junit.patch
+	cd dist/working/ && $(PATCH) ../blenderbim/libs/site/packages/behave/reporter/junit.py < junit.patch
 	rm -rf dist/working
 
 	# Required by ids - uh, not any more, but I'm trying it out in the drawing module
@@ -523,7 +541,7 @@ endif
 	cd dist/working/ && cp -r pkg_resources ../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	cd dist/blenderbim && sed -i "s/999999/$(VERSION)/" __init__.py
+	cd dist/blenderbim && $(SED) "s/999999/$(VERSION)/" __init__.py
 	cd dist && zip -r blenderbim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
 	rm -rf dist/blenderbim
 
