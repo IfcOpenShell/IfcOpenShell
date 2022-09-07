@@ -27,11 +27,12 @@ units, and assumes you'll be working with both 2D and 3D geoemtry.
 
 In the top right **Outliner** panel, you will see a hierarchy of spaces that has
 been automatically created for you.  This hierarchy is known is the **Spatial
-Tree**.
+Tree**. The Camera, Cube, and Light by default come with a fresh new Blender
+session, and are not part of your IFC project.
 
 .. image:: default-spatial-tree.png
 
-Any Blender object that you want to part of your IFC project must be converted
+Any Blender object that you want to be part of IFC project must be converted
 into a IFC object by assigning a category. This category is known as the **IFC
 Class**.
 
@@ -42,6 +43,12 @@ column, so select **IfcColumn** from the **Class** drop-down, and press **Assign
 IFC Class**.
 
 .. image:: assign-class.png
+
+.. tip::
+
+   Regardless of the type of geometry or shape of the object, there are no
+   restrictions on which category you can choose. You can have a monkey-shaped
+   wall if you want!
 
 All IFC objects must also belong inside the **Spatial Tree**. In the
 **Outliner** panel, you can drag and drop your newly created **IfcColumn/Cube**
