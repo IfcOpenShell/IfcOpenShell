@@ -4,7 +4,7 @@ Installation
 There are different methods of installation, depending on your situation.
 
 1. **Unstable installation** is recommended for power users helping with testing.
-2. **Building from source** is recommended for distributing a build from source.
+2. **Bundling for Blender** is recommended for distributing the add-on.
 3. **Live development environment** is recommended for developers who are actively coding.
 4. **Packaged installation** is recommended for those who use a package manager.
 
@@ -27,12 +27,13 @@ You will need to choose which build to download.
 Sometimes, a build may be delayed, or contain broken code. We try to avoid this,
 but it happens.
 
-Building from source
+Bundling for Blender
 --------------------
 
-It is possible to run the latest bleeding edge version of BlenderBIM without
-having to wait for an official release, since BlenderBIM is coded in Python and
-doesn't require any compilation.
+Instead of waiting for an official release on the BlenderBIM Add-on website, it
+is possible to make your own Blender add-on from the bleeding edge source code
+of BlenderBIM. BlenderBIM is coded in Python and doesn't require any
+compilation, so this is a relatively easy process.
 
 Note that the BlenderBIM Add-on does depend on IfcOpenShell, and IfcOpenShell
 does require compilation. The following instructions will use a pre-built
@@ -55,7 +56,7 @@ Live development environment
 ----------------------------
 
 One option for developers who want to actively develop from source is to follow
-the instructions from **Building from source**. However, creating a build,
+the instructions from **Bundling for Blender**. However, creating a build,
 uninstalling the old add-on, and installing a new build is a slow process.
 Although it works, it is very slow, so we do not recommend it.
 
