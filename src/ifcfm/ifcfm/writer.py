@@ -93,7 +93,7 @@ class Writer:
 
     def write(self):
         self.sheets = [
-            "Contact",
+            "Actor",
             "Facility",
             "Floor",
             "Space",
@@ -113,23 +113,22 @@ class Writer:
             # "Issue",
         ]
         self.write_data(
-            "Contact",
-            self.parser.contacts,
+            "Actor",
+            self.parser.actors,
             [
                 "Name",
                 "Category",
                 "Email",
                 "Phone",
+                "CompanyURL",
                 "Department",
-                "Street",
-                "PostalBox",
-                "Town",
+                "Address1",
+                "Address2",
                 "StateRegion",
                 "PostalCode",
                 "Country",
-                "CompanyURL",
             ],
-            "rirrrrrrrrrr",
+            "rirrrrrrrrr",
             ["Name"],
         )
         self.write_data(

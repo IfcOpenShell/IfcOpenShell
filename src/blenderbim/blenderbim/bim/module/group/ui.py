@@ -42,7 +42,7 @@ class BIM_PT_groups(Panel):
         row = self.layout.row(align=True)
         row.label(text=f"{len(Data.groups)} Groups Found", icon="OUTLINER")
         if self.props.is_editing:
-            row.operator("bim.add_group", text="", icon="ADD")
+            row.operator("bim.add_group", text="", icon="ADD").group = 0
             row.operator("bim.disable_group_editing_ui", text="", icon="CANCEL")
         else:
             row.operator("bim.load_groups", text="", icon="GREASEPENCIL")
@@ -140,7 +140,7 @@ class BIM_UL_groups(UIList):
             elif context.scene.BIMGroupProperties.active_group_id:
                 op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
                 op.group = group_id
-                op = row.operator("bim.add_group_to_group", text="", icon="ADD")
+                op = row.operator("bim.add_group", text="", icon="ADD")
                 op.group = group_id
                 op = row.operator("bim.remove_group", text="", icon="X")
                 op.group = group_id
@@ -153,7 +153,7 @@ class BIM_UL_groups(UIList):
                 op.group = group_id
                 op = row.operator("bim.enable_editing_group", text="", icon="GREASEPENCIL")
                 op.group = group_id
-                op = row.operator("bim.add_group_to_group", text="", icon="ADD")
+                op = row.operator("bim.add_group", text="", icon="ADD")
                 op.group = group_id
                 op = row.operator("bim.remove_group", text="", icon="X")
                 op.group = group_id

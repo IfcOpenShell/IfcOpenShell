@@ -52,14 +52,14 @@ class Usecase:
         if [e for e in self.file.by_type("IfcMaterial") if e.Name == self.settings["element"].Name]:
             return
         self.whitelisted_inverse_attributes = {"IfcMaterial": ["HasProperties", "HasRepresentation"]}
+        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
         if not element.HasRepresentation:
             return element
-        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         added_contexts = [
             e
             for e in self.file.traverse(element.HasRepresentation[0])
-            if e.is_a() == "IfcGeometricRepresentationSubContext"
+            if e.is_a("IfcGeometricRepresentationContext")
         ]
         for added_context in added_contexts:
             equivalent_existing_context = self.get_equivalent_existing_context(added_context)
@@ -93,9 +93,9 @@ class Usecase:
             "IfcMaterialDefinition": ["HasExternalReferences", "HasProperties"],
             "IfcRepresentationItem": ["StyledByItem"],
         }
-        element = self.add_element(self.settings["element"])
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
-        added_contexts = [e for e in self.file.traverse(element) if e.is_a() == "IfcGeometricRepresentationContext"]
+        element = self.add_element(self.settings["element"])
+        added_contexts = [e for e in self.file.traverse(element) if e.is_a("IfcGeometricRepresentationContext")]
         for added_context in added_contexts:
             equivalent_existing_context = self.get_equivalent_existing_context(added_context)
             if not equivalent_existing_context:
@@ -117,9 +117,9 @@ class Usecase:
             "IfcMaterialDefinition": ["HasExternalReferences", "HasProperties"],
             "IfcRepresentationItem": ["StyledByItem"],
         }
-        element = self.add_element(self.settings["element"])
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
-        added_contexts = [e for e in self.file.traverse(element) if e.is_a() == "IfcGeometricRepresentationContext"]
+        element = self.add_element(self.settings["element"])
+        added_contexts = [e for e in self.file.traverse(element) if e.is_a("IfcGeometricRepresentationContext")]
         for added_context in added_contexts:
             equivalent_existing_context = self.get_equivalent_existing_context(added_context)
             if not equivalent_existing_context:
@@ -189,12 +189,18 @@ class Usecase:
 
     def create_equivalent_context(self, added_context):
         if added_context.is_a("IfcGeometricRepresentationSubContext"):
+            parent = self.get_equivalent_existing_context(added_context.ParentContext)
+            if not parent:
+                parent = self.create_equivalent_context(added_context.ParentContext)
             return ifcopenshell.api.run(
                 "context.add_context",
-                context=added_context.ContextType,
-                subcontext=added_context.ContextIdentifier,
+                self.file,
+                parent=parent,
+                context_type=added_context.ContextType,
+                context_identifier=added_context.ContextIdentifier,
                 target_view=added_context.TargetView,
             )
         return ifcopenshell.api.run(
-            "context.add_context", context=added_context.ContextType, subcontext=added_context.ContextIdentifier
+            "context.add_context", self.file, context_type=added_context.ContextType,
+            context_identifier=added_context.ContextIdentifier
         )
