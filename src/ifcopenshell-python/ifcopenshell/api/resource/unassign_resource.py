@@ -31,12 +31,17 @@ class Usecase:
 
     def execute(self):
         for rel in self.settings["related_object"].HasAssignments or []:
-            if not rel.is_a("IfcRelAssignsToResource") or rel.RelatingResource != self.settings["relating_resource"]:
+            if (
+                not rel.is_a("IfcRelAssignsToResource")
+                or rel.RelatingResource != self.settings["relating_resource"]
+            ):
                 continue
             if len(rel.RelatedObjects) == 1:
                 return self.file.remove(rel)
             related_objects = list(rel.RelatedObjects)
             related_objects.remove(self.settings["related_object"])
             rel.RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+            ifcopenshell.api.run(
+                "owner.update_owner_history", self.file, **{"element": rel}
+            )
             return rel

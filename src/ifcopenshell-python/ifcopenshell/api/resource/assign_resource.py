@@ -35,7 +35,8 @@ class Usecase:
             for assignment in self.settings["related_object"].HasAssignments:
                 if (
                     assignment.is_a("IfclRelAssignsToResource")
-                    and assignment.RelatingResource == self.settings["relating_resource"]
+                    and assignment.RelatingResource
+                    == self.settings["relating_resource"]
                 ):
                     return
 
@@ -47,13 +48,17 @@ class Usecase:
             related_objects = list(resource_of.RelatedObjects)
             related_objects.append(self.settings["related_object"])
             resource_of.RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": resource_of})
+            ifcopenshell.api.run(
+                "owner.update_owner_history", self.file, **{"element": resource_of}
+            )
         else:
             resource_of = self.file.create_entity(
                 "IfcRelAssignsToResource",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    "OwnerHistory": ifcopenshell.api.run(
+                        "owner.create_owner_history", self.file
+                    ),
                     "RelatedObjects": [self.settings["related_object"]],
                     "RelatingResource": self.settings["relating_resource"],
                 }

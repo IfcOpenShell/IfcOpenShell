@@ -36,16 +36,27 @@ class Usecase:
             and "ScheduleFinish" in self.settings["attributes"].keys()
         ):
             del self.settings["attributes"]["ScheduleFinish"]
-        if self.settings["attributes"].get("ActualWork", None) and "ActualFinish" in self.settings["attributes"].keys():
+        if (
+            self.settings["attributes"].get("ActualWork", None)
+            and "ActualFinish" in self.settings["attributes"].keys()
+        ):
             del self.settings["attributes"]["ActualFinish"]
 
         for name, value in self.settings["attributes"].items():
             if value:
                 if "Start" in name or "Finish" in name or name == "StatusTime":
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDateTime")
-                elif name == "ScheduleWork" or name == "ActualWork" or name == "RemainingTime":
+                elif (
+                    name == "ScheduleWork"
+                    or name == "ActualWork"
+                    or name == "RemainingTime"
+                ):
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDuration")
             setattr(self.settings["resource_time"], name, value)
 
     def get_resource(self):
-        return [e for e in self.file.get_inverse(self.settings["resource_time"]) if e.is_a("IfcResource")][0]
+        return [
+            e
+            for e in self.file.get_inverse(self.settings["resource_time"])
+            if e.is_a("IfcResource")
+        ][0]
