@@ -509,7 +509,7 @@ if(NOT MINIMAL_BUILD AND COLLADA_SUPPORT)
 
     find_file(COLLADASWStreamWriter_h "COLLADASWStreamWriter.h" ${OPENCOLLADA_INCLUDE_DIRS})
 
-    IF(COLLADASWStreamWriter_h)
+    if(COLLADASWStreamWriter_h)
         message(STATUS "OpenCOLLADA header files found")
         add_definitions(-DWITH_OPENCOLLADA)
         set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_OPENCOLLADA)
@@ -1165,7 +1165,7 @@ if(BUILD_CONVERT)
     )
 endif()
 
-IF(BUILD_QTVIEWER)
+if(BUILD_QTVIEWER)
     add_subdirectory(../src/qtviewer qtviewer)
 endif()
 
