@@ -27,7 +27,7 @@ from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
 from ifcopenshell.api.cost.data import Data
 from ifcopenshell.api.unit.data import Data as UnitData
-from ifcopenshell.api.resource.data import Data as ResourceData
+from blenderbim.bim.module.resource.data import ResourceData
 
 
 class AddCostSchedule(bpy.types.Operator):
@@ -604,7 +604,7 @@ class AddCostValue(bpy.types.Operator):
         value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=parent)
         ifcopenshell.api.run("cost.edit_cost_value", self.file, cost_value=value, attributes=attributes)
         if parent.is_a("IfcConstructionResource"):
-            ResourceData.load(self.file)
+            ResourceData.load()
         else:
             Data.load(self.file)
         return {"FINISHED"}
@@ -630,7 +630,7 @@ class RemoveCostItemValue(bpy.types.Operator):
             cost_value=self.file.by_id(self.cost_value),
         )
         if parent.is_a("IfcConstructionResource"):
-            ResourceData.load(self.file)
+            ResourceData.load()
         else:
             Data.load(self.file)
         return {"FINISHED"}
