@@ -923,24 +923,26 @@ class LoadCostItemQuantities(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
+        Data.load(self.file)
         self.props.cost_item_products.clear()
         self.props.cost_item_processes.clear()
         self.props.cost_item_resources.clear()
-        ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
-        for control_id, quantity_ids in Data.cost_items[ifc_definition_id]["Controls"].items():
-            related_object = self.file.by_id(control_id)
-            if related_object.is_a("IfcProduct"):
-                new = self.props.cost_item_products.add()
-            elif related_object.is_a("IfcProcess"):
-                new = self.props.cost_item_processes.add()
-            elif related_object.is_a("IfcResource"):
-                new = self.props.cost_item_resources.add()
-            new.ifc_definition_id = control_id
-            new.name = related_object.Name or "Unnamed"
-            total_quantity = 0
-            for quantity_id in quantity_ids:
-                total_quantity += self.file.by_id(quantity_id)[3]
-            new.total_quantity = total_quantity
+        if self.props.active_cost_item_index:
+            ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
+            for control_id, quantity_ids in Data.cost_items[ifc_definition_id]["Controls"].items() or {}:
+                related_object = self.file.by_id(control_id)
+                if related_object.is_a("IfcProduct"):
+                    new = self.props.cost_item_products.add()
+                elif related_object.is_a("IfcProcess"):
+                    new = self.props.cost_item_processes.add()
+                elif related_object.is_a("IfcResource"):
+                    new = self.props.cost_item_resources.add()
+                new.ifc_definition_id = control_id
+                new.name = related_object.Name or "Unnamed"
+                total_quantity = 0
+                for quantity_id in quantity_ids:
+                    total_quantity += self.file.by_id(quantity_id)[3]
+                new.total_quantity = total_quantity
         return {"FINISHED"}
 
 
