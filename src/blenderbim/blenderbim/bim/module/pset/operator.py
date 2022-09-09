@@ -261,6 +261,7 @@ class EditPset(bpy.types.Operator, Operator):
                 },
             )
             CostData.purge()
+            bpy.ops.bim.load_cost_item_quantities()
         Data.load(IfcStore.get_file(), ifc_definition_id)
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
 
