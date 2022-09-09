@@ -32,5 +32,7 @@ class Usecase:
             setattr(self.settings["rel_sequence"], name, value)
         if "SequenceType" in self.settings["attributes"].keys():
             ifcopenshell.api.run(
-                "sequence.cascade_schedule", self.file, task=self.settings["rel_sequence"].RelatedProcess
+                "sequence.cascade_schedule",
+                self.file,
+                task=self.settings["rel_sequence"].RelatedProcess,
             )

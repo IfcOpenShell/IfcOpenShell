@@ -33,4 +33,8 @@ class Usecase:
             self.file.remove(self.settings["rel_sequence"].TimeLag)
         else:
             self.settings["rel_sequence"].TimeLag = None
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=self.settings["rel_sequence"].RelatedProcess)
+        ifcopenshell.api.run(
+            "sequence.cascade_schedule",
+            self.file,
+            task=self.settings["rel_sequence"].RelatedProcess,
+        )

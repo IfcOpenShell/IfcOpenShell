@@ -36,6 +36,9 @@ class Usecase:
         )
         context = self.file.by_type("IfcContext")[0]
         ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definition=work_calendar, relating_context=context
+            "project.assign_declaration",
+            self.file,
+            definition=work_calendar,
+            relating_context=context,
         )
         return work_calendar

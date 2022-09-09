@@ -33,7 +33,15 @@ class Usecase:
                 if isinstance(value, float):
                     value = self.file.createIfcRatioMeasure(value)
                 else:
-                    value = self.file.createIfcDuration(ifcopenshell.util.date.datetime2ifc(value, "IfcDuration"))
+                    value = self.file.createIfcDuration(
+                        ifcopenshell.util.date.datetime2ifc(value, "IfcDuration")
+                    )
             setattr(self.settings["lag_time"], name, value)
-        for rel in [r for r in self.file.get_inverse(self.settings["lag_time"]) if r.is_a("IfcRelSequence")]:
-            ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=rel.RelatedProcess)
+        for rel in [
+            r
+            for r in self.file.get_inverse(self.settings["lag_time"])
+            if r.is_a("IfcRelSequence")
+        ]:
+            ifcopenshell.api.run(
+                "sequence.cascade_schedule", self.file, task=rel.RelatedProcess
+            )

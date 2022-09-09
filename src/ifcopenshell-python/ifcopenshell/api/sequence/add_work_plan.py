@@ -24,7 +24,11 @@ from datetime import datetime
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"name": None, "predefined_type": "NOTDEFINED", "start_time": datetime.now()}
+        self.settings = {
+            "name": None,
+            "predefined_type": "NOTDEFINED",
+            "start_time": datetime.now(),
+        }
         for key, value in settings.items():
             self.settings[key] = value
 
@@ -36,12 +40,21 @@ class Usecase:
             predefined_type=self.settings["predefined_type"],
             name=self.settings["name"],
         )
-        work_plan.CreationDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
+        work_plan.CreationDate = ifcopenshell.util.date.datetime2ifc(
+            datetime.now(), "IfcDateTime"
+        )
         user = ifcopenshell.api.owner.settings.get_user(self.file)
         if user:
             work_plan.Creators = [user.ThePerson]
-        work_plan.StartTime = ifcopenshell.util.date.datetime2ifc(self.settings["start_time"], "IfcDateTime")
+        work_plan.StartTime = ifcopenshell.util.date.datetime2ifc(
+            self.settings["start_time"], "IfcDateTime"
+        )
 
         context = self.file.by_type("IfcContext")[0]
-        ifcopenshell.api.run("project.assign_declaration", self.file, definition=work_plan, relating_context=context)
+        ifcopenshell.api.run(
+            "project.assign_declaration",
+            self.file,
+            definition=work_plan,
+            relating_context=context,
+        )
         return work_plan

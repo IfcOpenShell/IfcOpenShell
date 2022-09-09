@@ -41,23 +41,33 @@ class Usecase:
             predefined_type=self.settings["predefined_type"],
             name=self.settings["name"],
         )
-        work_schedule.CreationDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
+        work_schedule.CreationDate = ifcopenshell.util.date.datetime2ifc(
+            datetime.now(), "IfcDateTime"
+        )
         user = ifcopenshell.api.owner.settings.get_user(self.file)
         if user:
             work_schedule.Creators = [user.ThePerson]
-        work_schedule.StartTime = ifcopenshell.util.date.datetime2ifc(self.settings["start_time"], "IfcDateTime")
+        work_schedule.StartTime = ifcopenshell.util.date.datetime2ifc(
+            self.settings["start_time"], "IfcDateTime"
+        )
 
         if self.settings["work_plan"]:
             ifcopenshell.api.run(
                 "aggregate.assign_object",
                 self.file,
-                **{"product": work_schedule, "relating_object": self.settings["work_plan"]}
+                **{
+                    "product": work_schedule,
+                    "relating_object": self.settings["work_plan"],
+                }
             )
         else:
             # TODO: this is an ambiguity by buildingSMART
             # See https://forums.buildingsmart.org/t/is-the-ifcworkschedule-project-declaration-mutually-exclusive-to-aggregation-within-a-relating-ifcworkplan/3510
             context = self.file.by_type("IfcContext")[0]
             ifcopenshell.api.run(
-                "project.assign_declaration", self.file, definition=work_schedule, relating_context=context
+                "project.assign_declaration",
+                self.file,
+                definition=work_schedule,
+                relating_context=context,
             )
         return work_schedule
