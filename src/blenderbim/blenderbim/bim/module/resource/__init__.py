@@ -48,6 +48,7 @@ classes = (
     operator.DisableEditingResourceQuantity,
     operator.DisableEditingResourceCostValue,
     operator.CalculateResourceWork,
+    operator.ImportResources,
     prop.Resource,
     prop.BIMResourceProperties,
     prop.BIMResourceTreeProperties,

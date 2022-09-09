@@ -330,3 +330,18 @@ class EditResourceQuantity(bpy.types.Operator, tool.Ifc.Operator):
             tool.Resource, tool.Ifc, physical_quantity=tool.Ifc.get().by_id(self.physical_quantity)
         )
 
+
+class ImportResources(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
+    bl_idname = "import_resources.bim"
+    bl_label = "Import P6"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".csv"
+    filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = tool.Ifc.get()
+        return ifc_file is not None
+
+    def _execute(self, context):
+        core.import_resources(tool.Resource, file_path=self.filepath)

@@ -54,10 +54,12 @@ class BIM_PT_resources(Panel):
             row.operator("bim.disable_resource_editing_ui", text="", icon="CANCEL")
         else:
             row.operator("bim.load_resources", text="Load Resources", icon="GREASEPENCIL")
+            row.operator("import_resources.bim", text="Import Resources", icon="IMPORT")
         if not self.props.is_editing:
             return
 
         self.draw_resource_operators()
+
         self.layout.template_list(
             "BIM_UL_resources",
             "",
