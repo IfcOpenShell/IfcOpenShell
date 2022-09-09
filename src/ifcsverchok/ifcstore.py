@@ -93,4 +93,6 @@ class SvIfcStore:
 
     @staticmethod
     def get_file():
+        if SvIfcStore.file is None:
+            SvIfcStore.create_boilerplate()
         return SvIfcStore.file

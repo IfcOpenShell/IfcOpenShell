@@ -60,6 +60,8 @@ def nodes_index():
                 ("ifc.by_type", "SvIfcByType"),
                 ("ifc.by_query", "SvIfcByQuery"),
                 ("ifc.add", "SvIfcAdd"),
+                ("ifc.add_pset", "SvIfcAddPset"),
+                ("ifc.add_spatial_element", "SvIfcAddSpatialElement"),
                 ("ifc.remove", "SvIfcRemove"),
                 ("ifc.generate_guid", "SvIfcGenerateGuid"),
                 ("ifc.get_property", "SvIfcGetProperty"),
@@ -68,6 +70,7 @@ def nodes_index():
                 ("ifc.api", "SvIfcApi"),
                 ("ifc.api_WIP", "SvIfcApiWIP"),
                 ("ifc.bmesh_to_ifc", "SvIfcBMeshToIfcGeo"),
+                ("ifc.bmesh_to_ifc2", "SvIfcBMeshToIfcRepr"),
                 ("ifc.create_project", "SvIfcCreateProject"),
                 ("ifc.quick_project_setup", "SvIfcQuickProjectSetup")
 
