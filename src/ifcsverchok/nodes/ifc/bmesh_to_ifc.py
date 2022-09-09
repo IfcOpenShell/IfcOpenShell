@@ -34,7 +34,7 @@ class SvIfcBMeshToIfcGeo(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
     Tooltip: Blender mesh to Ifc Geometric Representation
     """
     bl_idname = "SvIfcBMeshToIfcGeo"
-    bl_label = "IFC Blender Mesh to IFC Geo"
+    bl_label = "IFC Blender Mesh to IFC Geo (old)"
     tooltip: StringProperty(name="Tooltip")
     context_id: bpy.props.IntProperty()
 
