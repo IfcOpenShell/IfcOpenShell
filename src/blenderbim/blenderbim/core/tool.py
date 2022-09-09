@@ -427,6 +427,7 @@ class Resource:
     def get_resource_quantity_attributes(cls): pass
     def expand_resource(cls, resource): pass
     def contract_resource(cls, resource): pass
+    def import_resources(cls, file_path): pass
         
 @interface
 class Root:

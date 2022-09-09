@@ -26,9 +26,7 @@ class Csv2Ifc:
     def __init__(self):
         self.csv = None
         self.file = None
-        self.resource_items = []
-        self.cost_schedule = None
-        self.is_schedule_of_rates = False
+        self.resources = []
         self.units = {}
 
     def execute(self):
@@ -52,7 +50,7 @@ class Csv2Ifc:
                 cost_data = self.get_row_resource_data(row)
                 hierarchy_key = int(row[0])
                 if hierarchy_key == 1:
-                    self.resource_items.append(cost_data)
+                    self.resources.append(cost_data)
                 else:
                     self.parents[hierarchy_key - 1]["children"].append(cost_data)
                 self.parents[hierarchy_key] = cost_data
@@ -73,12 +71,12 @@ class Csv2Ifc:
         }
 
         return {
-            "Identification": str(identification) if identification else None,
-            "Name": str(name) if name else None,
+            "Identification": str(identification).strip() if identification else None,
+            "Name": str(name).strip() if name else None,
             "Type": type,
             "BaseCostValue": float(base_cost_value) if base_cost_value else None,
             "BaseCostQuantity": float(base_cost_quantity) if base_cost_quantity else None,
-            "Unit": str(base_cost_unit) if base_cost_unit else None,
+            "Unit": str(base_cost_unit).strip() if base_cost_unit else None,
             "Productivity": productivity if productivity["BaseQuantityProducedName"] else None,
             "children": [],
         }
@@ -86,10 +84,10 @@ class Csv2Ifc:
     def create_ifc(self):
         if not self.file:
             self.create_boilerplate_ifc()
-        self.create_resources(self.resource_items)
+        self.create_resources(self.resources)
 
-    def create_resources(self, resource_items, parent=None):
-        for resource in resource_items:
+    def create_resources(self, resources, parent=None):
+        for resource in resources:
             self.create_resource(resource, parent)
 
     def create_resource(self, resource, parent):
@@ -115,29 +113,35 @@ class Csv2Ifc:
             cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(resource["BaseCostValue"])
         if resource["Unit"]:
             measure_class = ifcopenshell.util.unit.get_symbol_measure_class(resource["Unit"])
+            print(measure_class)
             value_component = self.file.create_entity(measure_class, resource["BaseCostQuantity"])
+            print(value_component)
             unit_component = None
             if measure_class == "IfcNumericMeasure":
                 unit_component = self.create_unit(resource["Unit"])
             else:
                 unit_type = ifcopenshell.util.unit.get_measure_unit_type(measure_class)
+                print(unit_type)
                 unit_assignment = ifcopenshell.util.unit.get_unit_assignment(self.file)
                 if unit_assignment:
                     units = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == unit_type]
                     if units:
                         unit_component = units[0]
                 if not unit_component:
-                    unit_component = self.create_unit(resource["Unit"])
+                    unit_component = self.create_unit(resource["Unit"], unit_type)
+                    print(unit_component)
             cost_value.UnitBasis = self.file.createIfcMeasureWithUnit(value_component, unit_component)
         self.create_resources(resource["children"], resource["ifc"])
 
-    def create_unit(self, symbol):
+    def create_unit(self, symbol, unit_type):
         unit = self.units.get(symbol, None)
         if unit:
             return unit
-        unit = self.file.createIfcContextDependentUnit(
-            self.file.createIfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0), "USERDEFINED", symbol
-        )
+        else:
+            unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type=unit_type, name=ifcopenshell.util.unit.si_type_names.get(unit_type, None))
+        # unit = self.file.createIfcContextDependentUnit(
+        #     self.file.createIfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0), "USERDEFINED", symbol
+        # )
         self.units[symbol] = unit
         return unit
 
