@@ -231,7 +231,12 @@ class Attribute(Facet):
                         break
                 elif isinstance(self.value, str):
                     cast_value = cast_to_value(self.value, value)
-                    if value != cast_value:
+                    if isinstance(value, float) and isinstance(cast_value, float):
+                        if value < cast_value * (1. - 1e-6) or value > cast_value * (1. + 1e-6):
+                            is_pass = False
+                            reason = {"type": "VALUE", "actual": value}
+                            break
+                    elif value != cast_value:
                         is_pass = False
                         reason = {"type": "VALUE", "actual": value}
                         break
@@ -420,7 +425,12 @@ class Property(Facet):
                                 break
                         elif isinstance(self.value, str):
                             cast_value = cast_to_value(self.value, value)
-                            if value != cast_value:
+                            if isinstance(value, float) and isinstance(cast_value, float):
+                                if value < cast_value * (1. - 1e-6) or value > cast_value * (1. + 1e-6):
+                                    is_pass = False
+                                    reason = {"type": "VALUE", "actual": value}
+                                    break
+                            elif value != cast_value:
                                 is_pass = False
                                 reason = {"type": "VALUE", "actual": value}
                                 break

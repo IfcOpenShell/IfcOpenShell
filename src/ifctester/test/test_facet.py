@@ -487,6 +487,33 @@ class TestAttribute:
             expected=True,
         )
 
+        facet = Attribute(name="RefractionIndex", value="42.")
+        ifc = ifcopenshell.file()
+        run(
+            "Floating point numbers are compared with a 1e-6 tolerance 1/4",
+            facet=facet,
+            inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42. * (1. + 1e-6)),
+            expected=True,
+        )
+        run(
+            "Floating point numbers are compared with a 1e-6 tolerance 2/4",
+            facet=facet,
+            inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42. * (1. - 1e-6)),
+            expected=True,
+        )
+        run(
+            "Floating point numbers are compared with a 1e-6 tolerance 3/4",
+            facet=facet,
+            inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42. * (1. + 2e-6)),
+            expected=False,
+        )
+        run(
+            "Floating point numbers are compared with a 1e-6 tolerance 4/4",
+            facet=facet,
+            inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42. * (1. - 2e-6)),
+            expected=False,
+        )
+
         facet = Attribute(name="NumberOfRisers", value="42")
         ifc = ifcopenshell.file()
         run(
@@ -902,6 +929,16 @@ class TestProperty:
         run("Only specifically formatted numbers are allowed 3/4", facet=facet, inst=element, expected=True)
         facet = Property(propertySet="Foo_Bar", name="Foo", value="1.2345E3")
         run("Only specifically formatted numbers are allowed 4/4", facet=facet, inst=element, expected=True)
+
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42. * (1. + 1e-6))})
+        run("Floating point numbers are compared with a 1e-6 tolerance 1/4", facet=facet, inst=element, expected=True)
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42. * (1. - 1e-6))})
+        run("Floating point numbers are compared with a 1e-6 tolerance 2/4", facet=facet, inst=element, expected=True)
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42. * (1. + 2e-6))})
+        run("Floating point numbers are compared with a 1e-6 tolerance 3/4", facet=facet, inst=element, expected=False)
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42. * (1. - 2e-6))})
+        run("Floating point numbers are compared with a 1e-6 tolerance 4/4", facet=facet, inst=element, expected=False)
 
         facet = Property(propertySet="Foo_Bar", name="Foo", value="TRUE")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcBoolean(False)})
