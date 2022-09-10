@@ -27,7 +27,7 @@ from . import schema
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty
 from blenderbim.bim.ui import IFCFileSelector
-from blenderbim.bim.helper import get_enum_items, close_operator_panel
+from blenderbim.bim.helper import get_enum_items
 from mathutils import Vector, Matrix, Euler
 from math import radians
 
@@ -531,7 +531,6 @@ def update_enum_property_search_prop(self, context):
     for i, prop in enumerate(self.collection_names):
         if prop.name == self.dummy_name:
             setattr(context.data, self.prop_name, self.collection_identifiers[i].name)
-            close_operator_panel(self)
             break
 
 
@@ -543,11 +542,8 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     collection_names: bpy.props.CollectionProperty(type=StrProperty)
     collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
     prop_name: bpy.props.StringProperty()
-    mouse_x: bpy.props.IntProperty()
-    mouse_y: bpy.props.IntProperty()
 
     def invoke(self, context, event):
-        self.mouse_x, self.mouse_y = event.mouse_x, event.mouse_y
         self.clear_collections()
         self.data = context.data
         items = get_enum_items(self.data, self.prop_name, context)
@@ -555,9 +551,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
             return {"FINISHED"}
         self.add_items_regular(items)
         self.add_items_suggestions()
-        # Cursor is moved when we update dummy_name, set it back
-        context.window.cursor_warp(self.mouse_x, self.mouse_y)
-        return context.window_manager.invoke_props_popup(self, event)
+        return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
         # Mandatory to access context.data in update :
@@ -595,3 +589,19 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                         values = [values]
                     for value in values:
                         self.add_item(identifier=key, name=key + " (" + value + ")")
+
+
+class EditBlenderCollection(bpy.types.Operator):
+    bl_idname = "bim.edit_blender_collection"
+    bl_label = "Add or Remove blender collection item"
+    bl_options = {"REGISTER", "UNDO"}
+    option: bpy.props.StringProperty(description="add or remove item from collection")
+    collection: bpy.props.StringProperty(description="collection to be edited")
+    index: bpy.props.IntProperty(description="index of item to be removed")
+
+    def execute(self, context):
+        if self.option == "add":
+            getattr(context.bim_prop_group, self.collection).add()
+        else:
+            getattr(context.bim_prop_group, self.collection).remove(self.index)
+        return {"FINISHED"}

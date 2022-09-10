@@ -343,6 +343,11 @@ class BIM_PT_cost_item_quantities(Panel):
         return False
 
     def draw(self, context):
+        if not Data.is_loaded:
+            Data.load(IfcStore.get_file())
+
+        if not UnitData.is_loaded:
+            UnitData.load(IfcStore.get_file())
         self.props = context.scene.BIMCostProperties
 
         cost_item = self.props.cost_items[self.props.active_cost_item_index]

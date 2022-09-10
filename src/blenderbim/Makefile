@@ -16,6 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+PYTHON:=python
+PATCH:=patch
+SED:=sed -i
+ifeq ($(OS),Windows_NT)
+HOSTOS:=win
+else
+UNAME_S:=$(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+HOSTOS:=linux
+endif
+ifeq ($(UNAME_S),Darwin)
+HOSTOS:=macos
+PYTHON:=python3
+PATCH:=patch -d
+SED:=sed -i '' -e
+endif
+endif
+
 VERSION:=`date '+%y%m%d'`
 PYVERSION:=py37
 
@@ -115,7 +133,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-cb8cfd7-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-dc67287-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
 
@@ -138,11 +156,13 @@ endif
 	# Provides IFCClash functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcclash/ifcclash dist/blenderbim/libs/site/packages/
 	# Provides BIMTester functionality
-	cd dist/working && python -m venv env
+	cd dist/working && $(PYTHON) -m venv env
 	cd dist/working && . env/bin/activate && pip install pybabel
 	cd dist/working && . env/bin/activate && pip install babel
 	cd dist/working && . env/bin/activate && ./env/bin/pybabel compile -d ./IfcOpenShell-0.7.0/src/ifcbimtester/bimtester/locale/
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcbimtester/bimtester dist/blenderbim/libs/site/packages/
+	# Provides IFCTester functionality
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifctester/ifctester dist/blenderbim/libs/site/packages/
 	# Provides IFCCOBie functionality
 	cp -r dist/working/IfcOpenShell-0.7.0/src/ifccobie/* dist/blenderbim/libs/site/packages/
 	# Provides IFCDiff functionality
@@ -161,9 +181,9 @@ endif
 
 	# Provides Mustache templating in construction documentation
 	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/d6/fd/eb8c212053addd941cc90baac307c00ac246ac3fce7166b86434c6eae963/pystache-0.5.4.tar.gz
+	cd dist/working && wget https://files.pythonhosted.org/packages/3f/e7/8750ba6c6101d6aa5ceeb20c013adf2c6f3554a12c71d75654b468404bfa/pystache-0.6.0.tar.gz
 	cd dist/working && tar -xzvf pystache*
-	cd dist/working/pystache-0.5.4/ && python setup.py build && cp -r build/lib/pystache ../../blenderbim/libs/site/packages/
+	cd dist/working/pystache-0.6.0/ && $(PYTHON) setup.py build && cp -r build/lib/pystache ../../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Provides SVG export in construction documentation
@@ -210,9 +230,9 @@ endif
 
 	# Required by IFCDiff
 	mkdir dist/working
-	cd dist/working && wget https://github.com/Moult/deepdiff/archive/master.zip
-	cd dist/working && unzip master.zip
-	cp -r dist/working/deepdiff-master/deepdiff dist/blenderbim/libs/site/packages/
+	cd dist/working && wget https://files.pythonhosted.org/packages/0f/ca/caead2949fbb824c7142e3774fa841aa853bb4d4331b440da8c8514dfc6f/deepdiff-5.8.1.tar.gz
+	cd dist/working && tar -xzvf deepdiff*
+	cp -r dist/working/deepdiff-5.8.1/deepdiff dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by deepdiff
@@ -238,16 +258,16 @@ endif
 
 	# Required by bcf
 	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/bb/41/ad9ce53bb978b68af8ae415293cafc89b165b8ad55a593725299dca76729/xmlschema-1.1.1.tar.gz
+	cd dist/working && wget https://files.pythonhosted.org/packages/5b/ef/f97c3e1a7efa00e989a793fe15297214fc95ad7d9e3810586bd08ce9f0f3/xmlschema-2.0.2.tar.gz
 	cd dist/working && tar -xzvf xmlschema*
-	cp -r dist/working/xmlschema-1.1.1/xmlschema dist/blenderbim/libs/site/packages/
+	cp -r dist/working/xmlschema-2.0.2/xmlschema dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by bcf
 	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/12/f9/f9960222d5274944b01391749e55e4dcdf28d8f0c108b64ac931ceff6fdb/elementpath-1.4.3.tar.gz
+	cd dist/working && wget https://files.pythonhosted.org/packages/11/bc/5afb61dd5d863e5cf77cd952445c50c17e65953405986f19e97e4389692a/elementpath-3.0.2.tar.gz
 	cd dist/working && tar -xzvf elementpath*
-	cp -r dist/working/elementpath-1.4.3/elementpath dist/blenderbim/libs/site/packages/
+	cp -r dist/working/elementpath-3.0.2/elementpath dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by bcf
@@ -281,7 +301,7 @@ endif
 
 	# Required by IFCCityJSON
 	mkdir dist/working
-	cd dist/working && python -m venv env
+	cd dist/working && $(PYTHON) -m venv env
 	cd dist/working && mkdir site-packages
 	cd dist/working && . env/bin/activate && pip install cjio --target=./site-packages
 	cd dist/working/site-packages/ && rm -r *dist-info*
@@ -389,8 +409,11 @@ endif
 	# See bug #1294
 	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.7.0/src/ifcbimtester/patch/model_core.patch
 	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.7.0/src/ifcbimtester/patch/runner_util.patch
-	cd dist/working/ && patch ../blenderbim/libs/site/packages/behave/model_core.py < model_core.patch
-	cd dist/working/ && patch ../blenderbim/libs/site/packages/behave/runner_util.py < runner_util.patch
+	cd dist/working/ && $(PATCH) ../blenderbim/libs/site/packages/behave/model_core.py < model_core.patch
+	cd dist/working/ && $(PATCH) ../blenderbim/libs/site/packages/behave/runner_util.py < runner_util.patch
+	# See bug #2159
+	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.7.0/src/ifcbimtester/patch/junit.patch
+	cd dist/working/ && $(PATCH) ../blenderbim/libs/site/packages/behave/reporter/junit.py < junit.patch
 	rm -rf dist/working
 
 	# Required by ids - uh, not any more, but I'm trying it out in the drawing module
@@ -470,14 +493,14 @@ endif
 	cp -r dist/working/IFC2JSON_python-master/file_converters/ifcjson dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Provides OpenLCA fucntionality
+	# Provides OpenLCA functionality
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/85/33/f91b96e9e8608ff65a003b692e8a9cdd60f2178f60617e5b1d21334c009c/olca-ipc-0.0.10.tar.gz
 	cd dist/working && tar -xzvf olca-ipc*
 	cd dist/working/olca-ipc-0.0.10/ && cp -r olca ../../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Provides Brickschema fucntionality
+	# Provides Brickschema functionality
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/ca/37/8309da9a72407d2f5eb5489c197ac3cfe96ee3ccba1902d2a0ecc7843f92/brickschema-0.5.1.tar.gz
 	cd dist/working && tar -xzvf brickschema*
@@ -518,7 +541,7 @@ endif
 	cd dist/working/ && cp -r pkg_resources ../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	cd dist/blenderbim && sed -i "s/999999/$(VERSION)/" __init__.py
+	cd dist/blenderbim && $(SED) "s/999999/$(VERSION)/" __init__.py
 	cd dist && zip -r blenderbim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
 	rm -rf dist/blenderbim
 

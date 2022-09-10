@@ -61,8 +61,10 @@ class Usecase:
         for rel in task.IsSuccessorFrom:
             predecessor = rel.RelatingProcess
             predecessor_duration = (
-                ifcopenshell.util.date.ifc2datetime(predecessor.TaskTime.ScheduleDuration)
-                if predecessor.TaskTime.ScheduleDuration
+                ifcopenshell.util.date.ifc2datetime(
+                    predecessor.TaskTime.ScheduleDuration
+                )
+                if predecessor.TaskTime and predecessor.TaskTime.ScheduleDuration
                 else datetime.timedelta()
             )
             if rel.SequenceType == "FINISH_START":
@@ -77,12 +79,20 @@ class Usecase:
                 if days:
                     starts.append(
                         datetime.datetime.combine(
-                            self.offset_date(finish, days, duration_type, self.get_calendar(task)), datetime.time(9)
+                            self.offset_date(
+                                finish, days, duration_type, self.get_calendar(task)
+                            ),
+                            datetime.time(9),
                         )
                     )
                     starts.append(
                         datetime.datetime.combine(
-                            self.offset_date(finish, days, duration_type, self.get_calendar(predecessor)),
+                            self.offset_date(
+                                finish,
+                                days,
+                                duration_type,
+                                self.get_calendar(predecessor),
+                            ),
                             datetime.time(9),
                         )
                     )
@@ -95,8 +105,16 @@ class Usecase:
                 if rel.TimeLag:
                     days = self.get_lag_time_days(rel.TimeLag)
                     duration_type = rel.TimeLag.DurationType
-                    starts.append(self.offset_date(start, days, duration_type, self.get_calendar(task)))
-                    starts.append(self.offset_date(start, days, duration_type, self.get_calendar(predecessor)))
+                    starts.append(
+                        self.offset_date(
+                            start, days, duration_type, self.get_calendar(task)
+                        )
+                    )
+                    starts.append(
+                        self.offset_date(
+                            start, days, duration_type, self.get_calendar(predecessor)
+                        )
+                    )
                 else:
                     starts.append(start)
             elif rel.SequenceType == "FINISH_FINISH":
@@ -106,8 +124,16 @@ class Usecase:
                 if rel.TimeLag:
                     days = self.get_lag_time_days(rel.TimeLag)
                     duration_type = rel.TimeLag.DurationType
-                    finishes.append(self.offset_date(finish, days, duration_type, self.get_calendar(task)))
-                    finishes.append(self.offset_date(finish, days, duration_type, self.get_calendar(predecessor)))
+                    finishes.append(
+                        self.offset_date(
+                            finish, days, duration_type, self.get_calendar(task)
+                        )
+                    )
+                    finishes.append(
+                        self.offset_date(
+                            finish, days, duration_type, self.get_calendar(predecessor)
+                        )
+                    )
                 else:
                     finishes.append(finish)
             elif rel.SequenceType == "START_FINISH":
@@ -122,12 +148,20 @@ class Usecase:
                 if days or rel.TimeLag:
                     finishes.append(
                         datetime.datetime.combine(
-                            self.offset_date(start, days, duration_type, self.get_calendar(task)), datetime.time(17)
+                            self.offset_date(
+                                start, days, duration_type, self.get_calendar(task)
+                            ),
+                            datetime.time(17),
                         )
                     )
                     finishes.append(
                         datetime.datetime.combine(
-                            self.offset_date(start, days, duration_type, self.get_calendar(predecessor)),
+                            self.offset_date(
+                                start,
+                                days,
+                                duration_type,
+                                self.get_calendar(predecessor),
+                            ),
                             datetime.time(17),
                         )
                     )
@@ -138,14 +172,20 @@ class Usecase:
             start = max(starts)
             finish = max(finishes)
             potential_finish = ifcopenshell.util.sequence.get_start_or_finish_date(
-                start, duration, task.TaskTime.DurationType, self.get_calendar(task), date_type="FINISH"
+                start,
+                duration,
+                task.TaskTime.DurationType,
+                self.get_calendar(task),
+                date_type="FINISH",
             )
             if potential_finish > finish:
                 start_ifc = ifcopenshell.util.date.datetime2ifc(start, "IfcDateTime")
                 if task.TaskTime.ScheduleStart == start_ifc and not is_first_task:
                     return
                 task.TaskTime.ScheduleStart = start_ifc
-                task.TaskTime.ScheduleFinish = ifcopenshell.util.date.datetime2ifc(potential_finish, "IfcDateTime")
+                task.TaskTime.ScheduleFinish = ifcopenshell.util.date.datetime2ifc(
+                    potential_finish, "IfcDateTime"
+                )
             else:
                 finish_ifc = ifcopenshell.util.date.datetime2ifc(finish, "IfcDateTime")
                 if task.TaskTime.ScheduleFinish == finish_ifc and not is_first_task:
@@ -153,7 +193,11 @@ class Usecase:
                 task.TaskTime.ScheduleFinish = finish_ifc
                 task.TaskTime.ScheduleStart = ifcopenshell.util.date.datetime2ifc(
                     ifcopenshell.util.sequence.get_start_or_finish_date(
-                        finish, duration, task.TaskTime.DurationType, self.get_calendar(task), date_type="START"
+                        finish,
+                        duration,
+                        task.TaskTime.DurationType,
+                        self.get_calendar(task),
+                        date_type="START",
                     ),
                     "IfcDateTime",
                 )
@@ -165,7 +209,11 @@ class Usecase:
             task.TaskTime.ScheduleFinish = finish_ifc
             task.TaskTime.ScheduleStart = ifcopenshell.util.date.datetime2ifc(
                 ifcopenshell.util.sequence.get_start_or_finish_date(
-                    finish, duration, task.TaskTime.DurationType, self.get_calendar(task), date_type="START"
+                    finish,
+                    duration,
+                    task.TaskTime.DurationType,
+                    self.get_calendar(task),
+                    date_type="START",
                 ),
                 "IfcDateTime",
             )
@@ -177,7 +225,11 @@ class Usecase:
             task.TaskTime.ScheduleStart = start_ifc
             task.TaskTime.ScheduleFinish = ifcopenshell.util.date.datetime2ifc(
                 ifcopenshell.util.sequence.get_start_or_finish_date(
-                    start, duration, task.TaskTime.DurationType, self.get_calendar(task), date_type="FINISH"
+                    start,
+                    duration,
+                    task.TaskTime.DurationType,
+                    self.get_calendar(task),
+                    date_type="FINISH",
                 ),
                 "IfcDateTime",
             )
@@ -190,11 +242,15 @@ class Usecase:
 
     def get_calendar(self, task):
         if task.id() not in self.calendar_cache:
-            self.calendar_cache[task.id()] = ifcopenshell.util.sequence.derive_calendar(task)
+            self.calendar_cache[task.id()] = ifcopenshell.util.sequence.derive_calendar(
+                task
+            )
         return self.calendar_cache[task.id()]
 
     def offset_date(self, date, days, duration_type, calendar):
-        return ifcopenshell.util.sequence.offset_date(date, datetime.timedelta(days=days), duration_type, calendar)
+        return ifcopenshell.util.sequence.offset_date(
+            date, datetime.timedelta(days=days), duration_type, calendar
+        )
 
     def get_task_time_attribute(self, task, attribute):
         if task.TaskTime:

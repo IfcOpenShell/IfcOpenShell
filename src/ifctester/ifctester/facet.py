@@ -125,7 +125,7 @@ class Entity(Facet):
         else:
             results = []
             ifc_classes = [t for t in ifc_file.wrapped_data.types() if t.upper() == self.name]
-            [results.append(ifc_file.by_type(ifc_class, include_subtypes=False)) for ifc_class in ifc_classes]
+            [results.extend(ifc_file.by_type(ifc_class, include_subtypes=False)) for ifc_class in ifc_classes]
         if self.predefinedType:
             return [r for r in results if self(r)]
         return results
@@ -366,7 +366,7 @@ class Property(Facet):
                 props[pset_name] = {}
                 if isinstance(self.name, str):
                     prop = pset_props.get(self.name)
-                    if prop:
+                    if prop is not None and prop != "":
                         props[pset_name][self.name] = prop
                 else:
                     props[pset_name] = {k: v for k, v in pset_props.items() if k == self.name}

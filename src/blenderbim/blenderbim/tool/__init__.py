@@ -39,10 +39,11 @@ from blenderbim.tool.patch import Patch
 from blenderbim.tool.project import Project
 from blenderbim.tool.pset import Pset
 from blenderbim.tool.qto import Qto
+from blenderbim.tool.resource import Resource
 from blenderbim.tool.root import Root
+from blenderbim.tool.sequence import Sequence
 from blenderbim.tool.spatial import Spatial
 from blenderbim.tool.structural import Structural
-from blenderbim.tool.sequence import Sequence
 from blenderbim.tool.style import Style
 from blenderbim.tool.surveyor import Surveyor
 from blenderbim.tool.system import System

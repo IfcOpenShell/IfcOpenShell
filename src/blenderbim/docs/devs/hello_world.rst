@@ -40,10 +40,19 @@ Just show me the code!
 ----------------------
 
 Sometimes, the best way to learn how to hack on a project is to just start
-hacking away. BIM authoring is a really big topic. As a result, the BlenderBIM
-Add-on code is separated into modules. Each module focuses on a particular topic
-of BIM. Most modules are self-contained, but sometimes they connect to one
-another, just like how BIM works.
+hacking away. First, download the code. To keep things simple, you can download
+the source as a zip file for now, but keep in mind that sooner or later you'll
+need to :ref:`use Git to collaborate <submitting-code-to-git>`.
+
+.. container:: blockbutton
+
+    `Download Source
+    <https://github.com/IfcOpenShell/IfcOpenShell/archive/refs/heads/v0.7.0.zip>`__
+
+BIM authoring is a really big topic. As a result, the BlenderBIM Add-on code is
+separated into modules. Each module focuses on a particular topic of BIM. Most
+modules are self-contained, but sometimes they connect to one another, just like
+how BIM works.
 
 .. image:: module-architecture.png
 
@@ -53,8 +62,8 @@ minimise the overlap between modules, so that developers can work on a single
 portion of the code with relative certainty that their actions will not affects
 other developers.
 
-- `BlenderBIM Add-on modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/blenderbim/blenderbim/bim/module>`__
-- `IFC modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell/api>`__
+- `BlenderBIM Add-on modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/blenderbim/blenderbim/bim/module>`__
+- `IFC modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcopenshell-python/ifcopenshell/api>`__
 
 The BlenderBIM Add-on comes with a secret **demo module** which is basically a
 hello world coding tutorial which teaches you about all the moving parts. It's
@@ -278,9 +287,32 @@ authoring capabilities.
 
 The code for IfcOpenShell's various systems can be found here:
 
-- `ifcopenshell (core) <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell>`__
-- `ifcopenshell.util <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell/util>`__
-- `ifcopenshell.api <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell/api>`__
+- `ifcopenshell (core) <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcopenshell-python/ifcopenshell>`__
+- `ifcopenshell.util <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcopenshell-python/ifcopenshell/util>`__
+- `ifcopenshell.api <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcopenshell-python/ifcopenshell/api>`__
+
+.. _submitting-code-to-git:
+
+Submitting code to Git
+----------------------
+
+So, you've written some code, fixed a bug, made an improvement, and would like
+to get your code added to the Git repository? If your change is relatively
+small, you can submit your changes just using the Github website. Browse to the
+`IfcOpenShell repository <https://github.com/ifcopenshell/ifcopenshell>`__ and
+navigate to the file you want to edit the code of. Then just press the edit icon
+to begin editing. When you're done, you'll be prompted to submit your changes.
+
+.. image:: github-editing.png
+
+If you're making a large change, you'll need to create a **Pull Request**.
+Github has an excellent comprehensive guide on `how to contribute to projects
+<https://docs.github.com/en/get-started/quickstart/contributing-to-projects>`__
+which you can follow.
+
+If you make regular contributions, you are also welcome to officially join the
+IfcOpenShell developer team, where you'll be able to make changes without
+waiting for code reviews and approvals.
 
 Asking for help
 ---------------

@@ -151,6 +151,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "should_play_chaching_sound")
 
         row = layout.row()
+        row.prop(context.scene.BIMProjectProperties, "should_disable_undo_on_save")
+
+        row = layout.row()
         row.prop(context.scene.BIMModelProperties, "occurrence_name_style")
         row = layout.row()
         row.prop(context.scene.BIMModelProperties, "occurrence_name_function")

@@ -4,9 +4,9 @@ Installation
 There are different methods of installation, depending on your situation.
 
 1. **Unstable installation** is recommended for power users helping with testing.
-2. **Building from source** is recommended for distributing a build from source.
+2. **Bundling for Blender** is recommended for distributing the add-on.
 3. **Live development environment** is recommended for developers who are actively coding.
-4. **Distro installation** is recommended for those who use a Linux package manager.
+4. **Packaged installation** is recommended for those who use a package manager.
 
 Unstable installation
 ---------------------
@@ -27,12 +27,13 @@ You will need to choose which build to download.
 Sometimes, a build may be delayed, or contain broken code. We try to avoid this,
 but it happens.
 
-Building from source
+Bundling for Blender
 --------------------
 
-It is possible to run the latest bleeding edge version of BlenderBIM without
-having to wait for an official release, since BlenderBIM is coded in Python and
-doesn't require any compilation.
+Instead of waiting for an official release on the BlenderBIM Add-on website, it
+is possible to make your own Blender add-on from the bleeding edge source code
+of BlenderBIM. BlenderBIM is coded in Python and doesn't require any
+compilation, so this is a relatively easy process.
 
 Note that the BlenderBIM Add-on does depend on IfcOpenShell, and IfcOpenShell
 does require compilation. The following instructions will use a pre-built
@@ -55,25 +56,20 @@ Live development environment
 ----------------------------
 
 One option for developers who want to actively develop from source is to follow
-the instructions from **Building from source**. However, creating a build,
+the instructions from **Bundling for Blender**. However, creating a build,
 uninstalling the old add-on, and installing a new build is a slow process.
 Although it works, it is very slow, so we do not recommend it.
 
 A more rapid approach is to follow the **Unstable installation** method, as this
-provides all dependencies for you out of the box.  Then, we can replace certain
-Python files that tend to be updated frequently with those from the Git
-repository. We're going to use symlinks (Windows users can use ``mklink``), so
-we can code in our Git repository, and see the changes in our Blender
-installation (you will need to restart Blender to see changes).
+provides all dependencies for you out of the box.
 
-In addition, we're also going to replace the Python code of the IfcOpenShell
-dependency with our Git repository, since most of the BlenderBIM Add-on
-functionality is agnostic of Blender, and is actually part of IfcOpenShell.
-Therefore, we need to keep this dependency highly updated as well.
+Once you've done this, you can replace certain Python files that tend to be
+updated frequently with those from the Git repository. We're going to use
+symlinks (Windows users can use ``mklink``), so we can code in our Git
+repository, and see the changes in our Blender installation (you will need to
+restart Blender to see changes).
 
-The downside with this approach is that if a new dependency is added, or a
-compiled dependency version requirement has changed, or the build system
-changes, you'll need to fix your setup manually. But this is relatively rare.
+For Linux or Mac:
 
 ::
 
@@ -81,9 +77,13 @@ changes, you'll need to fix your setup manually. But this is relatively rare.
     $ cd IfcOpenShell
 
     # Remove the Blender add-on Python code
+    $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/core/
+    $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/tool/
     $ rm -r /path/to/blender/X.XX/scripts/addons/blenderbim/bim/
 
     # Replace them with links to the Git repository
+    $ ln -s src/blenderbim/blenderbim/core /path/to/blender/X.XX/scripts/addons/blenderbim/core
+    $ ln -s src/blenderbim/blenderbim/tool /path/to/blender/X.XX/scripts/addons/blenderbim/tool
     $ ln -s src/blenderbim/blenderbim/bim /path/to/blender/X.XX/scripts/addons/blenderbim/bim
 
     # Remove the IfcOpenShell dependency Python code
@@ -94,7 +94,14 @@ changes, you'll need to fix your setup manually. But this is relatively rare.
     $ ln -s src/ifcopenshell-python/ifcopenshell/api /path/to/blender/X.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/api
     $ ln -s src/ifcopenshell-python/ifcopenshell/util /path/to/blender/X.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/util
 
-On Windows:
+    # Manually download some third party dependencies
+    $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/data/gantt
+    $ wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
+    $ wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
+    $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/schema
+    $ wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
+
+Or, if you're on Windows:
 
 ::
 
@@ -102,9 +109,13 @@ On Windows:
     $ cd IfcOpenShell
 
     # Remove the Blender add-on Python code
+    $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\core\"
+    $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\tool\"
     $ rd /S /Q "\path\to\blender\X.XX\scripts\addons\blenderbim\bim\"
 
     # Replace them with links to the Git repository
+    $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\core" "src\blenderbim\blenderbim\core"
+    $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\tool" "src\blenderbim\blenderbim\tool"
     $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\bim" "src\blenderbim\blenderbim\bim"
 
     # Remove the IfcOpenShell dependency Python code
@@ -115,23 +126,38 @@ On Windows:
     $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api" "src\ifcopenshell-python\ifcopenshell\api"
     $ mklink /D "\path\to\blender\X.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util" "src\ifcopenshell-python\ifcopenshell\util"
 
+    # Manually download some third party dependencies
+    $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/data/gantt
+    $ curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -outfile jsgantt.js
+    $ curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -outfile jsgantt.css
+    $ cd /path/to/blender/X.XX/scripts/addons/blenderbim/bim/schema
+    $ curl https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o Brick.ttl
 
 After you modify your code in the Git repository, you will need to restart
-Blender for the changes to take effect. In ``Edit > Preferences > Add-ons`` you
-will see that the version number of the BlenderBIM Add-on has changed to
-``0.0.999999``, which represents an un-versioned BlenderBIM Add-on.
+Blender for the changes to take effect.
 
-There is a useful Blender Addon that adds a Reboot button in File menù.
-In this way, it's possible to directly restart Blender and test the modified source code.
-The add on is available `here <https://blenderartists.org/uploads/short-url/yto1sjw7pqDRVNQzpVLmn51PEDN.zip>`__
-(check also the related forum discussion `here <https://blenderartists.org/t/reboot-blender-addon/640465/13>`__)
-There is also a VS Code called `Blender Development <https://marketplace.visualstudio.com/items?itemName=JacquesLucke.blender-development>`__ that has a similar functionality.
+The downside with this approach is that if a new dependency is added, or a
+compiled dependency version requirement has changed, or the build system
+changes, you'll need to fix your setup manually. But this is relatively rare.
+
+.. seealso::
+
+    There is a `useful Blender Addon
+    <https://blenderartists.org/uploads/short-url/yto1sjw7pqDRVNQzpVLmn51PEDN.zip>`__
+    (see `forum thread
+    <https://blenderartists.org/t/reboot-blender-addon/640465/13>`__) that adds
+    a Reboot button in File menu.  In this way, it's possible to directly
+    restart Blender and test the modified source code.  There is also a VS Code
+    add-on called `Blender Development
+    <https://marketplace.visualstudio.com/items?itemName=JacquesLucke.blender-development>`__
+    that has a similar functionality.
 
 
-Distro installation
--------------------
+Packaged installation
+---------------------
 
-Those on Arch Linux can check out this `AUR package <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
+- **Arch Linux**: `Direct from Git <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
+- **Chocolatey on Windows**: `Unstable <https://community.chocolatey.org/packages/blenderbim-nightly/>`__.
 
 Tips for package managers
 -------------------------
@@ -145,12 +171,14 @@ Blender add-on conventions. Within this folder, you'll find the following file
 structure:
 ::
 
-    bim/ (core code)
+    core/ (Blender agnostic core code)
+    tool/ (Blender specific logic)
+    bim/ (Blender specific UI)
     libs/ (dependencies)
     __init__.py
 
 This corresponds to the structure found in the source code `here
-<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/blenderbim/blenderbim>`__.
+<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/blenderbim/blenderbim>`__.
 
 The BlenderBIM Add-on is complex, and requires many dependencies, including
 Python modules, binaries, and static assets. When packaged for users, these
@@ -159,7 +187,7 @@ dependencies are bundled with the add-on for convenience.
 If you choose to install the BlenderBIM Add-on and use your own system
 dependencies, the source of truth for how dependencies are bundled are found in
 the `Makefile
-<https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.6.0/src/blenderbim/Makefile>`__.
+<https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/src/blenderbim/Makefile>`__.
 
 Required Python modules to be stored in ``libs/site/packages/`` are:
 ::
@@ -202,7 +230,7 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
 Notes:
 
 1. ``ifcopenshell`` almost always requires the latest version due to the fast paced nature of the add-on development.
-2. ``behave`` requires `patches <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcbimtester/patch>`__.
+2. ``behave`` requires `patches <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcbimtester/patch>`__.
 3. ``ifcjson`` can be found `here <https://github.com/IFCJSON-Team/IFC2JSON_python/tree/master/file_converters>`__.
 
 Required static assets are:

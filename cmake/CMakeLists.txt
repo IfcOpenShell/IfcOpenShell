@@ -53,7 +53,7 @@ OPTION(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
-OPTION(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" ON)
+OPTION(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" OFF)
 if (${HAS_MAX})
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 endif()
@@ -452,30 +452,60 @@ if(NOT MINIMAL_BUILD AND HDF5_SUPPORT)
 
     if (HDF5_LIBRARY_DIR)
     	# result of the HDF5 ctest package
-    	
-        if (WIN32)
-        	set(zlib_post lib)
-        	set(lib_ext lib)
-        else()
-        	set(lib_ext a)
+        # Find zlib using cmake find_library. How should this be implemented?
+        # FIND_LIBRARY(NAMES z libz libz_debug PATHS ... NO_DEFAULT_PATH)
+
+
+        if ("$ENV{CONDA_BUILD}" STREQUAL "")
+            # result of the HDF5 ctest package
+
+            if (WIN32)
+                set(zlib_post lib)
+                set(lib_ext lib)
+            else()
+                set(lib_ext a)
+            endif()
+
+            if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+                set(debug_postfix "_debug")
+            endif()
+
+            SET(HDF5_LIBRARIES
+                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libhdf5${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libz${zlib_post}${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libsz${debug_postfix}.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libaec${debug_postfix}.${lib_ext}"
+                    )
+
+        ELSE()
+            MESSAGE(STATUS "Packaging hdf5 and zlib for conda distribution")
+            if (WIN32)
+                # Windows
+                set(zlib_post zlib)
+                set(lib_ext lib)
+            elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+                # macOS
+                set(zlib_post libz)
+                set(lib_ext dylib)
+            else()
+                # linux
+                set(zlib_post libz)
+                set(lib_ext so)
+            endif()
+
+            SET(HDF5_LIBRARIES
+                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
+                    "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
+                    )
         endif()
 
-	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-		set(debug_postfix "_debug")
-	endif() 
-        
-        SET(HDF5_LIBRARIES 
-            "${HDF5_LIBRARY_DIR}/libhdf5_cpp${debug_postfix}.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libhdf5${debug_postfix}.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libz${zlib_post}${debug_postfix}.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libsz${debug_postfix}.${lib_ext}"
-            "${HDF5_LIBRARY_DIR}/libaec${debug_postfix}.${lib_ext}"
-        )
     endif()
-    
+
     if (NOT HDF5_LIBRARIES)
     	# debian default
-    	
+
         SET(HDF5_LIBRARIES
             /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.so
             /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.so
@@ -931,12 +961,12 @@ set(CPACK_SOURCE_GENERATOR "TGZ")
 
 FOREACH(COMPONENT IN ITEMS ${BOOST_COMPONENTS})
     string(REPLACE "_" "-" COMP ${COMPONENT})
-    set(BOOST_DEPS "${BOOST_DEPS}, libboost-${COMP}1.67.0")
+    set(BOOST_DEPS "${BOOST_DEPS}, libboost-${COMP}-dev")
 endforeach(COMPONENT)
 
 set(CPACK_DEBIAN_PACKAGE_NAME "${PROJECT_NAME}")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_CONTACT}")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, liboce-foundation11, liboce-modeling11, liboce-ocaf11, liboce-visualization11, liboce-ocaf-lite11, libpython3.8 ${BOOST_DEPS}")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, libocct-foundation-dev, libocct-modeling-algorithms-dev, libocct-modeling-data-dev, libocct-ocaf-dev, libocct-visualization-dev, libocct-data-exchange-dev, libhdf5-serial-dev, libpython3.8 ${BOOST_DEPS}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION_SUMMARY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")

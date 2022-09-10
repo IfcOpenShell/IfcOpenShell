@@ -25,19 +25,22 @@ import ifcopenshell.api
 import ifcopenshell.api.owner.settings
 from pathlib import Path
 
+import numpy as np
 
 class Obj2Ifc:
     def __init__(self, path):
         self.path = path
 
-    def execute(self):
+    def execute(self, version="IFC4"):
         self.basename = Path(self.path).stem
-        self.create_ifc_file()
+        self.create_ifc_file(version)
         self.scene = pywavefront.Wavefront(self.path, create_materials=True, collect_faces=True)
         for mesh in self.scene.mesh_list:
-            ifc_faces = []
-            for face in mesh.faces:
-                ifc_faces.append(
+            
+            faces = mesh.faces
+            ifc_faces = np.zeros([len(faces)], dtype=object)
+            for i, face in enumerate(faces):
+                ifc_faces[i] = (
                     self.file.createIfcFace(
                         [
                             self.file.createIfcFaceOuterBound(
@@ -57,7 +60,7 @@ class Obj2Ifc:
                         self.context,
                         "Body",
                         "Brep",
-                        [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(ifc_faces))],
+                        [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(ifc_faces.tolist()))],
                     )
                 ],
             )
@@ -73,13 +76,13 @@ class Obj2Ifc:
             ifcopenshell.api.run("spatial.assign_container", self.file, product=product, relating_structure=self.storey)
         self.file.write(self.path.replace(".obj", ".ifc"))
 
-    def create_ifc_file(self):
-        self.file = ifcopenshell.api.run("project.create_file", version="IFC2X3")
+    def create_ifc_file(self, version):
+        self.file = ifcopenshell.api.run("project.create_file", version=version)
         person = ifcopenshell.api.run("owner.add_person", self.file)
-        person.Id = person.GivenName = None
+        person[0] = person.GivenName = None
         person.FamilyName = "user"
         org = ifcopenshell.api.run("owner.add_organisation", self.file)
-        org.Id = None
+        org[0] = None
         org.Name = "template"
         user = ifcopenshell.api.run("owner.add_person_and_organisation", self.file, person=person, organisation=org)
         application = ifcopenshell.api.run("owner.add_application", self.file)

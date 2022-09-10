@@ -45,8 +45,18 @@ double IfcGeom::util::min_edge_length(const TopoDS_Shape & a) {
 	double min_edge_len = std::numeric_limits<double>::infinity();
 	TopExp_Explorer exp(a, TopAbs_EDGE);
 	for (; exp.More(); exp.Next()) {
+		const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
+		
+		TopoDS_Vertex v0, v1;
+		TopExp::Vertices(e, v0, v1);
+		if (!v0.IsNull() && !v1.IsNull() && v0.IsSame(v1)) {
+			// Don't consider a 3d-degenerate edge (for example cone apex)
+			// in calculating overall shape min edge length.
+			continue;
+		}
+
 		GProp_GProps prop;
-		BRepGProp::LinearProperties(exp.Current(), prop);
+		BRepGProp::LinearProperties(e, prop);
 		double l = prop.Mass();
 		if (l < min_edge_len) {
 			min_edge_len = l;
@@ -715,7 +725,7 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 		// have already guaranteed they do not intersect. So they are
 		// either fully in or out. Selecting with complete_within=true
 		// will filter out some unnecessary cases. It also means we need
-		// that due this assymetry we need to process all pairs of wire
+		// that due this asymmetry we need to process all pairs of wire
 		// indices and not just the pairs where the first element is less
 		// than the second element.
 		for (auto& other_index : wire_tree.select_box(b, true)) {

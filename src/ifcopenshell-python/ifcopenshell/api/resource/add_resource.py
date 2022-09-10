@@ -50,5 +50,10 @@ class Usecase:
             )
         else:
             context = self.file.by_type("IfcContext")[0]
-            ifcopenshell.api.run("project.assign_declaration", self.file, definition=resource, relating_context=context)
+            ifcopenshell.api.run(
+                "project.assign_declaration",
+                self.file,
+                definition=resource,
+                relating_context=context,
+            )
         return resource

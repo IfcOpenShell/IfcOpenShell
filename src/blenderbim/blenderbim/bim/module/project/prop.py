@@ -92,7 +92,6 @@ class FilterCategory(PropertyGroup):
 
 class Link(PropertyGroup):
     name: StringProperty(name="Name")
-    collection: PointerProperty(name="Collection", type=bpy.types.Collection)
     is_loaded: BoolProperty(name="Is Loaded", default=False)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)
@@ -160,6 +159,9 @@ class BIMProjectProperties(PropertyGroup):
     false_origin: StringProperty(name="False Origin", default="0,0,0")
     element_offset: IntProperty(name="Element Offset", default=0)
     element_limit: IntProperty(name="Element Offset", default=30000)
+    should_disable_undo_on_save: BoolProperty(
+        name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
+    )
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
     export_schema: EnumProperty(items=get_export_schema, name="IFC Schema")

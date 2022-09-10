@@ -47,13 +47,17 @@ class Usecase:
             related_objects = list(referenced_by.RelatedObjects)
             related_objects.append(self.settings["related_object"])
             referenced_by.RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": referenced_by})
+            ifcopenshell.api.run(
+                "owner.update_owner_history", self.file, **{"element": referenced_by}
+            )
         else:
             referenced_by = self.file.create_entity(
                 "IfcRelAssignsToProduct",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    "OwnerHistory": ifcopenshell.api.run(
+                        "owner.create_owner_history", self.file
+                    ),
                     "RelatedObjects": [self.settings["related_object"]],
                     "RelatingProduct": self.settings["relating_product"],
                 }

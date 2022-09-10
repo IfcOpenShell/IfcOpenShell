@@ -39,6 +39,9 @@ class Usecase:
         rel_aggregates = ifcopenshell.api.run(
             "aggregate.assign_object",
             self.file,
-            **{"product": self.settings["work_schedule"], "relating_object": self.settings["work_plan"]}
+            **{
+                "product": self.settings["work_schedule"],
+                "relating_object": self.settings["work_plan"],
+            }
         )
         return rel_aggregates

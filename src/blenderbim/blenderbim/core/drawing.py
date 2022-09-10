@@ -148,7 +148,7 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
     )
     group = ifc.run("group.add_group")
     ifc.run("group.edit_group", group=group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
-    ifc.run("group.assign_group", group=group, product=[element])
+    ifc.run("group.assign_group", group=group, products=[element])
     collector.assign(camera)
     pset = ifc.run("pset.add_pset", product=element, name="EPset_Drawing")
     ifc.run(
@@ -203,7 +203,7 @@ def add_annotation(ifc, collector, drawing_tool, drawing=None, object_type=None)
             context=context,
             ifc_representation_class=drawing_tool.get_ifc_representation_class(object_type),
         )
-        ifc.run("group.assign_group", group=drawing_tool.get_drawing_group(drawing), product=[element])
+        ifc.run("group.assign_group", group=drawing_tool.get_drawing_group(drawing), products=[element])
     collector.assign(obj)
     drawing_tool.enable_editing(obj)
 
@@ -251,7 +251,7 @@ def sync_references(ifc, collector, drawing_tool, drawing=None):
             annotation = drawing_tool.generate_reference_annotation(drawing, reference_element, context)
             if annotation:
                 ifc.run("drawing.assign_product", relating_product=reference_element, related_object=annotation)
-                ifc.run("group.assign_group", group=group, product=[annotation])
+                ifc.run("group.assign_group", group=group, products=[annotation])
                 collector.assign(ifc.get_object(annotation))
 
         if reference_obj and ifc.is_moved(reference_obj):

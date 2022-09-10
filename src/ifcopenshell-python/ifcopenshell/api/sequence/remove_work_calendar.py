@@ -34,4 +34,15 @@ class Usecase:
             definition=self.settings["work_calendar"],
             relating_context=self.file.by_type("IfcContext")[0],
         )
+        if self.settings["work_calendar"].Controls:
+            for rel in self.settings["work_calendar"].Controls:
+                for object in rel.RelatedObjects:
+                    ifcopenshell.api.run(
+                        "control.unassign_control",
+                        self.file,
+                        **{
+                            "relating_control": self.settings["work_calendar"],
+                            "related_object": object,
+                        }
+                    )
         self.file.remove(self.settings["work_calendar"])

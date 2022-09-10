@@ -507,7 +507,7 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	}
 	IfcSchema::IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, work, calendars;
+	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, work, calendars, connections;
 	
 	// Write the SPF header as XML nodes.
 	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
@@ -665,6 +665,22 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 		}
 	}
 #endif
+	
+	IfcSchema::IfcRelConnectsElements::list::ptr pconnections = file->instances_by_type<IfcSchema::IfcRelConnectsElements>();
+	for (IfcSchema::IfcRelConnectsElements::list::it it = pconnections->begin(); it != pconnections->end(); ++it) {
+		IfcSchema::IfcRelConnectsElements* connection = *it;
+
+		ptree* nconnection = format_entity_instance(connection, connections);
+
+		ptree nrelatedElement;
+		ptree nrelatingElement;
+
+		format_entity_instance(connection->RelatedElement(), nrelatedElement, true);
+		format_entity_instance(connection->RelatingElement(), nrelatingElement, true);
+		
+		nconnection->add_child("RelatedElement",  nrelatedElement);
+		nconnection->add_child("RelatingElement", nrelatingElement);
+	}
 
 	// Write all type objects as XML nodes.
 	IfcSchema::IfcTypeObject::list::ptr type_objects = file->instances_by_type<IfcSchema::IfcTypeObject>();
@@ -749,6 +765,7 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 
 	root.add_child("ifc.header",        header);
 	root.add_child("ifc.units",         units);
+	root.add_child("ifc.connections",   connections);
 	root.add_child("ifc.properties",    properties);
 	root.add_child("ifc.quantities",    quantities);
 	root.add_child("ifc.work",			work);

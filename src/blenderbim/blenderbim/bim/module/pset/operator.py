@@ -23,6 +23,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.pset
 import ifcopenshell.util.attribute
 import blenderbim.bim.schema
+import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.pset as core
@@ -42,11 +43,9 @@ class Operator:
 
 def get_pset_props(context, obj, obj_type):
     if obj_type == "Object":
-        obj = bpy.data.objects.get(obj)
-        return obj.PsetProperties
+        return bpy.data.objects.get(obj).PsetProperties
     elif obj_type == "Material":
-        obj = bpy.data.materials.get(obj)
-        return obj.PsetProperties
+        return bpy.data.materials.get(obj).PsetProperties
     elif obj_type == "Task":
         return context.scene.TaskPsetProperties
     elif obj_type == "Resource":
@@ -55,29 +54,6 @@ def get_pset_props(context, obj, obj_type):
         return context.scene.ProfilePsetProperties
     elif obj_type == "WorkSchedule":
         return context.scene.WorkSchedulePsetProperties
-
-
-def get_pset_obj_ifc_definition_id(context, obj, obj_type):
-    if obj_type == "Object":
-        obj = bpy.data.objects.get(obj)
-        return obj.BIMObjectProperties.ifc_definition_id
-    elif obj_type == "Material":
-        obj = bpy.data.materials.get(obj)
-        return obj.BIMObjectProperties.ifc_definition_id
-    elif obj_type == "Task":
-        return context.scene.BIMTaskTreeProperties.tasks[
-            context.scene.BIMWorkScheduleProperties.active_task_index
-        ].ifc_definition_id
-    elif obj_type == "Resource":
-        return context.scene.BIMResourceTreeProperties.resources[
-            context.scene.BIMResourceProperties.active_resource_index
-        ].ifc_definition_id
-    elif obj_type == "Profile":
-        return context.scene.BIMProfileProperties.profiles[
-            context.scene.BIMProfileProperties.active_profile_index
-        ].ifc_definition_id
-    elif obj_type == "WorkSchedule":
-        return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
 
 
 class TogglePsetExpansion(bpy.types.Operator, Operator):
@@ -102,7 +78,8 @@ class EnablePsetEditing(bpy.types.Operator):
     def execute(self, context):
         self.props = get_pset_props(context, self.obj, self.obj_type)
         self.props.properties.clear()
-
+        ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
+        Data.load(IfcStore.get_file(), ifc_definition_id)
         data = Data.psets if self.pset_id in Data.psets else Data.qtos
         pset_data = data[self.pset_id]
         self.props.active_pset_name = pset_data["Name"]
@@ -242,7 +219,7 @@ class EditPset(bpy.types.Operator, Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         props = get_pset_props(context, self.obj, self.obj_type)
-        ifc_definition_id = get_pset_obj_ifc_definition_id(context, self.obj, self.obj_type)
+        ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
         properties = {}
 
         pset_id = self.pset_id or props.active_pset_id
@@ -284,6 +261,7 @@ class EditPset(bpy.types.Operator, Operator):
                 },
             )
             CostData.purge()
+            bpy.ops.bim.load_cost_item_quantities()
         Data.load(IfcStore.get_file(), ifc_definition_id)
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
 
@@ -297,18 +275,24 @@ class RemovePset(bpy.types.Operator, Operator):
     obj_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        props = get_pset_props(context, self.obj, self.obj_type)
-        ifc_definition_id = get_pset_obj_ifc_definition_id(context, self.obj, self.obj_type)
-        ifcopenshell.api.run(
-            "pset.remove_pset",
-            self.file,
-            **{
-                "product": self.file.by_id(ifc_definition_id),
-                "pset": self.file.by_id(self.pset_id),
-            },
-        )
-        Data.load(IfcStore.get_file(), ifc_definition_id)
+        if self.obj_type == "Object":
+            if context.selected_objects:
+                objects = [o.name for o in context.selected_objects]
+            else:
+                objects = [context.active_object.name]
+        else:
+            objects = [self.obj]
+        pset_name = tool.Ifc.get().by_id(self.pset_id).Name
+        for obj in objects:
+            props = get_pset_props(context, obj, self.obj_type)
+            ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, obj, self.obj_type)
+            element = tool.Ifc.get().by_id(ifc_definition_id)
+            pset = ifcopenshell.util.element.get_psets(element, should_inherit=False).get(pset_name, None)
+            if pset:
+                ifcopenshell.api.run(
+                    "pset.remove_pset", tool.Ifc.get(), product=element, pset=tool.Ifc.get().by_id(pset["id"])
+                )
+                Data.load(IfcStore.get_file(), ifc_definition_id)
 
 
 class AddPset(bpy.types.Operator, Operator):
@@ -322,11 +306,14 @@ class AddPset(bpy.types.Operator, Operator):
         self.file = IfcStore.get_file()
         pset_name = get_pset_props(context, self.obj, self.obj_type).pset_name
         if self.obj_type == "Object":
-            objects = [o.name for o in context.selected_objects]
+            if context.selected_objects:
+                objects = [o.name for o in context.selected_objects]
+            else:
+                objects = [context.active_object.name]
         else:
             objects = [self.obj]
         for obj in objects:
-            ifc_definition_id = get_pset_obj_ifc_definition_id(context, obj, self.obj_type)
+            ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, obj, self.obj_type)
             if not ifc_definition_id:
                 continue
             element = tool.Ifc.get().by_id(ifc_definition_id)
@@ -345,7 +332,7 @@ class AddQto(bpy.types.Operator, Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         props = get_pset_props(context, self.obj, self.obj_type)
-        ifc_definition_id = get_pset_obj_ifc_definition_id(context, self.obj, self.obj_type)
+        ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
         ifcopenshell.api.run(
             "pset.add_qto",
             self.file,
@@ -402,6 +389,31 @@ class GuessQuantity(bpy.types.Operator):
                 return None, "METRE"
             return unit_settings.length_unit[0 : -len("METERS")], "METRE"
 
+class GuessAllQuantities(bpy.types.Operator):
+    bl_idname = "bim.guess_all_quantities"
+    bl_label = "Guess All Quantities"
+    bl_options = {"REGISTER", "UNDO"}
+    pset_id: bpy.props.IntProperty()
+    obj_name : bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.qto_calculator = QtoCalculator()
+        obj = context.active_object
+        bpy.ops.bim.enable_pset_editing(pset_id=self.pset_id, obj=self.obj_name, obj_type=self.obj_type)
+        for prop in obj.PsetProperties.properties:
+            if (
+                'length' in prop.name.lower()
+                or 'area' in prop.name.lower()
+                or 'volume' in prop.name.lower()
+                or "width" in prop.name.lower()
+                or "height" in prop.name.lower()
+                or "depth" in prop.name.lower()
+                or "perimeter" in prop.name.lower()
+            ):
+                bpy.ops.bim.guess_quantity(prop=prop.name)
+        bpy.ops.bim.edit_pset(obj=self.obj_name, obj_type=self.obj_type)
+        return {"FINISHED"}
 
 class CopyPropertyToSelection(bpy.types.Operator, Operator):
     bl_idname = "bim.copy_property_to_selection"

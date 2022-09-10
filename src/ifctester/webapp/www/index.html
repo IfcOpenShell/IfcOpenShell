@@ -27,171 +27,177 @@
         <ifc-tester>
             <header>
                 IfcTester
-                <a href="#"><i data-feather="plus"></i>New Spec</a>
+                <ids-new>
+                    <a href="#"><i data-feather="plus"></i>New Spec</a>
+                </ids-new>
                 <span>
                     <a href="#"><i data-feather="settings"></i>Settings</a>
                     <a href="#"><i data-feather="help-circle"></i>Heeeelllp!</a>
                 </span>
             </header>
-            <ids-container>
-                <div class="ids">
-                    <div style="position: relative;">
-                        <div class="ids-controls">
-                            <ids-loader>
-                                <a href="#">
-                                    <i data-feather="upload"></i> LOAD
-                                </a>
-                            </ids-loader>
-                            <ids-save>
-                                <a href="#">
-                                    <i data-feather="download"></i> SAVE
-                                </a>
-                            </ids-save>
-                            <ids-audit>
-                                <a href="#">
-                                    <i data-feather="play"></i> AUDIT MODEL
-                                </a>
-                            </ids-audit>
-                            <span>
-                                <a href="#">
-                                    <i data-feather="x"></i> CLOSE
-                                </a>
-                            </span>
+            <template>
+                <ids-container>
+                    <div class="ids">
+                        <div style="position: relative;">
+                            <div class="ids-controls">
+                                <ids-loader>
+                                    <a href="#">
+                                        <i data-feather="upload"></i> LOAD
+                                    </a>
+                                </ids-loader>
+                                <ids-save>
+                                    <a href="#">
+                                        <i data-feather="download"></i> SAVE
+                                    </a>
+                                </ids-save>
+                                <ids-audit>
+                                    <a href="#">
+                                        <i data-feather="play"></i> AUDIT MODEL
+                                    </a>
+                                </ids-audit>
+                                <span>
+                                    <ids-close>
+                                        <a href="#">
+                                            <i data-feather="x"></i> CLOSE
+                                        </a>
+                                    </ids-close>
+                                </span>
+                            </div>
+                            <ids-info>
+                                <h1><ids-info-element name="title">My information requirements</ids-info-element></h1>
+                                <p>
+                                    <i data-feather="mail"></i>
+                                    <ids-info-element name="author">john@doe.com</ids-info-element>
+                                    <i data-feather="tag"></i>
+                                    <ids-info-element name="version">1.0.0</ids-info-element>
+                                    <i data-feather="calendar"></i>
+                                    <ids-info-element name="date">date()</ids-info-element>
+                                    <i data-feather="crosshair"></i>
+                                    <ids-info-element name="milestone">Construction</ids-info-element>
+                                </p>
+                                <p>
+                                    <ids-info-element name="description">
+                                        An example suite of OpenBIM requirements for data quality audits
+                                    </ids-info-element>
+                                </p>
+                                <p>
+                                    &copy; <ids-info-element name="copyright">Company Inc.</ids-info-element>
+                                </p>
+                            </ids-info>
+                            <ids-specs>
+                                <template>
+                                    <ids-spec>
+                                        <ids-spec-target></ids-spec-target>
+                                        <h2>
+                                            <a href="#"><i data-feather="play"></i></a>
+                                            <ids-spec-handle class="draggable" draggable="true">
+                                                <i data-feather="move"></i>
+                                                <div class="snippet hidden">Move specification</div>
+                                            </ids-spec-handle>
+                                            <ids-spec-remove>
+                                                <i data-feather="x"></i>
+                                            </ids-spec-remove>
+                                            <ids-spec-attribute name="name">Requirement name</ids-spec-attribute>
+                                        </h2>
+                                        <div class="spec-contents">
+                                            <p class="spec-description">
+                                                <ids-spec-attribute name="description">
+                                                    Describe why the requirement is important to the project.
+                                                </ids-spec-attribute>
+                                            </p>
+                                            <p>
+                                                <ids-spec-attribute name="instructions">
+                                                    Provide instructions on who is responsible and how to achieve it.
+                                                </ids-spec-attribute>
+                                            </p>
+                                            <h3>
+                                                <span class="controls">
+                                                    <ids-facet-add>
+                                                        <i data-feather="plus"></i>
+                                                    </ids-facet-add>
+                                                </span>
+                                                Applies to:
+                                            </h3>
+                                            <ids-facets name="applicability">
+                                                <template>
+                                                    <div class="facet">
+                                                        <span class="facet-controls">
+                                                            <ids-facet-remove>
+                                                                <i data-feather="x"></i>
+                                                            </ids-facet-remove>
+                                                        </span>
+                                                        <ids-facet type="applicability"></ids-facet>
+                                                    </div>
+                                                </template>
+                                            </ids-facets>
+                                            <h3>
+                                                <span class="controls">
+                                                    <ids-facet-add>
+                                                        <i data-feather="plus"></i>
+                                                    </ids-facet-add>
+                                                </span>
+                                                Requirements:
+                                            </h3>
+                                            <ids-facets name="requirements">
+                                                <template>
+                                                    <div class="facet">
+                                                        <span class="facet-controls">
+                                                            <ids-facet-remove>
+                                                                <i data-feather="x"></i>
+                                                            </ids-facet-remove>
+                                                        </span>
+                                                        <ids-result name="fail" class="result-icon hidden">
+                                                            <i data-feather="x"></i>
+                                                            <span>32</span>
+                                                        </ids-result>
+                                                        <ids-result name="pass" class="result-icon hidden">
+                                                            <i data-feather="check"></i>
+                                                        </ids-result>
+                                                        <ids-facet type="requirement"></ids-facet>
+                                                        <ids-facet-instructions class="requirement-instructions" title="Instructions">
+                                                            Optionally write instructions about how to achieve this requirement.
+                                                        </ids-facet-instructions>
+                                                    </div>
+                                                </template>
+                                            </ids-facets>
+                                        </div>
+                                        <div class="divider">
+                                            <span class="placeholder">
+                                                <i data-feather="align-justify"></i>
+                                            </span>
+                                            <span class="controls">
+                                                <ids-spec-add>
+                                                    <i data-feather="plus"></i>
+                                                </ids-spec-add>
+                                                <ids-spec-move direction="down">
+                                                    <i data-feather="chevron-down"></i>
+                                                </ids-spec-move>
+                                                <ids-spec-move direction="up">
+                                                <i data-feather="chevron-up"></i>
+                                                </ids-spec-move>
+                                            </span>
+                                        </div>
+                                    </ids-spec>
+                                </template>
+                            </ids-specs>
                         </div>
-                        <ids-info>
-                            <h1><ids-info-element name="title">My information requirements</ids-info-element></h1>
-                            <p>
-                                <i data-feather="mail"></i>
-                                <ids-info-element name="author">john@doe.com</ids-info-element>
-                                <i data-feather="tag"></i>
-                                <ids-info-element name="version">1.0.0</ids-info-element>
-                                <i data-feather="calendar"></i>
-                                <ids-info-element name="date">date()</ids-info-element>
-                                <i data-feather="crosshair"></i>
-                                <ids-info-element name="milestone">Construction</ids-info-element>
-                            </p>
-                            <p>
-                                <ids-info-element name="description">
-                                    An example suite of OpenBIM requirements for data quality audits
-                                </ids-info-element>
-                            </p>
-                            <p>
-                                &copy; <ids-info-element name="copyright">Company Inc.</ids-info-element>
-                            </p>
-                        </ids-info>
+                    </div>
+                    <nav>
                         <ids-specs>
                             <template>
                                 <ids-spec>
-                                    <ids-spec-target></ids-spec-target>
-                                    <h2>
-                                        <a href="#"><i data-feather="play"></i></a>
-                                        <ids-spec-handle class="draggable" draggable="true">
-                                            <i data-feather="move"></i>
-                                            <div class="snippet hidden">Move specification</div>
-                                        </ids-spec-handle>
-                                        <ids-spec-remove>
-                                            <i data-feather="x"></i>
-                                        </ids-spec-remove>
-                                        <ids-spec-attribute name="name">Requirement name</ids-spec-attribute>
-                                    </h2>
-                                    <div class="spec-contents">
-                                        <p class="spec-description">
-                                            <ids-spec-attribute name="description">
-                                                Describe why the requirement is important to the project.
-                                            </ids-spec-attribute>
-                                        </p>
-                                        <p>
-                                            <ids-spec-attribute name="instructions">
-                                                Provide instructions on who is responsible and how to achieve it.
-                                            </ids-spec-attribute>
-                                        </p>
-                                        <h3>
-                                            <span class="controls">
-                                                <ids-facet-add>
-                                                    <i data-feather="plus"></i>
-                                                </ids-facet-add>
-                                            </span>
-                                            Applies to:
-                                        </h3>
-                                        <ids-facets name="applicability">
-                                            <template>
-                                                <div class="facet">
-                                                    <span class="facet-controls">
-                                                        <ids-facet-remove>
-                                                            <i data-feather="x"></i>
-                                                        </ids-facet-remove>
-                                                    </span>
-                                                    <ids-facet type="applicability"></ids-facet>
-                                                </div>
-                                            </template>
-                                        </ids-facets>
-                                        <h3>
-                                            <span class="controls">
-                                                <ids-facet-add>
-                                                    <i data-feather="plus"></i>
-                                                </ids-facet-add>
-                                            </span>
-                                            Requirements:
-                                        </h3>
-                                        <ids-facets name="requirements">
-                                            <template>
-                                                <div class="facet">
-                                                    <span class="facet-controls">
-                                                        <ids-facet-remove>
-                                                            <i data-feather="x"></i>
-                                                        </ids-facet-remove>
-                                                    </span>
-                                                    <ids-result name="fail" class="result-icon hidden">
-                                                        <i data-feather="x"></i>
-                                                        <span>32</span>
-                                                    </ids-result>
-                                                    <ids-result name="pass" class="result-icon hidden">
-                                                        <i data-feather="check"></i>
-                                                    </ids-result>
-                                                    <ids-facet type="requirement"></ids-facet>
-                                                    <ids-facet-instructions class="requirement-instructions" title="Instructions">
-                                                        Optionally write instructions about how to achieve this requirement.
-                                                    </ids-facet-instructions>
-                                                </div>
-                                            </template>
-                                        </ids-facets>
-                                    </div>
-                                    <div class="divider">
-                                        <span class="placeholder">
-                                            <i data-feather="align-justify"></i>
-                                        </span>
-                                        <span class="controls">
-                                            <ids-spec-add>
-                                                <i data-feather="plus"></i>
-                                            </ids-spec-add>
-                                            <ids-spec-move direction="down">
-                                                <i data-feather="chevron-down"></i>
-                                            </ids-spec-move>
-                                            <ids-spec-move direction="up">
-                                            <i data-feather="chevron-up"></i>
-                                            </ids-spec-move>
-                                        </span>
-                                    </div>
+                                    <ids-spec-counter></ids-spec-counter>
+                                    <ids-spec-anchor>
+                                        <a href="#ids-spec-target">
+                                            <ids-spec-attribute name="name" readonly>Requirement name</ids-spec-attribute>
+                                        </a>
+                                    </ids-spec-anchor>
                                 </ids-spec>
                             </template>
                         </ids-specs>
-                    </div>
-                </div>
-                <nav>
-                    <ids-specs>
-                        <template>
-                            <ids-spec>
-                                <ids-spec-counter></ids-spec-counter>
-                                <ids-spec-anchor>
-                                    <a href="#ids-spec-target">
-                                        <ids-spec-attribute name="name" readonly>Requirement name</ids-spec-attribute>
-                                    </a>
-                                </ids-spec-anchor>
-                            </ids-spec>
-                        </template>
-                    </ids-specs>
-                </nav>
-            </ids-container>
+                    </nav>
+                </ids-container>
+            </template>
         </ifc-tester>
         <script src="https://unpkg.com/feather-icons"></script>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>

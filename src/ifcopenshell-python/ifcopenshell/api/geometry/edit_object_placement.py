@@ -44,7 +44,7 @@ class Usecase:
 
         placement_rel_to = self.get_placement_rel_to()
         relative_placement = self.get_relative_placement(placement_rel_to)
-        new_placement = self.file.createIfcLocalPlacement(placement_rel_to, relative_placement)
+        new_placement = self.file.createIfcLocalPlacement(RelativePlacement=relative_placement)
 
         old_placement = self.settings["product"].ObjectPlacement
 
@@ -59,6 +59,7 @@ class Usecase:
                     if inverse.is_a("IfcLocalPlacement"):
                         ifcopenshell.util.element.replace_attribute(inverse, old_placement, new_placement)
 
+        new_placement.PlacementRelTo = placement_rel_to
         self.settings["product"].ObjectPlacement = new_placement
 
         ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})

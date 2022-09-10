@@ -17,11 +17,12 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import handler, prop, ui, grid, product, wall, slab, stair, opening, pie, workspace
+from . import handler, prop, ui, grid, product, wall, slab, stair, opening, pie, workspace, profile
 
 classes = (
     product.AddEmptyType,
-    product.AddTypeInstance,
+    product.AddConstrTypeInstance,
+    product.DisplayConstrTypes,
     product.AlignProduct,
     product.DynamicallyVoidProduct,
     workspace.Hotkey,
@@ -32,8 +33,10 @@ classes = (
     opening.AddElementOpening,
     profile.ExtendProfile,
     prop.BIMModelProperties,
+    prop.ConstrTypeInfo,
     ui.BIM_PT_authoring,
-    ui.BIM_PT_authoring_architectural,
+    ui.DisplayConstrTypesUI,
+    ui.HelpConstrTypes,
     grid.BIM_OT_add_object,
     stair.BIM_OT_add_object,
     opening.BIM_OT_add_object,
@@ -51,6 +54,7 @@ def register():
     if not bpy.app.background:
         bpy.utils.register_tool(workspace.BimTool, after={"builtin.scale_cage"}, separator=True, group=True)
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
+    bpy.types.Scene.ConstrTypeInfo = bpy.props.CollectionProperty(type=prop.ConstrTypeInfo)
     bpy.types.VIEW3D_MT_mesh_add.append(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(opening.add_object_button)
@@ -68,6 +72,7 @@ def unregister():
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.BimTool)
     del bpy.types.Scene.BIMModelProperties
+    del bpy.types.Scene.ConstrTypeInfo
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)

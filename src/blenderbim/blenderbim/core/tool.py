@@ -22,7 +22,7 @@ import inspect
 # fmt: off
 # pylint: skip-file
 
-# This interface class and decorator is magic syntatic sugar to allow concise interface definitions
+# This interface class and decorator is magic syntactic sugar to allow concise interface definitions
 # If we didn't do this, Python is unnecessarily verbose, which I find distracting. Don't black this file :)
 class Interface(abc.ABC): pass
 def interface(cls):
@@ -402,6 +402,34 @@ class Qto:
 
 
 @interface
+class Resource:
+    def load_resources(cls): pass
+    def load_resource_properties(cls): pass
+    def disable_editing_resource(cls): pass
+    def disable_resource_editing_ui(cls): pass
+    def load_resource_attributes(cls, resource): pass
+    def enable_editing_resource(cls, resource): pass
+    def get_resource_attributes(cls): pass
+    def enable_editing_resource_time(cls, resource): pass
+    def get_resource_time(cls, resource): pass
+    def load_resource_time_attributes(cls, resource_time): pass
+    def get_resource_time_attributes(cls): pass
+    def enable_editing_resource_costs(cls, resource): pass
+    def disable_editing_resource_cost_value(cls): pass
+    def enable_editing_resource_cost_value_formula(cls, cost_value): pass
+    def load_cost_value_attributes(cls, cost_value): pass
+    def enable_editing_cost_value_attributes(cls, cost_value): pass
+    def get_resource_cost_value_formula(cls): pass
+    def get_resource_cost_value_attributes(cls): pass
+    def enable_editing_resource_base_quantity(cls, resource): pass
+    def enable_editing_resource_quantity(cls, resource_quantity): pass
+    def disable_editing_resource_quantity(cls): pass
+    def get_resource_quantity_attributes(cls): pass
+    def expand_resource(cls, resource): pass
+    def contract_resource(cls, resource): pass
+    def import_resources(cls, file_path): pass
+        
+@interface
 class Root:
     def add_dynamic_opening_voids(cls, element, obj): pass
     def does_type_have_representations(cls, element): pass
@@ -422,8 +450,83 @@ class Selector:
 
 
 @interface
+class Sequence:
+    def get_work_plan_attributes(cls): pass
+    def load_work_plan_attributes(cls, work_plan): pass
+    def get_nested_tasks(cls, task):pass
+    def enable_editing_work_plan(cls, work_plan): pass
+    def disable_editing_work_plan(cls): pass
+    def enable_editing_work_plan_schedules(cls, work_plan): pass
+    def get_work_schedule_attributes(cls): pass
+    def load_work_schedule_attributes(cls, work_schedule): pass
+    def enable_editing_work_schedule(cls,work_schedule): pass
+    def disable_editing_work_schedule(cls): pass
+    def enable_editing_work_schedule_tasks(cls, work_schedule): pass
+    def create_task_tree(cls, work_schedule): pass
+    def load_task_properties(cls, task): pass
+    def get_active_work_schedule_id(cls): pass
+    def get_selected_resource(cls): pass
+    def expand_task(cls, task): pass
+    def contract_task(cls, task): pass
+    def disable_work_schedule(cls): pass
+    def disable_selecting_deleted_task(cls): pass
+    def get_checked_tasks(cls): pass
+    def get_task_attribute_value(cls, attribute_name): pass
+    def get_active_task(cls): pass
+    def get_task_time(cls, task): pass
+    def load_task_attributes(cls, task): pass
+    def get_selected_products(cls): pass
+    def enable_editing_task(cls, task): pass
+    def get_task_attributes(cls): pass
+    def load_task_time_attributes(cls, task_time): pass
+    def enable_editing_task_time(cls, task): pass
+    def disable_editing_task(cls): pass
+    def get_task_time_attributes(cls): pass
+    def load_task_resources(cls,resources): pass
+    def load_resources(cls): pass 
+    def get_task_inputs(cls, task): pass
+    def load_task_inputs(cls, inputs): pass
+    def load_task_outputs(cls, outputs): pass
+    def get_highlighted_task(cls): pass
+    def get_task_outputs(cls, task): pass
+    def get_task_resources(cls, task):pass
+    def enable_editing_work_calendar_times(cls, work_calendar): pass
+    def load_work_calendar_attributes(cls, work_calendar): pass
+    def enable_editing_work_calendar(cls, work_calendar): pass
+    def disable_editing_work_calendar(cls): pass
+    def get_work_calendar_attributes(cls): pass
+    def load_work_time_attributes(cls, work_time): pass
+    def enable_editing_work_time(cls, work_time): pass
+    def get_work_time_attributes(cls): pass
+    def get_recurrence_pattern_attributes(cls, recurrence_pattern): pass
+    def disable_editing_work_time(cls): pass
+    def get_recurrence_pattern_times(cls): pass
+    def reset_time_period(cls): pass
+    def enable_editing_task_calendar(cls, task): pass
+    def enable_editing_task_sequence(cls, task): pass
+    def disable_editing_task_time(cls): pass
+    def load_rel_sequence_attributes(cls, rel_sequence): pass
+    def enable_editing_rel_sequence_attributes(cls, rel_sequence): pass
+    def load_lag_time_attributes(cls, lag_time): pass
+    def enable_editing_sequence_lag_time(cls, rel_sequence): pass
+    def get_rel_sequence_attributes(cls): pass
+    def disable_editing_rel_sequence(cls): pass
+    def get_lag_time_attributes(cls): pass
+    def select_task_products(cls, products): pass
+    def add_task_column(cls, column_type, name, data_type): pass
+    def remove_task_column(cls, name): pass
+    def set_task_sort_column(cls, column): pass
+    def find_related_output_tasks(cls, column): pass
+    def get_work_schedule(cls, task): pass
+    def is_work_schedule_active(cls, work_schedule): pass
+    def highlight_task(cls, task): pass
+
+
+
+@interface
 class Spatial:
     def can_contain(cls, structure_obj, element_obj): pass
+    def can_reference(cls, structure, element): pass
     def disable_editing(cls, obj): pass
     def duplicate_object_and_data(cls, obj): pass
     def enable_editing(cls, obj): pass
