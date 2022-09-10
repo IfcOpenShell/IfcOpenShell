@@ -28,8 +28,9 @@ def cast_to_value(from_value, to_value):
     try:
         target_type = type(to_value).__name__
         if target_type == "int":
-            # Casting str -> float -> int means that notation like '1e3' is preserved
-            return int(float(from_value))
+            # Casting str -> float means that notation like '1e3' is preserved
+            # We do not cast to int because 42.0 == 42 and 42.3 != 42
+            return float(from_value)
         elif target_type == "bool":
             if from_value == "TRUE":
                 return True
@@ -366,7 +367,11 @@ class Property(Facet):
                 props[pset_name] = {}
                 if isinstance(self.name, str):
                     prop = pset_props.get(self.name)
-                    if prop is not None and prop != "":
+                    if prop == "UNKNOWN" and [
+                        p for p in inst.wrapped_data.file.by_id(pset_props["id"]).HasProperties if p.Name == self.name
+                    ][0].NominalValue.is_a("IfcLogical"):
+                        pass
+                    elif prop is not None and prop != "":
                         props[pset_name][self.name] = prop
                 else:
                     props[pset_name] = {k: v for k, v in pset_props.items() if k == self.name}
@@ -386,7 +391,7 @@ class Property(Facet):
                         ):
                             continue
 
-                        data_type = prop_entity.NominalValue.is_a().replace("Ifc", "").replace("Measure", "")
+                        data_type = prop_entity.NominalValue.is_a()
 
                         if data_type != self.measure:
                             is_pass = False
@@ -407,10 +412,22 @@ class Property(Facet):
                     break
 
                 if self.value:
-                    if any([v != self.value for v in props[pset_name].values()]):
-                        is_pass = False
-                        reason = {"type": "VALUE", "actual": list(props[pset_name].values())}
-                        break
+                    for value in props[pset_name].values():
+                        if isinstance(self.value, str) and isinstance(value, str):
+                            if value != self.value:
+                                is_pass = False
+                                reason = {"type": "VALUE", "actual": value}
+                                break
+                        elif isinstance(self.value, str):
+                            cast_value = cast_to_value(self.value, value)
+                            if value != cast_value:
+                                is_pass = False
+                                reason = {"type": "VALUE", "actual": value}
+                                break
+                        elif value != self.value:
+                            is_pass = False
+                            reason = {"type": "VALUE", "actual": value}
+                            break
         return PropertyResult(is_pass, reason)
 
 
@@ -654,7 +671,7 @@ class PropertyResult(Result):
             return "The property set does not contain the required property"
         elif self.reason["type"] == "MEASURE":
             return f"The data type \"{str(self.reason['actual'])}\" does not match the requirements"
-        elif self.reason["type"] == "VALUE" and len(self.reason['actual']) == 1:
+        elif self.reason["type"] == "VALUE" and len(self.reason["actual"]) == 1:
             return f"The property value \"{str(self.reason['actual'][0])}\" does not match the requirements"
         elif self.reason["type"] == "VALUE":
             return f"The property values \"{str(self.reason['actual'])}\" do not match the requirements"

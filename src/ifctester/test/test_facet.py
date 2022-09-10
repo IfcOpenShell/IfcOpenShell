@@ -401,8 +401,6 @@ class TestAttribute:
             expected=False,
         )
 
-        # TODO continue from here
-
         global_id = ifcopenshell.guid.new()
         facet = Attribute(name="GlobalId", value=global_id)
         ifc = ifcopenshell.file()
@@ -509,27 +507,10 @@ class TestAttribute:
         facet = Attribute(name="NumberOfRisers", value="42.3")
         ifc = ifcopenshell.file()
         run(
-            "Integers are always floored when cast 1/2",
+            "Specifying a float when the value is an integer will fail",
             facet=facet,
             inst=ifc.createIfcStairFlight(NumberOfRisers=42),
-            expected=True,
-        )
-        facet = Attribute(name="NumberOfRisers", value="42.7")
-        ifc = ifcopenshell.file()
-        run(
-            "Integers are always floored when cast 2/2",
-            facet=facet,
-            inst=ifc.createIfcStairFlight(NumberOfRisers=42),
-            expected=True,
-        )
-
-        facet = Attribute(name="NumberOfRisers", value="42.7")
-        ifc = ifcopenshell.file()
-        run(
-            "Integers are always floored when cast 2/2",
-            facet=facet,
-            inst=ifc.createIfcStairFlight(NumberOfRisers=42),
-            expected=True,
+            expected=False,
         )
 
         facet = Attribute(name="IsMilestone", value="TRUE")
@@ -841,134 +822,177 @@ class TestProperty:
         timeunit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="TIMEUNIT", name="SECOND")
         ifcopenshell.api.run("unit.assign_unit", ifc, units=[lengthunit, areaunit, volumeunit, timeunit])
 
-        # A name check by itself only checks that a property is non-null and non empty string
-        # The logic is that unfortunately most BIM users cannot differentiate between the two.
         facet = Property(propertySet="Foo_Bar", name="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        run("", facet=facet, inst=element, expected=False)
+        run("Elements with no properties always fail", facet=facet, inst=element, expected=False)
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
-        run("", facet=facet, inst=element, expected=False)
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"AnotherProperty": "AnotherValue"})
+        run("Elements with a matching pset but no property also fail", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": None})
-        run("", facet=facet, inst=element, expected=False)
+        run("Properties with a null value fail", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
-        run("", facet=facet, inst=element, expected=True)
+        run("A name check will match any property with any string value", facet=facet, inst=element, expected=True)
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ""})
+        run("An empty string is considered falsey and will not pass", facet=facet, inst=element, expected=False)
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcLogical("UNKNOWN")})
+        run("A logical unknown is considered falsey and will not pass", facet=facet, inst=element, expected=False)
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDuration("P0D")})
+        run("A zero duration will pass", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcBoolean(True)})
-        run("", facet=facet, inst=element, expected=True)
+        run("A property set to true will pass a name check", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": False})
-        run("", facet=facet, inst=element, expected=True)
+        run(
+            "A property set to false is still considered a value and will pass a name check",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
 
-        # A simple value checks an exact case-sensitive match
         facet = Property(propertySet="Foo_Bar", name="Foo", value="Bar")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
-        run("", facet=facet, inst=element, expected=True)
+        run("Specifying a value performs a case-sensitive match 1/2", facet=facet, inst=element, expected=True)
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "bar"})
+        run("Specifying a value performs a case-sensitive match 2/2", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Baz"})
-        run("", facet=facet, inst=element, expected=False)
+        run("Specifying a value fails against different values", facet=facet, inst=element, expected=False)
 
-        # Simple values only check string matches
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="♫")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "♫"})
+        run("Non-ascii characters are treated without encoding", facet=facet, inst=element, expected=True)
+
+        identifier = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345"
+        facet = Property(propertySet="Foo_Bar", name="Foo", value=identifier + "_extra_characters")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcIdentifier(identifier)})
+        run("IDS does not handle string truncation such as for identifiers", facet=facet, inst=element, expected=False)
+
         facet = Property(propertySet="Foo_Bar", name="Foo", value="1")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "1"})
-        run("", facet=facet, inst=element, expected=True)
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcInteger(1)})
-        run("", facet=facet, inst=element, expected=False)
+        run("A number specified as a string is treated as a string", facet=facet, inst=element, expected=True)
 
-        # Restrictions are supported for property sets. If multiple are matched, all must satisfy requirements.
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcInteger(42)})
+        run("Integer values are checked using type casting 1/4", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.")
+        run("Integer values are checked using type casting 2/4", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.0")
+        run("Integer values are checked using type casting 3/4", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.3")
+        run("Integer values are checked using type casting 4/4", facet=facet, inst=element, expected=False)
+
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42.0)})
+        run("Real values are checked using type casting 1/3", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.0")
+        run("Real values are checked using type casting 2/3", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42.3")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42.3)})
+        run("Real values are checked using type casting 3/3", facet=facet, inst=element, expected=True)
+
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="42,3")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42.3)})
+        run("Only specifically formatted numbers are allowed 1/4", facet=facet, inst=element, expected=False)
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="123,4.5")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(1234.5)})
+        run("Only specifically formatted numbers are allowed 2/4", facet=facet, inst=element, expected=False)
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="1.2345e3")
+        run("Only specifically formatted numbers are allowed 3/4", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="1.2345E3")
+        run("Only specifically formatted numbers are allowed 4/4", facet=facet, inst=element, expected=True)
+
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="TRUE")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcBoolean(False)})
+        run("Booleans must be specified as uppercase strings 1/3", facet=facet, inst=element, expected=False)
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="FALSE")
+        run("Booleans must be specified as uppercase strings 2/3", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="False")
+        run("Booleans must be specified as uppercase strings 3/3", facet=facet, inst=element, expected=False)
+
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="2022-01-01")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDate("2022-01-01")})
+        run("Dates are treated as strings 1/2", facet=facet, inst=element, expected=True)
+        ifcopenshell.api.run(
+            "pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDate("2022-01-01+00:00")}
+        )
+        run("Dates are treated as strings 2/2", facet=facet, inst=element, expected=False)
+
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="PT16H")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDuration("PT16H")})
+        run("Durations are treated as strings 1/2", facet=facet, inst=element, expected=True)
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDuration("P2D")})
+        run("Durations are treated as strings 1/2", facet=facet, inst=element, expected=False)
+
         restriction = Restriction(options="Foo_.*", type="pattern")
         facet = Property(propertySet=restriction, name="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
-        run("", facet=facet, inst=element, expected=True)
+        run("All matching property sets must satisfy requirements 1/3", facet=facet, inst=element, expected=True)
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Baz")
-        run("", facet=facet, inst=element, expected=False)
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"AnotherProperty": "AnotherValue"})
+        run("All matching property sets must satisfy requirements 2/3", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
-        run("", facet=facet, inst=element, expected=True)
+        run("All matching property sets must satisfy requirements 3/3", facet=facet, inst=element, expected=True)
 
-        # Restrictions are supported for names. If multiple are matched, all must satisfy requirements.
         restriction = Restriction(options="Foo.*", type="pattern")
         facet = Property(propertySet="Foo_Bar", name=restriction, value="x")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x"})
-        run("", facet=facet, inst=element, expected=True)
+        run("All matching properties must satisfy requirements 1/3", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "x"})
-        run("", facet=facet, inst=element, expected=True)
+        run("All matching properties must satisfy requirements 2/3", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "y"})
-        run("", facet=facet, inst=element, expected=False)
+        run("All matching properties must satisfy requirements 3/3", facet=facet, inst=element, expected=False)
 
-        # Restrictions are supported for values. If multiple are matched, all must satisfy requirements.
         restriction1 = Restriction(options="Foo.*", type="pattern")
         restriction2 = Restriction(options=["x", "y"], type="enumeration")
         facet = Property(propertySet="Foo_Bar", name=restriction1, value=restriction2)
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "y"})
-        run("", facet=facet, inst=element, expected=True)
+        run(
+            "If multiple properties are matched, all values must satisfy requirements 1/2",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": "x", "Foobaz": "z"})
-        run("", facet=facet, inst=element, expected=False)
+        run(
+            "If multiple properties are matched, all values must satisfy requirements 2/2",
+            facet=facet,
+            inst=element,
+            expected=False,
+        )
 
-        # Restrictions may be used to check basic data primitives
-        restriction = Restriction(options=[42.12], type="enumeration", base="decimal")
-        facet = Property(propertySet="Foo_Bar", name="Foobar", value=restriction)
-        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": 42.12})
-        run("", facet=facet, inst=element, expected=True)
-        restriction = Restriction(options=[42], type="enumeration", base="integer")
-        facet = Property(propertySet="Foo_Bar", name="Foobar", value=restriction)
-        run("", facet=facet, inst=element, expected=False)
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": 42})
-        run("", facet=facet, inst=element, expected=True)
-        restriction = Restriction(options=[True], type="enumeration", base="boolean")
-        facet = Property(propertySet="Foo_Bar", name="Foobar", value=restriction)
-        run("", facet=facet, inst=element, expected=False)
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": True})
-        run("", facet=facet, inst=element, expected=True)
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": False})
-        run("", facet=facet, inst=element, expected=False)
-
-        # When measure is not specified, no unit conversion is done and only primitives are checked
-        restriction = Restriction(options=[42.12], type="enumeration", base="decimal")
-        facet = Property(propertySet="Foo_Bar", name="Foobar", value=restriction)
-        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foobar": 42.12})
-        run("", facet=facet, inst=element, expected=True)
-
-        # Measure may be used to specify an IFC data type
-        restriction = Restriction(options=[2], type="enumeration", base="decimal")
-        facet = Property(propertySet="Foo_Bar", name="Foo", value=restriction, measure="Time")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="2", measure="IfcTimeMeasure")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcMassMeasure(2)})
-        run("", facet=facet, inst=element, expected=False)
+        run("Measure may be used to specify an IFC data type 1/2", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcTimeMeasure(2)})
-        run("", facet=facet, inst=element, expected=True)
+        run("Measure may be used to specify an IFC data type 2/2", facet=facet, inst=element, expected=True)
 
-        # Measure also implies that a unit matters, and so a conversion shall take place to SI units
-        restriction = Restriction(options=[2], type="enumeration", base="decimal")
-        facet = Property(propertySet="Foo_Bar", name="Foo", value=restriction, measure="Length")
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="2", measure="IfcLengthMeasure")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcLengthMeasure(2)})
-        run("", facet=facet, inst=element, expected=False)
+        run("Unit conversions shall take place to IDS-nominated standard units 1/2", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcLengthMeasure(2000)})
-        run("", facet=facet, inst=element, expected=True)
+        run("Unit conversions shall take place to IDS-nominated standard units 2/2", facet=facet, inst=element, expected=True)
 
-        # The facet checks inherited properties from the type
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall_type, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
         facet = Property(propertySet="Foo_Bar", name="Foo")
-        run("", facet=facet, inst=wall, expected=True)
-        run("", facet=facet, inst=wall_type, expected=True)
+        run("Properties can be inherited from the type 1/2", facet=facet, inst=wall, expected=True)
+        run("Properties can be inherited from the type 2/2", facet=facet, inst=wall_type, expected=True)
 
-        # The facet checks overriden properties from the occurrence
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
@@ -977,8 +1001,8 @@ class TestProperty:
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
         facet = Property(propertySet="Foo_Bar", name="Foo", value="Bar")
-        run("", facet=facet, inst=wall, expected=True)
-        run("", facet=facet, inst=wall_type, expected=False)
+        run("Properties can be overriden by an occurrence 1/2", facet=facet, inst=wall, expected=True)
+        run("Properties can be overriden by an occurrence 2/2", facet=facet, inst=wall_type, expected=False)
 
 
 class TestMaterial:
