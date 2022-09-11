@@ -232,7 +232,7 @@ class Attribute(Facet):
                 elif isinstance(self.value, str):
                     cast_value = cast_to_value(self.value, value)
                     if isinstance(value, float) and isinstance(cast_value, float):
-                        if value < cast_value * (1. - 1e-6) or value > cast_value * (1. + 1e-6):
+                        if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
                             is_pass = False
                             reason = {"type": "VALUE", "actual": value}
                             break
@@ -295,28 +295,79 @@ class Classification(Facet):
 
 
 class PartOf(Facet):
-    def __init__(self, entity="IfcSystem"):
-        self.parameters = ["@entity"]
-        self.applicability_templates = ["An element part of a {entity}"]
-        self.requirement_templates = ["Must be part of a {entity}"]
-        super().__init__(entity)
+    def __init__(self, entity=None, relation="IfcRelAggregates", instructions=None):
+        self.parameters = ["entity", "@relation", "@instructions"]
+        self.applicability_templates = [
+            "An element with an {relation} relationship with an {entity}",
+            "An element with an {relation} relationship",
+        ]
+        self.requirement_templates = [
+            "An element must have an {relation} relationship with an {entity}",
+            "An element must have an {relation} relationship",
+        ]
+        super().__init__(entity, relation, instructions)
 
     def __call__(self, inst, logger=None):
-        if self.entity == "IfcElementAssembly":
-            is_pass = False
+        reason = None
+        if self.relation == "IfcRelAggregates":
             aggregate = ifcopenshell.util.element.get_aggregate(inst)
-            while aggregate is not None:
-                if aggregate.is_a() == "IfcElementAssembly":
-                    is_pass = True
-                    break
-                aggregate = ifcopenshell.util.element.get_aggregate(aggregate)
-        else:
-            is_pass = False
+            is_pass = aggregate is not None
+            if not is_pass:
+                reason = {"type": "RELATION"}
+            if is_pass and self.entity:
+                is_pass = False
+                ancestors = []
+                while aggregate is not None:
+                    ancestors.append(aggregate.is_a())
+                    if aggregate.is_a().upper() == self.entity:
+                        is_pass = True
+                        break
+                    aggregate = ifcopenshell.util.element.get_aggregate(aggregate)
+                if not is_pass:
+                    reason = {"type": "ENTITY", "actual": ancestors}
+        elif self.relation == "IfcRelAssignsToGroup":
+            group = None
             for rel in getattr(inst, "HasAssignments", []) or []:
-                if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a(self.entity):
-                    is_pass = True
+                if rel.is_a("IfcRelAssignsToGroup"):
+                    group = rel.RelatingGroup
+                    break
+            is_pass = group is not None
+            if not is_pass:
+                reason = {"type": "NOVALUE"}
+            if is_pass and self.entity:
+                if group.is_a().upper() != self.entity:
+                    is_pass = False
+                    reason = {"type": "ENTITY", "actual": group.is_a().upper()}
+        elif self.relation == "IfcRelContainedInSpatialStructure":
+            container = ifcopenshell.util.element.get_container(inst)
+            is_pass = container is not None
+            if not is_pass:
+                reason = {"type": "RELATION"}
+            if is_pass and self.entity:
+                if container.is_a().upper() != self.entity:
+                    is_pass = False
+                    reason = {"type": "ENTITY", "actual": container.is_a().upper()}
+        elif self.relation == "IfcRelNests":
+            nest = self.get_nested_whole(inst)
+            is_pass = nest is not None
+            if not is_pass:
+                reason = {"type": "NOVALUE"}
+            if is_pass and self.entity:
+                is_pass = False
+                ancestors = []
+                while nest is not None:
+                    ancestors.append(nest.is_a())
+                    if nest.is_a().upper() == self.entity:
+                        is_pass = True
+                        break
+                    nest = self.get_nested_whole(nest)
+                if not is_pass:
+                    reason = {"type": "ENTITY", "actual": ancestors}
+        return PartOfResult(is_pass, reason)
 
-        return PartOfResult(is_pass, "TODO")
+    def get_nested_whole(self, element):
+        for rel in getattr(element, "Nests", []) or []:
+            return rel.RelatingObject
 
 
 class Property(Facet):
@@ -426,7 +477,7 @@ class Property(Facet):
                         elif isinstance(self.value, str):
                             cast_value = cast_to_value(self.value, value)
                             if isinstance(value, float) and isinstance(cast_value, float):
-                                if value < cast_value * (1. - 1e-6) or value > cast_value * (1. + 1e-6):
+                                if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
                                     is_pass = False
                                     reason = {"type": "VALUE", "actual": value}
                                     break

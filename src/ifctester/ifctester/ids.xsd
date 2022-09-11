@@ -56,9 +56,16 @@
 			<xs:element name="system" type="ids:idsValue" minOccurs="0"/>
 		</xs:sequence>
 	</xs:complexType>
+	<xs:complexType name="partOfType">
+		<xs:sequence>
+			<xs:element name="entity" type="ids:idsValue" minOccurs="0"/>
+		</xs:sequence>
+		<xs:attribute name="relation" type="ids:relations" use="required"/>
+	</xs:complexType>
 	<xs:complexType name="applicabilityType">
 		<xs:sequence>
 			<xs:element name="entity" type="ids:entityType" minOccurs="0"/>
+			<xs:element name="partOf" type="ids:partOfType" minOccurs="0"/>
 			<xs:element name="classification" type="ids:classificationType" minOccurs="0" maxOccurs="unbounded"/>
 			<xs:element name="attribute" type="ids:attributeType" minOccurs="0" maxOccurs="unbounded"/>
 			<xs:element name="property" minOccurs="0" maxOccurs="unbounded">
@@ -115,17 +122,16 @@
 			</xs:element>
 			<xs:element name="partOf" minOccurs="0">
 				<xs:complexType>
-					<xs:sequence>
-						<xs:element name="entity" maxOccurs="unbounded">
-							<xs:complexType>
-								<xs:complexContent>
-									<xs:extension base="ids:idsValue">
-										<xs:attribute name="relation" type="ids:relations" use="required"/>
-									</xs:extension>
-								</xs:complexContent>
-							</xs:complexType>
-						</xs:element>
-					</xs:sequence>
+					<xs:complexContent>
+						<xs:extension base="ids:partOfType">
+							<xs:attributeGroup ref="xs:occurs"/>
+							<xs:attribute name="instructions" type="xs:string" use="optional">
+								<xs:annotation>
+									<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
+								</xs:annotation>
+							</xs:attribute>
+						</xs:extension>
+					</xs:complexContent>
 				</xs:complexType>
 			</xs:element>
 			<xs:element name="classification" minOccurs="0" maxOccurs="unbounded">
