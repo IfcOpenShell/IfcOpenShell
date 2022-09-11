@@ -152,13 +152,13 @@ class CreateDrawing(bpy.types.Operator):
 
             with profile("Generate underlay"):
                 underlay_svg = self.generate_underlay(context)
-            
+
             with profile("Generate linework"):
                 linework_svg = self.generate_linework(context)
 
             with profile("Generate annotation"):
                 annotation_svg = self.generate_annotation(context)
-            
+
             with profile("Combine SVG layers"):
                 svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
 
@@ -1195,7 +1195,7 @@ class AddSectionsAnnotations(bpy.types.Operator):
         ]
 
         def sideview(cam):
-            # leftmost and righmost points of camera view area, local coords
+            # leftmost and rightmost points of camera view area, local coords
             xmin, xmax, _, _, _, _ = helper.ortho_view_frame(cam.data, margin=0)
             proj = camera.matrix_world.inverted() @ cam.matrix_world
             p_l = proj @ Vector((xmin, 0, 0))

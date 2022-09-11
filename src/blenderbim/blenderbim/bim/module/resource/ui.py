@@ -19,7 +19,7 @@
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.resource.data import Data
+from blenderbim.bim.module.resource.data import ResourceData
 
 
 class BIM_PT_resources(Panel):
@@ -39,21 +39,27 @@ class BIM_PT_resources(Panel):
     def draw(self, context):
         self.props = context.scene.BIMResourceProperties
         self.tprops = context.scene.BIMResourceTreeProperties
-
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not ResourceData.is_loaded:
+            ResourceData.load()
 
         row = self.layout.row(align=True)
-        row.label(text=f"{len(Data.resources)} Resources Found")
+        if ResourceData.data["has_resources"]:
+            row.label(
+                text="{} Resources Found".format(ResourceData.data["number_of_resources_loaded"]),
+                icon="TEXT",
+            )
+        else:
+            row.label(text="No Resources found.", icon="COMMUNITY")
         if self.props.is_editing:
             row.operator("bim.disable_resource_editing_ui", text="", icon="CANCEL")
         else:
-            row.operator("bim.load_resources", text="", icon="GREASEPENCIL")
-
+            row.operator("bim.load_resources", text="Load Resources", icon="GREASEPENCIL")
+            row.operator("import_resources.bim", text="Import Resources", icon="IMPORT")
         if not self.props.is_editing:
             return
 
         self.draw_resource_operators()
+
         self.layout.template_list(
             "BIM_UL_resources",
             "",
@@ -76,17 +82,17 @@ class BIM_PT_resources(Panel):
         row = self.layout.row(align=True)
         op = row.operator("bim.add_resource", text="Add SubContract", icon="TEXT")
         op.ifc_class = "IfcSubContractResource"
-        op.resource = 0
+        op.parent_resource = 0
         op = row.operator("bim.add_resource", text="Add Crew", icon="COMMUNITY")
         op.ifc_class = "IfcCrewResource"
-        op.resource = 0
+        op.parent_resource = 0
 
         total_resources = len(self.tprops.resources)
         if not total_resources or self.props.active_resource_index >= total_resources:
             return
 
         ifc_definition_id = self.tprops.resources[self.props.active_resource_index].ifc_definition_id
-        resource = Data.resources[ifc_definition_id]
+        resource = ResourceData.data["resources"][ifc_definition_id]
 
         if resource["type"] != "IfcSubContractResource":
             icon_map = {
@@ -100,26 +106,13 @@ class BIM_PT_resources(Panel):
             for ifc_class, icon in icon_map.items():
                 label = ifc_class.replace("Ifc", "").replace("Construction", "").replace("Resource", "")
                 op = row.operator("bim.add_resource", text=label, icon=icon)
-                op.resource = ifc_definition_id
+                op.parent_resource = ifc_definition_id
                 op.ifc_class = ifc_class
 
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
 
-        if self.props.active_resource_id == ifc_definition_id and self.props.editing_resource_type == "ATTRIBUTES":
-            row.operator("bim.edit_resource", text="", icon="CHECKMARK")
-            row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
-        elif self.props.active_resource_id == ifc_definition_id and self.props.editing_resource_type == "USAGE":
-            row.operator("bim.edit_resource_time", text="", icon="CHECKMARK")
-            row.operator("bim.disable_editing_resource_time", text="", icon="CANCEL")
-        elif self.props.active_resource_id == ifc_definition_id and self.props.editing_resource_type == "COSTS":
-            row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
-        elif self.props.active_resource_id == ifc_definition_id and self.props.editing_resource_type == "QUANTITY":
-            row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
-        elif self.props.active_resource_id:
-            row.operator("bim.add_resource", text="", icon="ADD").resource = ifc_definition_id
-            row.operator("bim.remove_resource", text="", icon="X").resource = ifc_definition_id
-        else:
+        if not self.props.active_resource_id:
             if resource["type"] in ["IfcLaborResource", "IfcConstructionEquipmentResource"]:
                 op = row.operator("bim.calculate_resource_work", text="", icon="TEMP")
                 op.resource = ifc_definition_id
@@ -138,7 +131,7 @@ class BIM_PT_resources(Panel):
         blenderbim.bim.helper.draw_attributes(self.props.resource_time_attributes, self.layout)
 
     def draw_editable_resource_quantity_ui(self):
-        resource = Data.resources[self.props.active_resource_id]
+        resource = ResourceData.data["resources"][self.props.active_resource_id]
 
         if resource["BaseQuantity"]:
             quantity = resource["BaseQuantity"]
@@ -177,16 +170,16 @@ class BIM_PT_resources(Panel):
         if self.props.cost_types == "CATEGORY":
             op.cost_category = self.props.cost_category
 
-        for cost_value_id in Data.resources[self.props.active_resource_id]["BaseCosts"] or []:
+        for cost_value_id in ResourceData.data["resources"][self.props.active_resource_id]["BaseCosts"] or []:
             row = self.layout.row(align=True)
             self.draw_readonly_cost_value_ui(row, cost_value_id)
 
         if self.props.cost_value_editing_type == "ATTRIBUTES":
             box = self.layout.box()
-            self.draw_editable_cost_value_ui(box, Data.cost_values[self.props.active_cost_value_id])
+            self.draw_editable_cost_value_ui(box, ResourceData.cost_values[self.props.active_cost_value_id])
 
     def draw_readonly_cost_value_ui(self, layout, cost_value_id):
-        cost_value = Data.cost_values[cost_value_id]
+        cost_value = ResourceData.cost_values[cost_value_id]
 
         if self.props.active_cost_value_id == cost_value_id and self.props.cost_value_editing_type == "FORMULA":
             layout.prop(self.props, "cost_value_formula", text="")
@@ -225,7 +218,7 @@ class BIM_PT_resources(Panel):
 
 class BIM_UL_resources(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        resource = Data.resources[item.ifc_definition_id]
+        resource = ResourceData.data["resources"][item.ifc_definition_id]
         icon_map = {
             "IfcSubContractResource": "TEXT",
             "IfcCrewResource": "COMMUNITY",
@@ -251,13 +244,19 @@ class BIM_UL_resources(UIList):
             else:
                 row.label(text="", icon="DOT")
             row.prop(item, "name", emboss=False, text="", icon=icon_map[resource["type"]])
-
-            if context.active_object:
+            if context.active_object and not props.active_resource_id:
                 oprops = context.active_object.BIMObjectProperties
                 row = layout.row(align=True)
-                if oprops.ifc_definition_id in Data.resources[item.ifc_definition_id]["ResourceOf"]:
+                if oprops.ifc_definition_id in ResourceData.data["resources"][item.ifc_definition_id]["ResourceOf"]:
                     op = row.operator("bim.unassign_resource", text="", icon="KEYFRAME_HLT", emboss=False)
                     op.resource = item.ifc_definition_id
                 else:
                     op = row.operator("bim.assign_resource", text="", icon="KEYFRAME", emboss=False)
                     op.resource = item.ifc_definition_id
+
+            if props.active_resource_id == item.ifc_definition_id:
+                if props.editing_resource_type == "ATTRIBUTES":
+                    row.operator("bim.edit_resource", text="", icon="CHECKMARK")
+                elif props.editing_resource_type == "USAGE":
+                    row.operator("bim.edit_resource_time", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_resource", text="", icon="CANCEL")

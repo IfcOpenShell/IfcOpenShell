@@ -245,8 +245,8 @@ class IfcImporter:
         self.create_structural_items()
         self.profile_code("Create structural items")
         if not self.ifc_import_settings.is_coordinating:
-            self.create_type_products()
-            self.profile_code("Create type products")
+            self.create_element_types()
+            self.profile_code("Create element types")
         self.place_objects_in_collections()
         self.profile_code("Place objects in collections")
         self.add_project_to_scene()
@@ -327,6 +327,11 @@ class IfcImporter:
 
         self.elements = set(self.elements[offset:offset_limit])
 
+        if self.ifc_import_settings.has_filter or offset or offset_limit < len(self.elements):
+            self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
+        else:
+            self.element_types = set(self.file.by_type("IfcElementType"))
+
         if self.ifc_import_settings.has_filter and self.ifc_import_settings.should_filter_spatial_elements:
             self.spatial_elements = self.get_spatial_elements_filtered_by_elements(self.elements)
         else:
@@ -394,6 +399,12 @@ class IfcImporter:
         for representation in representations:
             items = representation["raw"].Items or []  # Be forgiving of invalid IFCs because Revit :(
             if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
+                return True
+            elif (
+                items[0].is_a("IfcSweptDiskSolid")
+                and len({i.is_a() for i in items}) == 1
+                and len({i.Radius for i in items}) == 1
+            ):
                 return True
         return False
 
@@ -576,19 +587,13 @@ class IfcImporter:
             self.set_matrix_world(obj, grid_obj.matrix_world)
             grid_collection.objects.link(obj)
 
-    def create_type_products(self):
-        # TODO allow filtering of spatial elements too
-        if self.ifc_import_settings.has_filter:
-            type_products = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
-        else:
-            type_products = self.file.by_type("IfcTypeProduct")
-
-        for type_product in type_products:
-            if not type_product:
+    def create_element_types(self):
+        for element_type in self.element_types:
+            if not element_type:
                 continue
-            self.create_type_product(type_product)
+            self.create_element_type(element_type)
 
-    def create_type_product(self, element):
+    def create_element_type(self, element):
         self.ifc_import_settings.logger.info("Creating object %s", element)
         representation_map = self.get_type_product_body_representation_map(element)
         mesh = None
@@ -1108,6 +1113,7 @@ class IfcImporter:
                     polyline.points[-1].co = representation["matrix"] @ mathutils.Vector(v2)
 
         curve.bevel_depth = self.unit_scale * item.Radius
+        curve.use_fill_caps = True
         return curve
 
     def create_native_annotation(self, element, mesh_name):

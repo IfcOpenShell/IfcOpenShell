@@ -47,14 +47,14 @@ class BIM_PT_styles(Panel):
         if self.props.is_editing:
             row.operator("bim.disable_editing_styles", text="", icon="CANCEL")
         else:
-            row.prop(self.props, "style_type", text="")
+            blenderbim.bim.helper.prop_with_search(row, self.props, "style_type", text="")
             row.operator("bim.load_styles", text="", icon="IMPORT").style_type = self.props.style_type
             return
 
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
 
-        #row.operator("bim.add_presentation_style", text="", icon="ADD")
+        # row.operator("bim.add_presentation_style", text="", icon="ADD")
         if self.props.styles and self.props.active_style_index < len(self.props.styles):
             style = self.props.styles[self.props.active_style_index]
             op = row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF")

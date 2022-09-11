@@ -65,7 +65,7 @@ class Material(blenderbim.core.tool.Material):
         materials = sorted(tool.Ifc.get().by_type(material_type), key=get_name)
         categories = {}
         if material_type == "IfcMaterial":
-            [categories.setdefault(m.Category, []).append(m) for m in materials]
+            [categories.setdefault(getattr(m, "Category", "Uncategorised"), []).append(m) for m in materials]
             for category, mats in categories.items():
                 cat = props.materials.add()
                 cat.name = category or ""
@@ -75,7 +75,9 @@ class Material(blenderbim.core.tool.Material):
                     new = props.materials.add()
                     new.ifc_definition_id = material.id()
                     new.name = get_name(material)
-                    new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+                    new.total_elements = len(
+                        ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
+                    )
             return
         for material in materials:
             new = props.materials.add()

@@ -23,18 +23,26 @@ import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.bim
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.model.data import AuthoringData
 from pytest_bdd import scenarios, given, when, then, parsers
 from mathutils import Vector
 
 scenarios("feature")
 
-variables = {"cwd": os.getcwd(), "ifc": "IfcStore.get_file()"}
+variables = {
+    "cwd": os.getcwd(),
+    "ifc": "IfcStore.get_file()",
+    "pset_ifc": "IfcStore.pset_template_file",
+    "classification_ifc": "IfcStore.classification_file",
+}
 
 # Monkey-patch webbrowser opening since we want to test headlessly
 webbrowser.open = lambda x: True
 
 
 def replace_variables(value):
+    if "{cwd}" in value and os.name == "nt":
+        value = value.replace("/", "\\").replace("{cwd}", os.getcwd()).replace("\\", "\\\\")
     for key, new_value in variables.items():
         value = value.replace("{" + key + "}", str(new_value))
     return value
@@ -65,6 +73,17 @@ def an_empty_ifc_project():
     bpy.ops.bim.create_project()
 
 
+@given("an empty IFC2X3 project")
+def an_empty_ifc_project():
+    IfcStore.purge()
+    bpy.ops.wm.read_homefile(app_template="")
+    if len(bpy.data.objects) > 0:
+        bpy.data.batch_remove(bpy.data.objects)
+        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+    bpy.context.scene.BIMProjectProperties.export_schema = "IFC2X3"
+    bpy.ops.bim.create_project()
+
+
 @when("I load a new pset template file")
 def i_load_a_new_pset_template_file():
     IfcStore.pset_template_path = os.path.join(
@@ -88,7 +107,7 @@ def i_add_an_empty():
 
 
 @given("I add a sun")
-@when("I add an sun")
+@when("I add a sun")
 def i_add_a_sun():
     bpy.ops.object.light_add(type="SUN")
 
@@ -97,6 +116,15 @@ def i_add_a_sun():
 @when("I add a material")
 def i_add_a_material():
     bpy.context.active_object.active_material = bpy.data.materials.new("Material")
+
+
+@given(parsers.parse('I add a new item to "{collection}"'))
+@when(parsers.parse('I add a new item to "{collection}"'))
+def i_add_a_new_collection_item(collection):
+    try:
+        eval(f"bpy.context.{collection}.add()")
+    except:
+        assert False, "Collection does not exist"
 
 
 @given(parsers.parse('the material "{name}" colour is set to "{colour}"'))
@@ -476,6 +504,7 @@ def prop_is_value(prop, value):
             except:
                 pass
     if not is_value:
+        print(f"bpy.context.{prop}")
         actual_value = eval(f"bpy.context.{prop}")
         assert False, f"Value is {actual_value}"
 
@@ -497,7 +526,16 @@ def the_collection_name1_is_in_the_collection_name2(name1, name2):
 
 @then(parsers.parse('the object "{name}" does not exist'))
 def the_object_name_does_not_exist(name):
-    assert bpy.data.objects.get(name) is None, "Object exists"
+    obj = bpy.data.objects.get(name)
+    assert obj is None or len(obj.users_collection) == 0, "Object exists"
+
+
+@then(parsers.parse('objects starting with "{name}" do not exist'))
+def objects_not_exist_starting_with(name):
+    objs = [obj for obj in bpy.data.objects if obj.name.startswith(name) and len(obj.users_collection) > 0]
+    if len(objs) > 0:
+        assert False, f'{len(objs)} objects starting with "{name}" exist'
+    assert True
 
 
 @then(parsers.parse('the object "{name}" is at "{location}"'))
@@ -552,3 +590,77 @@ def the_file_name_should_contain_value(name, value):
 @then(parsers.parse('the object "{name}" has no modifiers'))
 def the_object_name_has_no_modifiers(name):
     assert len(the_object_name_exists(name).modifiers) == 0
+
+
+@then(parsers.parse('the construction type "{ifc_class}"/"{relating_type}" has a preview'))
+def the_construction_type_has_a_preview(ifc_class, relating_type):
+    if "preview_constr_types" not in AuthoringData.data:
+        assert False, "There are no previews loaded"
+    preview_constr_types = AuthoringData.data["preview_constr_types"]
+    if ifc_class not in preview_constr_types:
+        assert False, f"Construction class {ifc_class} has no available previews"
+    relating_type_id = AuthoringData.relating_type_id_by_name(ifc_class, relating_type)
+    if relating_type_id is None:
+        assert False, f"No construction type {ifc_class}/{relating_type} was found"
+    if relating_type_id not in preview_constr_types[ifc_class]:
+        assert False, f"Construction type {ifc_class}/{relating_type} has no available previews"
+    preview_data = preview_constr_types[ifc_class][relating_type_id]
+    if "icon_id" not in preview_data:
+        assert False, f"Construction type {ifc_class}/{relating_type} has a preview, but no assigned icon_id"
+    icon_id = preview_data["icon_id"]
+    if not isinstance(icon_id, int):
+        assert False, f"Construction type {ifc_class}/{relating_type} has an invalid icon_id {icon_id}"
+    # Note: icon_id must be > 0 in UI mode, but asset_generate_preview() doesn't work headlessly -> skipping for now
+    # if icon_id == 0:
+    #     assert False, f'Construction type {ifc_class}/{relating_type} has the default null value for icon_id'
+    assert True
+
+
+@then("there is a Construction Type preview")
+def there_is_a_construction_type_preview():
+    props = bpy.context.scene.BIMModelProperties
+    assert props.icon_id > 0, f"There isn't a Construction Type preview"
+
+
+@then(parsers.parse('all construction types for "{ifc_class}" have a preview'))
+def all_construction_types_have_a_preview(ifc_class):
+    if "preview_constr_types" not in AuthoringData.data:
+        assert False, "There are no previews loaded"
+    preview_constr_types = AuthoringData.data["preview_constr_types"]
+    if ifc_class not in preview_constr_types:
+        assert False, f"Construction class {ifc_class} has no available previews"
+    constr_class_occurrences = AuthoringData.constr_class_entities(ifc_class)
+    for constr_class_entity in constr_class_occurrences:
+        the_construction_type_has_a_preview(ifc_class, constr_class_entity.Name)
+
+
+@given("I load the demo construction library")
+@when("I load the demo construction library")
+def i_add_a_construction_library():
+    lib_path = "./blenderbim/bim/data/libraries/IFC4 Demo Library.ifc"
+    bpy.ops.bim.select_library_file(filepath=lib_path, append_all=True)
+
+
+@given("I display the construction type browser")
+@when("I display the construction type browser")
+def i_display_the_construction_type_browser():
+    bpy.ops.bim.display_constr_types("INVOKE_DEFAULT")
+
+
+@given("I add the construction type")
+@when("I add the construction type")
+def i_add_the_active_construction_type():
+    props = bpy.context.scene.BIMModelProperties
+    bpy.ops.bim.add_constr_type_instance(ifc_class=props.ifc_class, relating_type_id=int(props.relating_type_id))
+
+
+@then(parsers.parse("construction type is {relating_type_name}"))
+def construction_type(relating_type_name):
+    props = bpy.context.scene.BIMModelProperties
+    relating_type = AuthoringData.relating_type_name_by_id(props.ifc_class, props.relating_type_id)
+    assert relating_type == relating_type_name, f"Construction Type is a {relating_type}, not a {relating_type_name}"
+
+
+@when("I move the cursor to the bottom left corner")
+def move_cursor_bottom_left():
+    bpy.context.window.cursor_warp(10, 10)

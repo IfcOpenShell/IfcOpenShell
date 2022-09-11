@@ -14,6 +14,20 @@ Scenario: Create project
     And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
 
+Scenario: Create project - IFC2X3
+    Given an empty Blender session
+    And I set "scene.BIMProjectProperties.export_schema" to "IFC2X3"
+    When I press "bim.create_project"
+    Then an IFC file exists
+    And the object "IfcProject/My Project" is an "IfcProject"
+    And the object "IfcSite/My Site" is an "IfcSite"
+    And the object "IfcBuilding/My Building" is an "IfcBuilding"
+    And the object "IfcBuildingStorey/My Storey" is an "IfcBuildingStorey"
+    And the object "IfcProject/My Project" is in the collection "IfcProject/My Project"
+    And the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
+    And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
+    And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
+
 Scenario: Append library element
     Given an empty IFC project
     When I press "bim.select_library_file(filepath='{cwd}/test/files/basic.ifc')"
@@ -307,6 +321,18 @@ Scenario: Link IFC
     And the object "IfcBeam/Beam" exists
     And the object "IfcBuildingStorey/Ground Floor" exists
     And the object "IfcBuildingStorey/Level 1" exists
+
+Scenario: Toggle link visibility - wireframe mode
+    Given an empty IFC project
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
+    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.blend', mode='WIREFRAME')"
+    Then nothing happens
+
+Scenario: Toggle link visibility - visible mode
+    Given an empty IFC project
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
+    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.blend', mode='VISIBLE')"
+    Then nothing happens
 
 Scenario: Unload link
     Given an empty Blender session

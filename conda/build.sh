@@ -1,34 +1,44 @@
-# From https://github.com/tpaviot/pythonocc-core/blob/master/ci/conda/build.sh
-if [ "$PY3K" == "1" ]; then
-    MY_PY_VER="${PY_VER}m"
-else
-    MY_PY_VER="${PY_VER}"
+#!/bin/bash
+
+declare -a CMAKE_PLATFORM_FLAGS
+
+if [[ ${HOST} =~ .*linux.* ]]; then
+    CMAKE_PLATFORM_FLAGS+=(-DCMAKE_TOOLCHAIN_FILE=$RECIPE_DIR/cross-linux.cmake)
 fi
 
 if [ `uname` == Darwin ]; then
-    PY_LIB="libpython${MY_PY_VER}.dylib"
-    export   CFLAGS="$CFLAGS   -Wl,-flat_namespace,-undefined,suppress"
-    export CXXFLAGS="$CXXFLAGS -Wl,-flat_namespace,-undefined,suppress"
-    export  LDFLAGS="$LDFLAGS  -Wl,-flat_namespace,-undefined,suppress"
-else
-    PY_LIB="libpython${MY_PY_VER}.so"
+  export CFLAGS="$CFLAGS   -Wl,-flat_namespace,-undefined,suppress"
+  export CXXFLAGS="$CXXFLAGS -Wl,-flat_namespace,-undefined,suppress"
+  export LDFLAGS="$LDFLAGS  -Wl,-flat_namespace,-undefined,suppress"
 fi
 
-mkdir build && cd build
-
-cmake \
- -DCMAKE_INSTALL_PREFIX=$PREFIX \
+cmake -G Ninja \
  -DCMAKE_BUILD_TYPE=Release \
+ -DCMAKE_INSTALL_PREFIX=$PREFIX \
+  ${CMAKE_PLATFORM_FLAGS[@]} \
  -DCMAKE_PREFIX_PATH=$PREFIX \
  -DCMAKE_SYSTEM_PREFIX_PATH=$PREFIX \
- -DOCC_INCLUDE_DIR=$PREFIX/include/oce \
- -DOCC_LIBRARY_DIR=$PREFIX/lib \
  -DPYTHON_EXECUTABLE:FILEPATH=$PYTHON \
- -DPYTHON_INCLUDE_DIR:PATH=$PREFIX/include/python$MY_PY_VER \
- -DPYTHON_LIBRARY:FILEPATH=$PREFIX/lib/${PY_LIB} \
- -DCOLLADA_SUPPORT=Off \
- ../cmake
+ -DGMP_LIBRARY_DIR=$PREFIX/lib \
+ -DMPFR_LIBRARY_DIR=$PREFIX/lib \
+ -DOCC_INCLUDE_DIR=$PREFIX/include/opencascade \
+ -DOCC_LIBRARY_DIR=$PREFIX/lib \
+ -DHDF5_SUPPORT:BOOL=ON \
+ -DHDF5_INCLUDE_DIR=$PREFIX/include \
+ -DHDF5_LIBRARY_DIR=$PREFIX/lib \
+ -DJSON_INCLUDE_DIR=$PREFIX/include \
+ -DCGAL_INCLUDE_DIR=$PREFIX/include \
+ -DCOLLADA_SUPPORT=0 \
+ -DBUILD_EXAMPLES:BOOL=OFF \
+ -DIFCXML_SUPPORT:BOOL=ON \
+ -DGLTF_SUPPORT:BOOL=ON \
+ -DBUILD_CONVERT:BOOL=ON \
+ -DBUILD_IFCPYTHON:BOOL=ON \
+ -DBUILD_IFCGEOM:BOOL=ON \
+ -DBUILD_GEOMSERVER:BOOL=OFF \
+ -DBOOST_USE_STATIC_LIBS:BOOL=OFF \
+ ./cmake
 
-make -j$CPU_COUNT _ifcopenshell_wrapper
-cd ifcwrap
-make install/local
+ninja
+
+ninja install

@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.classification.data import CostClassificationsData
 from ifcopenshell.api.cost.data import Data
 from ifcopenshell.api.pset.data import Data as PsetData
 from blenderbim.bim.prop import StrProperty, Attribute
@@ -164,6 +165,7 @@ def update_active_cost_item_index(self, context):
         bpy.ops.bim.load_cost_item_types()
     else:
         bpy.ops.bim.load_cost_item_quantities()
+    CostClassificationsData.load()
 
 
 def update_cost_item_identification(self, context):

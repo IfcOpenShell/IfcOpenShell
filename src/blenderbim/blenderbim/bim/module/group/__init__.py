@@ -20,17 +20,20 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.LoadGroups,
-    operator.DisableGroupEditingUI,
     operator.AddGroup,
-    operator.EditGroup,
-    operator.RemoveGroup,
-    operator.ToggleAssigningGroup,
     operator.AssignGroup,
-    operator.UnassignGroup,
-    operator.EnableEditingGroup,
     operator.DisableEditingGroup,
+    operator.DisableGroupEditingUI,
+    operator.EditGroup,
+    operator.EnableEditingGroup,
+    operator.LoadGroups,
+    operator.RemoveGroup,
     operator.SelectGroupProducts,
+    operator.ToggleAssigningGroup,
+    operator.ToggleGroup,
+    operator.UnassignGroup,
+    operator.UpdateGroup,
+    prop.ExpandedGroups,
     prop.Group,
     prop.BIMGroupProperties,
     ui.BIM_PT_groups,
@@ -42,7 +45,9 @@ classes = (
 
 def register():
     bpy.types.Scene.BIMGroupProperties = bpy.props.PointerProperty(type=prop.BIMGroupProperties)
+    bpy.types.Scene.ExpandedGroups = bpy.props.PointerProperty(type=prop.ExpandedGroups)
 
 
 def unregister():
     del bpy.types.Scene.BIMGroupProperties
+    del bpy.types.Scene.ExpandedGroups

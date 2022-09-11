@@ -130,16 +130,16 @@ class UpdateRepresentation(bpy.types.Operator):
     obj: bpy.props.StringProperty()
     ifc_representation_class: bpy.props.StringProperty()
 
-    @classmethod
-    def poll(cls, context):
-        return context.active_object.mode == "OBJECT"
-
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         if not ContextData.is_loaded:
             ContextData.load(IfcStore.get_file())
+
+        if context.active_object and context.active_object.mode != "OBJECT":
+            # Ensure mode is object to prevent invalid mesh data causing CTD
+            bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
 
         objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         self.file = IfcStore.get_file()
@@ -207,7 +207,10 @@ class UpdateRepresentation(bpy.types.Operator):
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
 
         if tool.Geometry.is_body_representation(new_representation):
-            [tool.Geometry.run_style_add_style(obj=mat) for mat in tool.Geometry.get_object_materials_without_styles(obj)]
+            [
+                tool.Geometry.run_style_add_style(obj=mat)
+                for mat in tool.Geometry.get_object_materials_without_styles(obj)
+            ]
             ifcopenshell.api.run(
                 "style.assign_representation_styles",
                 self.file,
@@ -237,7 +240,7 @@ class UpdateParametricRepresentation(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object.mode == "OBJECT"
+        return context.active_object and context.active_object.mode == "OBJECT"
 
     def execute(self, context):
         self.file = IfcStore.get_file()

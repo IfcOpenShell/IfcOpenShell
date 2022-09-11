@@ -41,6 +41,8 @@ class Usecase:
                 properties = self.settings["pset"].HasProperties or []
             elif self.settings["pset"].is_a("IfcQuantitySet"):
                 properties = self.settings["pset"].Quantities or []
+            elif self.settings["pset"].is_a() in ("IfcMaterialProperties", "IfcProfileProperties"):
+                properties = self.settings["pset"].Properties or []
             for prop in properties:
                 self.file.remove(prop)
             self.file.remove(self.settings["pset"])

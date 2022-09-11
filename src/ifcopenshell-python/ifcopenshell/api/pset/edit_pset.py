@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from distutils.command.sdist import sdist
 import ifcopenshell
 import ifcopenshell.util.pset
 
@@ -106,7 +105,12 @@ class Usecase:
                     properties.append(value)
                     continue               
                 else:
-                    nominal_value = value
+                    properties.append(
+                        self.file.create_entity(
+                            "IfcPropertySingleValue",
+                            **{"Name": name, "NominalValue": value},
+                        )
+                    )
             #TODO-The following "elif" is temporary code, will need to refactor at some point - vulevukusej
             elif isinstance(value, list):
                 for pset_template in self.settings["pset_template"].HasPropertyTemplates:
@@ -130,12 +134,12 @@ class Usecase:
                 value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
                 nominal_value = self.file.create_entity(primary_measure_type, value)
             
-            properties.append(
-                self.file.create_entity(
-                    "IfcPropertySingleValue",
-                    **{"Name": name, "NominalValue": nominal_value},
+                properties.append(
+                    self.file.create_entity(
+                        "IfcPropertySingleValue",
+                        **{"Name": name, "NominalValue": nominal_value},
+                    )
                 )
-            )
         return properties
 
     def extend_pset_with_new_properties(self, new_properties):

@@ -25,7 +25,7 @@
 #|    Given an empty IFC project
 #|    When I press "bim.demonstrate_hello_world"
 #|    # Blender doesn't have a way of testing that things are visible in the
-#|    # interface and layout. We can check properties, and whats in the 3D
+#|    # interface and layout. We can check properties, and what's in the 3D
 #|    # scenegraph, but not layout. There is no "DOM" like in web applications.
 #|    # Too bad, we can't check the results, but we still write the test, that way
 #|    # we can still check for errors like crashes or Python errors, like a "smoke

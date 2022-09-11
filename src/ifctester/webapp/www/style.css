@@ -1,0 +1,384 @@
+:root {
+    --green: #ccd5ae;
+    --red: #f08080;
+    --blue: #5aa9e6;
+    --light-blue: #7fc8f8;
+    --highlight: #faedcd;
+    --fg: #444;
+}
+html {
+    height: 100%;
+	scroll-behavior: smooth;
+}
+body {
+    height: calc(100% - 40px);
+    font-size: 0.8rem;
+    background-color: #FFF;
+    font-family: 'Libre Baskerville', serif;
+    border: 0px;
+    margin: 0px;
+    padding: 0px;
+    color: var(--fg);
+    transition: 0.3s ease-out;
+}
+header {
+    background-color: #333;
+    color: var(--blue);
+    font-family: 'Nova Mono', monospace;
+    height: 40px;
+    line-height: 40px;
+    padding-left: 10px;
+    padding-right: 10px;
+    text-transform: uppercase;
+}
+header a {
+    text-decoration: none;
+    margin-left: 10px;
+}
+header a:hover {
+    color: white;
+}
+header svg {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    margin-top: -3px;
+    margin-right: 5px;
+}
+header span {
+    float: right;
+}
+* {
+    transition: 0.3s ease-out;
+}
+h3 {
+    font-family: 'Nova Mono', monospace;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    color: #ccc;
+}
+a {
+    color: #5aa9e6;
+}
+a:hover {
+    color: #7fc8f8;
+}
+ids-container {
+    float: left;
+    width: 950px;
+    height: 100%;
+}
+.ids {
+    width: 700px;
+    height: calc(100%);
+    overflow: scroll;
+    float: left;
+    background-color: #f9f9f9;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+}
+.ids-controls {
+    font-family: 'Nova Mono', monospace;
+    background-color: #f9f9f9;
+    background-color: #eee;
+    padding: 10px;
+    /*box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;*/
+}
+.ids-controls span {
+    float: right;
+}
+.ids-controls:hover a {
+    opacity: 1;
+    transition: 0.3s ease-out;
+}
+.ids-controls ids-loader a {
+    margin-left: 0px;
+}
+.ids-controls a {
+    margin-left: 10px;
+    font-size: 0.8rem;
+    /*
+    opacity: 0.4;
+    transition: 0.3s ease-in;
+    border-radius: 5px;
+    border: 1px solid var(--blue);
+    padding: 10px;
+    */
+    text-decoration: none;
+    cursor: pointer;
+}
+.ids-controls a svg {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    top: -2px;
+    position: relative;
+}
+.divider {
+    margin-top: -10px;
+    margin-bottom: 25px;
+    border-bottom: 1px dashed #ccc;
+    text-align: center;
+    color: #ccc;
+}
+.dragover {
+    background-color: var(--blue) !important;
+}
+.dropzone {
+    background-color: var(--highlight);
+}
+ids-spec .controls ids-facet-add {
+    position: absolute;
+    margin-left: -30px;
+    margin-top: -5px;
+}
+ids-spec .controls {
+    display: none;
+}
+ids-spec:hover .placeholder {
+    display: none;
+}
+ids-spec:hover .controls {
+    display: inline;
+}
+ids-spec:hover ids-spec-add:hover svg {
+    color: var(--blue);
+    cursor: pointer;
+}
+ids-spec:hover ids-spec-move:hover svg {
+    color: var(--fg);
+    cursor: pointer;
+}
+.divider svg {
+    display: inline-block;
+    position: relative;
+    top: 27px;
+    background-color: #f9f9f9;
+    padding: 10px;
+}
+ids-spec {
+    display: block;
+    padding-left: 30px;
+    overflow: hidden;
+}
+ids-spec h2 a, .spec h2 a {
+    display: none;
+}
+ids-spec:hover h2 a, .spec:hover h2 a {
+    display: inline-block;
+    position: absolute;
+    margin-left: -30px;
+    margin-top: -3px;
+    cursor: pointer;
+}
+ids-spec .draggable {
+    display: none;
+}
+ids-spec ids-spec-remove {
+    display: none;
+}
+ids-spec:hover ids-spec-remove {
+    display: inline-block;
+    position: absolute;
+    margin-left: -30px;
+    margin-top: 57px;
+    cursor: pointer;
+    color: #aaa;
+}
+ids-spec:hover ids-spec-remove:hover {
+    color: var(--red);
+}
+ids-spec:hover .draggable:hover {
+    color: var(--fg);
+}
+ids-spec:hover .draggable {
+    display: inline-block;
+    position: absolute;
+    margin-left: -30px;
+    margin-top: 27px;
+    cursor: grab;
+    color: #aaa;
+}
+ids-spec ids-spec-handle .snippet {
+    position: fixed;
+    z-index: 1;
+    background-color: var(--blue);
+    padding: 5px;
+    color: #f9f9f9;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    font-family: 'Nova Mono', monospace;
+    top: 0px;
+    left: 0px;
+}
+.spec-contents {
+    margin-left: 30px;
+    max-height: 9999px;
+}
+.spec-description {
+    font-weight: bold;
+}
+.facet .facet-controls {
+    display: none;
+}
+.facet:hover .facet-controls {
+    display: inline;
+}
+.facet:hover .facet-controls ids-facet-remove {
+    color: #aaa;
+    position: absolute;
+    margin-top: -3px;
+    margin-left: -30px;
+    cursor: pointer;
+}
+.facet:hover .facet-controls ids-facet-remove:hover svg {
+    color: var(--red);
+}
+.facet {
+    padding-left: 30px;
+    margin-bottom: 10px;
+}
+.facet .requirement-instructions.null {
+    display: none;
+}
+.facet:hover .requirement-instructions.null {
+    display: block;
+    z-index: 99;
+    position: absolute;
+    width: 300px;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #e0e0e0;
+    color: #aaa;
+    /*box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;*/
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+    margin-top: 2px;
+}
+.requirement-instructions {
+    display: block;
+    margin-left: 30px;
+    margin-top: 5px;
+    font-size: 0.8rem;
+}
+.pattern {
+    font-family: 'Nova Mono', monospace;
+    border-bottom: 1px dotted #555;
+    background-color: #faedcd;
+    cursor: help;
+    font-family: monospace;
+    text-overflow: ellipsis;
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    display: inline-block;
+    bottom: -5px;
+    position: relative;
+}
+ids-result {
+    display: inline-block;
+    position: absolute;
+    margin-left: -30px;
+    margin-top: -3px;
+    cursor: help;
+}
+ids-result span {
+    position: absolute;
+    float: right;
+    right: 30px;
+    background-color: #333;
+    color: white;
+    font-family: 'Nova Mono';
+    padding: 3px;
+    border-radius: 5px;
+}
+ids-result[name="pass"] {
+    color: var(--green);
+}
+ids-result[name="fail"] {
+    color: var(--red);
+}
+ids-result:hover {
+    color: var(--blue);
+}
+.hidden {
+    display: none;
+}
+.error {
+    color: var(--red);
+    transition: 0.3s ease-out;
+}
+.null {
+    /*opacity: 0.4;*/
+    color: #ccc;
+    transition: 0.3s ease-out;
+}
+.null:hover {
+    color: var(--fg) !important;
+}
+[contenteditable] {
+    outline: 0px solid transparent;
+}
+*[contentEditable="true"] {
+    /*box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;*/
+    border-radius: 5px;
+    cursor: pointer;
+}
+*[contentEditable="true"]:hover {
+    outline: 1px solid var(--blue);
+    outline-offset: 2px;
+    display: inline-block;
+    /*background-color: rgba(0, 0, 0, 0.1);*/
+    background-color: #e0e0e0;
+}
+*[contentEditable="true"]:focus {
+    background-color: var(--light-blue);
+    outline: 0px;
+    padding: 5px;
+    margin: -5px;
+    display: inline-block;
+    cursor: text;
+}
+ids-info {
+    text-align: center;
+    margin-bottom: 20px;
+    display: block;
+}
+ids-info p {
+    font-size: 0.8rem;
+}
+ids-info svg {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+ids-info-element[ids-tag="description"] {
+    font-style: italic;
+}
+ids-param {
+    font-style: italic;
+}
+ids-facet {
+    display: block;
+}
+nav {
+    position: relative;
+    float: left;
+    width: 200px;
+    /*background-color: #fafafa;*/
+    overflow-x: hidden; /* Disable horizontal scroll */
+    overflow-y: scroll;
+    height: 100%;
+    /*
+    -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+    */
+    /*box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;*/
+    font-size: 0.7rem;
+}
+nav ids-spec {
+    padding-left: 0px;
+    border-bottom: 1px dashed #ccc;
+    padding: 15px;
+    display: block;
+}

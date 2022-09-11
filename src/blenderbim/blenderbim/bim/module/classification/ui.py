@@ -16,10 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blenderbim.bim.helper
+import blenderbim.tool as tool
 import blenderbim.bim.module.classification.prop as classification_prop
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.classification.data import Data
+from blenderbim.bim.module.classification.data import (
+    ClassificationsData,
+    ClassificationReferencesData,
+    MaterialClassificationsData,
+    CostClassificationsData,
+)
 
 
 class BIM_PT_classifications(Panel):
@@ -33,15 +40,15 @@ class BIM_PT_classifications(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
+        if not ClassificationsData.is_loaded:
+            ClassificationsData.load()
 
         self.props = context.scene.BIMClassificationProperties
 
-        if Data.library_file:
+        if ClassificationsData.data["has_classification_file"]:
             row = self.layout.row(align=True)
             row.prop(self.props, "available_classifications", text="")
             row.operator("bim.load_classification_library", text="", icon="IMPORT")
@@ -51,36 +58,100 @@ class BIM_PT_classifications(Panel):
             row.label(text="No Active Classification Library")
             row.operator("bim.load_classification_library", text="", icon="IMPORT")
 
-        for classification_id, classification in Data.classifications.items():
-            if self.props.active_classification_id == classification_id:
-                self.draw_editable_ui(classification)
+        for classification in ClassificationsData.data["classifications"]:
+            if self.props.active_classification_id == classification["id"]:
+                self.draw_editable_ui()
             else:
-                self.draw_ui(classification_id, classification)
+                self.draw_ui(classification)
 
-    def draw_editable_ui(self, classification):
+    def draw_editable_ui(self):
         row = self.layout.row(align=True)
-        row.prop(self.props.classification_attributes.get("Name"), "string_value", text="", icon="ASSET_MANAGER")
-        row.operator("bim.edit_classification", text="", icon="CHECKMARK")
+        row.operator("bim.edit_classification", text="Save changes", icon="CHECKMARK")
         row.operator("bim.disable_editing_classification", text="", icon="CANCEL")
+        blenderbim.bim.helper.draw_attributes(self.props.classification_attributes, self.layout)
 
-        for attribute in self.props.classification_attributes:
-            if attribute.name == "Name":
-                continue
-            row = self.layout.row(align=True)
-            row.prop(attribute, "string_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
-
-    def draw_ui(self, classification_id, classification):
+    def draw_ui(self, classification):
         row = self.layout.row(align=True)
         row.label(text=classification["Name"], icon="ASSET_MANAGER")
         if not self.props.active_classification_id:
             op = row.operator("bim.enable_editing_classification", text="", icon="GREASEPENCIL")
-            op.classification = classification_id
-        row.operator("bim.remove_classification", text="", icon="X").classification = classification_id
+            op.classification = classification["id"]
+        row.operator("bim.remove_classification", text="", icon="X").classification = classification["id"]
 
 
-class BIM_PT_classification_references(Panel):
+class ReferenceUI:
+    def draw_ui(self, context):
+        obj = context.active_object
+        self.oprops = obj.BIMObjectProperties
+        self.sprops = context.scene.BIMClassificationProperties
+        self.props = obj.BIMClassificationReferenceProperties
+        self.file = IfcStore.get_file()
+
+        self.draw_add_ui(context)
+
+        if not self.data.data["references"]:
+            row = self.layout.row(align=True)
+            row.label(text="No References")
+
+        for reference in self.data.data["references"]:
+            if self.props.active_reference_id == reference["id"]:
+                self.draw_editable_ui()
+            else:
+                self.draw_reference_ui(reference)
+
+    def draw_add_ui(self, context):
+        if not self.data.data["is_available_classification_added"]:
+            return
+        row = self.layout.row(align=True)
+        row.prop(self.sprops, "available_classifications", text="")
+        if not self.sprops.available_library_references:
+            op = row.operator("bim.change_classification_level", text="", icon="IMPORT")
+            op.parent_id = int(self.sprops.available_classifications)
+            return
+        if self.sprops.active_library_referenced_source:
+            op = row.operator("bim.change_classification_level", text="", icon="FRAME_PREV")
+            op.parent_id = self.sprops.active_library_referenced_source
+        if self.sprops.active_library_reference_index < len(self.sprops.available_library_references):
+            op = row.operator("bim.add_classification_reference", text="", icon="ADD")
+            op.obj = self.obj
+            op.obj_type = self.obj_type
+            op.reference = self.sprops.available_library_references[
+                self.sprops.active_library_reference_index
+            ].ifc_definition_id
+        row.operator("bim.disable_editing_classification_references", text="", icon="CANCEL")
+        self.layout.template_list(
+            "BIM_UL_classifications",
+            "",
+            self.sprops,
+            "available_library_references",
+            self.sprops,
+            "active_library_reference_index",
+        )
+
+    def draw_editable_ui(self):
+        row = self.layout.row(align=True)
+        row.operator("bim.edit_classification_reference", text="Save changes", icon="CHECKMARK")
+        row.operator("bim.disable_editing_classification_reference", text="", icon="CANCEL")
+        blenderbim.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
+
+    def draw_reference_ui(self, reference):
+        row = self.layout.row(align=True)
+        if self.file.schema == "IFC2X3":
+            name = reference["ItemReference"] or "No Identification"
+        else:
+            name = reference["Identification"] or "No Identification"
+        row.label(text=name, icon="ASSET_MANAGER")
+        row.label(text=reference["Name"] or "")
+        if not self.props.active_reference_id:
+            op = row.operator("bim.enable_editing_classification_reference", text="", icon="GREASEPENCIL")
+            op.reference = reference["id"]
+        op = row.operator("bim.remove_classification_reference", text="", icon="X")
+        op.reference = reference["id"]
+        op.obj = self.obj
+        op.obj_type = self.obj_type
+
+
+class BIM_PT_classification_references(Panel, ReferenceUI):
     bl_label = "IFC Classification References"
     bl_idname = "BIM_PT_classification_references"
     bl_options = {"DEFAULT_CLOSED"}
@@ -93,85 +164,65 @@ class BIM_PT_classification_references(Panel):
     def poll(cls, context):
         if not context.active_object:
             return False
-        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
-            return False
-        return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
+        return bool(tool.Ifc.get_entity(context.active_object))
 
     def draw(self, context):
-        obj = context.active_object
-        self.oprops = obj.BIMObjectProperties
-        self.sprops = context.scene.BIMClassificationProperties
-        self.props = obj.BIMClassificationReferenceProperties
-        self.file = IfcStore.get_file()
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
-        if self.oprops.ifc_definition_id not in Data.products:
-            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
+        if not ClassificationReferencesData.is_loaded:
+            ClassificationReferencesData.load()
+        self.data = ClassificationReferencesData
+        self.obj = context.active_object.name
+        self.obj_type = "Object"
+        self.draw_ui(context)
 
-        self.draw_add_ui(context)
 
-        reference_ids = Data.products[self.oprops.ifc_definition_id]
-        if not reference_ids:
-            row = self.layout.row(align=True)
-            row.label(text="No References")
+class BIM_PT_material_classifications(Panel, ReferenceUI):
+    bl_label = "IFC Material Classifications"
+    bl_idname = "BIM_PT_material_classifications"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "material"
 
-        for reference_id in reference_ids:
-            reference = Data.references[reference_id]
-            if self.props.active_reference_id == reference_id:
-                self.draw_editable_ui(reference)
-            else:
-                self.draw_ui(reference_id, reference)
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
+        try:
+            return bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id)
+        except:
+            return False
 
-    def draw_add_ui(self, context):
-        if not classification_prop.getClassifications(self.sprops, context):
-            return
+    def draw(self, context):
+        if not MaterialClassificationsData.is_loaded:
+            MaterialClassificationsData.load()
+        self.data = MaterialClassificationsData
+        self.obj = context.active_object.active_material.name
+        self.obj_type = "Material"
+        self.draw_ui(context)
 
-        name = Data.library_classifications[int(self.sprops.available_classifications)]
-        if name in [c["Name"] for c in Data.classifications.values()]:
-            row = self.layout.row(align=True)
-            row.prop(self.sprops, "available_classifications", text="")
-            if self.sprops.active_library_referenced_source:
-                op = row.operator("bim.change_classification_level", text="", icon="FRAME_PREV")
-                op.parent_id = self.sprops.active_library_referenced_source
-            op = row.operator("bim.add_classification_reference", text="", icon="ADD")
-            op.reference = self.sprops.available_library_references[
-                self.sprops.active_library_reference_index
-            ].ifc_definition_id
-            self.layout.template_list(
-                "BIM_UL_classifications",
-                "",
-                self.sprops,
-                "available_library_references",
-                self.sprops,
-                "active_library_reference_index",
-            )
 
-    def draw_editable_ui(self, reference):
-        row = self.layout.row(align=True)
-        row.prop(self.props.reference_attributes.get("Name"), "string_value", text="", icon="ASSET_MANAGER")
-        row.operator("bim.edit_classification_reference", text="", icon="CHECKMARK")
-        row.operator("bim.disable_editing_classification_reference", text="", icon="CANCEL")
+class BIM_PT_cost_classifications(Panel, ReferenceUI):
+    bl_label = "IFC Cost Classifications"
+    bl_idname = "BIM_PT_cost_classifications"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_cost_schedules"
 
-        for attribute in self.props.reference_attributes:
-            if attribute.name == "Name":
-                continue
-            row = self.layout.row(align=True)
-            row.prop(attribute, "string_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
+        return bool(context.scene.BIMCostProperties.cost_items)
 
-    def draw_ui(self, reference_id, reference):
-        row = self.layout.row(align=True)
-        if self.file.schema == "IFC2X3":
-            name = reference["ItemReference"] or "No Identification"
-        else:
-            name = reference["Identification"] or "No Identification"
-        row.label(text=name, icon="ASSET_MANAGER")
-        row.label(text=reference["Name"] or "")
-        if not self.props.active_reference_id:
-            op = row.operator("bim.enable_editing_classification_reference", text="", icon="GREASEPENCIL")
-            op.reference = reference_id
-        row.operator("bim.remove_classification_reference", text="", icon="X").reference = reference_id
+    def draw(self, context):
+        if not CostClassificationsData.is_loaded:
+            CostClassificationsData.load()
+        self.data = CostClassificationsData
+        self.obj = ""
+        self.obj_type = "Cost"
+        self.draw_ui(context)
 
 
 class BIM_UL_classifications(UIList):

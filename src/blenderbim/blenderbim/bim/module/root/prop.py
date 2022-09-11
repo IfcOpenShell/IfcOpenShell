@@ -88,13 +88,10 @@ def get_ifc_classes(self, context):
     return IfcClassData.data["ifc_classes"]
 
 
-def get_ifc_classes_filtered(self, context):
-    ifc_classes = get_ifc_classes(self, context)
-    global classes_enum
-    classes_enum = [
-        c for c in ifc_classes
-        if self.ifc_class_filter_textfield.lower() in c[0].lower()] or ifc_classes
-    return classes_enum
+def get_ifc_classes_suggestions():
+    if not IfcClassData.is_loaded:
+        IfcClassData.load()
+    return IfcClassData.data["ifc_classes_suggestions"]
 
 
 def get_contexts(self, context):
@@ -107,7 +104,9 @@ class BIMRootProperties(PropertyGroup):
     contexts: EnumProperty(items=get_contexts, name="Contexts")
     ifc_product: EnumProperty(items=get_ifc_products, name="Products", update=refresh_classes)
     ifc_class: EnumProperty(items=get_ifc_classes, name="Class", update=refreshPredefinedTypes)
-    ifc_class_filter_textfield: StringProperty(name="Filter", options={"TEXTEDIT_UPDATE"})
-    ifc_class_filter_enum: EnumProperty(items=get_ifc_classes_filtered, name="Class", update=update_class_enum)
     ifc_predefined_type: EnumProperty(items=getIfcPredefinedTypes, name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
+
+    getter_enum_suggestions = {
+        "ifc_class": get_ifc_classes_suggestions,
+    }

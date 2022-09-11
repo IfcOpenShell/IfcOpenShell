@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from blenderbim.bim.helper import prop_with_search
 import bpy
 from blenderbim.bim.helper import draw_attributes
 
@@ -37,7 +38,7 @@ class BIM_PT_patch(bpy.types.Panel):
         scene = context.scene
         props = scene.BIMPatchProperties
         row = layout.row()
-        row.prop(props, "ifc_patch_recipes")
+        prop_with_search(row, props, "ifc_patch_recipes")
 
         row = layout.row(align=True)
         row.prop(props, "ifc_patch_input")

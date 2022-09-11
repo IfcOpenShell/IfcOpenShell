@@ -817,12 +817,21 @@ class DumbWallGenerator:
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer2"})
         MaterialData.load(self.file)
-        obj.select_set(True)
+        try:
+            obj.select_set(True)
+        except RuntimeError:
+
+            def msg(self, context):
+                txt = "The created object could not be assigned to a collection. "
+                txt += "Has any IfcSpatialElement been deleted?"
+                self.layout.label(text=txt)
+
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
         return obj
 
 
 def generate_axis(usecase_path, ifc_file, settings):
-    axis_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Axis", "GRAPH_VIEW")
+    axis_context = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Axis", "GRAPH_VIEW")
     if not axis_context:
         return
     obj = settings["blender_object"]
@@ -830,7 +839,7 @@ def generate_axis(usecase_path, ifc_file, settings):
     parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
     if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
         return
-    old_axis = ifcopenshell.util.representation.get_representation(product, "Model", "Axis", "GRAPH_VIEW")
+    old_axis = ifcopenshell.util.representation.get_representation(product, "Plan", "Axis", "GRAPH_VIEW")
     if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
         if old_axis:
             blenderbim.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_axis)
@@ -861,7 +870,7 @@ def calculate_quantities(usecase_path, ifc_file, settings):
     obj = settings["blender_object"]
     product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
     parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
+    if not parametric or "Engine" not in parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
         return
     qto = ifcopenshell.api.run(
         "pset.add_qto", ifc_file, should_run_listeners=False, product=product, name="Qto_WallBaseQuantities"
@@ -941,6 +950,23 @@ class DumbWallPlaner:
             return
         new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
         material = ifcopenshell.util.element.get_material(settings["related_object"])
+
+        relating_type = settings["relating_type"]
+        if hasattr(relating_type, "HasPropertySets"):
+            psets = relating_type.HasPropertySets
+            if psets is not None:
+                for pset in psets:
+                    if hasattr(pset, "HasProperties"):
+                        pset_props = pset.HasProperties
+                        if pset_props is not None:
+                            for prop in pset_props:
+                                if prop.Name == "LayerSetDirection":
+                                    if hasattr(prop, "NominalValue"):
+                                        nominal_value = prop.NominalValue
+                                        if hasattr(nominal_value, "wrappedValue"):
+                                            if nominal_value.wrappedValue == "AXIS3":
+                                                return
+
         if material and material.is_a("IfcMaterialLayerSetUsage") and material.LayerSetDirection == "AXIS2":
             self.change_thickness(settings["related_object"], new_thickness)
 

@@ -59,7 +59,7 @@ class AddOpening(bpy.types.Operator):
                 return {"FINISHED"}
             bpy.ops.bim.assign_class(obj=opening.name, ifc_class="IfcOpeningElement", context_id=body_context.id())
 
-        # If the IfcOpeningElement aleady voids another object, remove the boolean modifier
+        # If the IfcOpeningElement already voids another object, remove the boolean modifier
         opening_element = self.file.by_id(opening.BIMObjectProperties.ifc_definition_id)
         if opening_element.VoidsElements:
             other_obj = IfcStore.get_element(opening_element.VoidsElements[0].RelatingBuildingElement.id())

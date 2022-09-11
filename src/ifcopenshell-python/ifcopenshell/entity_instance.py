@@ -234,10 +234,23 @@ class entity_instance(object):
     def __eq__(self, other):
         if not isinstance(self, type(other)):
             return False
-        return self.wrapped_data == other.wrapped_data
+        # Proper entity instances have a stable identity by means of the numeric
+        # step id. Selected type instances (such as IfcPropertySingleValue.NominalValue
+        # always have id=0, so we compare <type, value, file pointer>
+        if self.id():
+            return self.wrapped_data == other.wrapped_data
+        else:
+            return (self.is_a(), self[0], self.wrapped_data.file_pointer()) == \
+                (other.is_a(), other[0], other.wrapped_data.file_pointer())
 
     def __hash__(self):
-        return hash((self.id(), self.wrapped_data.file_pointer()))
+        # Proper entity instances have a stable identity by means of the numeric
+        # step id. Selected type instances (such as IfcPropertySingleValue.NominalValue
+        # always have id=0, so we hash <type, value, file pointer>
+        if self.id():
+            return hash((self.id(), self.wrapped_data.file_pointer()))
+        else:
+            return hash((self.is_a(), self[0], self.wrapped_data.file_pointer()))
 
     def __dir__(self):
         return sorted(

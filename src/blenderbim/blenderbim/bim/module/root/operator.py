@@ -31,7 +31,7 @@ import blenderbim.core.root as core
 import blenderbim.tool as tool
 from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.root.prop import get_contexts, get_ifc_classes_filtered
+from blenderbim.bim.helper import get_enum_items
 
 
 class Operator:
@@ -127,12 +127,13 @@ class AssignClass(bpy.types.Operator, Operator):
     ifc_representation_class: bpy.props.StringProperty()
 
     def _execute(self, context):
+        props = context.scene.BIMRootProperties
         objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        ifc_class = self.ifc_class or context.scene.BIMRootProperties.ifc_class
+        ifc_class = self.ifc_class or props.ifc_class
         predefined_type = self.userdefined_type if self.predefined_type == "USERDEFINED" else self.predefined_type
         ifc_context = self.context_id
-        if not ifc_context and get_contexts(self, context):
-            ifc_context = int(context.scene.BIMRootProperties.contexts or "0") or None
+        if not ifc_context and get_enum_items(props, "contexts", context):
+            ifc_context = int(props.contexts or "0") or None
         if ifc_context:
             ifc_context = tool.Ifc.get().by_id(ifc_context)
         active_object = context.active_object
@@ -189,24 +190,3 @@ class CopyClass(bpy.types.Operator, Operator):
         for obj in objects:
             core.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
         blenderbim.bim.handler.purge_module_data()
-
-
-class BIM_OT_root_property_textfield(bpy.types.Operator):
-    bl_idname = "bim.root_ifc_class_filter"
-    bl_label = "Filter Property"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-
-    def execute(self, context):
-        context.scene.BIMRootProperties.ifc_class = context.scene.BIMRootProperties.ifc_class_filter_enum
-        return {"FINISHED"}
-
-    def draw(self, context):
-        props = context.scene.BIMRootProperties
-        self.layout.prop(props, "ifc_class_filter_textfield")
-        if len(get_ifc_classes_filtered(props, context)) > 10:
-            self.layout.prop(props, "ifc_class_filter_enum")
-        else:
-            self.layout.props_enum(props, "ifc_class_filter_enum")

@@ -37,5 +37,7 @@ class Usecase:
         for rel in self.settings["work_schedule"].Controls:
             for related_object in rel.RelatedObjects:
                 if related_object.is_a("IfcTask"):
-                    ifcopenshell.api.run("sequence.remove_task", self.file, task=related_object)
+                    ifcopenshell.api.run(
+                        "sequence.remove_task", self.file, task=related_object
+                    )
         self.file.remove(self.settings["work_schedule"])
