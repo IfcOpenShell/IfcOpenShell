@@ -816,7 +816,7 @@ class TestProperty:
             propertySet="propertySet",
             name="name",
             value="value",
-            measure="String",
+            measure="measure",
             uri="https://test.com",
             minOccurs="0",
             maxOccurs="unbounded",
@@ -826,7 +826,7 @@ class TestProperty:
             "propertySet": {"simpleValue": "propertySet"},
             "name": {"simpleValue": "name"},
             "value": {"simpleValue": "value"},
-            "@measure": "String",
+            "@measure": "measure",
             "@uri": "https://test.com",
             "@minOccurs": "0",
             "@maxOccurs": "unbounded",
@@ -1224,6 +1224,8 @@ class TestPartOf:
         }
 
     def test_filtering_using_a_partof_facet(self):
+        set_facet("partof")
+
         ifc = ifcopenshell.file()
 
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
