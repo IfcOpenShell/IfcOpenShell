@@ -896,7 +896,7 @@ class IfcImporter:
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             mesh = self.create_camera(element, shape)
             self.link_mesh(shape, mesh)
-        elif element.is_a("IfcAnnotation") and self.is_curve_annotation(element):
+        elif element.is_a("IfcAnnotation") and self.is_curve_annotation(element) and shape:
             mesh = self.create_curve(element, shape)
             self.link_mesh(shape, mesh)
         elif shape:

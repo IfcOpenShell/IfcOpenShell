@@ -22,13 +22,10 @@ In the **Properties** panel in the bottom right, activate the icon for the
 
 .. image:: create-project.png
 
-For convenience, this IFC project by default defines length, area, and volume
-units, and assumes you'll be working with both 2D and 3D geoemtry.
-
 In the top right **Outliner** panel, you will see a hierarchy of spaces that has
 been automatically created for you.  This hierarchy is known is the **Spatial
-Tree**. The Camera, Cube, and Light by default come with a fresh new Blender
-session, and are not part of your IFC project.
+Tree**. The Camera, Cube, and Light come with a fresh new Blender session by
+default, and are not part of your IFC project.
 
 .. image:: default-spatial-tree.png
 
@@ -46,9 +43,8 @@ IFC Class**.
 
 .. tip::
 
-   Regardless of the type of geometry or shape of the object, there are no
-   restrictions on which category you can choose. You can have a monkey-shaped
-   wall if you want!
+   There are no restrictions on which **IFC Class** you can choose regardless of
+   the shape of your object. You can have a monkey-shaped wall if you want!
 
 All IFC objects must also belong inside the **Spatial Tree**. In the
 **Outliner** panel, you can drag and drop your newly created **IfcColumn/Cube**
