@@ -492,25 +492,25 @@ class TestAttribute:
         run(
             "Floating point numbers are compared with a 1e-6 tolerance 1/4",
             facet=facet,
-            inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42. * (1. + 1e-6)),
+            inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42.0 * (1.0 + 1e-6)),
             expected=True,
         )
         run(
             "Floating point numbers are compared with a 1e-6 tolerance 2/4",
             facet=facet,
-            inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42. * (1. - 1e-6)),
+            inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42.0 * (1.0 - 1e-6)),
             expected=True,
         )
         run(
             "Floating point numbers are compared with a 1e-6 tolerance 3/4",
             facet=facet,
-            inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42. * (1. + 2e-6)),
+            inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42.0 * (1.0 + 2e-6)),
             expected=False,
         )
         run(
             "Floating point numbers are compared with a 1e-6 tolerance 4/4",
             facet=facet,
-            inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42. * (1. - 2e-6)),
+            inst=ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42.0 * (1.0 - 2e-6)),
             expected=False,
         )
 
@@ -931,13 +931,21 @@ class TestProperty:
         run("Only specifically formatted numbers are allowed 4/4", facet=facet, inst=element, expected=True)
 
         facet = Property(propertySet="Foo_Bar", name="Foo", value="42.")
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42. * (1. + 1e-6))})
+        ifcopenshell.api.run(
+            "pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42.0 * (1.0 + 1e-6))}
+        )
         run("Floating point numbers are compared with a 1e-6 tolerance 1/4", facet=facet, inst=element, expected=True)
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42. * (1. - 1e-6))})
+        ifcopenshell.api.run(
+            "pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42.0 * (1.0 - 1e-6))}
+        )
         run("Floating point numbers are compared with a 1e-6 tolerance 2/4", facet=facet, inst=element, expected=True)
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42. * (1. + 2e-6))})
+        ifcopenshell.api.run(
+            "pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42.0 * (1.0 + 2e-6))}
+        )
         run("Floating point numbers are compared with a 1e-6 tolerance 3/4", facet=facet, inst=element, expected=False)
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42. * (1. - 2e-6))})
+        ifcopenshell.api.run(
+            "pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcReal(42.0 * (1.0 - 2e-6))}
+        )
         run("Floating point numbers are compared with a 1e-6 tolerance 4/4", facet=facet, inst=element, expected=False)
 
         facet = Property(propertySet="Foo_Bar", name="Foo", value="TRUE")
@@ -1017,9 +1025,19 @@ class TestProperty:
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcLengthMeasure(2)})
-        run("Unit conversions shall take place to IDS-nominated standard units 1/2", facet=facet, inst=element, expected=False)
+        run(
+            "Unit conversions shall take place to IDS-nominated standard units 1/2",
+            facet=facet,
+            inst=element,
+            expected=False,
+        )
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcLengthMeasure(2000)})
-        run("Unit conversions shall take place to IDS-nominated standard units 2/2", facet=facet, inst=element, expected=True)
+        run(
+            "Unit conversions shall take place to IDS-nominated standard units 2/2",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
 
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
@@ -1197,69 +1215,102 @@ class TestMaterial:
 class TestPartOf:
     def test_creating_a_partof_facet(self):
         facet = PartOf()
-        assert facet.asdict() == {"@entity": "IfcSystem"}
-        facet = PartOf(entity="IfcGroup")
-        assert facet.asdict() == {"@entity": "IfcGroup"}
+        assert facet.asdict() == {"@relation": "IfcRelAggregates"}
+        facet = PartOf(entity="IfcGroup", relation="IfcRelAssignsToGroup", instructions="instructions")
+        assert facet.asdict() == {
+            "entity": {"simpleValue": "IfcGroup"},
+            "@relation": "IfcRelAssignsToGroup",
+            "@instructions": "instructions",
+        }
 
     def test_filtering_using_a_partof_facet(self):
         ifc = ifcopenshell.file()
 
-        # An IfcElementAssembly entity only passes those who are part of an assembly
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        facet = PartOf(relation="IfcRelAggregates")
+        run("A non aggregated element fails an aggregate relationship", facet=facet, inst=subelement, expected=False)
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
-        facet = PartOf(entity="IfcElementAssembly")
-        run("", facet=facet, inst=element, expected=False)
-        run("", facet=facet, inst=subelement, expected=True)
+        run("The aggregated whole fails an aggregate relationship", facet=facet, inst=element, expected=False)
+        run("The aggregated part passes an aggregate relationship", facet=facet, inst=subelement, expected=True)
 
-        # An IfcElementAssembly strictly checks that the whole is an IfcElementAssembly class
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
-        facet = PartOf(entity="IfcElementAssembly")
-        run("", facet=facet, inst=subelement, expected=False)
+        facet = PartOf(entity="IFCSLAB", relation="IfcRelAggregates")
+        run("An aggregate may specify the entity of the whole 1/2", facet=facet, inst=subelement, expected=True)
+        facet = PartOf(entity="IFCWALL", relation="IfcRelAggregates")
+        run("An aggregate may specify the entity of the whole 2/2", facet=facet, inst=subelement, expected=False)
 
-        # A nested subelement still passes so long as one of its parents is an IfcElementAssembly
-        # TODO nononono
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
         subsubelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subsubelement, relating_object=subelement)
-        facet = PartOf(entity="IfcElementAssembly")
-        run("", facet=facet, inst=subsubelement, expected=True)
+        facet = PartOf(entity="IFCELEMENTASSEMBLY", relation="IfcRelAggregates")
+        run("An aggregate entity may pass any ancestral whole passes", facet=facet, inst=subsubelement, expected=True)
 
-        # An IfcGroup only checks that a group is assigned without any other logic
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         group = ifcopenshell.api.run("group.add_group", ifc)
-        facet = PartOf(entity="IfcGroup")
-        run("", facet=facet, inst=element, expected=False)
+        facet = PartOf(relation="IfcRelAssignsToGroup")
+        run("A non grouped element fails a group relationship", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
-        run("", facet=facet, inst=element, expected=True)
+        run("A grouped element passes a group relationship", facet=facet, inst=element, expected=True)
 
-        # An IfcGroup can be passed by subtypes
-        # TODO: wrong, subtypes should not be matched
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
         group = ifc.createIfcInventory()
-        facet = PartOf(entity="IfcGroup")
+        facet = PartOf(entity="IFCGROUP", relation="IfcRelAssignsToGroup")
         ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
-        run("", facet=facet, inst=element, expected=True)
+        run("A group entity must match exactly 1/2", facet=facet, inst=element, expected=False)
+        facet = PartOf(entity="IFCINVENTORY", relation="IfcRelAssignsToGroup")
+        run("A group entity must match exactly 2/2", facet=facet, inst=element, expected=True)
 
-        # An IfcSystem only checks that a system is assigned without any other logic
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
-        system = ifcopenshell.api.run("system.add_system", ifc)
-        facet = PartOf(entity="IfcSystem")
-        run("", facet=facet, inst=element, expected=False)
-        ifcopenshell.api.run("system.assign_system", ifc, product=element, system=system)
-        run("", facet=facet, inst=element, expected=True)
+        container = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
+        facet = PartOf(relation="IfcRelContainedInSpatialStructure")
+        run("Any contained element passes a containment relationship 1/2", facet=facet, inst=element, expected=False)
+        ifcopenshell.api.run("spatial.assign_container", ifc, product=element, relating_structure=container)
+        run("Any contained element passes a containment relationship 2/2", facet=facet, inst=element, expected=True)
+        run("The container itself always fails", facet=facet, inst=container, expected=False)
 
-        # An IfcSystem allows subtypes
-        # TODO: wrong, subtypes should not be matched
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcElementAssembly")
-        system = ifcopenshell.api.run("system.add_system", ifc, ifc_class="IfcDistributionSystem")
-        ifcopenshell.api.run("system.assign_system", ifc, product=element, system=system)
-        facet = PartOf(entity="IfcSystem")
-        run("", facet=facet, inst=element, expected=True)
+        container = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
+        ifcopenshell.api.run("spatial.assign_container", ifc, product=element, relating_structure=container)
+        facet = PartOf(relation="IfcRelContainedInSpatialStructure", entity="IFCSITE")
+        run("The container entity must match exactly 1/2", facet=facet, inst=element, expected=False)
+        facet = PartOf(relation="IfcRelContainedInSpatialStructure", entity="IFCSPACE")
+        run("The container entity must match exactly 2/2", facet=facet, inst=element, expected=True)
+
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
+        subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
+        ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
+        container = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
+        ifcopenshell.api.run("spatial.assign_container", ifc, product=element, relating_structure=container)
+        facet = PartOf(relation="IfcRelContainedInSpatialStructure", entity="IFCSPACE")
+        run("The container may be indirect", facet=facet, inst=subelement, expected=True)
+
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcFurniture")
+        subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcDiscreteAccessory")
+        ifcopenshell.api.run("nest.assign_object", ifc, related_object=subelement, relating_object=element)
+        facet = PartOf(relation="IfcRelNests")
+        run("Any nested part passes a nest relationship", facet=facet, inst=subelement, expected=True)
+        run("Any nested whole fails a nest relationship", facet=facet, inst=element, expected=False)
+
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcFurniture")
+        subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcDiscreteAccessory")
+        ifcopenshell.api.run("nest.assign_object", ifc, related_object=subelement, relating_object=element)
+        facet = PartOf(relation="IfcRelNests", entity="IFCBEAM")
+        run("The nest entity must match exactly 1/2", facet=facet, inst=subelement, expected=False)
+        facet = PartOf(relation="IfcRelNests", entity="IFCFURNITURE")
+        run("The nest entity must match exactly 2/2", facet=facet, inst=subelement, expected=True)
+
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcFurniture")
+        subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcDiscreteAccessory")
+        subsubelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcMechanicalFastener")
+        ifcopenshell.api.run("nest.assign_object", ifc, related_object=subelement, relating_object=element)
+        ifcopenshell.api.run("nest.assign_object", ifc, related_object=subsubelement, relating_object=subelement)
+        facet = PartOf(relation="IfcRelNests", entity="IFCFURNITURE")
+        run("Nesting may be indirect", facet=facet, inst=subsubelement, expected=True)
 
 
 class TestRestriction:
