@@ -460,10 +460,12 @@ class Property(Facet):
 
                 pset_entity = inst.wrapped_data.file.by_id(pset_props["id"])
 
+                is_property_supported_class = False
                 for prop_entity in self.get_properties(pset_entity):
                     if prop_entity.is_a("IfcPropertySingleValue"):
                         if prop_entity.Name not in props[pset_name].keys() or prop_entity.NominalValue is None:
                             continue
+                        is_property_supported_class = True
 
                         data_type = prop_entity.NominalValue.is_a()
 
@@ -484,6 +486,7 @@ class Property(Facet):
                     elif prop_entity.is_a("IfcPhysicalSimpleQuantity"):
                         if prop_entity.Name not in props[pset_name].keys():
                             continue
+                        is_property_supported_class = True
 
                         prop_schema = prop_entity.wrapped_data.declaration().as_entity()
                         data_type = prop_schema.attribute_by_index(3).type_of_attribute().declared_type().name()
@@ -502,6 +505,10 @@ class Property(Facet):
                                 None,
                                 ifcopenshell.util.unit.si_type_names[unit.UnitType],
                             )
+
+                if not is_property_supported_class:
+                    is_pass = False
+                    reason = {"type": "NOVALUE"}
 
                 if not is_pass:
                     break
