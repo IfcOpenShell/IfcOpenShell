@@ -517,7 +517,68 @@ class Property(Facet):
                             break
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
                         if unit:
-                            props[pset_name][prop_entity.Name] = [ifcopenshell.util.unit.convert(v, getattr(unit, "Prefix", None), unit.Name, None, ifcopenshell.util.unit.si_type_names[unit.UnitType]) for v in props[pset_name][prop_entity.Name]]
+                            props[pset_name][prop_entity.Name] = [
+                                ifcopenshell.util.unit.convert(
+                                    v,
+                                    getattr(unit, "Prefix", None),
+                                    unit.Name,
+                                    None,
+                                    ifcopenshell.util.unit.si_type_names[unit.UnitType],
+                                )
+                                for v in props[pset_name][prop_entity.Name]
+                            ]
+                    elif prop_entity.is_a("IfcPropertyBoundedValue"):
+                        values = []
+                        for attribute in ["UpperBoundValue", "LowerBoundValue", "SetPointValue"]:
+                            value = getattr(prop_entity, attribute)
+                            if value is not None:
+                                data_type = value.is_a()
+                                values.append(value.wrappedValue)
+                        if data_type != self.measure:
+                            is_pass = False
+                            reason = {"type": "MEASURE", "actual": data_type}
+                            break
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        if unit:
+                            values = [
+                                ifcopenshell.util.unit.convert(
+                                    v,
+                                    getattr(unit, "Prefix", None),
+                                    unit.Name,
+                                    None,
+                                    ifcopenshell.util.unit.si_type_names[unit.UnitType],
+                                )
+                                for v in values
+                            ]
+                        props[pset_name][prop_entity.Name] = values
+                    elif prop_entity.is_a("IfcPropertyTableValue"):
+                        values = []
+                        units = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        for attribute in ["Defining", "Defined"]:
+                            column_values = props[pset_name][prop_entity.Name][f"{attribute}Values"]
+                            if not column_values:
+                                continue
+                            data_type = column_values[0].is_a()
+                            if data_type == self.measure:
+                                column_values = [v.wrappedValue for v in column_values]
+                                unit = units[f"{attribute}Unit"]
+                                if unit:
+                                    column_values = [
+                                        ifcopenshell.util.unit.convert(
+                                            v,
+                                            getattr(unit, "Prefix", None),
+                                            unit.Name,
+                                            None,
+                                            ifcopenshell.util.unit.si_type_names[unit.UnitType],
+                                        )
+                                        for v in column_values
+                                    ]
+                                values.extend(column_values)
+                        if not values:
+                            is_pass = False
+                            reason = {"type": "MEASURE", "actual": data_type}
+                            break
+                        props[pset_name][prop_entity.Name] = values
                     else:
                         is_property_supported_class = False
 
@@ -538,7 +599,8 @@ class Property(Facet):
                                 break
                         elif isinstance(self.value, str) and isinstance(value, list):
                             # "i_require_foo" = ["a", "b"] such as in enumerated properties
-                            if self.value not in value:
+                            cast_value = cast_to_value(self.value, value[0])
+                            if cast_value not in value:
                                 is_pass = False
                                 reason = {"type": "VALUE", "actual": value}
                                 break
