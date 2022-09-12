@@ -17,11 +17,13 @@
  *                                                                              *
  ********************************************************************************/
 
+#include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/wire_utils.h"
+
 #include <gp_Pnt.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopTools_ListOfShape.hxx>
-#include "../ifcgeom/IfcGeom.h"
 
 #define _USE_MATH_DEFINES
 #define Kernel MAKE_TYPE_NAME(Kernel)
@@ -68,9 +70,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& resu
 	result = w.Wire();
 
 	TopTools_ListOfShape results;
-	if (wire_intersections(result, results)) {
+	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) == 0. && util::wire_intersections(result, results, get_wire_intersection_tolerance(result), getValue(GV_PRECISION))) {
 		Logger::Error("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", l);
-		select_largest(results, result);
+		util::select_largest(results, result);
 	}
 
 	return true;

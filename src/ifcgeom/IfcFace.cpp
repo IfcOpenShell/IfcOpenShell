@@ -38,6 +38,7 @@
 #include "../ifcgeom/IfcGeom.h"
 
 #include "../ifcgeom_schema_agnostic/face_definition.h"
+#include "../ifcgeom_schema_agnostic/wire_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -156,7 +157,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 				}
 			} else {
 				gp_Pln pln;
-				if (approximate_plane_through_wire(wire, pln)) {
+				if (util::approximate_plane_through_wire(wire, pln, getValue(GV_PRECISION))) {
 					fd.surface() = new Geom_Plane(pln);
 				}
 			}
@@ -185,11 +186,17 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 		if (fd.all_outer()) {
 			for (const auto& w : fd.wires()) {
 				TopTools_ListOfShape fl;
-				triangulate_wire({ w }, fl);
+				auto r = util::triangulate_wire({ w }, fl);
 				face_list.Append(fl);
+				if (faceset_helper_ && r == util::TRIANGULATE_WIRE_NON_MANIFOLD) {
+					faceset_helper_->non_manifold() = true;
+				}
 			}
 		} else {
-			triangulate_wire(fd.wires(), face_list);			
+			auto r = util::triangulate_wire(fd.wires(), face_list);
+			if (faceset_helper_ && r == util::TRIANGULATE_WIRE_NON_MANIFOLD) {
+				faceset_helper_->non_manifold() = true;
+			}
 		}
 	} else if (!fd.all_outer()) {
 		BRepBuilderAPI_MakeFace mf(fd.surface(), fd.outer_wire());
