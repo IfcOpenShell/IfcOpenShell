@@ -1017,6 +1017,28 @@ class TestProperty:
         facet = Property(propertySet="Foo_Bar", name="Foo", measure="IfcAreaMeasure")
         run("Quantities must also match the appropriate measure", facet=facet, inst=element, expected=False)
 
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
+        complex_property = ifc.createIfcComplexProperty(Name="Foo", UsageName="RabbitAgilityTraining")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=complex_property, properties={"Rabbits": "Awesome"})
+        pset.HasProperties = [complex_property]
+        facet = Property(propertySet="Foo_Bar", name="Foo", measure="IfcLabel")
+        run("Complex properties are not supported 1/2", facet=facet, inst=element, expected=False)
+        facet = Property(propertySet="Foo", name="Rabbits", measure="IfcLabel")
+        run("Complex properties are not supported 2/2", facet=facet, inst=element, expected=False)
+
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        qto = ifcopenshell.api.run("pset.add_qto", ifc, product=element, name="Foo_Bar")
+        complex_quantity = ifc.createIfcPhysicalComplexQuantity(Name="Foo", Discrimination="FurThickness")
+        ifcopenshell.api.run(
+            "pset.edit_qto", ifc, qto=complex_quantity, properties={"MyLength": ifc.createIfcLengthMeasure(42)}
+        )
+        qto.Quantities = [complex_quantity]
+        facet = Property(propertySet="Foo_Bar", name="Foo", measure="IfcLengthMeasure")
+        run("Complex properties are not supported 1/2", facet=facet, inst=element, expected=False)
+        facet = Property(propertySet="Foo", name="MyLength", measure="IfcLengthMeasure")
+        run("Complex properties are not supported 2/2", facet=facet, inst=element, expected=False)
+
         restriction = Restriction(options="Foo_.*", type="pattern")
         facet = Property(propertySet=restriction, name="Foo", measure="IfcLabel")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")

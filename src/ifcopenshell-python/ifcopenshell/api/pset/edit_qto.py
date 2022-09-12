@@ -28,6 +28,10 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        self.qto_idx = 5
+        if self.settings["qto"].is_a("IfcPhysicalComplexQuantity"):
+            self.qto_idx = 2
+
         self.update_qto_name()
         self.load_qto_template()
         self.update_existing_properties()
@@ -44,7 +48,7 @@ class Usecase:
         self.qto_template = self.psetqto.get_by_name(self.settings["qto"].Name)
 
     def update_existing_properties(self):
-        for prop in self.settings["qto"].Quantities or []:
+        for prop in self.settings["qto"][self.qto_idx] or []:
             self.update_existing_property(prop)
 
     def update_existing_property(self, prop):
@@ -75,9 +79,9 @@ class Usecase:
         return properties
 
     def extend_qto_with_new_properties(self, new_properties):
-        props = list(self.settings["qto"].Quantities) if self.settings["qto"].Quantities else []
+        props = list(self.settings["qto"][self.qto_idx]) if self.settings["qto"][self.qto_idx] else []
         props.extend(new_properties)
-        self.settings["qto"].Quantities = props
+        self.settings["qto"][self.qto_idx] = props
 
     def get_canonical_property_type(self, name, value):
         if isinstance(value, ifcopenshell.entity_instance):
