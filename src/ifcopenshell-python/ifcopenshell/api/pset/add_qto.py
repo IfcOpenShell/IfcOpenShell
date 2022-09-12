@@ -28,7 +28,7 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        if self.settings["product"].is_a("IfcObject"):
+        if self.settings["product"].is_a("IfcObject") or self.settings["product"].is_a("IfcContext"):
             for rel in self.settings["product"].IsDefinedBy or []:
                 if (
                     rel.is_a("IfcRelDefinesByProperties")
@@ -36,14 +36,7 @@ class Usecase:
                 ):
                     return rel.RelatingPropertyDefinition
 
-            qto = self.file.create_entity(
-                "IfcElementQuantity",
-                **{
-                    "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "Name": self.settings["name"],
-                }
-            )
+            qto = self.create_qto()
             self.file.create_entity(
                 "IfcRelDefinesByProperties",
                 **{
@@ -54,3 +47,20 @@ class Usecase:
                 }
             )
             return qto
+        elif self.settings["product"].is_a("IfcTypeObject"):
+            for definition in self.settings["product"].HasPropertySets or []:
+                if definition.Name == self.settings["name"]:
+                    return definition
+            qto = self.create_qto()
+            has_property_sets = list(self.settings["product"].HasPropertySets or [])
+            has_property_sets.append(qto)
+            self.settings["product"].HasPropertySets = has_property_sets
+            return qto
+
+    def create_qto(self):
+        return self.file.create_entity(
+            "IfcElementQuantity",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
+            Name=self.settings["name"],
+        )
