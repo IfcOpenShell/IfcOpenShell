@@ -464,7 +464,10 @@ class Property(Facet):
                 for prop_entity in self.get_properties(pset_entity):
                     if prop_entity.Name not in props[pset_name].keys():
                         continue
-                    if prop_entity.is_a("IfcPropertySingleValue"):
+                    if not isinstance(prop_entity, ifcopenshell.entity_instance):
+                        # Predefined properties are special :(
+                        pass
+                    elif prop_entity.is_a("IfcPropertySingleValue"):
                         data_type = prop_entity.NominalValue.is_a()
 
                         if data_type != self.measure:
@@ -640,6 +643,12 @@ class Property(Facet):
             return pset.Quantities
         elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
             return pset.Properties
+        elif pset.is_a("IfcPreDefinedPropertySet"):
+            return [
+                type("", (object,), {"Name": k, "Value": v})()
+                for k, v in pset.get_info().items()
+                if not isinstance(v, ifcopenshell.entity_instance)
+            ]
 
 
 class Material(Facet):

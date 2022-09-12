@@ -1076,6 +1076,29 @@ class TestProperty:
         facet = Property(propertySet="Foo_Bar", name="Foo", measure="IfcLabel")
         run("Reference properties are treated as objects and not supported", facet=facet, inst=element, expected=False)
 
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcDoor")
+        pset = ifc.create_entity(
+            "IfcDoorPanelProperties",
+            GlobalId=ifcopenshell.guid.new(),
+            Name="Foo_Bar",
+            PanelOperation="SWINGING",
+            PanelPosition="LEFT",
+        )
+        ifc.create_entity(
+            "IfcRelDefinesByProperties",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=[element],
+            RelatingPropertyDefinition=pset,
+        )
+        facet = Property(
+            propertySet="Foo_Bar", name="PanelOperation", value="SWINGING", measure="IfcDoorPanelOperationEnum"
+        )
+        run("Predefined properties are supported but discouraged 1/2", facet=facet, inst=element, expected=True)
+        facet = Property(
+            propertySet="Foo_Bar", name="PanelOperation", value="SWONGING", measure="IfcDoorPanelOperationEnum"
+        )
+        run("Predefined properties are supported but discouraged 2/2", facet=facet, inst=element, expected=False)
+
         facet = Property(propertySet="Foo_Bar", name="Foo", measure="IfcLengthMeasure")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         qto = ifcopenshell.api.run("pset.add_qto", ifc, product=element, name="Foo_Bar")
