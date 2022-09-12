@@ -460,13 +460,11 @@ class Property(Facet):
 
                 pset_entity = inst.wrapped_data.file.by_id(pset_props["id"])
 
-                is_property_supported_class = False
+                is_property_supported_class = True
                 for prop_entity in self.get_properties(pset_entity):
+                    if prop_entity.Name not in props[pset_name].keys():
+                        continue
                     if prop_entity.is_a("IfcPropertySingleValue"):
-                        if prop_entity.Name not in props[pset_name].keys() or prop_entity.NominalValue is None:
-                            continue
-                        is_property_supported_class = True
-
                         data_type = prop_entity.NominalValue.is_a()
 
                         if data_type != self.measure:
@@ -484,10 +482,6 @@ class Property(Facet):
                                 ifcopenshell.util.unit.si_type_names[unit.UnitType],
                             )
                     elif prop_entity.is_a("IfcPhysicalSimpleQuantity"):
-                        if prop_entity.Name not in props[pset_name].keys():
-                            continue
-                        is_property_supported_class = True
-
                         prop_schema = prop_entity.wrapped_data.declaration().as_entity()
                         data_type = prop_schema.attribute_by_index(3).type_of_attribute().declared_type().name()
 
@@ -505,6 +499,27 @@ class Property(Facet):
                                 None,
                                 ifcopenshell.util.unit.si_type_names[unit.UnitType],
                             )
+                    elif prop_entity.is_a("IfcPropertyEnumeratedValue"):
+                        data_type = prop_entity.EnumerationValues[0].is_a()
+                        if data_type != self.measure:
+                            is_pass = False
+                            reason = {"type": "MEASURE", "actual": data_type}
+                            break
+                    elif prop_entity.is_a("IfcPropertyListValue"):
+                        if not prop_entity.ListValues:
+                            is_pass = False
+                            reason = {"type": "NOVALUE"}
+                            break
+                        data_type = prop_entity.ListValues[0].is_a()
+                        if data_type != self.measure:
+                            is_pass = False
+                            reason = {"type": "MEASURE", "actual": data_type}
+                            break
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        if unit:
+                            props[pset_name][prop_entity.Name] = [ifcopenshell.util.unit.convert(v, getattr(unit, "Prefix", None), unit.Name, None, ifcopenshell.util.unit.si_type_names[unit.UnitType]) for v in props[pset_name][prop_entity.Name]]
+                    else:
+                        is_property_supported_class = False
 
                 if not is_property_supported_class:
                     is_pass = False
@@ -516,11 +531,26 @@ class Property(Facet):
                 if self.value:
                     for value in props[pset_name].values():
                         if isinstance(self.value, str) and isinstance(value, str):
+                            # "i_require_foo" = "i_have_bar"
                             if value != self.value:
                                 is_pass = False
                                 reason = {"type": "VALUE", "actual": value}
                                 break
+                        elif isinstance(self.value, str) and isinstance(value, list):
+                            # "i_require_foo" = ["a", "b"] such as in enumerated properties
+                            if self.value not in value:
+                                is_pass = False
+                                reason = {"type": "VALUE", "actual": value}
+                                break
+                        elif not isinstance(self.value, str) and isinstance(value, list):
+                            # XSD restriction = ["a", "b"] such as in enumerated properties
+                            does_any_pass = [v for v in value if v == self.value]
+                            if not does_any_pass:
+                                is_pass = False
+                                reason = {"type": "VALUE", "actual": value}
+                                break
                         elif isinstance(self.value, str):
+                            # "42" = 42
                             cast_value = cast_to_value(self.value, value)
                             if isinstance(value, float) and isinstance(cast_value, float):
                                 if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
@@ -532,6 +562,7 @@ class Property(Facet):
                                 reason = {"type": "VALUE", "actual": value}
                                 break
                         elif value != self.value:
+                            # XSD restriction = whatever
                             is_pass = False
                             reason = {"type": "VALUE", "actual": value}
                             break

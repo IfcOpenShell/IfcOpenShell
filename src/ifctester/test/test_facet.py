@@ -1009,6 +1009,36 @@ class TestProperty:
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDuration("P2D")})
         run("Durations are treated as strings 1/2", facet=facet, inst=element, expected=False)
 
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Pset_WallCommon")
+        pset_template = ifcopenshell.util.pset.get_template("IFC4").get_by_name("Pset_WallCommon")
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            ifc,
+            pset=pset,
+            properties={"Status": ["EXISTING", "DEMOLISH"]},
+            pset_template=pset_template,
+        )
+        facet = Property(propertySet="Pset_WallCommon", name="Status", value="EXISTING", measure="IfcLabel")
+        run("Any matching value in an enumerated property will pass 1/3", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Pset_WallCommon", name="Status", value="DEMOLISH", measure="IfcLabel")
+        run("Any matching value in an enumerated property will pass 2/3", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Pset_WallCommon", name="Status", value="NEW", measure="IfcLabel")
+        run("Any matching value in an enumerated property will pass 3/3", facet=facet, inst=element, expected=False)
+
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
+        list_property = ifc.createIfcPropertyListValue(
+            Name="Foo", ListValues=[ifc.createIfcLabel("X"), ifc.createIfcLabel("Y")]
+        )
+        pset.HasProperties = [list_property]
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="X", measure="IfcLabel")
+        run("Any matching value in a list property will pass 1/3", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="Y", measure="IfcLabel")
+        run("Any matching value in a list property will pass 2/3", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="Z", measure="IfcLabel")
+        run("Any matching value in a list property will pass 3/3", facet=facet, inst=element, expected=False)
+
         facet = Property(propertySet="Foo_Bar", name="Foo", measure="IfcLengthMeasure")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         qto = ifcopenshell.api.run("pset.add_qto", ifc, product=element, name="Foo_Bar")
