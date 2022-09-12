@@ -18,6 +18,7 @@
 
 import os
 import re
+import uuid
 import pytest
 import functools
 import ifcopenshell
@@ -28,6 +29,19 @@ from ifctester import ids
 from ifcopenshell import validate
 
 outdir = "build"
+
+class StableUUIDGenerator:
+    file = None
+
+    @classmethod
+    def generate(cls):
+        ns = uuid.UUID('b59aa156-82a4-4b4c-a6e5-3d04a0236af9')
+        if cls.file:
+            return ifcopenshell.guid.compress(uuid.uuid5(ns, str(cls.file.wrapped_data.getMaxId())).hex)
+        return ifcopenshell.guid.compress(uuid.uuid4().hex)
+
+# Just for aesthetics so we don't keep on getting brand new GlobalIds on each generation
+ifcopenshell.guid.new = StableUUIDGenerator.generate
 
 
 class DocGenerator:
@@ -42,6 +56,7 @@ class DocGenerator:
         result = "pass" if expected is True else "fail"
 
         f = inst.wrapped_data.file
+        StableUUIDGenerator.file = f
 
         # Validate the file created and loop over the issues, fixing them one by one.
         l = validate.json_logger()
