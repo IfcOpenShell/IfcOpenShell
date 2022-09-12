@@ -437,25 +437,24 @@ class Property(Facet):
                     reason = {"type": "NOVALUE"}
                     break
 
-                if self.measure:
-                    pset_entity = inst.wrapped_data.file.by_id(pset_props["id"])
-                    for prop_entity in pset_entity.HasProperties:
-                        if (
-                            prop_entity.Name not in props[pset_name].keys()
-                            or not prop_entity.is_a("IfcPropertySingleValue")
-                            or prop_entity.NominalValue is None
-                        ):
-                            continue
+                pset_entity = inst.wrapped_data.file.by_id(pset_props["id"])
+                for prop_entity in pset_entity.HasProperties:
+                    if (
+                        prop_entity.Name not in props[pset_name].keys()
+                        or not prop_entity.is_a("IfcPropertySingleValue")
+                        or prop_entity.NominalValue is None
+                    ):
+                        continue
 
-                        data_type = prop_entity.NominalValue.is_a()
+                    data_type = prop_entity.NominalValue.is_a()
 
-                        if data_type != self.measure:
-                            is_pass = False
-                            reason = {"type": "MEASURE", "actual": data_type}
-                            break
+                    if data_type != self.measure:
+                        is_pass = False
+                        reason = {"type": "MEASURE", "actual": data_type}
+                        break
 
-                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
-
+                    unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                    if unit:
                         props[pset_name][prop_entity.Name] = ifcopenshell.util.unit.convert(
                             prop_entity.NominalValue.wrappedValue,
                             getattr(unit, "Prefix", None),
