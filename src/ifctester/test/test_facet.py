@@ -238,7 +238,7 @@ class TestAttribute:
         set_facet("attribute")
 
         ifc = ifcopenshell.file()
-        facet = Attribute(name="Foobar")
+        facet = Attribute(name="Rabbit")
         run("Invalid attribute names always fail", facet=facet, inst=ifc.createIfcWall(), expected=False)
 
         ifc = ifcopenshell.file()
@@ -249,7 +249,20 @@ class TestAttribute:
             inst=ifc.createIfcWall(Name="Foobar"),
             expected=True,
         )
+
         ifc = ifcopenshell.file()
+        facet = Attribute(name="Name")
+        element = ifc.createIfcWall(Name="Foobar")
+        run("A required facet checks all parameters as normal", facet=facet, inst=element, expected=True)
+        facet = Attribute(name="Name", minOccurs=0, maxOccurs=0)
+        run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element, expected=False)
+        facet = Attribute(name="Name", minOccurs=0)
+        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+        facet = Attribute(name="Rabbit", minOccurs=0)
+        run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element, expected=True)
+
+        ifc = ifcopenshell.file()
+        facet = Attribute(name="Name")
         run("Attributes with null values always fail", facet=facet, inst=ifc.createIfcWall(), expected=False)
         # The logic is that unfortunately most BIM users cannot differentiate between the two.
         ifc = ifcopenshell.file()
@@ -724,6 +737,14 @@ class TestClassification:
             expected=True,
         )
 
+        run("A required facet checks all parameters as normal", facet=facet, inst=element1, expected=True)
+        facet = Classification(minOccurs=0, maxOccurs=0)
+        run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element1, expected=False)
+        facet = Attribute(name="Name", minOccurs=0)
+        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element0, expected=True)
+        facet = Attribute(name="Rabbit", minOccurs=0)
+        run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element1, expected=True)
+
         facet = Classification(value="1")
         run(
             "Values should match exactly if lightweight classifications are used",
@@ -859,6 +880,15 @@ class TestProperty:
         run("Properties with a null value fail", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
         run("A name check will match any property with any string value", facet=facet, inst=element, expected=True)
+
+        run("A required facet checks all parameters as normal", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", name="Foo", measure="IfcLabel", minOccurs=0, maxOccurs=0)
+        run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element, expected=False)
+        facet = Property(propertySet="Foo_Bar", name="Foo", measure="IfcLabel", minOccurs=0)
+        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", name="Bar", measure="IfcLabel", minOccurs=0)
+        run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element, expected=True)
+
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ""})
         facet = Property(propertySet="Foo_Bar", name="Foo", measure="IfcLogical")
         run("An empty string is considered falsey and will not pass", facet=facet, inst=element, expected=False)
@@ -1091,6 +1121,14 @@ class TestMaterial:
         ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material)
         run("Elements with any material will pass an empty material facet", facet=facet, inst=element, expected=True)
 
+        run("A required facet checks all parameters as normal", facet=facet, inst=element, expected=True)
+        facet = Material(minOccurs=0, maxOccurs=0)
+        run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element, expected=False)
+        facet = Material(minOccurs=0)
+        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+        facet = Material(value="Foo", minOccurs=0)
+        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+
         ifc = ifcopenshell.file()
         facet = Material(value="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
@@ -1221,10 +1259,18 @@ class TestPartOf:
     def test_creating_a_partof_facet(self):
         facet = PartOf()
         assert facet.asdict() == {"@relation": "IfcRelAggregates"}
-        facet = PartOf(entity="IfcGroup", relation="IfcRelAssignsToGroup", instructions="instructions")
+        facet = PartOf(
+            entity="IfcGroup",
+            relation="IfcRelAssignsToGroup",
+            minOccurs="0",
+            maxOccurs="unbounded",
+            instructions="instructions",
+        )
         assert facet.asdict() == {
             "entity": {"simpleValue": "IfcGroup"},
             "@relation": "IfcRelAssignsToGroup",
+            "@minOccurs": "0",
+            "@maxOccurs": "unbounded",
             "@instructions": "instructions",
         }
 
@@ -1240,6 +1286,11 @@ class TestPartOf:
         ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
         run("The aggregated whole fails an aggregate relationship", facet=facet, inst=element, expected=False)
         run("The aggregated part passes an aggregate relationship", facet=facet, inst=subelement, expected=True)
+
+        run("A required facet checks all parameters as normal", facet=facet, inst=subelement, expected=True)
+        run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=subelement, expected=False)
+        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+        run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=subelement, expected=True)
 
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")

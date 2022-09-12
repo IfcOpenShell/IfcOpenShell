@@ -162,6 +162,9 @@ class Attribute(Facet):
         super().__init__(name, value, minOccurs, maxOccurs, instructions)
 
     def __call__(self, inst, logger=None):
+        if self.minOccurs == 0 and self.maxOccurs != 0:
+            return AttributeResult(True)
+
         def get_values(element, name):
             if isinstance(name, str):
                 return [getattr(element, name, None)]
@@ -245,6 +248,8 @@ class Attribute(Facet):
                     reason = {"type": "VALUE", "actual": value}
                     break
 
+        if self.maxOccurs == 0:
+            return AttributeResult(not is_pass, {"type": "PROHIBITED"})
         return AttributeResult(is_pass, reason)
 
 
@@ -267,6 +272,9 @@ class Classification(Facet):
         pass
 
     def __call__(self, inst, logger=None):
+        if self.minOccurs == 0 and self.maxOccurs != 0:
+            return ClassificationResult(True)
+
         leaf_references = ifcopenshell.util.classification.get_references(inst)
 
         references = leaf_references.copy()
@@ -291,12 +299,14 @@ class Classification(Facet):
             if not is_pass:
                 reason = {"type": "SYSTEM", "actual": systems}
 
+        if self.maxOccurs == 0:
+            return ClassificationResult(not is_pass, {"type": "PROHIBITED"})
         return ClassificationResult(is_pass, reason)
 
 
 class PartOf(Facet):
-    def __init__(self, entity=None, relation="IfcRelAggregates", instructions=None):
-        self.parameters = ["entity", "@relation", "@instructions"]
+    def __init__(self, entity=None, relation="IfcRelAggregates", minOccurs=None, maxOccurs=None, instructions=None):
+        self.parameters = ["entity", "@relation", "@minOccurs", "@maxOccurs", "@instructions"]
         self.applicability_templates = [
             "An element with an {relation} relationship with an {entity}",
             "An element with an {relation} relationship",
@@ -305,9 +315,12 @@ class PartOf(Facet):
             "An element must have an {relation} relationship with an {entity}",
             "An element must have an {relation} relationship",
         ]
-        super().__init__(entity, relation, instructions)
+        super().__init__(entity, relation, minOccurs, maxOccurs, instructions)
 
     def __call__(self, inst, logger=None):
+        if self.minOccurs == 0 and self.maxOccurs != 0:
+            return PartOfResult(True)
+
         reason = None
         if self.relation == "IfcRelAggregates":
             aggregate = ifcopenshell.util.element.get_aggregate(inst)
@@ -363,6 +376,9 @@ class PartOf(Facet):
                     nest = self.get_nested_whole(nest)
                 if not is_pass:
                     reason = {"type": "ENTITY", "actual": ancestors}
+
+        if self.maxOccurs == 0:
+            return PartOfResult(not is_pass, {"type": "PROHIBITED"})
         return PartOfResult(is_pass, reason)
 
     def get_nested_whole(self, element):
@@ -403,6 +419,9 @@ class Property(Facet):
         super().__init__(propertySet, name, value, measure, uri, minOccurs, maxOccurs, instructions)
 
     def __call__(self, inst, logger=None):
+        if self.minOccurs == 0 and self.maxOccurs != 0:
+            return PropertyResult(True)
+
         all_psets = ifcopenshell.util.element.get_psets(inst)
 
         if isinstance(self.propertySet, str):
@@ -488,6 +507,9 @@ class Property(Facet):
                             is_pass = False
                             reason = {"type": "VALUE", "actual": value}
                             break
+
+        if self.maxOccurs == 0:
+            return PropertyResult(not is_pass, {"type": "PROHIBITED"})
         return PropertyResult(is_pass, reason)
 
 
@@ -505,6 +527,9 @@ class Material(Facet):
         super().__init__(value, uri, minOccurs, maxOccurs, instructions)
 
     def __call__(self, inst, logger=None):
+        if self.minOccurs == 0 and self.maxOccurs != 0:
+            return MaterialResult(True)
+
         material = ifcopenshell.util.element.get_material(inst, should_skip_usage=True)
 
         is_pass = material is not None
@@ -542,6 +567,8 @@ class Material(Facet):
             if not is_pass:
                 reason = {"type": "VALUE", "actual": values}
 
+        if self.maxOccurs == 0:
+            return MaterialResult(not is_pass, {"type": "PROHIBITED"})
         return MaterialResult(is_pass, reason)
 
 

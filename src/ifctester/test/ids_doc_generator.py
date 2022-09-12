@@ -63,7 +63,7 @@ class DocGenerator:
         basename = f"{result}-" + re.sub("[^0-9a-zA-Z]", "_", name.lower())
 
         # Write IFC to disk
-        f.write(os.path.join(outdir, "testcases", f"{basename}.ifc"))
+        f.write(os.path.join(outdir, "testcases", self.facet, f"{basename}.ifc"))
 
         # Create an IDS with the applicability selecting exactly
         # the entity type passed to us in `inst`.
@@ -74,7 +74,7 @@ class DocGenerator:
         specs.specifications.append(spec)
 
         # Write IDS to disk
-        with open(os.path.join(outdir, "testcases", f"{basename}.ids"), "w", encoding="utf-8") as ids_file:
+        with open(os.path.join(outdir, "testcases", self.facet, f"{basename}.ids"), "w", encoding="utf-8") as ids_file:
             ids_file.write(specs.to_string())
 
         xml_text = "\n".join(
@@ -123,7 +123,7 @@ for facet, testcases in test_facet.run.testcases.items():
             write("~~~")
             write()
             write(
-                f"[Sample IDS](testcases/{testcase['basename']}.ids) - [Sample IFC: {testcase['id']}](testcases/{testcase['basename']}.ifc)"
+                f"[Sample IDS](testcases/{facet}/{testcase['basename']}.ids) - [Sample IFC: {testcase['id']}](testcases/{facet}/{testcase['basename']}.ifc)"
             )
             write()
 
