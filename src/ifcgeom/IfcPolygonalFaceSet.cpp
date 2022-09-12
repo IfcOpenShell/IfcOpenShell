@@ -22,6 +22,7 @@
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/wire_utils.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -111,7 +112,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
 
 		if (not_planar) {
 			TopTools_ListOfShape fs;
-			if (triangulate_wire(ws, fs)) {
+			if (util::triangulate_wire(ws, fs)) {
 				Logger::Warning("Triangulated face boundary:", pfs);
 				TopTools_ListIteratorOfListOfShape it(fs);
 				for (; it.More(); it.Next()) {
