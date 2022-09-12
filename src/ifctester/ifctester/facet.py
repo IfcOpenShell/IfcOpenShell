@@ -443,7 +443,9 @@ class Property(Facet):
                 if isinstance(self.name, str):
                     prop = pset_props.get(self.name)
                     if prop == "UNKNOWN" and [
-                        p for p in inst.wrapped_data.file.by_id(pset_props["id"]).HasProperties if p.Name == self.name
+                        p
+                        for p in self.get_properties(inst.wrapped_data.file.by_id(pset_props["id"]))
+                        if p.Name == self.name
                     ][0].NominalValue.is_a("IfcLogical"):
                         pass
                     elif prop is not None and prop != "":
@@ -457,30 +459,49 @@ class Property(Facet):
                     break
 
                 pset_entity = inst.wrapped_data.file.by_id(pset_props["id"])
-                for prop_entity in pset_entity.HasProperties:
-                    if (
-                        prop_entity.Name not in props[pset_name].keys()
-                        or not prop_entity.is_a("IfcPropertySingleValue")
-                        or prop_entity.NominalValue is None
-                    ):
-                        continue
 
-                    data_type = prop_entity.NominalValue.is_a()
+                for prop_entity in self.get_properties(pset_entity):
+                    if prop_entity.is_a("IfcPropertySingleValue"):
+                        if prop_entity.Name not in props[pset_name].keys() or prop_entity.NominalValue is None:
+                            continue
 
-                    if data_type != self.measure:
-                        is_pass = False
-                        reason = {"type": "MEASURE", "actual": data_type}
-                        break
+                        data_type = prop_entity.NominalValue.is_a()
 
-                    unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
-                    if unit:
-                        props[pset_name][prop_entity.Name] = ifcopenshell.util.unit.convert(
-                            prop_entity.NominalValue.wrappedValue,
-                            getattr(unit, "Prefix", None),
-                            unit.Name,
-                            None,
-                            ifcopenshell.util.unit.si_type_names[unit.UnitType],
-                        )
+                        if data_type != self.measure:
+                            is_pass = False
+                            reason = {"type": "MEASURE", "actual": data_type}
+                            break
+
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        if unit:
+                            props[pset_name][prop_entity.Name] = ifcopenshell.util.unit.convert(
+                                prop_entity.NominalValue.wrappedValue,
+                                getattr(unit, "Prefix", None),
+                                unit.Name,
+                                None,
+                                ifcopenshell.util.unit.si_type_names[unit.UnitType],
+                            )
+                    elif prop_entity.is_a("IfcPhysicalSimpleQuantity"):
+                        if prop_entity.Name not in props[pset_name].keys():
+                            continue
+
+                        prop_schema = prop_entity.wrapped_data.declaration().as_entity()
+                        data_type = prop_schema.attribute_by_index(3).type_of_attribute().declared_type().name()
+
+                        if data_type != self.measure:
+                            is_pass = False
+                            reason = {"type": "MEASURE", "actual": data_type}
+                            break
+
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        if unit:
+                            props[pset_name][prop_entity.Name] = ifcopenshell.util.unit.convert(
+                                prop_entity[3],
+                                getattr(unit, "Prefix", None),
+                                unit.Name,
+                                None,
+                                ifcopenshell.util.unit.si_type_names[unit.UnitType],
+                            )
 
                 if not is_pass:
                     break
@@ -511,6 +532,14 @@ class Property(Facet):
         if self.maxOccurs == 0:
             return PropertyResult(not is_pass, {"type": "PROHIBITED"})
         return PropertyResult(is_pass, reason)
+
+    def get_properties(self, pset):
+        if pset.is_a("IfcPropertySet"):
+            return pset.HasProperties
+        elif pset.is_a("IfcElementQuantity"):
+            return pset.Quantities
+        elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
+            return pset.Properties
 
 
 class Material(Facet):
