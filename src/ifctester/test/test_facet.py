@@ -881,6 +881,10 @@ class TestProperty:
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
         run("A name check will match any property with any string value", facet=facet, inst=element, expected=True)
 
+        facet = Property(propertySet="Foo_Bar", name="Foo", measure="IfcLabel")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
         run("A required facet checks all parameters as normal", facet=facet, inst=element, expected=True)
         facet = Property(propertySet="Foo_Bar", name="Foo", measure="IfcLabel", minOccurs=0, maxOccurs=0)
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element, expected=False)
@@ -1004,6 +1008,14 @@ class TestProperty:
         run("Durations are treated as strings 1/2", facet=facet, inst=element, expected=True)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDuration("P2D")})
         run("Durations are treated as strings 1/2", facet=facet, inst=element, expected=False)
+
+        facet = Property(propertySet="Foo_Bar", name="Foo", measure="IfcLengthMeasure")
+        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        qto = ifcopenshell.api.run("pset.add_qto", ifc, product=element, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_qto", ifc, qto=qto, properties={"Foo": ifc.createIfcLengthMeasure(42)})
+        run("A name check will match any quantity with any value", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", name="Foo", measure="IfcAreaMeasure")
+        run("Quantities must also match the appropriate measure", facet=facet, inst=element, expected=False)
 
         restriction = Restriction(options="Foo_.*", type="pattern")
         facet = Property(propertySet=restriction, name="Foo", measure="IfcLabel")
@@ -1288,7 +1300,9 @@ class TestPartOf:
         run("The aggregated part passes an aggregate relationship", facet=facet, inst=subelement, expected=True)
 
         run("A required facet checks all parameters as normal", facet=facet, inst=subelement, expected=True)
+        facet = PartOf(relation="IfcRelAggregates", minOccurs=0, maxOccurs=0)
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=subelement, expected=False)
+        facet = PartOf(relation="IfcRelAggregates", minOccurs=0)
         run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
         run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=subelement, expected=True)
 
