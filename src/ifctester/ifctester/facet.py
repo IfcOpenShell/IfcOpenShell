@@ -745,6 +745,8 @@ class Restriction:
                 if other not in [cast_to_value(v, other) for v in value]:
                     return False
             elif constraint == "pattern":
+                if not isinstance(other, str):
+                    return False
                 value = value if isinstance(value, list) else [value]
                 for pattern in value:
                     if re.compile(identities.translate_pattern(pattern)).fullmatch(other) is None:
