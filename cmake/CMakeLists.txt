@@ -1052,10 +1052,10 @@ if(NOT MINIMAL_BUILD AND BUILD_IFCMAX)
         endif()
     endforeach()
 
-    if(NOT HAS_MAX)
-        message(STATUS "Autodesk 3ds Max SDK not found, is required to build IFCMax.")
-    else()
+    if(HAS_MAX)
         add_subdirectory(../src/ifcmax ifcmax)
+    else()
+        message(STATUS "Autodesk 3ds Max SDK not found, is required to build IFCMax.")
     endif()
 endif()
 
