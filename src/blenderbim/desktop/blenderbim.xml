@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-ifc">
+    <sub-class-of type="text/plain"/>
+    <comment xml:lang="en">Industry Foundation Classes</comment>
+    <magic priority="50">
+        <match type="string" value="ISO-10303-21;" offset="0"/>
+    </magic>
+    <generic-icon name="x-ifc"/>
+    <glob pattern="*.ifc"/>
+  </mime-type>
+</mime-info>
