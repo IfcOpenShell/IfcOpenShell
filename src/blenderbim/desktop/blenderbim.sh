@@ -8,7 +8,7 @@
 : ${BLENDER_EXE:=blender}
 
 if [[ $# -eq 1 && -f "$@" ]]; then
-    "${BLENDER_EXE}" --python-expr 'import bpy; bpy.data.collections.remove(bpy.data.collections.get("Collection")); bpy.ops.bim.load_project(filepath="'$@'")'
+    "${BLENDER_EXE}" --python-expr 'import bpy; bpy.data.collections.remove(bpy.data.collections[0]); bpy.ops.bim.load_project(filepath="'"$@"'")'
 else
-    "${BLENDER_EXE}" --python-expr 'import bpy; bpy.data.collections.remove(bpy.data.collections.get("Collection")); bpy.ops.bim.create_project()'
+    "${BLENDER_EXE}" --python-expr 'import bpy; bpy.data.collections.remove(bpy.data.collections[0]); bpy.ops.bim.create_project()'
 fi;
