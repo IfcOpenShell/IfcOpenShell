@@ -65,7 +65,7 @@
 	<xs:complexType name="applicabilityType">
 		<xs:sequence>
 			<xs:element name="entity" type="ids:entityType" minOccurs="0"/>
-			<xs:element name="partOf" type="ids:partOfType" minOccurs="0"/>
+			<xs:element name="partOf" type="ids:partOfType" minOccurs="0" maxOccurs="unbounded"/>
 			<xs:element name="classification" type="ids:classificationType" minOccurs="0" maxOccurs="unbounded"/>
 			<xs:element name="attribute" type="ids:attributeType" minOccurs="0" maxOccurs="unbounded"/>
 			<xs:element name="property" minOccurs="0" maxOccurs="unbounded">
@@ -120,7 +120,7 @@
 					</xs:complexContent>
 				</xs:complexType>
 			</xs:element>
-			<xs:element name="partOf" minOccurs="0">
+			<xs:element name="partOf" minOccurs="0" maxOccurs="unbounded">
 				<xs:complexType>
 					<xs:complexContent>
 						<xs:extension base="ids:partOfType">
