@@ -22,6 +22,7 @@ import math
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 
+
 class QtoCalculator:
     def guess_quantity(self, prop_name, alternative_prop_names, obj):
         prop_name = prop_name.lower()
@@ -179,62 +180,62 @@ class QtoCalculator:
                 volume += v1.dot(v2.cross(v3)) / 6.0
         return volume
 
-def angle_between_vectors(v1, v2):
-    return np.arccos(np.clip(np.dot(v1, v2), -1.0, 1.0))
+    def angle_between_vectors(self, v1, v2):
+        return np.arccos(np.clip(np.dot(v1, v2), -1.0, 1.0))
 
-def calculate_net_lateral_area(object, angle_a=45, angle_b=135):
-    z_axis = (0, 0, 1)
-    area = 0
-    polygons = object.data.polygons
+    def calculate_net_side_area(self, obj, angle_a: int = 45, angle_b: int =135):
+        z_axis = (0, 0, 1)
+        area = 0
+        polygons = obj.data.polygons
 
-    for polygon in polygons:
-        normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
-        angle_to_z_axis = math.degrees(angle_between_vectors(z_axis, normal_vector))
+        for polygon in polygons:
+            normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
+            angle_to_z_axis = math.degrees(self.angle_between_vectors(z_axis, normal_vector))
 
-        if angle_to_z_axis < angle_a or angle_to_z_axis > angle_b:
-            continue
-        area += polygon.area
-    return area
-
-def calculate_net_top_area(object, angle: int = 45):
-    z_axis = (0, 0, 1)
-    area = 0
-    polygons = object.data.polygons
-
-    for polygon in polygons:
-        normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
-        angle_to_z_axis = math.degrees(angle_between_vectors(z_axis, normal_vector))
-
-        if angle_to_z_axis < angle:
+            if angle_to_z_axis < angle_a or angle_to_z_axis > angle_b:
+                continue
             area += polygon.area
-    return area
+        return area
 
-def calculate_gross_projected_area_z(object, projection_axis = "-z"):
-    odata = object.data
-    polygons = object.data.polygons
-    shapely_polygons = []
+    def calculate_net_top_area(self, obj, angle: int = 45):
+        z_axis = (0, 0, 1)
+        area = 0
+        polygons = obj.data.polygons
 
-    for polygon in polygons:
-        polygon_tuple = []
-        
-        for i in polygon.loop_indices:
-            loop = odata.loops[i]
-            edge_index = loop.edge_index
-            
-            edge = odata.edges[edge_index]
-            
-            v1 = edge.vertices[0]
-            v1_x_coord = odata.vertices[v1].co.x
-            v1_y_coord = odata.vertices[v1].co.y
-            
-            v2 = edge.vertices[1]
-            v2_x_coord = odata.vertices[v2].co.x
-            v2_y_coord = odata.vertices[v2].co.y
-            
-            polygon_tuple.append((v1_x_coord, v1_y_coord))
-            polygon_tuple.append((v2_x_coord, v2_y_coord))  
-        
-        pgon = Polygon(polygon_tuple)
-        shapely_polygons.append(pgon)
-        
-    return unary_union(shapely_polygons).area
+        for polygon in polygons:
+            normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
+            angle_to_z_axis = math.degrees(self.angle_between_vectors(z_axis, normal_vector))
+
+            if angle_to_z_axis < angle:
+                area += polygon.area
+        return area
+
+    def calculate_gross_projected_area_z(self, obj):
+        odata = obj.data
+        polygons = obj.data.polygons
+        shapely_polygons = []
+
+        for polygon in polygons:
+            polygon_tuple = []
+
+            for i in polygon.loop_indices:
+                loop = odata.loops[i]
+                edge_index = loop.edge_index
+
+                edge = odata.edges[edge_index]
+
+                v1 = edge.vertices[0]
+                v1_x_coord = odata.vertices[v1].co.x
+                v1_y_coord = odata.vertices[v1].co.y
+
+                v2 = edge.vertices[1]
+                v2_x_coord = odata.vertices[v2].co.x
+                v2_y_coord = odata.vertices[v2].co.y
+
+                polygon_tuple.append((v1_x_coord, v1_y_coord))
+                polygon_tuple.append((v2_x_coord, v2_y_coord))
+
+            pgon = Polygon(polygon_tuple)
+            shapely_polygons.append(pgon)
+
+        return unary_union(shapely_polygons).area
