@@ -178,7 +178,7 @@ class TestEntity:
         facet = Entity(name="IFCWALL", predefinedType="X")
         run("Overridden predefined types should pass", facet=facet, inst=wall, expected=True)
 
-        restriction = Restriction(options=["IFCWALL", "IFCSLAB"], type="enumeration")
+        restriction = Restriction(options={"enumeration": ["IFCWALL", "IFCSLAB"]})
         facet = Entity(name=restriction)
         ifc = ifcopenshell.file()
         run("Entities can be specified as an enumeration 1/3", facet=facet, inst=ifc.createIfcWall(), expected=True)
@@ -187,7 +187,7 @@ class TestEntity:
         ifc = ifcopenshell.file()
         run("Entities can be specified as an enumeration 3/3", facet=facet, inst=ifc.createIfcBeam(), expected=False)
 
-        restriction = Restriction(options="IFC.*TYPE", type="pattern")
+        restriction = Restriction(options={"pattern": "IFC.*TYPE"})
         facet = Entity(name=restriction)
         ifc = ifcopenshell.file()
         run(
@@ -204,7 +204,7 @@ class TestEntity:
             expected=True,
         )
 
-        restriction = Restriction(options="FOO.*", type="pattern")
+        restriction = Restriction(options={"pattern": "FOO.*"})
         facet = Entity(name="IFCWALL", predefinedType=restriction)
         ifc = ifcopenshell.file()
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall", predefined_type="FOOBAR")
@@ -594,7 +594,7 @@ class TestAttribute:
             expected=False,
         )
 
-        restriction = Restriction(options=".*Name.*", type="pattern")
+        restriction = Restriction(options={"pattern": ".*Name.*"})
         facet = Attribute(name=restriction)
         ifc = ifcopenshell.file()
         run(
@@ -605,7 +605,7 @@ class TestAttribute:
             ),
             expected=True,
         )
-        restriction = Restriction(options=["Name", "Description"], type="enumeration")
+        restriction = Restriction(options={"enumeration": ["Name", "Description"]})
         facet = Attribute(name=restriction)
         ifc = ifcopenshell.file()
         run(
@@ -622,7 +622,7 @@ class TestAttribute:
             expected=True,
         )
 
-        restriction = Restriction(options=["Foo", "Bar"], type="enumeration")
+        restriction = Restriction(options={"enumeration": ["Foo", "Bar"]})
         facet = Attribute(name="Name", value=restriction)
         ifc = ifcopenshell.file()
         run("Value restrictions may be used 1/3", facet=facet, inst=ifc.createIfcWall(Name="Foo"), expected=True)
@@ -639,7 +639,7 @@ class TestAttribute:
         facet = Attribute(name="Description", value="Foobar")
         run("Attributes are not inherited by the occurrence", facet=facet, inst=wall, expected=False)
 
-        restriction = Restriction(options=["42"], type="enumeration", base="string")
+        restriction = Restriction(options={"enumeration": ["42", "43"]})
         facet = Attribute(name="RefractionIndex", value=restriction)
         ifc = ifcopenshell.file()
         run(
@@ -649,7 +649,7 @@ class TestAttribute:
             expected=True,
         )
 
-        restriction = Restriction(options={"minInclusive": 42, "maxInclusive": 42}, type="bounds", base="decimal")
+        restriction = Restriction(options={"minInclusive": 42, "maxInclusive": 42},  base="decimal")
         facet = Attribute(name="RefractionIndex", value=restriction)
         ifc = ifcopenshell.file()
         run(
@@ -774,13 +774,13 @@ class TestClassification:
         run("Systems should match exactly 4/5", facet=facet, inst=element11, expected=True)
         run("Systems should match exactly 5/5", facet=facet, inst=element22, expected=True)
 
-        restriction = Restriction(options="1.*", type="pattern")
+        restriction = Restriction(options={"pattern": "1.*"})
         facet = Classification(value=restriction)
         run("Restrictions can be used for values 1/3", facet=facet, inst=element1, expected=True)
         run("Restrictions can be used for values 2/3", facet=facet, inst=element11, expected=True)
         run("Restrictions can be used for values 3/3", facet=facet, inst=element22, expected=False)
 
-        restriction = Restriction(options="Foo.*", type="pattern")
+        restriction = Restriction(options={"pattern": "Foo.*"})
         facet = Classification(system=restriction)
         run("Restrictions can be used for systems 1/2", facet=facet, inst=element0, expected=False)
         run("Restrictions can be used for systems 2/2", facet=facet, inst=element1, expected=True)
@@ -1129,7 +1129,7 @@ class TestProperty:
         run("Complex properties are not supported 2/2", facet=facet, inst=element, expected=False)
 
         ifc = self.setup_ifc()
-        restriction = Restriction(options="Foo_.*", type="pattern")
+        restriction = Restriction(options={"pattern": "Foo_.*"})
         facet = Property(propertySet=restriction, name="Foo", measure="IfcLabel")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
@@ -1142,7 +1142,7 @@ class TestProperty:
         run("All matching property sets must satisfy requirements 3/3", facet=facet, inst=element, expected=True)
 
         ifc = self.setup_ifc()
-        restriction = Restriction(options="Foo.*", type="pattern")
+        restriction = Restriction(options={"pattern": "Foo.*"})
         facet = Property(propertySet="Foo_Bar", name=restriction, value="x", measure="IfcLabel")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
@@ -1154,8 +1154,8 @@ class TestProperty:
         run("All matching properties must satisfy requirements 3/3", facet=facet, inst=element, expected=False)
 
         ifc = self.setup_ifc()
-        restriction1 = Restriction(options="Foo.*", type="pattern")
-        restriction2 = Restriction(options=["x", "y"], type="enumeration")
+        restriction1 = Restriction(options={"pattern": "Foo.*"})
+        restriction2 = Restriction(options={"enumeration": ["x", "y"]})
         facet = Property(propertySet="Foo_Bar", name=restriction1, value=restriction2, measure="IfcLabel")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo_Bar")
@@ -1527,40 +1527,45 @@ class TestPartOf:
 
 
 class TestRestriction:
+    def test_creating_a_restriction(self):
+        restriction = Restriction(options={"enumeration": ["foo", "bar"]})
+        assert restriction.asdict() == {"@base": "xs:string", "xs:enumeration": [{"@value": "foo"}, {"@value": "bar"}]}
+
     def test_enumeration(self):
-        restriction = Restriction(options=["foo", "bar"], type="enumeration")
+        restriction = Restriction(options={"enumeration": ["foo", "bar"]})
         assert restriction == "foo"
         assert restriction == "bar"
+        assert restriction != "Foo"
         assert restriction != "baz"
 
     def test_bounds(self):
-        restriction = Restriction(options={"minInclusive": 0, "maxExclusive": 10}, type="bounds", base="integer")
+        restriction = Restriction(options={"minInclusive": 0, "maxExclusive": 10}, base="integer")
         assert restriction == 0
         assert restriction != 10
         assert restriction == 5
         assert restriction != -1
 
     def test_pattern(self):
-        restriction = Restriction(options="[A-Z]{2}[0-9]{2}", type="pattern")
+        restriction = Restriction(options={"pattern": "[A-Z]{2}[0-9]{2}"})
         assert restriction == "AB01"
         assert restriction != "AB"
         assert restriction != "01"
 
-    def test_filtering_using_an_enumeration(self):
+    def test_filtering_using_restrictions(self):
         set_facet("restriction")
 
         ifc = ifcopenshell.file()
-        restriction = Restriction(options=["Foo", "Bar"], type="enumeration")
+        restriction = Restriction(options={"enumeration": ["Foo", "Bar"]})
         facet = Attribute(name="Name", value=restriction)
         element = ifc.createIfcWall(Name="Foo")
         run("An enumeration matches case sensitively 1/3", facet=facet, inst=element, expected=True)
         element.Name = "Bar"
-        run("An enumeration matches case sensitively 1/3", facet=facet, inst=element, expected=True)
+        run("An enumeration matches case sensitively 2/3", facet=facet, inst=element, expected=True)
         element.Name = "Baz"
-        run("An enumeration matches case sensitively 1/3", facet=facet, inst=element, expected=False)
+        run("An enumeration matches case sensitively 3/3", facet=facet, inst=element, expected=False)
 
         ifc = ifcopenshell.file()
-        restriction = Restriction(options={"minInclusive": 0, "maxInclusive": 10}, type="bounds", base="integer")
+        restriction = Restriction(options={"minInclusive": 0, "maxInclusive": 10}, base="integer")
         element = ifc.createIfcSurfaceStyleRefraction(RefractionIndex=0)
         facet = Attribute(name="RefractionIndex", value=restriction)
         run("A bound can be inclusive 1/4", facet=facet, inst=element, expected=True)
@@ -1571,7 +1576,7 @@ class TestRestriction:
         element.RefractionIndex = 100
         run("A bound can be inclusive 4/4", facet=facet, inst=element, expected=False)
 
-        restriction = Restriction(options={"minExclusive": 0, "maxExclusive": 10}, type="bounds", base="integer")
+        restriction = Restriction(options={"minExclusive": 0, "maxExclusive": 10}, base="integer")
         facet = Attribute(name="RefractionIndex", value=restriction)
         element.RefractionIndex = 0
         run("A bound can be inclusive 1/3", facet=facet, inst=element, expected=False)
@@ -1581,7 +1586,7 @@ class TestRestriction:
         run("A bound can be inclusive 3/3", facet=facet, inst=element, expected=False)
 
         ifc = ifcopenshell.file()
-        restriction = Restriction(options="[A-Z]{2}[0-9]{2}", type="pattern")
+        restriction = Restriction(options={"pattern": "[A-Z]{2}[0-9]{2}"})
         facet = Attribute(name="Name", value=restriction)
         element = ifc.createIfcWall(Name="WT01")
         run("Regex patterns can be used 1/3", facet=facet, inst=element, expected=True)
@@ -1589,3 +1594,23 @@ class TestRestriction:
         run("Regex patterns can be used 2/3", facet=facet, inst=element, expected=True)
         element.Name = "A5"
         run("Regex patterns can be used 3/3", facet=facet, inst=element, expected=False)
+
+        ifc = ifcopenshell.file()
+        restriction = Restriction(options={"length": 2})
+        facet = Attribute(name="Name", value=restriction)
+        element = ifc.createIfcWall(Name="AB")
+        run("Length checks can be used 1/2", facet=facet, inst=element, expected=True)
+        element.Name = "ABC"
+        run("Length checks can be used 1/2", facet=facet, inst=element, expected=False)
+
+        ifc = ifcopenshell.file()
+        restriction = Restriction(options={"minLength": 2, "maxLength": 3})
+        facet = Attribute(name="Name", value=restriction)
+        element = ifc.createIfcWall(Name="A")
+        run("Max and min length checks can be used 1/3", facet=facet, inst=element, expected=False)
+        element.Name = "AB"
+        run("Max and min length checks can be used 2/3", facet=facet, inst=element, expected=True)
+        element.Name = "ABC"
+        run("Max and min length checks can be used 3/3", facet=facet, inst=element, expected=True)
+        element.Name = "ABCD"
+        run("Max and min length checks can be used 4/3", facet=facet, inst=element, expected=False)
