@@ -106,6 +106,14 @@ class Facet:
             raise Exception(str(parameter) + " was not able to be converted into 'Parameter_dict'")
         return parameter_dict
 
+    def get_usage(self):
+        if self.minOccurs != 0:
+            return "required"
+        elif self.minOccurs == 0 and self.maxOccurs != 0:
+            return "optional"
+        elif self.maxOccurs == 0:
+            return "prohibited"
+
 
 class Entity(Facet):
     def __init__(self, name="IFCWALL", predefinedType=None, instructions=None):
@@ -165,24 +173,11 @@ class Attribute(Facet):
         if self.minOccurs == 0 and self.maxOccurs != 0:
             return AttributeResult(True)
 
-        def get_values(element, name):
-            if isinstance(name, str):
-                return [getattr(element, name, None)]
-            return [v for k, v in element.get_info().items() if k == name]
-
-        element_type = ifcopenshell.util.element.get_type(inst)
-
         if isinstance(self.name, str):
-            type_value = getattr(element_type, self.name, None) if element_type else None
-            occurrence_value = getattr(inst, self.name, None)
             names = [self.name]
-            values = [occurrence_value if occurrence_value is not None else type_value]
+            values = [getattr(inst, self.name, None)]
         else:
-            if element_type:
-                info = element_type.get_info()
-                info.update({k: v for k, v in inst.get_info().items() if v is not None})
-            else:
-                info = inst.get_info()
+            info = inst.get_info()
             names = []
             values = []
             for k, v in info.items():
@@ -197,29 +192,31 @@ class Attribute(Facet):
             reason = {"type": "NOVALUE"}
 
         if is_pass:
+            non_empty_values = []
             for i, value in enumerate(values):
+                is_empty = False
                 if value is None:
-                    is_pass = False
-                    reason = {"type": "FALSEY", "actual": value}
+                    is_empty = True
                 elif value == "":
-                    is_pass = False
-                    reason = {"type": "FALSEY", "actual": value}
+                    is_empty = True
                 elif value == tuple():
-                    is_pass = False
-                    reason = {"type": "FALSEY", "actual": value}
+                    is_empty = True
                 else:
                     argument_index = inst.wrapped_data.get_argument_index(names[i])
                     try:
                         attribute_type = inst.attribute_type(argument_index)
                         if attribute_type == "LOGICAL" and value == "UNKNOWN":
-                            is_pass = False
-                            reason = {"type": "FALSEY", "actual": value}
+                            is_empty = True
                     except:
                         if names[i] in inst.wrapped_data.get_inverse_attribute_names():
-                            is_pass = False
-                            reason = {"type": "INVALID"}
-                if not is_pass:
-                    break
+                            is_empty = True
+                if not is_empty:
+                    non_empty_values.append(value)
+            if non_empty_values:
+                values = non_empty_values
+            else:
+                is_pass = False
+                reason = {"type": "FALSEY", "actual": values if len(values) > 1 else values[0]}
 
         if is_pass and self.value:
             for value in values:
@@ -326,7 +323,7 @@ class PartOf(Facet):
             aggregate = ifcopenshell.util.element.get_aggregate(inst)
             is_pass = aggregate is not None
             if not is_pass:
-                reason = {"type": "RELATION"}
+                reason = {"type": "NOVALUE"}
             if is_pass and self.entity:
                 is_pass = False
                 ancestors = []
@@ -355,7 +352,7 @@ class PartOf(Facet):
             container = ifcopenshell.util.element.get_container(inst)
             is_pass = container is not None
             if not is_pass:
-                reason = {"type": "RELATION"}
+                reason = {"type": "NOVALUE"}
             if is_pass and self.entity:
                 if container.is_a().upper() != self.entity:
                     is_pass = False
@@ -871,6 +868,8 @@ class AttributeResult(Result):
             return f"An invalid attribute name was specified in the IDS"
         elif self.reason["type"] == "VALUE":
             return f"The attribute value \"{str(self.reason['actual'])}\" does not match the requirement"
+        elif self.reason["type"] == "PROHIBITED":
+            return f"The attribute value should not have met the requirement"
 
 
 class ClassificationResult(Result):
@@ -881,11 +880,18 @@ class ClassificationResult(Result):
             return f"The references \"{str(self.reason['actual'])}\" do not match the requirements"
         elif self.reason["type"] == "system":
             return f"The systems \"{str(self.reason['actual'])}\" do not match the requirements"
+        elif self.reason["type"] == "PROHIBITED":
+            return f"The classification should not have met the requirement"
 
 
 class PartOfResult(Result):
     def to_string(self):
-        return "TODO"
+        if self.reason["type"] == "NOVALUE":
+            return "The entity has no relationship"
+        elif self.reason["type"] == "ENTITY":
+            return f"The entity has a relationship with incorrect entities: \"{str(self.reason['actual'])}\""
+        elif self.reason["type"] == "PROHIBITED":
+            return f"The relationship should not have met the requirement"
 
 
 class PropertyResult(Result):
@@ -900,6 +906,8 @@ class PropertyResult(Result):
             return f"The property value \"{str(self.reason['actual'][0])}\" does not match the requirements"
         elif self.reason["type"] == "VALUE":
             return f"The property values \"{str(self.reason['actual'])}\" do not match the requirements"
+        elif self.reason["type"] == "PROHIBITED":
+            return f"The property should not have met the requirement"
 
 
 class MaterialResult(Result):
@@ -910,3 +918,5 @@ class MaterialResult(Result):
             return (
                 f"The material names and categories of \"{str(self.reason['actual'])}\" does not match the requirement"
             )
+        elif self.reason["type"] == "PROHIBITED":
+            return f"The material should not have met the requirement"

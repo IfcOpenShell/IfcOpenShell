@@ -23,6 +23,14 @@ import ifcopenshell
 from ifctester import ids
 
 
+def run(name, specs, model, expected, applicable_entities, failed_entities):
+    specs.validate(model)
+    spec = specs.specifications[0]
+    assert spec.status is expected
+    assert set(spec.applicable_entities) == set(applicable_entities)
+    assert set(spec.requirements[0].failed_entities) == set(failed_entities)
+
+
 class TestIds:
     def test_failing_on_opening_invalid_ids_data(self):
         with pytest.raises(xmlschema.validators.exceptions.XMLSchemaValidationError):
@@ -106,11 +114,73 @@ class TestIds:
         model = ifcopenshell.file()
         wall = model.createIfcWall()
         waldo = model.createIfcWall(Name="Waldo")
-        specs.validate(model)
+        run("A minimal IDS can check a minimal IFC 1/2", specs, model, False, [wall, waldo], [wall])
+        wall.Name = "Waldo"
+        run("A minimal IDS can check a minimal IFC 2/2", specs, model, True, [wall, waldo], [])
 
-        assert spec.status == False
-        assert set(spec.applicable_entities) == {wall, waldo}
-        assert spec.requirements[0].failed_entities == [wall]
+        spec.ifcVersion = []
+        run(
+            "Specification version is purely metadata and does not impact pass or fail result",
+            specs,
+            model,
+            True,
+            [wall, waldo],
+        )
+
+        spec.minOccurs = 1
+        model = ifcopenshell.file()
+        waldo = model.createIfcWall(Name="Waldo")
+        run("Required specifications need at least one applicable entity 1/2", specs, model, True, [waldo])
+        model = ifcopenshell.file()
+        waldo = model.createIfcSlab(Name="Waldo")
+        run("Required specifications need at least one applicable entity 2/2", specs, model, False)
+
+        spec.minOccurs = 0
+        model = ifcopenshell.file()
+        waldo = model.createIfcSlab(Name="Waldo")
+        run("Optional specifications may still pass if nothing is applicable", specs, model, True)
+
+        spec.minOccurs = 0
+        spec.maxOccurs = 0
+        model = ifcopenshell.file()
+        wall = model.createIfcSlab(Name="Waldo")
+        run("Prohibited specifications fail if at least one entity passes all requirements 1/3", specs, model, True)
+        model = ifcopenshell.file()
+        wall = model.createIfcWall(Name="Wally")
+        run("Prohibited specifications fail if at least one entity passes all requirements 2/3", specs, model, True, [wall], [wall])
+        model = ifcopenshell.file()
+        wall = model.createIfcWall(Name="Waldo")
+        run("Prohibited specifications fail if at least one entity passes all requirements 3/3", specs, model, False, [wall])
+
+        spec.minOccurs = 0
+        spec.maxOccurs = "unbounded"
+        model = ifcopenshell.file()
+        wall = model.createIfcWall(Name="Waldo")
+        spec.requirements.append(ids.Attribute(name="Description", value="Foobar"))
+        run("A specification passes only if all requirements pass 1/2", specs, model, False, [wall], [wall])
+        wall.Description = "Foobar"
+        run("A specification passes only if all requirements pass 2/2", specs, model, True, [wall])
+
+        spec.requirements[1].minOccurs = 0
+        wall.Description = None
+        run("Specification optionality and facet optionality can be combined", specs, model, True, [wall])
+
+        spec.minOccurs = 0
+        spec.maxOccurs = 0
+        spec.requirements[0].minOccurs = 0
+        spec.requirements[0].maxOccurs = 0
+        spec.requirements[1].minOccurs = 0
+        spec.requirements[1].maxOccurs = 0
+        wall.Name = "Waldo"
+        wall.Description = "Foobar"
+        run("A prohibited specification and a prohibited facet results in a double negative", specs, model, True, [wall])
+
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        spec.requirements.append(ids.Attribute(name="Name", value="Waldo"))
+        specs.specifications.append(spec)
+        wall2 = model.createIfcWall(Name="Waldo")
+        run("Multiple specifications are independent of one another", specs, model, True, [wall, wall2])
 
     def test_creating_multiple_specifications(self):
         specs = ids.Ids(title="Title")
@@ -138,9 +208,12 @@ class TestIds:
 class TestSpecification:
     def test_create_specification_with_minimal_information(self):
         spec = ids.Specification()
+        print(spec.asdict())
         assert spec.asdict() == {
             "@name": "Unnamed",
             "@ifcVersion": ["IFC2X3", "IFC4"],
+            "@minOccurs": 0,
+            "@maxOccurs": "unbounded",
             "applicability": {},
             "requirements": {},
         }
@@ -148,8 +221,8 @@ class TestSpecification:
     def test_create_specification_with_all_possible_information(self):
         spec = ids.Specification(
             name="name",
-            minOccurs="0",
-            maxOccurs="unbounded",
+            minOccurs=1,
+            maxOccurs=1,
             ifcVersion="IFC4",
             identifier="identifier",
             description="description",
@@ -157,8 +230,8 @@ class TestSpecification:
         )
         assert spec.asdict() == {
             "@name": "name",
-            "@minOccurs": "0",
-            "@maxOccurs": "unbounded",
+            "@minOccurs": 1,
+            "@maxOccurs": 1,
             "@ifcVersion": "IFC4",
             "@identifier": "identifier",
             "@description": "description",

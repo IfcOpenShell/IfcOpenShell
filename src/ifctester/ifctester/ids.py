@@ -32,9 +32,7 @@ def open(filepath, validate=False):
     if validate:
         get_schema().validate(filepath)
     return Ids().parse(
-        get_schema().decode(
-            filepath, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
-        )
+        get_schema().decode(filepath, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"})
     )
 
 
@@ -114,18 +112,18 @@ class Ids:
         ET.ElementTree(get_schema().encode(self.asdict())).write(filepath, encoding="utf-8", xml_declaration=True)
         return get_schema().is_valid(filepath)
 
-    def validate(self, ifc_file):
+    def validate(self, ifc_file, filter_version=False):
         for specification in self.specifications:
             specification.reset_status()
-            specification.validate(ifc_file)
+            specification.validate(ifc_file, filter_version=filter_version)
 
 
 class Specification:
     def __init__(
         self,
         name="Unnamed",
-        minOccurs=None,
-        maxOccurs=None,
+        minOccurs=0,
+        maxOccurs="unbounded",
         ifcVersion=["IFC2X3", "IFC4"],
         identifier=None,
         description=None,
@@ -153,7 +151,7 @@ class Specification:
         }
         for attribute in ["identifier", "description", "instructions", "minOccurs", "maxOccurs"]:
             value = getattr(self, attribute)
-            if value:
+            if value is not None:
                 results[f"@{attribute}"] = value
         for clause_type in ["applicability", "requirements"]:
             clause = getattr(self, clause_type)
@@ -194,11 +192,12 @@ class Specification:
         self.applicable_entities.clear()
         self.failed_entities = set()
         for facet in self.requirements:
+            facet.status = None
             facet.failed_entities.clear()
         self.status = None
 
-    def validate(self, ifc_file):
-        if ifc_file.schema not in self.ifcVersion:
+    def validate(self, ifc_file, filter_version=False):
+        if filter_version and ifc_file.schema not in self.ifcVersion:
             return
 
         elements = []
@@ -218,18 +217,38 @@ class Specification:
             self.applicable_entities.append(element)
             for facet in self.requirements:
                 result = facet(element)
-                facet.status = bool(result)
-                if not facet.status:
+                if not bool(result):
                     self.failed_entities.add(element)
                     facet.failed_entities.append(element)
                     facet.failed_reasons.append(str(result))
 
+        for facet in self.requirements:
+            if facet.minOccurs != 0:
+                facet.status = not bool(facet.failed_entities)
+            elif facet.minOccurs == 0 and facet.maxOccurs != 0:
+                facet.status = True
+            elif facet.maxOccurs == 0:
+                facet.status = bool(facet.failed_entities)
+
         self.status = True
-        if self.failed_entities:
-            self.status = False
-        elif self.minOccurs != 0 and not self.applicable_entities:
-            self.status = False
-            for facet in self.requirements:
-                facet.status = False
-        elif len(self.applicable_entities) > (self.maxOccurs or 1):
-            self.status = False
+        if self.minOccurs != 0:
+            if not self.applicable_entities:
+                self.status = False
+                for facet in self.requirements:
+                    facet.status = False
+            elif self.failed_entities:
+                self.status = False
+        elif self.minOccurs == 0 and self.maxOccurs != 0:
+            if self.failed_entities:
+                self.status = False
+        elif self.maxOccurs == 0:
+            if (len(self.applicable_entities) - len(self.failed_entities)) > 0:
+                self.status = False
+
+    def get_usage(self):
+        if self.minOccurs != 0:
+            return "required"
+        elif self.minOccurs == 0 and self.maxOccurs != 0:
+            return "optional"
+        elif self.maxOccurs == 0:
+            return "prohibited"
