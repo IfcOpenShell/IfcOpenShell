@@ -708,131 +708,72 @@ class Material(Facet):
 
 
 class Restriction:
-    def __init__(self, options="", type="pattern", base="string"):
-        if type in ["enumeration", "pattern", "bounds"]:
-            self.type = type
-            self.base = base
-            self.options = options
-            if (
-                (type == "enumeration" and isinstance(options, list))
-                or (type == "bounds" and isinstance(options, dict))
-                or (type == "pattern" and isinstance(options, str))
-            ):
-                self.options = options
-            else:
-                raise Exception("Options were not properly defined.")
+    def __init__(self, options={}, base="string"):
+        self.base = base
+        self.options = options
 
     def parse(self, ids_dict):
-        if ids_dict:
-            try:
-                self.base = ids_dict["@base"][3:]
-            except KeyError:
-                self.base = "String"
-
-            for n in ids_dict:
-                if n == "enumeration":
-                    self.type = "enumeration"
-                    self.options = []
-                    for x in ids_dict[n]:
-                        self.options.append(x["@value"])
-                elif n[-7:] == "clusive":
-                    self.type = "bounds"
-                    self.options = {}
-                    self.options.append({n: ids_dict[n]["@value"]})
-                elif n[-5:] == "ength":
-                    self.type = "length"
-                    if n[3:6] == "min":
-                        self.options.append(">=")
-                    elif n[3:6] == "max":
-                        self.options.append("<=")
-                    else:
-                        self.options.append("==")
-                    self.options[-1] += str(ids_dict[n]["@value"])
-                elif n == "pattern":
-                    self.type = "pattern"
-                    self.options = ids_dict[n]["@value"]
-                # TODO add fractionDigits
-                # TODO add totalDigits
-                # TODO add whiteSpace
-                elif n == "@base":
-                    pass
-                else:
-                    print("Error! Restriction not implemented")
+        if not ids_dict:
+            return self
+        self.base = ids_dict.get("@base", "xs:string")[3:]
+        for key, value in ids_dict.items():
+            if key == "@base":
+                continue
+            if isinstance(value, dict):
+                self.options[key[3:]] = value["@value"]
+            else:
+                self.options[key[3:]] = [v["@value"] for v in value]
         return self
 
     def asdict(self):
-        rest_dict = {"@base": "xs:" + self.base}
-        if self.type == "enumeration":
-            for option in self.options:
-                if "xs:enumeration" not in rest_dict:
-                    rest_dict["xs:enumeration"] = [{"@value": option}]
+        result = {"@base": "xs:" + self.base}
+        for constraint, value in self.options.items():
+            value = [value] if not isinstance(value, list) else value
+            for v in value:
+                if constraint in ["length", "minLength", "maxLength"]:
+                    value_dict = {"@value": v}
                 else:
-                    rest_dict["xs:enumeration"].append({"@value": option})
-        elif self.type == "bounds":
-            for option in self.options:
-                rest_dict["xs:" + option] = [{"@value": str(self.options[option]), "@fixed": False}]
-        elif self.type == "pattern":
-            if "xs:pattern" not in rest_dict:
-                rest_dict["xs:pattern"] = [{"@value": self.options}]
-            else:
-                rest_dict["xs:pattern"].append({"@value": self.options})
-        return rest_dict
-
-    def __eq__(self, other):
-        result = False
-        if self and (other or other == 0):
-            if self.type == "enumeration" and self.base == "bool":
-                self.options = [x.lower() for x in self.options]
-                result = str(other).lower() in self.options
-            elif self.type == "enumeration":
-                result = other in [cast_to_value(o, other) for o in self.options]
-            elif self.type == "bounds":
-                result = True
-                for sign in self.options.keys():
-                    if sign == "minInclusive" and other < self.options[sign]:
-                        result = False
-                    elif sign == "maxInclusive" and other > self.options[sign]:
-                        result = False
-                    elif sign == "minExclusive" and other <= self.options[sign]:
-                        result = False
-                    elif sign == "maxExclusive" and other >= self.options[sign]:
-                        result = False
-            elif self.type == "length":
-                for op in self.options:
-                    if eval(str(len(other)) + op):  # TODO eval not safe?
-                        result = True
-            elif self.type == "pattern":
-                if isinstance(self.options, list):
-                    # TODO handle case with multiple pattern options
-                    translated_pattern = identities.translate_pattern(self.options[0])
-                else:
-                    translated_pattern = identities.translate_pattern(self.options)
-                regex_pattern = re.compile(translated_pattern)
-                if regex_pattern.fullmatch(other) is not None:
-                    result = True
-            # TODO add fractionDigits
-            # TODO add totalDigits
-            # TODO add whiteSpace
+                    value_dict = {"@value": str(v)}
+                result.setdefault(f"xs:{constraint}", []).append(value_dict)
         return result
 
+    def __eq__(self, other):
+        if other is None:
+            return False
+        for constraint, value in self.options.items():
+            if constraint == "enumeration":
+                if other not in [cast_to_value(v, other) for v in value]:
+                    return False
+            elif constraint == "pattern":
+                value = value if isinstance(value, list) else [value]
+                for pattern in value:
+                    if re.compile(identities.translate_pattern(pattern)).fullmatch(other) is None:
+                        return False
+            elif constraint == "length":
+                if len(str(other)) != int(value):
+                    return False
+            elif constraint == "maxLength":
+                if len(str(other)) > int(value):
+                    return False
+            elif constraint == "minLength":
+                if len(str(other)) < int(value):
+                    return False
+            elif constraint == "maxExclusive":
+                if float(other) >= value:
+                    return False
+            elif constraint == "maxInclusive":
+                if float(other) > value:
+                    return False
+            elif constraint == "minExclusive":
+                if float(other) <= value:
+                    return False
+            elif constraint == "minInclusive":
+                if float(other) < value:
+                    return False
+        return True
+
     def __str__(self):
-        if self.type == "enumeration":
-            return "one of '%s'" % "' or '".join(self.options)
-        elif self.type == "bounds":
-            bounds = {
-                "minInclusive": "larger or equal ",
-                "maxInclusive": "smaller or equal ",
-                "minExclusive": "larger than ",
-                "maxExclusive": "smaller than ",
-            }
-            return "of value %s" % ", and ".join([bounds[x] + str(self.options[x]) for x in self.options])
-        elif self.type == "length":
-            return "%s letters long" % " and ".join(self.options)
-        elif self.type == "pattern":
-            return "the pattern '%s'" % self.options
-        # TODO add fractionDigits
-        # TODO add totalDigits
-        # TODO add whiteSpace
+        return str(self.options)
 
 
 class Result:

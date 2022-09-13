@@ -273,7 +273,7 @@ spec = ifctester.ids.Specification(
 )
 specs.specifications.append(spec)
 spec.applicability.append(ifctester.ids.Entity(name="IFCWALLTYPE"))
-restriction = ifctester.ids.Restriction(options="(-|[0-9]{2,3})\/(-|[0-9]{2,3})\/(-|[0-9]{2,3})", type="pattern")
+restriction = ifctester.ids.Restriction(options={"pattern": "(-|[0-9]{2,3})\/(-|[0-9]{2,3})\/(-|[0-9]{2,3})"})
 spec.requirements.append(
     ifctester.ids.Property(
         propertySet="Pset_WallCommon",
