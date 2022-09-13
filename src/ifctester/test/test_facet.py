@@ -376,11 +376,11 @@ class TestAttribute:
         )
 
         ifc = ifcopenshell.file()
-        facet = Attribute(name="Name", value="♫")
+        facet = Attribute(name="Name", value="♫Don'tÄrgerhôtelЊет")
         run(
             "Non-ascii characters are treated without encoding",
             facet=facet,
-            inst=ifc.createIfcWall(Name="♫"),
+            inst=ifc.createIfcWall(Name="♫Don'tÄrgerhôtelЊет"),
             expected=True,
         )
 
@@ -911,8 +911,8 @@ class TestProperty:
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Baz"})
         run("Specifying a value fails against different values", facet=facet, inst=element, expected=False)
 
-        facet = Property(propertySet="Foo_Bar", name="Foo", value="♫", measure="IfcLabel")
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "♫"})
+        facet = Property(propertySet="Foo_Bar", name="Foo", value="♫Don'tÄrgerhôtelЊет", measure="IfcLabel")
+        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "♫Don'tÄrgerhôtelЊет"})
         run("Non-ascii characters are treated without encoding", facet=facet, inst=element, expected=True)
 
         identifier = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345"
@@ -1594,6 +1594,12 @@ class TestRestriction:
         run("Regex patterns can be used 2/3", facet=facet, inst=element, expected=True)
         element.Name = "A5"
         run("Regex patterns can be used 3/3", facet=facet, inst=element, expected=False)
+
+        ifc = ifcopenshell.file()
+        restriction = Restriction(options={"pattern": ".*"})
+        element = ifc.createIfcSurfaceStyleRefraction(RefractionIndex=42)
+        facet = Attribute(name="RefractionIndex", value=restriction)
+        run("Patterns only work on strings and nothing else", facet=facet, inst=element, expected=False)
 
         ifc = ifcopenshell.file()
         restriction = Restriction(options={"length": 2})
