@@ -1,5 +1,5 @@
 # BlenderBIM Add-on - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>, Vukas Pajic <vulepajic@gmail.om>
 #
 # This file is part of BlenderBIM Add-on.
 #
@@ -114,15 +114,37 @@ class QtoCalculator:
                 lowest_z = z
         return lowest_polygons
 
+    def get_highest_polygons(self, o):
+        highest_polygons = []
+        highest_z = None
+        for polygon in o.data.polygons:
+            z = round(polygon.center[2], 3)
+            if highest_z is None:
+                highest_z = z
+            if z > highest_z:
+                continue
+            elif z == highest_z:
+                highest_polygons.append(polygon)
+            elif z < highest_z:
+                highest_polygons = [polygon]
+                highest_z = z
+        return highest_polygons
+
     def get_edge_key_distance(self, obj, edge_key):
         return (obj.data.vertices[edge_key[1]].co - obj.data.vertices[edge_key[0]].co).length
 
     def get_edge_distance(self, obj, edge):
         return (obj.data.vertices[edge.vertices[1]].co - obj.data.vertices[edge.vertices[0]].co).length
 
-    def get_footprint_area(self, o):
+    def get_net_footprint_area(self, o):
         area = 0
         for polygon in self.get_lowest_polygons(o):
+            area += polygon.area
+        return area
+
+    def get_net_top_footprint_area(self, o):
+        area = 0
+        for polygon in self.get_highest_polygons(o):
             area += polygon.area
         return area
 
@@ -134,7 +156,7 @@ class QtoCalculator:
         z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
         return max(x * z, y * z)
 
-    def get_area(self, o, vg_index=None):
+    def get_total_surface_area(self, o, vg_index=None):
         if vg_index is None:
             area = 0
             for polygon in o.data.polygons:
@@ -183,7 +205,29 @@ class QtoCalculator:
     def angle_between_vectors(self, v1, v2):
         return np.arccos(np.clip(np.dot(v1, v2), -1.0, 1.0))
 
-    def calculate_net_side_area(self, obj, angle_a: int = 45, angle_b: int =135):
+    # Thanks to @Gorgious56 - the following script should decrease the time to complete by at least 5%
+    # def calculate_net_lateral_area_np(object, angle_a=45, angle_b=135):
+    #     z_axis = (0, 0, 1)
+    #     area = 0
+
+    #     mesh = object.data
+    #     areas = np.zeros(shape=len(mesh.polygons), dtype=float)
+    #     bad_areas = np.zeros(shape=len(mesh.polygons), dtype=bool)
+    #     normals = np.zeros(shape=3 * len(mesh.polygons), dtype=float)
+    #     mesh.polygons.foreach_get("normal", normals)
+    #     normals.shape = (len(mesh.polygons), 3)  # Reshape to get a list of 3D vectors
+
+    #     angles_to_z_axis = np.array([math.degrees(np.arccos(np.clip(np.dot(z_axis, normal), -1.0, 1.0))) for normal in normals])
+
+    #     bad_areas = angles_to_z_axis < angle_a
+    #     bad_areas += angles_to_z_axis > angle_b
+
+    #     mesh.polygons.foreach_get("area", areas)
+    #     areas *= 1 - bad_areas
+
+    # return sum(areas)
+
+    def get_net_side_area(self, obj, angle_a: int = 45, angle_b: int = 135):
         z_axis = (0, 0, 1)
         area = 0
         polygons = obj.data.polygons
@@ -197,7 +241,7 @@ class QtoCalculator:
             area += polygon.area
         return area
 
-    def calculate_net_top_area(self, obj, angle: int = 45):
+    def get_net_top_area(self, obj, angle: int = 45):
         z_axis = (0, 0, 1)
         area = 0
         polygons = obj.data.polygons
@@ -210,32 +254,36 @@ class QtoCalculator:
                 area += polygon.area
         return area
 
-    def calculate_gross_projected_area_z(self, obj):
+    def get_net_projected_area(self, obj, projection_axis: str):
         odata = obj.data
         polygons = obj.data.polygons
         shapely_polygons = []
 
+        axes = {"x": ["y", "z"], "y": ["x", "z"], "z": ["x", "y"]}[projection_axis]
+
         for polygon in polygons:
-            polygon_tuple = []
+            if getattr(polygon.normal, projection_axis) == 0:
+                continue
+            polygon_tuples = []
 
-            for i in polygon.loop_indices:
-                loop = odata.loops[i]
-                edge_index = loop.edge_index
+            for loop_index in polygon.loop_indices:
+                loop = odata.loops[loop_index]
+                v1_coord_a = getattr(odata.vertices[loop.vertex_index].co, axes[0])
+                v1_coord_b = getattr(odata.vertices[loop.vertex_index].co, axes[1])
+                polygon_tuples.append((v1_coord_a, v1_coord_b))
 
-                edge = odata.edges[edge_index]
-
-                v1 = edge.vertices[0]
-                v1_x_coord = odata.vertices[v1].co.x
-                v1_y_coord = odata.vertices[v1].co.y
-
-                v2 = edge.vertices[1]
-                v2_x_coord = odata.vertices[v2].co.x
-                v2_y_coord = odata.vertices[v2].co.y
-
-                polygon_tuple.append((v1_x_coord, v1_y_coord))
-                polygon_tuple.append((v2_x_coord, v2_y_coord))
-
-            pgon = Polygon(polygon_tuple)
+            pgon = Polygon(polygon_tuples)
             shapely_polygons.append(pgon)
 
         return unary_union(shapely_polygons).area
+
+
+# Following code is here temporarily to test newly created functions:
+import bpy
+
+qto = QtoCalculator()
+test = qto.get_net_projected_area(bpy.context.active_object, "x")
+test2 = qto.get_net_projected_area(bpy.context.active_object, "y")
+test3 = qto.get_net_projected_area(bpy.context.active_object, "z")
+
+print(test, test2, test3)
