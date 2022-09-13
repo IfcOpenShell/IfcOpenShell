@@ -183,6 +183,8 @@ $ git clone --recurse-submodules https://github.com/IfcOpenShell/IfcOpenShell.gi
 ```{shell}
 $ cd /path/to/IfcOpenShell
 $ mkdir build && cd build
+# set library flags
+$ export LDFLAGS="$LDFLAGS -Wl,-flat_namespace,-undefined,suppress"
 $ cmake ../cmake
     -DPYTHON_EXECUTABLE=/opt/homebrew/bin/python3.10 \
     -DPYTHON_LIBRARY=/opt/homebrew/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/lib/libpython3.10.dylib \
@@ -195,8 +197,8 @@ $ cmake ../cmake
     -DHDF5_LIBRARY_DIR=/opt/homebrew/lib/ \
     -DHDF5_INCLUDE_DIR=/opt/homebrew/include/ \
     -DCOLLADA_SUPPORT=0
-# Replace X with number of CPU cores, which you can get with sysctl -n hw.ncpu
-$ make -j X
+# `sysctl -n hw.ncpu` returns the number of cpu cores on macOS
+$ make -j$(sysctl -n hw.ncpu)
 ```
 
 Note: Make sure to compile using the XCode provided Apple Clang compiler, installed with `xcode-select --install
