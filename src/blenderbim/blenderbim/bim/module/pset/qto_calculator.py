@@ -234,6 +234,7 @@ class QtoCalculator:
         ifc_element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if len(openings := ifc_element.HasOpenings) != 0:
             for opening in openings:
+                # Hmm, sometimes PredefinedType is empty.  This code won't suffice.  At the same time, the reason why I originally only considered "OPENING" is because I don't consider recesses as openings.
                 if opening.RelatedOpeningElement.PredefinedType == "OPENING":
                     opening_id = opening.RelatedOpeningElement.GlobalId
 
@@ -367,5 +368,5 @@ qto = QtoCalculator()
 
 
 print(
-    qto.get_side_opening_area(bpy.context.active_object, angle_a=45, angle_b=135, min_area=2)
+    qto.get_side_opening_area(bpy.context.active_object, angle_a=45, angle_b=135, min_area=0)
     )
