@@ -263,6 +263,11 @@ def run(cmds, cwd=None):
 
     return stdout.strip()
 
+if platform.system() == "Darwin":
+    if run(["sw_vers", "-productVersion"]) >= "11.":
+        # Apparently not supported
+        PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) >= (3, 7)]
+
 BOOST_VERSION_UNDERSCORE = BOOST_VERSION.replace(".", "_")
 
 OCE_LOCATION = f"https://github.com/tpaviot/oce/archive/OCE-{OCE_VERSION}.tar.gz"
