@@ -1151,14 +1151,14 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
     def animate_input(self, obj, product_frame):
         if product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
             self.animate_movement_from(obj, product_frame)
+        elif product_frame["type"] in ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"]:
+            self.animate_destruction(obj, product_frame)
         else:
             self.animate_consumption(obj, product_frame)
 
     def animate_output(self, obj, product_frame):
         if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION", "NOTDEFINED"]:
             self.animate_creation(obj, product_frame)
-        elif product_frame["type"] in ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"]:
-            self.animate_destruction(obj, product_frame)
         elif product_frame["type"] in ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"]:
             self.animate_operation(obj, product_frame)
         elif product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
