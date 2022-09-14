@@ -72,7 +72,7 @@ PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
-PYTHON_VERSIONS = ["3.6.14", "3.7.12", "3.8.12", "3.9.7", "3.10.0"]
+PYTHON_VERSIONS = ["3.6.14", "3.7.13", "3.8.13", "3.9.11", "3.10.3"]
 JSON_VERSION = "v3.6.1"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.5.3"
@@ -83,8 +83,8 @@ SWIG_VERSION = "4.0.2"
 OPENCOLLADA_VERSION = "v1.6.68"
 HDF5_VERSION = "1.12.1"
 
-GMP_VERSION = "6.1.2"
-MPFR_VERSION = "3.1.5" # latest is 4.1.0
+GMP_VERSION = "6.2.1"
+MPFR_VERSION = "3.1.6" # latest is 4.1.0
 CGAL_VERSION = "5.3"
 
 # binaries
@@ -262,6 +262,11 @@ def run(cmds, cwd=None):
         raise RuntimeError(f"Command `{' '.join(cmds)}` returned exit code {proc.returncode}")
 
     return stdout.strip()
+
+if platform.system() == "Darwin":
+    if run(["sw_vers", "-productVersion"]) >= "11.":
+        # Apparently not supported
+        PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) >= (3, 7)]
 
 BOOST_VERSION_UNDERSCORE = BOOST_VERSION.replace(".", "_")
 
@@ -577,7 +582,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION:
     # with the system python because of some threading initialization
     PYTHON_CONFIGURE_ARGS = []
     if platform.system() == "Darwin":
-        PYTHON_CONFIGURE_ARGS = ["--disable-static", "--enable-shared"]
+        PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
         try:
