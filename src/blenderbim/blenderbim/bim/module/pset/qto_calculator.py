@@ -21,6 +21,7 @@ import numpy as np
 import math
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
+import blenderbim.tool as tool
 
 
 class QtoCalculator:
@@ -241,6 +242,34 @@ class QtoCalculator:
             area += polygon.area
         return area
 
+    def get_gross_top_area(self, obj, angle: int = 45):
+        z_axis = (0, 0, 1)
+        area = 0
+        opening_area = 0
+        polygons = obj.data.polygons
+
+        ifc = tool.Ifc.get()
+        ifc_element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
+
+        if len(openings := ifc_element.HasOpenings) != 0:
+            for opening in openings:
+                if opening.RelatedOpeningElement.PredefinedType == "OPENING":
+                    opening_id = opening.RelatedOpeningElement.GlobalId
+
+                    entity = ifc.by_guid(opening_id)
+                    open_obj = tool.Ifc.get_object(entity)
+                    opening_area += self.get_net_top_area(open_obj, angle=angle)
+                else:
+                    continue
+
+        for polygon in polygons:
+            normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
+            angle_to_z_axis = math.degrees(self.angle_between_vectors(z_axis, normal_vector))
+
+            if angle_to_z_axis < angle:
+                area += polygon.area
+        return area + opening_area
+
     def get_net_top_area(self, obj, angle: int = 45):
         z_axis = (0, 0, 1)
         area = 0
@@ -274,8 +303,8 @@ class QtoCalculator:
 
             pgon = Polygon(polygon_tuples)
             shapely_polygons.append(pgon)
-            
-        projected_polygon = unary_union(shapely_polygons)   
+
+        projected_polygon = unary_union(shapely_polygons)
         if is_gross:
             void_area = 0
             voids = projected_polygon.interiors
@@ -283,7 +312,7 @@ class QtoCalculator:
                 void_polygon = Polygon(void)
                 void_area += void_polygon.area
             return projected_polygon.area + void_area
-        
+
         return projected_polygon.area
 
 
@@ -293,7 +322,9 @@ import bpy
 qto = QtoCalculator()
 # test = qto.get_net_projected_area(bpy.context.active_object, "x")
 # test2 = qto.get_net_projected_area(bpy.context.active_object, "y")
-net = qto.get_net_projected_area(bpy.context.active_object, "z", False)
-gross = qto.get_net_projected_area(bpy.context.active_object, "z", True)
+# net = qto.get_projected_area(bpy.context.active_object, "z", False)
+# gross = qto.get_projected_area(bpy.context.active_object, "z", True)
+grossarea = qto.get_gross_top_area(bpy.context.active_object)
+netarea = qto.get_net_top_area(bpy.context.active_object)
 
-print(gross, net)
+print(netarea, grossarea)
