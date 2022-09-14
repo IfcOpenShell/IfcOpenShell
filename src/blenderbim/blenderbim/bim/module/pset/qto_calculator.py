@@ -254,7 +254,7 @@ class QtoCalculator:
                 area += polygon.area
         return area
 
-    def get_net_projected_area(self, obj, projection_axis: str):
+    def get_projected_area(self, obj, projection_axis: str, is_gross: bool):
         odata = obj.data
         polygons = obj.data.polygons
         shapely_polygons = []
@@ -274,16 +274,26 @@ class QtoCalculator:
 
             pgon = Polygon(polygon_tuples)
             shapely_polygons.append(pgon)
-
-        return unary_union(shapely_polygons).area
+            
+        projected_polygon = unary_union(shapely_polygons)   
+        if is_gross:
+            void_area = 0
+            voids = projected_polygon.interiors
+            for void in voids:
+                void_polygon = Polygon(void)
+                void_area += void_polygon.area
+            return projected_polygon.area + void_area
+        
+        return projected_polygon.area
 
 
 # Following code is here temporarily to test newly created functions:
 import bpy
 
 qto = QtoCalculator()
-test = qto.get_net_projected_area(bpy.context.active_object, "x")
-test2 = qto.get_net_projected_area(bpy.context.active_object, "y")
-test3 = qto.get_net_projected_area(bpy.context.active_object, "z")
+# test = qto.get_net_projected_area(bpy.context.active_object, "x")
+# test2 = qto.get_net_projected_area(bpy.context.active_object, "y")
+net = qto.get_net_projected_area(bpy.context.active_object, "z", False)
+gross = qto.get_net_projected_area(bpy.context.active_object, "z", True)
 
-print(test, test2, test3)
+print(gross, net)
