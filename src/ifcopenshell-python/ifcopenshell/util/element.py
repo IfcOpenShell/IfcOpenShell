@@ -86,6 +86,11 @@ def get_quantities(quantities):
     for quantity in quantities or []:
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
             results[quantity.Name] = quantity[3]
+        elif quantity.is_a("IfcPhysicalComplexQuantity"):
+            data = {k: v for k, v in quantity.get_info().items() if v is not None and k != "Name"}
+            data["properties"] = get_quantities(quantity.HasQuantities)
+            del data["HasQuantities"]
+            results[quantity.Name] = data
     return results
 
 
@@ -95,9 +100,15 @@ def get_properties(properties):
         if prop.is_a("IfcPropertySingleValue"):
             results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
         elif prop.is_a("IfcPropertyEnumeratedValue"):
-            values = [v.wrappedValue for v in prop.EnumerationValues]
             results[prop.Name] = [v.wrappedValue for v in prop.EnumerationValues] or None
-
+        elif prop.is_a("IfcPropertyListValue"):
+            results[prop.Name] = [v.wrappedValue for v in prop.ListValues] or None
+        elif prop.is_a("IfcPropertyBoundedValue"):
+            data = prop.get_info()
+            del data["Unit"]
+            results[prop.Name] = data
+        elif prop.is_a("IfcPropertyTableValue"):
+            results[prop.Name] = prop.get_info()
         elif prop.is_a("IfcComplexProperty"):
             data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
             data["properties"] = get_properties(prop.HasProperties)
