@@ -582,7 +582,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION:
     # with the system python because of some threading initialization
     PYTHON_CONFIGURE_ARGS = []
     if platform.system() == "Darwin":
-        PYTHON_CONFIGURE_ARGS = ["--disable-static", "--enable-shared"]
+        PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
         try:
