@@ -228,15 +228,10 @@ class QtoCalculator:
 
     # return sum(areas)
 
-    def get_gross_side_area(self, obj, angle_a: int = 45, angle_b: int = 135):
-        z_axis = (0, 0, 1)
-        area = 0
-        opening_area = 0
-        polygons = obj.data.polygons
-
+    def get_side_opening_area(self, obj, angle_a: int = 45, angle_b: int = 135, min_area: int = 0):
+        total_opening_area = 0
         ifc = tool.Ifc.get()
         ifc_element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
-
         if len(openings := ifc_element.HasOpenings) != 0:
             for opening in openings:
                 if opening.RelatedOpeningElement.PredefinedType == "OPENING":
@@ -244,10 +239,21 @@ class QtoCalculator:
 
                     entity = ifc.by_guid(opening_id)
                     open_obj = tool.Ifc.get_object(entity)
-                    opening_area += self.get_net_side_area(open_obj, angle_a=angle_a, angle_b=angle_b)
+                    opening_area = self.get_net_side_area(open_obj, angle_a=angle_a, angle_b=angle_b)
+                    if opening_area >= min_area:
+                        total_opening_area += opening_area
                 else:
                     continue
+                
+        return total_opening_area
 
+
+    def get_gross_side_area(self, obj, angle_a: int = 45, angle_b: int = 135):
+        z_axis = (0, 0, 1)
+        area = 0
+        total_opening_area = self.get_side_opening_area(obj, angle_a = angle_a, angle_b=angle_b)
+        polygons = obj.data.polygons
+        
         for polygon in polygons:
             normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
             angle_to_z_axis = math.degrees(self.angle_between_vectors(z_axis, normal_vector))
@@ -256,6 +262,7 @@ class QtoCalculator:
                 continue
             area += polygon.area
         return area+opening_area
+
     
     def get_net_side_area(self, obj, angle_a: int = 45, angle_b: int = 135):
         z_axis = (0, 0, 1)
@@ -355,7 +362,10 @@ qto = QtoCalculator()
 # # gross = qto.get_projected_area(bpy.context.active_object, "z", True)
 # # grossarea = qto.get_gross_top_area(bpy.context.active_object)
 # # netarea = qto.get_net_top_area(bpy.context.active_object)
-grossarea = qto.get_gross_side_area(bpy.context.active_object)
-netarea = qto.get_net_side_area(bpy.context.active_object)
+# grossarea = qto.get_gross_side_area(bpy.context.active_object)
+# netarea = qto.get_net_side_area(bpy.context.active_object)
 
-print(netarea, grossarea)
+
+print(
+    qto.get_side_opening_area(bpy.context.active_object, angle_a=45, angle_b=135, min_area=2)
+    )
