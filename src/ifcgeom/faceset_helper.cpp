@@ -140,7 +140,9 @@ IfcGeom::Kernel::faceset_helper<CP, LP>::faceset_helper(
 			}
 		}
 
-		Logger::Notice("Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(vertex_mapping_.size()));
+		if (unique.size() != vertex_mapping_.size()) {
+			Logger::Notice("Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(vertex_mapping_.size()));
+		}
 
 		typedef std::array<int, 2> edge_t;
 		typedef std::set<edge_t> edge_set_t;
