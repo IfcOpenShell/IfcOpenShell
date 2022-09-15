@@ -41,12 +41,19 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-      - name: Download MacOSX SDK
-        if: ${{ matrix.platform.name == 'macOS' }}
+      - name: Download MacOSX SDK 10.15
+        if: ${{ (matrix.platform.name == 'macOS') && (matrix.platform.distver == 'macos-10.15') }}
         run: |
-          curl -o MacOSX10.13.sdk.tar.xz -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz && \
-          tar xf MacOSX10.13.sdk.tar.xz && \
-          sudo mv -v MacOSX10.13.sdk /opt/ && \
+          curl -o MacOSX10.15.sdk.tar.xz -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.15.sdk.tar.xz && \
+          tar xf MacOSX10.15.sdk.tar.xz && \
+          sudo mv -v MacOSX10.15.sdk /opt/ && \
+          ls /opt/
+      - name: Download MacOSX SDK 11
+        if: ${{ (matrix.platform.name == 'macOS') && (matrix.platform.distver == 'macos-11') }}
+        run: |
+          curl -o MacOSX11.3.sdk.tar.xz -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX11.3.sdk.tar.xz && \
+          tar xf MacOSX11.3.sdk.tar.xz && \
+          sudo mv -v MacOSX11.3.sdk /opt/ && \
           ls /opt/
       - uses: seanmiddleditch/gha-setup-ninja@master
       - uses: conda-incubator/setup-miniconda@v2  # https://github.com/conda-incubator/setup-miniconda
