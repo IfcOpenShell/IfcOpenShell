@@ -28,8 +28,9 @@ def cast_to_value(from_value, to_value):
     try:
         target_type = type(to_value).__name__
         if target_type == "int":
-            # Casting str -> float -> int means that notation like '1e3' is preserved
-            return int(float(from_value))
+            # Casting str -> float means that notation like '1e3' is preserved
+            # We do not cast to int because 42.0 == 42 and 42.3 != 42
+            return float(from_value)
         elif target_type == "bool":
             if from_value == "TRUE":
                 return True
@@ -105,6 +106,14 @@ class Facet:
             raise Exception(str(parameter) + " was not able to be converted into 'Parameter_dict'")
         return parameter_dict
 
+    def get_usage(self):
+        if self.minOccurs != 0:
+            return "required"
+        elif self.minOccurs == 0 and self.maxOccurs != 0:
+            return "optional"
+        elif self.maxOccurs == 0:
+            return "prohibited"
+
 
 class Entity(Facet):
     def __init__(self, name="IFCWALL", predefinedType=None, instructions=None):
@@ -161,24 +170,14 @@ class Attribute(Facet):
         super().__init__(name, value, minOccurs, maxOccurs, instructions)
 
     def __call__(self, inst, logger=None):
-        def get_values(element, name):
-            if isinstance(name, str):
-                return [getattr(element, name, None)]
-            return [v for k, v in element.get_info().items() if k == name]
-
-        element_type = ifcopenshell.util.element.get_type(inst)
+        if self.minOccurs == 0 and self.maxOccurs != 0:
+            return AttributeResult(True)
 
         if isinstance(self.name, str):
-            type_value = getattr(element_type, self.name, None) if element_type else None
-            occurrence_value = getattr(inst, self.name, None)
             names = [self.name]
-            values = [occurrence_value if occurrence_value is not None else type_value]
+            values = [getattr(inst, self.name, None)]
         else:
-            if element_type:
-                info = element_type.get_info()
-                info.update({k: v for k, v in inst.get_info().items() if v is not None})
-            else:
-                info = inst.get_info()
+            info = inst.get_info()
             names = []
             values = []
             for k, v in info.items():
@@ -193,29 +192,31 @@ class Attribute(Facet):
             reason = {"type": "NOVALUE"}
 
         if is_pass:
+            non_empty_values = []
             for i, value in enumerate(values):
+                is_empty = False
                 if value is None:
-                    is_pass = False
-                    reason = {"type": "FALSEY", "actual": value}
+                    is_empty = True
                 elif value == "":
-                    is_pass = False
-                    reason = {"type": "FALSEY", "actual": value}
+                    is_empty = True
                 elif value == tuple():
-                    is_pass = False
-                    reason = {"type": "FALSEY", "actual": value}
+                    is_empty = True
                 else:
                     argument_index = inst.wrapped_data.get_argument_index(names[i])
                     try:
                         attribute_type = inst.attribute_type(argument_index)
                         if attribute_type == "LOGICAL" and value == "UNKNOWN":
-                            is_pass = False
-                            reason = {"type": "FALSEY", "actual": value}
+                            is_empty = True
                     except:
                         if names[i] in inst.wrapped_data.get_inverse_attribute_names():
-                            is_pass = False
-                            reason = {"type": "INVALID"}
-                if not is_pass:
-                    break
+                            is_empty = True
+                if not is_empty:
+                    non_empty_values.append(value)
+            if non_empty_values:
+                values = non_empty_values
+            else:
+                is_pass = False
+                reason = {"type": "FALSEY", "actual": values if len(values) > 1 else values[0]}
 
         if is_pass and self.value:
             for value in values:
@@ -230,7 +231,12 @@ class Attribute(Facet):
                         break
                 elif isinstance(self.value, str):
                     cast_value = cast_to_value(self.value, value)
-                    if value != cast_value:
+                    if isinstance(value, float) and isinstance(cast_value, float):
+                        if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
+                            is_pass = False
+                            reason = {"type": "VALUE", "actual": value}
+                            break
+                    elif value != cast_value:
                         is_pass = False
                         reason = {"type": "VALUE", "actual": value}
                         break
@@ -239,6 +245,8 @@ class Attribute(Facet):
                     reason = {"type": "VALUE", "actual": value}
                     break
 
+        if self.maxOccurs == 0:
+            return AttributeResult(not is_pass, {"type": "PROHIBITED"})
         return AttributeResult(is_pass, reason)
 
 
@@ -261,6 +269,9 @@ class Classification(Facet):
         pass
 
     def __call__(self, inst, logger=None):
+        if self.minOccurs == 0 and self.maxOccurs != 0:
+            return ClassificationResult(True)
+
         leaf_references = ifcopenshell.util.classification.get_references(inst)
 
         references = leaf_references.copy()
@@ -285,32 +296,91 @@ class Classification(Facet):
             if not is_pass:
                 reason = {"type": "SYSTEM", "actual": systems}
 
+        if self.maxOccurs == 0:
+            return ClassificationResult(not is_pass, {"type": "PROHIBITED"})
         return ClassificationResult(is_pass, reason)
 
 
 class PartOf(Facet):
-    def __init__(self, entity="IfcSystem"):
-        self.parameters = ["@entity"]
-        self.applicability_templates = ["An element part of a {entity}"]
-        self.requirement_templates = ["Must be part of a {entity}"]
-        super().__init__(entity)
+    def __init__(self, entity=None, relation="IfcRelAggregates", minOccurs=None, maxOccurs=None, instructions=None):
+        self.parameters = ["entity", "@relation", "@minOccurs", "@maxOccurs", "@instructions"]
+        self.applicability_templates = [
+            "An element with an {relation} relationship with an {entity}",
+            "An element with an {relation} relationship",
+        ]
+        self.requirement_templates = [
+            "An element must have an {relation} relationship with an {entity}",
+            "An element must have an {relation} relationship",
+        ]
+        super().__init__(entity, relation, minOccurs, maxOccurs, instructions)
 
     def __call__(self, inst, logger=None):
-        if self.entity == "IfcElementAssembly":
-            is_pass = False
-            aggregate = ifcopenshell.util.element.get_aggregate(inst)
-            while aggregate is not None:
-                if aggregate.is_a() == "IfcElementAssembly":
-                    is_pass = True
-                    break
-                aggregate = ifcopenshell.util.element.get_aggregate(aggregate)
-        else:
-            is_pass = False
-            for rel in getattr(inst, "HasAssignments", []) or []:
-                if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a(self.entity):
-                    is_pass = True
+        if self.minOccurs == 0 and self.maxOccurs != 0:
+            return PartOfResult(True)
 
-        return PartOfResult(is_pass, "TODO")
+        reason = None
+        if self.relation == "IfcRelAggregates":
+            aggregate = ifcopenshell.util.element.get_aggregate(inst)
+            is_pass = aggregate is not None
+            if not is_pass:
+                reason = {"type": "NOVALUE"}
+            if is_pass and self.entity:
+                is_pass = False
+                ancestors = []
+                while aggregate is not None:
+                    ancestors.append(aggregate.is_a())
+                    if aggregate.is_a().upper() == self.entity:
+                        is_pass = True
+                        break
+                    aggregate = ifcopenshell.util.element.get_aggregate(aggregate)
+                if not is_pass:
+                    reason = {"type": "ENTITY", "actual": ancestors}
+        elif self.relation == "IfcRelAssignsToGroup":
+            group = None
+            for rel in getattr(inst, "HasAssignments", []) or []:
+                if rel.is_a("IfcRelAssignsToGroup"):
+                    group = rel.RelatingGroup
+                    break
+            is_pass = group is not None
+            if not is_pass:
+                reason = {"type": "NOVALUE"}
+            if is_pass and self.entity:
+                if group.is_a().upper() != self.entity:
+                    is_pass = False
+                    reason = {"type": "ENTITY", "actual": group.is_a().upper()}
+        elif self.relation == "IfcRelContainedInSpatialStructure":
+            container = ifcopenshell.util.element.get_container(inst)
+            is_pass = container is not None
+            if not is_pass:
+                reason = {"type": "NOVALUE"}
+            if is_pass and self.entity:
+                if container.is_a().upper() != self.entity:
+                    is_pass = False
+                    reason = {"type": "ENTITY", "actual": container.is_a().upper()}
+        elif self.relation == "IfcRelNests":
+            nest = self.get_nested_whole(inst)
+            is_pass = nest is not None
+            if not is_pass:
+                reason = {"type": "NOVALUE"}
+            if is_pass and self.entity:
+                is_pass = False
+                ancestors = []
+                while nest is not None:
+                    ancestors.append(nest.is_a())
+                    if nest.is_a().upper() == self.entity:
+                        is_pass = True
+                        break
+                    nest = self.get_nested_whole(nest)
+                if not is_pass:
+                    reason = {"type": "ENTITY", "actual": ancestors}
+
+        if self.maxOccurs == 0:
+            return PartOfResult(not is_pass, {"type": "PROHIBITED"})
+        return PartOfResult(is_pass, reason)
+
+    def get_nested_whole(self, element):
+        for rel in getattr(element, "Nests", []) or []:
+            return rel.RelatingObject
 
 
 class Property(Facet):
@@ -346,6 +416,9 @@ class Property(Facet):
         super().__init__(propertySet, name, value, measure, uri, minOccurs, maxOccurs, instructions)
 
     def __call__(self, inst, logger=None):
+        if self.minOccurs == 0 and self.maxOccurs != 0:
+            return PropertyResult(True)
+
         all_psets = ifcopenshell.util.element.get_psets(inst)
 
         if isinstance(self.propertySet, str):
@@ -366,7 +439,13 @@ class Property(Facet):
                 props[pset_name] = {}
                 if isinstance(self.name, str):
                     prop = pset_props.get(self.name)
-                    if prop is not None and prop != "":
+                    if prop == "UNKNOWN" and [
+                        p
+                        for p in self.get_properties(inst.wrapped_data.file.by_id(pset_props["id"]))
+                        if p.Name == self.name
+                    ][0].NominalValue.is_a("IfcLogical"):
+                        pass
+                    elif prop is not None and prop != "":
                         props[pset_name][self.name] = prop
                 else:
                     props[pset_name] = {k: v for k, v in pset_props.items() if k == self.name}
@@ -376,17 +455,17 @@ class Property(Facet):
                     reason = {"type": "NOVALUE"}
                     break
 
-                if self.measure:
-                    pset_entity = inst.wrapped_data.file.by_id(pset_props["id"])
-                    for prop_entity in pset_entity.HasProperties:
-                        if (
-                            prop_entity.Name not in props[pset_name].keys()
-                            or not prop_entity.is_a("IfcPropertySingleValue")
-                            or prop_entity.NominalValue is None
-                        ):
-                            continue
+                pset_entity = inst.wrapped_data.file.by_id(pset_props["id"])
 
-                        data_type = prop_entity.NominalValue.is_a().replace("Ifc", "").replace("Measure", "")
+                is_property_supported_class = True
+                for prop_entity in self.get_properties(pset_entity):
+                    if prop_entity.Name not in props[pset_name].keys():
+                        continue
+                    if not isinstance(prop_entity, ifcopenshell.entity_instance):
+                        # Predefined properties are special :(
+                        pass
+                    elif prop_entity.is_a("IfcPropertySingleValue"):
+                        data_type = prop_entity.NominalValue.is_a()
 
                         if data_type != self.measure:
                             is_pass = False
@@ -394,24 +473,179 @@ class Property(Facet):
                             break
 
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        if unit:
+                            props[pset_name][prop_entity.Name] = ifcopenshell.util.unit.convert(
+                                prop_entity.NominalValue.wrappedValue,
+                                getattr(unit, "Prefix", None),
+                                unit.Name,
+                                None,
+                                ifcopenshell.util.unit.si_type_names[unit.UnitType],
+                            )
+                    elif prop_entity.is_a("IfcPhysicalSimpleQuantity"):
+                        prop_schema = prop_entity.wrapped_data.declaration().as_entity()
+                        data_type = prop_schema.attribute_by_index(3).type_of_attribute().declared_type().name()
 
-                        props[pset_name][prop_entity.Name] = ifcopenshell.util.unit.convert(
-                            prop_entity.NominalValue.wrappedValue,
-                            getattr(unit, "Prefix", None),
-                            unit.Name,
-                            None,
-                            ifcopenshell.util.unit.si_type_names[unit.UnitType],
-                        )
+                        if data_type != self.measure:
+                            is_pass = False
+                            reason = {"type": "MEASURE", "actual": data_type}
+                            break
+
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        if unit:
+                            props[pset_name][prop_entity.Name] = ifcopenshell.util.unit.convert(
+                                prop_entity[3],
+                                getattr(unit, "Prefix", None),
+                                unit.Name,
+                                None,
+                                ifcopenshell.util.unit.si_type_names[unit.UnitType],
+                            )
+                    elif prop_entity.is_a("IfcPropertyEnumeratedValue"):
+                        data_type = prop_entity.EnumerationValues[0].is_a()
+                        if data_type != self.measure:
+                            is_pass = False
+                            reason = {"type": "MEASURE", "actual": data_type}
+                            break
+                    elif prop_entity.is_a("IfcPropertyListValue"):
+                        if not prop_entity.ListValues:
+                            is_pass = False
+                            reason = {"type": "NOVALUE"}
+                            break
+                        data_type = prop_entity.ListValues[0].is_a()
+                        if data_type != self.measure:
+                            is_pass = False
+                            reason = {"type": "MEASURE", "actual": data_type}
+                            break
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        if unit:
+                            props[pset_name][prop_entity.Name] = [
+                                ifcopenshell.util.unit.convert(
+                                    v,
+                                    getattr(unit, "Prefix", None),
+                                    unit.Name,
+                                    None,
+                                    ifcopenshell.util.unit.si_type_names[unit.UnitType],
+                                )
+                                for v in props[pset_name][prop_entity.Name]
+                            ]
+                    elif prop_entity.is_a("IfcPropertyBoundedValue"):
+                        values = []
+                        for attribute in ["UpperBoundValue", "LowerBoundValue", "SetPointValue"]:
+                            value = getattr(prop_entity, attribute)
+                            if value is not None:
+                                data_type = value.is_a()
+                                values.append(value.wrappedValue)
+                        if data_type != self.measure:
+                            is_pass = False
+                            reason = {"type": "MEASURE", "actual": data_type}
+                            break
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        if unit:
+                            values = [
+                                ifcopenshell.util.unit.convert(
+                                    v,
+                                    getattr(unit, "Prefix", None),
+                                    unit.Name,
+                                    None,
+                                    ifcopenshell.util.unit.si_type_names[unit.UnitType],
+                                )
+                                for v in values
+                            ]
+                        props[pset_name][prop_entity.Name] = values
+                    elif prop_entity.is_a("IfcPropertyTableValue"):
+                        values = []
+                        units = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        for attribute in ["Defining", "Defined"]:
+                            column_values = props[pset_name][prop_entity.Name][f"{attribute}Values"]
+                            if not column_values:
+                                continue
+                            data_type = column_values[0].is_a()
+                            if data_type == self.measure:
+                                column_values = [v.wrappedValue for v in column_values]
+                                unit = units[f"{attribute}Unit"]
+                                if unit:
+                                    column_values = [
+                                        ifcopenshell.util.unit.convert(
+                                            v,
+                                            getattr(unit, "Prefix", None),
+                                            unit.Name,
+                                            None,
+                                            ifcopenshell.util.unit.si_type_names[unit.UnitType],
+                                        )
+                                        for v in column_values
+                                    ]
+                                values.extend(column_values)
+                        if not values:
+                            is_pass = False
+                            reason = {"type": "MEASURE", "actual": data_type}
+                            break
+                        props[pset_name][prop_entity.Name] = values
+                    else:
+                        is_property_supported_class = False
+
+                if not is_property_supported_class:
+                    is_pass = False
+                    reason = {"type": "NOVALUE"}
 
                 if not is_pass:
                     break
 
                 if self.value:
-                    if any([v != self.value for v in props[pset_name].values()]):
-                        is_pass = False
-                        reason = {"type": "VALUE", "actual": list(props[pset_name].values())}
-                        break
+                    for value in props[pset_name].values():
+                        if isinstance(self.value, str) and isinstance(value, str):
+                            # "i_require_foo" = "i_have_bar"
+                            if value != self.value:
+                                is_pass = False
+                                reason = {"type": "VALUE", "actual": value}
+                                break
+                        elif isinstance(self.value, str) and isinstance(value, list):
+                            # "i_require_foo" = ["a", "b"] such as in enumerated properties
+                            cast_value = cast_to_value(self.value, value[0])
+                            if cast_value not in value:
+                                is_pass = False
+                                reason = {"type": "VALUE", "actual": value}
+                                break
+                        elif not isinstance(self.value, str) and isinstance(value, list):
+                            # XSD restriction = ["a", "b"] such as in enumerated properties
+                            does_any_pass = [v for v in value if v == self.value]
+                            if not does_any_pass:
+                                is_pass = False
+                                reason = {"type": "VALUE", "actual": value}
+                                break
+                        elif isinstance(self.value, str):
+                            # "42" = 42
+                            cast_value = cast_to_value(self.value, value)
+                            if isinstance(value, float) and isinstance(cast_value, float):
+                                if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
+                                    is_pass = False
+                                    reason = {"type": "VALUE", "actual": value}
+                                    break
+                            elif value != cast_value:
+                                is_pass = False
+                                reason = {"type": "VALUE", "actual": value}
+                                break
+                        elif value != self.value:
+                            # XSD restriction = whatever
+                            is_pass = False
+                            reason = {"type": "VALUE", "actual": value}
+                            break
+
+        if self.maxOccurs == 0:
+            return PropertyResult(not is_pass, {"type": "PROHIBITED"})
         return PropertyResult(is_pass, reason)
+
+    def get_properties(self, pset):
+        if pset.is_a("IfcPropertySet"):
+            return pset.HasProperties
+        elif pset.is_a("IfcElementQuantity"):
+            return pset.Quantities
+        elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
+            return pset.Properties
+        elif pset.is_a("IfcPreDefinedPropertySet"):
+            return [
+                type("", (object,), {"Name": k, "Value": v})()
+                for k, v in pset.get_info().items()
+                if not isinstance(v, ifcopenshell.entity_instance)
+            ]
 
 
 class Material(Facet):
@@ -428,6 +662,9 @@ class Material(Facet):
         super().__init__(value, uri, minOccurs, maxOccurs, instructions)
 
     def __call__(self, inst, logger=None):
+        if self.minOccurs == 0 and self.maxOccurs != 0:
+            return MaterialResult(True)
+
         material = ifcopenshell.util.element.get_material(inst, should_skip_usage=True)
 
         is_pass = material is not None
@@ -465,135 +702,80 @@ class Material(Facet):
             if not is_pass:
                 reason = {"type": "VALUE", "actual": values}
 
+        if self.maxOccurs == 0:
+            return MaterialResult(not is_pass, {"type": "PROHIBITED"})
         return MaterialResult(is_pass, reason)
 
 
 class Restriction:
-    def __init__(self, options="", type="pattern", base="string"):
-        if type in ["enumeration", "pattern", "bounds"]:
-            self.type = type
-            self.base = base
-            self.options = options
-            if (
-                (type == "enumeration" and isinstance(options, list))
-                or (type == "bounds" and isinstance(options, dict))
-                or (type == "pattern" and isinstance(options, str))
-            ):
-                self.options = options
-            else:
-                raise Exception("Options were not properly defined.")
+    def __init__(self, options={}, base="string"):
+        self.base = base
+        self.options = options
 
     def parse(self, ids_dict):
-        if ids_dict:
-            try:
-                self.base = ids_dict["@base"][3:]
-            except KeyError:
-                self.base = "String"
-
-            for n in ids_dict:
-                if n == "enumeration":
-                    self.type = "enumeration"
-                    self.options = []
-                    for x in ids_dict[n]:
-                        self.options.append(x["@value"])
-                elif n[-7:] == "clusive":
-                    self.type = "bounds"
-                    self.options = {}
-                    self.options.append({n: ids_dict[n]["@value"]})
-                elif n[-5:] == "ength":
-                    self.type = "length"
-                    if n[3:6] == "min":
-                        self.options.append(">=")
-                    elif n[3:6] == "max":
-                        self.options.append("<=")
-                    else:
-                        self.options.append("==")
-                    self.options[-1] += str(ids_dict[n]["@value"])
-                elif n == "pattern":
-                    self.type = "pattern"
-                    self.options = ids_dict[n]["@value"]
-                # TODO add fractionDigits
-                # TODO add totalDigits
-                # TODO add whiteSpace
-                elif n == "@base":
-                    pass
-                else:
-                    print("Error! Restriction not implemented")
+        if not ids_dict:
+            return self
+        self.base = ids_dict.get("@base", "xs:string")[3:]
+        for key, value in ids_dict.items():
+            if key == "@base":
+                continue
+            if isinstance(value, dict):
+                self.options[key[3:]] = value["@value"]
+            else:
+                self.options[key[3:]] = [v["@value"] for v in value]
         return self
 
     def asdict(self):
-        rest_dict = {"@base": "xs:" + self.base}
-        if self.type == "enumeration":
-            for option in self.options:
-                if "xs:enumeration" not in rest_dict:
-                    rest_dict["xs:enumeration"] = [{"@value": option}]
+        result = {"@base": "xs:" + self.base}
+        for constraint, value in self.options.items():
+            value = [value] if not isinstance(value, list) else value
+            for v in value:
+                if constraint in ["length", "minLength", "maxLength"]:
+                    value_dict = {"@value": v}
                 else:
-                    rest_dict["xs:enumeration"].append({"@value": option})
-        elif self.type == "bounds":
-            for option in self.options:
-                rest_dict["xs:" + option] = [{"@value": str(self.options[option]), "@fixed": False}]
-        elif self.type == "pattern":
-            if "xs:pattern" not in rest_dict:
-                rest_dict["xs:pattern"] = [{"@value": self.options}]
-            else:
-                rest_dict["xs:pattern"].append({"@value": self.options})
-        return rest_dict
-
-    def __eq__(self, other):
-        result = False
-        if self and (other or other == 0):
-            if self.type == "enumeration" and self.base == "bool":
-                self.options = [x.lower() for x in self.options]
-                result = str(other).lower() in self.options
-            elif self.type == "enumeration":
-                result = other in [cast_to_value(o, other) for o in self.options]
-            elif self.type == "bounds":
-                result = True
-                for sign in self.options.keys():
-                    if sign == "minInclusive" and other < self.options[sign]:
-                        result = False
-                    elif sign == "maxInclusive" and other > self.options[sign]:
-                        result = False
-                    elif sign == "minExclusive" and other <= self.options[sign]:
-                        result = False
-                    elif sign == "maxExclusive" and other >= self.options[sign]:
-                        result = False
-            elif self.type == "length":
-                for op in self.options:
-                    if eval(str(len(other)) + op):  # TODO eval not safe?
-                        result = True
-            elif self.type == "pattern":
-                if isinstance(self.options, list):
-                    # TODO handle case with multiple pattern options
-                    translated_pattern = identities.translate_pattern(self.options[0])
-                else:
-                    translated_pattern = identities.translate_pattern(self.options)
-                regex_pattern = re.compile(translated_pattern)
-                if regex_pattern.fullmatch(other) is not None:
-                    result = True
-            # TODO add fractionDigits
-            # TODO add totalDigits
-            # TODO add whiteSpace
+                    value_dict = {"@value": str(v)}
+                result.setdefault(f"xs:{constraint}", []).append(value_dict)
         return result
 
+    def __eq__(self, other):
+        if other is None:
+            return False
+        for constraint, value in self.options.items():
+            if constraint == "enumeration":
+                if other not in [cast_to_value(v, other) for v in value]:
+                    return False
+            elif constraint == "pattern":
+                if not isinstance(other, str):
+                    return False
+                value = value if isinstance(value, list) else [value]
+                for pattern in value:
+                    if re.compile(identities.translate_pattern(pattern)).fullmatch(other) is None:
+                        return False
+            elif constraint == "length":
+                if len(str(other)) != int(value):
+                    return False
+            elif constraint == "maxLength":
+                if len(str(other)) > int(value):
+                    return False
+            elif constraint == "minLength":
+                if len(str(other)) < int(value):
+                    return False
+            elif constraint == "maxExclusive":
+                if float(other) >= value:
+                    return False
+            elif constraint == "maxInclusive":
+                if float(other) > value:
+                    return False
+            elif constraint == "minExclusive":
+                if float(other) <= value:
+                    return False
+            elif constraint == "minInclusive":
+                if float(other) < value:
+                    return False
+        return True
+
     def __str__(self):
-        if self.type == "enumeration":
-            return "one of '%s'" % "' or '".join(self.options)
-        elif self.type == "bounds":
-            bounds = {
-                "minInclusive": "larger or equal ",
-                "maxInclusive": "smaller or equal ",
-                "minExclusive": "larger than ",
-                "maxExclusive": "smaller than ",
-            }
-            return "of value %s" % ", and ".join([bounds[x] + str(self.options[x]) for x in self.options])
-        elif self.type == "length":
-            return "%s letters long" % " and ".join(self.options)
-        elif self.type == "pattern":
-            return "the pattern '%s'" % self.options
-        # TODO add fractionDigits
-        # TODO add totalDigits
-        # TODO add whiteSpace
+        return str(self.options)
 
 
 class Result:
@@ -629,6 +811,8 @@ class AttributeResult(Result):
             return f"An invalid attribute name was specified in the IDS"
         elif self.reason["type"] == "VALUE":
             return f"The attribute value \"{str(self.reason['actual'])}\" does not match the requirement"
+        elif self.reason["type"] == "PROHIBITED":
+            return f"The attribute value should not have met the requirement"
 
 
 class ClassificationResult(Result):
@@ -639,11 +823,18 @@ class ClassificationResult(Result):
             return f"The references \"{str(self.reason['actual'])}\" do not match the requirements"
         elif self.reason["type"] == "system":
             return f"The systems \"{str(self.reason['actual'])}\" do not match the requirements"
+        elif self.reason["type"] == "PROHIBITED":
+            return f"The classification should not have met the requirement"
 
 
 class PartOfResult(Result):
     def to_string(self):
-        return "TODO"
+        if self.reason["type"] == "NOVALUE":
+            return "The entity has no relationship"
+        elif self.reason["type"] == "ENTITY":
+            return f"The entity has a relationship with incorrect entities: \"{str(self.reason['actual'])}\""
+        elif self.reason["type"] == "PROHIBITED":
+            return f"The relationship should not have met the requirement"
 
 
 class PropertyResult(Result):
@@ -654,10 +845,12 @@ class PropertyResult(Result):
             return "The property set does not contain the required property"
         elif self.reason["type"] == "MEASURE":
             return f"The data type \"{str(self.reason['actual'])}\" does not match the requirements"
-        elif self.reason["type"] == "VALUE" and len(self.reason['actual']) == 1:
+        elif self.reason["type"] == "VALUE" and len(self.reason["actual"]) == 1:
             return f"The property value \"{str(self.reason['actual'][0])}\" does not match the requirements"
         elif self.reason["type"] == "VALUE":
             return f"The property values \"{str(self.reason['actual'])}\" do not match the requirements"
+        elif self.reason["type"] == "PROHIBITED":
+            return f"The property should not have met the requirement"
 
 
 class MaterialResult(Result):
@@ -668,3 +861,5 @@ class MaterialResult(Result):
             return (
                 f"The material names and categories of \"{str(self.reason['actual'])}\" does not match the requirement"
             )
+        elif self.reason["type"] == "PROHIBITED":
+            return f"The material should not have met the requirement"

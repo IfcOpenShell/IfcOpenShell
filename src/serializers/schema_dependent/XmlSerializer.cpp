@@ -368,6 +368,39 @@ void format_properties(IfcSchema::IfcProperty::list::ptr properties, ptree& node
 	}
 }
 
+void writeGroupToNode(IfcSchema::IfcGroup* group, ptree& node, std::set<std::string>notRootGroups) {
+	// @todo tfk: instead of a set<string> shouldn't we just have a set<IfcGroup>, the current approach
+	// might not work with non-unique or NIL group names.
+
+	// @todo tfk: should the set be a passed as a reference?
+	if (!group->Name()) {
+		return;
+	}
+
+    if (notRootGroups.find(*group->Name()) != notRootGroups.end()) {
+        return;
+    }
+    // Write one group to root
+    ptree* node2 = descend(group, node);
+    auto father = group->IsGroupedBy();
+    for (auto iter = father->begin(); iter != father->end(); iter++)
+    {
+        IfcSchema::IfcRelAssigns* ii = *iter;
+        auto objs = ii->RelatedObjects();
+        for (auto objit = objs->begin(); objit != objs->end(); objit++) {
+            auto entity = *objit;
+            if (entity->declaration().is(IfcSchema::IfcGroup::Class()) && entity->Name()) {
+                writeGroupToNode(entity->as<IfcSchema::IfcGroup>(), *node2, notRootGroups);
+                notRootGroups.emplace(*entity->Name());
+            }
+            else {
+                // Write child to father group
+                descend(entity, *node2);
+            }
+        }
+    }
+}
+
 // Format IfcElementQuantity instances and insert into the DOM.
 void format_quantities(IfcSchema::IfcPhysicalQuantity::list::ptr quantities, ptree& node) {
 	for (IfcSchema::IfcPhysicalQuantity::list::it it = quantities->begin(); it != quantities->end(); ++it) {
@@ -507,8 +540,8 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	}
 	IfcSchema::IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, work, calendars, connections;
-	
+	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, work, calendars, connections, groups;
+
 	// Write the SPF header as XML nodes.
 	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
 		header.add_child("file_description.description", ptree(s));
@@ -583,7 +616,21 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 			format_properties(pset->HasProperties(), *node);
 		}
 	}
-	
+
+	// Write all group sets and values as XML nodes.
+	IfcSchema::IfcGroup::list::ptr gsets = file->instances_by_type<IfcSchema::IfcGroup>();
+	std::set<std::string> notRootGroups; //selfname, fathername
+	for (IfcSchema::IfcGroup::list::it it = gsets->begin(); it != gsets->end(); ++it) {
+		writeGroupToNode(*it, groups, notRootGroups);
+	}
+	for (auto it = groups.begin(); it != groups.end();) {
+		if (notRootGroups.find(it->second.get<std::string>("<xmlattr>.Name")) != notRootGroups.end()) {
+			it = groups.erase(it);
+		} else {
+			it++;
+		}
+	}
+
 	// Write all quantities and values as XML nodes.
 	IfcSchema::IfcElementQuantity::list::ptr qtosets = file->instances_by_type<IfcSchema::IfcElementQuantity>();
 	for (IfcSchema::IfcElementQuantity::list::it it = qtosets->begin(); it != qtosets->end(); ++it) {
@@ -772,6 +819,7 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	root.add_child("ifc.calendars",		calendars);
 	root.add_child("ifc.types",         types);
 	root.add_child("ifc.layers",        layers);
+    root.add_child("ifc.groups",        groups);
 	root.add_child("ifc.materials",     materials);
 	root.add_child("ifc.decomposition", decomposition);
 

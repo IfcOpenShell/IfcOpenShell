@@ -50,7 +50,7 @@ class IfcStore:
     last_transaction = ""
     history = []
     future = []
-    schema_identifiers = ["IFC4", "IFC2X3"]
+    schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3"]
 
     @staticmethod
     def purge():
@@ -70,7 +70,7 @@ class IfcStore:
         IfcStore.last_transaction = ""
         IfcStore.history = []
         IfcStore.future = []
-        IfcStore.schema_identifiers = ["IFC4", "IFC2X3"]
+        IfcStore.schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3"]
 
     @staticmethod
     def get_file():

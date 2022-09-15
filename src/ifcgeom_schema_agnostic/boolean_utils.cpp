@@ -16,11 +16,13 @@
 #include <GeomAPI_ExtremaCurveCurve.hxx>
 #include <ShapeAnalysis_Surface.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
+#include <Standard_Version.hxx>
 
 #include <vector>
 
 void IfcGeom::util::copy_operand(const TopTools_ListOfShape & l, TopTools_ListOfShape & r) {
 #if OCC_VERSION_HEX < 0x70000
+	r.Clear();
 	TopTools_ListIteratorOfListOfShape it(l);
 	for (; it.More(); it.Next()) {
 		r.Append(BRepBuilderAPI_Copy(it.Value()));

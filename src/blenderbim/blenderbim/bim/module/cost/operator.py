@@ -927,7 +927,7 @@ class LoadCostItemQuantities(bpy.types.Operator):
         self.props.cost_item_products.clear()
         self.props.cost_item_processes.clear()
         self.props.cost_item_resources.clear()
-        if self.props.active_cost_item_index:
+        if self.props.cost_items:
             ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
             for control_id, quantity_ids in Data.cost_items[ifc_definition_id]["Controls"].items() or {}:
                 related_object = self.file.by_id(control_id)
