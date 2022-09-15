@@ -207,7 +207,7 @@ class QtoCalculator:
         return np.arccos(np.clip(np.dot(v1, v2), -1.0, 1.0))
 
     # Thanks to @Gorgious56 - the following script should decrease the time to complete by at least 5%
-    # def calculate_net_lateral_area_np(object, angle_a=45, angle_b=135):
+    # def calculate_net_lateral_area_np(object, angle_z1=45, angle_z2=135):
     #     z_axis = (0, 0, 1)
     #     area = 0
 
@@ -220,52 +220,69 @@ class QtoCalculator:
 
     #     angles_to_z_axis = np.array([math.degrees(np.arccos(np.clip(np.dot(z_axis, normal), -1.0, 1.0))) for normal in normals])
 
-    #     bad_areas = angles_to_z_axis < angle_a
-    #     bad_areas += angles_to_z_axis > angle_b
+    #     bad_areas = angles_to_z_axis < angle_z1
+    #     bad_areas += angles_to_z_axis > angle_z2
 
     #     mesh.polygons.foreach_get("area", areas)
     #     areas *= 1 - bad_areas
 
     # return sum(areas)
 
-    def get_side_opening_area(self, obj, angle_a: int = 45, angle_b: int = 135, min_area: int = 0):
+    def get_opening_type(self, opening, obj):
+        polygons = opening.data.polygons
+        ray_intersections = 0
+
+        for polygon in polygons:
+            normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
+            polygon_centre = (polygon.center.x, polygon.center.y, polygon.center.z)
+            if obj.ray_cast(polygon_centre, normal_vector)[0]:
+                ray_intersections += 1
+
+        # If an odd number of face-normal vectors intersect with the object, then the void is a recess, otherwise it's an opening
+        return "OPENING" if ray_intersections % 2 == 0 else "RECESS"
+
+    def get_side_opening_area(
+        self, obj, angle_z1: int = 45, angle_z2: int = 135, min_area: int = 0, ignore_recesses: bool = False
+    ):
         total_opening_area = 0
         ifc = tool.Ifc.get()
         ifc_element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if len(openings := ifc_element.HasOpenings) != 0:
             for opening in openings:
-                # Hmm, sometimes PredefinedType is empty.  This code won't suffice.  At the same time, the reason why I originally only considered "OPENING" is because I don't consider recesses as openings.
-                if opening.RelatedOpeningElement.PredefinedType == "OPENING":
-                    opening_id = opening.RelatedOpeningElement.GlobalId
+                opening_id = opening.RelatedOpeningElement.GlobalId
+                ifc_opening_element = ifc.by_guid(opening_id)
+                bl_opening_obj = tool.Ifc.get_object(ifc_opening_element)
 
-                    entity = ifc.by_guid(opening_id)
-                    open_obj = tool.Ifc.get_object(entity)
-                    opening_area = self.get_net_side_area(open_obj, angle_a=angle_a, angle_b=angle_b)
-                    if opening_area >= min_area:
-                        total_opening_area += opening_area
-                else:
+                opening_type = (
+                    ifc_opening_element.PredefinedType
+                    if ifc_opening_element.PredefinedType is not None
+                    else self.get_opening_type(bl_opening_obj, obj)
+                )
+
+                if ignore_recesses and opening_type == "RECESS":
                     continue
-                
+                opening_area = self.get_net_side_area(bl_opening_obj, angle_z1=angle_z1, angle_z2=angle_z2)
+                if opening_area >= min_area:
+                    total_opening_area += opening_area
+
         return total_opening_area
 
-
-    def get_gross_side_area(self, obj, angle_a: int = 45, angle_b: int = 135):
+    def get_gross_side_area(self, obj, angle_z1: int = 45, angle_z2: int = 135):
         z_axis = (0, 0, 1)
         area = 0
-        total_opening_area = self.get_side_opening_area(obj, angle_a = angle_a, angle_b=angle_b)
+        total_opening_area = self.get_side_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
         polygons = obj.data.polygons
-        
+
         for polygon in polygons:
             normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
             angle_to_z_axis = math.degrees(self.angle_between_vectors(z_axis, normal_vector))
 
-            if angle_to_z_axis < angle_a or angle_to_z_axis > angle_b:
+            if angle_to_z_axis < angle_z1 or angle_to_z_axis > angle_z2:
                 continue
             area += polygon.area
-        return area+opening_area
+        return area + total_opening_area
 
-    
-    def get_net_side_area(self, obj, angle_a: int = 45, angle_b: int = 135):
+    def get_net_side_area(self, obj, angle_z1: int = 45, angle_z2: int = 135):
         z_axis = (0, 0, 1)
         area = 0
         polygons = obj.data.polygons
@@ -274,7 +291,7 @@ class QtoCalculator:
             normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
             angle_to_z_axis = math.degrees(self.angle_between_vectors(z_axis, normal_vector))
 
-            if angle_to_z_axis < angle_a or angle_to_z_axis > angle_b:
+            if angle_to_z_axis < angle_z1 or angle_to_z_axis > angle_z2:
                 continue
             area += polygon.area
         return area
@@ -368,5 +385,8 @@ qto = QtoCalculator()
 
 
 print(
-    qto.get_side_opening_area(bpy.context.active_object, angle_a=45, angle_b=135, min_area=0)
-    )
+    qto.get_gross_side_area(bpy.context.active_object, angle_z1=45, angle_z2=135),
+    qto.get_net_side_area(bpy.context.active_object, angle_z1=45, angle_z2=135),
+    qto.get_side_opening_area(bpy.context.active_object, angle_z1=45, angle_z2=135, min_area=0),
+
+)
