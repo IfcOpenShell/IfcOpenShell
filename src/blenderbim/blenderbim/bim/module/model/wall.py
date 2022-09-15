@@ -650,23 +650,18 @@ class DumbWallGenerator:
 
     def generate(self):
         self.file = IfcStore.get_file()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
-        thicknesses = []
-        for rel in self.relating_type.HasAssociations:
-            if rel.is_a("IfcRelAssociatesMaterial"):
-                material = rel.RelatingMaterial
-                if material.is_a("IfcMaterialLayerSet"):
-                    thicknesses = [l.LayerThickness for l in material.MaterialLayers]
-                    break
-        if not sum(thicknesses):
+        self.layers = get_material_layer_parameters(self.relating_type)
+        if not self.layers["thickness"]:
             return
+
+        self.body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
         self.collection = bpy.context.view_layer.active_layer_collection.collection
         self.collection_obj = bpy.data.objects.get(self.collection.name)
-        self.width = sum(thicknesses) * unit_scale
-        self.height = 3
-        self.length = 1
-        self.rotation = 0
+        self.width = self.layers["thickness"]
+        self.height = 3.
+        self.length = 1.
+        self.rotation = 0.
         self.location = Vector((0, 0, 0))
 
         if self.has_sketch():
@@ -774,31 +769,17 @@ class DumbWallGenerator:
         return self.create_wall()
 
     def create_wall(self):
-        verts = [
-            Vector((0, self.width, 0)),
-            Vector((0, 0, 0)),
-            Vector((0, self.width, self.height)),
-            Vector((0, 0, self.height)),
-            Vector((self.length, self.width, 0)),
-            Vector((self.length, 0, 0)),
-            Vector((self.length, self.width, self.height)),
-            Vector((self.length, 0, self.height)),
-        ]
-        faces = [
-            [1, 3, 2, 0],
-            [4, 6, 7, 5],
-            [1, 0, 4, 5],
-            [3, 7, 6, 2],
-            [0, 2, 6, 4],
-            [1, 5, 7, 3],
-        ]
-        mesh = bpy.data.meshes.new(name="Wall")
-        mesh.from_pydata(verts, [], faces)
-
-        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
-        # Standard cases are deprecated, so let's cull them
-        ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
-
+        representation = ifcopenshell.api.run(
+            "geometry.add_wall_representation",
+            tool.Ifc.get(),
+            context=self.body,
+            thickness=self.layers["thickness"],
+            offset=self.layers["offset"],
+            length=self.length,
+            height=self.height,
+        )
+        ifc_class = self.get_relating_type_class(self.relating_type)
+        mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
         obj.location = self.location
         obj.rotation_euler[2] = self.rotation
@@ -806,28 +787,38 @@ class DumbWallGenerator:
             obj.location[2] = self.collection_obj.location[2]
         self.collection.objects.link(obj)
 
-        bpy.ops.bim.assign_class(
-            obj=obj.name,
+        element = blenderbim.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
             ifc_class=ifc_class,
-            ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef",
+            should_add_representation=False,
+            context=self.body,
         )
-
-        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type)
+        ifcopenshell.api.run(
+            "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
+        )
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=self.relating_type)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer2"})
         MaterialData.load(self.file)
-        try:
-            obj.select_set(True)
-        except RuntimeError:
-
-            def msg(self, context):
-                txt = "The created object could not be assigned to a collection. "
-                txt += "Has any IfcSpatialElement been deleted?"
-                self.layout.label(text=txt)
-
-            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+        obj.select_set(True)
         return obj
+
+    def get_relating_type_class(self, relating_type):
+        classes = ifcopenshell.util.type.get_applicable_entities(relating_type.is_a(), tool.Ifc.get().schema)
+        return [c for c in classes if "StandardCase" not in c][0]
 
 
 def generate_axis(usecase_path, ifc_file, settings):
@@ -860,7 +851,7 @@ def generate_axis(usecase_path, ifc_file, settings):
             "geometry.assign_representation",
             ifc_file,
             should_run_listeners=False,
-            **{"product": product, "representation": new_axis}
+            **{"product": product, "representation": new_axis},
         )
         bpy.data.meshes.remove(mesh)
 
@@ -1039,3 +1030,17 @@ class DumbWallPlaner:
             if min_face and max_face:
                 break
         return min_face, max_face
+
+
+def get_material_layer_parameters(element):
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    offset = 0.
+    thickness = 0.
+    material = ifcopenshell.util.element.get_material(element)
+    if material:
+        if material.is_a("IfcMaterialLayerSetUsage"):
+            offset = material.OffsetFromReferenceLine / unit_scale
+            material = material.ForLayerSet
+        if material.is_a("IfcMaterialLayerSet"):
+            thickness = sum([l.LayerThickness for l in material.MaterialLayers]) / unit_scale
+    return {"thickness": thickness, "offset": offset}
