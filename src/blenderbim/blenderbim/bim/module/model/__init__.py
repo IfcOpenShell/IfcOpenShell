@@ -30,6 +30,7 @@ classes = (
     wall.AlignWall,
     wall.FlipWall,
     wall.SplitWall,
+    wall.WallPrototypeVTX,
     opening.AddElementOpening,
     profile.ExtendProfile,
     prop.BIMModelProperties,

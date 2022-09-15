@@ -654,14 +654,14 @@ class DumbWallGenerator:
         if not self.layers["thickness"]:
             return
 
-        self.body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
         self.collection = bpy.context.view_layer.active_layer_collection.collection
         self.collection_obj = bpy.data.objects.get(self.collection.name)
         self.width = self.layers["thickness"]
-        self.height = 3.
-        self.length = 1.
-        self.rotation = 0.
+        self.height = 3.0
+        self.length = 1.0
+        self.rotation = 0.0
         self.location = Vector((0, 0, 0))
 
         if self.has_sketch():
@@ -772,7 +772,7 @@ class DumbWallGenerator:
         representation = ifcopenshell.api.run(
             "geometry.add_wall_representation",
             tool.Ifc.get(),
-            context=self.body,
+            context=self.body_context,
             thickness=self.layers["thickness"],
             offset=self.layers["offset"],
             length=self.length,
@@ -794,7 +794,7 @@ class DumbWallGenerator:
             obj=obj,
             ifc_class=ifc_class,
             should_add_representation=False,
-            context=self.body,
+            context=self.body_context,
         )
         ifcopenshell.api.run(
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
@@ -1032,10 +1032,251 @@ class DumbWallPlaner:
         return min_face, max_face
 
 
+class WallPrototypeVTX(bpy.types.Operator):
+    bl_idname = "bim.wall_prototype_vtx"
+    bl_label = "Wall Prototype VTX"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "AXIS", "GRAPH_VIEW")
+        self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
+        selected_objects = [o for o in context.selected_objects if tool.Ifc.get_entity(o)]
+        if len(selected_objects) == 1:
+            self.join_E(context.active_object, context.scene.cursor.location)
+        elif len(selected_objects) >= 2:
+            for obj in selected_objects:
+                if obj == context.active_object:
+                    continue
+                element = tool.Ifc.get_entity(obj)
+                if not element.is_a("IfcWall"):
+                    continue
+                self.join_T(obj, context.active_object)
+        return {"FINISHED"}
+
+    def join_E(self, wall1, target):
+        element1 = tool.Ifc.get_entity(wall1)
+        if not element1:
+            return
+
+        axis1 = self.get_wall_axis(wall1)
+        intersect, which_end = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
+        which_end = "ATEND" if which_end > 0.5 else "ATSTART"
+
+        ifcopenshell.api.run(
+            "geometry.disconnect_path", tool.Ifc.get(), related_element=element1, connection_type=which_end
+        )
+
+        self.axis = axis1["reference"].copy()
+        self.body = axis1["reference"].copy()
+        height = self.get_height(tool.Ifc.get().by_id(wall1.data.BIMMeshProperties.ifc_definition_id))
+        self.clippings = []
+        layers1 = get_material_layer_parameters(element1)
+
+        self.axis[1 if which_end == "ATEND" else 0] = intersect
+        self.body[1 if which_end == "ATEND" else 0] = intersect
+
+        for rel in element1.ConnectedFrom:
+            self.join(wall1, tool.Ifc.get_object(rel.RelatingElement))
+
+        height = self.get_height(tool.Ifc.get().by_id(wall1.data.BIMMeshProperties.ifc_definition_id))
+        self.recreate_wall(
+            wall1, self.body[0], self.body[1], height, layers1["thickness"], layers1["offset"], self.clippings
+        )
+
+    def recreate_wall(self, obj, start, end, height, thickness, offset=0, clippings=None):
+        length = (end - start).length
+        new_representation = ifcopenshell.api.run(
+            "geometry.add_wall_representation",
+            tool.Ifc.get(),
+            context=self.body_context,
+            length=length,
+            height=height,
+            offset=offset,
+            thickness=thickness,
+            clippings=clippings or [],
+        )
+
+        old_representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        for inverse in tool.Ifc.get().get_inverse(old_representation):
+            ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
+        obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
+        obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
+        blenderbim.core.geometry.remove_representation(
+            tool.Ifc, tool.Geometry, obj=obj, representation=old_representation
+        )
+
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=new_representation,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+        obj.location[0], obj.location[1] = start
+
+    def create_matrix(self, p, x, y, z):
+        return Matrix(
+            (
+                (x[0], y[0], z[0], p[0]),
+                (x[1], y[1], z[1], p[1]),
+                (x[2], y[2], z[2], p[2]),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+
+    def get_wall_axis(self, obj, layers=None):
+        x_values = [v[0] for v in obj.bound_box]
+        min_x = min(x_values)
+        max_x = max(x_values)
+        axes = {}
+        if layers:
+            axes = {
+                "base": [
+                    (obj.matrix_world @ Vector((min_x, layers["offset"], 0.0))).to_2d(),
+                    (obj.matrix_world @ Vector((max_x, layers["offset"], 0.0))).to_2d(),
+                ],
+                "side": [
+                    (obj.matrix_world @ Vector((min_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
+                    (obj.matrix_world @ Vector((max_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
+                ],
+            }
+        axes["reference"] = [
+            (obj.matrix_world @ Vector((min_x, 0.0, 0.0))).to_2d(),
+            (obj.matrix_world @ Vector((max_x, 0.0, 0.0))).to_2d(),
+        ]
+        return axes
+
+    def get_height(self, representation):
+        height = 3.0
+        item = representation.Items[0]
+        while True:
+            if item.is_a("IfcExtrudedAreaSolid"):
+                height = item.Depth / self.unit_scale
+                break
+            elif item.is_a("IfcBooleanClippingResult"):
+                item = item.FirstOperand
+            else:
+                break
+        return height
+
+    def join_T(self, wall1, wall2):
+        element1 = tool.Ifc.get_entity(wall1)
+        element2 = tool.Ifc.get_entity(wall2)
+        axis1 = self.get_wall_axis(wall1)
+        axis2 = self.get_wall_axis(wall2)
+        intersect, _ = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
+        which_end = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
+
+        ifcopenshell.api.run(
+            "geometry.connect_path",
+            tool.Ifc.get(),
+            related_element=element1,
+            relating_element=element2,
+            relating_connection="ATPATH",
+            related_connection=which_end,
+        )
+
+        self.axis = axis1["reference"].copy()
+        self.body = axis1["reference"].copy()
+        height = self.get_height(tool.Ifc.get().by_id(wall1.data.BIMMeshProperties.ifc_definition_id))
+        self.clippings = []
+        layers1 = get_material_layer_parameters(element1)
+        for rel in element1.ConnectedFrom:
+            self.join(wall1, tool.Ifc.get_object(rel.RelatingElement))
+        self.recreate_wall(
+            wall1, self.body[0], self.body[1], height, layers1["thickness"], layers1["offset"], self.clippings
+        )
+
+    def join(self, wall1, wall2):
+        element1 = tool.Ifc.get_entity(wall1)
+        element2 = tool.Ifc.get_entity(wall2)
+        layers1 = get_material_layer_parameters(element1)
+        layers2 = get_material_layer_parameters(element2)
+        axis1 = self.get_wall_axis(wall1, layers1)
+        axis2 = self.get_wall_axis(wall2, layers2)
+
+        angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=False, degrees=True)
+        if tool.Cad.is_x(angle, 0):
+            return
+
+        # Work out axis line
+        intersect, _ = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
+        which_end = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
+        self.axis[1 if which_end == "ATEND" else 0] = intersect
+
+        # Work out body extents
+        intersect1, _ = tool.Cad.intersect_edges(axis1["base"], axis2["base"])
+        intersect2, _ = tool.Cad.intersect_edges(axis1["base"], axis2["side"])
+        intersect3, _ = tool.Cad.intersect_edges(axis1["side"], axis2["base"])
+        intersect4, _ = tool.Cad.intersect_edges(axis1["side"], axis2["side"])
+
+        intersect12 = intersect1.lerp(intersect2, 0.5)
+        intersect34 = intersect3.lerp(intersect4, 0.5)
+
+        which_end = "ATEND" if tool.Cad.edge_percent(intersect12, axis1["base"]) > 0.5 else "ATSTART"
+
+        if which_end == "ATEND":
+            base_target = tool.Cad.closest_vector(axis1["base"][0], (intersect1, intersect2))
+            if tool.Cad.is_x(angle, 90):
+                self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
+            else:
+                side_target = tool.Cad.closest_vector(axis1["side"][0], (intersect3, intersect4))
+                base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
+                side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
+                if base_percent > side_percent:
+                    self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
+                    clip = side_target.to_3d()
+                    x_axis = (side_target - base_target).normalized().to_3d()
+                    y_axis = Vector((0, 0, 1))
+                    z_axis = x_axis.cross(y_axis)
+                    new_matrix = wall1.matrix_world.copy()
+                    new_matrix.col[3] = self.body[0].to_4d()
+                    self.clippings.append(new_matrix.inverted() @ self.create_matrix(clip, x_axis, y_axis, z_axis))
+                else:
+                    self.body[1] = tool.Cad.point_on_edge(side_target, axis1["reference"])
+                    clip = base_target.to_3d()
+                    x_axis = (side_target - base_target).normalized().to_3d()
+                    y_axis = Vector((0, 0, 1))
+                    z_axis = x_axis.cross(y_axis)
+                    new_matrix = wall1.matrix_world.copy()
+                    new_matrix.col[3] = self.body[0].to_4d()
+                    self.clippings.append(new_matrix.inverted() @ self.create_matrix(clip, x_axis, y_axis, z_axis))
+        else:
+            base_target = tool.Cad.closest_vector(axis1["base"][1], (intersect1, intersect2))
+            if tool.Cad.is_x(angle, 90):
+                self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
+            else:
+                side_target = tool.Cad.closest_vector(axis1["side"][1], (intersect3, intersect4))
+                base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
+                side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
+                if base_percent < side_percent:
+                    self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
+                    clip = side_target.to_3d()
+                    x_axis = (side_target - base_target).normalized().to_3d()
+                    y_axis = Vector((0, 0, 1))
+                    z_axis = y_axis.cross(x_axis)
+                    new_matrix = wall1.matrix_world.copy()
+                    new_matrix.col[3] = self.body[0].to_4d()
+                    self.clippings.append(new_matrix.inverted() @ self.create_matrix(clip, x_axis, y_axis, z_axis))
+                else:
+                    self.body[0] = tool.Cad.point_on_edge(side_target, axis1["reference"])
+                    clip = base_target.to_3d()
+                    x_axis = (side_target - base_target).normalized().to_3d()
+                    y_axis = Vector((0, 0, 1))
+                    z_axis = y_axis.cross(x_axis)
+                    new_matrix = wall1.matrix_world.copy()
+                    new_matrix.col[3] = self.body[0].to_4d()
+                    self.clippings.append(new_matrix.inverted() @ self.create_matrix(clip, x_axis, y_axis, z_axis))
+
+
 def get_material_layer_parameters(element):
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    offset = 0.
-    thickness = 0.
+    offset = 0.0
+    thickness = 0.0
     material = ifcopenshell.util.element.get_material(element)
     if material:
         if material.is_a("IfcMaterialLayerSetUsage"):
