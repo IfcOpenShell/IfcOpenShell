@@ -398,8 +398,7 @@ def get_parts(element):
 def replace_attribute(element, old, new):
     for i, attribute in enumerate(element):
         if has_element_reference(attribute, old):
-            new_attribute = element.walk(lambda v: v == old, lambda v: new, attribute)
-            element[i] = new_attribute
+            element[i] = element.walk(lambda v: v == old, lambda v: new, attribute)
 
 
 def has_element_reference(value, element):
