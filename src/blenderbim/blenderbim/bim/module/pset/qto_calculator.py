@@ -261,16 +261,20 @@ class QtoCalculator:
 
                 if ignore_recesses and opening_type == "RECESS":
                     continue
-                opening_area = self.get_net_side_area(bl_opening_obj, angle_z1=angle_z1, angle_z2=angle_z2)
+                opening_area = self.get_lateral_area(bl_opening_obj, subtract_openings= False, angle_z1=angle_z1, angle_z2=angle_z2)
                 if opening_area >= min_area:
                     total_opening_area += opening_area
 
         return total_opening_area
 
-    def get_gross_side_area(self, obj, angle_z1: int = 45, angle_z2: int = 135):
+    def get_lateral_area(self, obj, subtract_openings: bool = True, exclude_end_areas: bool = False, exclude_side_areas: bool = False, angle_z1: int = 45, angle_z2: int = 135):
+        x_axis = (1, 0, 0)
+        y_axis = (0, 1, 0)
         z_axis = (0, 0, 1)
         area = 0
-        total_opening_area = self.get_side_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
+        total_opening_area = (
+            0 if subtract_openings else self.get_side_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
+        )
         polygons = obj.data.polygons
 
         for polygon in polygons:
@@ -279,22 +283,16 @@ class QtoCalculator:
 
             if angle_to_z_axis < angle_z1 or angle_to_z_axis > angle_z2:
                 continue
+            if exclude_end_areas:
+                angle_to_x_axis = math.degrees(self.angle_between_vectors(x_axis, normal_vector))
+                if angle_to_x_axis < 45 or angle_to_x_axis > 135:
+                    continue
+            if exclude_side_areas:
+                angle_to_y_axis = math.degrees(self.angle_between_vectors(y_axis, normal_vector))
+                if angle_to_y_axis < 45 or angle_to_y_axis > 135:
+                    continue
             area += polygon.area
         return area + total_opening_area
-
-    def get_net_side_area(self, obj, angle_z1: int = 45, angle_z2: int = 135):
-        z_axis = (0, 0, 1)
-        area = 0
-        polygons = obj.data.polygons
-
-        for polygon in polygons:
-            normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
-            angle_to_z_axis = math.degrees(self.angle_between_vectors(z_axis, normal_vector))
-
-            if angle_to_z_axis < angle_z1 or angle_to_z_axis > angle_z2:
-                continue
-            area += polygon.area
-        return area
 
     def get_gross_top_area(self, obj, angle: int = 45):
         z_axis = (0, 0, 1)
@@ -384,9 +382,15 @@ qto = QtoCalculator()
 # netarea = qto.get_net_side_area(bpy.context.active_object)
 
 
-print(
-    qto.get_gross_side_area(bpy.context.active_object, angle_z1=45, angle_z2=135),
-    qto.get_net_side_area(bpy.context.active_object, angle_z1=45, angle_z2=135),
-    qto.get_side_opening_area(bpy.context.active_object, angle_z1=45, angle_z2=135, min_area=0),
+print(qto.get_lateral_area(bpy.context.active_object, subtract_openings=True, angle_z1=45, angle_z2=135))
 
-)
+print(qto.get_lateral_area(bpy.context.active_object, subtract_openings=False, angle_z1=45, angle_z2=135))
+
+print(qto.get_lateral_area(bpy.context.active_object, subtract_openings=True, exclude_end_areas=True, angle_z1=45, angle_z2=135))
+
+print(qto.get_lateral_area(bpy.context.active_object, subtract_openings=True, exclude_end_areas=False, angle_z1=45, angle_z2=135))
+
+print(qto.get_lateral_area(bpy.context.active_object, subtract_openings=True, exclude_side_areas=True, angle_z1=45, angle_z2=135))
+
+print(qto.get_lateral_area(bpy.context.active_object, subtract_openings=True, exclude_side_areas=True, exclude_end_areas=True, angle_z1=45, angle_z2=135))
+
