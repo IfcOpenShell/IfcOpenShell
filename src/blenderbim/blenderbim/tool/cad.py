@@ -38,25 +38,60 @@ from mathutils.geometry import intersect_line_line as LineIntersect
 from mathutils.geometry import intersect_point_line as PtLineIntersect
 
 
-class CAD_prefs:
-    VTX_PRECISION = 1.0e-5
-    VTX_DOUBLES_THRSHLD = 0.0001
+VTX_PRECISION = 1.0e-5
 
 
 class Cad:
     @classmethod
-    def point_on_edge(cls, p, edge):
+    def is_point_on_edge(cls, p, edge):
         """
         > p:        vector
         > edge:     tuple of 2 vectors
         < returns:  True / False if a point happens to lie on an edge
         """
         pt, _percent = PtLineIntersect(p, *edge)
-        on_line = (pt - p).length < CAD_prefs.VTX_PRECISION
+        on_line = (pt - p).length < VTX_PRECISION
         return on_line and (0.0 <= _percent <= 1.0)
 
     @classmethod
-    def line_from_edge_intersect(cls, edge1, edge2):
+    def point_on_edge(cls, p, edge):
+        """
+        > p:        vector
+        > edge:     tuple of 2 vectors
+        < returns:  a vector of the closest point on that edge
+        """
+        return PtLineIntersect(p, *edge)[0]
+
+    @classmethod
+    def edge_percent(cls, p, edge):
+        """
+        > takes a point, and a edge as a tuple of 2 vectors
+        < returns the percentage between 0 and 1 of where the point lies on the edge
+        """
+        return PtLineIntersect(p, *edge)[1]
+
+    @classmethod
+    def angle_edges(cls, edge1, edge2, degrees=False, signed=False):
+        """
+        > takes 2 edges, each as a tuple of two vectors
+        < returns the potentially signed angle as degrees or radians
+        """
+        if signed:
+            a = (edge1[1] - edge1[0]).angle_signed(edge2[1] - edge2[0])
+        else:
+            a = (edge1[1] - edge1[0]).angle_signed(edge2[1] - edge2[0])
+        return math.degrees(a) if degrees else a
+
+    @classmethod
+    def is_x(cls, value, x):
+        """
+        > takes a value and a target of x
+        < returns if the value is equivalent to x within a tolerance
+        """
+        return value > (x - VTX_PRECISION) and value < (x + VTX_PRECISION)
+
+    @classmethod
+    def intersect_edges(cls, edge1, edge2):
         """
         > takes 2 tuples, each tuple contains 2 vectors
         - prepares input for sending to intersect_line_line
@@ -71,7 +106,7 @@ class Cad:
         > takes 2 tuples, each tuple contains 2 vectors
         < returns the point halfway on line. See intersect_line_line
         """
-        line = cls.line_from_edge_intersect(edge1, edge2)
+        line = cls.intersect_edges(edge1, edge2)
         if line:
             return (line[0] + line[1]) / 2
 
@@ -83,9 +118,9 @@ class Cad:
         line is longer than the VTX_PRECISION then they are either
         coplanar or parallel.
         """
-        line = cls.line_from_edge_intersect(edge1, edge2)
+        line = cls.intersect_edges(edge1, edge2)
         if line:
-            return (line[0] - line[1]).length < CAD_prefs.VTX_PRECISION
+            return (line[0] - line[1]).length < VTX_PRECISION
 
     @classmethod
     def closest_idx(cls, pt, e):
@@ -110,8 +145,7 @@ class Cad:
         """
         > pt:       vector
         > e:        2 vector tuple
-        < returns:
-        pt, 2 vector tuple: returns closest vector to pt
+        < returns either v1 or v2 in e, whichever is closest to pt
 
         if both points in e are equally far from pt, then v1 is returned.
         """
@@ -120,7 +154,19 @@ class Cad:
             distance_test = (v1 - pt).length <= (v2 - pt).length
             return v1 if distance_test else v2
 
-        print("received {0}, check expected input in docstring ".format(e))
+    @classmethod
+    def furthest_vector(cls, pt, e):
+        """
+        > pt:       vector
+        > e:        2 vector tuple
+        < returns either v1 or v2 in e, whichever is furthest from pt
+
+        if both points in e are equally far from pt, then v1 is returned.
+        """
+        if isinstance(e, tuple) and all([isinstance(co, Vector) for co in e]):
+            v1, v2 = e
+            distance_test = (v1 - pt).length >= (v2 - pt).length
+            return v1 if distance_test else v2
 
     @classmethod
     def coords_tuple_from_edge_idx(cls, bm, idx):
@@ -161,7 +207,7 @@ class Cad:
     @classmethod
     def num_edges_point_lies_on(cls, pt, edges):
         """returns the number of edges that a point lies on."""
-        res = [point_on_edge(pt, edge) for edge in [edges[:2], edges[2:]]]
+        res = [cls.is_point_on_edge(pt, edge) for edge in [edges[:2], edges[2:]]]
         return len([i for i in res if i])
 
     @classmethod
@@ -175,7 +221,7 @@ class Cad:
             return []
         idxs = [idx1, idx2]
         edges = [cls.coords_tuple_from_edge_idx(bm, idx) for idx in idxs]
-        return [idx for edge, idx in zip(edges, idxs) if cls.point_on_edge(pt, edge)]
+        return [idx for edge, idx in zip(edges, idxs) if cls.is_point_on_edge(pt, edge)]
 
     @classmethod
     def duplicates(cls, indices):

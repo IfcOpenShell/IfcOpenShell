@@ -1112,6 +1112,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         for obj in bpy.data.objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
+            self.earliest_frame = None
             product_frames = self.product_frames.get(obj.BIMObjectProperties.ifc_definition_id, [])
             for product_frame in product_frames:
                 if product_frame["relationship"] == "input":
@@ -1167,10 +1168,12 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
             self.animate_operation(obj, product_frame)
 
     def animate_creation(self, obj, product_frame):
-        obj.hide_viewport = True
-        obj.hide_render = True
-        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
-        obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
+        if self.earliest_frame is None or product_frame["STARTED"] < self.earliest_frame:
+            obj.hide_viewport = True
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+            obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
+            self.earliest_frame = product_frame["STARTED"]
         obj.hide_viewport = False
         obj.hide_render = False
         obj.color = (0.0, 1.0, 0.0, 1)
@@ -1181,12 +1184,14 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
 
     def animate_destruction(self, obj, product_frame):
-        obj.color = (1.0, 1.0, 1.0, 1)
-        obj.hide_viewport = False
-        obj.hide_render = False
-        obj.keyframe_insert(data_path="color", frame=self.start_frame)
-        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
-        obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
+        if self.earliest_frame is None or product_frame["STARTED"] < self.earliest_frame:
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.hide_viewport = False
+            obj.hide_render = False
+            obj.keyframe_insert(data_path="color", frame=self.start_frame)
+            obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+            obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
+            self.earliest_frame = product_frame["STARTED"]
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
         obj.color = (1.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
@@ -1198,8 +1203,10 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
 
     def animate_operation(self, obj, product_frame):
-        obj.color = (1.0, 1.0, 1.0, 1)
-        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        if self.earliest_frame is None or product_frame["STARTED"] < self.earliest_frame:
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.keyframe_insert(data_path="color", frame=self.start_frame)
+            self.earliest_frame = product_frame["STARTED"]
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
         obj.color = (0.0, 0.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
@@ -1207,10 +1214,12 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
 
     def animate_movement_to(self, obj, product_frame):
-        obj.hide_viewport = True
-        obj.hide_render = True
-        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
-        obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
+        if self.earliest_frame is None or product_frame["STARTED"] < self.earliest_frame:
+            obj.hide_viewport = True
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+            obj.keyframe_insert(data_path="hide_render", frame=self.start_frame)
+            self.earliest_frame = product_frame["STARTED"]
         obj.hide_viewport = False
         obj.hide_render = False
         obj.color = (1.0, 1.0, 0.0, 1)
@@ -1221,8 +1230,10 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
 
     def animate_movement_from(self, obj, product_frame):
-        obj.color = (1.0, 1.0, 1.0, 1)
-        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        if self.earliest_frame is None or product_frame["STARTED"] < self.earliest_frame:
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.keyframe_insert(data_path="color", frame=self.start_frame)
+            self.earliest_frame = product_frame["STARTED"]
         obj.hide_viewport = False
         obj.hide_render = False
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
@@ -1238,8 +1249,10 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         obj.keyframe_insert(data_path="hide_render", frame=product_frame["COMPLETED"])
 
     def animate_consumption(self, obj, product_frame):
-        obj.color = (1.0, 1.0, 1.0, 1)
-        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        if self.earliest_frame is None or product_frame["STARTED"] < self.earliest_frame:
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.keyframe_insert(data_path="color", frame=self.start_frame)
+            self.earliest_frame = product_frame["STARTED"]
         obj.hide_viewport = False
         obj.hide_render = False
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)

@@ -1,9 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 # Wrapper script to launch BlenderBIM.
 
 # If the `blender` executable can't be found in your PATH environment, set
 # BLENDER_EXE to the location of your preferred `blender` executable.
+
+#BLENDER_EXE=/opt/blender-3.3/blender
 
 : ${BLENDER_EXE:=blender}
 

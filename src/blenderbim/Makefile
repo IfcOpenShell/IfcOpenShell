@@ -98,6 +98,31 @@ OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/osx-64/octo
 ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/osx-64/zlib-1.2.11-h7795811_1010.tar.bz2
 endif
 
+ifeq ($(PLATFORM), macosm1)
+ifeq ($(PYVERSION), py37)
+# Warning: py37 not supported on Apple M1
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py37h2d7f23a_0.tar.bz2
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py37h0695097_0.tar.bz2
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py37hd79e0ac_3.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/1e/3e/f0abc15d5dac50939bccc589aae336d5ead4c72e7ad1039a2e0f3630ea92/lxml-4.6.3-cp37-cp37m-macosx_10_9_x86_64.whl
+endif
+ifeq ($(PYVERSION), py39)
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-arm64/hpp-fcl-1.7.5-py39ha69f3c1_2.tar.bz2
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.7/download/osx-arm64/eigenpy-2.6.7-py39ha69f3c1_0.tar.bz2
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py39h2550fe3_0.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/b8/74/a71f7ad72e8db54ce899efab84507b801660750cbbfa6a39e6717557d36a/lxml-4.6.3-cp39-cp39-macosx_10_9_x86_64.whl
+endif
+ifeq ($(PYVERSION), py310)
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/osx-arm64/hpp-fcl-1.8.0-py310h5699539_2.tar.bz2
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.9/download/osx-arm64/eigenpy-2.6.9-py310habfc766_1.tar.bz2
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py310h4566fd1_0.tar.bz2
+LXML_URL:=https://files.pythonhosted.org/packages/a1/44/17b7dac7a18807d30e2fe10c3328c152808f5464565e230bfd0e77f178c6/lxml-4.8.0-cp310-cp310-macosx_10_15_x86_64.whl
+endif
+ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-arm64/assimp-5.0.1-h0f81e16_7.tar.bz2
+OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/osx-arm64/octomap-1.9.7-hc021e02_0.tar.bz2
+ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/osx-arm64/zlib-1.2.11-h90dfc92_1014.tar.bz2
+endif
+
 ifeq ($(PLATFORM), win)
 ifeq ($(PYVERSION), py37)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/win-64/hpp-fcl-1.7.5-py37h839d6b1_0.tar.bz2
@@ -133,7 +158,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-dc67287-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-4fb910f-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
 

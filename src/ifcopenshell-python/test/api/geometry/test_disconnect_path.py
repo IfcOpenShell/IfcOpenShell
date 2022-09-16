@@ -28,6 +28,32 @@ class TestDisconnectPath(test.bootstrap.IFC4):
         ifcopenshell.api.run("geometry.disconnect_path", self.file, relating_element=wall1, related_element=wall2)
         assert not self.file.by_type("IfcRelConnectsPathElements")
 
+    def test_disconnecting_by_connection_type(self):
+        wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "geometry.connect_path",
+            self.file,
+            relating_element=wall1,
+            related_element=wall2,
+            relating_connection="ATSTART",
+            related_connection="ATEND",
+        )
+        ifcopenshell.api.run("geometry.disconnect_path", self.file, element=wall1, connection_type="ATEND")
+        assert self.file.by_type("IfcRelConnectsPathElements")
+        ifcopenshell.api.run("geometry.disconnect_path", self.file, element=wall1, connection_type="ATSTART")
+        assert not self.file.by_type("IfcRelConnectsPathElements")
+        ifcopenshell.api.run(
+            "geometry.connect_path",
+            self.file,
+            relating_element=wall1,
+            related_element=wall2,
+            relating_connection="ATSTART",
+            related_connection="ATEND",
+        )
+        ifcopenshell.api.run("geometry.disconnect_path", self.file, element=wall2, connection_type="ATEND")
+        assert not self.file.by_type("IfcRelConnectsPathElements")
+
     def test_doing_nothing_if_there_is_no_connection(self):
         wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
