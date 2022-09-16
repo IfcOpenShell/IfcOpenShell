@@ -145,8 +145,7 @@ class Cad:
         """
         > pt:       vector
         > e:        2 vector tuple
-        < returns:
-        pt, 2 vector tuple: returns closest vector to pt
+        < returns either v1 or v2 in e, whichever is closest to pt
 
         if both points in e are equally far from pt, then v1 is returned.
         """
@@ -155,7 +154,19 @@ class Cad:
             distance_test = (v1 - pt).length <= (v2 - pt).length
             return v1 if distance_test else v2
 
-        print("received {0}, check expected input in docstring ".format(e))
+    @classmethod
+    def furthest_vector(cls, pt, e):
+        """
+        > pt:       vector
+        > e:        2 vector tuple
+        < returns either v1 or v2 in e, whichever is furthest from pt
+
+        if both points in e are equally far from pt, then v1 is returned.
+        """
+        if isinstance(e, tuple) and all([isinstance(co, Vector) for co in e]):
+            v1, v2 = e
+            distance_test = (v1 - pt).length >= (v2 - pt).length
+            return v1 if distance_test else v2
 
     @classmethod
     def coords_tuple_from_edge_idx(cls, bm, idx):

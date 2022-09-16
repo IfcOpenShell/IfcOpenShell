@@ -33,27 +33,42 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        existing_connection = [
-            r
-            for r in self.settings["relating_element"].ConnectedTo
-            if r.RelatedElement == self.settings["related_element"]
-        ]
+        incompatible_connections = []
+        for rel in self.settings["relating_element"].ConnectedTo:
+            if rel.RelatedElement == self.settings["related_element"]:
+                incompatible_connections.append(rel)
+            elif (
+                rel.RelatingConnectionType in ["ATSTART", "ATEND"]
+                and rel.RelatingConnectionType == self.settings["relating_connection"]
+            ):
+                incompatible_connections.append(rel)
 
-        if existing_connection:
-            existing_connection = existing_connection[0]
-            if existing_connection.RelatingConnectionType != self.settings["relating_connection"]:
-                existing_connection.RelatingConnectionType = self.settings["relating_connection"]
-            if existing_connection.RelatedConnectionType != self.settings["related_connection"]:
-                existing_connection.RelatedConnectionType = self.settings["related_connection"]
-            return existing_connection[0]
+        for rel in self.settings["relating_element"].ConnectedFrom:
+            if (
+                rel.RelatedConnectionType in ["ATSTART", "ATEND"]
+                and rel.RelatedConnectionType == self.settings["relating_connection"]
+            ):
+                incompatible_connections.append(rel)
 
-        if [
-            r
-            for r in self.settings["related_element"].ConnectedTo
-            if r.RelatedElement == self.settings["relating_element"]
-        ]:
-            # No cyclical connections allowed, I assume
-            return
+        for rel in self.settings["related_element"].ConnectedFrom:
+            if (
+                rel.RelatedConnectionType in ["ATSTART", "ATEND"]
+                and rel.RelatedConnectionType == self.settings["related_connection"]
+            ):
+                incompatible_connections.append(rel)
+
+        for rel in self.settings["related_element"].ConnectedTo:
+            if rel.RelatedElement == self.settings["relating_element"]:
+                incompatible_connections.append(rel)
+            elif (
+                rel.RelatingConnectionType in ["ATSTART", "ATEND"]
+                and rel.RelatingConnectionType == self.settings["related_connection"]
+            ):
+                incompatible_connections.append(rel)
+
+        if incompatible_connections:
+            for connection in set(incompatible_connections):
+                self.file.remove(connection)
 
         return self.file.createIfcRelConnectsPathElements(
             ifcopenshell.guid.new(),

@@ -1045,6 +1045,8 @@ class WallPrototypeVTX(bpy.types.Operator):
         selected_objects = [o for o in context.selected_objects if tool.Ifc.get_entity(o)]
         if len(selected_objects) == 1:
             self.join_E(context.active_object, context.scene.cursor.location)
+        elif len(selected_objects) == 2:
+            self.join_L([o for o in selected_objects if o != context.active_object][0], context.active_object)
         elif len(selected_objects) >= 2:
             for obj in selected_objects:
                 if obj == context.active_object:
@@ -1055,47 +1057,98 @@ class WallPrototypeVTX(bpy.types.Operator):
                 self.join_T(obj, context.active_object)
         return {"FINISHED"}
 
+    def join_L(self, wall1, wall2):
+        element1 = tool.Ifc.get_entity(wall1)
+        element2 = tool.Ifc.get_entity(wall2)
+        axis1 = self.get_wall_axis(wall1)
+        axis2 = self.get_wall_axis(wall2)
+        intersect, _ = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
+        wall1_end = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
+        wall2_end = "ATEND" if tool.Cad.edge_percent(intersect, axis2["reference"]) > 0.5 else "ATSTART"
+
+        ifcopenshell.api.run(
+            "geometry.connect_path",
+            tool.Ifc.get(),
+            relating_element=element1,
+            related_element=element2,
+            relating_connection=wall1_end,
+            related_connection=wall2_end,
+        )
+
+        self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
+        self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
+
     def join_E(self, wall1, target):
         element1 = tool.Ifc.get_entity(wall1)
         if not element1:
             return
 
         axis1 = self.get_wall_axis(wall1)
-        intersect, which_end = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
-        which_end = "ATEND" if which_end > 0.5 else "ATSTART"
+        intersect, connection = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
+        connection = "ATEND" if connection > 0.5 else "ATSTART"
 
         ifcopenshell.api.run(
-            "geometry.disconnect_path", tool.Ifc.get(), related_element=element1, connection_type=which_end
+            "geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection
         )
 
-        self.axis = axis1["reference"].copy()
-        self.body = axis1["reference"].copy()
-        height = self.get_height(tool.Ifc.get().by_id(wall1.data.BIMMeshProperties.ifc_definition_id))
+        axis = axis1["reference"].copy()
+        body = axis1["reference"].copy()
+        axis[1 if connection == "ATEND" else 0] = intersect
+        body[1 if connection == "ATEND" else 0] = intersect
+        self.recreate_wall(element1, wall1, axis, body)
+
+    def join_T(self, wall1, wall2):
+        element1 = tool.Ifc.get_entity(wall1)
+        element2 = tool.Ifc.get_entity(wall2)
+        axis1 = self.get_wall_axis(wall1)
+        axis2 = self.get_wall_axis(wall2)
+        intersect, _ = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
+        connection = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
+
+        ifcopenshell.api.run(
+            "geometry.connect_path",
+            tool.Ifc.get(),
+            related_element=element1,
+            relating_element=element2,
+            relating_connection="ATPATH",
+            related_connection=connection,
+        )
+
+        self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
+
+    def recreate_wall(self, element, obj, axis, body):
+        self.axis = axis.copy()
+        self.body = body.copy()
+        height = self.get_height(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
         self.clippings = []
-        layers1 = get_material_layer_parameters(element1)
+        layers = get_material_layer_parameters(element)
 
-        self.axis[1 if which_end == "ATEND" else 0] = intersect
-        self.body[1 if which_end == "ATEND" else 0] = intersect
+        for rel in element.ConnectedTo:
+            connection = rel.RelatingConnectionType
+            other = tool.Ifc.get_object(rel.RelatedElement)
+            if connection not in ["ATPATH", "NOTDEFINED"]:
+                self.join(obj, other, connection, is_relating=True)
+        for rel in element.ConnectedFrom:
+            connection = rel.RelatedConnectionType
+            other = tool.Ifc.get_object(rel.RelatingElement)
+            if connection not in ["ATPATH", "NOTDEFINED"]:
+                self.join(obj, other, connection, is_relating=False)
 
-        for rel in element1.ConnectedFrom:
-            self.join(wall1, tool.Ifc.get_object(rel.RelatingElement))
+        new_matrix = obj.matrix_world.copy()
+        new_matrix.col[3] = self.body[0].to_4d()
+        new_matrix.invert()
+        self.clippings = [new_matrix @ c for c in self.clippings]
 
-        height = self.get_height(tool.Ifc.get().by_id(wall1.data.BIMMeshProperties.ifc_definition_id))
-        self.recreate_wall(
-            wall1, self.body[0], self.body[1], height, layers1["thickness"], layers1["offset"], self.clippings
-        )
-
-    def recreate_wall(self, obj, start, end, height, thickness, offset=0, clippings=None):
-        length = (end - start).length
+        length = (self.body[1] - self.body[0]).length
         new_representation = ifcopenshell.api.run(
             "geometry.add_wall_representation",
             tool.Ifc.get(),
             context=self.body_context,
             length=length,
             height=height,
-            offset=offset,
-            thickness=thickness,
-            clippings=clippings or [],
+            offset=layers["offset"],
+            thickness=layers["thickness"],
+            clippings=self.clippings,
         )
 
         old_representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
@@ -1116,7 +1169,7 @@ class WallPrototypeVTX(bpy.types.Operator):
             is_global=True,
             should_sync_changes_first=False,
         )
-        obj.location[0], obj.location[1] = start
+        obj.location[0], obj.location[1] = self.body[0]
 
     def create_matrix(self, p, x, y, z):
         return Matrix(
@@ -1163,35 +1216,8 @@ class WallPrototypeVTX(bpy.types.Operator):
                 break
         return height
 
-    def join_T(self, wall1, wall2):
-        element1 = tool.Ifc.get_entity(wall1)
-        element2 = tool.Ifc.get_entity(wall2)
-        axis1 = self.get_wall_axis(wall1)
-        axis2 = self.get_wall_axis(wall2)
-        intersect, _ = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
-        which_end = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
-
-        ifcopenshell.api.run(
-            "geometry.connect_path",
-            tool.Ifc.get(),
-            related_element=element1,
-            relating_element=element2,
-            relating_connection="ATPATH",
-            related_connection=which_end,
-        )
-
-        self.axis = axis1["reference"].copy()
-        self.body = axis1["reference"].copy()
-        height = self.get_height(tool.Ifc.get().by_id(wall1.data.BIMMeshProperties.ifc_definition_id))
-        self.clippings = []
-        layers1 = get_material_layer_parameters(element1)
-        for rel in element1.ConnectedFrom:
-            self.join(wall1, tool.Ifc.get_object(rel.RelatingElement))
-        self.recreate_wall(
-            wall1, self.body[0], self.body[1], height, layers1["thickness"], layers1["offset"], self.clippings
-        )
-
-    def join(self, wall1, wall2):
+    def join(self, wall1, wall2, connection, is_relating=True):
+        print('going to join', wall1, wall2, connection, is_relating)
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
         layers1 = get_material_layer_parameters(element1)
@@ -1205,8 +1231,7 @@ class WallPrototypeVTX(bpy.types.Operator):
 
         # Work out axis line
         intersect, _ = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
-        which_end = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
-        self.axis[1 if which_end == "ATEND" else 0] = intersect
+        self.axis[1 if connection == "ATEND" else 0] = intersect
 
         # Work out body extents
         intersect1, _ = tool.Cad.intersect_edges(axis1["base"], axis2["base"])
@@ -1217,14 +1242,18 @@ class WallPrototypeVTX(bpy.types.Operator):
         intersect12 = intersect1.lerp(intersect2, 0.5)
         intersect34 = intersect3.lerp(intersect4, 0.5)
 
-        which_end = "ATEND" if tool.Cad.edge_percent(intersect12, axis1["base"]) > 0.5 else "ATSTART"
-
-        if which_end == "ATEND":
-            base_target = tool.Cad.closest_vector(axis1["base"][0], (intersect1, intersect2))
+        if connection == "ATEND":
+            if is_relating:
+                base_target = tool.Cad.furthest_vector(axis1["base"][0], (intersect1, intersect2))
+            else:
+                base_target = tool.Cad.closest_vector(axis1["base"][0], (intersect1, intersect2))
             if tool.Cad.is_x(angle, 90):
                 self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
             else:
-                side_target = tool.Cad.closest_vector(axis1["side"][0], (intersect3, intersect4))
+                if is_relating:
+                    side_target = tool.Cad.furthest_vector(axis1["side"][0], (intersect3, intersect4))
+                else:
+                    side_target = tool.Cad.closest_vector(axis1["side"][0], (intersect3, intersect4))
                 base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
                 side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
                 if base_percent > side_percent:
@@ -1233,24 +1262,26 @@ class WallPrototypeVTX(bpy.types.Operator):
                     x_axis = (side_target - base_target).normalized().to_3d()
                     y_axis = Vector((0, 0, 1))
                     z_axis = x_axis.cross(y_axis)
-                    new_matrix = wall1.matrix_world.copy()
-                    new_matrix.col[3] = self.body[0].to_4d()
-                    self.clippings.append(new_matrix.inverted() @ self.create_matrix(clip, x_axis, y_axis, z_axis))
+                    self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
                 else:
                     self.body[1] = tool.Cad.point_on_edge(side_target, axis1["reference"])
                     clip = base_target.to_3d()
                     x_axis = (side_target - base_target).normalized().to_3d()
                     y_axis = Vector((0, 0, 1))
                     z_axis = x_axis.cross(y_axis)
-                    new_matrix = wall1.matrix_world.copy()
-                    new_matrix.col[3] = self.body[0].to_4d()
-                    self.clippings.append(new_matrix.inverted() @ self.create_matrix(clip, x_axis, y_axis, z_axis))
+                    self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
         else:
-            base_target = tool.Cad.closest_vector(axis1["base"][1], (intersect1, intersect2))
+            if is_relating:
+                base_target = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
+            else:
+                base_target = tool.Cad.closest_vector(axis1["base"][1], (intersect1, intersect2))
             if tool.Cad.is_x(angle, 90):
                 self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
             else:
-                side_target = tool.Cad.closest_vector(axis1["side"][1], (intersect3, intersect4))
+                if is_relating:
+                    side_target = tool.Cad.furthest_vector(axis1["side"][1], (intersect3, intersect4))
+                else:
+                    side_target = tool.Cad.closest_vector(axis1["side"][1], (intersect3, intersect4))
                 base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
                 side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
                 if base_percent < side_percent:
@@ -1259,18 +1290,14 @@ class WallPrototypeVTX(bpy.types.Operator):
                     x_axis = (side_target - base_target).normalized().to_3d()
                     y_axis = Vector((0, 0, 1))
                     z_axis = y_axis.cross(x_axis)
-                    new_matrix = wall1.matrix_world.copy()
-                    new_matrix.col[3] = self.body[0].to_4d()
-                    self.clippings.append(new_matrix.inverted() @ self.create_matrix(clip, x_axis, y_axis, z_axis))
+                    self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
                 else:
                     self.body[0] = tool.Cad.point_on_edge(side_target, axis1["reference"])
                     clip = base_target.to_3d()
                     x_axis = (side_target - base_target).normalized().to_3d()
                     y_axis = Vector((0, 0, 1))
                     z_axis = y_axis.cross(x_axis)
-                    new_matrix = wall1.matrix_world.copy()
-                    new_matrix.col[3] = self.body[0].to_4d()
-                    self.clippings.append(new_matrix.inverted() @ self.create_matrix(clip, x_axis, y_axis, z_axis))
+                    self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
 
 
 def get_material_layer_parameters(element):

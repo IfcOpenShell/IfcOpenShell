@@ -26,16 +26,29 @@ class Usecase:
         self.settings = {
             "relating_element": None,
             "related_element": None,
+            "element": None,
+            "connection_type": None,
         }
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        existing_connection = [
-            r
-            for r in self.settings["relating_element"].ConnectedTo
-            if r.RelatedElement == self.settings["related_element"]
-        ]
+        if self.settings["connection_type"] and self.settings["element"]:
+            connections = [
+                r
+                for r in self.settings["element"].ConnectedTo
+                if r.RelatingConnectionType == self.settings["connection_type"]
+            ] + [
+                r
+                for r in self.settings["element"].ConnectedFrom
+                if r.RelatedConnectionType == self.settings["connection_type"]
+            ]
+        else:
+            connections = [
+                r
+                for r in self.settings["relating_element"].ConnectedTo
+                if r.RelatedElement == self.settings["related_element"]
+            ]
 
-        if existing_connection:
-            self.file.remove(existing_connection[0])
+        for connection in set(connections):
+            self.file.remove(connection)
