@@ -203,8 +203,9 @@ class QtoCalculator:
                 volume += v1.dot(v2.cross(v3)) / 6.0
         return volume
 
-    def angle_between_vectors(self, v1, v2):
-        return np.arccos(np.clip(np.dot(v1, v2), -1.0, 1.0))
+    # deprecated - Vector.rotation_difference is 20x faster
+    # def angle_between_vectors(self, v1, v2):
+    #     return np.arccos(np.clip(np.dot(v1, v2), -1.0, 1.0))
 
     # Thanks to @Gorgious56 - the following script should decrease the time to complete by at least 5%
     # def calculate_net_lateral_area_np(object, angle_z1=45, angle_z2=135):
@@ -268,9 +269,9 @@ class QtoCalculator:
         return total_opening_area
 
     def get_lateral_area(self, obj, subtract_openings: bool = True, exclude_end_areas: bool = False, exclude_side_areas: bool = False, angle_z1: int = 45, angle_z2: int = 135):
-        x_axis = (1, 0, 0)
-        y_axis = (0, 1, 0)
-        z_axis = (0, 0, 1)
+        x_axis = [1, 0, 0]
+        y_axis = [0, 1, 0]
+        z_axis = [0, 0, 1]
         area = 0
         total_opening_area = (
             0 if subtract_openings else self.get_side_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
@@ -278,17 +279,15 @@ class QtoCalculator:
         polygons = obj.data.polygons
 
         for polygon in polygons:
-            normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
-            angle_to_z_axis = math.degrees(self.angle_between_vectors(z_axis, normal_vector))
-
+            angle_to_z_axis = math.degrees(polygon.normal.rotation_difference(Vector(z_axis)).angle)
             if angle_to_z_axis < angle_z1 or angle_to_z_axis > angle_z2:
                 continue
             if exclude_end_areas:
-                angle_to_x_axis = math.degrees(self.angle_between_vectors(x_axis, normal_vector))
+                angle_to_x_axis = math.degrees(polygon.normal.rotation_difference(Vector(x_axis)).angle)
                 if angle_to_x_axis < 45 or angle_to_x_axis > 135:
                     continue
             if exclude_side_areas:
-                angle_to_y_axis = math.degrees(self.angle_between_vectors(y_axis, normal_vector))
+                angle_to_y_axis = math.degrees(polygon.normal.rotation_difference(Vector(y_axis)).angle)
                 if angle_to_y_axis < 45 or angle_to_y_axis > 135:
                     continue
             area += polygon.area
@@ -316,7 +315,7 @@ class QtoCalculator:
 
         for polygon in polygons:
             normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
-            angle_to_z_axis = math.degrees(self.angle_between_vectors(z_axis, normal_vector))
+            angle_to_z_axis = math.degrees(polygon.normal.rotation_difference(Vector(z_axis)).angle)
 
             if angle_to_z_axis < angle:
                 area += polygon.area
@@ -329,7 +328,7 @@ class QtoCalculator:
 
         for polygon in polygons:
             normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
-            angle_to_z_axis = math.degrees(self.angle_between_vectors(z_axis, normal_vector))
+            angle_to_z_axis = math.degrees(polygon.normal.rotation_difference(Vector(z_axis)).angle)
 
             if angle_to_z_axis < angle:
                 area += polygon.area
