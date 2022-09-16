@@ -53,6 +53,10 @@ jobs:
             name: "MacOS Build",
             short_name: macos
           }
+          - {
+            name: "MacOS ARM Build",
+            short_name: macosm1
+          }
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
