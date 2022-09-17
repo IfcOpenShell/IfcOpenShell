@@ -77,7 +77,7 @@ class Usecase:
         )
 
     def convert_si_to_unit(self, co):
-        if isinstance(co, tuple):
+        if isinstance(co, (tuple, list)):
             return [self.convert_si_to_unit(o) for o in co]
         if self.settings["coordinate_offset"]:
             return (co / self.settings["unit_scale"]) + self.settings["coordinate_offset"]
