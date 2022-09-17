@@ -655,6 +655,7 @@ class DumbWallGenerator:
             return
 
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
 
         self.collection = bpy.context.view_layer.active_layer_collection.collection
         self.collection_obj = bpy.data.objects.get(self.collection.name)
@@ -753,7 +754,11 @@ class DumbWallGenerator:
                 if "IfcWall" not in sibling_obj.name:
                     continue
                 local_location = sibling_obj.matrix_world.inverted() @ self.location
-                raycast = sibling_obj.closest_point_on_mesh(local_location, distance=0.01)
+                try:
+                    raycast = sibling_obj.closest_point_on_mesh(local_location, distance=0.01)
+                except:
+                    # If the mesh has no faces
+                    raycast = [None]
                 if not raycast[0]:
                     continue
                 for face in sibling_obj.data.polygons:
@@ -769,15 +774,6 @@ class DumbWallGenerator:
         return self.create_wall()
 
     def create_wall(self):
-        representation = ifcopenshell.api.run(
-            "geometry.add_wall_representation",
-            tool.Ifc.get(),
-            context=self.body_context,
-            thickness=self.layers["thickness"],
-            offset=self.layers["offset"],
-            length=self.length,
-            height=self.height,
-        )
         ifc_class = self.get_relating_type_class(self.relating_type)
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
@@ -795,6 +791,25 @@ class DumbWallGenerator:
             ifc_class=ifc_class,
             should_add_representation=False,
             context=self.body_context,
+        )
+        if self.axis_context:
+            representation = ifcopenshell.api.run(
+                "geometry.add_axis_representation",
+                tool.Ifc.get(),
+                context=self.axis_context,
+                axis=[(0., 0.,), (self.length, 0.)],
+            )
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
+            )
+        representation = ifcopenshell.api.run(
+            "geometry.add_wall_representation",
+            tool.Ifc.get(),
+            context=self.body_context,
+            thickness=self.layers["thickness"],
+            offset=self.layers["offset"],
+            length=self.length,
+            height=self.height,
         )
         ifcopenshell.api.run(
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
@@ -1041,6 +1056,7 @@ class WallPrototypeVTX(bpy.types.Operator):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "AXIS", "GRAPH_VIEW")
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
 
         selected_objects = [o for o in context.selected_objects if tool.Ifc.get_entity(o)]
         if len(selected_objects) == 1:
@@ -1062,7 +1078,11 @@ class WallPrototypeVTX(bpy.types.Operator):
         element2 = tool.Ifc.get_entity(wall2)
         axis1 = self.get_wall_axis(wall1)
         axis2 = self.get_wall_axis(wall2)
-        intersect, _ = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
+        intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
+        if intersect:
+            intersect, _ = intersect
+        else:
+            return
         wall1_end = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
         wall2_end = "ATEND" if tool.Cad.edge_percent(intersect, axis2["reference"]) > 0.5 else "ATSTART"
 
@@ -1087,9 +1107,7 @@ class WallPrototypeVTX(bpy.types.Operator):
         intersect, connection = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
         connection = "ATEND" if connection > 0.5 else "ATSTART"
 
-        ifcopenshell.api.run(
-            "geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection
-        )
+        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection)
 
         axis = axis1["reference"].copy()
         body = axis1["reference"].copy()
@@ -1102,7 +1120,11 @@ class WallPrototypeVTX(bpy.types.Operator):
         element2 = tool.Ifc.get_entity(wall2)
         axis1 = self.get_wall_axis(wall1)
         axis2 = self.get_wall_axis(wall2)
-        intersect, _ = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
+        intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
+        if intersect:
+            intersect, _ = intersect
+        else:
+            return
         connection = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
 
         ifcopenshell.api.run(
@@ -1140,7 +1162,25 @@ class WallPrototypeVTX(bpy.types.Operator):
         self.clippings = [new_matrix @ c for c in self.clippings]
 
         length = (self.body[1] - self.body[0]).length
-        new_representation = ifcopenshell.api.run(
+
+        if self.axis_context:
+            axis = [(new_matrix @ a.to_3d()).to_2d() for a in self.axis]
+            new_axis = ifcopenshell.api.run(
+                "geometry.add_axis_representation", tool.Ifc.get(), context=self.axis_context, axis=axis
+            )
+            old_axis = ifcopenshell.util.representation.get_representation(element, "Plan", "Axis", "GRAPH_VIEW")
+            if old_axis:
+                for inverse in tool.Ifc.get().get_inverse(old_axis):
+                    ifcopenshell.util.element.replace_attribute(inverse, old_axis, new_axis)
+                blenderbim.core.geometry.remove_representation(
+                    tool.Ifc, tool.Geometry, obj=obj, representation=old_axis
+                )
+            else:
+                ifcopenshell.api.run(
+                    "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_axis
+                )
+
+        new_body = ifcopenshell.api.run(
             "geometry.add_wall_representation",
             tool.Ifc.get(),
             context=self.body_context,
@@ -1151,19 +1191,22 @@ class WallPrototypeVTX(bpy.types.Operator):
             clippings=self.clippings,
         )
 
-        old_representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        for inverse in tool.Ifc.get().get_inverse(old_representation):
-            ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
-        obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
-        obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
-        blenderbim.core.geometry.remove_representation(
-            tool.Ifc, tool.Geometry, obj=obj, representation=old_representation
-        )
+        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if old_body:
+            for inverse in tool.Ifc.get().get_inverse(old_body):
+                ifcopenshell.util.element.replace_attribute(inverse, old_body, new_body)
+            obj.data.BIMMeshProperties.ifc_definition_id = int(new_body.id())
+            obj.data.name = f"{self.body_context.id()}/{new_body.id()}"
+            blenderbim.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_body)
+        else:
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_body
+            )
 
         blenderbim.core.geometry.switch_representation(
             tool.Geometry,
             obj=obj,
-            representation=new_representation,
+            representation=new_body,
             should_reload=True,
             enable_dynamic_voids=False,
             is_global=True,
@@ -1226,11 +1269,15 @@ class WallPrototypeVTX(bpy.types.Operator):
         axis2 = self.get_wall_axis(wall2, layers2)
 
         angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=False, degrees=True)
-        if tool.Cad.is_x(angle, 0):
+        if tool.Cad.is_x(angle, (0, 180)):
             return
 
         # Work out axis line
-        intersect, _ = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
+        intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
+        if intersect:
+            intersect, _ = intersect
+        else:
+            return
         self.axis[1 if connection == "ATEND" else 0] = intersect
 
         # Work out body extents
@@ -1247,7 +1294,7 @@ class WallPrototypeVTX(bpy.types.Operator):
                 base_target = tool.Cad.furthest_vector(axis1["base"][0], (intersect1, intersect2))
             else:
                 base_target = tool.Cad.closest_vector(axis1["base"][0], (intersect1, intersect2))
-            if tool.Cad.is_x(angle, 90):
+            if tool.Cad.is_x(angle, (90, 270)):
                 self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
             else:
                 if is_relating:
@@ -1275,7 +1322,7 @@ class WallPrototypeVTX(bpy.types.Operator):
                 base_target = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
             else:
                 base_target = tool.Cad.closest_vector(axis1["base"][1], (intersect1, intersect2))
-            if tool.Cad.is_x(angle, 90):
+            if tool.Cad.is_x(angle, (90, 270)):
                 self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
             else:
                 if is_relating:

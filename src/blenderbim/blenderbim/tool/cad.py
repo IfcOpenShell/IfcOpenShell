@@ -79,15 +79,20 @@ class Cad:
         if signed:
             a = (edge1[1] - edge1[0]).angle_signed(edge2[1] - edge2[0])
         else:
-            a = (edge1[1] - edge1[0]).angle_signed(edge2[1] - edge2[0])
+            a = (edge1[1] - edge1[0]).angle(edge2[1] - edge2[0])
         return math.degrees(a) if degrees else a
 
     @classmethod
     def is_x(cls, value, x):
         """
-        > takes a value and a target of x
+        > takes a value and a target of x, either as a single value x or an interable of values
         < returns if the value is equivalent to x within a tolerance
         """
+        if isinstance(x, (list, tuple)):
+            for y in x:
+                if value > (y - VTX_PRECISION) and value < (y + VTX_PRECISION):
+                    return True
+            return False
         return value > (x - VTX_PRECISION) and value < (x + VTX_PRECISION)
 
     @classmethod
