@@ -55,19 +55,19 @@ ifeq ($(PYVERSION), py37)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/linux-64/hpp-fcl-1.7.5-py37h5f1835d_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/linux-64/eigenpy-2.6.5-py37h95e2c48_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py37h0379df6_3.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/30/c0/d0526314971fc661b083ab135747dc68446a3022686da8c16d25fcf6ef07/lxml-4.6.3-cp37-cp37m-manylinux2014_x86_64.whl
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/linux-64/lxml-4.9.1-py37h540881e_0.tar.bz2
 endif
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/linux-64/hpp-fcl-1.7.5-py39hbcdfc36_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/linux-64/eigenpy-2.6.5-py39h5aed9d1_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py39h5472131_3.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/19/d9/a69c6aff5673554df48120565a14a50eaa41d29ae03b02faa0b023666318/lxml-4.6.3-cp39-cp39-manylinux2014_x86_64.whl
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/linux-64/lxml-4.9.1-py39hb9d737c_0.tar.bz2
 endif
 ifeq ($(PYVERSION), py310)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/linux-64/hpp-fcl-1.8.0-py310hdaf7e41_1.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.11/download/linux-64/eigenpy-2.6.11-py310hf3e5c9c_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost-1.74.0-py310h7c3ba0c_5.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/25/1e/19b46d8e8881fe0df2e20945d51919eeb1817836d62a90efa8506530e45c/lxml-4.8.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_24_x86_64.whl
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/linux-64/lxml-4.9.1-py310h5764c6d_0.tar.bz2
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/linux-64/assimp-5.0.1-hedfc422_6.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/linux-64/octomap-1.9.7-h4bd325d_0.tar.bz2
@@ -79,23 +79,48 @@ ifeq ($(PYVERSION), py37)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py37h2d7f23a_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py37h0695097_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py37hd79e0ac_3.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/1e/3e/f0abc15d5dac50939bccc589aae336d5ead4c72e7ad1039a2e0f3630ea92/lxml-4.6.3-cp37-cp37m-macosx_10_9_x86_64.whl
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-64/lxml-4.9.1-py37h994c40b_0.tar.bz2
 endif
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py39h1e32b98_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py39h5405915_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py39ha641261_3.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/b8/74/a71f7ad72e8db54ce899efab84507b801660750cbbfa6a39e6717557d36a/lxml-4.6.3-cp39-cp39-macosx_10_9_x86_64.whl
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-64/lxml-4.9.1-py39h701faf5_0.tar.bz2
 endif
 ifeq ($(PYVERSION), py310)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/osx-64/hpp-fcl-1.8.0-py310h651ac30_1.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.11/download/osx-64/eigenpy-2.6.11-py310hc03097c_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py310h509978a_5.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/a1/44/17b7dac7a18807d30e2fe10c3328c152808f5464565e230bfd0e77f178c6/lxml-4.8.0-cp310-cp310-macosx_10_15_x86_64.whl
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-64/lxml-4.9.1-py310h6c45266_0.tar.bz2
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-64/assimp-5.0.1-h1224e73_6.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/osx-64/octomap-1.9.7-h940c156_0.tar.bz2
 ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/osx-64/zlib-1.2.11-h7795811_1010.tar.bz2
+endif
+
+ifeq ($(PLATFORM), macosm1)
+ifeq ($(PYVERSION), py37)
+# Warning: py37 not supported on Apple M1
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py37h2d7f23a_0.tar.bz2
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py37h0695097_0.tar.bz2
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py37hd79e0ac_3.tar.bz2
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-64/lxml-4.9.1-py37h994c40b_0.tar.bz2
+endif
+ifeq ($(PYVERSION), py39)
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-arm64/hpp-fcl-1.7.5-py39ha69f3c1_2.tar.bz2
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.7/download/osx-arm64/eigenpy-2.6.7-py39ha69f3c1_0.tar.bz2
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py39h2550fe3_0.tar.bz2
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py39h9eb174b_0.tar.bz2
+endif
+ifeq ($(PYVERSION), py310)
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/osx-arm64/hpp-fcl-1.8.0-py310h5699539_2.tar.bz2
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.9/download/osx-arm64/eigenpy-2.6.9-py310habfc766_1.tar.bz2
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py310h4566fd1_0.tar.bz2
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py310h02f21da_0.tar.bz2
+endif
+ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-arm64/assimp-5.0.1-h0f81e16_7.tar.bz2
+OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/osx-arm64/octomap-1.9.7-hc021e02_0.tar.bz2
+ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/osx-arm64/zlib-1.2.11-h90dfc92_1014.tar.bz2
 endif
 
 ifeq ($(PLATFORM), win)
@@ -103,19 +128,19 @@ ifeq ($(PYVERSION), py37)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/win-64/hpp-fcl-1.7.5-py37h839d6b1_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/win-64/eigenpy-2.6.5-py37h2c32e34_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/win-64/boost-1.74.0-py37h3b38789_3.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/9e/5e/171ee9d40a600f565fe691ec5bf7596247ec62cfb2edc00c91afe8ea837b/lxml-4.6.3-cp37-cp37m-win_amd64.whl
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/win-64/lxml-4.9.1-py37hcc03f2d_0.tar.bz2
 endif
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/win-64/hpp-fcl-1.7.5-py39h2e7c763_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/win-64/eigenpy-2.6.5-py39h3ce40e6_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/win-64/boost-1.74.0-py39hefe7e4c_3.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/72/d4/426ecb8849c47c3e370c87aa0ac05d85768df917ffea27fcd6686a5e6495/lxml-4.6.3-cp39-cp39-win_amd64.whl
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/win-64/lxml-4.9.1-py39hb82d6ee_0.tar.bz2
 endif
 ifeq ($(PYVERSION), py310)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/win-64/hpp-fcl-1.8.0-py310hc5a3c62_1.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.11/download/win-64/eigenpy-2.6.11-py310hbd43d28_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/win-64/boost-1.74.0-py310hc781a3c_5.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/f6/71/65c80a4caa1617a4c6e8fe1500cebb179db96232e2f623bfe6a1f4294e39/lxml-4.8.0-cp310-cp310-win_amd64.whl
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/win-64/lxml-4.9.1-py310he2412df_0.tar.bz2
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/win-64/assimp-5.0.1-hc2aa0de_6.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/win-64/octomap-1.9.7-h5362a0b_0.tar.bz2
@@ -133,7 +158,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-dc67287-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-4fb910f-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
 
@@ -419,8 +444,8 @@ endif
 	# Required by ids - uh, not any more, but I'm trying it out in the drawing module
 	mkdir dist/working
 	cd dist/working && wget $(LXML_URL)
-	cd dist/working && cp *.whl lxml.zip && unzip lxml.zip
-	cp -r dist/working/lxml dist/blenderbim/libs/site/packages/
+	cd dist/working && tar -xf lxml*
+	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/lxml dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by behave

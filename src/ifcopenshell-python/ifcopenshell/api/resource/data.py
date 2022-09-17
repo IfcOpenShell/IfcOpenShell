@@ -59,7 +59,11 @@ class Data(CostValueTrait):
             data["ResourceOf"] = []
             for rel in resource.ResourceOf:
                 [data["ResourceOf"].append(o.id()) for o in rel.RelatedObjects]
-            data["HasContext"] = resource.HasContext[0].RelatingContext.id() if resource.HasContext else None
+            data["HasContext"] = (
+                resource.HasContext[0].RelatingContext.id()
+                if resource.HasContext
+                else None
+            )
             if resource.Usage:
                 data["Usage"] = data["Usage"].id()
             data["TotalCostQuantity"] = cls.get_total_quantity(resource)

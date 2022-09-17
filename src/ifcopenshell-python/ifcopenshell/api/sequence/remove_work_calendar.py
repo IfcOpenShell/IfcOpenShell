@@ -40,5 +40,9 @@ class Usecase:
                     ifcopenshell.api.run(
                         "control.unassign_control",
                         self.file,
-                        **{"relating_control": self.settings["work_calendar"], "related_object": object})
+                        **{
+                            "relating_control": self.settings["work_calendar"],
+                            "related_object": object,
+                        }
+                    )
         self.file.remove(self.settings["work_calendar"])

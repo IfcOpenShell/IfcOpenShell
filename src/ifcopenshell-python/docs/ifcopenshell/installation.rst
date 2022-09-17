@@ -96,7 +96,7 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
     OpenCascade, your system may get confused.
 
 
-4. For building IfcConvert with COLLADA (.dae) support (on by default), OpenCOLLADA is needed:
+4. For building IfcConvert with COLLADA (.dae) support (ON by default), OpenCOLLADA is needed:
 
    ::
 
@@ -111,13 +111,13 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
         $ make -j X
         $ sudo make install
 
-5. For building the IfcPython wrapper (on by default), SWIG and Python development are needed:
+5. For building the IfcPython wrapper (ON by default), SWIG and Python development are needed:
 
    ::
 
         $ sudo apt-get install python-all-dev swig
 
-6. For building support for HDF5 caching (off by default), install dependencies:
+6. For building support for HDF5 caching (ON by default), install dependencies:
 
    ::
 
@@ -177,22 +177,33 @@ GCC (4.7 or newer) or Clang (any version) is required.
 
    ::
 
-        $ brew install boost swig cmake ftgl cgal gmp libaec opencascade
+        $ brew install boost cmake python3 cgal ftgl gmp libaec opencascade swig hdf5 zlib
+        # homebrew automatically links most libraries, except some keg-only ones
+        $ brew link zlib --force
 
-3. Build IfcOpenShell with flags for Homebrew dependencies (``/usr/local/``)
+3. Build IfcOpenShell with flags for Homebrew dependencies: (``/usr/local/``) for Intel machines with x84_64 architecture,
+(``/opt/homebrew/``) for Apple Silicon processors with arm64 architecture.
 
    ::
 
         $ cd /path/to/IfcOpenShell
         $ mkdir build && cd build
-        $ cmake ../cmake -DOCC_LIBRARY_DIR=/usr/local/lib/ \
-              -DOCC_INCLUDE_DIR=/usr/local/include/opencascade/ \
-              -DCOLLADA_SUPPORT=0 \
-              -DCGAL_INCLUDE_DIR=/usr/local/include/ \
-              -DGMP_LIBRARY_DIR=/usr/local/lib/ \
-              -DMPFR_LIBRARY_DIR=/usr/local/lib/
-        # Replace X with number of CPU cores + 1
-        $ make -j X -lboost_options
+        # set library flags
+        $ export LDFLAGS="$LDFLAGS -Wl,-flat_namespace,-undefined,suppress"
+        $ cmake ../cmake
+            -DPYTHON_EXECUTABLE=/opt/homebrew/bin/python3.10 \
+            -DPYTHON_LIBRARY=/opt/homebrew/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/lib/libpython3.10.dylib \
+            -DPYTHON_INCLUDE_DIR=/opt/homebrew/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/include/python3.10/ \
+            -DOCC_LIBRARY_DIR=/opt/homebrew/lib/ \
+            -DOCC_INCLUDE_DIR=/opt/homebrew/include/opencascade/ \
+            -DCGAL_INCLUDE_DIR=/opt/homebrew/include/ \
+            -DGMP_LIBRARY_DIR=/opt/homebrew/lib/ \
+            -DMPFR_LIBRARY_DIR=/opt/homebrew/lib/
+            -DHDF5_LIBRARY_DIR=/opt/homebrew/lib/ \
+            -DHDF5_INCLUDE_DIR=/opt/homebrew/include/ \
+            -DCOLLADA_SUPPORT=0 \
+        # `sysctl -n hw.ncpu` returns the number of cpu cores on macOS
+        $ make -j$(sysctl -n hw.ncpu)
 
 Compiling on Windows (Visual Studio)
 ------------------------------------

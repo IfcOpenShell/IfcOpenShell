@@ -402,6 +402,34 @@ class Qto:
 
 
 @interface
+class Resource:
+    def load_resources(cls): pass
+    def load_resource_properties(cls): pass
+    def disable_editing_resource(cls): pass
+    def disable_resource_editing_ui(cls): pass
+    def load_resource_attributes(cls, resource): pass
+    def enable_editing_resource(cls, resource): pass
+    def get_resource_attributes(cls): pass
+    def enable_editing_resource_time(cls, resource): pass
+    def get_resource_time(cls, resource): pass
+    def load_resource_time_attributes(cls, resource_time): pass
+    def get_resource_time_attributes(cls): pass
+    def enable_editing_resource_costs(cls, resource): pass
+    def disable_editing_resource_cost_value(cls): pass
+    def enable_editing_resource_cost_value_formula(cls, cost_value): pass
+    def load_cost_value_attributes(cls, cost_value): pass
+    def enable_editing_cost_value_attributes(cls, cost_value): pass
+    def get_resource_cost_value_formula(cls): pass
+    def get_resource_cost_value_attributes(cls): pass
+    def enable_editing_resource_base_quantity(cls, resource): pass
+    def enable_editing_resource_quantity(cls, resource_quantity): pass
+    def disable_editing_resource_quantity(cls): pass
+    def get_resource_quantity_attributes(cls): pass
+    def expand_resource(cls, resource): pass
+    def contract_resource(cls, resource): pass
+    def import_resources(cls, file_path): pass
+        
+@interface
 class Root:
     def add_dynamic_opening_voids(cls, element, obj): pass
     def does_type_have_representations(cls, element): pass
