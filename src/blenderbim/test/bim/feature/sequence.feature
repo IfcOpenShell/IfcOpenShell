@@ -388,7 +388,7 @@ Scenario: Animate the demolition of a wall
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
-    And I press "bim.assign_product(task={task}, relating_product=0)"
+    And I press "bim.assign_process(task={task}, related_object=0)"
     And I set "scene.BIMWorkScheduleProperties.visualisation_start" to "01/01/21"
     And I set "scene.BIMWorkScheduleProperties.visualisation_finish" to "01/02/21"
     And I set "scene.BIMWorkScheduleProperties.speed_types" to "FRAME_SPEED"
