@@ -94,7 +94,7 @@ Scenario: Enable pset editing - work schedule
 Scenario: Enable pset editing - resource with time series properties
     Given an empty IFC project
     And I press "bim.load_resources"
-    And I press "bim.add_resource(ifc_class='IfcSubContractResource', resource=0)"
+    And I press "bim.add_resource(ifc_class='IfcSubContractResource', parent_resource=0)"
     And I set "scene.ResourcePsetProperties.pset_name" to "Pset_ConstructionResource"
     And I press "bim.add_pset(obj_type='Resource')"
     And the variable "pset" is "{ifc}.by_type('IfcPropertySet')[-1].id()"
@@ -104,9 +104,9 @@ Scenario: Enable pset editing - resource with time series properties
 Scenario: Enable pset editing - resource with regular single properties
     Given an empty IFC project
     And I press "bim.load_resources"
-    And I press "bim.add_resource(ifc_class='IfcCrewResource', resource=0)"
+    And I press "bim.add_resource(ifc_class='IfcCrewResource', parent_resource=0)"
     And the variable "resource" is "{ifc}.by_type('IfcCrewResource')[-1].id()"
-    And I press "bim.add_resource(ifc_class='IfcLaborResource', resource={resource})"
+    And I press "bim.add_resource(ifc_class='IfcLaborResource', parent_resource={resource})"
     And I set "scene.BIMResourceProperties.active_resource_index" to "1"
     And I set "scene.ResourcePsetProperties.pset_name" to "EPset_Productivity"
     And I press "bim.add_pset(obj_type='Resource')"

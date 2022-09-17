@@ -51,6 +51,9 @@ class TestCreateProject:
             context_type="Plan", context_identifier="", target_view="", parent=0
         ).should_be_called().will_return("plan")
         project.run_context_add_context(
+            context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent="plan"
+        ).should_be_called()
+        project.run_context_add_context(
             context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
         ).should_be_called()
         project.run_context_add_context(
@@ -97,6 +100,9 @@ class TestCreateProject:
         project.run_context_add_context(
             context_type="Plan", context_identifier="", target_view="", parent=0
         ).should_be_called().will_return("plan")
+        project.run_context_add_context(
+            context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent="plan"
+        ).should_be_called()
         project.run_context_add_context(
             context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
         ).should_be_called()
@@ -153,6 +159,9 @@ class TestCreateProject:
         project.run_context_add_context(
             context_type="Plan", context_identifier="", target_view="", parent=0
         ).should_be_called().will_return("plan")
+        project.run_context_add_context(
+            context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent="plan"
+        ).should_be_called()
         project.run_context_add_context(
             context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
         ).should_be_called()
