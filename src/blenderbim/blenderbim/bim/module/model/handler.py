@@ -62,9 +62,6 @@ def load_post(*args):
     IfcStore.add_element_listener(profile.element_listener)
 
     ifcopenshell.api.add_post_listener(
-        "geometry.add_representation", "BlenderBIM.DumbWall.GenerateAxis", wall.generate_axis
-    )
-    ifcopenshell.api.add_post_listener(
         "geometry.add_representation", "BlenderBIM.DumbWall.CalculateQuantities", wall.calculate_quantities
     )
     ifcopenshell.api.add_post_listener(

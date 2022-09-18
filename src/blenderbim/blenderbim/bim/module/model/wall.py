@@ -185,6 +185,22 @@ class SplitWall(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MergeWall(bpy.types.Operator):
+    bl_idname = "bim.merge_wall"
+    bl_label = "Merge Wall"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def execute(self, context):
+        selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
+        if len(selected_objs) == 2:
+            DumbWallJoiner().merge([o for o in selected_objs if o != context.active_object][0], context.active_object)
+        return {"FINISHED"}
+
+
 class RecalculateWall(bpy.types.Operator):
     bl_idname = "bim.recalculate_wall"
     bl_label = "Recalculate Wall"
@@ -753,6 +769,63 @@ class DumbWallJoiner:
         axis2["reference"][0] = intersect
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
+
+    def merge(self, wall1, wall2):
+        element1 = tool.Ifc.get_entity(wall1)
+        element2 = tool.Ifc.get_entity(wall2)
+        axis1 = self.get_wall_axis(wall1)
+        axis2 = self.get_wall_axis(wall2)
+
+        angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=False, degrees=True)
+        if not tool.Cad.is_x(angle, 0):
+            return
+
+        intersect1, connection1 = mathutils.geometry.intersect_point_line(axis2["reference"][0], *axis1["reference"])
+        if not tool.Cad.is_x((intersect1 - axis2["reference"][0]).length, 0):
+            return
+
+        intersect2, connection2 = mathutils.geometry.intersect_point_line(axis2["reference"][1], *axis1["reference"])
+        if not tool.Cad.is_x((intersect2 - axis2["reference"][1]).length, 0):
+            return
+
+        changed_connections = set()
+
+        if connection1 < 0:
+            changed_connections.add("ATSTART")
+            axis1["reference"][0] = intersect2 if connection2 < connection1 else intersect1
+        elif connection1 > 1:
+            changed_connections.add("ATEND")
+            axis1["reference"][1] = intersect2 if connection2 > connection1 else intersect1
+
+        for connection in changed_connections:
+            ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection)
+
+        for rel in element2.ConnectedTo:
+            if rel.RelatingConnectionType in changed_connections:
+                other = tool.Ifc.get_object(rel.RelatedElement)
+                ifcopenshell.api.run(
+                    "geometry.connect_path",
+                    tool.Ifc.get(),
+                    relating_element=element1,
+                    related_element=rel.RelatedElement,
+                    relating_connection=rel.RelatingConnectionType,
+                    related_connection=rel.RelatedConnectionType,
+                )
+
+        for rel in element2.ConnectedFrom:
+            if rel.RelatedConnectionType in changed_connections:
+                ifcopenshell.api.run(
+                    "geometry.connect_path",
+                    tool.Ifc.get(),
+                    relating_element=rel.RelatingElement,
+                    related_element=element1,
+                    relating_connection=rel.RelatingConnectionType,
+                    related_connection=rel.RelatedConnectionType,
+                )
+
+        self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
+        bpy.data.objects.remove(wall2)
+
 
     def duplicate_wall(self, wall1):
         wall2 = wall1.copy()
