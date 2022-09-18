@@ -185,6 +185,20 @@ class SplitWall(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class RecalculateWall(bpy.types.Operator):
+    bl_idname = "bim.recalculate_wall"
+    bl_label = "Recalculate Wall"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def execute(self, context):
+        DumbWallRecalculator().recalculate(context.selected_objects)
+        return {"FINISHED"}
+
+
 def recalculate_dumb_wall_origin(wall, new_origin=None):
     if new_origin is None:
         new_origin = wall.matrix_world @ Vector(wall.bound_box[0])
@@ -369,6 +383,20 @@ class DumbWallAligner:
         return round(degrees(angle) % 360) == 180
 
 
+class DumbWallRecalculator:
+    def recalculate(self, walls):
+        queue = set()
+        for wall in walls:
+            element = tool.Ifc.get_entity(wall)
+            queue.add((element, wall))
+            for rel in getattr(element, "ConnectedTo", []):
+                queue.add((rel.RelatedElement, tool.Ifc.get_object(rel.RelatedElement)))
+            for rel in getattr(element, "ConnectedFrom", []):
+                queue.add((rel.RelatingElement, tool.Ifc.get_object(rel.RelatingElement)))
+        joiner = DumbWallJoiner()
+        for element, wall in queue:
+            if wall:
+                joiner.recreate_wall(element, wall)
 
 
 class DumbWallGenerator:
