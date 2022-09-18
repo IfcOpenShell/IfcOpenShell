@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import copy
 import math
 import bmesh
 import ifcopenshell
@@ -180,8 +181,7 @@ class SplitWall(bpy.types.Operator):
     def execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
         for obj in selected_objs:
-            DumbWallSplitter(obj, context.scene.cursor.location).split()
-            IfcStore.edited_objs.add(obj)
+            DumbWallJoiner().split(obj, context.scene.cursor.location)
         return {"FINISHED"}
 
 
@@ -212,68 +212,6 @@ def recalculate_dumb_wall_origin(wall, new_origin=None):
     wall.matrix_world.translation = new_origin
     for child in wall.children:
         child.matrix_parent_inverse = wall.matrix_world.inverted()
-
-
-class DumbWallSplitter:
-    def __init__(self, wall, point):
-        self.wall = wall
-        self.point = point
-
-    def split(self):
-        recalculate_dumb_wall_origin(self.wall)
-        self.point = self.determine_split_point()
-        if not self.point:
-            return
-        new_wall = self.duplicate_wall()
-        self.snap_end_face_to_point(self.wall, "max")
-        self.snap_end_face_to_point(new_wall, "min")
-
-    def determine_split_point(self):
-        start = self.wall.matrix_world @ Vector(self.wall.bound_box[0])
-        end = self.wall.matrix_world @ Vector(self.wall.bound_box[4])
-        point, distance = mathutils.geometry.intersect_point_line(self.point, start, end)
-        if round(distance, 2) <= 0 or round(distance, 2) >= 1:
-            return  # The split point is not on the wall
-        return point
-
-    def duplicate_wall(self):
-        new = self.wall.copy()
-        self.wall.users_collection[0].objects.link(new)
-        blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new)
-        return new
-
-    def snap_end_face_to_point(self, wall, which_end):
-        bm = bmesh.new()
-        bm.from_mesh(wall.data)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-        min_face, max_face = self.get_wall_end_faces(wall, bm)
-        face = min_face if which_end == "min" else max_face
-        local_point = wall.matrix_world.inverted() @ self.point
-        for vert in face.verts:
-            vert.co.x = local_point.x
-        bm.to_mesh(wall.data)
-        wall.data.update()
-        bm.free()
-        IfcStore.edited_objs.add(wall)
-
-    # An end face is a quad that is on one end of the wall or the other. It must
-    # have at least one vertex on either extreme X-axis, and a non-insignificant
-    # X component of its face normal
-    def get_wall_end_faces(self, wall, bm):
-        min_face = None
-        max_face = None
-        min_x = min([v[0] for v in wall.bound_box])
-        max_x = max([v[0] for v in wall.bound_box])
-        bm.faces.ensure_lookup_table()
-        for f in bm.faces:
-            for v in f.verts:
-                if v.co.x == min_x and abs(f.normal.x) > 0.1:
-                    min_face = f
-                elif v.co.x == max_x and abs(f.normal.x) > 0.1:
-                    max_face = f
-            if min_face and max_face:
-                break
-        return min_face, max_face
 
 
 class DumbWallFlipper:
@@ -395,7 +333,7 @@ class DumbWallRecalculator:
                 queue.add((rel.RelatingElement, tool.Ifc.get_object(rel.RelatingElement)))
         joiner = DumbWallJoiner()
         for element, wall in queue:
-            if wall:
+            if element.is_a("IfcWall") and wall:
                 joiner.recreate_wall(element, wall)
 
 
@@ -789,9 +727,39 @@ class DumbWallJoiner:
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
 
         axis1 = self.get_wall_axis(wall1)
-        axis = axis1["reference"].copy()
-        body = axis1["reference"].copy()
+        axis = copy.deepcopy(axis1["reference"])
+        body = copy.deepcopy(axis1["reference"])
         self.recreate_wall(element1, wall1, axis, body)
+
+    def split(self, wall1, target):
+        element1 = tool.Ifc.get_entity(wall1)
+        if not element1:
+            return
+        axis1 = self.get_wall_axis(wall1)
+        axis2 = copy.deepcopy(axis1)
+        intersect, connection = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
+        if connection < 0 or connection > 1 or tool.Cad.is_x(connection, (0, 1)):
+            return
+        connection = "ATEND" if connection > 0.5 else "ATSTART"
+
+        wall2 = self.duplicate_wall(wall1)
+        MaterialData.load(tool.Ifc.get())
+        element2 = tool.Ifc.get_entity(wall2)
+
+        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
+        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element2, connection_type="ATSTART")
+
+        axis1["reference"][1] = intersect
+        axis2["reference"][0] = intersect
+        self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
+        self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
+
+    def duplicate_wall(self, wall1):
+        wall2 = wall1.copy()
+        wall2.data = wall2.data.copy()
+        wall1.users_collection[0].objects.link(wall2)
+        blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=wall2)
+        return wall2
 
     def join_L(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
@@ -829,8 +797,8 @@ class DumbWallJoiner:
 
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection)
 
-        axis = axis1["reference"].copy()
-        body = axis1["reference"].copy()
+        axis = copy.deepcopy(axis1["reference"])
+        body = copy.deepcopy(axis1["reference"])
         axis[1 if connection == "ATEND" else 0] = intersect
         body[1 if connection == "ATEND" else 0] = intersect
         self.recreate_wall(element1, wall1, axis, body)
@@ -861,9 +829,9 @@ class DumbWallJoiner:
     def recreate_wall(self, element, obj, axis=None, body=None):
         if axis is None or body is None:
             axis = body = self.get_wall_axis(obj)["reference"]
-        self.axis = axis.copy()
-        self.body = body.copy()
-        self.original_body = body.copy()
+        self.axis = copy.deepcopy(axis)
+        self.body = copy.deepcopy(body)
+        self.original_body = copy.deepcopy(body)
         height = self.get_height(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
         self.clippings = []
         layers = get_material_layer_parameters(element)
@@ -879,7 +847,7 @@ class DumbWallJoiner:
             if connection not in ["ATPATH", "NOTDEFINED"]:
                 self.join(obj, other, connection, is_relating=False)
 
-        new_matrix = obj.matrix_world.copy()
+        new_matrix = copy.deepcopy(obj.matrix_world)
         new_matrix.col[3] = self.body[0].to_4d()
         new_matrix.invert()
         self.clippings = [new_matrix @ c for c in self.clippings]
