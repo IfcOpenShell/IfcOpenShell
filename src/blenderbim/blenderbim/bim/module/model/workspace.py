@@ -42,7 +42,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.join_wall", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("join_type", "L")]}),
-        ("bim.join_wall", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": [("join_type", "V")]}),
+        ("bim.recalculate_wall", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": []}),
         ("bim.flip_wall", {"type": "F", "value": "PRESS", "shift": True}, {"properties": []}),
         ("bim.split_wall", {"type": "S", "value": "PRESS", "shift": True}, {"properties": []}),
         ("bim.hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
@@ -140,7 +140,7 @@ class BimTool(WorkSpaceTool):
                 row.label(text="Butt", icon="EVENT_T")
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="Mitre", icon="EVENT_Y")
+                row.label(text="Regen Connections", icon="EVENT_Y")
 
                 row = layout.row()
                 row.label(text="Wall Tools")
