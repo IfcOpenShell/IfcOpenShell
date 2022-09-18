@@ -43,6 +43,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.join_wall", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("join_type", "L")]}),
         ("bim.recalculate_wall", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": []}),
+        ("bim.merge_wall", {"type": "M", "value": "PRESS", "shift": True}, {"properties": []}),
         ("bim.flip_wall", {"type": "F", "value": "PRESS", "shift": True}, {"properties": []}),
         ("bim.split_wall", {"type": "S", "value": "PRESS", "shift": True}, {"properties": []}),
         ("bim.hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
@@ -141,6 +142,9 @@ class BimTool(WorkSpaceTool):
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="Regen Connections", icon="EVENT_Y")
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="Merge", icon="EVENT_M")
 
                 row = layout.row()
                 row.label(text="Wall Tools")
