@@ -76,9 +76,10 @@ class JoinWall(bpy.types.Operator):
     bl_label = "Join Wall"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = """ Trim/Extend the selected walls to the last selected wall:
-    'T' mode: Trim/Extend to the virtual projection
-    'L' mode: Chamfer the walls
-    'V' mode: Chamfer the walls keeping the angle"""
+    'T' mode: Trim/Extend to a selected wall or 3D target
+    'L' mode: Join two selected wall ends
+    '' (empty) mode: Unjoin selected walls
+    """
     join_type: bpy.props.StringProperty()
 
     @classmethod
@@ -87,33 +88,31 @@ class JoinWall(bpy.types.Operator):
 
     def execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.BIMObjectProperties.ifc_definition_id]
-        for obj in selected_objs:
-            bpy.ops.bim.dynamically_void_product(obj=obj.name)
+        #for obj in selected_objs:
+        #    bpy.ops.bim.dynamically_void_product(obj=obj.name)
         if not self.join_type:
             for obj in selected_objs:
-                DumbWallJoiner(obj, obj).unjoin()
+                DumbWallJoiner().unjoin(obj)
             return {"FINISHED"}
         if not context.active_object:
             return {"FINISHED"}
         if len(selected_objs) == 1:
-            DumbWallJoiner(context.active_object, target_coordinate=context.scene.cursor.location).extend()
-            IfcStore.edited_objs.add(context.active_object)
+            DumbWallJoiner().join_E(context.active_object, context.scene.cursor.location)
+            #IfcStore.edited_objs.add(context.active_object)
             return {"FINISHED"}
         if len(selected_objs) < 2:
             return {"FINISHED"}
+        joiner = DumbWallJoiner()
         for obj in selected_objs:
             if obj == context.active_object:
                 continue
-            joiner = DumbWallJoiner(obj, context.active_object)
             if self.join_type == "T":
-                joiner.join_T()
+                joiner.join_T(obj, context.active_object)
             elif self.join_type == "L":
-                joiner.join_L()
-            elif self.join_type == "V":
-                joiner.join_V()
+                joiner.join_L(obj, context.active_object)
             IfcStore.edited_objs.add(obj)
-        if self.join_type != "T":
-            IfcStore.edited_objs.add(context.active_object)
+        #if self.join_type != "T":
+        #    IfcStore.edited_objs.add(context.active_object)
         return {"FINISHED"}
 
 
@@ -370,278 +369,6 @@ class DumbWallAligner:
         return round(degrees(angle) % 360) == 180
 
 
-class DumbWallJoiner:
-    # A dumb wall is a prismatic wall along its local X axis.
-    # Given two dumb walls, there are three types of wall joints.
-    #  1. T-junction joints
-    #  2. L-junction "butt" joints
-    #  3. V-junction "mitre" joints
-    # The algorithms that handle all joints rely on three fundamental functions.
-    #  1. Identify faces at either end of the wall, called "end faces".
-    #  2. Given an "end face", identify a side "target face" of the other wall
-    #     to project towards.
-    #  3. Project the vertices of an "end face" to the "target face".
-    # Alternatively, a target coordinate may be provided as an imaginary point for the wall to join to
-    def __init__(self, wall1, wall2=None, target_coordinate=None):
-        self.wall1 = wall1
-        self.wall2 = wall2
-        self.target_coordinate = target_coordinate
-        self.should_project_to_frontface = True
-        self.should_attempt_v_junction_projection = False
-        self.initialise_convenience_variables()
-
-    def initialise_convenience_variables(self):
-        self.wall1_matrix = self.wall1.matrix_world
-        if self.wall2:
-            self.wall2_matrix = self.wall2.matrix_world
-        self.pos_x = self.wall1_matrix.to_quaternion() @ Vector((1, 0, 0))
-        self.neg_x = self.wall1_matrix.to_quaternion() @ Vector((-1, 0, 0))
-
-    # Unjoining a wall geometrically means to flatten the ends of the wall to
-    # remove any mitred angle from it.
-    def unjoin(self):
-        wall1_min_faces, wall1_max_faces = self.get_wall_end_faces(self.wall1)
-        min_x = min([v[0] for v in self.wall1.bound_box])
-        max_x = max([v[0] for v in self.wall1.bound_box])
-        for face in wall1_min_faces:
-            for v in face.vertices:
-                self.wall1.data.vertices[v].co[0] = min_x
-        for face in wall1_max_faces:
-            for v in face.vertices:
-                self.wall1.data.vertices[v].co[0] = max_x
-        self.recalculate_origins()
-
-    # An extension is where a single end of wall1 is projected to an imaginary
-    # plane denoted by the target coordinate.
-    def extend(self):
-        wall1_min_faces, wall1_max_faces = self.get_wall_end_faces(self.wall1)
-        ef1_distance = abs(
-            mathutils.geometry.distance_point_to_plane(
-                self.wall1_matrix @ self.wall1.data.vertices[wall1_min_faces[0].vertices[0]].co,
-                self.target_coordinate,
-                self.pos_x,
-            )
-        )
-        ef2_distance = abs(
-            mathutils.geometry.distance_point_to_plane(
-                self.wall1_matrix @ self.wall1.data.vertices[wall1_max_faces[0].vertices[0]].co,
-                self.target_coordinate,
-                self.neg_x,
-            )
-        )
-        if ef1_distance < ef2_distance:
-            self.project_end_faces_to_target(wall1_min_faces)
-        else:
-            self.project_end_faces_to_target(wall1_max_faces)
-        self.recalculate_origins()
-
-    # A T-junction is an ordered operation where a single end of wall1 is joined
-    # to wall2 if possible (i.e. walls aren't parallel). Wall2 is not modified.
-    # First, wall1 end faces are identified. We attempt to project an end face
-    # at both ends to a front face of wall2. We then choose the end face that
-    # has the shortest projection distance, and project it.
-    def join_T(self):
-        self._join_T()
-        self.recalculate_origins()
-
-    def _join_T(self):
-        wall1_min_faces, wall1_max_faces = self.get_wall_end_faces(self.wall1)
-        wall2_end_faces1, wall2_end_faces2 = self.get_wall_end_faces(self.wall2)
-        self.wall2_end_faces = wall2_end_faces1 + wall2_end_faces2
-        ef1_distance, ef1_target_frontface, ef1_target_backface = self.get_projection_target(wall1_min_faces, 1)
-        ef2_distance, ef2_target_frontface, ef2_target_backface = self.get_projection_target(wall1_max_faces, 2)
-
-        # Large distances probably means rounding issues which lead to very long projections
-        if ef1_distance and ef1_distance > 50:
-            ef1_distance = None
-        if ef2_distance and ef2_distance > 50:
-            ef2_distance = None
-
-        # Project only the end faces that are closer to their target
-        if ef1_distance and ef2_distance is None:
-            self.project_end_faces(wall1_min_faces, ef1_target_frontface, ef1_target_backface)
-            return (wall1_min_faces, ef1_target_frontface, ef1_target_backface)
-        elif ef2_distance and ef1_distance is None:
-            self.project_end_faces(wall1_max_faces, ef2_target_frontface, ef2_target_backface)
-            return (wall1_max_faces, ef2_target_frontface, ef2_target_backface)
-        elif ef1_distance is None and ef2_distance is None:
-            return (None, None, None)  # Life is short. BIM is hard.
-        elif ef1_distance < ef2_distance:
-            self.project_end_faces(wall1_min_faces, ef1_target_frontface, ef1_target_backface)
-            return (wall1_min_faces, ef1_target_frontface, ef1_target_backface)
-        else:
-            self.project_end_faces(wall1_max_faces, ef2_target_frontface, ef2_target_backface)
-            return (wall1_max_faces, ef2_target_frontface, ef2_target_backface)
-
-    # An L-junction is ordered operation where a single end of wall1 is joined
-    # to the backface of a side of wall2, and then a single end of wall2 is
-    # joined back to wall1 as a regular T-junction.
-    def join_L(self):
-        self.should_project_to_frontface = False
-        self._join_T()
-        self.swap_walls()
-        self.should_project_to_frontface = True
-        self._join_T()
-        self.recalculate_origins()
-
-    # A V-junction is an unordered operation where wall1 is joined to wall2,
-    # then vice versa. First, we do a T-junction from wall1 to wall2, then vice
-    # versa. This creates a junction where the inner vertices of the mitre joint
-    # touches, but the outer vertices do not. So, we just loop through the end
-    # point vertices of each wall, find outer vertices (i.e. vertices that don't
-    # touch the other wall), then continue projecting those to the back face of
-    # the other wall.
-    def join_V(self):
-        wall2_end_faces, wall2_target_frontface, wall2_target_backface = self._join_T()
-        self.swap_walls()
-        wall1_end_faces, wall1_target_frontface, wall1_target_backface = self._join_T()
-
-        for face in wall1_end_faces or []:
-            for v in face.vertices:
-                global_co = self.wall1_matrix @ self.wall1.data.vertices[v].co
-                if self.wall2.closest_point_on_mesh(self.wall2_matrix.inverted() @ global_co, distance=0.001)[0]:
-                    continue  # Vertex is already coincident with other wall, do not mitre
-                target_face_center = self.wall2_matrix @ wall1_target_backface.center
-                target_face_normal = (self.wall2_matrix.to_quaternion() @ wall1_target_backface.normal).normalized()
-                self.project_vertex(v, target_face_center, target_face_normal, self.wall1, self.wall1_matrix)
-
-        self.swap_walls()
-
-        for face in wall2_end_faces or []:
-            for v in face.vertices:
-                global_co = self.wall1_matrix @ self.wall1.data.vertices[v].co
-                if self.wall2.closest_point_on_mesh(self.wall2_matrix.inverted() @ global_co, distance=0.001)[0]:
-                    continue  # Vertex is already coincident with other wall, do not mitre
-                target_face_center = self.wall2_matrix @ wall2_target_backface.center
-                target_face_normal = (self.wall2_matrix.to_quaternion() @ wall2_target_backface.normal).normalized()
-                self.project_vertex(v, target_face_center, target_face_normal, self.wall1, self.wall1_matrix)
-        self.recalculate_origins()
-
-    def recalculate_origins(self):
-        bpy.context.view_layer.update()
-        recalculate_dumb_wall_origin(self.wall1)
-        if self.wall2:
-            recalculate_dumb_wall_origin(self.wall2)
-
-    def swap_walls(self):
-        self.wall1, self.wall2 = self.wall2, self.wall1
-        self.initialise_convenience_variables()
-
-    def project_end_faces(self, end_faces, target_frontface, target_backface):
-        target_face = target_frontface if self.should_project_to_frontface else target_backface
-        target_face_center = self.wall2_matrix @ target_face.center
-        target_face_normal = (self.wall2_matrix.to_quaternion() @ target_face.normal).normalized()
-
-        for end_face in end_faces:
-            for v in end_face.vertices:
-                self.project_vertex(v, target_face_center, target_face_normal, self.wall1, self.wall1_matrix)
-
-    def project_vertex(self, v, target_face_center, target_face_normal, wall, wall_matrix):
-        original_point = wall_matrix @ wall.data.vertices[v].co
-        point = mathutils.geometry.intersect_line_plane(
-            original_point,
-            (original_point) + self.pos_x,
-            target_face_center,
-            target_face_normal,
-        )
-        if not point or (point - original_point).length > 50:
-            return
-        local_point = wall_matrix.inverted() @ point
-        wall.data.vertices[v].co = local_point
-
-    def project_end_faces_to_target(self, end_faces):
-        for end_face in end_faces:
-            for v in end_face.vertices:
-                vertex = self.wall1_matrix @ self.wall1.data.vertices[v].co
-                self.wall1.data.vertices[v].co = self.wall1_matrix.inverted() @ mathutils.geometry.intersect_line_plane(
-                    vertex, vertex + self.pos_x, self.target_coordinate, self.pos_x
-                )
-
-    # A projection target face is a side face on the target wall that has a
-    # significant local Y component to its normal (i.e. is not pointing up or
-    # down or something). In addition, its plane must intersect with the
-    # projection vector of an end face. Finally, the projection vector and the
-    # normal of the target face must not be acute.
-    def get_projection_target(self, end_faces, which_end):
-        if not end_faces:
-            return (None, None, None)
-
-        # Get a single end face as a sample.
-        f1 = end_faces[0]
-        f1_center = self.wall1_matrix @ f1.center
-
-        if which_end == 1:
-            outwards = self.neg_x
-            inwards = self.pos_x
-        elif which_end == 2:
-            outwards = self.pos_x
-            inwards = self.neg_x
-
-        distance = None
-        target_frontface = None
-        target_backface = None
-
-        for f2 in self.wall2.data.polygons:
-            if abs(f2.normal.y) < 0.75:
-                continue  # Probably not a side wall
-            if f2 in self.wall2_end_faces:
-                continue
-            # Can we project the end face to the target face?
-            f2_center = self.wall2_matrix @ f2.center
-            f1_center_offset_x = f1_center + outwards
-            f2_normal = (self.wall2_matrix.to_quaternion() @ f2.normal).normalized()
-            point = mathutils.geometry.intersect_line_plane(
-                f1_center,
-                f1_center_offset_x,
-                f2_center,
-                f2_normal,
-            )
-            if not point:
-                continue  # We can't project to the face at all
-            intersection_point, signed_distance = mathutils.geometry.intersect_point_line(
-                point, f1_center, f1_center_offset_x
-            )
-            raycast_direction = outwards if signed_distance > 0 else inwards
-
-            if raycast_direction == outwards and f2_normal.angle(raycast_direction) < math.pi / 2:
-                target_backface = f2  # f2 is on the wrong side of the wall
-            elif raycast_direction == inwards and f2_normal.angle(raycast_direction) > math.pi / 2:
-                target_backface = f2  # f2 is on the wrong side of the wall
-            else:
-                target_frontface = f2
-
-            distance = (point - f1_center).length
-
-            if distance is not None and target_frontface is not None and target_backface is not None:
-                return (distance, target_frontface, target_backface)
-        return (None, None, None)
-
-    # An end face is a set of faces that represents either one end of the wall or
-    # the other. There is typically only 1 quad or 2 tris for each end.
-    # An end face is defined as having at least one vertex on either extreme
-    # X-axis, and a non-insignificant X component of its face normal
-    def get_wall_end_faces(self, wall):
-        min_faces = []
-        max_faces = []
-        min_x = min([v[0] for v in wall.bound_box])
-        max_x = max([v[0] for v in wall.bound_box])
-        for f in wall.data.polygons:
-            if abs(f.normal.x) < 0.1:
-                continue
-            end_face_index = self.get_wall_face_end(wall, f, min_x, max_x)
-            if end_face_index == 1:
-                min_faces.append(f)
-            elif end_face_index == 2:
-                max_faces.append(f)
-        return (min_faces, max_faces)
-
-    # 1 is the leftmost (minimum local X axis) end, and 2 is the rightmost end
-    def get_wall_face_end(self, wall, face, min_x, max_x):
-        for v in face.vertices:
-            if wall.data.vertices[v].co.x == min_x:
-                return 1
-            if wall.data.vertices[v].co.x == max_x:
-                return 2
 
 
 class DumbWallGenerator:
@@ -797,7 +524,13 @@ class DumbWallGenerator:
                 "geometry.add_axis_representation",
                 tool.Ifc.get(),
                 context=self.axis_context,
-                axis=[(0., 0.,), (self.length, 0.)],
+                axis=[
+                    (
+                        0.0,
+                        0.0,
+                    ),
+                    (self.length, 0.0),
+                ],
             )
             ifcopenshell.api.run(
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
@@ -834,41 +567,6 @@ class DumbWallGenerator:
     def get_relating_type_class(self, relating_type):
         classes = ifcopenshell.util.type.get_applicable_entities(relating_type.is_a(), tool.Ifc.get().schema)
         return [c for c in classes if "StandardCase" not in c][0]
-
-
-def generate_axis(usecase_path, ifc_file, settings):
-    axis_context = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Axis", "GRAPH_VIEW")
-    if not axis_context:
-        return
-    obj = settings["blender_object"]
-    product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-    parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
-        return
-    old_axis = ifcopenshell.util.representation.get_representation(product, "Plan", "Axis", "GRAPH_VIEW")
-    if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
-        if old_axis:
-            blenderbim.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_axis)
-
-        new_settings = settings.copy()
-        new_settings["context"] = axis_context
-
-        mesh = bpy.data.meshes.new("Temporary Axis")
-        start = Vector(obj.bound_box[0])
-        end = Vector(obj.bound_box[4])
-        mesh.from_pydata([start, end], [(0, 1)], [])
-
-        new_settings["geometry"] = mesh
-        new_axis = ifcopenshell.api.run(
-            "geometry.add_representation", ifc_file, should_run_listeners=False, **new_settings
-        )
-        ifcopenshell.api.run(
-            "geometry.assign_representation",
-            ifc_file,
-            should_run_listeners=False,
-            **{"product": product, "representation": new_axis},
-        )
-        bpy.data.meshes.remove(mesh)
 
 
 def calculate_quantities(usecase_path, ifc_file, settings):
@@ -1047,12 +745,8 @@ class DumbWallPlaner:
         return min_face, max_face
 
 
-class WallPrototypeVTX(bpy.types.Operator):
-    bl_idname = "bim.wall_prototype_vtx"
-    bl_label = "Wall Prototype VTX"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
+class DumbWallJoiner:
+    def __init__(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "AXIS", "GRAPH_VIEW")
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
@@ -1070,20 +764,6 @@ class WallPrototypeVTX(bpy.types.Operator):
         axis = axis1["reference"].copy()
         body = axis1["reference"].copy()
         self.recreate_wall(element1, wall1, axis, body)
-        selected_objects = [o for o in context.selected_objects if tool.Ifc.get_entity(o)]
-        if len(selected_objects) == 1:
-            self.join_E(context.active_object, context.scene.cursor.location)
-        elif len(selected_objects) == 2:
-            self.join_L([o for o in selected_objects if o != context.active_object][0], context.active_object)
-        elif len(selected_objects) >= 2:
-            for obj in selected_objects:
-                if obj == context.active_object:
-                    continue
-                element = tool.Ifc.get_entity(obj)
-                if not element.is_a("IfcWall"):
-                    continue
-                self.join_T(obj, context.active_object)
-        return {"FINISHED"}
 
     def join_L(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
@@ -1150,9 +830,12 @@ class WallPrototypeVTX(bpy.types.Operator):
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
 
-    def recreate_wall(self, element, obj, axis, body):
+    def recreate_wall(self, element, obj, axis=None, body=None):
+        if axis is None or body is None:
+            axis = body = self.get_wall_axis(obj)["reference"]
         self.axis = axis.copy()
         self.body = body.copy()
+        self.original_body = body.copy()
         height = self.get_height(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
         self.clippings = []
         layers = get_material_layer_parameters(element)
@@ -1215,6 +898,10 @@ class WallPrototypeVTX(bpy.types.Operator):
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_body
             )
 
+        obj.location[0], obj.location[1] = self.body[0]
+        bpy.context.view_layer.update()
+        if tool.Ifc.is_moved(obj):
+            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         blenderbim.core.geometry.switch_representation(
             tool.Geometry,
             obj=obj,
@@ -1224,7 +911,6 @@ class WallPrototypeVTX(bpy.types.Operator):
             is_global=True,
             should_sync_changes_first=False,
         )
-        obj.location[0], obj.location[1] = self.body[0]
 
     def create_matrix(self, p, x, y, z):
         return Matrix(
