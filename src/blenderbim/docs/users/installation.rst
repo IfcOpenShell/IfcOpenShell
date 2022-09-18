@@ -125,11 +125,3 @@ FAQ
    Our latest package which uses IfcOpenShell v0.7.0 is built using Ubuntu 20 LTS.
    If you have an older Ubuntu version, you can either upgrade to 19.10 or above,
    or you'll need to compile IfcOpenShell yourself.
-
-3. **The add-on does not install on a Mac with an M1 arm chip**
-
-   The BlenderBIM Add-on uses the IfcOpenShell library, which is not yet
-   available for computers which use an ARM chip. You may
-   compile IfcOpenShell yourself to get this to work, but this may be too
-   difficult for most users. Please consider donating so that we can devote more
-   time to supporting all platforms.

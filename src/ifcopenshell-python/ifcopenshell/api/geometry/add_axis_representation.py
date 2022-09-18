@@ -16,39 +16,34 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.util.unit
 
 
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
         self.settings = {
-            "relating_element": None,
-            "related_element": None,
-            "element": None,
-            "connection_type": None,
+            "context": None,  # IfcGeometricRepresentationContext
+            "axis": [],  # A list of ordered coordinates for the axis
         }
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        if self.settings["connection_type"] and self.settings["element"]:
-            connections = [
-                r
-                for r in self.settings["element"].ConnectedTo
-                if r.RelatingConnectionType == self.settings["connection_type"]
-            ] + [
-                r
-                for r in self.settings["element"].ConnectedFrom
-                if r.RelatedConnectionType == self.settings["connection_type"]
-            ]
+        self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        points = [self.convert_si_to_unit(p) for p in self.settings["axis"]]
+        if self.file.schema == "IFC2X3":
+            curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
-            connections = [
-                r
-                for r in self.settings["relating_element"].ConnectedTo
-                if r.RelatedElement == self.settings["related_element"]
-            ]
+            curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(points))
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Curve2D" if len(self.settings["axis"][0]) == 2 else "Curve3D",
+            [curve],
+        )
 
-        for connection in set(connections):
-            self.file.remove(connection)
+    def convert_si_to_unit(self, co):
+        if isinstance(co, (tuple, list)):
+            return [self.convert_si_to_unit(o) for o in co]
+        return co / self.settings["unit_scale"]

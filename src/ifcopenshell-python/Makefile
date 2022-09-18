@@ -24,8 +24,18 @@ endif
 ifeq ($(PLATFORM), macos)
 PLATFORMTAG:=macosx_10_15_x86_64
 endif
+ifeq ($(PLATFORM), macosm1)
+PLATFORMTAG:=macosx_11_0_arm64
+endif
 ifeq ($(PLATFORM), win)
 PLATFORMTAG:=win_amd64
+endif
+
+ifeq ($(PLATFORM), macosm1)
+ifeq ($(PYVERSION), py36)
+# Pure Evil. Let me know if you're the first to file a bug report.
+PYNUMBER:=37
+endif
 endif
 
 .PHONY: test
@@ -67,7 +77,7 @@ endif
 	mkdir -p dist/ifcopenshell
 	cp -r ifcopenshell/* dist/ifcopenshell/
 
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-dc67287-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-4fb910f-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
 ifeq ($(PLATFORM), win)

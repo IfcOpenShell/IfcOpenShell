@@ -44,11 +44,13 @@ class Usecase:
         )
 
     def create_item(self):
+        length = self.convert_si_to_unit(self.settings["length"])
+        thickness = self.convert_si_to_unit(self.settings["thickness"])
         points = (
             (0.0, 0.0, 0.0),
-            (0.0, self.settings["thickness"], 0.0),
-            (self.settings["length"], self.settings["thickness"], 0.0),
-            (self.settings["length"], 0.0, 0.0),
+            (0.0, thickness, 0.0),
+            (length, thickness, 0.0),
+            (length, 0.0, 0.0),
             (0.0, 0.0, 0.0),
         )
         if self.file.schema == "IFC2X3":
@@ -58,7 +60,7 @@ class Usecase:
         extrusion = self.file.createIfcExtrudedAreaSolid(
             self.file.createIfcArbitraryClosedProfileDef("AREA", None, curve),
             self.file.createIfcAxis2Placement3D(
-                self.file.createIfcCartesianPoint((0.0, self.settings["offset"], 0.0)),
+                self.file.createIfcCartesianPoint((0.0, self.convert_si_to_unit(self.settings["offset"]), 0.0)),
                 self.file.createIfcDirection((0.0, 0.0, 1.0)),
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             ),

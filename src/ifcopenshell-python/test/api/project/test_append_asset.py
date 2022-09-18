@@ -44,6 +44,16 @@ class TestAppendAsset(test.bootstrap.IFC4):
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         assert len(self.file.by_type("IfcWallType")) == 1
 
+    def test_append_a_single_type_product_even_though_an_inverse_material_relationship_is_shared(self):
+        library = ifcopenshell.api.run("project.create_file")
+        element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        element2 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+        ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
+        ifcopenshell.api.run("material.assign_material", library, product=element2, material=material)
+        ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
+        assert len(self.file.by_type("IfcWallType")) == 1
+
     def test_append_a_type_product_with_its_materials(self):
         library = ifcopenshell.api.run("project.create_file")
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
