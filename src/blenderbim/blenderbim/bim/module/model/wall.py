@@ -1058,6 +1058,18 @@ class WallPrototypeVTX(bpy.types.Operator):
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
 
+    def unjoin(self, wall1):
+        element1 = tool.Ifc.get_entity(wall1)
+        if not element1:
+            return
+
+        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATSTART")
+        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
+
+        axis1 = self.get_wall_axis(wall1)
+        axis = axis1["reference"].copy()
+        body = axis1["reference"].copy()
+        self.recreate_wall(element1, wall1, axis, body)
         selected_objects = [o for o in context.selected_objects if tool.Ifc.get_entity(o)]
         if len(selected_objects) == 1:
             self.join_E(context.active_object, context.scene.cursor.location)
