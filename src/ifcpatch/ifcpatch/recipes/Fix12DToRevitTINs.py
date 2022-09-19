@@ -44,13 +44,13 @@ class Patcher:
             bm = bmesh.new()
             bm.from_mesh(data)
             bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.01)
-            bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method='BEAUTY', ngon_method='BEAUTY')
+            bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method="BEAUTY", ngon_method="BEAUTY")
             bm.faces.ensure_lookup_table()
             for polygon in bm.faces:
                 v1, v2, v3 = [v.co.to_2d() for v in polygon.verts]
-                d1 = degrees((v2-v1).angle(v3-v1))
-                d2 = degrees((v3-v2).angle(v1-v2))
-                d3 = degrees((v1-v3).angle(v2-v3))
+                d1 = degrees((v2 - v1).angle(v3 - v1))
+                d2 = degrees((v3 - v2).angle(v1 - v2))
+                d3 = degrees((v1 - v3).angle(v2 - v3))
                 if d1 < angle_threshold or d2 < angle_threshold or d3 < angle_threshold:
                     bm.faces.remove(polygon)
             bm.to_mesh(data)
