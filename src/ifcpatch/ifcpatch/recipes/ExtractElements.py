@@ -1,6 +1,5 @@
-
 # IfcPatch - IFC patching utiliy
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcPatch.
 #
@@ -43,6 +42,7 @@ class Patcher:
         for owner_history in self.file.by_type("IfcOwnerHistory"):
             self.owner_history = self.new.add(owner_history)
             break
+        self.add_element(self.file.by_type("IfcProject")[0])
         selector = ifcopenshell.util.selector.Selector()
         for element in selector.parse(self.file, self.query):
             self.add_element(element)
