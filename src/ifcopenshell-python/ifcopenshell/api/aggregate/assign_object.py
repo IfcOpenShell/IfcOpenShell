@@ -18,6 +18,8 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
 
 
 class Usecase:

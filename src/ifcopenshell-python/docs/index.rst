@@ -17,6 +17,7 @@ IfcOpenShell is a suite of developer libraries and utilities to manipulate OpenB
    ifcconvert
    bimtester
    ifcdiff
+   ifcpatch
    ifcclash
    ifccobie
    ifcmax
