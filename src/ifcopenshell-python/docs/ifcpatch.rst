@@ -56,11 +56,12 @@ Here is a minimal example of how to use IfcDiff as a library:
 
     import ifcpatch
 
-    ifcpatch.execute({
+    output = ifcpatch.execute({
         "input": ifcopenshell.open("input.ifc"),
         "recipe": "ExtractElements",
         "arguments": [".IfcWall"],
     })
+    ifcpatch.write(output, "output.ifc")
 
 You can also alias it to a command:
 
