@@ -31,7 +31,7 @@ class Patcher:
         source = ifcopenshell.open(self.args[0])
         original_project = self.file.by_type("IfcProject")[0]
         merged_project = self.file.add(source.by_type("IfcProject")[0])
-        for element in source.by_type("IfcRoot"):
+        for element in source:
             self.file.add(element)
         for inverse in self.file.get_inverse(merged_project):
             ifcopenshell.util.element.replace_attribute(inverse, merged_project, original_project)
