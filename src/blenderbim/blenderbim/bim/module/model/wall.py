@@ -185,6 +185,22 @@ class SplitWall(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MergeWall(bpy.types.Operator):
+    bl_idname = "bim.merge_wall"
+    bl_label = "Merge Wall"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def execute(self, context):
+        selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
+        if len(selected_objs) == 2:
+            DumbWallJoiner().merge([o for o in selected_objs if o != context.active_object][0], context.active_object)
+        return {"FINISHED"}
+
+
 class RecalculateWall(bpy.types.Operator):
     bl_idname = "bim.recalculate_wall"
     bl_label = "Recalculate Wall"
@@ -198,6 +214,41 @@ class RecalculateWall(bpy.types.Operator):
         DumbWallRecalculator().recalculate(context.selected_objects)
         return {"FINISHED"}
 
+
+class ChangeExtrusionDepth(bpy.types.Operator):
+    bl_idname = "bim.change_extrusion_depth"
+    bl_label = "Change Extrusion Depth"
+    bl_options = {"REGISTER", "UNDO"}
+    depth: bpy.props.FloatProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def execute(self, context):
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                return
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if not representation:
+                return
+            extrusion = self.get_extrusion(representation)
+            if not extrusion:
+                return
+            extrusion.Depth = self.depth
+        DumbWallRecalculator().recalculate(context.selected_objects)
+        return {"FINISHED"}
+
+    def get_extrusion(self, representation):
+        item = representation.Items[0]
+        while True:
+            if item.is_a("IfcExtrudedAreaSolid"):
+                return item
+            elif item.is_a("IfcBooleanClippingResult"):
+                item = item.FirstOperand
+            else:
+                break
 
 def recalculate_dumb_wall_origin(wall, new_origin=None):
     if new_origin is None:
@@ -754,6 +805,63 @@ class DumbWallJoiner:
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
 
+    def merge(self, wall1, wall2):
+        element1 = tool.Ifc.get_entity(wall1)
+        element2 = tool.Ifc.get_entity(wall2)
+        axis1 = self.get_wall_axis(wall1)
+        axis2 = self.get_wall_axis(wall2)
+
+        angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=False, degrees=True)
+        if not tool.Cad.is_x(angle, 0):
+            return
+
+        intersect1, connection1 = mathutils.geometry.intersect_point_line(axis2["reference"][0], *axis1["reference"])
+        if not tool.Cad.is_x((intersect1 - axis2["reference"][0]).length, 0):
+            return
+
+        intersect2, connection2 = mathutils.geometry.intersect_point_line(axis2["reference"][1], *axis1["reference"])
+        if not tool.Cad.is_x((intersect2 - axis2["reference"][1]).length, 0):
+            return
+
+        changed_connections = set()
+
+        if connection1 < 0:
+            changed_connections.add("ATSTART")
+            axis1["reference"][0] = intersect2 if connection2 < connection1 else intersect1
+        elif connection1 > 1:
+            changed_connections.add("ATEND")
+            axis1["reference"][1] = intersect2 if connection2 > connection1 else intersect1
+
+        for connection in changed_connections:
+            ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection)
+
+        for rel in element2.ConnectedTo:
+            if rel.RelatingConnectionType in changed_connections:
+                other = tool.Ifc.get_object(rel.RelatedElement)
+                ifcopenshell.api.run(
+                    "geometry.connect_path",
+                    tool.Ifc.get(),
+                    relating_element=element1,
+                    related_element=rel.RelatedElement,
+                    relating_connection=rel.RelatingConnectionType,
+                    related_connection=rel.RelatedConnectionType,
+                )
+
+        for rel in element2.ConnectedFrom:
+            if rel.RelatedConnectionType in changed_connections:
+                ifcopenshell.api.run(
+                    "geometry.connect_path",
+                    tool.Ifc.get(),
+                    relating_element=rel.RelatingElement,
+                    related_element=element1,
+                    relating_connection=rel.RelatingConnectionType,
+                    related_connection=rel.RelatedConnectionType,
+                )
+
+        self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
+        bpy.data.objects.remove(wall2)
+
+
     def duplicate_wall(self, wall1):
         wall2 = wall1.copy()
         wall2.data = wall2.data.copy()
@@ -831,7 +939,6 @@ class DumbWallJoiner:
             axis = body = self.get_wall_axis(obj)["reference"]
         self.axis = copy.deepcopy(axis)
         self.body = copy.deepcopy(body)
-        self.original_body = copy.deepcopy(body)
         height = self.get_height(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
         self.clippings = []
         layers = get_material_layer_parameters(element)
@@ -964,14 +1071,21 @@ class DumbWallJoiner:
 
         angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=False, degrees=True)
         if tool.Cad.is_x(angle, (0, 180)):
-            return
+            return False
 
         # Work out axis line
         intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
         if intersect:
             intersect, _ = intersect
         else:
-            return
+            return False
+
+        proposed_axis = [self.axis[0], intersect] if connection == "ATEND" else [intersect, self.axis[1]]
+
+        if tool.Cad.is_x(tool.Cad.angle_edges(self.axis, proposed_axis, degrees=True), 180):
+            # The user has moved the wall into an invalid position that connect connect at the desired end
+            return False
+
         self.axis[1 if connection == "ATEND" else 0] = intersect
 
         # Work out body extents
@@ -1039,6 +1153,7 @@ class DumbWallJoiner:
                     y_axis = Vector((0, 0, 1))
                     z_axis = y_axis.cross(x_axis)
                     self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
+        return True
 
 
 def get_material_layer_parameters(element):

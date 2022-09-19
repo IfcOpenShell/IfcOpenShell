@@ -45,7 +45,7 @@ class Patcher:
         #
         # See bug https://github.com/Autodesk/revit-ifc/issues/187
 
-        #for context in self.file.by_type("IfcGeometricRepresentationSubContext"):
+        # for context in self.file.by_type("IfcGeometricRepresentationSubContext"):
         #    if context.ContextIdentifier == "FootPrint":
         #        context.ContextIdentifier = None
         #        context.ContextType = "Annotation"
