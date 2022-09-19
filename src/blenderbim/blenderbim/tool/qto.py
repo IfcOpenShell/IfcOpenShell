@@ -60,7 +60,9 @@ class Qto(blenderbim.core.tool.Qto):
 
     @classmethod
     def get_pset_qto_properties(cls, object):
-        pset_qto = util.pset.PsetQto('IFC4')
+        file = tool.Ifc.get()
+        schema = file.schema
+        pset_qto = util.pset.PsetQto(schema)
         pset_qto_name = cls.get_pset_qto_name(object)
         pset_qto_properties = pset_qto.get_by_name(pset_qto_name).get_info()['HasPropertyTemplates']
         return pset_qto_properties
@@ -75,7 +77,9 @@ class Qto(blenderbim.core.tool.Qto):
 
     @classmethod
     def get_applicable_pset_names(cls, object):
-        pset_qto = util.pset.PsetQto('IFC4')
+        file = tool.Ifc.get()
+        schema = file.schema
+        pset_qto = util.pset.PsetQto(schema)
         ifc_object_instance = cls.get_ifc_object_instance(object)
         ifc_object_type = ifc_object_instance.get_info()['type']
         applicable_pset_names = pset_qto.get_applicable_names(ifc_object_type)
