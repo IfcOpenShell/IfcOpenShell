@@ -27,6 +27,7 @@ classes = (
     product.DynamicallyVoidProduct,
     workspace.Hotkey,
     wall.AlignWall,
+    wall.ChangeExtrusionDepth,
     wall.FlipWall,
     wall.JoinWall,
     wall.MergeWall,

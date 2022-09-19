@@ -131,6 +131,11 @@ class BimTool(WorkSpaceTool):
 
         if ifc_classes:
             if ifc_class == "IfcWallType":
+                row = layout.row(align=True)
+                row.prop(data=props, property="extrusion_depth", text="Height")
+                op = row.operator("bim.change_extrusion_depth", icon="FILE_REFRESH", text="")
+                op.depth = props.extrusion_depth
+
                 row = layout.row()
                 row.label(text="Join")
                 row = layout.row(align=True)

@@ -215,6 +215,43 @@ class RecalculateWall(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ChangeExtrusionDepth(bpy.types.Operator):
+    bl_idname = "bim.change_extrusion_depth"
+    bl_label = "Change Extrusion Depth"
+    bl_options = {"REGISTER", "UNDO"}
+    depth: bpy.props.FloatProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def execute(self, context):
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                return
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if not representation:
+                return
+            extrusion = self.get_extrusion(representation)
+            if not extrusion:
+                return
+            print(extrusion)
+            extrusion.Depth = self.depth
+            print(extrusion)
+        DumbWallRecalculator().recalculate(context.selected_objects)
+        return {"FINISHED"}
+
+    def get_extrusion(self, representation):
+        item = representation.Items[0]
+        while True:
+            if item.is_a("IfcExtrudedAreaSolid"):
+                return item
+            elif item.is_a("IfcBooleanClippingResult"):
+                item = item.FirstOperand
+            else:
+                break
+
 def recalculate_dumb_wall_origin(wall, new_origin=None):
     if new_origin is None:
         new_origin = wall.matrix_world @ Vector(wall.bound_box[0])
