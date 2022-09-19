@@ -86,14 +86,14 @@ class Qto(blenderbim.core.tool.Qto):
         return applicable_pset_names
     
     @classmethod
-    def edit_qto(cls, object, quantity_name, new_quantity):
+    def edit_qto(cls, object, calculated_quantities):
         file = tool.Ifc.get()
         pset_qto_id = cls.get_pset_qto_id(object)
         pset_qto_name = cls.get_pset_qto_name(object)
 
         ifcopenshell.api.run("pset.edit_qto",
                 file,
-                **{"qto" : pset_qto_id, "name" : pset_qto_name, "properties": {quantity_name : new_quantity}}
+                **{"qto" : pset_qto_id, "name" : pset_qto_name, "properties": calculated_quantities}
             )
     
     @classmethod
@@ -125,3 +125,21 @@ class Qto(blenderbim.core.tool.Qto):
     @classmethod
     def get_rounded_value(cls, new_quantity):
         return round(new_quantity, 3)
+
+    @classmethod
+    def get_calculated_quantities(cls, object, pset_qto_properties):
+        calculated_quantities = {}
+        for pset_qto_property in pset_qto_properties:
+            quantity_name = pset_qto_property.get_info()['Name']
+            alternative_prop_names = [p.get_info()['Name'] for p in pset_qto_properties]
+
+            new_quantity = cls.get_new_quantity(object, quantity_name, alternative_prop_names)
+
+            if not new_quantity:
+                new_quantity = cls.get_non_calculated_value()
+            else:
+                new_quantity = cls.get_rounded_value(new_quantity)
+            
+            calculated_quantities[quantity_name] = new_quantity
+
+        return calculated_quantities

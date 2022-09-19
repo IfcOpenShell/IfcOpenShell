@@ -407,12 +407,13 @@ class Qto:
     def get_pset_qto_properties(cls, object): pass
     def get_pset_qto_name(cls, object): pass
     def get_applicable_pset_names(cls, object): pass
-    def edit_qto(cls, object, quantity_name, new_quantity): pass
+    def edit_qto(cls, object, calculated_quantities): pass
     def get_pset_qto_id(cls, object): pass
     def get_pset_qto_name(cls, object): pass
     def get_new_quantity(cls, object, quantity_name, alternative_prop_names): pass
     def get_non_calculated_value(cls): pass
     def get_rounded_value(cls, new_quantity): pass
+    def get_calculated_quantities(cls, object, pset_qto_properties): pass
 
 @interface
 class Resource:
