@@ -1,4 +1,3 @@
-
 # IfcPatch - IFC patching utiliy
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -17,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+
 class Patcher:
     def __init__(self, src, file, logger, args=None):
         self.src = src
@@ -25,11 +25,11 @@ class Patcher:
         self.args = args
 
     def patch(self):
-        project = self.file.by_type('IfcProject')[0]
-        storeys = self.find_decomposed_ifc_class(project, 'IfcBuildingStorey')
+        project = self.file.by_type("IfcProject")[0]
+        storeys = self.find_decomposed_ifc_class(project, "IfcBuildingStorey")
         for storey in storeys:
             co = storey.ObjectPlacement.RelativePlacement.Location.Coordinates
-            storey.ObjectPlacement.RelativePlacement.Location.Coordinates = (co[0], co[1], co[2]+float(self.args[0]))
+            storey.ObjectPlacement.RelativePlacement.Location.Coordinates = (co[0], co[1], co[2] + float(self.args[0]))
             co = storey.ObjectPlacement.RelativePlacement.Location.Coordinates
             # NOTE  If the geometric data is provided (ObjectPlacement is
             # specified), the Elevation value shall either not be included, or

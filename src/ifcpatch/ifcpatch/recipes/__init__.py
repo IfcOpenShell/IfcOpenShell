@@ -1,4 +1,3 @@
-
 # IfcPatch - IFC patching utiliy
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -16,4 +15,3 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
-

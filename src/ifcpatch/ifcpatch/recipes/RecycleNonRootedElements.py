@@ -1,4 +1,3 @@
-
 # IfcPatch - IFC patching utiliy
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -20,6 +19,7 @@
 from collections import deque
 import ifcopenshell.util.element
 
+
 class Patcher:
     def __init__(self, src, file, logger, args=None):
         self.src = src
@@ -31,7 +31,7 @@ class Patcher:
         deleted = []
         hashes = {}
         for element in self.file:
-            if element.is_a('IfcRoot'):
+            if element.is_a("IfcRoot"):
                 continue
             h = hash(tuple(element))
             if h in hashes:
@@ -42,13 +42,13 @@ class Patcher:
                 hashes[h] = element
         deleted.sort()
         deleted_q = deque(deleted)
-        new = ''
-        for line in self.file.wrapped_data.to_string().split('\n'):
+        new = ""
+        for line in self.file.wrapped_data.to_string().split("\n"):
             try:
-                if int(line.split('=')[0][1:]) != deleted_q[0]:
-                    new += (line + '\n')
+                if int(line.split("=")[0][1:]) != deleted_q[0]:
+                    new += line + "\n"
                 else:
                     deleted_q.popleft()
             except:
-                new += (line + '\n')
+                new += line + "\n"
         self.file = new
