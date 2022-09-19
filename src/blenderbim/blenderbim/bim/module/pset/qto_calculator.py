@@ -276,14 +276,47 @@ class QtoCalculator:
             shapely_polygons.append(pgon)
 
         return unary_union(shapely_polygons).area
+    
+    def get_OBB_object(self, obj):
+        ifc_id = obj.BIMObjectProperties.ifc_definition_id
+
+        bbox = obj.bound_box
+        # matrix transformation to go from obj coordinates to world coordinates:
+        obb = [obj.matrix_world @ Vector(v) for v in bbox]
+        obb_mesh = bpy.data.meshes.new(f"OBB_{ifc_id}")
+
+        # list of faces, with each tuple referring to an vertex-index in obb
+        faces = [
+            (0,1,2,3),
+            (4,5,6,7),
+            (1,2,6,5),
+            (0,3,7,4),  
+            (1,5,4,0),
+            (2,6,7,3),
+        ]
+
+        obb_mesh.from_pydata(vertices=obb, edges=[], faces=faces)
+        obb_mesh.update()
+
+        # create a new object from the mesh
+        new_OBB_object = bpy.data.objects.new(f'OBB_{ifc_id}', obb_mesh)
+
+        # create new collection for QtoCalculator
+        collection = bpy.data.collections.get('QtoCalculator', bpy.data.collections.new('QtoCalculator'))
+        bpy.context.scene.collection.children.link(collection)
+
+        # add object to scene collection and then hide them. 
+        collection.objects.link(new_OBB_object)
+        new_OBB_object.hide_set(True)
+        
+        return new_OBB_object
 
 
 # Following code is here temporarily to test newly created functions:
 import bpy
 
 qto = QtoCalculator()
-test = qto.get_net_projected_area(bpy.context.active_object, "x")
-test2 = qto.get_net_projected_area(bpy.context.active_object, "y")
-test3 = qto.get_net_projected_area(bpy.context.active_object, "z")
+obj = bpy.context.active_object
 
-print(test, test2, test3)
+test = qto.get_OBB_object(obj)
+print(test)
