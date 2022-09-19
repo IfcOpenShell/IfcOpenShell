@@ -445,7 +445,11 @@ endif
 	mkdir dist/working
 	cd dist/working && wget $(LXML_URL)
 	cd dist/working && tar -xf lxml*
+ifeq ($(PLATFORM), win)
+	cp -r dist/working/Lib/site-packages/lxml dist/blenderbim/libs/site/packages/
+else
 	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/lxml dist/blenderbim/libs/site/packages/
+endif
 	rm -rf dist/working
 
 	# Required by behave
