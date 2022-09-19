@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 from mathutils import Vector
 import numpy as np
 import math
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 import blenderbim.tool as tool
+
 
 
 class QtoCalculator:
@@ -367,7 +369,6 @@ class QtoCalculator:
     
     def get_OBB_object(self, obj):
         ifc_id = obj.BIMObjectProperties.ifc_definition_id
-
         bbox = obj.bound_box
         # matrix transformation to go from obj coordinates to world coordinates:
         obb = [obj.matrix_world @ Vector(v) for v in bbox]
@@ -398,13 +399,60 @@ class QtoCalculator:
         new_OBB_object.hide_set(True)
         
         return new_OBB_object
+    
+    def get_AABB_object(self, obj):
+        ifc_id = obj.BIMObjectProperties.ifc_definition_id
+        aabb_mesh = bpy.data.meshes.new(f"OBB_{ifc_id}")
+        
+        x = [(obj.matrix_world @ x.co).x for x in obj.data.vertices]
+        y = [(obj.matrix_world @ y.co).y for y in obj.data.vertices]
+        z = [(obj.matrix_world @ z.co).z for z in obj.data.vertices]
+        
+        min_x, max_x = min(x), max(x)
+        min_y, max_y = min(y), max(y)
+        min_z, max_z = min(z), max(z)
+        
+        vertices = [
+            (min_x, min_y, min_z),
+            (min_x, min_y, max_z),
+            (min_x, max_y, max_z),
+            (min_x, max_y, min_z),
+            (max_x, min_y, min_z),
+            (max_x, min_y, max_z),
+            (max_x, max_y, max_z),
+            (max_x, max_y, min_z),
+            ] 
+        
+        faces = [
+            (0,1,2,3),
+            (4,5,6,7),
+            (1,2,6,5),
+            (0,3,7,4),  
+            (1,5,4,0),
+            (2,6,7,3),
+        ]
+
+        aabb_mesh.from_pydata(vertices=vertices, edges=[], faces=faces)
+        aabb_mesh.update()
+
+        # create a new object from the mesh
+        new_OBB_object = bpy.data.objects.new(f'OBB_{ifc_id}', aabb_mesh)
+
+        # create new collection for QtoCalculator
+        collection = bpy.data.collections.get('QtoCalculator', bpy.data.collections.new('QtoCalculator'))
+        bpy.context.scene.collection.children.link(collection)
+
+        # add object to scene collection and then hide them. 
+        collection.objects.link(new_OBB_object)
+        new_OBB_object.hide_set(True)
+        
+        return new_OBB_object
+        
 
 # Following code is here temporarily to test newly created functions:
-import bpy
-
 qto = QtoCalculator()
 obj = bpy.context.active_object
 
-test = qto.get_OBB_object(obj)
-print(test)
+test = qto.get_AABB_object(obj)
+
 
