@@ -21,6 +21,7 @@ import numpy as np
 import math
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
+import blenderbim.tool as tool
 
 
 class QtoCalculator:
@@ -202,11 +203,12 @@ class QtoCalculator:
                 volume += v1.dot(v2.cross(v3)) / 6.0
         return volume
 
-    def angle_between_vectors(self, v1, v2):
-        return np.arccos(np.clip(np.dot(v1, v2), -1.0, 1.0))
+    # deprecated - Vector.rotation_difference is 20x faster
+    # def angle_between_vectors(self, v1, v2):
+    #     return np.arccos(np.clip(np.dot(v1, v2), -1.0, 1.0))
 
     # Thanks to @Gorgious56 - the following script should decrease the time to complete by at least 5%
-    # def calculate_net_lateral_area_np(object, angle_a=45, angle_b=135):
+    # def calculate_net_lateral_area_np(object, angle_z1=45, angle_z2=135):
     #     z_axis = (0, 0, 1)
     #     area = 0
 
@@ -219,27 +221,105 @@ class QtoCalculator:
 
     #     angles_to_z_axis = np.array([math.degrees(np.arccos(np.clip(np.dot(z_axis, normal), -1.0, 1.0))) for normal in normals])
 
-    #     bad_areas = angles_to_z_axis < angle_a
-    #     bad_areas += angles_to_z_axis > angle_b
+    #     bad_areas = angles_to_z_axis < angle_z1
+    #     bad_areas += angles_to_z_axis > angle_z2
 
     #     mesh.polygons.foreach_get("area", areas)
     #     areas *= 1 - bad_areas
 
     # return sum(areas)
 
-    def get_net_side_area(self, obj, angle_a: int = 45, angle_b: int = 135):
-        z_axis = (0, 0, 1)
-        area = 0
-        polygons = obj.data.polygons
+    def get_opening_type(self, opening, obj):
+        polygons = opening.data.polygons
+        ray_intersections = 0
 
         for polygon in polygons:
             normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
-            angle_to_z_axis = math.degrees(self.angle_between_vectors(z_axis, normal_vector))
+            polygon_centre = (polygon.center.x, polygon.center.y, polygon.center.z)
+            if obj.ray_cast(polygon_centre, normal_vector)[0]:
+                ray_intersections += 1
 
-            if angle_to_z_axis < angle_a or angle_to_z_axis > angle_b:
+        # If an odd number of face-normal vectors intersect with the object, then the void is a recess, otherwise it's an opening
+        return "OPENING" if ray_intersections % 2 == 0 else "RECESS"
+
+    def get_side_opening_area(
+        self, obj, angle_z1: int = 45, angle_z2: int = 135, min_area: int = 0, ignore_recesses: bool = False
+    ):
+        total_opening_area = 0
+        ifc = tool.Ifc.get()
+        ifc_element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if len(openings := ifc_element.HasOpenings) != 0:
+            for opening in openings:
+                opening_id = opening.RelatedOpeningElement.GlobalId
+                ifc_opening_element = ifc.by_guid(opening_id)
+                bl_opening_obj = tool.Ifc.get_object(ifc_opening_element)
+
+                opening_type = (
+                    ifc_opening_element.PredefinedType
+                    if ifc_opening_element.PredefinedType is not None
+                    else self.get_opening_type(bl_opening_obj, obj)
+                )
+
+                if ignore_recesses and opening_type == "RECESS":
+                    continue
+                opening_area = self.get_lateral_area(bl_opening_obj, subtract_openings= False, angle_z1=angle_z1, angle_z2=angle_z2)
+                if opening_area >= min_area:
+                    total_opening_area += opening_area
+
+        return total_opening_area
+
+    def get_lateral_area(self, obj, subtract_openings: bool = True, exclude_end_areas: bool = False, exclude_side_areas: bool = False, angle_z1: int = 45, angle_z2: int = 135):
+        x_axis = [1, 0, 0]
+        y_axis = [0, 1, 0]
+        z_axis = [0, 0, 1]
+        area = 0
+        total_opening_area = (
+            0 if subtract_openings else self.get_side_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
+        )
+        polygons = obj.data.polygons
+
+        for polygon in polygons:
+            angle_to_z_axis = math.degrees(polygon.normal.rotation_difference(Vector(z_axis)).angle)
+            if angle_to_z_axis < angle_z1 or angle_to_z_axis > angle_z2:
                 continue
+            if exclude_end_areas:
+                angle_to_x_axis = math.degrees(polygon.normal.rotation_difference(Vector(x_axis)).angle)
+                if angle_to_x_axis < 45 or angle_to_x_axis > 135:
+                    continue
+            if exclude_side_areas:
+                angle_to_y_axis = math.degrees(polygon.normal.rotation_difference(Vector(y_axis)).angle)
+                if angle_to_y_axis < 45 or angle_to_y_axis > 135:
+                    continue
             area += polygon.area
-        return area
+        return area + total_opening_area
+
+    def get_gross_top_area(self, obj, angle: int = 45):
+        z_axis = (0, 0, 1)
+        area = 0
+        opening_area = 0
+        polygons = obj.data.polygons
+
+        ifc = tool.Ifc.get()
+        ifc_element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
+
+        if len(openings := ifc_element.HasOpenings) != 0:
+            for opening in openings:
+                if opening.RelatedOpeningElement.PredefinedType == "OPENING":
+                    opening_id = opening.RelatedOpeningElement.GlobalId
+
+                    entity = ifc.by_guid(opening_id)
+                    open_obj = tool.Ifc.get_object(entity)
+                    opening_area += self.get_net_top_area(open_obj, angle=angle)
+                else:
+                    continue
+
+        for polygon in polygons:
+            normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
+            angle_to_z_axis = math.degrees(polygon.normal.rotation_difference(Vector(z_axis)).angle)
+
+            if angle_to_z_axis < angle:
+                area += polygon.area
+        return area + opening_area
 
     def get_net_top_area(self, obj, angle: int = 45):
         z_axis = (0, 0, 1)
@@ -248,13 +328,13 @@ class QtoCalculator:
 
         for polygon in polygons:
             normal_vector = (polygon.normal.x, polygon.normal.y, polygon.normal.z)
-            angle_to_z_axis = math.degrees(self.angle_between_vectors(z_axis, normal_vector))
+            angle_to_z_axis = math.degrees(polygon.normal.rotation_difference(Vector(z_axis)).angle)
 
             if angle_to_z_axis < angle:
                 area += polygon.area
         return area
 
-    def get_net_projected_area(self, obj, projection_axis: str):
+    def get_projected_area(self, obj, projection_axis: str, is_gross: bool):
         odata = obj.data
         polygons = obj.data.polygons
         shapely_polygons = []
@@ -274,8 +354,16 @@ class QtoCalculator:
 
             pgon = Polygon(polygon_tuples)
             shapely_polygons.append(pgon)
-
-        return unary_union(shapely_polygons).area
+            
+        projected_polygon = unary_union(shapely_polygons)
+        if is_gross:
+            void_area = 0
+            voids = projected_polygon.interiors
+            for void in voids:
+                void_polygon = Polygon(void)
+                void_area += void_polygon.area
+            return projected_polygon.area + void_area
+        return projected_polygon.area
     
     def get_OBB_object(self, obj):
         ifc_id = obj.BIMObjectProperties.ifc_definition_id
@@ -311,7 +399,6 @@ class QtoCalculator:
         
         return new_OBB_object
 
-
 # Following code is here temporarily to test newly created functions:
 import bpy
 
@@ -320,3 +407,4 @@ obj = bpy.context.active_object
 
 test = qto.get_OBB_object(obj)
 print(test)
+
