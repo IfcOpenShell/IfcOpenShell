@@ -236,9 +236,7 @@ class ChangeExtrusionDepth(bpy.types.Operator):
             extrusion = self.get_extrusion(representation)
             if not extrusion:
                 return
-            print(extrusion)
             extrusion.Depth = self.depth
-            print(extrusion)
         DumbWallRecalculator().recalculate(context.selected_objects)
         return {"FINISHED"}
 
@@ -941,7 +939,6 @@ class DumbWallJoiner:
             axis = body = self.get_wall_axis(obj)["reference"]
         self.axis = copy.deepcopy(axis)
         self.body = copy.deepcopy(body)
-        self.original_body = copy.deepcopy(body)
         height = self.get_height(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
         self.clippings = []
         layers = get_material_layer_parameters(element)
@@ -1074,14 +1071,21 @@ class DumbWallJoiner:
 
         angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=False, degrees=True)
         if tool.Cad.is_x(angle, (0, 180)):
-            return
+            return False
 
         # Work out axis line
         intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
         if intersect:
             intersect, _ = intersect
         else:
-            return
+            return False
+
+        proposed_axis = [self.axis[0], intersect] if connection == "ATEND" else [intersect, self.axis[1]]
+
+        if tool.Cad.is_x(tool.Cad.angle_edges(self.axis, proposed_axis, degrees=True), 180):
+            # The user has moved the wall into an invalid position that connect connect at the desired end
+            return False
+
         self.axis[1 if connection == "ATEND" else 0] = intersect
 
         # Work out body extents
@@ -1149,6 +1153,7 @@ class DumbWallJoiner:
                     y_axis = Vector((0, 0, 1))
                     z_axis = y_axis.cross(x_axis)
                     self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
+        return True
 
 
 def get_material_layer_parameters(element):
