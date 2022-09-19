@@ -34,15 +34,11 @@ print("# Loading IFC file ...")
 args["input"] = ifcopenshell.open(args["input"])
 
 print("# Patching ...")
-ifc_file = ifcpatch.execute(args)
+output = ifcpatch.execute(args)
 
 print("# Writing patched file ...")
 if not args["output"]:
     args["output"] = args["input"]
-if isinstance(ifc_file, str):
-    with open(args["output"], "w") as text_file:
-        text_file.write(ifc_file)
-else:
-    ifc_file.write(args["output"])
+ifcpatch.write(output, args["output"])
 
 print("# All tasks are complete :-)")

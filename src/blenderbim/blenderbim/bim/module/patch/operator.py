@@ -19,6 +19,7 @@
 import os
 import bpy
 import json
+import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.core.patch as core
 import blenderbim.bim.handler
@@ -79,15 +80,15 @@ class ExecuteIfcPatch(bpy.types.Operator):
         else:
             arguments = [arg.get_value() for arg in props.ifc_patch_args_attr]
 
-        ifcpatch.execute(
+        output = ifcpatch.execute(
             {
-                "input": props.ifc_patch_input,
-                "output": props.ifc_patch_output,
+                "input": ifcopenshell.open(props.ifc_patch_input),
                 "recipe": props.ifc_patch_recipes,
                 "arguments": arguments,
                 "log": os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
             }
         )
+        ifcpatch.write(output, props.ifc_patch_output)
         return {"FINISHED"}
 
 

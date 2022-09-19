@@ -39,7 +39,19 @@ def execute(args):
     else:
         patcher = recipe.Patcher(args["input"], ifc_file, logger, args["arguments"])
     patcher.patch()
-    return getattr(patcher, "file_patched", patcher.file)
+    output = getattr(patcher, "file_patched", patcher.file)
+    if isinstance(output, str):
+        with open(args["output"], "w") as text_file:
+            text_file.write(output)
+    return output
+
+
+def write(output, filepath):
+    if isinstance(output, str):
+        with open(filepath, "w") as text_file:
+            text_file.write(output)
+    else:
+        output.write(filepath)
 
 
 def extract_docs(

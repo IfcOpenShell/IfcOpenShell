@@ -97,15 +97,29 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
     should_switch_all_meshes: bpy.props.BoolProperty()
 
     def _execute(self, context):
-        core.switch_representation(
-            tool.Geometry,
-            obj=bpy.data.objects.get(self.obj) if self.obj else context.active_object,
-            representation=tool.Ifc.get().by_id(self.ifc_definition_id),
-            should_reload=self.should_reload,
-            enable_dynamic_voids=self.disable_opening_subtractions,
-            is_global=self.should_switch_all_meshes,
-            should_sync_changes_first=True,
-        )
+        target = tool.Ifc.get().by_id(self.ifc_definition_id).ContextOfItems
+        is_subcontext = target.is_a("IfcGeometricRepresentationSubContext")
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if is_subcontext:
+                representation = ifcopenshell.util.representation.get_representation(
+                    element, target.ContextType, target.ContextIdentifier, target.TargetView
+                )
+            else:
+                representation = ifcopenshell.util.representation.get_representation(element, target.ContextType)
+            if not representation:
+                continue
+            core.switch_representation(
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=self.should_reload,
+                enable_dynamic_voids=self.disable_opening_subtractions,
+                is_global=self.should_switch_all_meshes,
+                should_sync_changes_first=True,
+            )
 
 
 class RemoveRepresentation(bpy.types.Operator, Operator):
