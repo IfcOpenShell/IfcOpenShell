@@ -250,6 +250,24 @@ class ChangeExtrusionDepth(bpy.types.Operator):
             else:
                 break
 
+
+class ChangeLayerLength(bpy.types.Operator):
+    bl_idname = "bim.change_layer_length"
+    bl_label = "Change Layer Length"
+    bl_options = {"REGISTER", "UNDO"}
+    length: bpy.props.FloatProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def execute(self, context):
+        joiner = DumbWallJoiner()
+        for obj in context.selected_objects:
+            joiner.set_length(obj, self.length)
+        return {"FINISHED"}
+
+
 def recalculate_dumb_wall_origin(wall, new_origin=None):
     if new_origin is None:
         new_origin = wall.matrix_world @ Vector(wall.bound_box[0])
@@ -909,6 +927,23 @@ class DumbWallJoiner:
         body = copy.deepcopy(axis1["reference"])
         axis[1 if connection == "ATEND" else 0] = intersect
         body[1 if connection == "ATEND" else 0] = intersect
+        self.recreate_wall(element1, wall1, axis, body)
+
+    def set_length(self, wall1, length):
+        element1 = tool.Ifc.get_entity(wall1)
+        if not element1:
+            return
+
+        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
+
+        axis1 = self.get_wall_axis(wall1)
+        axis = copy.deepcopy(axis1["reference"])
+        body = copy.deepcopy(axis1["reference"])
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        si_length = unit_scale * length
+        end = (wall1.matrix_world @ Vector((si_length, 0, 0))).to_2d()
+        axis[1] = end
+        body[1] = end
         self.recreate_wall(element1, wall1, axis, body)
 
     def join_T(self, wall1, wall2):
