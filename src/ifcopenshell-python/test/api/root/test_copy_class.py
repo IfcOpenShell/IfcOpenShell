@@ -161,3 +161,21 @@ class TestCopyClass(test.bootstrap.IFC4):
         assert port not in new_ports
         assert new_ports[0].is_a("IfcDistributionPort")
         assert ifcopenshell.util.system.get_ports(element) == [port]
+
+    def test_not_copying_path_connections(self):
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "geometry.connect_path",
+            self.file,
+            relating_element=element1,
+            related_element=element2,
+            relating_connection="ATSTART",
+            related_connection="ATEND",
+        )
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=element1)
+        assert len(self.file.by_type("IfcRelConnectsPathElements")) == 1
+        assert element1.ConnectedTo
+        assert element2.ConnectedFrom
+        assert not new.ConnectedTo
+        assert not new.ConnectedFrom
