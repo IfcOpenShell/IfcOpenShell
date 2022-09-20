@@ -46,6 +46,9 @@ def create_project(ifc, project, schema=None, template=None):
     )
     plan = project.run_context_add_context(context_type="Plan", context_identifier="", target_view="", parent=0)
     project.run_context_add_context(
+        context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent=plan
+    )
+    project.run_context_add_context(
         context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan
     )
     project.run_context_add_context(
