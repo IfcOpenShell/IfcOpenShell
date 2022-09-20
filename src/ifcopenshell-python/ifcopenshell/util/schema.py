@@ -125,6 +125,8 @@ class Migrator:
         }
 
     def migrate(self, element, new_file):
+        if element.id() == 0:
+            return new_file.create_entity(element.is_a(), element.wrappedValue)
         try:
             return new_file.by_id(self.migrated_ids[element.id()])
         except:
@@ -214,13 +216,12 @@ class Migrator:
                 for item in value:
                     new_value.append(self.migrate(item, new_file))
                 value = new_value
-        setattr(new_element, attribute.name(), value)
+        if value is not None:
+            setattr(new_element, attribute.name(), value)
 
     def generate_default_value(self, attribute, new_file):
         if attribute.name() in self.default_values:
             return self.default_values[attribute.name()]
-        elif self.default_entities[attribute.name()]:
-            return self.default_entities[attribute.name()]
         elif attribute.name() == "OwnerHistory":
             self.default_entities[attribute.name()] = new_file.create_entity(
                 "IfcOwnerHistory",
@@ -249,4 +250,4 @@ class Migrator:
                     "CreationDate": int(time.time()),
                 },
             )
-        return self.default_entities[attribute.name()]
+        return self.default_entities.get(attribute.name(), None)
