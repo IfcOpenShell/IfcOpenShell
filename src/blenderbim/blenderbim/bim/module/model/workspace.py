@@ -136,6 +136,11 @@ class BimTool(WorkSpaceTool):
                 op = row.operator("bim.change_extrusion_depth", icon="FILE_REFRESH", text="")
                 op.depth = props.extrusion_depth
 
+                row = layout.row(align=True)
+                row.prop(data=props, property="length", text="Length")
+                op = row.operator("bim.change_layer_length", icon="FILE_REFRESH", text="")
+                op.length = props.length
+
                 row = layout.row()
                 row.label(text="Join")
                 row = layout.row(align=True)
