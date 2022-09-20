@@ -121,6 +121,7 @@ class BIMModelProperties(PropertyGroup):
     occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type}
     extrusion_depth: bpy.props.FloatProperty(default=42.0)
+    length: bpy.props.FloatProperty(default=42.0)
 
 
 def get_relating_type_info(self, context):
