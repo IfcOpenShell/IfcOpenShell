@@ -160,9 +160,9 @@ class FlipWall(bpy.types.Operator):
 
     def execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
+        joiner = DumbWallJoiner()
         for obj in selected_objs:
-            DumbWallFlipper(obj).flip()
-            IfcStore.edited_objs.add(obj)
+            joiner.flip(obj)
         return {"FINISHED"}
 
 
@@ -284,7 +284,6 @@ def recalculate_dumb_wall_origin(wall, new_origin=None):
 
 
 class DumbWallFlipper:
-    # A flip switches the origin from the min XY corner to the max XY corner, and rotates the origin by 180.
     def __init__(self, wall):
         self.wall = wall
 
@@ -753,6 +752,28 @@ class DumbWallJoiner:
         axis2["reference"][0] = intersect
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
+
+    def flip(self, wall1):
+        element1 = tool.Ifc.get_entity(wall1)
+        if not element1:
+            return
+
+        for rel in element1.ConnectedTo:
+            if rel.RelatingConnectionType in ["ATSTART", "ATEND"]:
+                rel.RelatingConnectionType = "ATSTART" if rel.RelatingConnectionType == "ATEND" else "ATEND"
+        for rel in element1.ConnectedFrom:
+            if rel.RelatedConnectionType in ["ATSTART", "ATEND"]:
+                rel.RelatedConnectionType = "ATSTART" if rel.RelatedConnectionType == "ATEND" else "ATEND"
+
+        axis1 = self.get_wall_axis(wall1)
+        axis1["reference"][0], axis1["reference"][1] = axis1["reference"][1], axis1["reference"][0]
+
+        flip_matrix = Matrix.Rotation(pi, 4, "Z")
+        wall1.rotation_euler.rotate(flip_matrix)
+        bpy.context.view_layer.update()
+
+        self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
+        DumbWallRecalculator().recalculate([wall1])
 
     def merge(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
