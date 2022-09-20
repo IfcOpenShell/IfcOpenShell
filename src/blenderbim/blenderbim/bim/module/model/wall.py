@@ -160,9 +160,9 @@ class FlipWall(bpy.types.Operator):
 
     def execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
+        joiner = DumbWallJoiner()
         for obj in selected_objs:
-            DumbWallFlipper(obj).flip()
-            IfcStore.edited_objs.add(obj)
+            joiner.flip(obj)
         return {"FINISHED"}
 
 
@@ -284,7 +284,6 @@ def recalculate_dumb_wall_origin(wall, new_origin=None):
 
 
 class DumbWallFlipper:
-    # A flip switches the origin from the min XY corner to the max XY corner, and rotates the origin by 180.
     def __init__(self, wall):
         self.wall = wall
 
@@ -428,6 +427,7 @@ class DumbWallGenerator:
         self.location = Vector((0, 0, 0))
 
         if self.has_sketch():
+            return # For now
             return self.derive_from_sketch()
         return self.derive_from_cursor()
 
@@ -541,6 +541,7 @@ class DumbWallGenerator:
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
         obj.location = self.location
         obj.rotation_euler[2] = self.rotation
+        bpy.context.view_layer.update()
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2]
         self.collection.objects.link(obj)
@@ -554,6 +555,7 @@ class DumbWallGenerator:
             should_add_representation=False,
             context=self.body_context,
         )
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=self.relating_type)
         if self.axis_context:
             representation = ifcopenshell.api.run(
                 "geometry.add_axis_representation",
@@ -591,8 +593,6 @@ class DumbWallGenerator:
             is_global=True,
             should_sync_changes_first=False,
         )
-        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=self.relating_type)
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer2"})
         MaterialData.load(self.file)
@@ -659,11 +659,10 @@ def calculate_quantities(usecase_path, ifc_file, settings):
 
 class DumbWallPlaner:
     def regenerate_from_layer(self, usecase_path, ifc_file, settings):
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        layer = settings["layer"]
-        thickness = settings["attributes"].get("LayerThickness")
-        if thickness is None:
+        if settings["attributes"].get("LayerThickness") is None:
             return
+        walls = []
+        layer = settings["layer"]
         for layer_set in layer.ToMaterialLayerSet:
             total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
             if not total_thickness:
@@ -675,19 +674,20 @@ class DumbWallPlaner:
                     for rel in ifc_file.get_inverse(inverse):
                         if not rel.is_a("IfcRelAssociatesMaterial"):
                             continue
-                        for element in rel.RelatedObjects:
-                            self.change_thickness(element, thickness)
+                        walls.extend([tool.Ifc.get_object(e) for e in rel.RelatedObjects])
                 else:
                     for rel in inverse.AssociatedTo:
-                        for element in rel.RelatedObjects:
-                            self.change_thickness(element, thickness)
+                        walls.extend([tool.Ifc.get_object(e) for e in rel.RelatedObjects])
+        DumbWallRecalculator().recalculate([w for w in set(walls) if w])
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
+        obj = tool.Ifc.get_object(settings["related_object"])
+        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+            return
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
         if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
             return
-        new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
         material = ifcopenshell.util.element.get_material(settings["related_object"])
 
         relating_type = settings["relating_type"]
@@ -707,77 +707,7 @@ class DumbWallPlaner:
                                                 return
 
         if material and material.is_a("IfcMaterialLayerSetUsage") and material.LayerSetDirection == "AXIS2":
-            self.change_thickness(settings["related_object"], new_thickness)
-
-    def change_thickness(self, element, thickness):
-        obj = IfcStore.get_element(element.id())
-        if not obj:
-            return
-
-        delta_thickness = (thickness * self.unit_scale) - obj.dimensions.y
-        if round(delta_thickness, 2) == 0:
-            return
-
-        bm = bmesh.new()
-        bm.from_mesh(obj.data)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-
-        min_face, max_face = self.get_wall_end_faces(obj, bm)
-
-        verts_to_move = []
-        verts_to_move.extend(self.thicken_face(min_face, delta_thickness))
-        verts_to_move.extend(self.thicken_face(max_face, delta_thickness))
-        for vert_to_move in verts_to_move:
-            vert_to_move["vert"].co += vert_to_move["vector"]
-
-        bm.to_mesh(obj.data)
-        obj.data.update()
-        bm.free()
-        IfcStore.edited_objs.add(obj)
-
-    def thicken_face(self, face, delta_thickness):
-        slide_magnitude = abs(delta_thickness)
-        results = []
-        for vert in face.verts:
-            slide_vector = None
-            for edge in vert.link_edges:
-                other_vert = edge.verts[1] if edge.verts[0] == vert else edge.verts[0]
-                if delta_thickness > 0:
-                    potential_slide_vector = (vert.co - other_vert.co).normalized()
-                    if potential_slide_vector.y < 0:
-                        continue
-                else:
-                    potential_slide_vector = (other_vert.co - vert.co).normalized()
-                    if potential_slide_vector.y > 0:
-                        continue
-                if abs(potential_slide_vector.x) > 0.9 or abs(potential_slide_vector.z) > 0.9:
-                    continue
-                slide_vector = potential_slide_vector
-                break
-            if not slide_vector:
-                continue
-            slide_vector *= slide_magnitude / abs(slide_vector.y)
-            results.append({"vert": vert, "vector": slide_vector})
-        return results
-
-    # An end face is a quad that is on one end of the wall or the other. It must
-    # have at least one vertex on either extreme X-axis, and a non-insignificant
-    # X component of its face normal
-    def get_wall_end_faces(self, wall, bm):
-        min_face = None
-        max_face = None
-        min_x = min([v[0] for v in wall.bound_box])
-        max_x = max([v[0] for v in wall.bound_box])
-        bm.faces.ensure_lookup_table()
-        for f in bm.faces:
-            for v in f.verts:
-                if v.co.x == min_x and abs(f.normal.x) > 0.1:
-                    min_face = f
-                elif v.co.x == max_x and abs(f.normal.x) > 0.1:
-                    max_face = f
-            if min_face and max_face:
-                break
-        return min_face, max_face
+            DumbWallRecalculator().recalculate([obj])
 
 
 class DumbWallJoiner:
@@ -822,6 +752,28 @@ class DumbWallJoiner:
         axis2["reference"][0] = intersect
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
+
+    def flip(self, wall1):
+        element1 = tool.Ifc.get_entity(wall1)
+        if not element1:
+            return
+
+        for rel in element1.ConnectedTo:
+            if rel.RelatingConnectionType in ["ATSTART", "ATEND"]:
+                rel.RelatingConnectionType = "ATSTART" if rel.RelatingConnectionType == "ATEND" else "ATEND"
+        for rel in element1.ConnectedFrom:
+            if rel.RelatedConnectionType in ["ATSTART", "ATEND"]:
+                rel.RelatedConnectionType = "ATSTART" if rel.RelatedConnectionType == "ATEND" else "ATEND"
+
+        axis1 = self.get_wall_axis(wall1)
+        axis1["reference"][0], axis1["reference"][1] = axis1["reference"][1], axis1["reference"][0]
+
+        flip_matrix = Matrix.Rotation(pi, 4, "Z")
+        wall1.rotation_euler.rotate(flip_matrix)
+        bpy.context.view_layer.update()
+
+        self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
+        DumbWallRecalculator().recalculate([wall1])
 
     def merge(self, wall1, wall2):
         element1 = tool.Ifc.get_entity(wall1)
