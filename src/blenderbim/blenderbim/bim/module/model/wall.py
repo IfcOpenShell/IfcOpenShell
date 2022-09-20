@@ -1039,7 +1039,7 @@ class DumbWallJoiner:
         item = representation.Items[0]
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):
-                height = item.Depth / self.unit_scale
+                height = item.Depth * self.unit_scale
                 break
             elif item.is_a("IfcBooleanClippingResult"):
                 item = item.FirstOperand
@@ -1150,8 +1150,8 @@ def get_material_layer_parameters(element):
     material = ifcopenshell.util.element.get_material(element)
     if material:
         if material.is_a("IfcMaterialLayerSetUsage"):
-            offset = material.OffsetFromReferenceLine / unit_scale
+            offset = material.OffsetFromReferenceLine * unit_scale
             material = material.ForLayerSet
         if material.is_a("IfcMaterialLayerSet"):
-            thickness = sum([l.LayerThickness for l in material.MaterialLayers]) / unit_scale
+            thickness = sum([l.LayerThickness for l in material.MaterialLayers]) * unit_scale
     return {"thickness": thickness, "offset": offset}
