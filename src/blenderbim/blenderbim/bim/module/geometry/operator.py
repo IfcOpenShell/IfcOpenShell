@@ -86,6 +86,26 @@ class AddRepresentation(bpy.types.Operator, Operator):
         )
 
 
+class SelectConnection(bpy.types.Operator, Operator):
+    bl_idname = "bim.select_connection"
+    bl_label = "Select Connection"
+    bl_options = {"REGISTER", "UNDO"}
+    connection: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.select_connection(tool.Geometry, connection=tool.Ifc.get().by_id(self.connection))
+
+
+class RemoveConnection(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_connection"
+    bl_label = "Remove Connection"
+    bl_options = {"REGISTER", "UNDO"}
+    connection: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.remove_connection(tool.Geometry, connection=tool.Ifc.get().by_id(self.connection))
+
+
 class SwitchRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.switch_representation"
     bl_label = "Switch Representation"
