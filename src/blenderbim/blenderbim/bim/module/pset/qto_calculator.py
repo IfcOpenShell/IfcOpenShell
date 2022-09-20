@@ -408,10 +408,8 @@ class QtoCalculator:
         y = [(obj.matrix_world @ y.co).y for y in obj.data.vertices]
         z = [(obj.matrix_world @ z.co).z for z in obj.data.vertices]
         
-        min_x, max_x = min(x), max(x)
-        min_y, max_y = min(y), max(y)
-        min_z, max_z = min(z), max(z)
-        
+        min_x, max_x, min_y, max_y, min_z, max_z = min(x), max(x), min(y), max(y), min(z), max(z)
+
         vertices = [
             (min_x, min_y, min_z),
             (min_x, min_y, max_z),
@@ -436,23 +434,60 @@ class QtoCalculator:
         aabb_mesh.update()
 
         # create a new object from the mesh
-        new_OBB_object = bpy.data.objects.new(f'OBB_{ifc_id}', aabb_mesh)
+        new_AABB_object = bpy.data.objects.new(f'OBB_{ifc_id}', aabb_mesh)
 
         # create new collection for QtoCalculator
         collection = bpy.data.collections.get('QtoCalculator', bpy.data.collections.new('QtoCalculator'))
         bpy.context.scene.collection.children.link(collection)
 
         # add object to scene collection and then hide them. 
-        collection.objects.link(new_OBB_object)
-        new_OBB_object.hide_set(True)
+        collection.objects.link(new_AABB_object)
+        new_AABB_object.hide_set(True)
         
-        return new_OBB_object
+        return new_AABB_object
+    
+    def get_bisected_obj(self, obj, plane_co_pos, plane_no_pos, plane_co_neg, plane_no_neg,):
+        ifc_id = obj.BIMObjectProperties.ifc_definition_id
+        
+        bis_obj = obj.copy()
+        bis_obj.data = obj.data.copy()
+        bis_obj.name = f'Bisected_{ifc_id}'
+        
+        collection = bpy.data.collections.get('QtoCalculator', bpy.data.collections.new('QtoCalculator'))
+        bpy.context.scene.collection.children.link(collection)
+        collection.objects.link(bis_obj)
+        
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.context.view_layer.objects.active = bis_obj
+
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+
+        bpy.ops.mesh.bisect(
+            plane_co=plane_co_pos,
+            plane_no=plane_no_pos,
+            use_fill = True,
+            clear_outer=True
+        )
+
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.bisect(
+            plane_co=plane_co_neg,
+            plane_no=plane_no_neg,
+            use_fill = True,
+            clear_outer=True
+        )
+        bpy.ops.object.editmode_toggle()
+        bis_obj.hide_set(True)
+        
+        return bis_obj
+        
         
 
 # Following code is here temporarily to test newly created functions:
 qto = QtoCalculator()
 obj = bpy.context.active_object
 
-test = qto.get_AABB_object(obj)
+test = qto.get_bisected_obj(obj, (0,0,0.5), (0,0,1), (0,0,-0.5), (0, 0, -1))
 
 
