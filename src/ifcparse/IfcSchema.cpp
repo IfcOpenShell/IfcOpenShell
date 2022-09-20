@@ -72,7 +72,6 @@ IfcParse::schema_definition::schema_definition(const std::string& name, const st
 }
 
 IfcParse::schema_definition::~schema_definition() {
-	schemas.erase(name_);
 	for (std::vector<const declaration*>::const_iterator it = declarations_.begin(); it != declarations_.end(); ++it) {
 		delete *it;
 	}
