@@ -140,3 +140,11 @@ def remove_representation(ifc, geometry, obj=None, representation=None):
             geometry.replace_object_with_empty(obj)
         ifc.run("geometry.unassign_representation", product=element, representation=representation)
         ifc.run("geometry.remove_representation", representation=representation)
+
+
+def select_connection(geometry, connection=None):
+    geometry.select_connection(connection)
+
+
+def remove_connection(geometry, connection=None):
+    geometry.remove_connection(connection)

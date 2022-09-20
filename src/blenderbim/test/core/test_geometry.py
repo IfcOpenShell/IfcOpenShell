@@ -382,3 +382,15 @@ class TestRemoveRepresentation:
         ).should_be_called()
         ifc.run("geometry.remove_representation", representation="representation").should_be_called()
         subject.remove_representation(ifc, geometry, obj="obj", representation="representation")
+
+
+class TestSelectConnection:
+    def test_run(self, geometry):
+        geometry.select_connection("connection").should_be_called()
+        subject.select_connection(geometry, connection="connection")
+
+
+class TestRemoveConnection:
+    def test_run(self, geometry):
+        geometry.remove_connection("connection").should_be_called()
+        subject.remove_connection(geometry, connection="connection")
