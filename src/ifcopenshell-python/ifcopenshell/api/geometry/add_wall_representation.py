@@ -77,7 +77,13 @@ class Usecase:
             second_operand = self.file.createIfcHalfSpaceSolid(
                 self.file.createIfcPlane(
                     self.file.createIfcAxis2Placement3D(
-                        self.file.createIfcCartesianPoint((clipping[0][3], clipping[1][3], clipping[2][3])),
+                        self.file.createIfcCartesianPoint(
+                            (
+                                self.convert_si_to_unit(clipping[0][3]),
+                                self.convert_si_to_unit(clipping[1][3]),
+                                self.convert_si_to_unit(clipping[2][3]),
+                            )
+                        ),
                         self.file.createIfcDirection((clipping[0][2], clipping[1][2], clipping[2][2])),
                         self.file.createIfcDirection((clipping[0][0], clipping[1][0], clipping[2][0])),
                     )
