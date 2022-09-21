@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
+import bpy, bmesh
 from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 import numpy as np
 import math
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 import blenderbim.tool as tool
-
 
 
 class QtoCalculator:
@@ -79,6 +79,11 @@ class QtoCalculator:
         return length
 
     def get_width(self, o):
+        x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
+        y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
+        return min(x, y)
+
+    def get_min_width(self, o):
         x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
         y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
         return min(x, y)
@@ -264,13 +269,23 @@ class QtoCalculator:
 
                 if ignore_recesses and opening_type == "RECESS":
                     continue
-                opening_area = self.get_lateral_area(bl_opening_obj, subtract_openings= False, angle_z1=angle_z1, angle_z2=angle_z2)
+                opening_area = self.get_lateral_area(
+                    bl_opening_obj, subtract_openings=False, angle_z1=angle_z1, angle_z2=angle_z2
+                )
                 if opening_area >= min_area:
                     total_opening_area += opening_area
 
         return total_opening_area
 
-    def get_lateral_area(self, obj, subtract_openings: bool = True, exclude_end_areas: bool = False, exclude_side_areas: bool = False, angle_z1: int = 45, angle_z2: int = 135):
+    def get_lateral_area(
+        self,
+        obj,
+        subtract_openings: bool = True,
+        exclude_end_areas: bool = False,
+        exclude_side_areas: bool = False,
+        angle_z1: int = 45,
+        angle_z2: int = 135,
+    ):
         x_axis = [1, 0, 0]
         y_axis = [0, 1, 0]
         z_axis = [0, 0, 1]
@@ -356,7 +371,7 @@ class QtoCalculator:
 
             pgon = Polygon(polygon_tuples)
             shapely_polygons.append(pgon)
-            
+
         projected_polygon = unary_union(shapely_polygons)
         if is_gross:
             void_area = 0
@@ -366,7 +381,7 @@ class QtoCalculator:
                 void_area += void_polygon.area
             return projected_polygon.area + void_area
         return projected_polygon.area
-    
+
     def get_OBB_object(self, obj):
         ifc_id = obj.BIMObjectProperties.ifc_definition_id
         bbox = obj.bound_box
@@ -376,38 +391,38 @@ class QtoCalculator:
 
         # list of faces, with each tuple referring to an vertex-index in obb
         faces = [
-            (0,1,2,3),
-            (4,5,6,7),
-            (1,2,6,5),
-            (0,3,7,4),  
-            (1,5,4,0),
-            (2,6,7,3),
+            (0, 1, 2, 3),
+            (4, 5, 6, 7),
+            (1, 2, 6, 5),
+            (0, 3, 7, 4),
+            (1, 5, 4, 0),
+            (2, 6, 7, 3),
         ]
 
         obb_mesh.from_pydata(vertices=obb, edges=[], faces=faces)
         obb_mesh.update()
 
         # create a new object from the mesh
-        new_OBB_object = bpy.data.objects.new(f'OBB_{ifc_id}', obb_mesh)
+        new_OBB_object = bpy.data.objects.new(f"OBB_{ifc_id}", obb_mesh)
 
         # create new collection for QtoCalculator
-        collection = bpy.data.collections.get('QtoCalculator', bpy.data.collections.new('QtoCalculator'))
+        collection = bpy.data.collections.get("QtoCalculator", bpy.data.collections.new("QtoCalculator"))
         bpy.context.scene.collection.children.link(collection)
 
-        # add object to scene collection and then hide them. 
+        # add object to scene collection and then hide them.
         collection.objects.link(new_OBB_object)
         new_OBB_object.hide_set(True)
-        
+
         return new_OBB_object
-    
+
     def get_AABB_object(self, obj):
         ifc_id = obj.BIMObjectProperties.ifc_definition_id
         aabb_mesh = bpy.data.meshes.new(f"OBB_{ifc_id}")
-        
+
         x = [(obj.matrix_world @ x.co).x for x in obj.data.vertices]
         y = [(obj.matrix_world @ y.co).y for y in obj.data.vertices]
         z = [(obj.matrix_world @ z.co).z for z in obj.data.vertices]
-        
+
         min_x, max_x, min_y, max_y, min_z, max_z = min(x), max(x), min(y), max(y), min(z), max(z)
 
         vertices = [
@@ -419,75 +434,163 @@ class QtoCalculator:
             (max_x, min_y, max_z),
             (max_x, max_y, max_z),
             (max_x, max_y, min_z),
-            ] 
-        
+        ]
+
         faces = [
-            (0,1,2,3),
-            (4,5,6,7),
-            (1,2,6,5),
-            (0,3,7,4),  
-            (1,5,4,0),
-            (2,6,7,3),
+            (0, 1, 2, 3),
+            (4, 5, 6, 7),
+            (1, 2, 6, 5),
+            (0, 3, 7, 4),
+            (1, 5, 4, 0),
+            (2, 6, 7, 3),
         ]
 
         aabb_mesh.from_pydata(vertices=vertices, edges=[], faces=faces)
         aabb_mesh.update()
 
         # create a new object from the mesh
-        new_AABB_object = bpy.data.objects.new(f'OBB_{ifc_id}', aabb_mesh)
+        new_AABB_object = bpy.data.objects.new(f"OBB_{ifc_id}", aabb_mesh)
 
         # create new collection for QtoCalculator
-        collection = bpy.data.collections.get('QtoCalculator', bpy.data.collections.new('QtoCalculator'))
+        collection = bpy.data.collections.get("QtoCalculator", bpy.data.collections.new("QtoCalculator"))
         bpy.context.scene.collection.children.link(collection)
 
-        # add object to scene collection and then hide them. 
+        # add object to scene collection and then hide them.
         collection.objects.link(new_AABB_object)
         new_AABB_object.hide_set(True)
-        
+
         return new_AABB_object
-    
-    def get_bisected_obj(self, obj, plane_co_pos, plane_no_pos, plane_co_neg, plane_no_neg,):
+
+    def get_bisected_obj(
+        self,
+        obj,
+        plane_co_pos,
+        plane_no_pos,
+        plane_co_neg,
+        plane_no_neg,
+    ):
         ifc_id = obj.BIMObjectProperties.ifc_definition_id
-        
+
         bis_obj = obj.copy()
         bis_obj.data = obj.data.copy()
-        bis_obj.name = f'Bisected_{ifc_id}'
-        
-        collection = bpy.data.collections.get('QtoCalculator', bpy.data.collections.new('QtoCalculator'))
+        bis_obj.name = f"Bisected_{ifc_id}"
+
+        collection = bpy.data.collections.get("QtoCalculator", bpy.data.collections.new("QtoCalculator"))
         bpy.context.scene.collection.children.link(collection)
         collection.objects.link(bis_obj)
-        
-        bpy.ops.object.select_all(action='DESELECT')
+
+        bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = bis_obj
 
-        bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_all(action="SELECT")
 
-        bpy.ops.mesh.bisect(
-            plane_co=plane_co_pos,
-            plane_no=plane_no_pos,
-            use_fill = True,
-            clear_outer=True
-        )
+        bpy.ops.mesh.bisect(plane_co=plane_co_pos, plane_no=plane_no_pos, use_fill=True, clear_outer=True)
 
-        bpy.ops.mesh.select_all(action='SELECT')
-        bpy.ops.mesh.bisect(
-            plane_co=plane_co_neg,
-            plane_no=plane_no_neg,
-            use_fill = True,
-            clear_outer=True
-        )
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.mesh.bisect(plane_co=plane_co_neg, plane_no=plane_no_neg, use_fill=True, clear_outer=True)
         bpy.ops.object.editmode_toggle()
         bis_obj.hide_set(True)
-        
+
         return bis_obj
+
+    def get_contact_polygons(self, obj1, obj2):
+
+        obj1_data = obj1.data
+        obj2_data = obj2.data
+
+        # Get a BMesh representation
+        bm1 = bmesh.new()  # create an empty BMesh
+        bm1.from_mesh(obj1_data)
+        bm1.transform(obj1.matrix_world)
+
+        bm2 = bmesh.new()  # create an empty BMesh
+        bm2.from_mesh(obj2_data)
+        bm2.transform(obj2.matrix_world)
+
+        tree1 = BVHTree.FromBMesh(bm1)
+        tree2 = BVHTree.FromBMesh(bm2)
+
+        # Returns: Returns a list of unique index pairs, the first index referencing tree1, the second referencing tree2.
+        return tree1.overlap(tree2)
+    
+    
+    
+    def get_contact_area(self, obj, contact_filter="IfcWall"):
         
+        # get list of objects that touch the reference object
+        obj = bpy.context.object
+        obj_mesh = bmesh.new()
+        obj_mesh.from_mesh(obj.data)
+        obj_mesh.transform(obj.matrix_world)
+        obj_tree = BVHTree.FromBMesh(obj_mesh)
+
+        touching_objects = []
+        total_contact_area = 0
+
+        for o in bpy.context.selectable_objects:
+            if contact_filter not in o.name:
+                continue
+            o_mesh = bmesh.new()
+            try:
+                o_mesh.from_mesh(o.data)
+            except:
+                continue
+            o_mesh.transform(o.matrix_world)
+            o_tree = BVHTree.FromBMesh(o_mesh)
+            
+            if len(obj_tree.overlap(o_tree)) > 0:
+                touching_objects.append({
+                    "contact_object":o,
+                    "reference_polygons":[i[0] for i in obj_tree.overlap(o_tree)],
+                    "contact_polygons":[i[1] for i in obj_tree.overlap(o_tree)]
+                })
         
+        if len(touching_objects) == 0:
+            return 0
+        
+        for to in touching_objects:
+               
+            reference_polygons = [p for p in to["reference_polygons"]]
+            contact_polygons = [p for p in to["contact_polygons"]]
+
+            #WORK IN PROGRESS
+            test1 = self.get_combined_poly(obj1, touching_polygons_obj1)
+            test2 = self.get_combined_poly(obj2, touching_polygons_obj2)
+        
+        if test1 == 0 or test2 == 0:
+            return test1.area or test2.area
+        return(test1.intersection(test2).area)
+    
+    
+    def get_combined_poly(self, obj, touching_polygons_obj):
+        shapely_polygons = []
+        for tp in touching_polygons_obj:
+            odata = obj.data
+            polygon = obj.data.polygons[tp]
+            
+            if getattr(polygon.normal, "x") == 0:
+                continue
+            polygon_tuples = []
+            
+            for loop_index in polygon.loop_indices:
+                loop = odata.loops[loop_index]
+                v1_coord_a = getattr(obj.matrix_world @ odata.vertices[loop.vertex_index].co, "y")
+                v1_coord_b = getattr(obj.matrix_world @ odata.vertices[loop.vertex_index].co, "z")
+                polygon_tuples.append((v1_coord_a, v1_coord_b))
+
+            pgon = Polygon(polygon_tuples)
+            shapely_polygons.append(pgon)
+        
+        if len(shapely_polygons) == 0:
+            # For some reason, if two faces overlap exactly, only one the faces will be listed in the contact_polygons list. I don't understand - @vulevukusej
+            return 0
+        return unary_union(shapely_polygons)
+        
+
 
 # Following code is here temporarily to test newly created functions:
 qto = QtoCalculator()
-obj = bpy.context.active_object
+obj = bpy.context.object
 
-test = qto.get_bisected_obj(obj, (0,0,0.5), (0,0,1), (0,0,-0.5), (0, 0, -1))
-
-
+test = print(qto.get_contact_area(obj))
