@@ -24,10 +24,9 @@ class Usecase:
         self.file = file
         self.settings = {
             "context": None,  # IfcGeometricRepresentationContext
-            "length": 1.0,
-            "height": 3.0,
-            "offset": 0.0,
-            "thickness": 0.2,
+            "profile": None,
+            "depth": 1.0,
+            "cardinal_point": 5,
             # Planes are defined as a matrix. The XY plane is the clipping boundary and +Z is removed.
             "clippings": [],  # A list of planes that define clipping half space solids
         }
@@ -44,28 +43,15 @@ class Usecase:
         )
 
     def create_item(self):
-        length = self.convert_si_to_unit(self.settings["length"])
-        thickness = self.convert_si_to_unit(self.settings["thickness"])
-        points = (
-            (0.0, 0.0, 0.0),
-            (0.0, thickness, 0.0),
-            (length, thickness, 0.0),
-            (length, 0.0, 0.0),
-            (0.0, 0.0, 0.0),
-        )
-        if self.file.schema == "IFC2X3":
-            curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
-        else:
-            curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(points))
         extrusion = self.file.createIfcExtrudedAreaSolid(
-            self.file.createIfcArbitraryClosedProfileDef("AREA", None, curve),
+            self.settings["profile"],
             self.file.createIfcAxis2Placement3D(
-                self.file.createIfcCartesianPoint((0.0, self.convert_si_to_unit(self.settings["offset"]), 0.0)),
+                self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
                 self.file.createIfcDirection((0.0, 0.0, 1.0)),
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             ),
             self.file.createIfcDirection((0.0, 0.0, 1.0)),
-            self.convert_si_to_unit(self.settings["height"]),
+            self.convert_si_to_unit(self.settings["depth"]),
         )
         if self.settings["clippings"]:
             return self.apply_clippings(extrusion)
