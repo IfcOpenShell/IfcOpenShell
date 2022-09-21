@@ -98,16 +98,18 @@ class DumbProfileGenerator:
 
     def generate(self):
         self.file = IfcStore.get_file()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
         material = ifcopenshell.util.element.get_material(self.relating_type)
         if material and material.is_a("IfcMaterialProfileSet"):
             self.profile_set = material
         else:
             return
 
+        self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
         self.collection = bpy.context.view_layer.active_layer_collection.collection
         self.collection_obj = bpy.data.objects.get(self.collection.name)
-        self.length = 3
+        self.depth = 3
         self.rotation = 0
         self.location = Vector((0, 0, 0))
         return self.derive_from_cursor()
@@ -117,61 +119,68 @@ class DumbProfileGenerator:
         return self.create_profile()
 
     def create_profile(self):
-        # A cube
-        verts = [
-            Vector((-1, -1, -1)),
-            Vector((-1, -1, 1)),
-            Vector((-1, 1, -1)),
-            Vector((-1, 1, 1)),
-            Vector((1, -1, -1)),
-            Vector((1, -1, 1)),
-            Vector((1, 1, -1)),
-            Vector((1, 1, 1)),
-        ]
-        edges = []
-        faces = [
-            [0, 2, 3, 1],
-            [2, 3, 7, 6],
-            [4, 5, 7, 6],
-            [0, 1, 5, 4],
-            [1, 3, 7, 5],
-            [0, 2, 6, 4],
-        ]
-
         ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
         # Standard cases are deprecated, so let's cull them
         ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
 
-        mesh = bpy.data.meshes.new(name="Dumb Profile")
-        mesh.from_pydata(verts, edges, faces)
+        mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
         obj.location = self.location
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2]
         self.collection.objects.link(obj)
 
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=ifc_class, should_add_representation=False)
-
+        element = blenderbim.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class=ifc_class,
+            should_add_representation=False,
+            context=self.body_context,
+        )
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=self.relating_type)
         if self.relating_type.is_a() in ["IfcBeamType", "IfcMemberType"]:
             obj.rotation_euler[0] = math.pi / 2
             obj.rotation_euler[2] = math.pi / 2
 
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type)
-        profile_set_usage = ifcopenshell.util.element.get_material(element)
+        if self.axis_context:
+            representation = ifcopenshell.api.run(
+                "geometry.add_axis_representation",
+                tool.Ifc.get(),
+                context=self.axis_context,
+                axis=[(0.0, 0.0, 0.0), (0.0, 0.0, self.depth)],
+            )
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
+            )
+
+        representation = ifcopenshell.api.run(
+            "geometry.add_profile_representation",
+            tool.Ifc.get(),
+            context=self.body_context,
+            profile=self.profile_set.CompositeProfile or self.profile_set.MaterialProfiles[0].Profile,
+            depth=self.depth,
+        )
+        ifcopenshell.api.run(
+            "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
+        )
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbProfile"})
         MaterialData.load(self.file)
-        try:
-            obj.select_set(True)
-        except RuntimeError:
 
-            def msg(self, context):
-                txt = "The created object could not be assigned to a collection. "
-                txt += "Has any IfcSpatialElement been deleted?"
-                self.layout.label(text=txt)
+        obj.select_set(True)
 
-            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
         return obj
 
 
