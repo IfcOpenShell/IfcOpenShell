@@ -414,6 +414,7 @@ class Qto:
     def get_non_calculated_value(cls): pass
     def get_rounded_value(cls, new_quantity): pass
     def get_calculated_quantities(cls, object, pset_qto_properties): pass
+    def assign_pset_qto_to_selected_object(cls, object): pass
 
 @interface
 class Resource:

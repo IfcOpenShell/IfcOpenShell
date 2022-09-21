@@ -151,6 +151,20 @@ class QuantifyObjects(bpy.types.Operator):
             PsetData.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
+class AssignPsetQto(bpy.types.Operator):
+    bl_idname = "bim.assign_pset_qto"
+    bl_label = "Assign Pset Qto"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Assign pset qto to selected object"
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object
+
+    def execute(self, context):
+        core.assign_pset_qto(tool.Qto, selected_objects = context.selected_objects)
+        return {"FINISHED"}       
+
 class CalculateAllQtos(bpy.types.Operator):
     bl_idname = "bim.calculate_all_qtos"
     bl_label = "Calculate All Qtos"

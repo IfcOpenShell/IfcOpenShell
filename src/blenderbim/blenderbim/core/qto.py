@@ -22,6 +22,11 @@ def calculate_circle_radius(qto, obj=None):
     qto.set_qto_result(result)
     return result
 
+def assign_pset_qto(qto, selected_objects):
+    for object in selected_objects:
+        qto.set_active_object(object)
+        qto.assign_pset_qto_to_selected_object(object) 
+
 def calculate_all_qtos(qto, selected_objects):
     for object in selected_objects:
         qto.set_active_object(object)

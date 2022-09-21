@@ -143,3 +143,17 @@ class Qto(blenderbim.core.tool.Qto):
             calculated_quantities[quantity_name] = new_quantity
 
         return calculated_quantities
+    
+    @classmethod
+    def assign_pset_qto_to_selected_object(cls, object):
+        file = tool.Ifc.get()
+        ifc_object_instance = cls.get_ifc_object_instance(object)
+        pset_qto_name = cls.get_pset_qto_name(object)
+        ifcopenshell.api.run(
+            "pset.add_qto",
+            file,
+            **{
+                "product": ifc_object_instance,
+                "name": pset_qto_name,
+            },
+        )
