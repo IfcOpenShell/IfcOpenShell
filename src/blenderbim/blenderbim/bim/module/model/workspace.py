@@ -41,7 +41,7 @@ class BimTool(WorkSpaceTool):
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
         ("bim.hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
-        ("bim.join_wall", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("join_type", "L")]}),
+        ("bim.hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
         ("bim.recalculate_wall", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": []}),
         ("bim.merge_wall", {"type": "M", "value": "PRESS", "shift": True}, {"properties": []}),
         ("bim.flip_wall", {"type": "F", "value": "PRESS", "shift": True}, {"properties": []}),
@@ -247,7 +247,15 @@ class Hotkey(bpy.types.Operator):
         if self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.join_wall(join_type="T")
         elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
-            bpy.ops.bim.extend_profile()
+            bpy.ops.bim.extend_profile(join_type="T")
+
+    def hotkey_S_T(self):
+        if not self.has_ifc_class:
+            return
+        if self.props.ifc_class == "IfcWallType":
+            bpy.ops.bim.join_wall(join_type="L")
+        elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
+            bpy.ops.bim.extend_profile(join_type="L")
 
     def hotkey_S_V(self):
         if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
