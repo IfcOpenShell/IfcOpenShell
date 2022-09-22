@@ -775,7 +775,7 @@ class DumbWallJoiner:
         axis2 = self.get_wall_axis(wall2)
 
         angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=False, degrees=True)
-        if not tool.Cad.is_x(angle, 0):
+        if not tool.Cad.is_x(angle, 0, tolerance=0.001):
             return
 
         intersect1, connection1 = mathutils.geometry.intersect_point_line(axis2["reference"][0], *axis1["reference"])
@@ -1051,7 +1051,7 @@ class DumbWallJoiner:
         axis2 = self.get_wall_axis(wall2, layers2)
 
         angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=False, degrees=True)
-        if tool.Cad.is_x(angle, (0, 180)):
+        if tool.Cad.is_x(angle, (0, 180), tolerance=0.001):
             return False
 
         # Work out axis line
@@ -1063,8 +1063,8 @@ class DumbWallJoiner:
 
         proposed_axis = [self.axis[0], intersect] if connection == "ATEND" else [intersect, self.axis[1]]
 
-        if tool.Cad.is_x(tool.Cad.angle_edges(self.axis, proposed_axis, degrees=True), 180):
-            # The user has moved the wall into an invalid position that connect connect at the desired end
+        if tool.Cad.is_x(tool.Cad.angle_edges(self.axis, proposed_axis, degrees=True), 180, tolerance=0.001):
+            # The user has moved the wall into an invalid position that cannot connect at the desired end
             return False
 
         self.axis[1 if connection == "ATEND" else 0] = intersect
@@ -1083,7 +1083,7 @@ class DumbWallJoiner:
                 base_target = tool.Cad.furthest_vector(axis1["base"][0], (intersect1, intersect2))
             else:
                 base_target = tool.Cad.closest_vector(axis1["base"][0], (intersect1, intersect2))
-            if tool.Cad.is_x(angle, (90, 270)):
+            if tool.Cad.is_x(angle, (90, 270), tolerance=0.001):
                 self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
             else:
                 if is_relating:
@@ -1111,7 +1111,7 @@ class DumbWallJoiner:
                 base_target = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
             else:
                 base_target = tool.Cad.closest_vector(axis1["base"][1], (intersect1, intersect2))
-            if tool.Cad.is_x(angle, (90, 270)):
+            if tool.Cad.is_x(angle, (90, 270), tolerance=0.001):
                 self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
             else:
                 if is_relating:
