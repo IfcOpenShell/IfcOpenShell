@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import copy
 import math
 import bmesh
 import mathutils.geometry
@@ -106,7 +107,7 @@ class DumbProfileGenerator:
             return
 
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
-        self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
+        self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
         self.collection = bpy.context.view_layer.active_layer_collection.collection
         self.collection_obj = bpy.data.objects.get(self.collection.name)
         self.depth = 3
@@ -262,15 +263,14 @@ class ExtendProfile(bpy.types.Operator):
         if not context.active_object:
             return {"FINISHED"}
         if len(selected_objs) == 1:
-            DumbProfileExtender(context.active_object, target_coordinate=context.scene.cursor.location).extend()
-            IfcStore.edited_objs.add(context.active_object)
+            DumbProfileExtender(None).join_E(context.active_object, context.scene.cursor.location)
             return {"FINISHED"}
         if len(selected_objs) < 2:
             return {"FINISHED"}
         for obj in selected_objs:
             if obj == context.active_object:
                 continue
-            DumbProfileExtender(obj, context.active_object).extend()
+            DumbProfileExtender(obj, context.active_object).extend_old()
             IfcStore.edited_objs.add(obj)
         return {"FINISHED"}
 
@@ -281,12 +281,136 @@ class DumbProfileExtender:
         self.profile = profile
         self.target = target
         self.target_coordinate = target_coordinate
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
+        self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
+    def join_E(self, profile1, target):
+        element1 = tool.Ifc.get_entity(profile1)
+        if not element1:
+            return
+        axis1 = self.get_profile_axis(profile1)
+        intersect, connection = mathutils.geometry.intersect_point_line(target, *axis1)
+        connection = "ATEND" if connection > 0.5 else "ATSTART"
+
+        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection)
+
+        axis = copy.deepcopy(axis1)
+        body = copy.deepcopy(axis1)
+        axis[1 if connection == "ATEND" else 0] = intersect
+        body[1 if connection == "ATEND" else 0] = intersect
+        self.recreate_profile(element1, profile1, axis, body)
+
+    def recreate_profile(self, element, obj, axis=None, body=None):
+        if axis is None or body is None:
+            axis = body = self.get_profile_axis(obj)
+        self.axis = copy.deepcopy(axis)
+        self.body = copy.deepcopy(body)
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        self.profile = material.CompositeProfile or material.MaterialProfiles[0].Profile
+        height = self.get_height(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
+        self.clippings = []
+
+        for rel in element.ConnectedTo:
+            connection = rel.RelatingConnectionType
+            other = tool.Ifc.get_object(rel.RelatedElement)
+            if connection not in ["ATPATH", "NOTDEFINED"]:
+                self.join(obj, other, connection, is_relating=True)
+        for rel in element.ConnectedFrom:
+            connection = rel.RelatedConnectionType
+            other = tool.Ifc.get_object(rel.RelatingElement)
+            if connection not in ["ATPATH", "NOTDEFINED"]:
+                self.join(obj, other, connection, is_relating=False)
+
+        new_matrix = copy.deepcopy(obj.matrix_world)
+        new_matrix.col[3] = self.body[0].to_4d()
+        new_matrix.invert()
+        self.clippings = [new_matrix @ c for c in self.clippings]
+
+        depth = (self.body[1] - self.body[0]).length
+
+        if self.axis_context:
+            axis = [(new_matrix @ a) for a in self.axis]
+            new_axis = ifcopenshell.api.run(
+                "geometry.add_axis_representation", tool.Ifc.get(), context=self.axis_context, axis=axis
+            )
+            old_axis = ifcopenshell.util.representation.get_representation(element, "Model", "Axis", "GRAPH_VIEW")
+            if old_axis:
+                for inverse in tool.Ifc.get().get_inverse(old_axis):
+                    ifcopenshell.util.element.replace_attribute(inverse, old_axis, new_axis)
+                blenderbim.core.geometry.remove_representation(
+                    tool.Ifc, tool.Geometry, obj=obj, representation=old_axis
+                )
+            else:
+                ifcopenshell.api.run(
+                    "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_axis
+                )
+
+        new_body = ifcopenshell.api.run(
+            "geometry.add_profile_representation",
+            tool.Ifc.get(),
+            context=self.body_context,
+            profile=self.profile,
+            depth=depth,
+            clippings=self.clippings,
+        )
+
+        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if old_body:
+            for inverse in tool.Ifc.get().get_inverse(old_body):
+                ifcopenshell.util.element.replace_attribute(inverse, old_body, new_body)
+            obj.data.BIMMeshProperties.ifc_definition_id = int(new_body.id())
+            obj.data.name = f"{self.body_context.id()}/{new_body.id()}"
+            blenderbim.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_body)
+        else:
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_body
+            )
+
+        obj.location[0], obj.location[1], obj.location[2] = self.body[0]
+        bpy.context.view_layer.update()
+        if tool.Ifc.is_moved(obj):
+            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=new_body,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+
+    def join(self, profile1, profile2, connection, is_relating=True):
+        pass
+
+    def get_profile_axis(self, obj):
+        z_values = [v[2] for v in obj.bound_box]
+        return [
+            (obj.matrix_world @ Vector((0.0, 0.0, min(z_values)))),
+            (obj.matrix_world @ Vector((0.0, 0.0, max(z_values)))),
+        ]
+
+    # TODO
+    def get_height(self, representation):
+        height = 3.0
+        item = representation.Items[0]
+        while True:
+            if item.is_a("IfcExtrudedAreaSolid"):
+                height = item.Depth * self.unit_scale
+                break
+            elif item.is_a("IfcBooleanClippingResult"):
+                item = item.FirstOperand
+            else:
+                break
+        return height
+
 
     # An extension of a profile is determined by casting a ray from the cardinal
     # point of either extreme along the profiles local Z axis to a target
     # object. The nearest result from this raycast will be the target extension
     # point.
-    def extend(self):
+    def extend_old(self):
         extension_data = self.get_closest_extension_point()
         if not extension_data:
             return
