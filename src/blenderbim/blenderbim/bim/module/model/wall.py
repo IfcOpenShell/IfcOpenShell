@@ -89,31 +89,28 @@ class JoinWall(bpy.types.Operator):
 
     def execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.BIMObjectProperties.ifc_definition_id]
+        joiner = DumbWallJoiner()
         #for obj in selected_objs:
         #    bpy.ops.bim.dynamically_void_product(obj=obj.name)
         if not self.join_type:
             for obj in selected_objs:
-                DumbWallJoiner().unjoin(obj)
+                joiner.unjoin(obj)
             return {"FINISHED"}
         if not context.active_object:
             return {"FINISHED"}
         if len(selected_objs) == 1:
-            DumbWallJoiner().join_E(context.active_object, context.scene.cursor.location)
+            joiner.join_E(context.active_object, context.scene.cursor.location)
             #IfcStore.edited_objs.add(context.active_object)
             return {"FINISHED"}
+        if len(selected_objs) == 2 and self.join_type == "L":
+            joiner.join_L([o for o in selected_objs if o != context.active_object][0], context.active_object)
         if len(selected_objs) < 2:
             return {"FINISHED"}
-        joiner = DumbWallJoiner()
-        for obj in selected_objs:
-            if obj == context.active_object:
-                continue
-            if self.join_type == "T":
+        if self.join_type == "T":
+            for obj in selected_objs:
+                if obj == context.active_object:
+                    continue
                 joiner.join_T(obj, context.active_object)
-            elif self.join_type == "L":
-                joiner.join_L(obj, context.active_object)
-            IfcStore.edited_objs.add(obj)
-        #if self.join_type != "T":
-        #    IfcStore.edited_objs.add(context.active_object)
         return {"FINISHED"}
 
 

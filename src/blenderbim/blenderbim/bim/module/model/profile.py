@@ -253,33 +253,34 @@ class ExtendProfile(bpy.types.Operator):
     bl_idname = "bim.extend_profile"
     bl_label = "Extend Profile"
     bl_options = {"REGISTER", "UNDO"}
+    join_type: bpy.props.StringProperty()
 
     def execute(self, context):
         selected_objs = context.selected_objects
         for obj in selected_objs:
             bpy.ops.bim.dynamically_void_product(obj=obj.name)
+        joiner = DumbProfileJoiner()
         if len(selected_objs) == 0:
             return {"FINISHED"}
         if not context.active_object:
             return {"FINISHED"}
         if len(selected_objs) == 1:
-            DumbProfileExtender(None).join_E(context.active_object, context.scene.cursor.location)
+            joiner.join_E(context.active_object, context.scene.cursor.location)
             return {"FINISHED"}
+        if len(selected_objs) == 2 and self.join_type == "L":
+            joiner.join_L([o for o in selected_objs if o != context.active_object][0], context.active_object)
         if len(selected_objs) < 2:
             return {"FINISHED"}
-        for obj in selected_objs:
-            if obj == context.active_object:
-                continue
-            DumbProfileExtender(None).join_T(obj, context.active_object)
+        if self.join_type == "T":
+            for obj in selected_objs:
+                if obj == context.active_object:
+                    continue
+                joiner.join_T(obj, context.active_object)
         return {"FINISHED"}
 
 
-class DumbProfileExtender:
-    # A profile is a prismatic extrusion along its local Z axis.
-    def __init__(self, profile, target=None, target_coordinate=None):
-        self.profile = profile
-        self.target = target
-        self.target_coordinate = target_coordinate
+class DumbProfileJoiner:
+    def __init__(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
@@ -322,6 +323,31 @@ class DumbProfileExtender:
         )
 
         self.recreate_profile(element1, profile1, axis1, axis1)
+
+    def join_L(self, profile1, profile2):
+        element1 = tool.Ifc.get_entity(profile1)
+        element2 = tool.Ifc.get_entity(profile2)
+        axis1 = self.get_profile_axis(profile1)
+        axis2 = self.get_profile_axis(profile2)
+        intersect = tool.Cad.intersect_edges(axis1, axis2)
+        if intersect:
+            intersect, _ = intersect
+        else:
+            return
+        profile1_end = "ATEND" if tool.Cad.edge_percent(intersect, axis1) > 0.5 else "ATSTART"
+        profile2_end = "ATEND" if tool.Cad.edge_percent(intersect, axis2) > 0.5 else "ATSTART"
+
+        ifcopenshell.api.run(
+            "geometry.connect_path",
+            tool.Ifc.get(),
+            relating_element=element1,
+            related_element=element2,
+            relating_connection=profile1_end,
+            related_connection=profile2_end,
+        )
+
+        self.recreate_profile(element1, profile1, axis1, axis1)
+        self.recreate_profile(element2, profile2, axis2, axis2)
 
     def recreate_profile(self, element, obj, axis=None, body=None):
         if axis is None or body is None:
@@ -426,9 +452,9 @@ class DumbProfileExtender:
         # Work out body extents
 
         if connection == "ATEND":
-            axisl = ((profile2.matrix_world.inverted() @ axis1[1]) - (profile2.matrix_world.inverted() @ axis1[0]))
+            axisl = (profile2.matrix_world.inverted() @ axis1[1]) - (profile2.matrix_world.inverted() @ axis1[0])
         elif connection == "ATSTART":
-            axisl = ((profile2.matrix_world.inverted() @ axis1[0]) - (profile2.matrix_world.inverted() @ axis1[1]))
+            axisl = (profile2.matrix_world.inverted() @ axis1[0]) - (profile2.matrix_world.inverted() @ axis1[1])
         xy_angle = math.degrees(Vector((1, 0)).angle_signed(axisl.normalized().to_2d()))
         if xy_angle >= -135 and xy_angle <= -45:
             closest_plane = "bottom"
@@ -451,7 +477,9 @@ class DumbProfileExtender:
                 intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.col[3].to_3d(), plane.col[2].to_3d())
                 self.body[1] = intersect
             else:
-                plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
+                plane = self.get_profile_plane(
+                    profile2, furthest_plane if is_relating else closest_plane, z_inwards=False if is_relating else True
+                )
                 intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.col[3].to_3d(), plane.col[2].to_3d())
                 max_dim = self.get_max_bound_box_dimension(profile1)
                 self.body[1] = intersect + profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
@@ -462,7 +490,9 @@ class DumbProfileExtender:
                 intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.col[3].to_3d(), plane.col[2].to_3d())
                 self.body[0] = intersect
             else:
-                plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
+                plane = self.get_profile_plane(
+                    profile2, furthest_plane if is_relating else closest_plane, z_inwards=False if is_relating else True
+                )
                 intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.col[3].to_3d(), plane.col[2].to_3d())
                 max_dim = self.get_max_bound_box_dimension(profile1)
                 self.body[0] = intersect - profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
@@ -475,7 +505,7 @@ class DumbProfileExtender:
         y_dim = max(y) - min(y)
         return x_dim if x_dim > y_dim else y_dim
 
-    def get_profile_plane(self, obj, plane):
+    def get_profile_plane(self, obj, plane, z_inwards=True):
         # Get a matrix for one of the bounding planes of the profile to be used as cutting plane
         # Here's an example of looking at the end of an I-Beam profile with a +Z extrusion out of the screen
         #        top
@@ -491,26 +521,42 @@ class DumbProfileExtender:
             max_y = max([v[1] for v in obj.bound_box])
             p = obj.matrix_world @ Vector((0, max_y, 0))
             x_axis = obj.matrix_world.to_quaternion() @ Vector((0, 0, 1))
-            y_axis = obj.matrix_world.to_quaternion() @ Vector((-1, 0, 0))
-            z_axis = obj.matrix_world.to_quaternion() @ Vector((0, -1, 0))
+            if z_inwards:
+                y_axis = obj.matrix_world.to_quaternion() @ Vector((-1, 0, 0))
+                z_axis = obj.matrix_world.to_quaternion() @ Vector((0, -1, 0))
+            else:
+                y_axis = obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
+                z_axis = obj.matrix_world.to_quaternion() @ Vector((0, 1, 0))
         elif plane == "bottom":
             min_y = min([v[1] for v in obj.bound_box])
             p = obj.matrix_world @ Vector((0, min_y, 0))
             x_axis = obj.matrix_world.to_quaternion() @ Vector((0, 0, 1))
-            y_axis = obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
-            z_axis = obj.matrix_world.to_quaternion() @ Vector((0, 1, 0))
+            if z_inwards:
+                y_axis = obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
+                z_axis = obj.matrix_world.to_quaternion() @ Vector((0, 1, 0))
+            else:
+                y_axis = obj.matrix_world.to_quaternion() @ Vector((-1, 0, 0))
+                z_axis = obj.matrix_world.to_quaternion() @ Vector((0, -1, 0))
         elif plane == "right":
             max_x = max([v[0] for v in obj.bound_box])
             p = obj.matrix_world @ Vector((max_x, 0, 0))
             x_axis = obj.matrix_world.to_quaternion() @ Vector((0, 0, 1))
-            y_axis = obj.matrix_world.to_quaternion() @ Vector((0, 1, 0))
-            z_axis = obj.matrix_world.to_quaternion() @ Vector((-1, 0, 0))
+            if z_inwards:
+                y_axis = obj.matrix_world.to_quaternion() @ Vector((0, 1, 0))
+                z_axis = obj.matrix_world.to_quaternion() @ Vector((-1, 0, 0))
+            else:
+                y_axis = obj.matrix_world.to_quaternion() @ Vector((0, -1, 0))
+                z_axis = obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
         elif plane == "left":
             min_x = min([v[0] for v in obj.bound_box])
             p = obj.matrix_world @ Vector((min_x, 0, 0))
             x_axis = obj.matrix_world.to_quaternion() @ Vector((0, 0, 1))
-            y_axis = obj.matrix_world.to_quaternion() @ Vector((0, -1, 0))
-            z_axis = obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
+            if z_inwards:
+                y_axis = obj.matrix_world.to_quaternion() @ Vector((0, -1, 0))
+                z_axis = obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
+            else:
+                y_axis = obj.matrix_world.to_quaternion() @ Vector((0, 1, 0))
+                z_axis = obj.matrix_world.to_quaternion() @ Vector((-1, 0, 0))
         return self.create_matrix(p, x_axis, y_axis, z_axis)
 
     def create_matrix(self, p, x, y, z):
@@ -543,7 +589,6 @@ class DumbProfileExtender:
             else:
                 break
         return height
-
 
     # An extension of a profile is determined by casting a ray from the cardinal
     # point of either extreme along the profiles local Z axis to a target
