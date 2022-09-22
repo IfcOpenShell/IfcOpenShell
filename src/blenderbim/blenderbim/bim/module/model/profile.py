@@ -270,8 +270,7 @@ class ExtendProfile(bpy.types.Operator):
         for obj in selected_objs:
             if obj == context.active_object:
                 continue
-            DumbProfileExtender(obj, context.active_object).extend_old()
-            IfcStore.edited_objs.add(obj)
+            DumbProfileExtender(None).join_T(obj, context.active_object)
         return {"FINISHED"}
 
 
@@ -300,6 +299,29 @@ class DumbProfileExtender:
         axis[1 if connection == "ATEND" else 0] = intersect
         body[1 if connection == "ATEND" else 0] = intersect
         self.recreate_profile(element1, profile1, axis, body)
+
+    def join_T(self, profile1, profile2):
+        element1 = tool.Ifc.get_entity(profile1)
+        element2 = tool.Ifc.get_entity(profile2)
+        axis1 = self.get_profile_axis(profile1)
+        axis2 = self.get_profile_axis(profile2)
+        intersect = tool.Cad.intersect_edges(axis1, axis2)
+        if intersect:
+            intersect, _ = intersect
+        else:
+            return
+        connection = "ATEND" if tool.Cad.edge_percent(intersect, axis1) > 0.5 else "ATSTART"
+
+        ifcopenshell.api.run(
+            "geometry.connect_path",
+            tool.Ifc.get(),
+            related_element=element1,
+            relating_element=element2,
+            relating_connection="ATPATH",
+            related_connection=connection,
+        )
+
+        self.recreate_profile(element1, profile1, axis1, axis1)
 
     def recreate_profile(self, element, obj, axis=None, body=None):
         if axis is None or body is None:
@@ -382,7 +404,124 @@ class DumbProfileExtender:
         )
 
     def join(self, profile1, profile2, connection, is_relating=True):
-        pass
+        element1 = tool.Ifc.get_entity(profile1)
+        element2 = tool.Ifc.get_entity(profile2)
+        axis1 = self.get_profile_axis(profile1)
+        axis2 = self.get_profile_axis(profile2)
+
+        angle = tool.Cad.angle_edges(axis1, axis2, signed=False, degrees=True)
+        if tool.Cad.is_x(angle, (0, 180)):
+            return False
+
+        intersect, _ = tool.Cad.intersect_edges(axis1, axis2)
+
+        proposed_axis = [self.axis[0], intersect] if connection == "ATEND" else [intersect, self.axis[1]]
+
+        if tool.Cad.is_x(tool.Cad.angle_edges(self.axis, proposed_axis, degrees=True), 180):
+            # The user has moved the wall into an invalid position that cannot connect at the desired end
+            return False
+
+        self.axis[1 if connection == "ATEND" else 0] = intersect
+
+        # Work out body extents
+
+        if connection == "ATEND":
+            axisl = ((profile2.matrix_world.inverted() @ axis1[1]) - (profile2.matrix_world.inverted() @ axis1[0]))
+        elif connection == "ATSTART":
+            axisl = ((profile2.matrix_world.inverted() @ axis1[0]) - (profile2.matrix_world.inverted() @ axis1[1]))
+        xy_angle = math.degrees(Vector((1, 0)).angle_signed(axisl.normalized().to_2d()))
+        if xy_angle >= -135 and xy_angle <= -45:
+            closest_plane = "bottom"
+            furthest_plane = "top"
+        elif xy_angle >= 45 and xy_angle <= 135:
+            closest_plane = "top"
+            furthest_plane = "bottom"
+        elif xy_angle >= -45 and xy_angle <= 45:
+            closest_plane = "left"
+            furthest_plane = "right"
+        else:
+            closest_plane = "right"
+            furthest_plane = "left"
+
+        is_orthogonal = tool.Cad.is_x(tool.Cad.angle_edges(axis1, axis2, degrees=True), 90, tolerance=0.001)
+
+        if connection == "ATEND":
+            if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
+                plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
+                intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.col[3].to_3d(), plane.col[2].to_3d())
+                self.body[1] = intersect
+            else:
+                plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
+                intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.col[3].to_3d(), plane.col[2].to_3d())
+                max_dim = self.get_max_bound_box_dimension(profile1)
+                self.body[1] = intersect + profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
+                self.clippings.append(plane)
+        elif connection == "ATSTART":
+            if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
+                plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
+                intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.col[3].to_3d(), plane.col[2].to_3d())
+                self.body[0] = intersect
+            else:
+                plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
+                intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.col[3].to_3d(), plane.col[2].to_3d())
+                max_dim = self.get_max_bound_box_dimension(profile1)
+                self.body[0] = intersect - profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
+                self.clippings.append(plane)
+
+    def get_max_bound_box_dimension(self, obj):
+        x = [v[0] for v in obj.bound_box]
+        y = [v[1] for v in obj.bound_box]
+        x_dim = max(x) - min(x)
+        y_dim = max(y) - min(y)
+        return x_dim if x_dim > y_dim else y_dim
+
+    def get_profile_plane(self, obj, plane):
+        # Get a matrix for one of the bounding planes of the profile to be used as cutting plane
+        # Here's an example of looking at the end of an I-Beam profile with a +Z extrusion out of the screen
+        #        top
+        #      +-----+           Y
+        #      |=====|           ^
+        #      |  |  |           |
+        # left |  |  | right     Z->X
+        #      |  |  |
+        #      |=====|
+        #      +-----+
+        #      bottom
+        if plane == "top":
+            max_y = max([v[1] for v in obj.bound_box])
+            p = obj.matrix_world @ Vector((0, max_y, 0))
+            x_axis = obj.matrix_world.to_quaternion() @ Vector((0, 0, 1))
+            y_axis = obj.matrix_world.to_quaternion() @ Vector((-1, 0, 0))
+            z_axis = obj.matrix_world.to_quaternion() @ Vector((0, -1, 0))
+        elif plane == "bottom":
+            min_y = min([v[1] for v in obj.bound_box])
+            p = obj.matrix_world @ Vector((0, min_y, 0))
+            x_axis = obj.matrix_world.to_quaternion() @ Vector((0, 0, 1))
+            y_axis = obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
+            z_axis = obj.matrix_world.to_quaternion() @ Vector((0, 1, 0))
+        elif plane == "right":
+            max_x = max([v[0] for v in obj.bound_box])
+            p = obj.matrix_world @ Vector((max_x, 0, 0))
+            x_axis = obj.matrix_world.to_quaternion() @ Vector((0, 0, 1))
+            y_axis = obj.matrix_world.to_quaternion() @ Vector((0, 1, 0))
+            z_axis = obj.matrix_world.to_quaternion() @ Vector((-1, 0, 0))
+        elif plane == "left":
+            min_x = min([v[0] for v in obj.bound_box])
+            p = obj.matrix_world @ Vector((min_x, 0, 0))
+            x_axis = obj.matrix_world.to_quaternion() @ Vector((0, 0, 1))
+            y_axis = obj.matrix_world.to_quaternion() @ Vector((0, -1, 0))
+            z_axis = obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
+        return self.create_matrix(p, x_axis, y_axis, z_axis)
+
+    def create_matrix(self, p, x, y, z):
+        return Matrix(
+            (
+                (x[0], y[0], z[0], p[0]),
+                (x[1], y[1], z[1], p[1]),
+                (x[2], y[2], z[2], p[2]),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
 
     def get_profile_axis(self, obj):
         z_values = [v[2] for v in obj.bound_box]
