@@ -561,13 +561,7 @@ class DumbWallGenerator:
                 "geometry.add_axis_representation",
                 tool.Ifc.get(),
                 context=self.axis_context,
-                axis=[
-                    (
-                        0.0,
-                        0.0,
-                    ),
-                    (self.length, 0.0),
-                ],
+                axis=[(0.0, 0.0), (self.length, 0.0)],
             )
             ifcopenshell.api.run(
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
@@ -715,7 +709,6 @@ class DumbWallJoiner:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "AXIS", "GRAPH_VIEW")
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
-        self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
 
     def unjoin(self, wall1):
         element1 = tool.Ifc.get_entity(wall1)
@@ -803,7 +796,9 @@ class DumbWallJoiner:
             axis1["reference"][1] = intersect2 if connection2 > connection1 else intersect1
 
         for connection in changed_connections:
-            ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection)
+            ifcopenshell.api.run(
+                "geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection
+            )
 
         for rel in element2.ConnectedTo:
             if rel.RelatingConnectionType in changed_connections:
@@ -830,7 +825,6 @@ class DumbWallJoiner:
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         bpy.data.objects.remove(wall2)
-
 
     def duplicate_wall(self, wall1):
         wall2 = wall1.copy()
