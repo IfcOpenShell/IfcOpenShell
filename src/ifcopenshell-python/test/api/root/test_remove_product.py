@@ -140,3 +140,25 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcChiller")) == 0
         assert len(self.file.by_type("IfcRelNests")) == 0
         assert len(self.file.by_type("IfcDistributionPort")) == 0
+
+    def test_removing_all_aggregate_relationships_of_a_whole(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
+        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert len(list(self.file)) == total_entities - 2
+        assert len(self.file.by_type("IfcRelAggregates")) == 0
+        assert len(self.file.by_type("IfcElementAssembly")) == 0
+        assert len(self.file.by_type("IfcBeam")) == 1
+
+    def test_removing_all_aggregate_relationships_of_a_part(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
+        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=subelement)
+        assert len(list(self.file)) == total_entities - 2
+        assert len(self.file.by_type("IfcRelAggregates")) == 0
+        assert len(self.file.by_type("IfcElementAssembly")) == 1
+        assert len(self.file.by_type("IfcBeam")) == 0
