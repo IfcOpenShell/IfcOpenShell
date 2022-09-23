@@ -853,6 +853,7 @@ class DumbWallJoiner:
             related_element=element2,
             relating_connection=wall1_end,
             related_connection=wall2_end,
+            description="BUTT",
         )
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
@@ -955,12 +956,16 @@ class DumbWallJoiner:
             connection = rel.RelatingConnectionType
             other = tool.Ifc.get_object(rel.RelatedElement)
             if connection not in ["ATPATH", "NOTDEFINED"]:
-                self.join(obj, other, connection, rel.RelatedConnectionType, is_relating=True, description=rel.Description)
+                self.join(
+                    obj, other, connection, rel.RelatedConnectionType, is_relating=True, description=rel.Description
+                )
         for rel in element.ConnectedFrom:
             connection = rel.RelatedConnectionType
             other = tool.Ifc.get_object(rel.RelatingElement)
             if connection not in ["ATPATH", "NOTDEFINED"]:
-                self.join(obj, other, connection, rel.RelatingConnectionType, is_relating=False, description=rel.Description)
+                self.join(
+                    obj, other, connection, rel.RelatingConnectionType, is_relating=False, description=rel.Description
+                )
 
         new_matrix = copy.deepcopy(obj.matrix_world)
         new_matrix.col[3] = self.body[0].to_4d()

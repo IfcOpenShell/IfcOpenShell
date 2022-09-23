@@ -190,6 +190,10 @@ class BimTool(WorkSpaceTool):
                 row.label(text="", icon="EVENT_T")
                 row.operator("bim.hotkey", text="Butt").hotkey="S_T"
                 row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_Y")
+                row.operator("bim.hotkey", text="Mitre").hotkey="S_Y"
+                row = layout.row(align=True)
                 row.operator("bim.extend_profile", icon="X", text="Disconnect").join_type = ""
 
             if props.ifc_class in (
@@ -309,6 +313,8 @@ class Hotkey(bpy.types.Operator):
     def hotkey_S_Y(self):
         if self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.join_wall(join_type="V")
+        elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
+            bpy.ops.bim.extend_profile(join_type="V")
 
     def hotkey_S_O(self):
         bpy.ops.bim.add_element_opening(voided_building_element="", filling_building_element="")
