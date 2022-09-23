@@ -43,6 +43,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
+        ("bim.hotkey", {"type": "G", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_G")]}),
         ("bim.hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
         ("bim.hotkey", {"type": "S", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_S")]}),
@@ -154,7 +155,11 @@ class BimTool(WorkSpaceTool):
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_Y")
-                row.operator("bim.hotkey", text="Regen Connections").hotkey="S_Y"
+                row.operator("bim.hotkey", text="Mitre").hotkey="S_Y"
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_G")
+                row.operator("bim.hotkey", text="Regen Connections").hotkey="S_G"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_M")
@@ -264,6 +269,14 @@ class Hotkey(bpy.types.Operator):
         elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
             bpy.ops.bim.extend_profile(join_type="T")
 
+    def hotkey_S_F(self):
+        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+            bpy.ops.bim.flip_wall()
+
+    def hotkey_S_G(self):
+        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+            bpy.ops.bim.recalculate_wall()
+
     def hotkey_S_T(self):
         if not self.has_ifc_class:
             return
@@ -285,10 +298,6 @@ class Hotkey(bpy.types.Operator):
         else:
             bpy.ops.bim.align_product(align_type="NEGATIVE")
 
-    def hotkey_S_F(self):
-        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
-            bpy.ops.bim.flip_wall()
-
     def hotkey_S_S(self):
         if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.split_wall()
@@ -298,8 +307,8 @@ class Hotkey(bpy.types.Operator):
             bpy.ops.bim.merge_wall()
 
     def hotkey_S_Y(self):
-        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
-            bpy.ops.bim.recalculate_wall()
+        if self.props.ifc_class == "IfcWallType":
+            bpy.ops.bim.join_wall(join_type="V")
 
     def hotkey_S_O(self):
         bpy.ops.bim.add_element_opening(voided_building_element="", filling_building_element="")
