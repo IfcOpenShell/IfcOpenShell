@@ -40,18 +40,18 @@ class BimTool(WorkSpaceTool):
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
         ("bim.hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
-        ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
-        ("bim.hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
-        ("bim.recalculate_wall", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": []}),
-        ("bim.merge_wall", {"type": "M", "value": "PRESS", "shift": True}, {"properties": []}),
-        ("bim.flip_wall", {"type": "F", "value": "PRESS", "shift": True}, {"properties": []}),
-        ("bim.split_wall", {"type": "S", "value": "PRESS", "shift": True}, {"properties": []}),
-        ("bim.hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
         ("bim.hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
-        ("bim.hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
+        ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
+        ("bim.hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
+        ("bim.hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
-        ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
+        ("bim.hotkey", {"type": "S", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_S")]}),
+        ("bim.hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
+        ("bim.hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
+        ("bim.hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
+        ("bim.hotkey", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Y")]}),
         ("bim.hotkey", {"type": "D", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_D")]}),
+        ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
     )
 
     def draw_settings(context, layout, tool):
@@ -145,32 +145,47 @@ class BimTool(WorkSpaceTool):
                 row.label(text="Join")
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="Extend", icon="EVENT_E")
+                row.label(text="", icon="EVENT_E")
+                row.operator("bim.hotkey", text="Extend").hotkey="S_E"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="Butt", icon="EVENT_T")
+                row.label(text="", icon="EVENT_T")
+                row.operator("bim.hotkey", text="Butt").hotkey="S_T"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="Regen Connections", icon="EVENT_Y")
+                row.label(text="", icon="EVENT_Y")
+                row.operator("bim.hotkey", text="Regen Connections").hotkey="S_Y"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="Merge", icon="EVENT_M")
+                row.label(text="", icon="EVENT_M")
+                row.operator("bim.hotkey", text="Merge").hotkey="S_M"
+                row = layout.row(align=True)
+                row.operator("bim.join_wall", icon="X", text="Disconnect").join_type = ""
 
                 row = layout.row()
                 row.label(text="Wall Tools")
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="Flip", icon="EVENT_F")
+                row.label(text="", icon="EVENT_F")
+                row.operator("bim.hotkey", text="Flip").hotkey="S_F"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="Split", icon="EVENT_S")
+                row.label(text="", icon="EVENT_S")
+                row.operator("bim.hotkey", text="Split").hotkey="S_S"
 
             if ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
                 row = layout.row()
                 row.label(text="Join")
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="Extend", icon="EVENT_E")
+                row.label(text="", icon="EVENT_E")
+                row.operator("bim.hotkey", text="Extend").hotkey="S_E"
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_T")
+                row.operator("bim.hotkey", text="Butt").hotkey="S_T"
+                row = layout.row(align=True)
+                row.operator("bim.extend_profile", icon="X", text="Disconnect").join_type = ""
 
             if props.ifc_class in (
                 "IfcCableCarrierSegmentType",
@@ -269,6 +284,22 @@ class Hotkey(bpy.types.Operator):
                 bpy.ops.bim.align_wall(align_type="EXTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="NEGATIVE")
+
+    def hotkey_S_F(self):
+        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+            bpy.ops.bim.flip_wall()
+
+    def hotkey_S_S(self):
+        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+            bpy.ops.bim.split_wall()
+
+    def hotkey_S_M(self):
+        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+            bpy.ops.bim.merge_wall()
+
+    def hotkey_S_Y(self):
+        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+            bpy.ops.bim.recalculate_wall()
 
     def hotkey_S_O(self):
         bpy.ops.bim.add_element_opening(voided_building_element="", filling_building_element="")

@@ -260,7 +260,9 @@ class ExtendProfile(bpy.types.Operator):
         for obj in selected_objs:
             bpy.ops.bim.dynamically_void_product(obj=obj.name)
         joiner = DumbProfileJoiner()
-        if len(selected_objs) == 0:
+        if not self.join_type:
+            for obj in selected_objs:
+                joiner.unjoin(obj)
             return {"FINISHED"}
         if not context.active_object:
             return {"FINISHED"}
@@ -284,6 +286,19 @@ class DumbProfileJoiner:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+
+    def unjoin(self, profile1):
+        element1 = tool.Ifc.get_entity(profile1)
+        if not element1:
+            return
+
+        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATSTART")
+        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
+
+        axis1 = self.get_profile_axis(profile1)
+        axis = copy.deepcopy(axis1)
+        body = copy.deepcopy(axis1)
+        self.recreate_profile(element1, profile1, axis, body)
 
     def join_E(self, profile1, target):
         element1 = tool.Ifc.get_entity(profile1)

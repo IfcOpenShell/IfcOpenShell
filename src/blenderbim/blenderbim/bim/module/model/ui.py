@@ -30,11 +30,6 @@ class BIM_PT_authoring(Panel):
 
     def draw(self, context):
         row = self.layout.row(align=True)
-        row.operator("bim.join_wall", icon="MOD_SKIN", text="T").join_type = "T"
-        row.operator("bim.join_wall", icon="MOD_SKIN", text="L").join_type = "L"
-        row.operator("bim.join_wall", icon="MOD_SKIN", text="V").join_type = "V"
-        row.operator("bim.join_wall", icon="X", text="").join_type = ""
-        row = self.layout.row(align=True)
         row.operator("bim.align_wall", icon="ANCHOR_TOP", text="Ext.").align_type = "EXTERIOR"
         row.operator("bim.align_wall", icon="ANCHOR_CENTER", text="C/L").align_type = "CENTERLINE"
         row.operator("bim.align_wall", icon="ANCHOR_BOTTOM", text="Int.").align_type = "INTERIOR"
