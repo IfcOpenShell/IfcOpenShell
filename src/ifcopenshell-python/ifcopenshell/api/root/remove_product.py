@@ -64,4 +64,10 @@ class Usecase:
                             ifcopenshell.api.run("root.remove_product", self.file, product=subelement)
                     if not inverse.RelatedObjects:
                         self.file.remove(inverse)
+            elif inverse.is_a("IfcRelAggregates"):
+                if inverse.RelatingObject == self.settings["product"] or len(inverse.RelatedObjects) == 1:
+                    self.file.remove(inverse)
+            elif inverse.is_a("IfcRelContainedInSpatialStructure"):
+                if inverse.RelatingStructure == self.settings["product"] or len(inverse.RelatedElements) == 1:
+                    self.file.remove(inverse)
         self.file.remove(self.settings["product"])

@@ -78,7 +78,8 @@ class JoinWall(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = """ Trim/Extend the selected walls to the last selected wall:
     'T' mode: Trim/Extend to a selected wall or 3D target
-    'L' mode: Join two selected wall ends
+    'L' mode: Butt join two selected walls
+    'V' mode: Mitre join two selected wall
     '' (empty) mode: Unjoin selected walls
     """
     join_type: bpy.props.StringProperty()
@@ -89,31 +90,30 @@ class JoinWall(bpy.types.Operator):
 
     def execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.BIMObjectProperties.ifc_definition_id]
+        joiner = DumbWallJoiner()
         #for obj in selected_objs:
         #    bpy.ops.bim.dynamically_void_product(obj=obj.name)
         if not self.join_type:
             for obj in selected_objs:
-                DumbWallJoiner().unjoin(obj)
+                joiner.unjoin(obj)
             return {"FINISHED"}
         if not context.active_object:
             return {"FINISHED"}
         if len(selected_objs) == 1:
-            DumbWallJoiner().join_E(context.active_object, context.scene.cursor.location)
-            #IfcStore.edited_objs.add(context.active_object)
+            joiner.join_E(context.active_object, context.scene.cursor.location)
             return {"FINISHED"}
+        if len(selected_objs) == 2:
+            if self.join_type == "L":
+                joiner.join_L([o for o in selected_objs if o != context.active_object][0], context.active_object)
+            elif self.join_type == "V":
+                joiner.join_V([o for o in selected_objs if o != context.active_object][0], context.active_object)
         if len(selected_objs) < 2:
             return {"FINISHED"}
-        joiner = DumbWallJoiner()
-        for obj in selected_objs:
-            if obj == context.active_object:
-                continue
-            if self.join_type == "T":
+        if self.join_type == "T":
+            for obj in selected_objs:
+                if obj == context.active_object:
+                    continue
                 joiner.join_T(obj, context.active_object)
-            elif self.join_type == "L":
-                joiner.join_L(obj, context.active_object)
-            IfcStore.edited_objs.add(obj)
-        #if self.join_type != "T":
-        #    IfcStore.edited_objs.add(context.active_object)
         return {"FINISHED"}
 
 
@@ -226,6 +226,7 @@ class ChangeExtrusionDepth(bpy.types.Operator):
         return context.selected_objects
 
     def execute(self, context):
+        wall_objs = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -237,7 +238,10 @@ class ChangeExtrusionDepth(bpy.types.Operator):
             if not extrusion:
                 return
             extrusion.Depth = self.depth
-        DumbWallRecalculator().recalculate(context.selected_objects)
+            if element.is_a("IfcWall"):
+                wall_objs.append(obj)
+        if wall_objs:
+            DumbWallRecalculator().recalculate(wall_objs)
         return {"FINISHED"}
 
     def get_extrusion(self, representation):
@@ -427,7 +431,7 @@ class DumbWallGenerator:
         self.location = Vector((0, 0, 0))
 
         if self.has_sketch():
-            return # For now
+            return  # For now
             return self.derive_from_sketch()
         return self.derive_from_cursor()
 
@@ -561,13 +565,7 @@ class DumbWallGenerator:
                 "geometry.add_axis_representation",
                 tool.Ifc.get(),
                 context=self.axis_context,
-                axis=[
-                    (
-                        0.0,
-                        0.0,
-                    ),
-                    (self.length, 0.0),
-                ],
+                axis=[(0.0, 0.0), (self.length, 0.0)],
             )
             ifcopenshell.api.run(
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
@@ -715,7 +713,6 @@ class DumbWallJoiner:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "AXIS", "GRAPH_VIEW")
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
-        self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
 
     def unjoin(self, wall1):
         element1 = tool.Ifc.get_entity(wall1)
@@ -782,7 +779,7 @@ class DumbWallJoiner:
         axis2 = self.get_wall_axis(wall2)
 
         angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=False, degrees=True)
-        if not tool.Cad.is_x(angle, 0):
+        if not tool.Cad.is_x(angle, 0, tolerance=0.001):
             return
 
         intersect1, connection1 = mathutils.geometry.intersect_point_line(axis2["reference"][0], *axis1["reference"])
@@ -803,7 +800,9 @@ class DumbWallJoiner:
             axis1["reference"][1] = intersect2 if connection2 > connection1 else intersect1
 
         for connection in changed_connections:
-            ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection)
+            ifcopenshell.api.run(
+                "geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection
+            )
 
         for rel in element2.ConnectedTo:
             if rel.RelatingConnectionType in changed_connections:
@@ -830,7 +829,6 @@ class DumbWallJoiner:
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         bpy.data.objects.remove(wall2)
-
 
     def duplicate_wall(self, wall1):
         wall2 = wall1.copy()
@@ -859,6 +857,7 @@ class DumbWallJoiner:
             related_element=element2,
             relating_connection=wall1_end,
             related_connection=wall2_end,
+            description="BUTT",
         )
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
@@ -917,9 +916,36 @@ class DumbWallJoiner:
             relating_element=element2,
             relating_connection="ATPATH",
             related_connection=connection,
+            description="BUTT",
         )
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
+
+    def join_V(self, wall1, wall2):
+        element1 = tool.Ifc.get_entity(wall1)
+        element2 = tool.Ifc.get_entity(wall2)
+        axis1 = self.get_wall_axis(wall1)
+        axis2 = self.get_wall_axis(wall2)
+        intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
+        if intersect:
+            intersect, _ = intersect
+        else:
+            return
+        wall1_end = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
+        wall2_end = "ATEND" if tool.Cad.edge_percent(intersect, axis2["reference"]) > 0.5 else "ATSTART"
+
+        ifcopenshell.api.run(
+            "geometry.connect_path",
+            tool.Ifc.get(),
+            relating_element=element1,
+            related_element=element2,
+            relating_connection=wall1_end,
+            related_connection=wall2_end,
+            description="MITRE",
+        )
+
+        self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
+        self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
 
     def recreate_wall(self, element, obj, axis=None, body=None):
         if axis is None or body is None:
@@ -934,12 +960,16 @@ class DumbWallJoiner:
             connection = rel.RelatingConnectionType
             other = tool.Ifc.get_object(rel.RelatedElement)
             if connection not in ["ATPATH", "NOTDEFINED"]:
-                self.join(obj, other, connection, is_relating=True)
+                self.join(
+                    obj, other, connection, rel.RelatedConnectionType, is_relating=True, description=rel.Description
+                )
         for rel in element.ConnectedFrom:
             connection = rel.RelatedConnectionType
             other = tool.Ifc.get_object(rel.RelatingElement)
             if connection not in ["ATPATH", "NOTDEFINED"]:
-                self.join(obj, other, connection, is_relating=False)
+                self.join(
+                    obj, other, connection, rel.RelatingConnectionType, is_relating=False, description=rel.Description
+                )
 
         new_matrix = copy.deepcopy(obj.matrix_world)
         new_matrix.col[3] = self.body[0].to_4d()
@@ -1047,8 +1077,7 @@ class DumbWallJoiner:
                 break
         return height
 
-    def join(self, wall1, wall2, connection, is_relating=True):
-        print('going to join', wall1, wall2, connection, is_relating)
+    def join(self, wall1, wall2, connection1, connection2, is_relating=True, description="BUTT"):
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
         layers1 = get_material_layer_parameters(element1)
@@ -1056,8 +1085,8 @@ class DumbWallJoiner:
         axis1 = self.get_wall_axis(wall1, layers1)
         axis2 = self.get_wall_axis(wall2, layers2)
 
-        angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=False, degrees=True)
-        if tool.Cad.is_x(angle, (0, 180)):
+        angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=True, degrees=True)
+        if tool.Cad.is_x(abs(angle), (0, 180), tolerance=0.001):
             return False
 
         # Work out axis line
@@ -1067,13 +1096,13 @@ class DumbWallJoiner:
         else:
             return False
 
-        proposed_axis = [self.axis[0], intersect] if connection == "ATEND" else [intersect, self.axis[1]]
+        proposed_axis = [self.axis[0], intersect] if connection1 == "ATEND" else [intersect, self.axis[1]]
 
-        if tool.Cad.is_x(tool.Cad.angle_edges(self.axis, proposed_axis, degrees=True), 180):
-            # The user has moved the wall into an invalid position that connect connect at the desired end
+        if tool.Cad.is_x(tool.Cad.angle_edges(self.axis, proposed_axis, degrees=True), 180, tolerance=0.001):
+            # The user has moved the wall into an invalid position that cannot connect at the desired end
             return False
 
-        self.axis[1 if connection == "ATEND" else 0] = intersect
+        self.axis[1 if connection1 == "ATEND" else 0] = intersect
 
         # Work out body extents
         intersect1, _ = tool.Cad.intersect_edges(axis1["base"], axis2["base"])
@@ -1081,65 +1110,131 @@ class DumbWallJoiner:
         intersect3, _ = tool.Cad.intersect_edges(axis1["side"], axis2["base"])
         intersect4, _ = tool.Cad.intersect_edges(axis1["side"], axis2["side"])
 
-        intersect12 = intersect1.lerp(intersect2, 0.5)
-        intersect34 = intersect3.lerp(intersect4, 0.5)
-
-        if connection == "ATEND":
-            if is_relating:
+        if description == "MITRE":
+            # Mitre joints are an unofficial convention
+            if connection1 == "ATEND":
                 base_target = tool.Cad.furthest_vector(axis1["base"][0], (intersect1, intersect2))
-            else:
-                base_target = tool.Cad.closest_vector(axis1["base"][0], (intersect1, intersect2))
-            if tool.Cad.is_x(angle, (90, 270)):
-                self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
-            else:
-                if is_relating:
-                    side_target = tool.Cad.furthest_vector(axis1["side"][0], (intersect3, intersect4))
-                else:
-                    side_target = tool.Cad.closest_vector(axis1["side"][0], (intersect3, intersect4))
-                base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
-                side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
-                if base_percent > side_percent:
+                if tool.Cad.is_x(abs(angle), (90, 270), tolerance=0.001):
                     self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
-                    clip = side_target.to_3d()
-                    x_axis = (side_target - base_target).normalized().to_3d()
-                    y_axis = Vector((0, 0, 1))
-                    z_axis = x_axis.cross(y_axis)
-                    self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
                 else:
-                    self.body[1] = tool.Cad.point_on_edge(side_target, axis1["reference"])
-                    clip = base_target.to_3d()
-                    x_axis = (side_target - base_target).normalized().to_3d()
-                    y_axis = Vector((0, 0, 1))
-                    z_axis = x_axis.cross(y_axis)
-                    self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
-        else:
-            if is_relating:
-                base_target = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
+                    side_target = tool.Cad.furthest_vector(axis1["side"][0], (intersect3, intersect4))
+                    base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
+                    side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
+                    if base_percent > side_percent:
+                        self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
+                    else:
+                        self.body[1] = tool.Cad.point_on_edge(side_target, axis1["reference"])
+
+                # Mitre clip
+                if connection1 == connection2:
+                    if angle < 0:
+                        clip1 = tool.Cad.closest_vector(axis1["base"][0], (intersect1, intersect2))
+                        clip2 = tool.Cad.furthest_vector(axis1["side"][0], (intersect3, intersect4))
+                    else:
+                        clip1 = tool.Cad.furthest_vector(axis1["base"][0], (intersect1, intersect2))
+                        clip2 = tool.Cad.closest_vector(axis1["side"][0], (intersect3, intersect4))
+                else:
+                    if angle < 0:
+                        clip1 = tool.Cad.furthest_vector(axis1["base"][0], (intersect1, intersect2))
+                        clip2 = tool.Cad.closest_vector(axis1["side"][0], (intersect3, intersect4))
+                    else:
+                        clip1 = tool.Cad.closest_vector(axis1["base"][0], (intersect1, intersect2))
+                        clip2 = tool.Cad.furthest_vector(axis1["side"][0], (intersect3, intersect4))
+                y_axis = Vector((0, 0, -1))
+                x_axis = (clip1 - clip2).normalized().to_3d()
+                z_axis = x_axis.cross(y_axis)
+                self.clippings.append(self.create_matrix(clip1.to_3d(), x_axis, y_axis, z_axis))
             else:
-                base_target = tool.Cad.closest_vector(axis1["base"][1], (intersect1, intersect2))
-            if tool.Cad.is_x(angle, (90, 270)):
-                self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
+                base_target = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
+                if tool.Cad.is_x(abs(angle), (90, 270), tolerance=0.001):
+                    self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
+                else:
+                    side_target = tool.Cad.furthest_vector(axis1["side"][1], (intersect3, intersect4))
+                    base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
+                    side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
+                    if base_percent < side_percent:
+                        self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
+                    else:
+                        self.body[0] = tool.Cad.point_on_edge(side_target, axis1["reference"])
+
+                # Mitre clip
+                if connection1 == connection2:
+                    if angle < 0:
+                        clip1 = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
+                        clip2 = tool.Cad.closest_vector(axis1["side"][1], (intersect3, intersect4))
+                    else:
+                        clip1 = tool.Cad.closest_vector(axis1["base"][1], (intersect1, intersect2))
+                        clip2 = tool.Cad.furthest_vector(axis1["side"][1], (intersect3, intersect4))
+                    y_axis = Vector((0, 0, 1))
+                else:
+                    if angle < 0:
+                        clip1 = tool.Cad.closest_vector(axis1["base"][1], (intersect1, intersect2))
+                        clip2 = tool.Cad.furthest_vector(axis1["side"][1], (intersect3, intersect4))
+                    else:
+                        clip1 = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
+                        clip2 = tool.Cad.closest_vector(axis1["side"][1], (intersect3, intersect4))
+                    y_axis = Vector((0, 0, 1))
+                x_axis = (clip1 - clip2).normalized().to_3d()
+                z_axis = x_axis.cross(y_axis)
+                self.clippings.append(self.create_matrix(clip1.to_3d(), x_axis, y_axis, z_axis))
+        else:
+            # This is the standard L and T joints described by IFC
+            if connection1 == "ATEND":
+                if is_relating:
+                    base_target = tool.Cad.furthest_vector(axis1["base"][0], (intersect1, intersect2))
+                else:
+                    base_target = tool.Cad.closest_vector(axis1["base"][0], (intersect1, intersect2))
+                if tool.Cad.is_x(abs(angle), (90, 270), tolerance=0.001):
+                    self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
+                else:
+                    if is_relating:
+                        side_target = tool.Cad.furthest_vector(axis1["side"][0], (intersect3, intersect4))
+                    else:
+                        side_target = tool.Cad.closest_vector(axis1["side"][0], (intersect3, intersect4))
+                    base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
+                    side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
+                    if base_percent > side_percent:
+                        self.body[1] = tool.Cad.point_on_edge(base_target, axis1["reference"])
+                        clip = side_target.to_3d()
+                        x_axis = (side_target - base_target).normalized().to_3d()
+                        y_axis = Vector((0, 0, 1))
+                        z_axis = x_axis.cross(y_axis)
+                        self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
+                    else:
+                        self.body[1] = tool.Cad.point_on_edge(side_target, axis1["reference"])
+                        clip = base_target.to_3d()
+                        x_axis = (side_target - base_target).normalized().to_3d()
+                        y_axis = Vector((0, 0, 1))
+                        z_axis = x_axis.cross(y_axis)
+                        self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
             else:
                 if is_relating:
-                    side_target = tool.Cad.furthest_vector(axis1["side"][1], (intersect3, intersect4))
+                    base_target = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
                 else:
-                    side_target = tool.Cad.closest_vector(axis1["side"][1], (intersect3, intersect4))
-                base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
-                side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
-                if base_percent < side_percent:
+                    base_target = tool.Cad.closest_vector(axis1["base"][1], (intersect1, intersect2))
+                if tool.Cad.is_x(abs(angle), (90, 270), tolerance=0.001):
                     self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
-                    clip = side_target.to_3d()
-                    x_axis = (side_target - base_target).normalized().to_3d()
-                    y_axis = Vector((0, 0, 1))
-                    z_axis = y_axis.cross(x_axis)
-                    self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
                 else:
-                    self.body[0] = tool.Cad.point_on_edge(side_target, axis1["reference"])
-                    clip = base_target.to_3d()
-                    x_axis = (side_target - base_target).normalized().to_3d()
-                    y_axis = Vector((0, 0, 1))
-                    z_axis = y_axis.cross(x_axis)
-                    self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
+                    if is_relating:
+                        side_target = tool.Cad.furthest_vector(axis1["side"][1], (intersect3, intersect4))
+                    else:
+                        side_target = tool.Cad.closest_vector(axis1["side"][1], (intersect3, intersect4))
+                    base_percent = tool.Cad.edge_percent(base_target, axis1["base"])
+                    side_percent = tool.Cad.edge_percent(side_target, axis1["side"])
+                    if base_percent < side_percent:
+                        self.body[0] = tool.Cad.point_on_edge(base_target, axis1["reference"])
+                        clip = side_target.to_3d()
+                        x_axis = (side_target - base_target).normalized().to_3d()
+                        y_axis = Vector((0, 0, 1))
+                        z_axis = y_axis.cross(x_axis)
+                        self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
+                    else:
+                        self.body[0] = tool.Cad.point_on_edge(side_target, axis1["reference"])
+                        clip = base_target.to_3d()
+                        x_axis = (side_target - base_target).normalized().to_3d()
+                        y_axis = Vector((0, 0, 1))
+                        z_axis = y_axis.cross(x_axis)
+                        self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
         return True
 
 
