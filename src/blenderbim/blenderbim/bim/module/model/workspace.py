@@ -147,23 +147,23 @@ class BimTool(WorkSpaceTool):
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_E")
-                row.operator("bim.hotkey", text="Extend").hotkey="S_E"
+                row.operator("bim.hotkey", text="Extend").hotkey = "S_E"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_T")
-                row.operator("bim.hotkey", text="Butt").hotkey="S_T"
+                row.operator("bim.hotkey", text="Butt").hotkey = "S_T"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_Y")
-                row.operator("bim.hotkey", text="Mitre").hotkey="S_Y"
+                row.operator("bim.hotkey", text="Mitre").hotkey = "S_Y"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_G")
-                row.operator("bim.hotkey", text="Regen Connections").hotkey="S_G"
+                row.operator("bim.hotkey", text="Regen Connections").hotkey = "S_G"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_M")
-                row.operator("bim.hotkey", text="Merge").hotkey="S_M"
+                row.operator("bim.hotkey", text="Merge").hotkey = "S_M"
                 row = layout.row(align=True)
                 row.operator("bim.join_wall", icon="X", text="Disconnect").join_type = ""
 
@@ -172,31 +172,37 @@ class BimTool(WorkSpaceTool):
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_F")
-                row.operator("bim.hotkey", text="Flip").hotkey="S_F"
+                row.operator("bim.hotkey", text="Flip").hotkey = "S_F"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_S")
-                row.operator("bim.hotkey", text="Split").hotkey="S_S"
+                row.operator("bim.hotkey", text="Split").hotkey = "S_S"
 
             if ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
+                row = layout.row(align=True)
+                label = "Height" if ifc_class == "IfcColumnType" else "Length"
+                row.prop(data=props, property="extrusion_depth", text=label)
+                op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
+                op.depth = props.extrusion_depth
+
                 row = layout.row()
                 row.label(text="Join")
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_E")
-                row.operator("bim.hotkey", text="Extend").hotkey="S_E"
+                row.operator("bim.hotkey", text="Extend").hotkey = "S_E"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_T")
-                row.operator("bim.hotkey", text="Butt").hotkey="S_T"
+                row.operator("bim.hotkey", text="Butt").hotkey = "S_T"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_Y")
-                row.operator("bim.hotkey", text="Mitre").hotkey="S_Y"
+                row.operator("bim.hotkey", text="Mitre").hotkey = "S_Y"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_G")
-                row.operator("bim.hotkey", text="Regen Connections").hotkey="S_G"
+                row.operator("bim.hotkey", text="Regen Connections").hotkey = "S_G"
                 row = layout.row(align=True)
                 row.operator("bim.extend_profile", icon="X", text="Disconnect").join_type = ""
 

@@ -226,6 +226,7 @@ class ChangeExtrusionDepth(bpy.types.Operator):
         return context.selected_objects
 
     def execute(self, context):
+        wall_objs = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -237,7 +238,10 @@ class ChangeExtrusionDepth(bpy.types.Operator):
             if not extrusion:
                 return
             extrusion.Depth = self.depth
-        DumbWallRecalculator().recalculate(context.selected_objects)
+            if element.is_a("IfcWall"):
+                wall_objs.append(obj)
+        if wall_objs:
+            DumbWallRecalculator().recalculate(wall_objs)
         return {"FINISHED"}
 
     def get_extrusion(self, representation):
