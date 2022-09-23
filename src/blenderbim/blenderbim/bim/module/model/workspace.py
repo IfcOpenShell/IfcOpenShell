@@ -194,6 +194,10 @@ class BimTool(WorkSpaceTool):
                 row.label(text="", icon="EVENT_Y")
                 row.operator("bim.hotkey", text="Mitre").hotkey="S_Y"
                 row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_G")
+                row.operator("bim.hotkey", text="Regen Connections").hotkey="S_G"
+                row = layout.row(align=True)
                 row.operator("bim.extend_profile", icon="X", text="Disconnect").join_type = ""
 
             if props.ifc_class in (
@@ -280,6 +284,8 @@ class Hotkey(bpy.types.Operator):
     def hotkey_S_G(self):
         if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.recalculate_wall()
+        elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
+            bpy.ops.bim.recalculate_profile()
 
     def hotkey_S_T(self):
         if not self.has_ifc_class:

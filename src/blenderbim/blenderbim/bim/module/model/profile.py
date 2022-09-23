@@ -863,3 +863,33 @@ class DumbProfileJoiner:
                     final = {"contact": contact, "distance": distance, "end": result[2], "direction": result[3]}
 
         return final
+
+
+class RecalculateProfile(bpy.types.Operator):
+    bl_idname = "bim.recalculate_profile"
+    bl_label = "Recalculate Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def execute(self, context):
+        DumbProfileRecalculator().recalculate(context.selected_objects)
+        return {"FINISHED"}
+
+
+class DumbProfileRecalculator:
+    def recalculate(self, profiles):
+        queue = set()
+        for profile in profiles:
+            element = tool.Ifc.get_entity(profile)
+            queue.add((element, profile))
+            for rel in getattr(element, "ConnectedTo", []):
+                queue.add((rel.RelatedElement, tool.Ifc.get_object(rel.RelatedElement)))
+            for rel in getattr(element, "ConnectedFrom", []):
+                queue.add((rel.RelatingElement, tool.Ifc.get_object(rel.RelatingElement)))
+        joiner = DumbProfileJoiner()
+        for element, profile in queue:
+            if element.is_a() in ("IfcColumn", "IfcBeam", "IfcMember") and profile:
+                joiner.recreate_profile(element, profile)
