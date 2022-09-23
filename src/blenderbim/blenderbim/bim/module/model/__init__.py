@@ -36,6 +36,7 @@ classes = (
     wall.SplitWall,
     opening.AddElementOpening,
     profile.ExtendProfile,
+    profile.RecalculateProfile,
     prop.BIMModelProperties,
     prop.ConstrTypeInfo,
     ui.BIM_PT_authoring,
