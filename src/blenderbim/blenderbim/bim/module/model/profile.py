@@ -269,8 +269,11 @@ class ExtendProfile(bpy.types.Operator):
         if len(selected_objs) == 1:
             joiner.join_E(context.active_object, context.scene.cursor.location)
             return {"FINISHED"}
-        if len(selected_objs) == 2 and self.join_type == "L":
-            joiner.join_L([o for o in selected_objs if o != context.active_object][0], context.active_object)
+        if len(selected_objs) == 2:
+            if self.join_type == "L":
+                joiner.join_L([o for o in selected_objs if o != context.active_object][0], context.active_object)
+            elif self.join_type == "V":
+                joiner.join_V([o for o in selected_objs if o != context.active_object][0], context.active_object)
         if len(selected_objs) < 2:
             return {"FINISHED"}
         if self.join_type == "T":
@@ -335,9 +338,36 @@ class DumbProfileJoiner:
             relating_element=element2,
             relating_connection="ATPATH",
             related_connection=connection,
+            description="BUTT",
         )
 
         self.recreate_profile(element1, profile1, axis1, axis1)
+
+    def join_V(self, profile1, profile2):
+        element1 = tool.Ifc.get_entity(profile1)
+        element2 = tool.Ifc.get_entity(profile2)
+        axis1 = self.get_profile_axis(profile1)
+        axis2 = self.get_profile_axis(profile2)
+        intersect = tool.Cad.intersect_edges(axis1, axis2)
+        if intersect:
+            intersect, _ = intersect
+        else:
+            return
+        profile1_end = "ATEND" if tool.Cad.edge_percent(intersect, axis1) > 0.5 else "ATSTART"
+        profile2_end = "ATEND" if tool.Cad.edge_percent(intersect, axis2) > 0.5 else "ATSTART"
+
+        ifcopenshell.api.run(
+            "geometry.connect_path",
+            tool.Ifc.get(),
+            relating_element=element1,
+            related_element=element2,
+            relating_connection=profile1_end,
+            related_connection=profile2_end,
+            description="MITRE",
+        )
+
+        self.recreate_profile(element1, profile1, axis1, axis1)
+        self.recreate_profile(element2, profile2, axis2, axis2)
 
     def join_L(self, profile1, profile2):
         element1 = tool.Ifc.get_entity(profile1)
@@ -359,6 +389,7 @@ class DumbProfileJoiner:
             related_element=element2,
             relating_connection=profile1_end,
             related_connection=profile2_end,
+            description="BUTT",
         )
 
         self.recreate_profile(element1, profile1, axis1, axis1)
@@ -378,12 +409,16 @@ class DumbProfileJoiner:
             connection = rel.RelatingConnectionType
             other = tool.Ifc.get_object(rel.RelatedElement)
             if connection not in ["ATPATH", "NOTDEFINED"]:
-                self.join(obj, other, connection, is_relating=True)
+                self.join(
+                    obj, other, connection, rel.RelatedConnectionType, is_relating=True, description=rel.Description
+                )
         for rel in element.ConnectedFrom:
             connection = rel.RelatedConnectionType
             other = tool.Ifc.get_object(rel.RelatingElement)
             if connection not in ["ATPATH", "NOTDEFINED"]:
-                self.join(obj, other, connection, is_relating=False)
+                self.join(
+                    obj, other, connection, rel.RelatingConnectionType, is_relating=False, description=rel.Description
+                )
 
         new_matrix = copy.deepcopy(obj.matrix_world)
         new_matrix.col[3] = self.body[0].to_4d()
@@ -444,7 +479,7 @@ class DumbProfileJoiner:
             should_sync_changes_first=False,
         )
 
-    def join(self, profile1, profile2, connection, is_relating=True):
+    def join(self, profile1, profile2, connection1, connection2, is_relating=True, description="BUTT"):
         element1 = tool.Ifc.get_entity(profile1)
         element2 = tool.Ifc.get_entity(profile2)
         axis1 = self.get_profile_axis(profile1)
@@ -456,19 +491,19 @@ class DumbProfileJoiner:
 
         intersect, _ = tool.Cad.intersect_edges(axis1, axis2)
 
-        proposed_axis = [self.axis[0], intersect] if connection == "ATEND" else [intersect, self.axis[1]]
+        proposed_axis = [self.axis[0], intersect] if connection1 == "ATEND" else [intersect, self.axis[1]]
 
         if tool.Cad.is_x(tool.Cad.angle_edges(self.axis, proposed_axis, degrees=True), 180):
             # The user has moved the wall into an invalid position that cannot connect at the desired end
             return False
 
-        self.axis[1 if connection == "ATEND" else 0] = intersect
+        self.axis[1 if connection1 == "ATEND" else 0] = intersect
 
         # Work out body extents
 
-        if connection == "ATEND":
+        if connection1 == "ATEND":
             axisl = (profile2.matrix_world.inverted() @ axis1[1]) - (profile2.matrix_world.inverted() @ axis1[0])
-        elif connection == "ATSTART":
+        elif connection1 == "ATSTART":
             axisl = (profile2.matrix_world.inverted() @ axis1[0]) - (profile2.matrix_world.inverted() @ axis1[1])
         xy_angle = math.degrees(Vector((1, 0)).angle_signed(axisl.normalized().to_2d()))
         if xy_angle >= -135 and xy_angle <= -45:
@@ -486,32 +521,158 @@ class DumbProfileJoiner:
 
         is_orthogonal = tool.Cad.is_x(tool.Cad.angle_edges(axis1, axis2, degrees=True), 90, tolerance=0.001)
 
-        if connection == "ATEND":
-            if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
-                plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
-                intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.col[3].to_3d(), plane.col[2].to_3d())
-                self.body[1] = intersect
+        if description == "MITRE":
+            # Mitre joints are an unofficial convention
+
+            # Check the closest plane from the perspective of the other element
+            if connection2 == "ATEND":
+                axisl = (profile1.matrix_world.inverted() @ axis2[1]) - (profile1.matrix_world.inverted() @ axis2[0])
+            elif connection2 == "ATSTART":
+                axisl = (profile1.matrix_world.inverted() @ axis2[0]) - (profile1.matrix_world.inverted() @ axis2[1])
+            xy_angle2 = math.degrees(Vector((1, 0)).angle_signed(axisl.normalized().to_2d()))
+            if xy_angle2 >= -135 and xy_angle2 <= -45:
+                closest_plane2 = "bottom"
+                furthest_plane2 = "top"
+            elif xy_angle2 >= 45 and xy_angle2 <= 135:
+                closest_plane2 = "top"
+                furthest_plane2 = "bottom"
+            elif xy_angle2 >= -45 and xy_angle2 <= 45:
+                closest_plane2 = "left"
+                furthest_plane2 = "right"
             else:
-                plane = self.get_profile_plane(
-                    profile2, furthest_plane if is_relating else closest_plane, z_inwards=False if is_relating else True
-                )
-                intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.col[3].to_3d(), plane.col[2].to_3d())
-                max_dim = self.get_max_bound_box_dimension(profile1)
-                self.body[1] = intersect + profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
-                self.clippings.append(plane)
-        elif connection == "ATSTART":
-            if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
-                plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
-                intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.col[3].to_3d(), plane.col[2].to_3d())
-                self.body[0] = intersect
-            else:
-                plane = self.get_profile_plane(
-                    profile2, furthest_plane if is_relating else closest_plane, z_inwards=False if is_relating else True
-                )
-                intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.col[3].to_3d(), plane.col[2].to_3d())
-                max_dim = self.get_max_bound_box_dimension(profile1)
-                self.body[0] = intersect - profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
-                self.clippings.append(plane)
+                closest_plane2 = "right"
+                furthest_plane2 = "left"
+
+            if connection1 == "ATEND":
+                if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
+                    plane = self.get_profile_plane(profile2, furthest_plane)
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                    )
+                    self.body[1] = intersect
+                else:
+                    plane = self.get_profile_plane(profile2, furthest_plane, z_inwards=False)
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                    )
+                    max_dim = self.get_max_bound_box_dimension(profile1)
+                    self.body[1] = intersect + profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
+
+                # Mitre clip
+                if connection1 == connection2:
+                    plane1 = self.get_profile_plane(profile1, furthest_plane2)
+                    plane2 = self.get_profile_plane(profile2, furthest_plane)
+                    clip1, direction1 = mathutils.geometry.intersect_plane_plane(
+                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                    )
+
+                    plane1 = self.get_profile_plane(profile1, closest_plane2)
+                    plane2 = self.get_profile_plane(profile2, closest_plane)
+                    clip2, direction2 = mathutils.geometry.intersect_plane_plane(
+                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                    )
+                else:
+                    plane1 = self.get_profile_plane(profile1, furthest_plane2)
+                    plane2 = self.get_profile_plane(profile2, furthest_plane)
+                    clip1, direction1 = mathutils.geometry.intersect_plane_plane(
+                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                    )
+
+                    plane1 = self.get_profile_plane(profile1, closest_plane2)
+                    plane2 = self.get_profile_plane(profile2, closest_plane)
+                    clip2, direction2 = mathutils.geometry.intersect_plane_plane(
+                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                    )
+
+                y_axis = direction2
+                x_axis = (clip2 - clip1).normalized().to_3d()
+                z_axis = x_axis.cross(y_axis)
+                self.clippings.append(self.create_matrix(clip1, x_axis, y_axis, z_axis))
+            elif connection1 == "ATSTART":
+                if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
+                    plane = self.get_profile_plane(profile2, furthest_plane)
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                    )
+                    self.body[0] = intersect
+                else:
+                    plane = self.get_profile_plane(profile2, furthest_plane, z_inwards=False)
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                    )
+                    max_dim = self.get_max_bound_box_dimension(profile1)
+                    self.body[0] = intersect - profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
+
+                if connection1 == connection2:
+                    plane1 = self.get_profile_plane(profile1, furthest_plane2)
+                    plane2 = self.get_profile_plane(profile2, furthest_plane)
+                    clip1, direction1 = mathutils.geometry.intersect_plane_plane(
+                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                    )
+
+                    plane1 = self.get_profile_plane(profile1, closest_plane2)
+                    plane2 = self.get_profile_plane(profile2, closest_plane)
+                    clip2, direction2 = mathutils.geometry.intersect_plane_plane(
+                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                    )
+                else:
+                    plane1 = self.get_profile_plane(profile1, furthest_plane2)
+                    plane2 = self.get_profile_plane(profile2, furthest_plane)
+                    clip1, direction1 = mathutils.geometry.intersect_plane_plane(
+                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                    )
+
+                    plane1 = self.get_profile_plane(profile1, closest_plane2)
+                    plane2 = self.get_profile_plane(profile2, closest_plane)
+                    clip2, direction2 = mathutils.geometry.intersect_plane_plane(
+                        plane1.col[3].to_3d(), plane1.col[2].to_3d(), plane2.col[3].to_3d(), plane2.col[2].to_3d()
+                    )
+
+                y_axis = direction2
+                x_axis = (clip2 - clip1).normalized().to_3d()
+                z_axis = x_axis.cross(y_axis)
+                self.clippings.append(self.create_matrix(clip1, x_axis, y_axis, z_axis))
+
+        else:
+            # This is the standard L and T joints described by IFC
+            if connection1 == "ATEND":
+                if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
+                    plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                    )
+                    self.body[1] = intersect
+                else:
+                    plane = self.get_profile_plane(
+                        profile2,
+                        furthest_plane if is_relating else closest_plane,
+                        z_inwards=False if is_relating else True,
+                    )
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                    )
+                    max_dim = self.get_max_bound_box_dimension(profile1)
+                    self.body[1] = intersect + profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
+                    self.clippings.append(plane)
+            elif connection1 == "ATSTART":
+                if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
+                    plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                    )
+                    self.body[0] = intersect
+                else:
+                    plane = self.get_profile_plane(
+                        profile2,
+                        furthest_plane if is_relating else closest_plane,
+                        z_inwards=False if is_relating else True,
+                    )
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        *axis1, plane.col[3].to_3d(), plane.col[2].to_3d()
+                    )
+                    max_dim = self.get_max_bound_box_dimension(profile1)
+                    self.body[0] = intersect - profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
+                    self.clippings.append(plane)
 
     def get_max_bound_box_dimension(self, obj):
         x = [v[0] for v in obj.bound_box]
