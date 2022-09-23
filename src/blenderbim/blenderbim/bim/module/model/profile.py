@@ -319,6 +319,23 @@ class DumbProfileJoiner:
         body[1 if connection == "ATEND" else 0] = intersect
         self.recreate_profile(element1, profile1, axis, body)
 
+    def set_depth(self, profile1, length):
+        element1 = tool.Ifc.get_entity(profile1)
+        if not element1:
+            return
+
+        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
+
+        axis1 = self.get_profile_axis(profile1)
+        axis = copy.deepcopy(axis1)
+        body = copy.deepcopy(axis1)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        si_length = unit_scale * length
+        end = profile1.matrix_world @ Vector((si_length, 0, 0))
+        axis[1] = end
+        body[1] = end
+        self.recreate_profile(element1, profile1, axis, body)
+
     def join_T(self, profile1, profile2):
         element1 = tool.Ifc.get_entity(profile1)
         element2 = tool.Ifc.get_entity(profile2)
@@ -893,3 +910,20 @@ class DumbProfileRecalculator:
         for element, profile in queue:
             if element.is_a() in ("IfcColumn", "IfcBeam", "IfcMember") and profile:
                 joiner.recreate_profile(element, profile)
+
+
+class ChangeProfileDepth(bpy.types.Operator):
+    bl_idname = "bim.change_profile_depth"
+    bl_label = "Change Profile Length"
+    bl_options = {"REGISTER", "UNDO"}
+    depth: bpy.props.FloatProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def execute(self, context):
+        joiner = DumbProfileJoiner()
+        for obj in context.selected_objects:
+            joiner.set_depth(obj, self.depth)
+        return {"FINISHED"}
