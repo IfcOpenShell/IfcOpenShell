@@ -28,6 +28,7 @@ class Usecase:
             "related_element": None,
             "relating_connection": "NOTDEFINED",
             "related_connection": "NOTDEFINED",
+            "description": None,
         }
         for key, value in settings.items():
             self.settings[key] = value
@@ -73,6 +74,7 @@ class Usecase:
         return self.file.createIfcRelConnectsPathElements(
             ifcopenshell.guid.new(),
             OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
+            Description=self.settings["description"],
             RelatingElement=self.settings["relating_element"],
             RelatedElement=self.settings["related_element"],
             RelatingConnectionType=self.settings["relating_connection"],
