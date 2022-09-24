@@ -417,9 +417,12 @@ class DumbProfileJoiner:
             axis = body = self.get_profile_axis(obj)
         self.axis = copy.deepcopy(axis)
         self.body = copy.deepcopy(body)
-        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=False)
+        usage = None
+        if material.is_a("IfcMaterialProfileSetUsage"):
+            usage = material
+            material = material.ForProfileSet
         self.profile = material.CompositeProfile or material.MaterialProfiles[0].Profile
-        height = self.get_height(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
         self.clippings = []
 
         for rel in element.ConnectedTo:
@@ -467,6 +470,7 @@ class DumbProfileJoiner:
             context=self.body_context,
             profile=self.profile,
             depth=depth,
+            cardinal_point=usage.CardinalPoint if usage else None,
             clippings=self.clippings,
         )
 
@@ -768,20 +772,6 @@ class DumbProfileJoiner:
             (obj.matrix_world @ Vector((0.0, 0.0, min(z_values)))),
             (obj.matrix_world @ Vector((0.0, 0.0, max(z_values)))),
         ]
-
-    # TODO
-    def get_height(self, representation):
-        height = 3.0
-        item = representation.Items[0]
-        while True:
-            if item.is_a("IfcExtrudedAreaSolid"):
-                height = item.Depth * self.unit_scale
-                break
-            elif item.is_a("IfcBooleanClippingResult"):
-                item = item.FirstOperand
-            else:
-                break
-        return height
 
     # An extension of a profile is determined by casting a ray from the cardinal
     # point of either extreme along the profiles local Z axis to a target
