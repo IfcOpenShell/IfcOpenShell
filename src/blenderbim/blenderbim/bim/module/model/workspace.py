@@ -180,6 +180,11 @@ class BimTool(WorkSpaceTool):
 
             if ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
                 row = layout.row(align=True)
+                row.prop(data=props, property="cardinal_point", text="Axis")
+                op = row.operator("bim.change_cardinal_point", icon="FILE_REFRESH", text="")
+                op.cardinal_point = int(props.cardinal_point)
+
+                row = layout.row(align=True)
                 label = "Height" if ifc_class == "IfcColumnType" else "Length"
                 row.prop(data=props, property="extrusion_depth", text=label)
                 op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
