@@ -528,8 +528,9 @@ class SvgWriter:
         product = tool.Drawing.get_assigned_product(element)
         selector = ifcopenshell.util.selector.Selector
         variables = {}
-        for variable in re.findall("{{.*?}}", literal):
-            literal = literal.replace(variable, selector.get_element_value(product, variable[2:-2]) or "")
+        if product != None:
+            for variable in re.findall("{{.*?}}", literal):
+                literal = literal.replace(variable, str(selector.get_element_value(product, variable[2:-2]) or ""))
 
         for line_number, text_line in enumerate(literal.replace("\\n", "\n").split("\n")):
             self.svg.add(
