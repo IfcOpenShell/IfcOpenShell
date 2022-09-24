@@ -70,4 +70,6 @@ class Usecase:
             elif inverse.is_a("IfcRelContainedInSpatialStructure"):
                 if inverse.RelatingStructure == self.settings["product"] or len(inverse.RelatedElements) == 1:
                     self.file.remove(inverse)
+            elif inverse.is_a("IfcRelConnectsPathElements"):
+                self.file.remove(inverse)
         self.file.remove(self.settings["product"])
