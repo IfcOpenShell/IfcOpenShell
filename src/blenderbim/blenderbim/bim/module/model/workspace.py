@@ -46,6 +46,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "G", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_G")]}),
         ("bim.hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
+        ("bim.hotkey", {"type": "R", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_R")]}),
         ("bim.hotkey", {"type": "S", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_S")]}),
         ("bim.hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
         ("bim.hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
@@ -206,6 +207,10 @@ class BimTool(WorkSpaceTool):
                 row.operator("bim.hotkey", text="Mitre").hotkey = "S_Y"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_R")
+                row.operator("bim.hotkey", text="Rotate 90").hotkey = "S_R"
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_G")
                 row.operator("bim.hotkey", text="Regen Connections").hotkey = "S_G"
                 row = layout.row(align=True)
@@ -318,6 +323,16 @@ class Hotkey(bpy.types.Operator):
                 bpy.ops.bim.align_wall(align_type="EXTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="NEGATIVE")
+
+    def hotkey_S_R(self):
+        if not self.has_ifc_class:
+            return
+        if self.props.ifc_class == "IfcWallType":
+            bpy.ops.bim.rotate_90(axis="Z")
+        elif self.props.ifc_class == "IfcColumnType":
+            bpy.ops.bim.rotate_90(axis="Z")
+        elif self.props.ifc_class in ["IfcBeamType", "IfcMemberType"]:
+            bpy.ops.bim.rotate_90(axis="Y")
 
     def hotkey_S_S(self):
         if self.has_ifc_class and self.props.ifc_class == "IfcWallType":

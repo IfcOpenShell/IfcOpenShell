@@ -190,17 +190,22 @@ class UpdateRepresentation(bpy.types.Operator):
 
     def update_obj_mesh_representation(self, context, obj):
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        material = ifcopenshell.util.element.get_material(product, should_skip_usage=True)
 
         if not product.is_a("IfcGridAxis"):
             tool.Geometry.clear_cache(product)
 
         if product.is_a("IfcGridAxis"):
+            # Grid geometry does not follow the "representation" paradigm and needs to be treated specially
             ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": product})
             return
-        if product.is_a("IfcRelSpaceBoundary"):
+        elif product.is_a("IfcRelSpaceBoundary"):
             # TODO refactor
             settings = tool.Boundary.get_assign_connection_geometry_settings(obj)
             ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
+            return
+        elif material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
+            # These objects are parametrically based on an axis and should not be modified as a mesh
             return
 
         core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)

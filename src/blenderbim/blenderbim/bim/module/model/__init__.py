@@ -39,6 +39,7 @@ classes = (
     profile.ChangeProfileDepth,
     profile.ExtendProfile,
     profile.RecalculateProfile,
+    profile.Rotate90,
     prop.BIMModelProperties,
     prop.ConstrTypeInfo,
     ui.BIM_PT_authoring,

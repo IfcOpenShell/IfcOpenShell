@@ -482,6 +482,7 @@ class DumbProfileJoiner:
             is_global=True,
             should_sync_changes_first=False,
         )
+        tool.Geometry.record_object_materials(obj)
 
     def join(self, profile1, profile2, connection1, connection2, is_relating=True, description="BUTT"):
         element1 = tool.Ifc.get_entity(profile1)
@@ -824,5 +825,28 @@ class ChangeCardinalPoint(bpy.types.Operator):
             if material.is_a("IfcMaterialProfileSetUsage"):
                 material.CardinalPoint = self.cardinal_point
                 objs.append(obj)
+        DumbProfileRecalculator().recalculate(objs)
+        return {"FINISHED"}
+
+
+class Rotate90(bpy.types.Operator):
+    bl_idname = "bim.rotate_90"
+    bl_label = "Rotate 90"
+    bl_options = {"REGISTER", "UNDO"}
+    axis: bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def execute(self, context):
+        objs = []
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element.ConnectedTo or element.ConnectedFrom:
+                objs.append(obj)
+            rotate_matrix = Matrix.Rotation(pi / 2, 4, self.axis)
+            obj.matrix_world @= rotate_matrix
+        bpy.context.view_layer.update()
         DumbProfileRecalculator().recalculate(objs)
         return {"FINISHED"}
