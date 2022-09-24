@@ -35,6 +35,7 @@ classes = (
     wall.RecalculateWall,
     wall.SplitWall,
     opening.AddElementOpening,
+    profile.ChangeCardinalPoint,
     profile.ChangeProfileDepth,
     profile.ExtendProfile,
     profile.RecalculateProfile,
