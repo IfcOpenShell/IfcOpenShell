@@ -113,6 +113,7 @@ class DumbProfileGenerator:
         self.depth = 3
         self.rotation = 0
         self.location = Vector((0, 0, 0))
+        self.cardinal_point = int(bpy.context.scene.BIMModelProperties.cardinal_point)
         return self.derive_from_cursor()
 
     def derive_from_cursor(self):
@@ -141,6 +142,9 @@ class DumbProfileGenerator:
             context=self.body_context,
         )
         ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=self.relating_type)
+        material = ifcopenshell.util.element.get_material(element)
+        material.CardinalPoint = self.cardinal_point
+
         if self.relating_type.is_a() in ["IfcBeamType", "IfcMemberType"]:
             obj.rotation_euler[0] = math.pi / 2
             obj.rotation_euler[2] = math.pi / 2
@@ -161,6 +165,7 @@ class DumbProfileGenerator:
             tool.Ifc.get(),
             context=self.body_context,
             profile=self.profile_set.CompositeProfile or self.profile_set.MaterialProfiles[0].Profile,
+            cardinal_point=self.cardinal_point,
             depth=self.depth,
         )
         ifcopenshell.api.run(
@@ -916,4 +921,28 @@ class ChangeProfileDepth(bpy.types.Operator):
         joiner = DumbProfileJoiner()
         for obj in context.selected_objects:
             joiner.set_depth(obj, self.depth)
+        return {"FINISHED"}
+
+
+class ChangeCardinalPoint(bpy.types.Operator):
+    bl_idname = "bim.change_cardinal_point"
+    bl_label = "Change Cardinal Point"
+    bl_options = {"REGISTER", "UNDO"}
+    cardinal_point: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def execute(self, context):
+        objs = []
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            material = ifcopenshell.util.element.get_material(element, should_skip_usage=False)
+            if material.is_a("IfcMaterialProfileSetUsage"):
+                material.CardinalPoint = self.cardinal_point
+                objs.append(obj)
+        DumbProfileRecalculator().recalculate(objs)
         return {"FINISHED"}
