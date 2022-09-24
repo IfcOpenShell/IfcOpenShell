@@ -1031,6 +1031,7 @@ class DumbWallJoiner:
             is_global=True,
             should_sync_changes_first=False,
         )
+        tool.Geometry.record_object_materials(obj)
 
     def create_matrix(self, p, x, y, z):
         return Matrix(
