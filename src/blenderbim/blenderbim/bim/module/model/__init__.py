@@ -40,6 +40,8 @@ classes = (
     profile.ExtendProfile,
     profile.RecalculateProfile,
     profile.Rotate90,
+    slab.EnableEditingExtrusionProfile,
+    slab.EditExtrusionProfile,
     prop.BIMModelProperties,
     prop.ConstrTypeInfo,
     ui.BIM_PT_authoring,

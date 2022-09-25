@@ -383,3 +383,133 @@ class DumbSlabPlaner:
         modifier = ensure_solidify_modifier(obj)
         modifier.thickness += delta_thickness
         obj.location[2] -= delta_thickness
+
+
+class EnableEditingExtrusionProfile(bpy.types.Operator):
+    bl_idname = "bim.xxx"
+    bl_label = "Enable Editing Extrusion Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def execute(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        extrusion = self.get_extrusion(body)
+        profile = extrusion.SweptArea
+        position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+
+        z_values = [v[2] for v in obj.bound_box]
+
+        element = tool.Ifc.get_entity(obj)
+        entities = context.scene.sketcher.entities
+        entities.ensure_origin_elements(context)
+
+        origin = entities.add_point_3d(obj.matrix_world @ Vector((0, 0, max(z_values))))
+        origin.fixed = True
+        origin.origin = True
+        normal = entities.add_normal_3d(obj.matrix_world.to_quaternion())
+        normal.fixed = True
+        normal.origin = True
+
+        wp = entities.add_workplane(origin, normal)
+        sketch = entities.add_sketch(wp)
+
+        points = []
+        total_points = len(profile.OuterCurve.Points)
+        last_index = len(profile.OuterCurve.Points) - 1
+        for i, point in enumerate(profile.OuterCurve.Points):
+            if i == last_index:
+                continue
+            global_point = (position @ Vector(point.Coordinates).to_3d()).to_2d()
+            p = context.scene.sketcher.entities.add_point_2d(global_point, sketch)
+            if i != 0:
+                context.scene.sketcher.entities.add_line_2d(points[-1], p, sketch)
+            points.append(p)
+        context.scene.sketcher.entities.add_line_2d(points[-1], points[0], sketch)
+
+        bpy.ops.view3d.slvs_set_active_sketch(index=sketch.slvs_index)
+        return {"FINISHED"}
+
+    def get_extrusion(self, representation):
+        item = representation.Items[0]
+        while True:
+            if item.is_a("IfcExtrudedAreaSolid"):
+                return item
+            elif item.is_a("IfcBooleanClippingResult"):
+                item = item.FirstOperand
+            else:
+                break
+
+
+class EditExtrusionProfile(bpy.types.Operator):
+    bl_idname = "bim.xxe"
+    bl_label = "Edit Extrusion Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        extrusion = self.get_extrusion(representation)
+        position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+        position_i = position.inverted()
+
+        cad_sketcher = __import__("CAD_Sketcher-main")
+        sketch = context.scene.sketcher.active_sketch
+        converter = cad_sketcher.convertors.BezierConverter(context.scene, sketch)
+        converter.run()
+        print(converter.paths)
+
+        profile = tool.Ifc.get().createIfcArbitraryClosedProfileDef("AREA")
+        for path in converter.paths:
+            points = []
+            lines = path[0]
+            last_index = len(lines) - 1
+            for i, line in enumerate(lines):
+                local_point = (position_i @ Vector(line.p1.co).to_3d()).to_2d()
+                points.append(tool.Ifc.get().createIfcCartesianPoint(local_point))
+            points.append(points[0])
+            curve = tool.Ifc.get().createIfcPolyline(points)
+        profile.OuterCurve = curve
+
+        extrusion.SweptArea = profile
+
+        bpy.foo = converter.paths
+
+        bpy.ops.view3d.slvs_set_active_sketch(index=-1)
+        workplane = sketch.wp
+        p1 = workplane.p1
+        p1.origin = False
+        nm = workplane.nm
+        nm.origin = False
+        bpy.ops.view3d.slvs_delete_entity(index=sketch["slvs_index"])
+        bpy.ops.view3d.slvs_delete_entity(index=workplane["slvs_index"])
+        bpy.ops.view3d.slvs_delete_entity(index=p1["slvs_index"])
+        bpy.ops.view3d.slvs_delete_entity(index=nm["slvs_index"])
+
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+        return {"FINISHED"}
+
+    def get_extrusion(self, representation):
+        item = representation.Items[0]
+        while True:
+            if item.is_a("IfcExtrudedAreaSolid"):
+                return item
+            elif item.is_a("IfcBooleanClippingResult"):
+                item = item.FirstOperand
+            else:
+                break
