@@ -47,16 +47,9 @@ class Qto(blenderbim.core.tool.Qto):
 
     @classmethod
     def get_pset_qto_object_ifc_info(cls, object):
-        ifc_object_instance = cls.get_ifc_object_instance(object)
-        pset_qto_ifc_instance = ifcopenshell.util.element.get_psets(ifc_object_instance, qtos_only = True)
+        element = tool.Ifc.get_entity(object)
+        pset_qto_ifc_instance = ifcopenshell.util.element.get_psets(element, qtos_only = True)
         return pset_qto_ifc_instance
-
-    @classmethod
-    def get_ifc_object_instance(cls, object):
-        file = tool.Ifc.get()
-        object_ifc_id = object.BIMObjectProperties.ifc_definition_id
-        ifc_object_instance = file.by_id(object_ifc_id)
-        return ifc_object_instance
 
     @classmethod
     def get_pset_qto_properties(cls, object):
@@ -80,8 +73,8 @@ class Qto(blenderbim.core.tool.Qto):
         file = tool.Ifc.get()
         schema = file.schema
         pset_qto = util.pset.PsetQto(schema)
-        ifc_object_instance = cls.get_ifc_object_instance(object)
-        ifc_object_type = ifc_object_instance.get_info()['type']
+        entity = tool.Ifc.get_entity(object)
+        ifc_object_type = entity.get_info()['type']
         applicable_pset_names = pset_qto.get_applicable_names(ifc_object_type)
         return applicable_pset_names
 
@@ -147,13 +140,13 @@ class Qto(blenderbim.core.tool.Qto):
     @classmethod
     def assign_pset_qto_to_selected_object(cls, object):
         file = tool.Ifc.get()
-        ifc_object_instance = cls.get_ifc_object_instance(object)
+        entity = tool.Ifc.get_entity(object)
         pset_qto_name = cls.get_pset_qto_name(object)
         ifcopenshell.api.run(
             "pset.add_qto",
             file,
             **{
-                "product": ifc_object_instance,
+                "product": entity,
                 "name": pset_qto_name,
             },
         )

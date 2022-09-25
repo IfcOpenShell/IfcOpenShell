@@ -403,7 +403,6 @@ class Qto:
     def set_qto_result(cls, result): pass
     def set_active_object(cls, object): pass
     def get_pset_qto_object_ifc_info(cls, object): pass
-    def get_ifc_object_instance(cls, object): pass
     def get_pset_qto_properties(cls, object): pass
     def get_pset_qto_name(cls, object): pass
     def get_applicable_pset_names(cls, object): pass
