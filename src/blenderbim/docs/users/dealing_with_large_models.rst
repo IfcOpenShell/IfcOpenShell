@@ -62,8 +62,8 @@ Filtered model loading
 ----------------------
 
 You may filter elements and only load a portion of the model. Click on **Enable
-Advanced Mode** when loading a model and you will be presented with model
-loading options in the **IFC Project** panel. **Filter Modes** include:
+Advanced Mode** and load regularly. Nothing is loaded yet, navigate to the **IFC Project** scene properties to input the model
+loading options. See the below image for an impression. **Filter Modes** include:
 
 - **Decomposition**, filter by location in the building, such as **Level 1** or
   **Building A**.
@@ -75,6 +75,8 @@ loading options in the **IFC Project** panel. **Filter Modes** include:
 
 When **Whitelist** or **Blacklist** is chosen, you may type a custom query to
 filter by attributes, properties, location, and so on.
+
+.. image:: import-advanced-mode.png
 
 Large polygon counts
 --------------------
@@ -163,7 +165,8 @@ Once loaded, the model may be saved as a ``.blend`` file for subsequent loads.
 You can think of the ``.blend`` file as a geometry cache, which is very, very
 fast to load. If it no longer necessary to access IFC data, consider pressing
 the **Unload Project** icon so that future loads of the ``.blend`` file will be
-very fast.
+very fast. The icon is a cross located next to 'Save As' in the **IFC Project**
+scene properties, only seen if an IFC model has been loaded.  
 
 With these strategies, a federated 1GB IFC model can easily load in 10 seconds
 from the saved Blender files.
