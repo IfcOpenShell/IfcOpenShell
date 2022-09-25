@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy, bmesh
-from mathutils import Vector
+from mathutils import Vector, Matrix, Quaternion, Euler
 from mathutils.bvhtree import BVHTree
 import numpy as np
 import math
@@ -511,17 +511,18 @@ class QtoCalculator:
         tree1 = BVHTree.FromBMesh(bm1)
         tree2 = BVHTree.FromBMesh(bm2)
 
-        # Returns: Returns a list of unique index pairs, the first index referencing tree1, the second referencing tree2.
+        # Returns: Returns a list of unique index pairs, the first index referencing tree1, the second referencing tree2. 1 and 3
         return tree1.overlap(tree2)
-    
-    
-    
+
     def get_contact_area(self, obj, contact_filter="IfcWall"):
-        
-        # get list of objects that touch the reference object
-        obj = bpy.context.object
+
+        # rotate the object ever so slightly, otherwise bvhtree.overlap won't work properly.  https://blender.stackexchange.com/a/275244/130742
+        obj.rotation_euler[0] += math.radians(0.001)
+        obj.rotation_euler[1] += math.radians(0.001)
+        bpy.context.evaluated_depsgraph_get().update()
+
         obj_mesh = bmesh.new()
-        obj_mesh.from_mesh(obj.data)
+        obj_mesh.from_mesh(obj.data) 
         obj_mesh.transform(obj.matrix_world)
         obj_tree = BVHTree.FromBMesh(obj_mesh)
 
@@ -529,8 +530,10 @@ class QtoCalculator:
         total_contact_area = 0
 
         for o in bpy.context.selectable_objects:
-            if contact_filter not in o.name:
+            if o == obj:
                 continue
+            # if contact_filter not in o.name:
+            #     continue
             o_mesh = bmesh.new()
             try:
                 o_mesh.from_mesh(o.data)
@@ -538,59 +541,92 @@ class QtoCalculator:
                 continue
             o_mesh.transform(o.matrix_world)
             o_tree = BVHTree.FromBMesh(o_mesh)
-            
+
             if len(obj_tree.overlap(o_tree)) > 0:
-                touching_objects.append({
-                    "contact_object":o,
-                    "reference_polygons":[i[0] for i in obj_tree.overlap(o_tree)],
-                    "contact_polygons":[i[1] for i in obj_tree.overlap(o_tree)]
-                })
-        
+                touching_objects.append({"contact_object": o, "overlapping_indices": obj_tree.overlap(o_tree)})
+
         if len(touching_objects) == 0:
+            # return the objects to their original states
+            obj.rotation_euler[0] -= math.radians(0.001)
+            obj.rotation_euler[1] -= math.radians(0.001)
+            bpy.context.evaluated_depsgraph_get().update()
             return 0
         
+        #24 180
+
         for to in touching_objects:
-               
-            reference_polygons = [p for p in to["reference_polygons"]]
-            contact_polygons = [p for p in to["contact_polygons"]]
+            for i in to["overlapping_indices"]:
+                total_contact_area += self.get_combined_poly(obj, to["contact_object"], i[0], i[1])
 
-            #WORK IN PROGRESS
-            test1 = self.get_combined_poly(obj1, touching_polygons_obj1)
-            test2 = self.get_combined_poly(obj2, touching_polygons_obj2)
+        # return the objects to their original states
+        obj.rotation_euler[0] -= math.radians(0.001)
+        obj.rotation_euler[1] -= math.radians(0.001)
+        bpy.context.evaluated_depsgraph_get().update()
         
-        if test1 == 0 or test2 == 0:
-            return test1.area or test2.area
-        return(test1.intersection(test2).area)
-    
-    
-    def get_combined_poly(self, obj, touching_polygons_obj):
+        return round(total_contact_area,3)
+
+
+    def get_combined_poly(self, reference_object, contact_object, ref_poly, contact_poly):
         shapely_polygons = []
-        for tp in touching_polygons_obj:
-            odata = obj.data
-            polygon = obj.data.polygons[tp]
-            
-            if getattr(polygon.normal, "x") == 0:
-                continue
-            polygon_tuples = []
-            
-            for loop_index in polygon.loop_indices:
-                loop = odata.loops[loop_index]
-                v1_coord_a = getattr(obj.matrix_world @ odata.vertices[loop.vertex_index].co, "y")
-                v1_coord_b = getattr(obj.matrix_world @ odata.vertices[loop.vertex_index].co, "z")
-                polygon_tuples.append((v1_coord_a, v1_coord_b))
 
-            pgon = Polygon(polygon_tuples)
-            shapely_polygons.append(pgon)
-        
-        if len(shapely_polygons) == 0:
-            # For some reason, if two faces overlap exactly, only one the faces will be listed in the contact_polygons list. I don't understand - @vulevukusej
+        obj_polygon = reference_object.data.polygons[ref_poly]
+        contact_polygon = contact_object.data.polygons[contact_poly]
+
+        # get normal vectors according to world axis
+        ref_normal = reference_object.rotation_euler.to_matrix() @ obj_polygon.normal
+        cont_normal = contact_object.rotation_euler.to_matrix() @ contact_polygon.normal
+        angle_between_normals = ref_normal.rotation_difference(cont_normal).angle
+
+        # contact areas should be coplanar.  If they're not it means the two polygons are actually clashing.
+        if 178 > math.degrees(angle_between_normals):  # 2 degrees is small, maybe should be more lenient?
             return 0
-        return unary_union(shapely_polygons)
         
+        # calculate rotation between face and vertical Z-axis.  This makes it easier to calculate intersection area later
+        rotation_to_z = ref_normal.rotation_difference(Vector((0, 0, 1)))
+        
+        bmesh.ops.rotate()
+        
+        
+        #rotation around face.center in world space / https://blender.stackexchange.com/a/12324/130742
+        mat1 = Matrix.Translation( obj_polygon.center) @ \
+            rotation_to_z.to_matrix().to_4x4() @ \
+            Matrix.Translation(-obj_polygon.center)
+            
+        mat2 = Matrix.Translation( contact_polygon.center) @ \
+            rotation_to_z.to_matrix().to_4x4() @ \
+            Matrix.Translation(-contact_polygon.center)
+            
+        #transform the face back to object space afterwards      
+        mat_obj = reference_object.matrix_world.inverted() @ mat1
+        mat_cont_obj = contact_object.matrix_world.inverted() @ mat2
+        
+        # mat_obj = reference_object.matrix_world
+        # mat_cont_obj = contact_object.matrix_world
+        
+        pgon1 = self.create_polygon(reference_object, obj_polygon, mat_obj)
+        pgon2 = self.create_polygon(contact_object, contact_polygon, mat_cont_obj)
+
+        return pgon1.intersection(pgon2).area
+
+    def create_polygon(self, obj, polygon, mat_obj):
+        polygon_tuples = []
+        odata = obj.data
+        for loop_index in polygon.loop_indices:
+            loop = odata.loops[loop_index]
+            v1_coord_a = getattr(mat_obj @ odata.vertices[loop.vertex_index].co, "x")
+            v1_coord_b = getattr(mat_obj @ odata.vertices[loop.vertex_index].co, "y")
+            v1_coord_c = getattr(mat_obj @ odata.vertices[loop.vertex_index].co, "z")
+            polygon_tuples.append((v1_coord_a, v1_coord_b, v1_coord_c))
+            
+        pgon = Polygon(polygon_tuples)
+        return pgon
 
 
 # Following code is here temporarily to test newly created functions:
 qto = QtoCalculator()
-obj = bpy.context.object
+o1 = bpy.context.selectable_objects[0]
+o2 = bpy.context.selectable_objects[1]
+o = bpy.context.active_object
 
-test = print(qto.get_contact_area(obj))
+# test = print(qto.get_contact_polygons(o1,o2))
+print(qto.get_contact_area(o))
