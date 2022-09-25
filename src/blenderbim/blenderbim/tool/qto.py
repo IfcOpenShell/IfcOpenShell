@@ -44,13 +44,13 @@ class Qto(blenderbim.core.tool.Qto):
     @classmethod
     def set_active_object(cls, object):
         bpy.context.view_layer.objects.active = object
-    
+
     @classmethod
-    def get_pset_qto_object_ifc_instance(cls, object):
+    def get_pset_qto_object_ifc_info(cls, object):
         ifc_object_instance = cls.get_ifc_object_instance(object)
         pset_qto_ifc_instance = ifcopenshell.util.element.get_psets(ifc_object_instance, qtos_only = True)
         return pset_qto_ifc_instance
-    
+
     @classmethod
     def get_ifc_object_instance(cls, object):
         file = tool.Ifc.get()
@@ -84,7 +84,7 @@ class Qto(blenderbim.core.tool.Qto):
         ifc_object_type = ifc_object_instance.get_info()['type']
         applicable_pset_names = pset_qto.get_applicable_names(ifc_object_type)
         return applicable_pset_names
-    
+
     @classmethod
     def edit_qto(cls, object, calculated_quantities):
         file = tool.Ifc.get()
@@ -95,12 +95,12 @@ class Qto(blenderbim.core.tool.Qto):
                 file,
                 **{"qto" : pset_qto_id, "name" : pset_qto_name, "properties": calculated_quantities}
             )
-    
+
     @classmethod
     def get_pset_qto_id(cls, object):
         file = tool.Ifc.get()
         pset_qto_name = cls.get_pset_qto_name(object)
-        pset_qto_object_ifc_instance = cls.get_pset_qto_object_ifc_instance(object)
+        pset_qto_object_ifc_instance = cls.get_pset_qto_object_ifc_info(object)
         pset_qto_id = file.by_id(pset_qto_object_ifc_instance[pset_qto_name]['id'])
         return pset_qto_id
 
@@ -121,7 +121,7 @@ class Qto(blenderbim.core.tool.Qto):
     @classmethod
     def get_non_calculated_value(cls):
         return 0
-    
+
     @classmethod
     def get_rounded_value(cls, new_quantity):
         return round(new_quantity, 3)
@@ -139,11 +139,11 @@ class Qto(blenderbim.core.tool.Qto):
                 new_quantity = cls.get_non_calculated_value()
             else:
                 new_quantity = cls.get_rounded_value(new_quantity)
-            
+
             calculated_quantities[quantity_name] = new_quantity
 
         return calculated_quantities
-    
+
     @classmethod
     def assign_pset_qto_to_selected_object(cls, object):
         file = tool.Ifc.get()

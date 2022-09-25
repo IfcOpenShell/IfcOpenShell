@@ -159,11 +159,11 @@ class AssignPsetQto(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object
+        return context.active_object and context.selected_objects
 
     def execute(self, context):
         core.assign_pset_qto(tool.Qto, selected_objects = context.selected_objects)
-        return {"FINISHED"}       
+        return {"FINISHED"}
 
 class CalculateAllQtos(bpy.types.Operator):
     bl_idname = "bim.calculate_all_qtos"
@@ -173,7 +173,7 @@ class CalculateAllQtos(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object
+        return context.active_object and context.selected_objects
 
     def execute(self, context):
         core.calculate_all_qtos(tool.Qto, selected_objects = context.selected_objects)

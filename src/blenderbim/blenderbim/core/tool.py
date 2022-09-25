@@ -402,7 +402,7 @@ class Qto:
     def get_radius_of_selected_vertices(cls, obj): pass
     def set_qto_result(cls, result): pass
     def set_active_object(cls, object): pass
-    def get_pset_qto_object_ifc_instance(cls, object): pass
+    def get_pset_qto_object_ifc_info(cls, object): pass
     def get_ifc_object_instance(cls, object): pass
     def get_pset_qto_properties(cls, object): pass
     def get_pset_qto_name(cls, object): pass
