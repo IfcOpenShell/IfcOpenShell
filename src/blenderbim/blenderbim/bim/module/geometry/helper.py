@@ -112,6 +112,142 @@ class Helper:
 
         return {"profile": profile, "extrusion": extrusion}
 
+    def auto_detect_arbitrary_profile_with_voids(self, obj, mesh):
+        arc_groups = []
+        for i, group in enumerate(obj.vertex_groups):
+            if "IFCARCINDEX" in group.name:
+                arc_groups.append(i)
+
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+
+        # https://docs.blender.org/api/blender_python_api_2_63_8/bmesh.html#CustomDataAccess
+        # This is how we access vertex groups via bmesh, apparently, it's not very intuitive
+        deform_layer = bm.verts.layers.deform.active
+
+        # Sanity check
+        group_verts = {}
+        for vert in bm.verts:
+            if len(vert.link_edges) != 2:  # Unclosed loop or forked loop
+                return (False, "UNCLOSED_LOOP")
+            total_groups = 0
+            for group_index in arc_groups:
+                if group_index in vert[deform_layer]:
+                    group_verts.setdefault(group_index, []).append(vert)
+                    total_groups += 0
+            if total_groups > 1:  # A vert can only belong to one arc
+                return (False, "AMBIGUOUS_ARC")
+        for verts in group_verts.values():
+            if len(verts) != 3:  # Each arc needs 3 verts
+                return (False, "3POINT_ARC")
+
+        loop_edges = set(bm.edges)
+
+        # Create loops from edges
+        loops = []
+        while loop_edges:
+            edge = loop_edges.pop()
+            loop = [edge]
+            has_found_connected_edge = True
+            while has_found_connected_edge:
+                has_found_connected_edge = False
+                for edge in loop_edges.copy():
+                    edge_verts = set(edge.verts)
+                    if edge_verts & set(loop[0].verts):
+                        loop.insert(0, edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+                    elif edge_verts & set(loop[-1].verts):
+                        loop.append(edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+            loops.append(loop)
+
+        # Determine outer loop
+        max_area = 0
+        outer_loop = None
+        inner_loops = []
+
+        for loop in loops:
+            loop_vertices = []
+            total_edges = len(loop)
+            for i, edge in enumerate(loop):
+                if i + 1 == total_edges and edge.verts[0] in loop[i - 1].verts:
+                    loop_vertices.append(edge.verts[0])
+                elif i + 1 == total_edges and edge.verts[1] in loop[i - 1].verts:
+                    loop_vertices.append(edge.verts[1])
+                elif edge.verts[0] in loop[i + 1].verts:
+                    loop_vertices.append(edge.verts[1])
+                elif edge.verts[1] in loop[i + 1].verts:
+                    loop_vertices.append(edge.verts[0])
+
+            loop_bm = bmesh.new()
+            for vert in loop_vertices:
+                loop_bm.verts.new(vert.co)
+            face = loop_bm.faces.new(loop_bm.verts)
+
+            loop_vertex_indices = []
+            active_arc_id = None
+            arc_stack = []
+            last_index = len(loop_vertices) - 1
+
+            # It is possible to loop through loop_vertices halfway through an arc.
+            # If that is the case, we store it in incomplete_arc
+            incomplete_arc = []
+            for i, v in enumerate(loop_vertices):
+                if len(arc_stack) == 3:
+                    loop_vertex_indices.append(arc_stack)
+                    loop_vertex_indices.append((arc_stack[-1], v.index))
+                    arc_stack = []
+                    active_arc_id = None
+
+                is_arc = False
+                for group_index in arc_groups:
+                    if group_index in v[deform_layer]:
+                        if active_arc_id is not None and active_arc_id != group_index:
+                            incomplete_arc = arc_stack
+                            arc_stack = []
+                        active_arc_id = group_index
+                        is_arc = True
+                        break
+
+                if i == last_index and not is_arc:
+                    continue
+
+                if is_arc:
+                    arc_stack.append(v.index)
+                else:
+                    if active_arc_id is not None:
+                        incomplete_arc = arc_stack
+                        active_arc_id = None
+                        arc_stack = []
+                    loop_vertex_indices.append((v.index, loop_vertices[i + 1].index))
+
+            if active_arc_id is not None:
+                arc_stack.extend(incomplete_arc)
+                loop_vertex_indices.append(arc_stack)
+
+            loop_vertex_indices.append((loop_vertex_indices[-1][-1], loop_vertex_indices[0][0]))
+            # loop_vertex_indices = [v.index for v in loop_vertices]
+
+            face_area = face.calc_area()
+            if face_area > max_area:
+                max_area = face_area
+                outer_loop = loop_vertex_indices
+            inner_loops.append(loop_vertex_indices)
+            loop_bm.free()
+
+        inner_loops.remove(outer_loop)
+
+        points = [v.co for v in bm.verts]
+
+        bm.to_mesh(mesh)
+        mesh.update()
+        bm.free()
+
+        return {"points": points, "profile": outer_loop, "inner_curves": inner_loops}
+
     # An arbitrary closed profile with voids is similar to one without voids.
     # We start the same way with any ngon (no tri), but instead of being the entire
     # profile, it is only one of the possible faces that make up the end of our
