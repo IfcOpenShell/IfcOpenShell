@@ -22,7 +22,8 @@ You will need to choose which build to download.
 - If you are on Blender >=3.1, choose py310
 - If you are on Blender >=2.93 and <3.1, choose py39
 - If you are on Blender <2.93, choose py37
-- Choose linux, macos, or win depending on your operating system
+- Choose ``linux``, ``macos``, ``macosm1`` (for Apple M1 devices), or ``win``
+  depending on your operating system
 
 Sometimes, a build may be delayed, or contain broken code. We try to avoid this,
 but it happens.

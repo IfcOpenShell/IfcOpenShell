@@ -104,19 +104,19 @@ ifeq ($(PYVERSION), py37)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-64/hpp-fcl-1.7.5-py37h2d7f23a_0.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.5/download/osx-64/eigenpy-2.6.5-py37h0695097_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1.74.0-py37hd79e0ac_3.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/1e/3e/f0abc15d5dac50939bccc589aae336d5ead4c72e7ad1039a2e0f3630ea92/lxml-4.6.3-cp37-cp37m-macosx_10_9_x86_64.whl
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-64/lxml-4.9.1-py37h994c40b_0.tar.bz2
 endif
 ifeq ($(PYVERSION), py39)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.7.5/download/osx-arm64/hpp-fcl-1.7.5-py39ha69f3c1_2.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.7/download/osx-arm64/eigenpy-2.6.7-py39ha69f3c1_0.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py39h2550fe3_0.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/b8/74/a71f7ad72e8db54ce899efab84507b801660750cbbfa6a39e6717557d36a/lxml-4.6.3-cp39-cp39-macosx_10_9_x86_64.whl
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py39h9eb174b_0.tar.bz2
 endif
 ifeq ($(PYVERSION), py310)
 HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/1.8.0/download/osx-arm64/hpp-fcl-1.8.0-py310h5699539_2.tar.bz2
 EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/2.6.9/download/osx-arm64/eigenpy-2.6.9-py310habfc766_1.tar.bz2
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py310h4566fd1_0.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/a1/44/17b7dac7a18807d30e2fe10c3328c152808f5464565e230bfd0e77f178c6/lxml-4.8.0-cp310-cp310-macosx_10_15_x86_64.whl
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py310h02f21da_0.tar.bz2
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-arm64/assimp-5.0.1-h0f81e16_7.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/osx-arm64/octomap-1.9.7-hc021e02_0.tar.bz2
@@ -442,11 +442,22 @@ endif
 	rm -rf dist/working
 
 	# Required by ids - uh, not any more, but I'm trying it out in the drawing module
+ifeq ($(PLATFORM), macosm1)
+	# No wheels available for MacOS M1, but turns out this Anaconda build works
+	mkdir dist/working
+	cd dist/working && wget $(LXML_URL)
+	cd dist/working && tar -xf lxml*
+	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/lxml dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+else
+	# Wheels are preferred for other OSes. A first attempt at using Anaconda
+	# builds for everything shows it breaks on windows. See #2422.
 	mkdir dist/working
 	cd dist/working && wget $(LXML_URL)
 	cd dist/working && cp *.whl lxml.zip && unzip lxml.zip
 	cp -r dist/working/lxml dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
+endif
 
 	# Required by behave
 	mkdir dist/working

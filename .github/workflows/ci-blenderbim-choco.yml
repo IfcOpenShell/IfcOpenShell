@@ -20,6 +20,8 @@ env:
 jobs:
   activate:
     runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
     steps:
     - name: Set env
       run: echo ok go

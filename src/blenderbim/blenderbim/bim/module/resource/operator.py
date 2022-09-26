@@ -21,6 +21,7 @@ from bpy_extras.io_utils import ImportHelper
 import blenderbim.core.resource as core
 import blenderbim.tool as tool
 
+
 class LoadResources(bpy.types.Operator):
     bl_idname = "bim.load_resources"
     bl_label = "Load Resources"

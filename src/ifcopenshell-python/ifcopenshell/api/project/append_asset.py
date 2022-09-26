@@ -29,17 +29,22 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        self.added_elements = set()
+        self.added_elements = {}
         self.whitelisted_inverse_attributes = {}
         if self.settings["element"].is_a("IfcTypeProduct"):
+            self.target_class = "IfcTypeProduct"
             return self.append_type_product()
         elif self.settings["element"].is_a("IfcProduct"):
+            self.target_class = "IfcProduct"
             return self.append_product()
         elif self.settings["element"].is_a("IfcMaterial"):
+            self.target_class = "IfcMaterial"
             return self.append_material()
         elif self.settings["element"].is_a("IfcCostSchedule"):
+            self.target_class = "IfcCostSchedule"
             return self.append_cost_schedule()
         elif self.settings["element"].is_a("IfcProfileDef"):
+            self.target_class = "IfcProfileDef"
             return self.append_profile_def()
 
     def get_existing_element(self):
@@ -147,16 +152,18 @@ class Usecase:
         return element
 
     def add_element(self, element):
-        if element.id() == 0 or element.id() in self.added_elements:
+        if element.id() == 0:
             return
+        if element.id() in self.added_elements:
+            return self.added_elements[element.id()]
         new = self.file.add(element)
-        self.added_elements.add(element.id())
-        self.add_inverse(element)
+        self.added_elements[element.id()] = new
+        self.check_inverses(element)
         for subelement in self.settings["library"].traverse(element):
-            self.add_inverse(subelement)
+            self.check_inverses(subelement)
         return new
 
-    def add_inverse(self, element):
+    def check_inverses(self, element):
         for source_class, attributes in self.whitelisted_inverse_attributes.items():
             if not element.is_a(source_class):
                 continue
@@ -166,9 +173,39 @@ class Usecase:
                     attribute, attribute_class = attribute.split(".")
                 for inverse in getattr(element, attribute, []):
                     if attribute_class and inverse.is_a(attribute_class):
-                        self.add_element(inverse)
+                        self.add_inverse_element(inverse)
                     elif not attribute_class:
-                        self.add_element(inverse)
+                        self.add_inverse_element(inverse)
+
+    def add_inverse_element(self, element):
+        # Inverse attributes are added manually because they are basically
+        # relationships that can reference many other assets that we are not
+        # interested in.
+        new = self.file.create_entity(element.is_a())
+        for i, attribute in enumerate(element):
+            new_attribute = None
+            if isinstance(attribute, ifcopenshell.entity_instance):
+                if not self.is_another_asset(attribute):
+                    new_attribute = self.add_element(attribute)
+            elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
+                new_attribute = []
+                for item in attribute:
+                    if not self.is_another_asset(item):
+                        new_attribute.append(self.add_element(item))
+            else:
+                new_attribute = attribute
+            if new_attribute is not None:
+                new[i] = new_attribute
+
+    def is_another_asset(self, element):
+        if element == self.settings["element"]:
+            return False
+        elif element.is_a("IfcFeatureElement"):
+            # Feature elements match the target class but aren't considered "assets"
+            return False
+        elif element.is_a(self.target_class):
+            return True
+        return False
 
     def get_equivalent_existing_context(self, added_context):
         for context in self.existing_contexts:

@@ -71,6 +71,8 @@ class Usecase:
                 continue
             elif inverse.is_a("IfcRelFillsElement"):
                 continue
+            elif inverse.is_a("IfcRelConnectsPathElements"):
+                continue
             elif inverse.is_a("IfcRelAssociatesMaterial") and "Usage" in inverse.RelatingMaterial.is_a():
                 inverse = ifcopenshell.util.element.copy(self.file, inverse)
                 inverse.RelatingMaterial = ifcopenshell.util.element.copy(self.file, inverse.RelatingMaterial)

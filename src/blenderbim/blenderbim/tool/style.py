@@ -74,7 +74,7 @@ class Style(blenderbim.core.tool.Style):
 
     @classmethod
     def get_surface_rendering_attributes(cls, obj):
-        transparency = obj.diffuse_color[3]
+        transparency = 1 - obj.diffuse_color[3]
         diffuse_color = obj.diffuse_color
 
         attributes = {
