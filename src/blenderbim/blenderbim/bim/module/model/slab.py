@@ -560,6 +560,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
         return context.selected_objects
 
     def execute(self, context):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
 
@@ -567,6 +568,10 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
         extrusion = self.get_extrusion(body)
         profile = extrusion.SweptArea
         position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+        position[0][3] *= self.unit_scale
+        position[1][3] *= self.unit_scale
+        position[2][3] *= self.unit_scale
+        print('converted', position)
 
         z_values = [v[2] for v in obj.bound_box]
 
@@ -579,11 +584,11 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
         self.edges = []
         self.arcs = []
 
-        self.process_curve(obj, position, profile.OuterCurve)
-
-        if profile.is_a("IfcArbitraryProfileDefWithVoids"):
-            for inner_curve in profile.InnerCurves:
-                self.process_curve(obj, position, inner_curve)
+        if profile.is_a("IfcArbitraryClosedProfileDef"):
+            self.process_curve(obj, position, profile.OuterCurve)
+            if profile.is_a("IfcArbitraryProfileDefWithVoids"):
+                for inner_curve in profile.InnerCurves:
+                    self.process_curve(obj, position, inner_curve)
 
         mesh = bpy.data.meshes.new("Profile")
         mesh.from_pydata(self.vertices, self.edges, [])
@@ -618,7 +623,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
             for i, point in enumerate(curve.Points):
                 if i == last_index:
                     continue
-                global_point = position @ Vector(point.Coordinates).to_3d()
+                global_point = position @ Vector(self.convert_unit_to_si(point.Coordinates)).to_3d()
                 self.vertices.append(global_point)
         elif curve.is_a("IfcIndexedPolyCurve"):
             is_arc = False
@@ -626,24 +631,30 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
                 for segment in curve.Segments:
                     if len(segment[0]) == 3:  # IfcArcIndex
                         is_arc = True
-                        global_point = position @ Vector(curve.Points.CoordList[segment[0][0] - 1]).to_3d()
+                        local_point = self.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
                         self.vertices.append(global_point)
-                        global_point = position @ Vector(curve.Points.CoordList[segment[0][1] - 1]).to_3d()
+                        local_point = self.convert_unit_to_si(curve.Points.CoordList[segment[0][1] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
                         self.vertices.append(global_point)
                         self.arcs.append([len(self.vertices) - 2, len(self.vertices) - 1])
                     else:
-                        global_point = position @ Vector(curve.Points.CoordList[segment[0][0] - 1]).to_3d()
+                        local_point = self.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
                         self.vertices.append(global_point)
                         if is_arc:
                             self.arcs[-1].append(len(self.vertices) - 1)
                             is_arc = False
             else:
-                for point in curve.PointsCoordList:
-                    global_point = position @ Vector(point).to_3d()
+                for local_point in curve.PointsCoordList:
+                    global_point = position @ Vector(self.convert_unit_to_si(local_point)).to_3d()
                     self.vertices.append(global_point)
 
         self.edges.extend([(i, i + 1) for i in range(offset, len(self.vertices))])
         self.edges[-1] = (len(self.vertices) - 1, offset)
+
+    def convert_unit_to_si(self, value):
+        return [v * self.unit_scale for v in value]
 
 
 class EditExtrusionProfile(bpy.types.Operator):
@@ -652,6 +663,7 @@ class EditExtrusionProfile(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         DecorationsHandler.uninstall()
         bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -661,9 +673,13 @@ class EditExtrusionProfile(bpy.types.Operator):
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         extrusion = self.get_extrusion(representation)
         position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+        position[0][3] *= self.unit_scale
+        position[1][3] *= self.unit_scale
+        position[2][3] *= self.unit_scale
 
         helper = Helper(tool.Ifc.get())
         indices = helper.auto_detect_arbitrary_profile_with_voids(obj, obj.data)
+
         if isinstance(indices, tuple) and indices[0] is False:  # Ugly
             self.report({"ERROR"}, "INVALID PROFILE: " + indices[1])
             DecorationsHandler.install(context)
@@ -710,7 +726,7 @@ class EditExtrusionProfile(bpy.types.Operator):
         points = []
         for point in indices:
             local_point = (position_i @ point).to_2d()
-            points.append(list(local_point))
+            points.append(self.convert_si_to_unit(list(local_point)))
         return tool.Ifc.get().createIfcCartesianPointList2D(points)
 
     def create_curve(self, position, edge_indices, points=None):
@@ -719,7 +735,7 @@ class EditExtrusionProfile(bpy.types.Operator):
             points = []
             for edge in edge_indices:
                 local_point = (position_i @ Vector(bm.verts[edge[0]].co)).to_2d()
-                points.append(tool.Ifc.get().createIfcCartesianPoint(local_point))
+                points.append(tool.Ifc.get().createIfcCartesianPoint(self.convert_si_to_unit(local_point)))
             points.append(points[0])
             return tool.Ifc.get().createIfcPolyline(points)
         segments = []
@@ -739,6 +755,9 @@ class EditExtrusionProfile(bpy.types.Operator):
                 item = item.FirstOperand
             else:
                 break
+
+    def convert_si_to_unit(self, value):
+        return [v / self.unit_scale for v in value]
 
 
 class SetArcIndex(bpy.types.Operator):
