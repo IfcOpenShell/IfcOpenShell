@@ -587,6 +587,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
 
         mesh = bpy.data.meshes.new("Profile")
         mesh.from_pydata(self.vertices, self.edges, [])
+        mesh.BIMMeshProperties.is_profile = True
         obj.data = mesh
 
         for arc in self.arcs:
@@ -757,10 +758,12 @@ class SetArcIndex(bpy.types.Operator):
         obj = context.active_object
         bpy.ops.object.mode_set(mode="OBJECT")
         selected_vertices = [v.index for v in obj.data.vertices if v.select]
+        in_group = any([bool(obj.data.vertices[v].groups) for v in selected_vertices])
         for group in obj.vertex_groups:
             group.remove(selected_vertices)
-        group = obj.vertex_groups.new(name="IFCARCINDEX")
-        group.add(selected_vertices, 1, "REPLACE")
+        if in_group is False:
+            group = obj.vertex_groups.new(name="IFCARCINDEX")
+            group.add(selected_vertices, 1, "REPLACE")
         bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
 
