@@ -130,9 +130,11 @@ class CostClassificationsData(ReferencesData):
     @classmethod
     def references(cls):
         results = []
-        element = tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.cost_items[
-            bpy.context.scene.BIMCostProperties.active_cost_item_index
-        ].ifc_definition_id)
+        element = tool.Ifc.get().by_id(
+            bpy.context.scene.BIMCostProperties.cost_items[
+                bpy.context.scene.BIMCostProperties.active_cost_item_index
+            ].ifc_definition_id
+        )
         if element:
             for reference in ifcopenshell.util.classification.get_references(element):
                 data = reference.get_info()

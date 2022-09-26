@@ -37,6 +37,7 @@ class CadTool(WorkSpaceTool):
     bl_keymap = (
         ("bim.cad_hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.cad_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
+        ("bim.cad_hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
         ("bim.cad_fillet", {"type": "F", "value": "PRESS", "shift": True}, {"properties": []}),
         # Enable Mesh Tools add-on to get this amazing tool
         ("mesh.offset_edges", {"type": "O", "value": "PRESS", "shift": True}, {"properties": []}),
@@ -45,6 +46,12 @@ class CadTool(WorkSpaceTool):
     )
 
     def draw_settings(context, layout, tool):
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="", icon="EVENT_Q")
+        row.operator("bim.edit_extrusion_profile", text="Save Profile")
+        row.operator("bim.disable_editing_extrusion_profile", text="", icon="CANCEL")
+
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="Extend", icon="EVENT_E")
@@ -91,3 +98,6 @@ class CadHotkey(bpy.types.Operator):
 
     def hotkey_S_T(self):
         bpy.ops.bim.cad_mitre()
+
+    def hotkey_S_Q(self):
+        bpy.ops.bim.edit_extrusion_profile()

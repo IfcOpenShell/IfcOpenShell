@@ -79,19 +79,23 @@ class ConnectionsData:
         results = []
         element = tool.Ifc.get_entity(bpy.context.active_object)
         for rel in getattr(element, "ConnectedTo", []):
-            results.append({
-                "id": rel.id(),
-                "is_relating": True,
-                "Name": rel.RelatedElement.Name or "Unnamed",
-                "ConnectionType": rel.RelatingConnectionType,
-            })
+            results.append(
+                {
+                    "id": rel.id(),
+                    "is_relating": True,
+                    "Name": rel.RelatedElement.Name or "Unnamed",
+                    "ConnectionType": rel.RelatingConnectionType,
+                }
+            )
         for rel in getattr(element, "ConnectedFrom", []):
-            results.append({
-                "id": rel.id(),
-                "is_relating": False,
-                "Name": rel.RelatingElement.Name or "Unnamed",
-                "ConnectionType": rel.RelatedConnectionType,
-            })
+            results.append(
+                {
+                    "id": rel.id(),
+                    "is_relating": False,
+                    "Name": rel.RelatingElement.Name or "Unnamed",
+                    "ConnectionType": rel.RelatedConnectionType,
+                }
+            )
         return results
 
 
