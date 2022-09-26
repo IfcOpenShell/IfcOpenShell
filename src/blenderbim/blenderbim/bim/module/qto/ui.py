@@ -51,3 +51,9 @@ class BIM_PT_qto_utilities(Panel):
         row.prop(props, "qto_name", text="")
         row.prop(props, "prop_name", text="")
         row.operator("bim.quantify_objects", icon="COPYDOWN", text="")
+        
+        row = layout.row(align=True)
+        row.operator("bim.assign_pset_qto")
+
+        row = layout.row(align=True)
+        row.operator("bim.calculate_all_qtos")
