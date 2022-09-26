@@ -114,11 +114,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
-    lock_grids_on_import: BoolProperty(
-        name="Will lock grids upon import", default=True
-    )
-
-
+    lock_grids_on_import: BoolProperty(name="Will lock grids upon import", default=True)
 
     def draw(self, context):
         layout = self.layout

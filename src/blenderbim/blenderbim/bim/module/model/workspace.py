@@ -179,6 +179,15 @@ class BimTool(WorkSpaceTool):
                 row.label(text="", icon="EVENT_S")
                 row.operator("bim.hotkey", text="Split").hotkey = "S_S"
 
+            if ifc_class == "IfcSlabType":
+                if not context.active_object:
+                    pass
+                elif context.active_object.mode == "OBJECT":
+                    row = layout.row(align=True)
+                    row.label(text="", icon="EVENT_SHIFT")
+                    row.label(text="", icon="EVENT_E")
+                    row.operator("bim.hotkey", text="Edit Profile").hotkey = "S_E"
+
             if ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
                 row = layout.row(align=True)
                 row.prop(data=props, property="cardinal_point", text="Axis")
@@ -290,6 +299,11 @@ class Hotkey(bpy.types.Operator):
             return
         if self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.join_wall(join_type="T")
+        elif self.props.ifc_class == "IfcSlabType":
+            if not bpy.context.active_object:
+                pass
+            elif bpy.context.active_object.mode == "OBJECT":
+                bpy.ops.bim.enable_editing_extrusion_profile()
         elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
             bpy.ops.bim.extend_profile(join_type="T")
 
@@ -302,6 +316,24 @@ class Hotkey(bpy.types.Operator):
             bpy.ops.bim.recalculate_wall()
         elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
             bpy.ops.bim.recalculate_profile()
+
+    def hotkey_S_M(self):
+        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+            bpy.ops.bim.merge_wall()
+
+    def hotkey_S_R(self):
+        if not self.has_ifc_class:
+            return
+        if self.props.ifc_class == "IfcWallType":
+            bpy.ops.bim.rotate_90(axis="Z")
+        elif self.props.ifc_class == "IfcColumnType":
+            bpy.ops.bim.rotate_90(axis="Z")
+        elif self.props.ifc_class in ["IfcBeamType", "IfcMemberType"]:
+            bpy.ops.bim.rotate_90(axis="Y")
+
+    def hotkey_S_S(self):
+        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+            bpy.ops.bim.split_wall()
 
     def hotkey_S_T(self):
         if not self.has_ifc_class:
@@ -323,24 +355,6 @@ class Hotkey(bpy.types.Operator):
                 bpy.ops.bim.align_wall(align_type="EXTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="NEGATIVE")
-
-    def hotkey_S_R(self):
-        if not self.has_ifc_class:
-            return
-        if self.props.ifc_class == "IfcWallType":
-            bpy.ops.bim.rotate_90(axis="Z")
-        elif self.props.ifc_class == "IfcColumnType":
-            bpy.ops.bim.rotate_90(axis="Z")
-        elif self.props.ifc_class in ["IfcBeamType", "IfcMemberType"]:
-            bpy.ops.bim.rotate_90(axis="Y")
-
-    def hotkey_S_S(self):
-        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
-            bpy.ops.bim.split_wall()
-
-    def hotkey_S_M(self):
-        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
-            bpy.ops.bim.merge_wall()
 
     def hotkey_S_Y(self):
         if self.props.ifc_class == "IfcWallType":
