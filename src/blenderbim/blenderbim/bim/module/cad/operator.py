@@ -204,9 +204,9 @@ class CadFillet(bpy.types.Operator):
             chamfer_edge = [e for e in bm.edges if shared_vert in e.verts and v2 in e.verts][0]
             bm.edges.remove(chamfer_edge)
 
+        bm.verts.index_update()
+        bm.edges.index_update()
         bmesh.update_edit_mesh(mesh)
-        mesh.update()
-        bm.free()
         return {"FINISHED"}
 
 
