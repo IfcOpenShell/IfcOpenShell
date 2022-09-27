@@ -41,12 +41,13 @@ class CadTool(WorkSpaceTool):
         ("bim.cad_fillet", {"type": "F", "value": "PRESS", "shift": True}, {"properties": []}),
         # Enable Mesh Tools add-on to get this amazing tool
         ("mesh.offset_edges", {"type": "O", "value": "PRESS", "shift": True}, {"properties": []}),
-        ("bim.cad_arc_from_2_points", {"type": "C", "value": "PRESS", "shift": True}, {"properties": []}),
+        ("bim.cad_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.cad_hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
     )
 
     def draw_settings(context, layout, tool):
-        if context.active_object.data.BIMMeshProperties.is_profile:
+        obj = context.active_object
+        if obj and obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.is_profile:
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_Q")
@@ -57,6 +58,11 @@ class CadTool(WorkSpaceTool):
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_E")
             row.operator("bim.hotkey", text="Extend").hotkey = "S_E"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_C")
+            row.operator("bim.add_ifccircle", text="Circle")
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -105,6 +111,12 @@ class CadHotkey(bpy.types.Operator):
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
 
+    def hotkey_S_C(self):
+        if self.is_profile():
+            bpy.ops.bim.add_ifccircle()
+        else:
+            bpy.ops.bim.cad_arc_from_2_points()
+
     def hotkey_S_E(self):
         bpy.ops.bim.cad_trim_extend()
 
@@ -115,7 +127,11 @@ class CadHotkey(bpy.types.Operator):
         bpy.ops.bim.cad_mitre()
 
     def hotkey_S_V(self):
-        if bpy.context.active_object.data.BIMMeshProperties.is_profile:
+        if self.is_profile():
             bpy.ops.bim.set_arc_index()
         else:
             bpy.ops.bim.cad_arc_from_3_points()
+
+    def is_profile(self):
+        obj = bpy.context.active_object
+        return obj and obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.is_profile
