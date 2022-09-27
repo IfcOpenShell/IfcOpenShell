@@ -113,6 +113,7 @@ class DumbProfileGenerator:
         self.depth = 3
         self.rotation = 0
         self.location = Vector((0, 0, 0))
+        self.cardinal_point = int(bpy.context.scene.BIMModelProperties.cardinal_point)
         return self.derive_from_cursor()
 
     def derive_from_cursor(self):
@@ -129,6 +130,7 @@ class DumbProfileGenerator:
         obj.location = self.location
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2]
+        bpy.context.view_layer.update()
         self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
@@ -141,6 +143,9 @@ class DumbProfileGenerator:
             context=self.body_context,
         )
         ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=self.relating_type)
+        material = ifcopenshell.util.element.get_material(element)
+        material.CardinalPoint = self.cardinal_point
+
         if self.relating_type.is_a() in ["IfcBeamType", "IfcMemberType"]:
             obj.rotation_euler[0] = math.pi / 2
             obj.rotation_euler[2] = math.pi / 2
@@ -161,6 +166,7 @@ class DumbProfileGenerator:
             tool.Ifc.get(),
             context=self.body_context,
             profile=self.profile_set.CompositeProfile or self.profile_set.MaterialProfiles[0].Profile,
+            cardinal_point=self.cardinal_point,
             depth=self.depth,
         )
         ifcopenshell.api.run(
@@ -188,19 +194,15 @@ class DumbProfileGenerator:
 class DumbProfileRegenerator:
     def regenerate_from_profile(self, usecase_path, ifc_file, settings):
         self.file = ifc_file
+        objs = []
         profile = settings["profile"].Profile
         if not profile:
             return
         for element in self.get_elements_using_profile(profile):
-            self.change_profile(element)
-
-    def sync_object_from_profile(self, usecase_path, ifc_file, settings):
-        self.file = ifc_file
-        profile = settings["profile"].Profile
-        if not profile:
-            return
-        for element in self.get_elements_using_profile(profile):
-            self.sync_object(element)
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                objs.append(obj)
+        DumbProfileRecalculator().recalculate(objs)
 
     def get_elements_using_profile(self, profile):
         results = []
@@ -221,32 +223,13 @@ class DumbProfileRegenerator:
         return results
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
+        obj = tool.Ifc.get_object(settings["related_object"])
+        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+            return
         new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
         if not new_material or not new_material.is_a("IfcMaterialProfileSet"):
             return
-        self.change_profile(settings["related_object"])
-
-    def change_profile(self, element):
-        obj = IfcStore.get_element(element.id())
-        if not obj:
-            return
-        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if representation:
-            blenderbim.core.geometry.switch_representation(
-                tool.Geometry,
-                obj=obj,
-                representation=representation,
-                should_reload=True,
-                enable_dynamic_voids=True,
-                is_global=True,
-                should_sync_changes_first=False,
-            )
-
-    def sync_object(self, element):
-        obj = IfcStore.get_element(element.id())
-        if not obj or obj not in IfcStore.edited_objs:
-            return
-        bpy.ops.bim.update_representation(obj=obj.name)
+        DumbProfileRecalculator().recalculate([obj])
 
 
 class ExtendProfile(bpy.types.Operator):
@@ -417,9 +400,12 @@ class DumbProfileJoiner:
             axis = body = self.get_profile_axis(obj)
         self.axis = copy.deepcopy(axis)
         self.body = copy.deepcopy(body)
-        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=False)
+        usage = None
+        if material.is_a("IfcMaterialProfileSetUsage"):
+            usage = material
+            material = material.ForProfileSet
         self.profile = material.CompositeProfile or material.MaterialProfiles[0].Profile
-        height = self.get_height(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
         self.clippings = []
 
         for rel in element.ConnectedTo:
@@ -467,6 +453,7 @@ class DumbProfileJoiner:
             context=self.body_context,
             profile=self.profile,
             depth=depth,
+            cardinal_point=usage.CardinalPoint if usage else None,
             clippings=self.clippings,
         )
 
@@ -495,6 +482,7 @@ class DumbProfileJoiner:
             is_global=True,
             should_sync_changes_first=False,
         )
+        tool.Geometry.record_object_materials(obj)
 
     def join(self, profile1, profile2, connection1, connection2, is_relating=True, description="BUTT"):
         element1 = tool.Ifc.get_entity(profile1)
@@ -769,118 +757,6 @@ class DumbProfileJoiner:
             (obj.matrix_world @ Vector((0.0, 0.0, max(z_values)))),
         ]
 
-    # TODO
-    def get_height(self, representation):
-        height = 3.0
-        item = representation.Items[0]
-        while True:
-            if item.is_a("IfcExtrudedAreaSolid"):
-                height = item.Depth * self.unit_scale
-                break
-            elif item.is_a("IfcBooleanClippingResult"):
-                item = item.FirstOperand
-            else:
-                break
-        return height
-
-    # An extension of a profile is determined by casting a ray from the cardinal
-    # point of either extreme along the profiles local Z axis to a target
-    # object. The nearest result from this raycast will be the target extension
-    # point.
-    def extend_old(self):
-        extension_data = self.get_closest_extension_point()
-        if not extension_data:
-            return
-        if extension_data["end"] == "bottom":
-            self.profile.matrix_world.translation = extension_data["contact"]
-            if extension_data["direction"] == "up":
-                self.shift_top_faces(-extension_data["distance"])
-            elif extension_data["direction"] == "down":
-                self.shift_top_faces(extension_data["distance"])
-        if extension_data["end"] == "top":
-            if extension_data["direction"] == "up":
-                self.shift_top_faces(extension_data["distance"])
-            elif extension_data["direction"] == "down":
-                self.shift_top_faces(-extension_data["distance"])
-
-    def shift_top_faces(self, z):
-        vertices = []
-        for f in self.get_profile_top_faces():
-            vertices.extend(f.vertices)
-        for v in set(vertices):
-            self.profile.data.vertices[v].co.z += z
-
-    # An top face is defined as having at least one vertex on the max
-    # Z-axis, and a non-insignificant Z component of its face normal
-    def get_profile_top_faces(self):
-        faces = []
-        max_z = max([v[2] for v in self.profile.bound_box])
-        for f in self.profile.data.polygons:
-            if abs(f.normal.z) < 0.1:
-                continue
-            for v in f.vertices:
-                if self.profile.data.vertices[v].co.z == max_z:
-                    faces.append(f)
-                    break
-        return faces
-
-    def get_closest_extension_point(self):
-        top = self.profile.matrix_world @ Vector((0, 0, self.profile.dimensions[2]))
-        bottom = self.profile.matrix_world.translation
-        up = self.profile.matrix_world.to_quaternion() @ Vector((0, 0, 1))
-        down = self.profile.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-
-        if self.target:
-            return self.get_closest_extension_point_from_target_obj(top, bottom, up, down)
-        elif self.target_coordinate:
-            return self.get_closest_extension_point_from_target_coordinate(top, bottom, up, down)
-
-    def get_closest_extension_point_from_target_coordinate(self, top, bottom, up, down):
-        point = mathutils.geometry.intersect_line_plane(
-            bottom, top, self.target_coordinate, self.profile.matrix_world.to_quaternion() @ Vector((0, 0, 1))
-        )
-        if not point:
-            return
-        top_distance = (point - top).length
-        bottom_distance = (point - bottom).length
-        if top_distance < bottom_distance:
-            intersection_point, signed_distance = mathutils.geometry.intersect_point_line(point, top, bottom)
-            if signed_distance > 0:
-                return {"contact": point, "distance": top_distance, "end": "top", "direction": "down"}
-            else:
-                return {"contact": point, "distance": top_distance, "end": "top", "direction": "up"}
-        else:
-            intersection_point, signed_distance = mathutils.geometry.intersect_point_line(point, bottom, top)
-            if signed_distance > 0:
-                return {"contact": point, "distance": bottom_distance, "end": "bottom", "direction": "up"}
-            else:
-                return {"contact": point, "distance": bottom_distance, "end": "bottom", "direction": "down"}
-
-    def get_closest_extension_point_from_target_obj(self, top, bottom, up, down):
-        t_top = self.target.matrix_world.inverted() @ top
-        t_bottom = self.target.matrix_world.inverted() @ bottom
-        t_up = self.target.matrix_world.inverted().to_quaternion() @ up
-        t_down = self.target.matrix_world.inverted().to_quaternion() @ down
-
-        results = []
-        results.append((self.target.ray_cast(t_top, t_up, distance=50), top, "top", "up"))
-        results.append((self.target.ray_cast(t_top, t_down, distance=50), top, "top", "down"))
-        results.append((self.target.ray_cast(t_bottom, t_up, distance=50), bottom, "bottom", "up"))
-        results.append((self.target.ray_cast(t_bottom, t_down, distance=50), bottom, "bottom", "down"))
-
-        min_distance = float(inf)
-        final = None
-
-        for result in results:
-            if result[0][0]:
-                contact = self.target.matrix_world @ result[0][1]
-                distance = (contact - result[1]).length
-                if distance < min_distance:
-                    min_distance = distance
-                    final = {"contact": contact, "distance": distance, "end": result[2], "direction": result[3]}
-
-        return final
-
 
 class RecalculateProfile(bpy.types.Operator):
     bl_idname = "bim.recalculate_profile"
@@ -926,4 +802,51 @@ class ChangeProfileDepth(bpy.types.Operator):
         joiner = DumbProfileJoiner()
         for obj in context.selected_objects:
             joiner.set_depth(obj, self.depth)
+        return {"FINISHED"}
+
+
+class ChangeCardinalPoint(bpy.types.Operator):
+    bl_idname = "bim.change_cardinal_point"
+    bl_label = "Change Cardinal Point"
+    bl_options = {"REGISTER", "UNDO"}
+    cardinal_point: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def execute(self, context):
+        objs = []
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            material = ifcopenshell.util.element.get_material(element, should_skip_usage=False)
+            if material.is_a("IfcMaterialProfileSetUsage"):
+                material.CardinalPoint = self.cardinal_point
+                objs.append(obj)
+        DumbProfileRecalculator().recalculate(objs)
+        return {"FINISHED"}
+
+
+class Rotate90(bpy.types.Operator):
+    bl_idname = "bim.rotate_90"
+    bl_label = "Rotate 90"
+    bl_options = {"REGISTER", "UNDO"}
+    axis: bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def execute(self, context):
+        objs = []
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element.ConnectedTo or element.ConnectedFrom:
+                objs.append(obj)
+            rotate_matrix = Matrix.Rotation(pi / 2, 4, self.axis)
+            obj.matrix_world @= rotate_matrix
+        bpy.context.view_layer.update()
+        DumbProfileRecalculator().recalculate(objs)
         return {"FINISHED"}

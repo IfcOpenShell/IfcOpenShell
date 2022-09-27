@@ -356,8 +356,8 @@ class Cad:
         return bm
 
     @classmethod
-    def get_center_of_arc(cls, pts, obj):
-        mw = obj.matrix_world
+    def get_center_of_arc(cls, pts, obj=None):
+        mw = obj.matrix_world if obj else None
         V = Vector
 
         # construction
@@ -376,7 +376,7 @@ class Cad:
         r = geometry.intersect_line_line(v1_, v2_, v3_, v4_)
         if r:
             p1, _ = r
-            cp = mw @ p1
+            cp = mw @ p1 if mw else p1
             return cp
         else:
             print("not on a circle")

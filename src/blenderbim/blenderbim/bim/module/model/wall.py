@@ -545,9 +545,9 @@ class DumbWallGenerator:
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
         obj.location = self.location
         obj.rotation_euler[2] = self.rotation
-        bpy.context.view_layer.update()
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2]
+        bpy.context.view_layer.update()
         self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
@@ -1031,6 +1031,7 @@ class DumbWallJoiner:
             is_global=True,
             should_sync_changes_first=False,
         )
+        tool.Geometry.record_object_materials(obj)
 
     def create_matrix(self, p, x, y, z):
         return Matrix(
