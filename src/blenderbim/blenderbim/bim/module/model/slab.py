@@ -34,78 +34,13 @@ import blenderbim.core.geometry
 import blenderbim.tool as tool
 from bpy.types import SpaceView3D
 from blenderbim.bim.ifc import IfcStore
-from math import pi, degrees
+from math import pi, degrees, sin, cos, radians
 from mathutils import Vector, Matrix
 from ifcopenshell.api.pset.data import Data as PsetData
 from ifcopenshell.api.material.data import Data as MaterialData
 from blenderbim.bim.module.geometry.helper import Helper
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
-
-
-def element_listener(element, obj):
-    blenderbim.bim.handler.subscribe_to(obj, "mode", mode_callback)
-
-
-def mode_callback(obj, data):
-    for obj in set(bpy.context.selected_objects + [bpy.context.active_object]):
-        if (
-            not obj.data
-            or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
-            or not obj.BIMObjectProperties.ifc_definition_id
-            or not bpy.context.scene.BIMProjectProperties.is_authoring
-        ):
-            return
-        product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
-        parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-        if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer3":
-            return
-        if obj.mode == "EDIT":
-            IfcStore.edited_objs.add(obj)
-            ensure_solidify_modifier(obj)
-        else:
-            new_origin = obj.matrix_world @ Vector(obj.bound_box[0])
-            obj.data.transform(
-                Matrix.Translation(
-                    (obj.matrix_world.inverted().to_quaternion() @ (obj.matrix_world.translation - new_origin))
-                )
-            )
-            obj.matrix_world.translation = new_origin
-
-
-def ensure_solidify_modifier(obj):
-    modifier = [m for m in obj.modifiers if m.type == "SOLIDIFY"]
-    if modifier:
-        return modifier[0]
-    depth = obj.dimensions.z
-
-    if obj.mode == "EDIT":
-        bm = bmesh.from_edit_mesh(obj.data)
-    else:
-        bm = bmesh.new()
-        bm.from_mesh(obj.data)
-
-    bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-    bm.faces.ensure_lookup_table()
-    non_bottom_faces = []
-    for face in bm.faces:
-        if face.normal.z > -0.9:
-            non_bottom_faces.append(face)
-        else:
-            face.normal_flip()
-    bmesh.ops.delete(bm, geom=non_bottom_faces, context="FACES")
-
-    if obj.mode == "EDIT":
-        bmesh.update_edit_mesh(obj.data)
-    else:
-        bm.to_mesh(obj.data)
-
-    bm.free()
-    modifier = obj.modifiers.new("Slab Depth", "SOLIDIFY")
-    modifier.use_even_offset = True
-    modifier.offset = 1
-    modifier.thickness = depth
-    return modifier
 
 
 def generate_footprint(usecase_path, ifc_file, settings):
@@ -560,30 +495,32 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
         return context.selected_objects
 
     def execute(self, context):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         extrusion = self.get_extrusion(body)
-        profile = extrusion.SweptArea
         position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+        position[0][3] *= self.unit_scale
+        position[1][3] *= self.unit_scale
+        position[2][3] *= self.unit_scale
 
         z_values = [v[2] for v in obj.bound_box]
-
-        element = tool.Ifc.get_entity(obj)
-
         origin = obj.matrix_world @ Vector((0, 0, max(z_values)))
         normal = obj.matrix_world.to_quaternion()
 
         self.vertices = []
         self.edges = []
         self.arcs = []
+        self.circles = []
 
-        self.process_curve(obj, position, profile.OuterCurve)
-
-        if profile.is_a("IfcArbitraryProfileDefWithVoids"):
-            for inner_curve in profile.InnerCurves:
-                self.process_curve(obj, position, inner_curve)
+        profile = extrusion.SweptArea
+        if profile.is_a("IfcArbitraryClosedProfileDef"):
+            self.process_curve(obj, position, profile.OuterCurve)
+            if profile.is_a("IfcArbitraryProfileDefWithVoids"):
+                for inner_curve in profile.InnerCurves:
+                    self.process_curve(obj, position, inner_curve)
 
         mesh = bpy.data.meshes.new("Profile")
         mesh.from_pydata(self.vertices, self.edges, [])
@@ -594,8 +531,12 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
             group = obj.vertex_groups.new(name="IFCARCINDEX")
             group.add(arc, 1, "REPLACE")
 
+        for circle in self.circles:
+            group = obj.vertex_groups.new(name="IFCCIRCLE")
+            group.add(circle, 1, "REPLACE")
+
         bpy.ops.object.mode_set(mode="EDIT")
-        DecorationsHandler.install(bpy.context)
+        DecorationsHandler.install(context)
         bpy.ops.wm.tool_set_by_id(name="bim.cad_tool")
         return {"FINISHED"}
 
@@ -618,32 +559,55 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
             for i, point in enumerate(curve.Points):
                 if i == last_index:
                     continue
-                global_point = position @ Vector(point.Coordinates).to_3d()
+                global_point = position @ Vector(self.convert_unit_to_si(point.Coordinates)).to_3d()
                 self.vertices.append(global_point)
+            self.edges.extend([(i, i + 1) for i in range(offset, len(self.vertices))])
+            self.edges[-1] = (len(self.vertices) - 1, offset) # Close the loop
         elif curve.is_a("IfcIndexedPolyCurve"):
             is_arc = False
             if curve.Segments:
                 for segment in curve.Segments:
                     if len(segment[0]) == 3:  # IfcArcIndex
                         is_arc = True
-                        global_point = position @ Vector(curve.Points.CoordList[segment[0][0] - 1]).to_3d()
+                        local_point = self.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
                         self.vertices.append(global_point)
-                        global_point = position @ Vector(curve.Points.CoordList[segment[0][1] - 1]).to_3d()
+                        local_point = self.convert_unit_to_si(curve.Points.CoordList[segment[0][1] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
                         self.vertices.append(global_point)
                         self.arcs.append([len(self.vertices) - 2, len(self.vertices) - 1])
                     else:
-                        global_point = position @ Vector(curve.Points.CoordList[segment[0][0] - 1]).to_3d()
+                        local_point = self.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
                         self.vertices.append(global_point)
                         if is_arc:
                             self.arcs[-1].append(len(self.vertices) - 1)
                             is_arc = False
             else:
-                for point in curve.PointsCoordList:
-                    global_point = position @ Vector(point).to_3d()
+                for local_point in curve.PointsCoordList:
+                    global_point = position @ Vector(self.convert_unit_to_si(local_point)).to_3d()
                     self.vertices.append(global_point)
 
-        self.edges.extend([(i, i + 1) for i in range(offset, len(self.vertices))])
-        self.edges[-1] = (len(self.vertices) - 1, offset)
+            self.edges.extend([(i, i + 1) for i in range(offset, len(self.vertices))])
+            self.edges[-1] = (len(self.vertices) - 1, offset) # Close the loop
+        elif curve.is_a("IfcCircle"):
+            center = self.convert_unit_to_si(
+                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).col[3].to_3d()
+            )
+            radius = self.convert_unit_to_si(curve.Radius)
+            self.vertices.extend(
+                [
+                    position @ Vector((center[0], center[1] - curve.Radius, 0.0)),
+                    position @ Vector((center[0], center[1] + curve.Radius, 0.0)),
+                ]
+            )
+            self.circles.append([offset, offset + 1])
+            self.edges.append((offset, offset + 1))
+
+    def convert_unit_to_si(self, value):
+        if isinstance(value, (tuple, list)):
+            return [v * self.unit_scale for v in value]
+        return value * self.unit_scale
 
 
 class EditExtrusionProfile(bpy.types.Operator):
@@ -652,6 +616,7 @@ class EditExtrusionProfile(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         DecorationsHandler.uninstall()
         bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -661,19 +626,23 @@ class EditExtrusionProfile(bpy.types.Operator):
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         extrusion = self.get_extrusion(representation)
         position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+        position[0][3] *= self.unit_scale
+        position[1][3] *= self.unit_scale
+        position[2][3] *= self.unit_scale
 
         helper = Helper(tool.Ifc.get())
         indices = helper.auto_detect_arbitrary_profile_with_voids(obj, obj.data)
+
         if isinstance(indices, tuple) and indices[0] is False:  # Ugly
             self.report({"ERROR"}, "INVALID PROFILE: " + indices[1])
             DecorationsHandler.install(context)
             bpy.ops.object.mode_set(mode="EDIT")
             return {"CANCELLED"}
 
-        bm = bmesh.new()
-        bm.from_mesh(obj.data)
-        bm.verts.ensure_lookup_table()
-        bm.edges.ensure_lookup_table()
+        self.bm = bmesh.new()
+        self.bm.from_mesh(obj.data)
+        self.bm.verts.ensure_lookup_table()
+        self.bm.edges.ensure_lookup_table()
 
         if indices["inner_curves"]:
             profile = tool.Ifc.get().createIfcArbitraryProfileDefWithVoids("AREA")
@@ -690,7 +659,7 @@ class EditExtrusionProfile(bpy.types.Operator):
                 results.append(self.create_curve(position, inner_curve))
             profile.InnerCurves = results
 
-        bm.free()
+        self.bm.free()
 
         extrusion.SweptArea = profile
 
@@ -710,16 +679,25 @@ class EditExtrusionProfile(bpy.types.Operator):
         points = []
         for point in indices:
             local_point = (position_i @ point).to_2d()
-            points.append(list(local_point))
+            points.append(self.convert_si_to_unit(list(local_point)))
         return tool.Ifc.get().createIfcCartesianPointList2D(points)
 
     def create_curve(self, position, edge_indices, points=None):
         position_i = position.inverted()
+        if len(edge_indices) == 2:
+            diameter = edge_indices[0]
+            p1 = self.bm.verts[diameter[0]].co
+            p2 = self.bm.verts[diameter[1]].co
+            center = self.convert_si_to_unit(list(position_i @ p1.lerp(p2, 0.5)))
+            radius = self.convert_si_to_unit((p1 - p2).length / 2)
+            return tool.Ifc.get().createIfcCircle(
+                tool.Ifc.get().createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center)), radius
+            )
         if tool.Ifc.get().schema == "IFC2X3":
             points = []
             for edge in edge_indices:
-                local_point = (position_i @ Vector(bm.verts[edge[0]].co)).to_2d()
-                points.append(tool.Ifc.get().createIfcCartesianPoint(local_point))
+                local_point = (position_i @ Vector(self.bm.verts[edge[0]].co)).to_2d()
+                points.append(tool.Ifc.get().createIfcCartesianPoint(self.convert_si_to_unit(local_point)))
             points.append(points[0])
             return tool.Ifc.get().createIfcPolyline(points)
         segments = []
@@ -739,6 +717,11 @@ class EditExtrusionProfile(bpy.types.Operator):
                 item = item.FirstOperand
             else:
                 break
+
+    def convert_si_to_unit(self, value):
+        if isinstance(value, (tuple, list)):
+            return [v / self.unit_scale for v in value]
+        return value / self.unit_scale
 
 
 class SetArcIndex(bpy.types.Operator):
@@ -788,12 +771,13 @@ class DecorationsHandler:
 
     def __call__(self, context):
         obj = context.active_object
+        if obj.mode != "EDIT":
+            return
+
         bgl.glLineWidth(2)
         bgl.glPointSize(6)
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        if not obj.data.is_editmode:
-            return
 
         all_vertices = []
         error_vertices = []
@@ -806,11 +790,15 @@ class DecorationsHandler:
         special_edges = []
 
         arc_groups = []
+        circle_groups = []
         for i, group in enumerate(obj.vertex_groups):
             if "IFCARCINDEX" in group.name:
                 arc_groups.append(i)
+            elif "IFCCIRCLE" in group.name:
+                circle_groups.append(i)
 
         arcs = {}
+        circles = {}
 
         bm = bmesh.from_edit_mesh(obj.data)
 
@@ -831,6 +819,15 @@ class DecorationsHandler:
                     break
             if is_arc:
                 arcs.setdefault(group_index, []).append(vertex)
+                special_vertex_indices[vertex.index] = group_index
+
+            is_circle = False
+            for group_index in circle_groups:
+                if group_index in vertex[deform_layer]:
+                    is_circle = True
+                    break
+            if is_circle:
+                circles.setdefault(group_index, []).append(vertex)
                 special_vertex_indices[vertex.index] = group_index
 
             if vertex.select:
@@ -894,6 +891,8 @@ class DecorationsHandler:
         self.shader.uniform_float("color", green)
         batch.draw(self.shader)
 
+        # Draw arcs
+
         arc_centroids = []
         arc_segments = []
         for arc in arcs.values():
@@ -914,7 +913,7 @@ class DecorationsHandler:
             centroid = tool.Cad.get_center_of_arc(points)
             if centroid:
                 arc_centroids.append(tuple(centroid))
-            arc_segments.append(self.generate_3PT_mode_1(pts=points, num_verts=17, make_edges=True))
+            arc_segments.append(self.create_arc_segments(pts=points, num_verts=17, make_edges=True))
 
         batch = batch_for_shader(self.shader, "POINTS", {"pos": arc_centroids})
         self.shader.uniform_float("color", (0.2, 0.2, 0.2, 1))
@@ -925,10 +924,74 @@ class DecorationsHandler:
             self.shader.uniform_float("color", (0.157, 0.565, 1, 1))
             batch.draw(self.shader)
 
+        # Draw circles
+
+        circle_centroids = []
+        circle_segments = []
+        for circle in circles.values():
+            if len(circle) != 2:
+                continue
+            p1 = obj.matrix_world @ circle[0].co
+            p2 = obj.matrix_world @ circle[1].co
+            radius = (p2 - p1).length / 2
+            centroid = p1.lerp(p2, 0.5)
+            circle_centroids.append(tuple(centroid))
+            segments = self.create_circle_segments(360, 20, radius)
+            matrix = obj.matrix_world.copy()
+            matrix.col[3] = centroid.to_4d()
+            segments = [[list(matrix @ Vector(v)) for v in segments[0]], segments[1]]
+            circle_segments.append(segments)
+
+        batch = batch_for_shader(self.shader, "POINTS", {"pos": circle_centroids})
+        self.shader.uniform_float("color", (0.2, 0.2, 0.2, 1))
+        batch.draw(self.shader)
+
+        for verts, edges in circle_segments:
+            batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=edges)
+            self.shader.uniform_float("color", (0.157, 0.565, 1, 1))
+            batch.draw(self.shader)
+
+    def create_matrix(self, p, x, y, z):
+        return Matrix([x, y, z, p]).to_4x4().transposed()
+
     # https://github.com/nortikin/sverchok/blob/master/nodes/generator/basic_3pt_arc.py
-    # This generate_3PT_mode_1 function is taken from Sverchok, licensed under GPL v2-or-later.
+    # This function is taken from Sverchok, licensed under GPL v2-or-later.
+    # This is a combination of the make_verts and make_edges function.
+    def create_circle_segments(self, Angle, Vertices, Radius):
+        if Angle < 360:
+            theta = Angle / (Vertices - 1)
+        else:
+            theta = Angle / Vertices
+        listVertX = []
+        listVertY = []
+        for i in range(Vertices):
+            listVertX.append(Radius * cos(radians(theta * i)))
+            listVertY.append(Radius * sin(radians(theta * i)))
+
+        if Angle < 360 and self.mode_ == 0:
+            sigma = radians(Angle)
+            listVertX[-1] = Radius * cos(sigma)
+            listVertY[-1] = Radius * sin(sigma)
+        elif Angle < 360 and self.mode_ == 1:
+            listVertX.append(0.0)
+            listVertY.append(0.0)
+
+        points = list((x, y, 0) for x, y in zip(listVertX, listVertY))
+
+        listEdg = [(i, i + 1) for i in range(Vertices - 1)]
+
+        if Angle < 360 and self.mode_ == 1:
+            listEdg.append((0, Vertices))
+            listEdg.append((Vertices - 1, Vertices))
+        else:
+            listEdg.append((Vertices - 1, 0))
+
+        return points, listEdg
+
+    # https://github.com/nortikin/sverchok/blob/master/nodes/generator/basic_3pt_arc.py
+    # This function is taken from Sverchok's generate_3PT_mode_1 function, licensed under GPL v2-or-later.
     # No functional modifications have been made.
-    def generate_3PT_mode_1(self, pts=None, num_verts=20, make_edges=False):
+    def create_arc_segments(self, pts=None, num_verts=20, make_edges=False):
         """
         Arc from [start - through - end]
         - call this function only if you have 3 pts,

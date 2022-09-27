@@ -21,7 +21,7 @@ import bmesh
 import mathutils
 import ifcopenshell
 import ifcopenshell.util.unit
-from math import pi
+from math import pi, pow
 from mathutils import Vector, Matrix, geometry
 
 
@@ -113,34 +113,51 @@ class Helper:
         return {"profile": profile, "extrusion": extrusion}
 
     def auto_detect_arbitrary_profile_with_voids(self, obj, mesh):
-        arc_groups = []
+        groups = {"IFCARCINDEX": [], "IFCCIRCLE": []}
         for i, group in enumerate(obj.vertex_groups):
             if "IFCARCINDEX" in group.name:
-                arc_groups.append(i)
+                groups["IFCARCINDEX"].append(i)
+            elif "IFCCIRCLE" in group.name:
+                groups["IFCCIRCLE"].append(i)
 
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bmesh.ops.delete(bm, geom=bm.faces, context="FACES_ONLY")
 
         # https://docs.blender.org/api/blender_python_api_2_63_8/bmesh.html#CustomDataAccess
         # This is how we access vertex groups via bmesh, apparently, it's not very intuitive
         deform_layer = bm.verts.layers.deform.active
 
         # Sanity check
-        group_verts = {}
+        group_verts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
         for vert in bm.verts:
-            if len(vert.link_edges) != 2:  # Unclosed loop or forked loop
-                return (False, "UNCLOSED_LOOP")
             total_groups = 0
-            for group_index in arc_groups:
-                if group_index in vert[deform_layer]:
-                    group_verts.setdefault(group_index, []).append(vert)
-                    total_groups += 0
-            if total_groups > 1:  # A vert can only belong to one arc
-                return (False, "AMBIGUOUS_ARC")
-        for verts in group_verts.values():
-            if len(verts) != 3:  # Each arc needs 3 verts
-                return (False, "3POINT_ARC")
+            is_circle = False
+            for group_type, group_indices in groups.items():
+                for group_index in group_indices:
+                    if group_index in vert[deform_layer]:
+                        if group_type == "IFCCIRCLE":
+                            is_circle = True
+                        group_verts[group_type].setdefault(group_index, 0)
+                        group_verts[group_type][group_index] += 1
+                        total_groups += 0
+            if total_groups > 1:  # A vert can only belong to one group
+                return (False, "AMBIGUOUS_SPECIAL_VERTEX")
+            elif is_circle:
+                pass # Circles are allowed to be unclosed
+            elif total_groups == 0 and len(vert.link_edges) != 2:  # Unclosed loop or forked loop
+                return (False, "UNCLOSED_LOOP")
+
+        for group_type, group_counts in group_verts.items():
+            if group_type == "IFCARCINDEX":
+                for group_count in group_counts.values():
+                    if group_count != 3: # Each arc needs 3 verts
+                        return (False, "3POINT_ARC")
+            elif group_type == "IFCCIRCLE":
+                for group_count in group_counts.values():
+                    if group_count != 2: # Each circle needs 2 verts
+                        return (False, "CIRCLE")
 
         loop_edges = set(bm.edges)
 
@@ -172,20 +189,31 @@ class Helper:
         for loop in loops:
             loop_vertices = []
             total_edges = len(loop)
-            for i, edge in enumerate(loop):
-                if i + 1 == total_edges and edge.verts[0] in loop[i - 1].verts:
-                    loop_vertices.append(edge.verts[0])
-                elif i + 1 == total_edges and edge.verts[1] in loop[i - 1].verts:
-                    loop_vertices.append(edge.verts[1])
-                elif edge.verts[0] in loop[i + 1].verts:
-                    loop_vertices.append(edge.verts[1])
-                elif edge.verts[1] in loop[i + 1].verts:
-                    loop_vertices.append(edge.verts[0])
 
-            loop_bm = bmesh.new()
-            for vert in loop_vertices:
-                loop_bm.verts.new(vert.co)
-            face = loop_bm.faces.new(loop_bm.verts)
+            if total_edges == 1:
+                loop_vertices = [loop[0].verts[0], loop[0].verts[1]]
+            else:
+                for i, edge in enumerate(loop):
+                    if i + 1 == total_edges and edge.verts[0] in loop[i - 1].verts:
+                        loop_vertices.append(edge.verts[0])
+                    elif i + 1 == total_edges and edge.verts[1] in loop[i - 1].verts:
+                        loop_vertices.append(edge.verts[1])
+                    elif edge.verts[0] in loop[i + 1].verts:
+                        loop_vertices.append(edge.verts[1])
+                    elif edge.verts[1] in loop[i + 1].verts:
+                        loop_vertices.append(edge.verts[0])
+
+            if len(loop_vertices) == 2:
+                # Unofficial convention right now that a loop of 2 verts always is a circle
+                radius = (loop_vertices[0].co - loop_vertices[1].co).length / 2
+                face_area = pi * pow(radius, 2)
+            else:
+                loop_bm = bmesh.new()
+                for vert in loop_vertices:
+                    loop_bm.verts.new(vert.co)
+                face = loop_bm.faces.new(loop_bm.verts)
+                face_area = face.calc_area()
+                loop_bm.free()
 
             loop_vertex_indices = []
             active_arc_id = None
@@ -203,7 +231,7 @@ class Helper:
                     active_arc_id = None
 
                 is_arc = False
-                for group_index in arc_groups:
+                for group_index in groups["IFCARCINDEX"]:
                     if group_index in v[deform_layer]:
                         if active_arc_id is not None and active_arc_id != group_index:
                             incomplete_arc = arc_stack
@@ -229,14 +257,11 @@ class Helper:
                 loop_vertex_indices.append(arc_stack)
 
             loop_vertex_indices.append((loop_vertex_indices[-1][-1], loop_vertex_indices[0][0]))
-            # loop_vertex_indices = [v.index for v in loop_vertices]
 
-            face_area = face.calc_area()
             if face_area > max_area:
                 max_area = face_area
                 outer_loop = loop_vertex_indices
             inner_loops.append(loop_vertex_indices)
-            loop_bm.free()
 
         inner_loops.remove(outer_loop)
 
