@@ -58,7 +58,6 @@ def load_post(*args):
 
     IfcStore.add_element_listener(opening.element_listener)
     IfcStore.add_element_listener(wall.element_listener)
-    IfcStore.add_element_listener(slab.element_listener)
     IfcStore.add_element_listener(profile.element_listener)
 
     ifcopenshell.api.add_post_listener(

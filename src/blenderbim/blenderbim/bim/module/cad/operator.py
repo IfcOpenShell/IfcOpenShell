@@ -343,3 +343,35 @@ class CadArcFrom3Points(bpy.types.Operator):
         bmesh.update_edit_mesh(mesh)
         mesh.update()
         return {"FINISHED"}
+
+
+class AddIfcCircle(bpy.types.Operator):
+    bl_idname = "bim.add_ifccircle"
+    bl_label = "Add IfcCircle"
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return bool(obj) and obj.type == "MESH"
+
+    def execute(self, context):
+        obj = context.active_object
+        bpy.ops.object.mode_set(mode="EDIT")
+
+        bm = bmesh.from_edit_mesh(obj.data)
+
+        center = obj.matrix_world.inverted() @ context.scene.cursor.location
+        radius = 0.5
+
+        v1 = bm.verts.new((center[0], center[1] + radius, 0.0))
+        v2 = bm.verts.new((center[0], center[1] - radius, 0.0))
+        bm.verts.index_update()
+        indices = [v1.index, v2.index]
+        bm.edges.new((v1, v2))
+        bmesh.update_edit_mesh(obj.data)
+
+        bpy.ops.object.mode_set(mode="OBJECT")
+        group = obj.vertex_groups.new(name="IFCCIRCLE")
+        group.add(indices, 1, "REPLACE")
+        bpy.ops.object.mode_set(mode="EDIT")
+        return {"FINISHED"}

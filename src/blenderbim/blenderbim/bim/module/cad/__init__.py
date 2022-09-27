@@ -20,6 +20,7 @@ import bpy
 from . import operator, workspace
 
 classes = (
+    operator.AddIfcCircle,
     operator.CadArcFrom2Points,
     operator.CadArcFrom3Points,
     operator.CadFillet,
