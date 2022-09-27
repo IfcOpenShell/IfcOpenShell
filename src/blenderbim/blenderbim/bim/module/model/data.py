@@ -20,7 +20,6 @@ import functools
 import bpy
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from time import sleep
 
 
 preview_icon_ids = {}
