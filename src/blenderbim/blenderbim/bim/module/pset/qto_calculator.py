@@ -18,9 +18,8 @@
 
 import bpy, bmesh
 import mathutils
-from mathutils import Vector, Matrix, Quaternion, Euler
+from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
-import numpy as np
 import math
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
@@ -167,8 +166,9 @@ class QtoCalculator:
             area += polygon.area
         return area
 
-    def get_net_top_footprint_area(self, o):
-        """_summary_: Returns the area of the net top footprint of the object, excluding any holes
+    def get_net_roofprint_area(self, o):
+        # Is roofprint the right word? Couldn't think of anything better - vulevukusej
+        """_summary_: Returns the area of the net roofprint of the object, excluding any holes
 
         :param o: _description_
         :return: _description_
@@ -177,7 +177,7 @@ class QtoCalculator:
         for polygon in self.get_highest_polygons(o):
             area += polygon.area
         return area
-    
+
     def get_side_area(self, o):
         # There are a few dumb options for this, but this seems the dumbest
         # until I get more practical experience on what works best.
@@ -205,32 +205,38 @@ class QtoCalculator:
                 return False
         return True
 
-    def get_volume(self, o, vg_index=None):
-        volume = 0
-        ob_mat = o.matrix_world
-        me = o.data
-        me.calc_loop_triangles()
-        for tf in me.loop_triangles:
-            tfv = tf.vertices
-            if len(tf.vertices) == 3:
-                tf_tris = ((me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),)
-            else:
-                tf_tris = (
-                    (me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),
-                    (
-                        me.vertices[tfv[2]],
-                        me.vertices[tfv[3]],
-                        me.vertices[tfv[0]],
-                    ),
-                )
+    def get_volume(self, o):
+        o_mesh = bmesh.new()
+        o_mesh.from_mesh(o.data)
+        return o_mesh.calc_volume()
+        
+        # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
+    # def get_volume(self, o, vg_index=None):
+        # volume = 0
+        # ob_mat = o.matrix_world
+        # me = o.data
+        # me.calc_loop_triangles()
+        # for tf in me.loop_triangles:
+        #     tfv = tf.vertices
+        #     if len(tf.vertices) == 3:
+        #         tf_tris = ((me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),)
+        #     else:
+        #         tf_tris = (
+        #             (me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),
+        #             (
+        #                 me.vertices[tfv[2]],
+        #                 me.vertices[tfv[3]],
+        #                 me.vertices[tfv[0]],
+        #             ),
+        #         )
 
-            for tf_iter in tf_tris:
-                v1 = ob_mat @ tf_iter[0].co
-                v2 = ob_mat @ tf_iter[1].co
-                v3 = ob_mat @ tf_iter[2].co
+        #     for tf_iter in tf_tris:
+        #         v1 = ob_mat @ tf_iter[0].co
+        #         v2 = ob_mat @ tf_iter[1].co
+        #         v3 = ob_mat @ tf_iter[2].co
 
-                volume += v1.dot(v2.cross(v3)) / 6.0
-        return volume
+        #         volume += v1.dot(v2.cross(v3)) / 6.0
+        # return volume
 
     def get_opening_type(self, opening, obj):
         """_summary_: Returns the opening type - OPENING / RECESS
