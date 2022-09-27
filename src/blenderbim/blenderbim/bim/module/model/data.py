@@ -20,6 +20,7 @@ import functools
 import bpy
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+from time import sleep
 
 
 preview_icon_ids = {}
@@ -28,6 +29,11 @@ attempts = 0
 
 def refresh():
     AuthoringData.is_loaded = False
+
+
+def wait_for_asset_previews_generation(check_interval_seconds=0.05):
+    while bpy.app.is_job_running("RENDER_PREVIEW"):
+        sleep(check_interval_seconds)
 
 
 class AuthoringData:
@@ -143,6 +149,7 @@ class AuthoringData:
                 obj = new_obj
         obj.asset_mark()
         obj.asset_generate_preview()
+        wait_for_asset_previews_generation()
         icon_id = obj.preview.icon_id
         if ifc_class not in cls.data["preview_constr_types"]:
             cls.data["preview_constr_types"][ifc_class] = {}
