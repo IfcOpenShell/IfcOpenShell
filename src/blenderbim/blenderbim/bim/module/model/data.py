@@ -144,9 +144,8 @@ class AuthoringData:
         obj.asset_mark()
         obj.asset_generate_preview()
 
-        def wait_for_asset_previews_generation(check_interval_seconds=0.03):
+        def wait_for_asset_previews_generation(check_interval_seconds=0.001):
             if bpy.app.is_job_running("RENDER_PREVIEW"):
-                print(f"{obj.name}: Generating preview...")
                 return check_interval_seconds
             else:
                 icon_id = obj.preview.icon_id
@@ -162,7 +161,6 @@ class AuthoringData:
                     # Instead, we only "hide" it by unlinking it from all collections.
                     for collection in obj.users_collection:
                         collection.objects.unlink(obj)
-                print(f"{obj.name}: Preview generated!")
                 return None
 
         bpy.app.timers.register(wait_for_asset_previews_generation)
