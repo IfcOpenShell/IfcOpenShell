@@ -257,17 +257,17 @@ class QtoCalculator:
         # If an odd number of face-normal vectors intersect with the object, then the void is a recess, otherwise it's an opening
         return "OPENING" if ray_intersections % 2 == 0 else "RECESS"
 
-    def get_side_opening_area(
+    def get_opening_area(
         self, obj, angle_z1: int = 45, angle_z2: int = 135, min_area: int = 0, ignore_recesses: bool = False
     ):
-        """_summary_: Returns the area of the side openings of the object.
+        """_summary_: Returns the lateral area of the openings in the object.
 
         :param obj: blender object
         :param angle_z1: Angle measured from the positive z-axis to the normal-vector of the opening area. Openings with a normal_vector lower than this value will be ignored, defaults to 45
         :param angle_z2: Angle measured from the positive z-axis to the normal-vector of the opening area. Openings with a normal_vector greater than this value will be ignored,defaults to 135
         :param min_area: Minimum opening area to consider.  Values lower than this will be ignored, defaults to 0
         :param ignore_recesses: Toggle whether recess areas should be considered, defaults to False
-        :return: Side Opening Area, float
+        :return: Opening Area, float
         """
         total_opening_area = 0
         ifc = tool.Ifc.get()
@@ -286,9 +286,7 @@ class QtoCalculator:
 
                 if ignore_recesses and opening_type == "RECESS":
                     continue
-                opening_area = self.get_lateral_area(
-                    bl_opening_obj, subtract_openings=False, angle_z1=angle_z1, angle_z2=angle_z2
-                )
+                opening_area = self.get_lateral_area(self.get_OBB_object(bl_opening_obj), exclude_end_areas=True)
                 if opening_area >= min_area:
                     total_opening_area += opening_area
 
@@ -318,7 +316,7 @@ class QtoCalculator:
         z_axis = [0, 0, 1]
         area = 0
         total_opening_area = (
-            0 if subtract_openings else self.get_side_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
+            0 if subtract_openings else self.get_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
         )
         polygons = obj.data.polygons
 
@@ -391,7 +389,7 @@ class QtoCalculator:
                 area += polygon.area
         return area
 
-    def get_projected_area(self, obj, projection_axis: str, is_gross: bool):
+    def get_projected_area(self, obj, projection_axis: str = "z", is_gross: bool = True):
         """_summary_: Returns the projected area of the object.
 
         :param blender-object obj: blender object
@@ -439,7 +437,7 @@ class QtoCalculator:
         ifc_id = obj.BIMObjectProperties.ifc_definition_id
         bbox = obj.bound_box
         # matrix transformation to go from obj coordinates to world coordinates:
-        obb = [obj.matrix_world @ Vector(v) for v in bbox]
+        obb = [Vector(v) for v in bbox]
         obb_mesh = bpy.data.meshes.new(f"OBB_{ifc_id}")
 
         # list of faces, with each tuple referring to an vertex-index in obb
@@ -452,18 +450,22 @@ class QtoCalculator:
             (2, 6, 7, 3),
         ]
 
+        
         obb_mesh.from_pydata(vertices=obb, edges=[], faces=faces)
+        #obb_mesh.transform(obj.matrix_world)
         obb_mesh.update()
 
         # create a new object from the mesh
         new_OBB_object = bpy.data.objects.new(f"OBB_{ifc_id}", obb_mesh)
+        new_OBB_object.matrix_world = obj.matrix_world
 
         # create new collection for QtoCalculator
         collection = bpy.data.collections.get("QtoCalculator", bpy.data.collections.new("QtoCalculator"))
-        bpy.context.scene.collection.children.link(collection)
-
+        if not bpy.context.scene.collection.children.get(collection.name):
+            bpy.context.scene.collection.children.link(collection)
+        
         # add object to scene collection and then hide them.
-        collection.objects.link(new_OBB_object)
+        collection.objects.get(new_OBB_object.name, collection.objects.link(new_OBB_object))
         new_OBB_object.hide_set(True)
 
         return new_OBB_object
@@ -477,9 +479,9 @@ class QtoCalculator:
         ifc_id = obj.BIMObjectProperties.ifc_definition_id
         aabb_mesh = bpy.data.meshes.new(f"OBB_{ifc_id}")
 
-        x = [(obj.matrix_world @ x.co).x for x in obj.data.vertices]
-        y = [(obj.matrix_world @ y.co).y for y in obj.data.vertices]
-        z = [(obj.matrix_world @ z.co).z for z in obj.data.vertices]
+        x = [v.co.x for v in obj.data.vertices]
+        y = [v.co.y for v in obj.data.vertices]
+        z = [v.co.z for v in obj.data.vertices]
 
         min_x, max_x, min_y, max_y, min_z, max_z = min(x), max(x), min(y), max(y), min(z), max(z)
 
@@ -508,6 +510,7 @@ class QtoCalculator:
 
         # create a new object from the mesh
         new_AABB_object = bpy.data.objects.new(f"OBB_{ifc_id}", aabb_mesh)
+        new_AABB_object.matrix_world = obj.matrix_world
 
         # create new collection for QtoCalculator
         collection = bpy.data.collections.get("QtoCalculator", bpy.data.collections.new("QtoCalculator"))
@@ -561,7 +564,7 @@ class QtoCalculator:
 
         return bis_obj
     
-    def get_total_contact_area(self, obj, class_filter):
+    def get_total_contact_area(self, obj, class_filter: str = ["IfcElement"]):
         """_summary_: Returns the total contact area of the object with other objects.
 
         :param blender-object obj: Blender Object
@@ -573,6 +576,8 @@ class QtoCalculator:
         
         for o in touching_objects:
             total_contact_area += self.get_contact_area(obj, o)
+            
+        return total_contact_area
         
     def get_touching_objects(self, obj, class_filter):
         """_summary_: Returns a list of objects that are touching the object.
@@ -600,24 +605,24 @@ class QtoCalculator:
             filtered_objects += ifc.by_type(f)
         
         for o in filtered_objects:
-            blender_o = tool.Ifc.get_object(o.id())
-            if o == obj:
+            blender_o = tool.Ifc.get_object(o)
+            if blender_o == obj:
                 continue
             o_mesh = bmesh.new()
             try:
-                o_mesh.from_mesh(o.data)
+                o_mesh.from_mesh(blender_o.data)
             except:
                 #i'm too tired to debug this properly.  Not sure what causes this error. @vulevukusej
                 continue
-            o_mesh.transform(o.matrix_world)
+            o_mesh.transform(blender_o.matrix_world)
             o_tree = BVHTree.FromBMesh(o_mesh)
 
             if len(obj_tree.overlap(o_tree)) > 0:
-                touching_objects.append(o)
+                touching_objects.append(blender_o)
 
         # return the objects to their original states
-        o.rotation_euler[0] -= math.radians(0.001)
-        o.rotation_euler[1] -= math.radians(0.001)
+        blender_o.rotation_euler[0] -= math.radians(0.001)
+        blender_o.rotation_euler[1] -= math.radians(0.001)
         bpy.context.evaluated_depsgraph_get().update()
 
         return touching_objects
@@ -629,14 +634,12 @@ class QtoCalculator:
         :param blender-object obj: Blender Object
         :return float: contact area between the two objects.
         """
-        
-        total_area = (
-            0  # list of tuples, each tuple containing the index of the polygon in object1 and object2 that are touching
-        )
+        # list of tuples, each tuple containing the index of the polygon in object1 and object2 that are touching
+        total_area = 0
 
         for poly1 in object1.data.polygons:
             for poly2 in object2.data.polygons:
-                return self.polygon_intersection_area(object1, poly1, object2, poly2)
+                total_area += self.get_intersection_between_polygons(object1, poly1, object2, poly2)
         return total_area
             
 
@@ -677,7 +680,11 @@ class QtoCalculator:
         pgon1 = self.create_shapely_polygon(object1, poly1, trans_matrix)
         pgon2 = self.create_shapely_polygon(object2, poly2, trans_matrix)
 
-        return pgon1.intersection(pgon2).area
+        try:
+            return pgon1.intersection(pgon2).area
+        except:
+            # TopologicalError - Generated Geometry might be invalid
+            return 0
 
     def create_shapely_polygon(self, obj, polygon, trans_matrix):
         """_summary_: Create a shapely polygon
@@ -699,27 +706,27 @@ class QtoCalculator:
         return Polygon(polygon_tuples)
 
 
-    # 1 and 3
-    def polygon_intersection_area(self, object1, polygon1, object2, polygon2):
-        """_summary_: Returns the intersection area between two polygons.
+    # # 1 and 3
+    # def polygon_intersection_area(self, object1, polygon1, object2, polygon2):
+    #     """_summary_: Returns the intersection area between two polygons.
 
-        :param blender-object object1: Blender Object
-        :param blender-polygon polygon1: Blender Polygon
-        :param blender object2: Blender Object
-        :param blender polygon2: Blender Polygon
-        :return float: Intersection Area
-        """
-        # polygons should be coplanar:
-        if (
-            mathutils.geometry.intersect_plane_plane(
-                polygon1.center, polygon1.normal, polygon2.center, polygon2.normal
-            )[0]
-            is None
-        ):
-            return 0
+    #     :param blender-object object1: Blender Object
+    #     :param blender-polygon polygon1: Blender Polygon
+    #     :param blender object2: Blender Object
+    #     :param blender polygon2: Blender Polygon
+    #     :return float: Intersection Area
+    #     """
+    #     # polygons should be coplanar:
+    #     if (
+    #         mathutils.geometry.intersect_plane_plane(
+    #             polygon1.center, polygon1.normal, polygon2.center, polygon2.normal
+    #         )[0]
+    #         is None
+    #     ):
+    #         return 0
 
-        intersection = self.get_combined_poly(object1, polygon1, object2, polygon2)
-        return intersection.area
+    #     intersection = self.get_combined_poly(object1, polygon1, object2, polygon2)
+    #     return intersection.area
 
 # # Following code is here temporarily to test newly created functions:
 
@@ -729,8 +736,13 @@ class QtoCalculator:
 # poly1 = o1.data.polygons[1]
 # poly2 = o2.data.polygons[3]
 
-# qto = QtoCalculator()
-# o = bpy.context.active_object
+qto = QtoCalculator()
+o = bpy.context.active_object
+sel = bpy.context.selected_objects
 
-# print(qto.get_touching_objects(o, ["IfcWall", "IfcSlab"]))
+print(qto.get_lateral_area(qto.get_OBB_object(o), exclude_end_areas=True))
+# print(qto.get_lateral_area(qto.get_OBB_object(o), exclude_side_areas=True))
+# # print(qto.get_lateral_area(qto.get_OBB_object(o)))
+
+# print(qto.get_opening_area(o))
 # #
