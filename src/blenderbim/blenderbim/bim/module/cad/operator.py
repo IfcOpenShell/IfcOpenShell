@@ -69,6 +69,7 @@ class CadTrimExtend(bpy.types.Operator):
         else:
             return self.cancel_message("select two edges!")
 
+        bmesh.ops.remove_doubles(bm, verts=list(set(edges[0].verts) | set(edges[1].verts)), dist=1e-5)
         bm.verts.index_update()
         bm.edges.index_update()
         bmesh.update_edit_mesh(me, loop_triangles=True)
@@ -115,6 +116,7 @@ class CadMitre(bpy.types.Operator):
         else:
             return self.cancel_message("select two edges!")
 
+        bmesh.ops.remove_doubles(bm, verts=list(set(edges[0].verts) | set(edges[1].verts)), dist=1e-5)
         bm.verts.index_update()
         bm.edges.index_update()
         bmesh.update_edit_mesh(me, loop_triangles=True)

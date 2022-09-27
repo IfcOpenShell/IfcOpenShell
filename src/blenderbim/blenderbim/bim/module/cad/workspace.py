@@ -61,6 +61,11 @@ class CadTool(WorkSpaceTool):
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_T")
+            row.operator("bim.hotkey", text="Mitre").hotkey = "S_T"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_C")
             row.operator("bim.add_ifccircle", text="Circle")
 
@@ -76,11 +81,13 @@ class CadTool(WorkSpaceTool):
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="Mitre", icon="EVENT_T")
+            row.label(text="", icon="EVENT_T")
+            row.operator("bim.hotkey", text="Mitre").hotkey = "S_T"
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="Fillet", icon="EVENT_F")
+            row.label(text="", icon="EVENT_F")
+            row.operator("bim.hotkey", text="Fillet").hotkey = "S_F"
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
