@@ -139,7 +139,6 @@ class Helper:
                     if group_index in vert[deform_layer]:
                         if group_type == "IFCCIRCLE":
                             is_circle = True
-                            print('it is a circle')
                         group_verts[group_type].setdefault(group_index, 0)
                         group_verts[group_type][group_index] += 1
                         total_groups += 0
