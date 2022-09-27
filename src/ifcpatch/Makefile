@@ -16,21 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import ifcopenshell
-import blenderbim.core.tool
-import blenderbim.tool as tool
+.PHONY: test
+test:
+	pytest -p no:pytest-blender test
 
-try:
-    import ifcpatch
-except:
-    print("IfcPatch not available")
-
-
-class Patch(blenderbim.core.tool.Patch):
-    @classmethod
-    def run_migrate_patch(cls, infile, outfile, schema):
-        log = os.path.join(bpy.context.scene.BIMProperties.data_dir, "process.log")
-        output = ifcpatch.execute({"input": ifcopenshell.open(infile), "recipe": "Migrate", "arguments": [schema]})
-        ifcpatch.write(output, outfile)
+.PHONY: qa
+qa:
+	black .

@@ -379,6 +379,17 @@ class TestRecordObjectPosition(NewFile):
         assert obj.BIMObjectProperties.rotation_checksum == repr(np.array(obj.matrix_world.to_3x3()).tobytes())
 
 
+class TestRemoveConnection(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+        element1 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        rel = ifcopenshell.api.run("geometry.connect_path", ifc, relating_element=element1, related_element=element2)
+        subject.remove_connection(rel)
+        assert not tool.Ifc.get().by_type("IfcRelConnectsPathElements")
+
+
 class TestRenameObject(NewFile):
     def test_run(self):
         obj = bpy.data.meshes.new("Mesh")
@@ -429,6 +440,28 @@ class TestRunGeometryUpdateRepresentation(NewFile):
 class TestRunStyleAddStyle(NewFile):
     def test_nothing(self):
         pass
+
+
+class TestSelectConnection(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc().set(ifc)
+
+        element1 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        obj1 = bpy.data.objects.new("Object", None)
+        bpy.context.scene.collection.objects.link(obj1)
+        tool.Ifc.link(element1, obj1)
+
+        element2 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        obj2 = bpy.data.objects.new("Object", None)
+        bpy.context.scene.collection.objects.link(obj2)
+        tool.Ifc.link(element2, obj2)
+
+        rel = ifcopenshell.api.run("geometry.connect_path", ifc, relating_element=element1, related_element=element2)
+
+        subject.select_connection(rel)
+        assert obj1 in bpy.context.selected_objects
+        assert obj2 in bpy.context.selected_objects
 
 
 class TestShouldForceFacetedBrep(NewFile):

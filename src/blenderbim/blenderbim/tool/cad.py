@@ -83,17 +83,19 @@ class Cad:
         return math.degrees(a) if degrees else a
 
     @classmethod
-    def is_x(cls, value, x):
+    def is_x(cls, value, x, tolerance=None):
         """
         > takes a value and a target of x, either as a single value x or an interable of values
         < returns if the value is equivalent to x within a tolerance
         """
+        if tolerance is None:
+            tolerance = VTX_PRECISION
         if isinstance(x, (list, tuple)):
             for y in x:
-                if value > (y - VTX_PRECISION) and value < (y + VTX_PRECISION):
+                if value > (y - tolerance) and value < (y + tolerance):
                     return True
             return False
-        return value > (x - VTX_PRECISION) and value < (x + VTX_PRECISION)
+        return value > (x - tolerance) and value < (x + tolerance)
 
     @classmethod
     def intersect_edges(cls, edge1, edge2):
@@ -354,8 +356,8 @@ class Cad:
         return bm
 
     @classmethod
-    def get_center_of_arc(cls, pts, obj):
-        mw = obj.matrix_world
+    def get_center_of_arc(cls, pts, obj=None):
+        mw = obj.matrix_world if obj else None
         V = Vector
 
         # construction
@@ -374,7 +376,7 @@ class Cad:
         r = geometry.intersect_line_line(v1_, v2_, v3_, v4_)
         if r:
             p1, _ = r
-            cp = mw @ p1
+            cp = mw @ p1 if mw else p1
             return cp
         else:
             print("not on a circle")

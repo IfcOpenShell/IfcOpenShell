@@ -389,12 +389,13 @@ class GuessQuantity(bpy.types.Operator):
                 return None, "METRE"
             return unit_settings.length_unit[0 : -len("METERS")], "METRE"
 
+
 class GuessAllQuantities(bpy.types.Operator):
     bl_idname = "bim.guess_all_quantities"
     bl_label = "Guess All Quantities"
     bl_options = {"REGISTER", "UNDO"}
     pset_id: bpy.props.IntProperty()
-    obj_name : bpy.props.StringProperty()
+    obj_name: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -403,9 +404,9 @@ class GuessAllQuantities(bpy.types.Operator):
         bpy.ops.bim.enable_pset_editing(pset_id=self.pset_id, obj=self.obj_name, obj_type=self.obj_type)
         for prop in obj.PsetProperties.properties:
             if (
-                'length' in prop.name.lower()
-                or 'area' in prop.name.lower()
-                or 'volume' in prop.name.lower()
+                "length" in prop.name.lower()
+                or "area" in prop.name.lower()
+                or "volume" in prop.name.lower()
                 or "width" in prop.name.lower()
                 or "height" in prop.name.lower()
                 or "depth" in prop.name.lower()
@@ -414,6 +415,7 @@ class GuessAllQuantities(bpy.types.Operator):
                 bpy.ops.bim.guess_quantity(prop=prop.name)
         bpy.ops.bim.edit_pset(obj=self.obj_name, obj_type=self.obj_type)
         return {"FINISHED"}
+
 
 class CopyPropertyToSelection(bpy.types.Operator, Operator):
     bl_idname = "bim.copy_property_to_selection"

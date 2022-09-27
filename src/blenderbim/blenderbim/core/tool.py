@@ -237,11 +237,13 @@ class Geometry:
     def link(cls, element, obj): pass
     def record_object_materials(cls, obj): pass
     def record_object_position(cls, obj): pass
+    def remove_connection(cls, connection): pass
     def rename_object(cls, obj, name): pass
     def replace_object_with_empty(cls, obj): pass
     def resolve_mapped_representation(cls, representation): pass
     def run_geometry_update_representation(cls, obj=None): pass
     def run_style_add_style(cls, obj=None): pass
+    def select_connection(cls, connection): pass
     def should_force_faceted_brep(cls): pass
     def should_force_triangulation(cls): pass
     def should_generate_uvs(cls, obj): pass
@@ -399,7 +401,19 @@ class Pset:
 class Qto:
     def get_radius_of_selected_vertices(cls, obj): pass
     def set_qto_result(cls, result): pass
-
+    def set_active_object(cls, object): pass
+    def get_pset_qto_object_ifc_info(cls, object): pass
+    def get_pset_qto_properties(cls, object): pass
+    def get_pset_qto_name(cls, object): pass
+    def get_applicable_pset_names(cls, object): pass
+    def edit_qto(cls, object, calculated_quantities): pass
+    def get_pset_qto_id(cls, object): pass
+    def get_pset_qto_name(cls, object): pass
+    def get_new_quantity(cls, object, quantity_name, alternative_prop_names): pass
+    def get_non_calculated_value(cls): pass
+    def get_rounded_value(cls, new_quantity): pass
+    def get_calculated_quantities(cls, object, pset_qto_properties): pass
+    def assign_pset_qto_to_selected_object(cls, object): pass
 
 @interface
 class Resource:
@@ -428,7 +442,8 @@ class Resource:
     def expand_resource(cls, resource): pass
     def contract_resource(cls, resource): pass
     def import_resources(cls, file_path): pass
-        
+
+
 @interface
 class Root:
     def add_dynamic_opening_voids(cls, element, obj): pass
@@ -483,7 +498,7 @@ class Sequence:
     def disable_editing_task(cls): pass
     def get_task_time_attributes(cls): pass
     def load_task_resources(cls,resources): pass
-    def load_resources(cls): pass 
+    def load_resources(cls): pass
     def get_task_inputs(cls, task): pass
     def load_task_inputs(cls, inputs): pass
     def load_task_outputs(cls, outputs): pass

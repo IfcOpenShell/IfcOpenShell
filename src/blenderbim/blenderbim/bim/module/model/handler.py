@@ -58,12 +58,8 @@ def load_post(*args):
 
     IfcStore.add_element_listener(opening.element_listener)
     IfcStore.add_element_listener(wall.element_listener)
-    IfcStore.add_element_listener(slab.element_listener)
     IfcStore.add_element_listener(profile.element_listener)
 
-    ifcopenshell.api.add_post_listener(
-        "geometry.add_representation", "BlenderBIM.DumbWall.GenerateAxis", wall.generate_axis
-    )
     ifcopenshell.api.add_post_listener(
         "geometry.add_representation", "BlenderBIM.DumbWall.CalculateQuantities", wall.calculate_quantities
     )
@@ -87,11 +83,6 @@ def load_post(*args):
         "type.assign_type", "BlenderBIM.DumbSlab.RegenerateFromType", slab.DumbSlabPlaner().regenerate_from_type
     )
 
-    ifcopenshell.api.add_pre_listener(
-        "material.edit_profile",
-        "BlenderBIM.DumbProfile.SyncObjectFromProfile",
-        profile.DumbProfileRegenerator().sync_object_from_profile,
-    )
     ifcopenshell.api.add_post_listener(
         "material.edit_profile",
         "BlenderBIM.DumbProfile.RegenerateFromProfile",

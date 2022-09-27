@@ -120,6 +120,34 @@ class BIMModelProperties(PropertyGroup):
     )
     occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type}
+    extrusion_depth: bpy.props.FloatProperty(default=42.0)
+    cardinal_point: bpy.props.EnumProperty(
+        items=(
+            # TODO: complain to buildingSMART
+            ("1", "bottom left", ""),
+            ("2", "bottom centre", ""),
+            ("3", "bottom right", ""),
+            ("4", "mid-depth left", ""),
+            ("5", "mid-depth centre", ""),
+            ("6", "mid-depth right", ""),
+            ("7", "top left", ""),
+            ("8", "top centre", ""),
+            ("9", "top right", ""),
+            ("10", "geometric centroid", ""),
+            ("11", "bottom in line with the geometric centroid", ""),
+            ("12", "left in line with the geometric centroid", ""),
+            ("13", "right in line with the geometric centroid", ""),
+            ("14", "top in line with the geometric centroid", ""),
+            ("15", "shear centre", ""),
+            ("16", "bottom in line with the shear centre", ""),
+            ("17", "left in line with the shear centre", ""),
+            ("18", "right in line with the shear centre", ""),
+            ("19", "top in line with the shear centre", ""),
+        ),
+        name="Cardinal Point",
+        default="5",
+    )
+    length: bpy.props.FloatProperty(default=42.0)
 
 
 def get_relating_type_info(self, context):

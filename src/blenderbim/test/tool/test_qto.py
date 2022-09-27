@@ -39,3 +39,22 @@ class TestSetQtoResult(test.bim.bootstrap.NewFile):
     def test_run(self):
         subject.set_qto_result(123.4567)
         assert bpy.context.scene.BIMQtoProperties.qto_result == "123.457"
+
+class TestGetPsetQtoObjectIfcInfo(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifc.createIfcWall()
+        wall_obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        tool.Ifc.link(wall, wall_obj)
+        pset_qto = ifcopenshell.api.run("pset.add_qto", ifc, product=wall, name="Qto_foo")
+        assert subject.get_pset_qto_object_ifc_info(wall_obj)['Qto_foo']['id'] == pset_qto.get_info()['id']
+        assert list(subject.get_pset_qto_object_ifc_info(wall_obj).keys())[0] == pset_qto.get_info()['Name']
+
+    def test_isempty(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifc.createIfcWall()
+        wall_obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        tool.Ifc.link(wall, wall_obj)
+        assert not subject.get_pset_qto_object_ifc_info(wall_obj) == True
