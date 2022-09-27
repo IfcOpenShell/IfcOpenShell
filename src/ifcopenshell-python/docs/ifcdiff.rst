@@ -28,7 +28,8 @@ Source installation
 
 1. :doc:`Install IfcOpenShell <ifcopenshell-python/installation>`
 2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcdiff>`_.
-3. ``pip install -r requirements.txt``
+3. ``cd /path/to/src/ifcdiff``
+4. ``pip install -r requirements.txt``
 
 Here is a minimal example of how to use IfcDiff as a Python module or CLI
 utility:
@@ -69,6 +70,11 @@ Here is a minimal example of how to use IfcDiff as a library:
    For more information on how to use IfcDiff as a library, check out the :doc:`API
    reference <autoapi/ifcdiff/index>`.
 
+You can also alias it to a command:
+
+::
+
+    $ alias ifcdiff='python -m ifcdiff'
 
 Using the BlenderBIM Add-on
 ---------------------------

@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
 
@@ -31,4 +32,5 @@ class Patch(blenderbim.core.tool.Patch):
     @classmethod
     def run_migrate_patch(cls, infile, outfile, schema):
         log = os.path.join(bpy.context.scene.BIMProperties.data_dir, "process.log")
-        ifcpatch.execute({"input": infile, "output": outfile, "recipe": "Migrate", "arguments": [schema], "log": log})
+        output = ifcpatch.execute({"input": ifcopenshell.open(infile), "recipe": "Migrate", "arguments": [schema]})
+        ifcpatch.write(output, outfile)

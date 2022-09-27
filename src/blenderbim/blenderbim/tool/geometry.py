@@ -262,6 +262,10 @@ class Geometry(blenderbim.core.tool.Geometry):
         obj.BIMObjectProperties.rotation_checksum = repr(np.array(obj.matrix_world.to_3x3()).tobytes())
 
     @classmethod
+    def remove_connection(cls, connection):
+        tool.Ifc.get().remove(connection)
+
+    @classmethod
     def rename_object(cls, obj, name):
         obj.name = name
 
@@ -292,6 +296,15 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def run_style_add_style(cls, obj=None):
         return blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=obj)
+
+    @classmethod
+    def select_connection(cls, connection):
+        obj = tool.Ifc.get_object(connection.RelatingElement)
+        if obj:
+            obj.select_set(True)
+        obj = tool.Ifc.get_object(connection.RelatedElement)
+        if obj:
+            obj.select_set(True)
 
     @classmethod
     def should_force_faceted_brep(cls):
