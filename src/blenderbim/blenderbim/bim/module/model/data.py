@@ -31,11 +31,6 @@ def refresh():
     AuthoringData.is_loaded = False
 
 
-def wait_for_asset_previews_generation(check_interval_seconds=0.05):
-    while bpy.app.is_job_running("RENDER_PREVIEW"):
-        sleep(check_interval_seconds)
-
-
 class AuthoringData:
     data = {}
     is_loaded = False
@@ -149,20 +144,29 @@ class AuthoringData:
                 obj = new_obj
         obj.asset_mark()
         obj.asset_generate_preview()
-        wait_for_asset_previews_generation()
-        icon_id = obj.preview.icon_id
-        if ifc_class not in cls.data["preview_constr_types"]:
-            cls.data["preview_constr_types"][ifc_class] = {}
-        cls.data["preview_constr_types"][ifc_class][str(relating_type_id)] = {"icon_id": icon_id, "object": obj}
-        if to_be_deleted:
-            element = tool.Ifc.get_entity(obj)
-            if element:
-                tool.Ifc.delete(element)
-            tool.Ifc.unlink(obj=obj)
-            # We do not delete the object from the scene, as that breaks Blender's asset system.
-            # Instead, we only "hide" it by unlinking it from all collections.
-            for collection in obj.users_collection:
-                collection.objects.unlink(obj)
+
+        def wait_for_asset_previews_generation(check_interval_seconds=0.03):
+            if bpy.app.is_job_running("RENDER_PREVIEW"):
+                print(f"{obj.name}: Generating preview...")
+                return check_interval_seconds
+            else:
+                icon_id = obj.preview.icon_id
+                if ifc_class not in cls.data["preview_constr_types"]:
+                    cls.data["preview_constr_types"][ifc_class] = {}
+                cls.data["preview_constr_types"][ifc_class][str(relating_type_id)] = {"icon_id": icon_id, "object": obj}
+                if to_be_deleted:
+                    element = tool.Ifc.get_entity(obj)
+                    if element:
+                        tool.Ifc.delete(element)
+                    tool.Ifc.unlink(obj=obj)
+                    # We do not delete the object from the scene, as that breaks Blender's asset system.
+                    # Instead, we only "hide" it by unlinking it from all collections.
+                    for collection in obj.users_collection:
+                        collection.objects.unlink(obj)
+                print(f"{obj.name}: Preview generated!")
+                return None
+
+        bpy.app.timers.register(wait_for_asset_previews_generation)
 
     @classmethod
     def assetize_relating_type_from_selection(cls, browser=False):
