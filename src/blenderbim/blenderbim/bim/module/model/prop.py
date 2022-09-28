@@ -51,7 +51,7 @@ def update_icon_id(self, context, browser=False):
         except ConstrTypeEntityNotFound:
             return
 
-    def set_icon(update_interval_seconds=0.001):
+    def set_icon(update_interval_seconds=0.0001):
         if ifc_class not in self.constr_classes or relating_type_id not in self.constr_classes[ifc_class].constr_types:
             return update_interval_seconds
         else:

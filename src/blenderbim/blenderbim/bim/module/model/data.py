@@ -134,7 +134,7 @@ class AuthoringData:
         obj.asset_mark()
         obj.asset_generate_preview()
 
-        def wait_for_asset_previews_generation(check_interval_seconds=0.001):
+        def wait_for_asset_previews_generation(check_interval_seconds=0.0001):
             if bpy.app.is_job_running("RENDER_PREVIEW"):
                 return check_interval_seconds
             else:
