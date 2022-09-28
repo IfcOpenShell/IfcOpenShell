@@ -201,8 +201,8 @@ class DisplayConstrTypes(bpy.types.Operator):
             AuthoringData.load()
         props = context.scene.BIMModelProperties
         ifc_class = props.ifc_class
-        relating_type_info = AuthoringData.relating_type_info(ifc_class)
-        if relating_type_info is None or not relating_type_info.fully_loaded:
+        constr_class_info = AuthoringData.constr_class_info(ifc_class)
+        if constr_class_info is None or not constr_class_info.fully_loaded:
             AuthoringData.assetize_constr_class(ifc_class)
         bpy.ops.bim.display_constr_types_ui("INVOKE_DEFAULT")
         return {"FINISHED"}

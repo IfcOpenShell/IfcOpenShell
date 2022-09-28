@@ -20,10 +20,7 @@ import functools
 import bpy
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-
-
-preview_icon_ids = {}
-attempts = 0
+from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
 
 
 def refresh():
@@ -43,7 +40,6 @@ class AuthoringData:
         cls.load_ifc_classes()
         cls.load_relating_types()
         cls.load_relating_types_browser()
-        cls.load_preview_constr_types()
 
     @classmethod
     def load_ifc_classes(cls):
@@ -56,10 +52,6 @@ class AuthoringData:
     @classmethod
     def load_relating_types_browser(cls):
         cls.data["relating_types_ids_browser"] = cls.relating_types_browser()
-
-    @classmethod
-    def load_preview_constr_types(cls):
-        cls.data["preview_constr_types"] = preview_icon_ids
 
     @classmethod
     def ifc_classes(cls):
@@ -97,11 +89,11 @@ class AuthoringData:
     def relating_types_browser(cls):
         return cls.relating_types(ifc_class=cls.props.ifc_class_browser)
 
-    @staticmethod
-    def new_relating_type_info(ifc_class):
-        relating_type_info = bpy.context.scene.ConstrTypeInfo.add()
-        relating_type_info.name = ifc_class
-        return relating_type_info
+    @classmethod
+    def new_constr_class_info(cls, ifc_class):
+        if ifc_class not in cls.props.constr_classes:
+            cls.props.constr_classes.add().name = ifc_class
+        return cls.props.constr_classes[ifc_class]
 
     @classmethod
     def assetize_constr_class(cls, ifc_class=None):
@@ -109,21 +101,19 @@ class AuthoringData:
         selected_relating_type_id = cls.props.relating_type_id
         if ifc_class is None:
             ifc_class = cls.props.ifc_class_browser
-        relating_type_info = cls.relating_type_info(ifc_class)
-        _ = cls.new_relating_type_info(ifc_class) if relating_type_info is None else relating_type_info
+        if cls.constr_class_info(ifc_class) is None:
+            cls.new_constr_class_info(ifc_class)
         constr_class_occurrences = cls.constr_class_entities(ifc_class)
-        preview_constr_types = cls.data["preview_constr_types"]
-        for constr_class_entity in constr_class_occurrences:
+        constr_classes = cls.props.constr_classes
 
-            ### handle asset regeneration when library entity is updated ¿?
+        for constr_class_entity in constr_class_occurrences:
             if (
-                ifc_class not in preview_constr_types
-                or str(constr_class_entity.id()) not in preview_constr_types[ifc_class]
+                ifc_class not in constr_classes
+                or constr_class_entity.Name not in constr_classes[ifc_class].constr_types
             ):
                 obj = tool.Ifc.get_object(constr_class_entity)
                 cls.assetize_object(obj, ifc_class, constr_class_entity)
-        relating_type_info = cls.relating_type_info(ifc_class)
-        relating_type_info.fully_loaded = True
+        cls.constr_class_info(ifc_class).fully_loaded = True
         cls.props.updating = True
         cls.props.ifc_class = selected_ifc_class
         cls.props.relating_type_id = selected_relating_type_id
@@ -148,17 +138,21 @@ class AuthoringData:
             if bpy.app.is_job_running("RENDER_PREVIEW"):
                 return check_interval_seconds
             else:
-                icon_id = obj.preview.icon_id
-                if ifc_class not in cls.data["preview_constr_types"]:
-                    cls.data["preview_constr_types"][ifc_class] = {}
-                cls.data["preview_constr_types"][ifc_class][str(relating_type_id)] = {"icon_id": icon_id, "object": obj}
+                if ifc_class not in cls.props.constr_classes:
+                    cls.props.constr_classes.add().name = ifc_class
+                constr_class_info = cls.props.constr_classes[ifc_class]
+                # relating_type = cls.relating_type_name_by_id(ifc_class, relating_type_id)
+                if str(relating_type_id) not in constr_class_info.constr_types:
+                    constr_class_info.constr_types.add().name = str(relating_type_id)
+                relating_type_info = constr_class_info.constr_types[str(relating_type_id)]
+                relating_type_info.object = obj
+                relating_type_info.icon_id = obj.preview.icon_id
+
                 if to_be_deleted:
                     element = tool.Ifc.get_entity(obj)
                     if element:
                         tool.Ifc.delete(element)
                     tool.Ifc.unlink(obj=obj)
-                    # We do not delete the object from the scene, as that breaks Blender's asset system.
-                    # Instead, we only "hide" it by unlinking it from all collections.
                     for collection in obj.users_collection:
                         collection.objects.unlink(obj)
                 return None
@@ -174,18 +168,16 @@ class AuthoringData:
             entity for entity in constr_class_occurrences if entity.id() == int(relating_type_id)
         ]
         if len(constr_class_occurrences) == 0:
-            return False
+            raise ConstrTypeEntityNotFound()
         constr_class_entity = constr_class_occurrences[0]
-        obj = tool.Ifc.get_object(constr_class_entity)
-        if obj is None:
-            return False
+        if (obj := tool.Ifc.get_object(constr_class_entity)) is None:
+            raise ConstrTypeEntityNotFound()
         cls.assetize_object(obj, ifc_class, constr_class_entity, from_selection=True)
-        return True
 
     @staticmethod
-    def relating_type_info(ifc_class):
-        relating_type_infos = [element for element in bpy.context.scene.ConstrTypeInfo if element.name == ifc_class]
-        return None if len(relating_type_infos) == 0 else relating_type_infos[0]
+    def constr_class_info(ifc_class):
+        props = bpy.context.scene.BIMModelProperties
+        return props.constr_classes[ifc_class] if ifc_class in props.constr_classes else None
 
     @classmethod
     def new_relating_type(cls, ifc_class=None, relating_type_id=None):

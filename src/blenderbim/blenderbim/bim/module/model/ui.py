@@ -69,11 +69,10 @@ class DisplayConstrTypesUI(Operator):
             row.label(text=name, icon="FILE_3D")
             row.alignment = "CENTER"
             row = box.row()
-            preview_constr_types = AuthoringData.data["preview_constr_types"]
-            if ifc_class in preview_constr_types:
-                preview_ifc_class = preview_constr_types[ifc_class]
-                if relating_type_id in preview_ifc_class:
-                    icon_id = preview_ifc_class[relating_type_id]["icon_id"]
+            if ifc_class in props.constr_classes:
+                constr_class_info = props.constr_classes[ifc_class]
+                if relating_type_id in constr_class_info.constr_types:
+                    icon_id = constr_class_info.constr_types[relating_type_id].icon_id
                     row.template_icon(icon_value=icon_id, scale=6.0)
             row = box.row()
             op = row.operator("bim.add_constr_type_instance", icon="ADD")

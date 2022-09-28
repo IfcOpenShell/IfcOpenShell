@@ -18,6 +18,7 @@
 
 import bpy
 from blenderbim.bim.module.model.data import AuthoringData
+from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
 from bpy.types import PropertyGroup
 
 
@@ -42,14 +43,21 @@ def get_relating_type_browser(self, context):
 def update_icon_id(self, context, browser=False):
     ifc_class = self.ifc_class_browser if browser else self.ifc_class
     relating_type_id = self.relating_type_id_browser if browser else self.relating_type_id
-    relating_type = AuthoringData.relating_type_name_by_id(ifc_class, relating_type_id)
-    if (
-        ifc_class not in AuthoringData.data["preview_constr_types"]
-        or relating_type_id not in AuthoringData.data["preview_constr_types"][ifc_class]
-    ) and relating_type is not None:
-        if not AuthoringData.assetize_relating_type_from_selection(browser=browser):
+    # relating_type = AuthoringData.relating_type_name_by_id(ifc_class, relating_type_id)
+
+    if ifc_class not in self.constr_classes or relating_type_id not in self.constr_classes[ifc_class].constr_types:
+        try:
+            AuthoringData.assetize_relating_type_from_selection(browser=browser)
+        except ConstrTypeEntityNotFound:
             return
-    self.icon_id = AuthoringData.data["preview_constr_types"][ifc_class][relating_type_id]["icon_id"]
+
+    def set_icon(update_interval_seconds=0.001):
+        if ifc_class not in self.constr_classes or relating_type_id not in self.constr_classes[ifc_class].constr_types:
+            return update_interval_seconds
+        else:
+            self.icon_id = self.constr_classes[ifc_class].constr_types[relating_type_id].icon_id
+
+    bpy.app.timers.register(set_icon)
 
 
 def update_ifc_class(self, context):
@@ -65,8 +73,9 @@ def update_ifc_class_browser(self, context):
     if self.updating:
         return
     ifc_class = self.ifc_class_browser
-    relating_type_info = AuthoringData.relating_type_info(ifc_class)
-    if relating_type_info is None or not relating_type_info.fully_loaded:
+    constr_class_info = AuthoringData.constr_class_info(ifc_class)
+
+    if constr_class_info is None or not constr_class_info.fully_loaded:
         AuthoringData.assetize_constr_class(ifc_class)
 
 
@@ -89,14 +98,30 @@ def update_relating_type_by_name(self, context):
         self.relating_type_id = relating_type_id
 
 
+def get_constr_class_info(props, ifc_class):
+    return props.constr_classes[ifc_class] if ifc_class in props.constr_classes else None
+
+
 def update_preview_multiple(self, context):
     if self.preview_multiple_constr_types:
         ifc_class = self.ifc_class
-        relating_type_info = AuthoringData.relating_type_info(ifc_class)
-        if relating_type_info is None or not relating_type_info.fully_loaded:
+        constr_class_info = get_constr_class_info(self, ifc_class)
+        if constr_class_info is None or not constr_class_info.fully_loaded:
             AuthoringData.assetize_constr_class(ifc_class)
     else:
         update_relating_type(self, context)
+
+
+class ConstrTypeInfo(PropertyGroup):
+    name: bpy.props.StringProperty(name="Construction type ID")
+    icon_id: bpy.props.IntProperty(name="Icon ID")
+    object: bpy.props.PointerProperty(name="Object", type=bpy.types.Object)
+
+
+class ConstrClassInfo(PropertyGroup):
+    name: bpy.props.StringProperty(name="Construction class")
+    constr_types: bpy.props.CollectionProperty(type=ConstrTypeInfo)
+    fully_loaded: bpy.props.BoolProperty(default=False)
 
 
 class BIMModelProperties(PropertyGroup):
@@ -120,6 +145,7 @@ class BIMModelProperties(PropertyGroup):
     )
     occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type}
+    constr_classes: bpy.props.CollectionProperty(type=ConstrClassInfo)
     extrusion_depth: bpy.props.FloatProperty(default=42.0)
     cardinal_point: bpy.props.EnumProperty(
         items=(
@@ -148,13 +174,3 @@ class BIMModelProperties(PropertyGroup):
         default="5",
     )
     length: bpy.props.FloatProperty(default=42.0)
-
-
-def get_relating_type_info(self, context):
-    return AuthoringData.relating_types(ifc_class=self.name)
-
-
-class ConstrTypeInfo(PropertyGroup):
-    name: bpy.props.StringProperty(name="Construction class")
-    relating_type: bpy.props.EnumProperty(name="Construction type", items=get_relating_type_info)
-    fully_loaded: bpy.props.BoolProperty(default=False)
