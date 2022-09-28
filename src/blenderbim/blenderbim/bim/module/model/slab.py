@@ -913,7 +913,7 @@ class DecorationsHandler:
             centroid = tool.Cad.get_center_of_arc(points)
             if centroid:
                 arc_centroids.append(tuple(centroid))
-            arc_segments.append(self.create_arc_segments(pts=points, num_verts=17, make_edges=True))
+            arc_segments.append(tool.Cad.create_arc_segments(pts=points, num_verts=17, make_edges=True))
 
         batch = batch_for_shader(self.shader, "POINTS", {"pos": arc_centroids})
         self.shader.uniform_float("color", (0.2, 0.2, 0.2, 1))
@@ -987,56 +987,3 @@ class DecorationsHandler:
             listEdg.append((Vertices - 1, 0))
 
         return points, listEdg
-
-    # https://github.com/nortikin/sverchok/blob/master/nodes/generator/basic_3pt_arc.py
-    # This function is taken from Sverchok's generate_3PT_mode_1 function, licensed under GPL v2-or-later.
-    # No functional modifications have been made.
-    def create_arc_segments(self, pts=None, num_verts=20, make_edges=False):
-        """
-        Arc from [start - through - end]
-        - call this function only if you have 3 pts,
-        - do your error checking before passing to it.
-        """
-        num_verts -= 1
-        verts, edges = [], []
-        V = Vector
-
-        # construction
-        v1, v2, v3, v4 = V(pts[0]), V(pts[1]), V(pts[1]), V(pts[2])
-        edge1_mid = v1.lerp(v2, 0.5)
-        edge2_mid = v3.lerp(v4, 0.5)
-        axis = mathutils.geometry.normal(v1, v2, v4)
-        mat_rot = mathutils.Matrix.Rotation(math.radians(90.0), 4, axis)
-
-        # triangle edges
-        v1_ = ((v1 - edge1_mid) @ mat_rot) + edge1_mid
-        v2_ = ((v2 - edge1_mid) @ mat_rot) + edge1_mid
-        v3_ = ((v3 - edge2_mid) @ mat_rot) + edge2_mid
-        v4_ = ((v4 - edge2_mid) @ mat_rot) + edge2_mid
-
-        r = mathutils.geometry.intersect_line_line(v1_, v2_, v3_, v4_)
-        if r:
-            # do arc
-            p1, _ = r
-
-            # find arc angle.
-            a = (v1 - p1).angle((v4 - p1), 0)
-            s = (2 * math.pi) - a
-
-            interior_angle = (v1 - v2).angle(v4 - v3, 0)
-            if interior_angle > 0.5 * math.pi:
-                s = math.pi + 2 * (0.5 * math.pi - interior_angle)
-
-            for i in range(num_verts + 1):
-                mat_rot = mathutils.Matrix.Rotation(((s / num_verts) * i), 4, axis)
-                vec = ((v4 - p1) @ mat_rot) + p1
-                verts.append(vec[:])
-        else:
-            # do straight line
-            step_size = 1 / num_verts
-            verts = [v1_.lerp(v4_, i * step_size)[:] for i in range(num_verts + 1)]
-
-        if make_edges:
-            edges = [(n, n + 1) for n in range(len(verts) - 1)]
-
-        return verts, edges

@@ -299,51 +299,38 @@ class CadArcFrom3Points(bpy.types.Operator):
         mesh = obj.data
         bm = bmesh.from_edit_mesh(mesh)
 
-        selected_verts = [v for v in bm.verts if v.select]
-        if len(selected_verts) != 3:
+        arc = [v for v in bm.verts if v.select]
+        if len(arc) != 3:
             return {"CANCELLED"}
-        pts = [v.co for v in selected_verts]
-        center = tool.Cad.get_center_of_arc(pts, obj)
-        if not center:
+        elif len([e for e in bm.edges if e.select]) != 2:
             return {"CANCELLED"}
 
-        bpy.context.scene.cursor.location = center
-        if self.only_recalculate_center:
-            return {"FINISHED"}
+        sorted_arc = [None, None, None]
+        for v1 in arc:
+            connections = 0
+            for link_edge in v1.link_edges:
+                v2 = link_edge.other_vert(v1)
+                if v2 in arc:
+                    connections += 1
+            if connections == 2:  # Midpoint
+                sorted_arc[1] = v1
+            else:
+                sorted_arc[2 if sorted_arc[2] is None else 0] = v1
 
-        center = obj.matrix_world.inverted() @ center
+        points = [tuple(v.co) for v in sorted_arc]
+        verts, _ = tool.Cad.create_arc_segments(points, num_verts=(self.resolution * 4) + 1, make_edges=False)
 
-        def get_distance_to_other_points(vert):
-            other_verts = [v for v in selected_verts if v != vert]
-            total_vector = mathutils.Vector((0, 0, 0))
-            for other_vert in other_verts:
-                total_vector += other_vert.co - vert.co
-            return total_vector.length
+        bm.verts.index_update()
+        bm.edges.index_update()
 
-        # For three selected points that represent a start, end, and point on an
-        # arc, the start and end verts can be identified by being furthest away
-        # from the other 2 points.
-        arc_end_verts = sorted(selected_verts, key=get_distance_to_other_points)[-2:]
-        normal = mathutils.geometry.normal(pts)
+        index_offset = len(bm.verts)
+        new_verts = [bm.verts.new(v) for v in verts]
+        new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
 
-        dir1 = (arc_end_verts[0].co - center).normalized()
-        dir2 = (arc_end_verts[1].co - center).normalized()
+        bm.verts.remove(sorted_arc[1])
+        bmesh.ops.remove_doubles(bm, verts=new_verts + [sorted_arc[0], sorted_arc[2]], dist=1e-5)
 
-        # Let's get the matrix that represents the coordinate system of the arc.
-        # This matrix allows us to get 2D vectors for calculating the signed arc angle.
-        z = normal
-        x = (arc_end_verts[0].co - center).normalized()
-        y = z.cross(x)
-        arc_matrix = mathutils.Matrix([x, y, z]).transposed().to_4x4()
-
-        dir1 = ((arc_matrix.inverted() @ arc_end_verts[0].co) - (arc_matrix.inverted() @ center)).normalized()
-        dir2 = ((arc_matrix.inverted() @ arc_end_verts[1].co) - (arc_matrix.inverted() @ center)).normalized()
-        angle = dir1.xy.angle_signed(dir2.xy)
-
-        v = arc_end_verts[0]
-        bmesh.ops.spin(bm, geom=[v], axis=normal, cent=center, steps=self.resolution * 4, angle=-angle)
         bmesh.update_edit_mesh(mesh)
-        mesh.update()
         return {"FINISHED"}
 
 
