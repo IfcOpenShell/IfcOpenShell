@@ -158,8 +158,8 @@ class QtoCalculator:
     def get_net_footprint_area(self, o):
         """_summary_: Returns the area of the footprint of the object, excluding any holes
 
-        :param o: blender object
-        :return: float footprint area 
+        :param blender-object o: blender object
+        :return float: footprint area
         """
         area = 0
         for polygon in self.get_lowest_polygons(o):
@@ -170,8 +170,8 @@ class QtoCalculator:
         # Is roofprint the right word? Couldn't think of anything better - vulevukusej
         """_summary_: Returns the area of the net roofprint of the object, excluding any holes
 
-        :param o: _description_
-        :return: _description_
+        :param blender-object o: Blender Object
+        :return float: Area
         """
         area = 0
         for polygon in self.get_highest_polygons(o):
@@ -209,41 +209,42 @@ class QtoCalculator:
         o_mesh = bmesh.new()
         o_mesh.from_mesh(o.data)
         return o_mesh.calc_volume()
-        
+
         # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
+
     # def get_volume(self, o, vg_index=None):
-        # volume = 0
-        # ob_mat = o.matrix_world
-        # me = o.data
-        # me.calc_loop_triangles()
-        # for tf in me.loop_triangles:
-        #     tfv = tf.vertices
-        #     if len(tf.vertices) == 3:
-        #         tf_tris = ((me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),)
-        #     else:
-        #         tf_tris = (
-        #             (me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),
-        #             (
-        #                 me.vertices[tfv[2]],
-        #                 me.vertices[tfv[3]],
-        #                 me.vertices[tfv[0]],
-        #             ),
-        #         )
+    # volume = 0
+    # ob_mat = o.matrix_world
+    # me = o.data
+    # me.calc_loop_triangles()
+    # for tf in me.loop_triangles:
+    #     tfv = tf.vertices
+    #     if len(tf.vertices) == 3:
+    #         tf_tris = ((me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),)
+    #     else:
+    #         tf_tris = (
+    #             (me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),
+    #             (
+    #                 me.vertices[tfv[2]],
+    #                 me.vertices[tfv[3]],
+    #                 me.vertices[tfv[0]],
+    #             ),
+    #         )
 
-        #     for tf_iter in tf_tris:
-        #         v1 = ob_mat @ tf_iter[0].co
-        #         v2 = ob_mat @ tf_iter[1].co
-        #         v3 = ob_mat @ tf_iter[2].co
+    #     for tf_iter in tf_tris:
+    #         v1 = ob_mat @ tf_iter[0].co
+    #         v2 = ob_mat @ tf_iter[1].co
+    #         v3 = ob_mat @ tf_iter[2].co
 
-        #         volume += v1.dot(v2.cross(v3)) / 6.0
-        # return volume
+    #         volume += v1.dot(v2.cross(v3)) / 6.0
+    # return volume
 
     def get_opening_type(self, opening, obj):
         """_summary_: Returns the opening type - OPENING / RECESS
 
-        :param opening: blender opening object
-        :param obj: blender object, bpy.types.Object
-        :return: "OPENING" or "RECESS", string
+        :param blender-object opening: blender opening object
+        :param blender-object obj: blender object
+        :return string: "OPENING" or "RECESS"
         """
         polygons = opening.data.polygons
         ray_intersections = 0
@@ -263,11 +264,11 @@ class QtoCalculator:
         """_summary_: Returns the lateral area of the openings in the object.
 
         :param obj: blender object
-        :param angle_z1: Angle measured from the positive z-axis to the normal-vector of the opening area. Openings with a normal_vector lower than this value will be ignored, defaults to 45
-        :param angle_z2: Angle measured from the positive z-axis to the normal-vector of the opening area. Openings with a normal_vector greater than this value will be ignored,defaults to 135
-        :param min_area: Minimum opening area to consider.  Values lower than this will be ignored, defaults to 0
-        :param ignore_recesses: Toggle whether recess areas should be considered, defaults to False
-        :return: Opening Area, float
+        :param int angle_z1: Angle measured from the positive z-axis to the normal-vector of the opening area. Openings with a normal_vector lower than this value will be ignored, defaults to 45
+        :param int angle_z2: Angle measured from the positive z-axis to the normal-vector of the opening area. Openings with a normal_vector greater than this value will be ignored,defaults to 135
+        :param float min_area: Minimum opening area to consider.  Values lower than this will be ignored, defaults to 0
+        :param bool ignore_recesses: Toggle whether recess areas should be considered, defaults to False
+        :return float: Opening Area
         """
         total_opening_area = 0
         ifc = tool.Ifc.get()
@@ -286,7 +287,9 @@ class QtoCalculator:
 
                 if ignore_recesses and opening_type == "RECESS":
                     continue
-                opening_area = self.get_lateral_area(self.get_OBB_object(bl_opening_obj), exclude_end_areas=True)
+                opening_area = self.get_lateral_area(
+                    self.get_OBB_object(bl_opening_obj), angle_z1=angle_z1, angle_z2=angle_z2, exclude_end_areas=True
+                )
                 if opening_area >= min_area:
                     total_opening_area += opening_area
 
@@ -342,7 +345,7 @@ class QtoCalculator:
         :param int angle: Angle measured from the positive z-axis to the normal-vector of the area. Values lower than this will be ignored, defaults to 45
         :return float: Gross Top Area
         """
-        
+
         z_axis = (0, 0, 1)
         area = 0
         opening_area = 0
@@ -370,11 +373,13 @@ class QtoCalculator:
                 area += polygon.area
         return area + opening_area
 
-    def get_net_top_area(self, obj, angle: int = 45):
+    # curently net top area is larger then projected area, because its taking into account internal polygons, or window sills
+    def get_net_top_area(self, obj, angle: int = 45, ignore_internal: bool = True):
         """_summary_: Returns the net top area of the object.
 
         :param blender-object obj: blender object
         :param int angle: Angle measured from the positive z-axis to the normal-vector of the area. Values lower than this will be ignored, defaults to 45
+        :param bool ignore_internal: Toggle whether internal areas should be subtracted (Like window sills), defaults to True
         :return float: Net Top Area
         """
         z_axis = (0, 0, 1)
@@ -386,7 +391,12 @@ class QtoCalculator:
             angle_to_z_axis = math.degrees(polygon.normal.rotation_difference(Vector(z_axis)).angle)
 
             if angle_to_z_axis < angle:
+                # offset the raycast, otherwise the raycast will always collide with the object.
+                offset = polygon.center+Vector((0,0,0.01))
+                if ignore_internal and obj.ray_cast(offset, (0,0,1))[0]:
+                    continue
                 area += polygon.area
+
         return area
 
     def get_projected_area(self, obj, projection_axis: str = "z", is_gross: bool = True):
@@ -397,7 +407,7 @@ class QtoCalculator:
         :param bool is_gross: if True, the projected area will include openings, if False, the projected area will exclude openings
         :return float: Projected Area
         """
-        
+
         odata = obj.data
         polygons = obj.data.polygons
         shapely_polygons = []
@@ -411,9 +421,9 @@ class QtoCalculator:
 
             for loop_index in polygon.loop_indices:
                 loop = odata.loops[loop_index]
-                v1_coord_a = getattr(odata.vertices[loop.vertex_index].co, axes[0])
-                v1_coord_b = getattr(odata.vertices[loop.vertex_index].co, axes[1])
-                polygon_tuples.append((v1_coord_a, v1_coord_b))
+                a = getattr(odata.vertices[loop.vertex_index].co, axes[0])
+                b = getattr(odata.vertices[loop.vertex_index].co, axes[1])
+                polygon_tuples.append((a, b))
 
             pgon = Polygon(polygon_tuples)
             shapely_polygons.append(pgon)
@@ -443,17 +453,15 @@ class QtoCalculator:
         # list of faces, with each tuple referring to an vertex-index in obb
         faces = [
             (0, 1, 2, 3),
-            (4, 5, 6, 7),
-            (1, 2, 6, 5),
+            (7, 6, 5, 4),
+            (5, 6, 2, 1),
             (0, 3, 7, 4),
-            (1, 5, 4, 0),
+            (0, 4, 5, 1),
             (2, 6, 7, 3),
         ]
 
-        
         obb_mesh.from_pydata(vertices=obb, edges=[], faces=faces)
-        #obb_mesh.transform(obj.matrix_world)
-        obb_mesh.update()
+        # obb_mesh.transform(obj.matrix_world)
 
         # create a new object from the mesh
         new_OBB_object = bpy.data.objects.new(f"OBB_{ifc_id}", obb_mesh)
@@ -463,7 +471,7 @@ class QtoCalculator:
         collection = bpy.data.collections.get("QtoCalculator", bpy.data.collections.new("QtoCalculator"))
         if not bpy.context.scene.collection.children.get(collection.name):
             bpy.context.scene.collection.children.link(collection)
-        
+
         # add object to scene collection and then hide them.
         collection.objects.get(new_OBB_object.name, collection.objects.link(new_OBB_object))
         new_OBB_object.hide_set(True)
@@ -563,7 +571,7 @@ class QtoCalculator:
         bis_obj.hide_set(True)
 
         return bis_obj
-    
+
     def get_total_contact_area(self, obj, class_filter: str = ["IfcElement"]):
         """_summary_: Returns the total contact area of the object with other objects.
 
@@ -573,12 +581,12 @@ class QtoCalculator:
         """
         total_contact_area = 0
         touching_objects = self.get_touching_objects(obj, class_filter)
-        
+
         for o in touching_objects:
             total_contact_area += self.get_contact_area(obj, o)
-            
+
         return total_contact_area
-        
+
     def get_touching_objects(self, obj, class_filter):
         """_summary_: Returns a list of objects that are touching the object.
 
@@ -599,11 +607,11 @@ class QtoCalculator:
 
         touching_objects = []
         filtered_objects = []
-        
+
         ifc = tool.Ifc.get()
         for f in class_filter:
             filtered_objects += ifc.by_type(f)
-        
+
         for o in filtered_objects:
             blender_o = tool.Ifc.get_object(o)
             if blender_o == obj:
@@ -612,7 +620,7 @@ class QtoCalculator:
             try:
                 o_mesh.from_mesh(blender_o.data)
             except:
-                #i'm too tired to debug this properly.  Not sure what causes this error. @vulevukusej
+                # i'm too tired to debug this properly.  Not sure what causes this error. @vulevukusej
                 continue
             o_mesh.transform(blender_o.matrix_world)
             o_tree = BVHTree.FromBMesh(o_mesh)
@@ -626,7 +634,7 @@ class QtoCalculator:
         bpy.context.evaluated_depsgraph_get().update()
 
         return touching_objects
-        
+
     def get_contact_area(self, object1, object2):
         """_summary_: Returns the contact area between two objects.
 
@@ -641,7 +649,6 @@ class QtoCalculator:
             for poly2 in object2.data.polygons:
                 total_area += self.get_intersection_between_polygons(object1, poly1, object2, poly2)
         return total_area
-            
 
     def get_intersection_between_polygons(self, object1, poly1, object2, poly2):
         """_summary_: Returns the intersection between two polygons.
@@ -651,7 +658,7 @@ class QtoCalculator:
         :param blender-object object1: Blender Object
         :param blender-polygon poly1: Blender Polygon
         :return float: intersection area of the two polygons.
-        """    
+        """
 
         # touching polygons should be coplanar:
         if (
@@ -705,7 +712,6 @@ class QtoCalculator:
             polygon_tuples.append((x, y))
         return Polygon(polygon_tuples)
 
-
     # # 1 and 3
     # def polygon_intersection_area(self, object1, polygon1, object2, polygon2):
     #     """_summary_: Returns the intersection area between two polygons.
@@ -728,6 +734,7 @@ class QtoCalculator:
     #     intersection = self.get_combined_poly(object1, polygon1, object2, polygon2)
     #     return intersection.area
 
+
 # # Following code is here temporarily to test newly created functions:
 
 # o1 = bpy.data.objects["Cube"]
@@ -740,9 +747,6 @@ qto = QtoCalculator()
 o = bpy.context.active_object
 sel = bpy.context.selected_objects
 
-print(qto.get_lateral_area(qto.get_OBB_object(o), exclude_end_areas=True))
-# print(qto.get_lateral_area(qto.get_OBB_object(o), exclude_side_areas=True))
-# # print(qto.get_lateral_area(qto.get_OBB_object(o)))
-
-# print(qto.get_opening_area(o))
-# #
+print(qto.get_net_top_area(o, ignore_internal=True))
+print(qto.get_net_roofprint_area(o))
+# qto.get_OBB_object(o)
