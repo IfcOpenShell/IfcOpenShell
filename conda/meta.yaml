@@ -29,7 +29,6 @@ requirements:
     - cgal-cpp >={{ cgal_cpp_version }}
     - nlohmann_json
     - libxml2
-    - boost ==1.80.0
 
   run:
     - python
