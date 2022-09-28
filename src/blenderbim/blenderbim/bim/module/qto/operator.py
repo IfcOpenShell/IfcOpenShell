@@ -24,6 +24,7 @@ import blenderbim.core.qto as core
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.qto import helper
 from ifcopenshell.api.pset.data import Data as PsetData
+from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 
 
 class CalculateCircleRadius(bpy.types.Operator):
@@ -107,6 +108,26 @@ class ExecuteQtoMethod(bpy.types.Operator):
             result = helper.calculate_formwork_area(selected_mesh_objects, context)
         elif props.qto_methods == "SIDE_FORMWORK":
             result = helper.calculate_side_formwork_area(selected_mesh_objects, context)
+        elif props.qto_methods == "NetFootprintArea":
+            result = QtoCalculator().get_net_footprint_area(selected_mesh_objects[0])
+        elif props.qto_methods == "NetRoofprintArea":
+            result = QtoCalculator().get_net_roofprint_area(selected_mesh_objects[0])
+        elif props.qto_methods == "LateralArea":
+            result = QtoCalculator().get_lateral_area(selected_mesh_objects[0])
+        elif props.qto_methods == "TotalSurfaceArea":
+            result = QtoCalculator().get_total_surface_area(selected_mesh_objects[0])
+        elif props.qto_methods == "OpeningArea":
+            result = QtoCalculator().get_opening_area(selected_mesh_objects[0])
+        elif props.qto_methods == "GrossTopArea":
+            result = QtoCalculator().get_gross_top_area(selected_mesh_objects[0])
+        elif props.qto_methods == "NetTopArea":
+            result = QtoCalculator().get_net_top_area(selected_mesh_objects[0])
+        elif props.qto_methods == "ProjectedArea":
+            result = QtoCalculator().get_projected_area(selected_mesh_objects[0])
+        elif props.qto_methods == "TotalContactArea":
+            result = QtoCalculator().get_total_contact_area(selected_mesh_objects[0])
+        elif props.qto_methods == "ContactArea":
+            result = QtoCalculator().get_contact_area(selected_mesh_objects[0], selected_mesh_objects[1])
         props.qto_result = str(round(result, 3))
         return {"FINISHED"}
 
