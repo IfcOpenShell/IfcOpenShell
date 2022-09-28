@@ -725,6 +725,29 @@ class EditExtrusionProfile(bpy.types.Operator):
         return value / self.unit_scale
 
 
+class ResetVertex(bpy.types.Operator):
+    bl_idname = "bim.reset_vertex"
+    bl_label = "Reset Vertex"
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return bool(obj) and obj.type == "MESH"
+
+    def cancel_message(self, msg):
+        self.report({"WARNING"}, msg)
+        return {"CANCELLED"}
+
+    def execute(self, context):
+        obj = context.active_object
+        bpy.ops.object.mode_set(mode="OBJECT")
+        selected_vertices = [v.index for v in obj.data.vertices if v.select]
+        for group in obj.vertex_groups:
+            group.remove(selected_vertices)
+        bpy.ops.object.mode_set(mode="EDIT")
+        return {"FINISHED"}
+
+
 class SetArcIndex(bpy.types.Operator):
     bl_idname = "bim.set_arc_index"
     bl_label = "Set Arc Index"
@@ -745,9 +768,8 @@ class SetArcIndex(bpy.types.Operator):
         in_group = any([bool(obj.data.vertices[v].groups) for v in selected_vertices])
         for group in obj.vertex_groups:
             group.remove(selected_vertices)
-        if in_group is False:
-            group = obj.vertex_groups.new(name="IFCARCINDEX")
-            group.add(selected_vertices, 1, "REPLACE")
+        group = obj.vertex_groups.new(name="IFCARCINDEX")
+        group.add(selected_vertices, 1, "REPLACE")
         bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
 

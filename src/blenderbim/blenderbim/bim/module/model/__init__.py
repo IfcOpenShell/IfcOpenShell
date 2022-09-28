@@ -45,6 +45,7 @@ classes = (
     slab.EditSketchExtrusionProfile,
     slab.EnableEditingExtrusionProfile,
     slab.EnableEditingSketchExtrusionProfile,
+    slab.ResetVertex,
     slab.SetArcIndex,
     prop.ConstrTypeInfo,
     prop.ConstrClassInfo,
