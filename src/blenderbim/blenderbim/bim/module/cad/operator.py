@@ -340,7 +340,7 @@ class CadOffset(bpy.types.Operator):
 
     @classmethod
     def poll(self, context):
-        return context.mode == 'EDIT_MESH'
+        return context.mode == "EDIT_MESH"
 
     def draw(self, context):
         layout = self.layout
@@ -381,17 +381,17 @@ class CadOffset(bpy.types.Operator):
 
         # Use the viewport angle to determine the offset direction
         for area in bpy.context.screen.areas:
-            if area.type == 'VIEW_3D':
+            if area.type == "VIEW_3D":
                 # Don't ask me, I don't know.
                 # view_matrix = area.spaces.active.region_3d.view_matrix
-                x = area.spaces.active.region_3d.view_rotation @ Vector((1,0,0))
-                y = area.spaces.active.region_3d.view_rotation @ Vector((0,1,0))
-                z = area.spaces.active.region_3d.view_rotation @ Vector((0,0,1))
-                wp = Matrix([x,y,z,Vector((0,0,0))]).to_4x4().transposed()
+                x = area.spaces.active.region_3d.view_rotation @ Vector((1, 0, 0))
+                y = area.spaces.active.region_3d.view_rotation @ Vector((0, 1, 0))
+                z = area.spaces.active.region_3d.view_rotation @ Vector((0, 0, 1))
+                wp = Matrix([x, y, z, Vector((0, 0, 0))]).to_4x4().transposed()
                 break
 
-        rotation = Matrix.Rotation(pi / 2, 2, 'Z')
-        rotation_i = Matrix.Rotation(- pi / 2, 2, 'Z')
+        rotation = Matrix.Rotation(pi / 2, 2, "Z")
+        rotation_i = Matrix.Rotation(-pi / 2, 2, "Z")
 
         # Create loops from edges
         loop_edges = set(edges)
@@ -501,7 +501,7 @@ class CadOffset(bpy.types.Operator):
                 if len(normals) == 2:
                     # https://stackoverflow.com/a/54042831/9627415
                     new_normal = (normals[0].lerp(normals[1], 0.5)).normalized()
-                    offset_length = self.distance / sqrt((1 + normals[0].dot(normals[1]))/2)
+                    offset_length = self.distance / sqrt((1 + normals[0].dot(normals[1])) / 2)
                     offset = mw.inverted().to_quaternion() @ (wp.to_quaternion() @ (new_normal * offset_length).to_3d())
                     new_vert = v1.co + offset
                     new_verts.append(bm.verts.new(new_vert))
@@ -556,5 +556,106 @@ class AddIfcCircle(bpy.types.Operator):
         bpy.ops.object.mode_set(mode="OBJECT")
         group = obj.vertex_groups.new(name="IFCCIRCLE")
         group.add(indices, 1, "REPLACE")
+        bpy.ops.object.mode_set(mode="EDIT")
+        return {"FINISHED"}
+
+
+class AddIfcArcIndexFillet(bpy.types.Operator):
+    bl_idname = "bim.add_ifcarcindex_fillet"
+    bl_label = "Add Arc Index Fillet"
+    bl_options = {"REGISTER", "UNDO"}
+    radius: bpy.props.FloatProperty(name="Radius", default=0.1)
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return obj and obj.type == "MESH" and context.mode == "EDIT_MESH"
+
+    def draw(self, context):
+        layout = self.layout
+        for prop in self.__class__.__annotations__.keys():
+            layout.prop(self, prop)
+
+    def execute(self, context):
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.object.mode_set(mode="EDIT")
+
+        obj = bpy.context.active_object
+        cursor = obj.matrix_world.inverted() @ bpy.context.scene.cursor.location
+        mesh = obj.data
+        bm = bmesh.from_edit_mesh(mesh)
+        selected_edges = [e for e in bm.edges if e.select]
+        if len(selected_edges) != 2:
+            return {"CANCELLED"}
+
+        # Assume the user has selected two edges sharing a vert, but merge verts
+        # just in case the vertex is coincident but not shared.
+        all_verts = list(set(selected_edges[0].verts) | set(selected_edges[1].verts))
+        bmesh.ops.remove_doubles(bm, verts=all_verts, dist=1e-4)
+
+        # Subdivide one of the edges to give us an extra vert to play with
+        # without damaging any faces that already exist.
+        cut = bmesh.ops.bisect_edges(bm, edges=[selected_edges[1]], cuts=1)
+        bm.edges.index_update()
+        bmesh.update_edit_mesh(mesh)
+
+        is_wire = selected_edges[0].is_wire
+
+        # Recover the original intention of the selected edges after our bisect operation
+        cut_edges = cut["geom_split"][1:]
+        selected_edges = [e for e in bm.edges if e.select and e not in cut_edges]
+        if set(selected_edges[0].verts) & set(cut_edges[0].verts):
+            selected_edges.append(cut_edges[0])
+        elif set(selected_edges[0].verts) & set(cut_edges[1].verts):
+            selected_edges.append(cut_edges[1])
+
+        # Calculate the distance to slide each edge to make space for the fillet arc
+        shared_vert = list(set(selected_edges[0].verts) & set(selected_edges[1].verts))[0]
+        v1 = selected_edges[0].other_vert(shared_vert)
+        v2 = selected_edges[1].other_vert(shared_vert)
+        dir1 = (v1.co - shared_vert.co).normalized()
+        dir2 = (v2.co - shared_vert.co).normalized()
+        edge_angle = dir1.angle(dir2)
+        slide_distance = self.radius / math.tan(edge_angle / 2)
+
+        angle = math.pi - edge_angle
+        fillet_v1 = shared_vert.co + (dir1 * slide_distance)
+        fillet_v2 = shared_vert.co + (dir2 * slide_distance)
+
+        normal = mathutils.geometry.normal([v1.co, shared_vert.co, v2.co])
+
+        center = mathutils.geometry.intersect_line_line(
+            fillet_v1, fillet_v1 + normal.cross(dir1), fillet_v2, fillet_v2 + normal.cross(dir2)
+        )[0]
+
+        v = bm.verts.new(fillet_v1)
+        steps = 2
+        spin = bmesh.ops.spin(bm, geom=[v], axis=normal, cent=center, steps=steps, angle=angle)
+        midpoint = spin["geom_last"][0].link_edges[0].other_vert(spin["geom_last"][0])
+
+        x = bmesh.ops.pointmerge(bm, verts=[shared_vert, v], merge_co=v.co)
+        y = bmesh.ops.pointmerge(bm, verts=[v2, spin["geom_last"][0]], merge_co=spin["geom_last"][0].co)
+
+        fillet_verts = [v2.index, shared_vert.index, midpoint.index]
+
+        # If faces are involved, then the chamfer edge protects existing faces from the newly created fillet.
+        # If no faces are involved, we delete the chamfer edge.
+        if is_wire:
+            chamfer_edge = [e for e in bm.edges if shared_vert in e.verts and v2 in e.verts][0]
+            bm.edges.remove(chamfer_edge)
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        bmesh.update_edit_mesh(mesh)
+
+        obj = context.active_object
+        bpy.ops.object.mode_set(mode="OBJECT")
+        in_group = any([bool(obj.data.vertices[v].groups) for v in fillet_verts])
+        for i, group in enumerate(obj.vertex_groups):
+            group.remove(fillet_verts)
+            if not [v for v in obj.data.vertices if i in [vg.group for vg in v.groups]]:
+                obj.vertex_groups.remove(group)
+        group = obj.vertex_groups.new(name="IFCARCINDEX")
+        group.add(fillet_verts, 1, "REPLACE")
         bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
