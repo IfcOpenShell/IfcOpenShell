@@ -722,11 +722,11 @@ class QtoCalculator:
 
 # # Following code is here temporarily to test newly created functions:
 
-qto = QtoCalculator()
-o = bpy.context.active_object
-sel = bpy.context.selected_objects
-
-nl = '\n'
+#qto = QtoCalculator()
+#o = bpy.context.active_object
+#sel = bpy.context.selected_objects
+#
+#nl = '\n'
 # print(
 #     f"get_linear_length: {qto.get_linear_length(o)}{nl}{nl}"
 #     f"get_width: {qto.get_width(o)}{nl}{nl}"
