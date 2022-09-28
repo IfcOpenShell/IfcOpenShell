@@ -506,10 +506,10 @@ class QtoCalculator:
 
         faces = [
             (0, 1, 2, 3),
-            (4, 5, 6, 7),
-            (1, 2, 6, 5),
+            (7, 6, 5, 4),
+            (5, 6, 2, 1),
             (0, 3, 7, 4),
-            (1, 5, 4, 0),
+            (0, 4, 5, 1),
             (2, 6, 7, 3),
         ]
 
@@ -520,9 +520,10 @@ class QtoCalculator:
         new_AABB_object = bpy.data.objects.new(f"OBB_{ifc_id}", aabb_mesh)
         new_AABB_object.matrix_world = obj.matrix_world
 
-        # create new collection for QtoCalculator
+          # create new collection for QtoCalculator
         collection = bpy.data.collections.get("QtoCalculator", bpy.data.collections.new("QtoCalculator"))
-        bpy.context.scene.collection.children.link(collection)
+        if not bpy.context.scene.collection.children.get(collection.name):
+            bpy.context.scene.collection.children.link(collection)
 
         # add object to scene collection and then hide them.
         collection.objects.link(new_AABB_object)
@@ -552,9 +553,11 @@ class QtoCalculator:
         bis_obj = obj.copy()
         bis_obj.data = obj.data.copy()
         bis_obj.name = f"Bisected_{ifc_id}"
-
+        
         collection = bpy.data.collections.get("QtoCalculator", bpy.data.collections.new("QtoCalculator"))
-        bpy.context.scene.collection.children.link(collection)
+        if not bpy.context.scene.collection.children.get(collection.name):
+            bpy.context.scene.collection.children.link(collection)
+        
         collection.objects.link(bis_obj)
 
         bpy.ops.object.select_all(action="DESELECT")
@@ -659,27 +662,32 @@ class QtoCalculator:
         :param blender-polygon poly1: Blender Polygon
         :return float: intersection area of the two polygons.
         """
-
+        # get normal vectors according to world axis
+        normal1 = object1.rotation_euler.to_matrix() @ poly1.normal
+        center1 = object1.matrix_world @ poly1.center
+        normal2 = object2.rotation_euler.to_matrix() @ poly2.normal
+        center2 = object2.matrix_world @ poly2.center
+        
+        angle_between_normals = normal1.rotation_difference(normal2).angle
+        
+        if math.degrees(angle_between_normals) < 178:
+            return 0
+        
         # touching polygons should be coplanar:
-        if (
-            mathutils.geometry.intersect_plane_plane(
-                object1.matrix_world @ poly1.center,
-                object1.matrix_world @ poly1.normal,
-                object2.matrix_world @ poly2.center,
-                object2.matrix_world @ poly2.normal,
-            )[0]
-            is None
-        ):
+        plane_intersection = mathutils.geometry.intersect_plane_plane(
+                center1,
+                normal1,
+                center2,
+                normal2
+            )
+        
+        # sometimes coplanar planes will interesect far off into the distance.  This is a crude way of filtering out those intersections.
+        if plane_intersection[0] is None or (plane_intersection[0] - center1).magnitude > 20:
             return 0
 
-        # get normal vectors according to world axis
-        ref_normal = object1.rotation_euler.to_matrix() @ poly1.normal
-        cont_normal = object2.rotation_euler.to_matrix() @ poly2.normal
-        angle_between_normals = ref_normal.rotation_difference(cont_normal).angle
-
         # calculate rotation between face and vertical Z-axis.  This makes it easier to calculate intersection area later
-        rotation_to_z = ref_normal.rotation_difference(Vector((0, 0, 1)))
-        center_of_rotation = object1.matrix_world @ poly1.center
+        rotation_to_z = normal1.rotation_difference(Vector((0, 0, 1)))
+        center_of_rotation = center1
 
         # rotation around face.center in world space / https://blender.stackexchange.com/a/12324/130742
         trans_matrix = Matrix.Translation(center_of_rotation) @ rotation_to_z.to_matrix().to_4x4()
@@ -712,41 +720,36 @@ class QtoCalculator:
             polygon_tuples.append((x, y))
         return Polygon(polygon_tuples)
 
-    # # 1 and 3
-    # def polygon_intersection_area(self, object1, polygon1, object2, polygon2):
-    #     """_summary_: Returns the intersection area between two polygons.
-
-    #     :param blender-object object1: Blender Object
-    #     :param blender-polygon polygon1: Blender Polygon
-    #     :param blender object2: Blender Object
-    #     :param blender polygon2: Blender Polygon
-    #     :return float: Intersection Area
-    #     """
-    #     # polygons should be coplanar:
-    #     if (
-    #         mathutils.geometry.intersect_plane_plane(
-    #             polygon1.center, polygon1.normal, polygon2.center, polygon2.normal
-    #         )[0]
-    #         is None
-    #     ):
-    #         return 0
-
-    #     intersection = self.get_combined_poly(object1, polygon1, object2, polygon2)
-    #     return intersection.area
-
-
 # # Following code is here temporarily to test newly created functions:
-
-# o1 = bpy.data.objects["Cube"]
-# o2 = bpy.data.objects["Cube.001"]
-
-# poly1 = o1.data.polygons[1]
-# poly2 = o2.data.polygons[3]
 
 qto = QtoCalculator()
 o = bpy.context.active_object
 sel = bpy.context.selected_objects
 
-print(qto.get_net_top_area(o, ignore_internal=True))
-print(qto.get_net_roofprint_area(o))
-# qto.get_OBB_object(o)
+nl = '\n'
+print(
+    f"get_linear_length: {qto.get_linear_length(o)}{nl}{nl}"
+    f"get_width: {qto.get_width(o)}{nl}{nl}"
+    f"get_height: {qto.get_height(o)}{nl}{nl}"
+    f"get_perimeter: {qto.get_perimeter(o)}{nl}{nl}"
+    f"get_lowest_polygons: {qto.get_lowest_polygons(o)}{nl}{nl}"
+    f"get_highest_polygons: {qto.get_highest_polygons(o)}{nl}{nl}"
+    f"get_net_footprint_area: {qto.get_net_footprint_area(o)}{nl}{nl}"
+    f"get_net_roofprint_area: {qto.get_net_roofprint_area(o)}{nl}{nl}"
+    f"get_side_area: {qto.get_side_area(o)}{nl}{nl}"
+    f"get_total_surface_area: {qto.get_total_surface_area(o)}{nl}{nl}"
+    f"get_volume: {qto.get_volume(o)}{nl}{nl}"
+    f"get_opening_area(o, angle_z1=45, angle_z2=135, min_area=0, ignore_recesses=False): {qto.get_opening_area(o, angle_z1=45, angle_z2=135, min_area=0, ignore_recesses=False)}{nl}{nl}"
+    f"get_lateral_area(o, subtract_openings=True, exclude_end_areas=False, exclude_side_areas=False, angle_z1=45, angle_z2=135): {qto.get_lateral_area(o, subtract_openings=True, exclude_end_areas=False, exclude_side_areas=False, angle_z1=45, angle_z2=135)}{nl}{nl}"
+    f"get_gross_top_area: {qto.get_gross_top_area(o, angle=45)}{nl}{nl}"
+    f"get_net_top_area(o, angle=45, ignore_internal=True): {qto.get_net_top_area(o, angle=45, ignore_internal=True)}{nl}{nl}"
+    f"get_projected_area(o, projection_axis='z', is_gross=True): {qto.get_projected_area(o, projection_axis='z', is_gross=True)}{nl}{nl}"
+    f"get_OBB_object: {qto.get_OBB_object(o)}{nl}{nl}"
+    f"get_AABB_object: {qto.get_AABB_object(o)}{nl}{nl}"
+    f"get_bisected_obj(o, plane_co_pos=(0,0,1), plane_no_pos=(0,0,1), plane_co_neg=(0,0,1), plane_no_neg=(0,0,1)): {qto.get_bisected_obj(o, plane_co_pos=(0,0,1), plane_no_pos=(0,0,1), plane_co_neg=(0,0,1), plane_no_neg=(0,0,1))}{nl}{nl}"
+    f"get_total_contact_area(o, class_filter=['IfcWall', 'IfcSlab']): {qto.get_total_contact_area(o, class_filter=['IfcWall', 'IfcSlab'])}{nl}{nl}"
+    f"get_touching_objects(o, ['IfcElement']): {qto.get_touching_objects(o, ['IfcElement'])}{nl}{nl}"
+    #f"get_contact_area: {qto.get_contact_area(o)}{nl}{nl}"
+    )
+
+
