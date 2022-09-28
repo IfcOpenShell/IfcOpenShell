@@ -25,6 +25,7 @@ classes = (
     operator.CadArcFrom3Points,
     operator.CadFillet,
     operator.CadMitre,
+    operator.CadOffset,
     operator.CadTrimExtend,
     workspace.CadHotkey,
 )
