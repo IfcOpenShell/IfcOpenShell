@@ -41,6 +41,7 @@ class CadTool(WorkSpaceTool):
         ("bim.cad_hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
         ("bim.cad_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
         ("bim.cad_hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
+        ("bim.cad_hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
     )
 
     def draw_settings(context, layout, tool):
@@ -64,6 +65,16 @@ class CadTool(WorkSpaceTool):
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_F")
+            row.operator("bim.cad_hotkey", text="Fillet").hotkey = "S_F"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_O")
+            row.operator("bim.cad_hotkey", text="Offset").hotkey = "S_O"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_C")
             row.operator("bim.add_ifccircle", text="Circle")
 
@@ -74,8 +85,8 @@ class CadTool(WorkSpaceTool):
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_O")
-            row.operator("bim.cad_hotkey", text="Offset").hotkey = "S_O"
+            row.label(text="", icon="EVENT_X")
+            row.operator("bim.reset_vertex", text="Reset Vertex")
         else:
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -126,8 +137,9 @@ class CadHotkey(bpy.types.Operator):
                 row = self.layout.row()
                 row.prop(self, "resolution")
         elif self.hotkey == "S_F":
-            row = self.layout.row()
-            row.prop(self, "resolution")
+            if not self.is_profile():
+                row = self.layout.row()
+                row.prop(self, "resolution")
             row = self.layout.row()
             row.prop(self, "radius")
         elif self.hotkey == "S_O":
@@ -144,7 +156,10 @@ class CadHotkey(bpy.types.Operator):
         bpy.ops.bim.cad_trim_extend()
 
     def hotkey_S_F(self):
-        bpy.ops.bim.cad_fillet(resolution=self.resolution, radius=self.radius)
+        if self.is_profile():
+            bpy.ops.bim.add_ifcarcindex_fillet(radius=self.radius)
+        else:
+            bpy.ops.bim.cad_fillet(resolution=self.resolution, radius=self.radius)
 
     def hotkey_S_O(self):
         bpy.ops.bim.cad_offset(distance=self.distance)
@@ -160,6 +175,10 @@ class CadHotkey(bpy.types.Operator):
             bpy.ops.bim.set_arc_index()
         else:
             bpy.ops.bim.cad_arc_from_3_points(resolution=self.resolution)
+
+    def hotkey_S_X(self):
+        if self.is_profile():
+            bpy.ops.bim.reset_vertex()
 
     def is_profile(self):
         obj = bpy.context.active_object

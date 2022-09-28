@@ -722,34 +722,34 @@ class QtoCalculator:
 
 # # Following code is here temporarily to test newly created functions:
 
-qto = QtoCalculator()
-o = bpy.context.active_object
-sel = bpy.context.selected_objects
-
-nl = '\n'
-print(
-    f"get_linear_length: {qto.get_linear_length(o)}{nl}{nl}"
-    f"get_width: {qto.get_width(o)}{nl}{nl}"
-    f"get_height: {qto.get_height(o)}{nl}{nl}"
-    f"get_perimeter: {qto.get_perimeter(o)}{nl}{nl}"
-    f"get_lowest_polygons: {qto.get_lowest_polygons(o)}{nl}{nl}"
-    f"get_highest_polygons: {qto.get_highest_polygons(o)}{nl}{nl}"
-    f"get_net_footprint_area: {qto.get_net_footprint_area(o)}{nl}{nl}"
-    f"get_net_roofprint_area: {qto.get_net_roofprint_area(o)}{nl}{nl}"
-    f"get_side_area: {qto.get_side_area(o)}{nl}{nl}"
-    f"get_total_surface_area: {qto.get_total_surface_area(o)}{nl}{nl}"
-    f"get_volume: {qto.get_volume(o)}{nl}{nl}"
-    f"get_opening_area(o, angle_z1=45, angle_z2=135, min_area=0, ignore_recesses=False): {qto.get_opening_area(o, angle_z1=45, angle_z2=135, min_area=0, ignore_recesses=False)}{nl}{nl}"
-    f"get_lateral_area(o, subtract_openings=True, exclude_end_areas=False, exclude_side_areas=False, angle_z1=45, angle_z2=135): {qto.get_lateral_area(o, subtract_openings=True, exclude_end_areas=False, exclude_side_areas=False, angle_z1=45, angle_z2=135)}{nl}{nl}"
-    f"get_gross_top_area: {qto.get_gross_top_area(o, angle=45)}{nl}{nl}"
-    f"get_net_top_area(o, angle=45, ignore_internal=True): {qto.get_net_top_area(o, angle=45, ignore_internal=True)}{nl}{nl}"
-    f"get_projected_area(o, projection_axis='z', is_gross=True): {qto.get_projected_area(o, projection_axis='z', is_gross=True)}{nl}{nl}"
-    f"get_OBB_object: {qto.get_OBB_object(o)}{nl}{nl}"
-    f"get_AABB_object: {qto.get_AABB_object(o)}{nl}{nl}"
-    f"get_bisected_obj(o, plane_co_pos=(0,0,1), plane_no_pos=(0,0,1), plane_co_neg=(0,0,1), plane_no_neg=(0,0,1)): {qto.get_bisected_obj(o, plane_co_pos=(0,0,1), plane_no_pos=(0,0,1), plane_co_neg=(0,0,1), plane_no_neg=(0,0,1))}{nl}{nl}"
-    f"get_total_contact_area(o, class_filter=['IfcWall', 'IfcSlab']): {qto.get_total_contact_area(o, class_filter=['IfcWall', 'IfcSlab'])}{nl}{nl}"
-    f"get_touching_objects(o, ['IfcElement']): {qto.get_touching_objects(o, ['IfcElement'])}{nl}{nl}"
-    #f"get_contact_area: {qto.get_contact_area(o)}{nl}{nl}"
-    )
+#qto = QtoCalculator()
+#o = bpy.context.active_object
+#sel = bpy.context.selected_objects
+#
+#nl = '\n'
+# print(
+#     f"get_linear_length: {qto.get_linear_length(o)}{nl}{nl}"
+#     f"get_width: {qto.get_width(o)}{nl}{nl}"
+#     f"get_height: {qto.get_height(o)}{nl}{nl}"
+#     f"get_perimeter: {qto.get_perimeter(o)}{nl}{nl}"
+#     f"get_lowest_polygons: {qto.get_lowest_polygons(o)}{nl}{nl}"
+#     f"get_highest_polygons: {qto.get_highest_polygons(o)}{nl}{nl}"
+#     f"get_net_footprint_area: {qto.get_net_footprint_area(o)}{nl}{nl}"
+#     f"get_net_roofprint_area: {qto.get_net_roofprint_area(o)}{nl}{nl}"
+#     f"get_side_area: {qto.get_side_area(o)}{nl}{nl}"
+#     f"get_total_surface_area: {qto.get_total_surface_area(o)}{nl}{nl}"
+#     f"get_volume: {qto.get_volume(o)}{nl}{nl}"
+#     f"get_opening_area(o, angle_z1=45, angle_z2=135, min_area=0, ignore_recesses=False): {qto.get_opening_area(o, angle_z1=45, angle_z2=135, min_area=0, ignore_recesses=False)}{nl}{nl}"
+#     f"get_lateral_area(o, subtract_openings=True, exclude_end_areas=False, exclude_side_areas=False, angle_z1=45, angle_z2=135): {qto.get_lateral_area(o, subtract_openings=True, exclude_end_areas=False, exclude_side_areas=False, angle_z1=45, angle_z2=135)}{nl}{nl}"
+#     f"get_gross_top_area: {qto.get_gross_top_area(o, angle=45)}{nl}{nl}"
+#     f"get_net_top_area(o, angle=45, ignore_internal=True): {qto.get_net_top_area(o, angle=45, ignore_internal=True)}{nl}{nl}"
+#     f"get_projected_area(o, projection_axis='z', is_gross=True): {qto.get_projected_area(o, projection_axis='z', is_gross=True)}{nl}{nl}"
+#     f"get_OBB_object: {qto.get_OBB_object(o)}{nl}{nl}"
+#     f"get_AABB_object: {qto.get_AABB_object(o)}{nl}{nl}"
+#     f"get_bisected_obj(o, plane_co_pos=(0,0,1), plane_no_pos=(0,0,1), plane_co_neg=(0,0,1), plane_no_neg=(0,0,1)): {qto.get_bisected_obj(o, plane_co_pos=(0,0,1), plane_no_pos=(0,0,1), plane_co_neg=(0,0,1), plane_no_neg=(0,0,1))}{nl}{nl}"
+#     f"get_total_contact_area(o, class_filter=['IfcWall', 'IfcSlab']): {qto.get_total_contact_area(o, class_filter=['IfcWall', 'IfcSlab'])}{nl}{nl}"
+#     f"get_touching_objects(o, ['IfcElement']): {qto.get_touching_objects(o, ['IfcElement'])}{nl}{nl}"
+#     #f"get_contact_area: {qto.get_contact_area(o)}{nl}{nl}"
+#     )
 
 
