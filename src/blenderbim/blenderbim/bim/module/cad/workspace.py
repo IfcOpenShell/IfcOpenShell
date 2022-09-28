@@ -65,6 +65,11 @@ class CadTool(WorkSpaceTool):
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_F")
+            row.operator("bim.cad_hotkey", text="Fillet").hotkey = "S_F"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_O")
             row.operator("bim.cad_hotkey", text="Offset").hotkey = "S_O"
 
@@ -132,8 +137,9 @@ class CadHotkey(bpy.types.Operator):
                 row = self.layout.row()
                 row.prop(self, "resolution")
         elif self.hotkey == "S_F":
-            row = self.layout.row()
-            row.prop(self, "resolution")
+            if not self.is_profile():
+                row = self.layout.row()
+                row.prop(self, "resolution")
             row = self.layout.row()
             row.prop(self, "radius")
         elif self.hotkey == "S_O":
@@ -150,7 +156,10 @@ class CadHotkey(bpy.types.Operator):
         bpy.ops.bim.cad_trim_extend()
 
     def hotkey_S_F(self):
-        bpy.ops.bim.cad_fillet(resolution=self.resolution, radius=self.radius)
+        if self.is_profile():
+            bpy.ops.bim.add_ifcarcindex_fillet(radius=self.radius)
+        else:
+            bpy.ops.bim.cad_fillet(resolution=self.resolution, radius=self.radius)
 
     def hotkey_S_O(self):
         bpy.ops.bim.cad_offset(distance=self.distance)
