@@ -183,14 +183,14 @@ class AuthoringData:
     def new_relating_type(cls, ifc_class=None, relating_type_id=None):
         if ifc_class is None:
             bpy.ops.bim.add_constr_type_instance(
-                ifc_class=cls.props.ifc_class, relating_type_id=int(cls.props.relating_type_id)
+                ifc_class=cls.props.ifc_class, relating_type_id=int(cls.props.relating_type_id), link_to_scene=True
             )
         else:
             cls.props.updating = True
             cls.props.ifc_class = ifc_class
             cls.props.relating_type_id = str(relating_type_id)
             cls.props.updating = False
-            bpy.ops.bim.add_constr_type_instance()
+            bpy.ops.bim.add_constr_type_instance(link_to_scene=True)
         return bpy.context.selected_objects[-1]
 
     @staticmethod

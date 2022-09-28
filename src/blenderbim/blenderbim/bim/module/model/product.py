@@ -63,6 +63,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
     ifc_class: bpy.props.StringProperty()
     relating_type_id: bpy.props.IntProperty()
     from_invoke: bpy.props.BoolProperty(default=False)
+    link_to_scene: bpy.props.BoolProperty(default=True)
 
     def invoke(self, context, event):
         return self.execute(context)
@@ -88,13 +89,13 @@ class AddConstrTypeInstance(bpy.types.Operator):
         material = ifcopenshell.util.element.get_material(relating_type)
 
         if material and material.is_a("IfcMaterialProfileSet"):
-            if profile.DumbProfileGenerator(relating_type).generate():
+            if profile.DumbProfileGenerator(relating_type).generate(link_to_scene=self.link_to_scene):
                 return {"FINISHED"}
         elif material and material.is_a("IfcMaterialLayerSet"):
-            if self.generate_layered_element(ifc_class, relating_type):
+            if self.generate_layered_element(ifc_class, relating_type, link_to_scene=self.link_to_scene):
                 return {"FINISHED"}
         if relating_type.is_a("IfcFlowSegmentType") and not relating_type.RepresentationMaps:
-            if mep.MepGenerator(relating_type).generate():
+            if mep.MepGenerator(relating_type).generate(link_to_scene=self.link_to_scene):
                 return {"FINISHED"}
 
         building_obj = None
@@ -125,15 +126,17 @@ class AddConstrTypeInstance(bpy.types.Operator):
         mesh = bpy.data.meshes.new(name="Instance")
         mesh.from_pydata(verts, edges, faces)
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
-        obj.location = context.scene.cursor.location
-        collection = context.view_layer.active_layer_collection.collection
-        collection.objects.link(obj)
-        collection_obj = bpy.data.objects.get(collection.name)
+        if self.link_to_scene:
+            obj.location = context.scene.cursor.location
+            collection = context.view_layer.active_layer_collection.collection
+            collection.objects.link(obj)
+            collection_obj = bpy.data.objects.get(collection.name)
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         element = tool.Ifc.get_entity(obj)
         blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
-        # Update required as core.type.assign_type may change obj.data
-        bpy.context.view_layer.update()
+        if self.link_to_scene:
+            # Update required as core.type.assign_type may change obj.data
+            bpy.context.view_layer.update()
 
         if (
             building_obj
@@ -145,9 +148,9 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 bpy.ops.bim.add_element_opening(
                     voided_building_element=building_obj.name, filling_building_element=obj.name
                 )
-            if instance_class == "IfcDoor":
+            if instance_class == "IfcDoor" and self.link_to_scene:
                 obj.location[2] = building_obj.location[2] - min([v[2] for v in obj.bound_box])
-        else:
+        elif self.link_to_scene:
             if collection_obj and collection_obj.BIMObjectProperties.ifc_definition_id:
                 obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])
 
@@ -168,7 +171,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
         return {"FINISHED"}
 
     @staticmethod
-    def generate_layered_element(ifc_class, relating_type):
+    def generate_layered_element(ifc_class, relating_type, link_to_scene=True):
         layer_set_direction = None
 
         parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
@@ -181,10 +184,10 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 layer_set_direction = "AXIS2"
 
         if layer_set_direction == "AXIS3":
-            if slab.DumbSlabGenerator(relating_type).generate():
+            if slab.DumbSlabGenerator(relating_type).generate(link_to_scene=link_to_scene):
                 return True
         elif layer_set_direction == "AXIS2":
-            if wall.DumbWallGenerator(relating_type).generate():
+            if wall.DumbWallGenerator(relating_type).generate(link_to_scene=link_to_scene):
                 return True
         else:
             pass  # Dumb block generator? Eh? :)
