@@ -97,7 +97,7 @@ class DumbProfileGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
 
-    def generate(self):
+    def generate(self, link_to_scene=True):
         self.file = IfcStore.get_file()
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
         material = ifcopenshell.util.element.get_material(self.relating_type)
@@ -114,13 +114,13 @@ class DumbProfileGenerator:
         self.rotation = 0
         self.location = Vector((0, 0, 0))
         self.cardinal_point = int(bpy.context.scene.BIMModelProperties.cardinal_point)
-        return self.derive_from_cursor()
+        return self.derive_from_cursor(link_to_scene=link_to_scene)
 
-    def derive_from_cursor(self):
+    def derive_from_cursor(self, link_to_scene):
         self.location = bpy.context.scene.cursor.location
-        return self.create_profile()
+        return self.create_profile(link_to_scene)
 
-    def create_profile(self):
+    def create_profile(self, link_to_scene):
         ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
         # Standard cases are deprecated, so let's cull them
         ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
@@ -128,10 +128,11 @@ class DumbProfileGenerator:
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
         obj.location = self.location
-        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
+        if link_to_scene and self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2]
         bpy.context.view_layer.update()
-        self.collection.objects.link(obj)
+        if link_to_scene:
+            self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
@@ -186,7 +187,8 @@ class DumbProfileGenerator:
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbProfile"})
         MaterialData.load(self.file)
 
-        obj.select_set(True)
+        if link_to_scene:
+            obj.select_set(True)
 
         return obj
 

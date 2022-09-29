@@ -47,8 +47,9 @@ classes = (
     slab.EnableEditingSketchExtrusionProfile,
     slab.ResetVertex,
     slab.SetArcIndex,
-    prop.BIMModelProperties,
     prop.ConstrTypeInfo,
+    prop.ConstrClassInfo,
+    prop.BIMModelProperties,
     ui.BIM_PT_authoring,
     ui.DisplayConstrTypesUI,
     ui.HelpConstrTypes,
@@ -69,7 +70,6 @@ def register():
     if not bpy.app.background:
         bpy.utils.register_tool(workspace.BimTool, after={"builtin.scale_cage"}, separator=True, group=True)
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
-    bpy.types.Scene.ConstrTypeInfo = bpy.props.CollectionProperty(type=prop.ConstrTypeInfo)
     bpy.types.VIEW3D_MT_mesh_add.append(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(opening.add_object_button)
@@ -87,7 +87,6 @@ def unregister():
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.BimTool)
     del bpy.types.Scene.BIMModelProperties
-    del bpy.types.Scene.ConstrTypeInfo
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)

@@ -413,7 +413,7 @@ class DumbWallGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
 
-    def generate(self):
+    def generate(self, link_to_scene=True):
         self.file = IfcStore.get_file()
         self.layers = get_material_layer_parameters(self.relating_type)
         if not self.layers["thickness"]:
@@ -433,7 +433,7 @@ class DumbWallGenerator:
         if self.has_sketch():
             return  # For now
             return self.derive_from_sketch()
-        return self.derive_from_cursor()
+        return self.derive_from_cursor(link_to_scene)
 
     def has_sketch(self):
         return (
@@ -511,7 +511,7 @@ class DumbWallGenerator:
     def is_near(self, point1, point2):
         return (point1 - point2).length < 0.1
 
-    def derive_from_cursor(self):
+    def derive_from_cursor(self, link_to_scene):
         self.location = bpy.context.scene.cursor.location
         if self.collection:
             for sibling_obj in self.collection.objects:
@@ -537,18 +537,19 @@ class DumbWallGenerator:
                         normal = (sibling_obj.matrix_world.to_quaternion() @ face.normal).normalized()
                         self.rotation = math.atan2(normal[1], normal[0])
                         break
-        return self.create_wall()
+        return self.create_wall(link_to_scene)
 
-    def create_wall(self):
+    def create_wall(self, link_to_scene):
         ifc_class = self.get_relating_type_class(self.relating_type)
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
-        obj.location = self.location
-        obj.rotation_euler[2] = self.rotation
-        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-            obj.location[2] = self.collection_obj.location[2]
-        bpy.context.view_layer.update()
-        self.collection.objects.link(obj)
+        if link_to_scene:
+            obj.location = self.location
+            obj.rotation_euler[2] = self.rotation
+            if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
+                obj.location[2] = self.collection_obj.location[2]
+            bpy.context.view_layer.update()
+            self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,

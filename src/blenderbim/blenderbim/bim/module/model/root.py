@@ -48,3 +48,8 @@ def sync_name(usecase_path, ifc_file, settings):
         collection.name = new_name
     obj.name = new_name
     blenderbim.bim.handler.refresh_ui_data()
+
+
+class ConstrTypeEntityNotFound(Exception):
+    pass
+
