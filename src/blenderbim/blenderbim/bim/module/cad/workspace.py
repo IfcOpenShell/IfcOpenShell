@@ -39,6 +39,7 @@ class CadTool(WorkSpaceTool):
         ("bim.cad_hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
         ("bim.cad_hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
         ("bim.cad_hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
+        ("bim.cad_hotkey", {"type": "R", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_R")]}),
         ("bim.cad_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
         ("bim.cad_hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
         ("bim.cad_hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
@@ -73,6 +74,11 @@ class CadTool(WorkSpaceTool):
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_O")
             row.operator("bim.cad_hotkey", text="Offset").hotkey = "S_O"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_R")
+            row.operator("bim.add_rectangle", text="Rectangle")
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -145,6 +151,11 @@ class CadHotkey(bpy.types.Operator):
         elif self.hotkey == "S_O":
             row = self.layout.row()
             row.prop(props, "distance")
+        elif self.hotkey == "S_R":
+            row = self.layout.row()
+            row.prop(props, "x")
+            row = self.layout.row()
+            row.prop(props, "y")
         elif self.hotkey == "S_V":
             if not self.is_profile():
                 row = self.layout.row()
@@ -170,6 +181,10 @@ class CadHotkey(bpy.types.Operator):
 
     def hotkey_S_Q(self):
         bpy.ops.bim.edit_extrusion_profile()
+
+    def hotkey_S_R(self):
+        if self.is_profile():
+            bpy.ops.bim.add_rectangle(x=self.props.x, y=self.props.y)
 
     def hotkey_S_T(self):
         bpy.ops.bim.cad_mitre()
