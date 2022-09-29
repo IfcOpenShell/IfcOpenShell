@@ -51,6 +51,7 @@ class CadTool(WorkSpaceTool):
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_Q")
             row.operator("bim.edit_extrusion_profile", text="Save Profile")
+            row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
             row.operator("bim.disable_editing_extrusion_profile", text="", icon="CANCEL")
 
             row = layout.row(align=True)
