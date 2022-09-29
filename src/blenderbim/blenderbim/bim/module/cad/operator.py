@@ -531,6 +531,7 @@ class CadOffset(bpy.types.Operator):
 class AddIfcCircle(bpy.types.Operator):
     bl_idname = "bim.add_ifccircle"
     bl_label = "Add IfcCircle"
+    radius: bpy.props.FloatProperty(name="Radius", default=0.1)
 
     @classmethod
     def poll(cls, context):
@@ -544,16 +545,22 @@ class AddIfcCircle(bpy.types.Operator):
         bm = bmesh.from_edit_mesh(obj.data)
 
         center = obj.matrix_world.inverted() @ context.scene.cursor.location
-        radius = 0.5
 
-        v1 = bm.verts.new((center[0], center[1] + radius, 0.0))
-        v2 = bm.verts.new((center[0], center[1] - radius, 0.0))
+        v1 = bm.verts.new((center[0], center[1] + self.radius, 0.0))
+        v2 = bm.verts.new((center[0], center[1] - self.radius, 0.0))
         bm.verts.index_update()
         indices = [v1.index, v2.index]
         bm.edges.new((v1, v2))
         bmesh.update_edit_mesh(obj.data)
 
         bpy.ops.object.mode_set(mode="OBJECT")
+        to_delete = set()
+        for i, group in enumerate(obj.vertex_groups):
+            group.remove(indices)
+            if not [v for v in obj.data.vertices if i in [vg.group for vg in v.groups]]:
+                to_delete.add(group)
+        for group in to_delete:
+            obj.vertex_groups.remove(group)
         group = obj.vertex_groups.new(name="IFCCIRCLE")
         group.add(indices, 1, "REPLACE")
         bpy.ops.object.mode_set(mode="EDIT")
@@ -581,9 +588,7 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         bpy.ops.object.mode_set(mode="EDIT")
 
         obj = bpy.context.active_object
-        cursor = obj.matrix_world.inverted() @ bpy.context.scene.cursor.location
-        mesh = obj.data
-        bm = bmesh.from_edit_mesh(mesh)
+        bm = bmesh.from_edit_mesh(obj.data)
         selected_edges = [e for e in bm.edges if e.select]
         if len(selected_edges) != 2:
             return {"CANCELLED"}
@@ -592,22 +597,6 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         # just in case the vertex is coincident but not shared.
         all_verts = list(set(selected_edges[0].verts) | set(selected_edges[1].verts))
         bmesh.ops.remove_doubles(bm, verts=all_verts, dist=1e-4)
-
-        # Subdivide one of the edges to give us an extra vert to play with
-        # without damaging any faces that already exist.
-        cut = bmesh.ops.bisect_edges(bm, edges=[selected_edges[1]], cuts=1)
-        bm.edges.index_update()
-        bmesh.update_edit_mesh(mesh)
-
-        is_wire = selected_edges[0].is_wire
-
-        # Recover the original intention of the selected edges after our bisect operation
-        cut_edges = cut["geom_split"][1:]
-        selected_edges = [e for e in bm.edges if e.select and e not in cut_edges]
-        if set(selected_edges[0].verts) & set(cut_edges[0].verts):
-            selected_edges.append(cut_edges[0])
-        elif set(selected_edges[0].verts) & set(cut_edges[1].verts):
-            selected_edges.append(cut_edges[1])
 
         # Calculate the distance to slide each edge to make space for the fillet arc
         shared_vert = list(set(selected_edges[0].verts) & set(selected_edges[1].verts))[0]
@@ -619,42 +608,42 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         slide_distance = self.radius / math.tan(edge_angle / 2)
 
         angle = math.pi - edge_angle
-        fillet_v1 = shared_vert.co + (dir1 * slide_distance)
-        fillet_v2 = shared_vert.co + (dir2 * slide_distance)
+        fillet_v1co = shared_vert.co + (dir1 * slide_distance)
+        fillet_v2co = shared_vert.co + (dir2 * slide_distance)
 
         normal = mathutils.geometry.normal([v1.co, shared_vert.co, v2.co])
 
         center = mathutils.geometry.intersect_line_line(
-            fillet_v1, fillet_v1 + normal.cross(dir1), fillet_v2, fillet_v2 + normal.cross(dir2)
+            fillet_v1co, fillet_v1co + normal.cross(dir1), fillet_v2co, fillet_v2co + normal.cross(dir2)
         )[0]
 
-        v = bm.verts.new(fillet_v1)
-        steps = 2
-        spin = bmesh.ops.spin(bm, geom=[v], axis=normal, cent=center, steps=steps, angle=angle)
-        midpoint = spin["geom_last"][0].link_edges[0].other_vert(spin["geom_last"][0])
+        fillet_v1 = bm.verts.new(fillet_v1co)
+        fillet_v2 = bm.verts.new(fillet_v2co)
 
-        x = bmesh.ops.pointmerge(bm, verts=[shared_vert, v], merge_co=v.co)
-        y = bmesh.ops.pointmerge(bm, verts=[v2, spin["geom_last"][0]], merge_co=spin["geom_last"][0].co)
+        midpointco = center + ((fillet_v1co.lerp(fillet_v2.co, 0.5) - center).normalized() * self.radius)
+        midpoint = bm.verts.new(midpointco)
 
-        fillet_verts = [v2.index, shared_vert.index, midpoint.index]
+        bm.edges.new((v1, fillet_v1))
+        bm.edges.new((v2, fillet_v2))
+        bm.edges.new((fillet_v1, midpoint))
+        bm.edges.new((fillet_v2, midpoint))
 
-        # If faces are involved, then the chamfer edge protects existing faces from the newly created fillet.
-        # If no faces are involved, we delete the chamfer edge.
-        if is_wire:
-            chamfer_edge = [e for e in bm.edges if shared_vert in e.verts and v2 in e.verts][0]
-            bm.edges.remove(chamfer_edge)
+        bmesh.ops.delete(bm, geom=[shared_vert], context="VERTS")
+
+        fillet_verts = [fillet_v1.index, midpoint.index, fillet_v2.index]
 
         bm.verts.index_update()
         bm.edges.index_update()
-        bmesh.update_edit_mesh(mesh)
+        bmesh.update_edit_mesh(obj.data)
 
-        obj = context.active_object
         bpy.ops.object.mode_set(mode="OBJECT")
-        in_group = any([bool(obj.data.vertices[v].groups) for v in fillet_verts])
+        to_delete = set()
         for i, group in enumerate(obj.vertex_groups):
             group.remove(fillet_verts)
             if not [v for v in obj.data.vertices if i in [vg.group for vg in v.groups]]:
-                obj.vertex_groups.remove(group)
+                to_delete.add(group)
+        for group in to_delete:
+            obj.vertex_groups.remove(group)
         group = obj.vertex_groups.new(name="IFCARCINDEX")
         group.add(fillet_verts, 1, "REPLACE")
         bpy.ops.object.mode_set(mode="EDIT")

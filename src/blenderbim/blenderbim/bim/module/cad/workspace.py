@@ -132,10 +132,10 @@ class CadHotkey(bpy.types.Operator):
         return {"FINISHED"}
 
     def draw(self, context):
-        if self.hotkey == "S_V":
-            if not self.is_profile():
+        if self.hotkey == "S_C":
+            if self.is_profile():
                 row = self.layout.row()
-                row.prop(self, "resolution")
+                row.prop(self, "radius")
         elif self.hotkey == "S_F":
             if not self.is_profile():
                 row = self.layout.row()
@@ -145,10 +145,14 @@ class CadHotkey(bpy.types.Operator):
         elif self.hotkey == "S_O":
             row = self.layout.row()
             row.prop(self, "distance")
+        elif self.hotkey == "S_V":
+            if not self.is_profile():
+                row = self.layout.row()
+                row.prop(self, "resolution")
 
     def hotkey_S_C(self):
         if self.is_profile():
-            bpy.ops.bim.add_ifccircle()
+            bpy.ops.bim.add_ifccircle(radius=self.radius)
         else:
             bpy.ops.bim.cad_arc_from_2_points()
 
