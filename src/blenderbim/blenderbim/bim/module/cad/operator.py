@@ -539,8 +539,41 @@ class AddIfcCircle(bpy.types.Operator):
         return bool(obj) and obj.type == "MESH"
 
     def execute(self, context):
-        obj = context.active_object
+        if self.has_selected_existing_circle(context):
+            self.change_radius(context)
+        else:
+            self.create_circle(context)
+        return {"FINISHED"}
 
+    def has_selected_existing_circle(self, context):
+        obj = context.active_object
+        bm = bmesh.from_edit_mesh(obj.data)
+        verts = [v for v in bm.verts if v.select and not v.hide]
+        if len(verts) != 2:
+            return False
+        groups = []
+        for i, group in enumerate(obj.vertex_groups):
+            if "IFCCIRCLE" in group.name:
+                groups.append(i)
+        bm.verts.layers.deform.verify()
+        deform_layer = bm.verts.layers.deform.active
+        for group in groups:
+            if group in verts[0][deform_layer] and group in verts[1][deform_layer]:
+                return True
+
+    def change_radius(self, context):
+        obj = context.active_object
+        bm = bmesh.from_edit_mesh(obj.data)
+        verts = [v for v in bm.verts if v.select and not v.hide]
+        center = verts[0].co.lerp(verts[1].co, 0.5)
+        verts[0].co = center + ((verts[0].co - center).normalized() * self.radius)
+        verts[1].co = center + ((verts[1].co - center).normalized() * self.radius)
+        bm.verts.index_update()
+        bm.edges.index_update()
+        bmesh.update_edit_mesh(obj.data)
+
+    def create_circle(self, context):
+        obj = context.active_object
         bpy.ops.object.mode_set(mode="OBJECT")
         # The last group may be the result of a prior run of this operator.
         # I tried looping through all groups but Blender group indices seem to behave unpredictably.
@@ -570,7 +603,6 @@ class AddIfcCircle(bpy.types.Operator):
         bm.verts.index_update()
         bm.edges.index_update()
         bmesh.update_edit_mesh(obj.data)
-        return {"FINISHED"}
 
 
 class AddIfcArcIndexFillet(bpy.types.Operator):

@@ -17,29 +17,12 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import operator, prop, workspace
-
-classes = (
-    operator.AddIfcArcIndexFillet,
-    operator.AddIfcCircle,
-    operator.CadArcFrom2Points,
-    operator.CadArcFrom3Points,
-    operator.CadFillet,
-    operator.CadMitre,
-    operator.CadOffset,
-    operator.CadTrimExtend,
-    prop.BIMCadProperties,
-    workspace.CadHotkey,
-)
+from blenderbim.bim.module.model.data import AuthoringData
+from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
+from bpy.types import PropertyGroup
 
 
-def register():
-    if not bpy.app.background:
-        bpy.utils.register_tool(workspace.CadTool, after={"builtin.transform"}, separator=True, group=True)
-    bpy.types.Scene.BIMCadProperties = bpy.props.PointerProperty(type=prop.BIMCadProperties)
-
-
-def unregister():
-    if not bpy.app.background:
-        bpy.utils.unregister_tool(workspace.CadTool)
-    del bpy.types.Scene.BIMCadProperties
+class BIMCadProperties(PropertyGroup):
+    resolution: bpy.props.IntProperty(name="Arc Resolution", min=1, default=1)
+    radius: bpy.props.FloatProperty(name="Radius", default=0.1)
+    distance: bpy.props.FloatProperty(name="Distance", default=0.1)
