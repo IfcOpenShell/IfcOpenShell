@@ -635,10 +635,12 @@ class EditExtrusionProfile(bpy.types.Operator):
         indices = helper.auto_detect_arbitrary_profile_with_voids(obj, obj.data)
 
         if isinstance(indices, tuple) and indices[0] is False:  # Ugly
-            self.report({"ERROR"}, "INVALID PROFILE: " + indices[1])
+            def msg(self, context):
+                self.layout.label(text="INVALID PROFILE: " + indices[1])
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             DecorationsHandler.install(context)
             bpy.ops.object.mode_set(mode="EDIT")
-            return {"CANCELLED"}
+            return {"FINISHED"}
 
         self.bm = bmesh.new()
         self.bm.from_mesh(obj.data)
@@ -856,7 +858,11 @@ class DecorationsHandler:
             if vertex.select:
                 selected_vertices.append(co)
             else:
-                if len(vertex.link_edges) != 2:
+                if len(vertex.link_edges) > 1 and is_circle:
+                    error_vertices.append(co)
+                elif is_circle:
+                    special_vertices.append(co)
+                elif len(vertex.link_edges) != 2:
                     error_vertices.append(co)
                 elif is_arc:
                     special_vertices.append(co)
