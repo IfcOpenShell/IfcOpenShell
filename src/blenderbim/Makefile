@@ -331,7 +331,7 @@ endif
 	# Required by QTOCalculator
 	mkdir dist/working
 	cd dist/working && wget $(SHAPELY_URL)
-	cd dist/working && tar -xzvf shapely*
+	cd dist/working && cp *.whl shapely.zip && unzip shapely.zip
 	cp -r dist/working/Shapely-1.8.4/shapely dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
