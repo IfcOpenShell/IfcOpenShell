@@ -26,3 +26,5 @@ class BIMCadProperties(PropertyGroup):
     resolution: bpy.props.IntProperty(name="Arc Resolution", min=1, default=1)
     radius: bpy.props.FloatProperty(name="Radius", default=0.1)
     distance: bpy.props.FloatProperty(name="Distance", default=0.1)
+    x: bpy.props.FloatProperty(name="X", default=0.2)
+    y: bpy.props.FloatProperty(name="Y", default=0.1)
