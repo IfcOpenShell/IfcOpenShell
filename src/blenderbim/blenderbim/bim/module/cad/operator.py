@@ -622,6 +622,69 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
             layout.prop(self, prop)
 
     def execute(self, context):
+        if self.has_selected_existing_arc(context):
+            self.change_radius(context)
+        else:
+            self.create_arc(context)
+        return {"FINISHED"}
+
+    def has_selected_existing_arc(self, context):
+        obj = context.active_object
+        bm = bmesh.from_edit_mesh(obj.data)
+        verts = [v for v in bm.verts if v.select and not v.hide]
+        if len(verts) != 3:
+            return False
+        groups = []
+        for i, group in enumerate(obj.vertex_groups):
+            if "IFCARCINDEX" in group.name:
+                groups.append(i)
+        bm.verts.layers.deform.verify()
+        deform_layer = bm.verts.layers.deform.active
+        for group in groups:
+            try:
+                if group in verts[0][deform_layer] and group in verts[1][deform_layer]:
+                    return True
+            except:
+                pass  # Potentially fail if the vert has been removed in the previous operation
+
+    def change_radius(self, context):
+        obj = context.active_object
+        bm = bmesh.from_edit_mesh(obj.data)
+        edges = [e for e in bm.edges if e.select and not e.hide]
+
+        mid = list(set(edges[0].verts) & set(edges[1].verts))[0]
+        v1 = edges[0].other_vert(mid)
+        v2 = edges[1].other_vert(mid)
+        center = tool.Cad.get_center_of_arc([v1.co, mid.co, v2.co])
+
+        if len(v1.link_edges) != 2 or len(v2.link_edges) != 2:
+            return
+
+        v3 = v1.link_edges[1].other_vert(v1) if mid in v1.link_edges[0].verts else v1.link_edges[0].other_vert(v1)
+        v4 = v2.link_edges[1].other_vert(v2) if mid in v2.link_edges[0].verts else v2.link_edges[0].other_vert(v2)
+        dir1 = (v3.co - v1.co).normalized()
+        dir2 = (v4.co - v2.co).normalized()
+
+        intersect = mathutils.geometry.intersect_line_line(v3.co, v1.co, v4.co, v2.co)[0]
+
+        edge_angle = dir1.angle(dir2)
+        slide_distance = self.radius / math.tan(edge_angle / 2)
+
+        v1.co = intersect + (dir1 * slide_distance)
+        v2.co = intersect + (dir2 * slide_distance)
+
+        normal = mathutils.geometry.normal([v1.co, intersect, v2.co])
+        center = mathutils.geometry.intersect_line_line(
+            v1.co, v1.co + normal.cross(dir1), v2.co, v2.co + normal.cross(dir2)
+        )[0]
+
+        mid.co = center + ((v1.co.lerp(v2.co, 0.5) - center).normalized() * self.radius)
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        bmesh.update_edit_mesh(obj.data)
+
+    def create_arc(self, context):
         obj = bpy.context.active_object
 
         bpy.ops.object.mode_set(mode="OBJECT")
@@ -688,4 +751,3 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         bm.verts.index_update()
         bm.edges.index_update()
         bmesh.update_edit_mesh(obj.data)
-        return {"FINISHED"}

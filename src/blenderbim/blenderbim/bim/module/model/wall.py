@@ -712,7 +712,7 @@ class DumbWallPlaner:
 class DumbWallJoiner:
     def __init__(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "AXIS", "GRAPH_VIEW")
+        self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
     def unjoin(self, wall1):
