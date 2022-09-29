@@ -333,7 +333,12 @@ endif
 	cd dist/working && wget $(SHAPELY_URL)
 	cd dist/working && cp *.whl shapely.zip && unzip shapely.zip
 	cp -r dist/working/shapely dist/blenderbim/libs/site/packages/
-	cp -r dist/working/Shapely.libs dist/blenderbim/libs/site/packages/
+	ifeq ($(PLATFORM), win)
+		cp -r dist/working/Shapely.libs dist/blenderbim/libs/site/packages/
+	endif
+	ifeq ($(PLATFORM), linux)
+		cp -r dist/working/Shapely.libs dist/blenderbim/libs/site/packages/
+	endif
 	rm -rf dist/working
 
 	# Required by xerparser and IFC4D
