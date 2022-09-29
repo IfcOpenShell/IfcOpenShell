@@ -41,23 +41,24 @@ def get_relating_type_browser(self, context):
 
 
 def update_icon_id(self, context, browser=False):
-    ifc_class = self.ifc_class_browser if browser else self.ifc_class
-    relating_type_id = self.relating_type_id_browser if browser else self.relating_type_id
-    # relating_type = AuthoringData.relating_type_name_by_id(ifc_class, relating_type_id)
+    if context.region is not None and context.region.type != "TOOL_HEADER":
+        ifc_class = self.ifc_class_browser if browser else self.ifc_class
+        relating_type_id = self.relating_type_id_browser if browser else self.relating_type_id
+        # relating_type = AuthoringData.relating_type_name_by_id(ifc_class, relating_type_id)
 
-    if ifc_class not in self.constr_classes or relating_type_id not in self.constr_classes[ifc_class].constr_types:
-        try:
-            AuthoringData.assetize_relating_type_from_selection(browser=browser)
-        except ConstrTypeEntityNotFound:
-            return
-
-    def set_icon(update_interval_seconds=0.0001):
         if ifc_class not in self.constr_classes or relating_type_id not in self.constr_classes[ifc_class].constr_types:
-            return update_interval_seconds
-        else:
-            self.icon_id = self.constr_classes[ifc_class].constr_types[relating_type_id].icon_id
+            try:
+                AuthoringData.assetize_relating_type_from_selection(browser=browser)
+            except ConstrTypeEntityNotFound:
+                return
 
-    bpy.app.timers.register(set_icon)
+        def set_icon(update_interval_seconds=0.0001):
+            if ifc_class not in self.constr_classes or relating_type_id not in self.constr_classes[ifc_class].constr_types:
+                return update_interval_seconds
+            else:
+                self.icon_id = self.constr_classes[ifc_class].constr_types[relating_type_id].icon_id
+
+        bpy.app.timers.register(set_icon)
 
 
 def update_ifc_class(self, context):
@@ -68,15 +69,16 @@ def update_ifc_class(self, context):
 
 
 def update_ifc_class_browser(self, context):
-    AuthoringData.load_ifc_classes()
-    AuthoringData.load_relating_types_browser()
-    if self.updating:
-        return
-    ifc_class = self.ifc_class_browser
-    constr_class_info = AuthoringData.constr_class_info(ifc_class)
+    if context.region is not None and context.region.type != "TOOL_HEADER":
+        AuthoringData.load_ifc_classes()
+        AuthoringData.load_relating_types_browser()
+        if self.updating:
+            return
+        ifc_class = self.ifc_class_browser
+        constr_class_info = AuthoringData.constr_class_info(ifc_class)
 
-    if constr_class_info is None or not constr_class_info.fully_loaded:
-        AuthoringData.assetize_constr_class(ifc_class)
+        if constr_class_info is None or not constr_class_info.fully_loaded:
+            AuthoringData.assetize_constr_class(ifc_class)
 
 
 def update_relating_type(self, context):
@@ -103,13 +105,14 @@ def get_constr_class_info(props, ifc_class):
 
 
 def update_preview_multiple(self, context):
-    if self.preview_multiple_constr_types:
-        ifc_class = self.ifc_class
-        constr_class_info = get_constr_class_info(self, ifc_class)
-        if constr_class_info is None or not constr_class_info.fully_loaded:
-            AuthoringData.assetize_constr_class(ifc_class)
-    else:
-        update_relating_type(self, context)
+    if context.region is not None and context.region.type != "TOOL_HEADER":
+        if self.preview_multiple_constr_types:
+            ifc_class = self.ifc_class
+            constr_class_info = get_constr_class_info(self, ifc_class)
+            if constr_class_info is None or not constr_class_info.fully_loaded:
+                AuthoringData.assetize_constr_class(ifc_class)
+        else:
+            update_relating_type(self, context)
 
 
 class ConstrTypeInfo(PropertyGroup):
