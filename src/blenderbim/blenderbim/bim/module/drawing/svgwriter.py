@@ -191,7 +191,10 @@ class SvgWriter:
                 )
             )
             # TODO: allow metric to be configurable
-            rl = (matrix_world @ points[0].co.xyz).z
+            
+            elevationofrefheight = helper.getelevationofrefheight()
+            inworld_elevation = (matrix_world @ points[0].co.xyz).z
+            rl = inworld_elevation + elevationofrefheight
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
                 rl = helper.format_distance(rl)
             else:

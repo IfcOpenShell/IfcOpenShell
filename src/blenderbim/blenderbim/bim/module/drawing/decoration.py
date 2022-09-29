@@ -1063,8 +1063,10 @@ class SectionLevelDecorator(LevelDecorator):
             p1 = location_3d_to_region_2d(region, region3d, v1)
             dir = p1 - p0
             if dir.length < 1:
-                continue
-            text = "RL " + self.format_value(context, verts[-1].z)
+                continue        
+            elevationofrefheight = helper.getelevationofrefheight()
+            inworld_elevation = verts[-1].z
+            text = "RL " + self.format_value(context, inworld_elevation + elevationofrefheight)
             self.draw_label(context, text, p0 + dir.normalized() * 16, -dir, gap=16, center=False)
 
 

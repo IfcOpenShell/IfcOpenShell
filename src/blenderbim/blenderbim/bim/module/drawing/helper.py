@@ -257,6 +257,20 @@ def format_distance(value, isArea=False, hide_units=True):
     return tx_dist
 
 
+def getelevationofrefheight():
+    # IfcBuilding.ElevationOfRefHeight is deprecated in IFC4x3
+    # TODO develop an apporach for IFC4x3 and beyond https://github.com/buildingSMART/IFC4.3.x-development/issues/36
+    first_building = tool.Ifc.get().by_type("IfcBuilding")[0]
+    if first_building.ElevationOfRefHeight:
+        if bpy.context.scene.unit_settings.system == "IMPERIAL":
+            elevationofrefheight = first_building.ElevationOfRefHeight/3.28084
+        else:
+            elevationofrefheight = first_building.ElevationOfRefHeight
+    else:
+        elevationofrefheight = 0
+    return elevationofrefheight
+
+
 def get_active_drawing(scene):
     """Get active drawing collection and camera"""
     props = scene.DocProperties
