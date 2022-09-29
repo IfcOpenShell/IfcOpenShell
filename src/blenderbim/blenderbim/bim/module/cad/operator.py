@@ -340,7 +340,7 @@ class CadOffset(bpy.types.Operator):
 
     @classmethod
     def poll(self, context):
-        return context.mode == 'EDIT_MESH'
+        return context.mode == "EDIT_MESH"
 
     def draw(self, context):
         layout = self.layout
@@ -381,17 +381,17 @@ class CadOffset(bpy.types.Operator):
 
         # Use the viewport angle to determine the offset direction
         for area in bpy.context.screen.areas:
-            if area.type == 'VIEW_3D':
+            if area.type == "VIEW_3D":
                 # Don't ask me, I don't know.
                 # view_matrix = area.spaces.active.region_3d.view_matrix
-                x = area.spaces.active.region_3d.view_rotation @ Vector((1,0,0))
-                y = area.spaces.active.region_3d.view_rotation @ Vector((0,1,0))
-                z = area.spaces.active.region_3d.view_rotation @ Vector((0,0,1))
-                wp = Matrix([x,y,z,Vector((0,0,0))]).to_4x4().transposed()
+                x = area.spaces.active.region_3d.view_rotation @ Vector((1, 0, 0))
+                y = area.spaces.active.region_3d.view_rotation @ Vector((0, 1, 0))
+                z = area.spaces.active.region_3d.view_rotation @ Vector((0, 0, 1))
+                wp = Matrix([x, y, z, Vector((0, 0, 0))]).to_4x4().transposed()
                 break
 
-        rotation = Matrix.Rotation(pi / 2, 2, 'Z')
-        rotation_i = Matrix.Rotation(- pi / 2, 2, 'Z')
+        rotation = Matrix.Rotation(pi / 2, 2, "Z")
+        rotation_i = Matrix.Rotation(-pi / 2, 2, "Z")
 
         # Create loops from edges
         loop_edges = set(edges)
@@ -501,7 +501,7 @@ class CadOffset(bpy.types.Operator):
                 if len(normals) == 2:
                     # https://stackoverflow.com/a/54042831/9627415
                     new_normal = (normals[0].lerp(normals[1], 0.5)).normalized()
-                    offset_length = self.distance / sqrt((1 + normals[0].dot(normals[1]))/2)
+                    offset_length = self.distance / sqrt((1 + normals[0].dot(normals[1])) / 2)
                     offset = mw.inverted().to_quaternion() @ (wp.to_quaternion() @ (new_normal * offset_length).to_3d())
                     new_vert = v1.co + offset
                     new_verts.append(bm.verts.new(new_vert))
@@ -531,6 +531,7 @@ class CadOffset(bpy.types.Operator):
 class AddIfcCircle(bpy.types.Operator):
     bl_idname = "bim.add_ifccircle"
     bl_label = "Add IfcCircle"
+    radius: bpy.props.FloatProperty(name="Radius", default=0.1)
 
     @classmethod
     def poll(cls, context):
@@ -538,23 +539,215 @@ class AddIfcCircle(bpy.types.Operator):
         return bool(obj) and obj.type == "MESH"
 
     def execute(self, context):
+        if self.has_selected_existing_circle(context):
+            self.change_radius(context)
+        else:
+            self.create_circle(context)
+        return {"FINISHED"}
+
+    def has_selected_existing_circle(self, context):
         obj = context.active_object
+        bm = bmesh.from_edit_mesh(obj.data)
+        verts = [v for v in bm.verts if v.select and not v.hide]
+        if len(verts) != 2:
+            return False
+        groups = []
+        for i, group in enumerate(obj.vertex_groups):
+            if "IFCCIRCLE" in group.name:
+                groups.append(i)
+        bm.verts.layers.deform.verify()
+        deform_layer = bm.verts.layers.deform.active
+        for group in groups:
+            if group in verts[0][deform_layer] and group in verts[1][deform_layer]:
+                return True
+
+    def change_radius(self, context):
+        obj = context.active_object
+        bm = bmesh.from_edit_mesh(obj.data)
+        verts = [v for v in bm.verts if v.select and not v.hide]
+        center = verts[0].co.lerp(verts[1].co, 0.5)
+        verts[0].co = center + ((verts[0].co - center).normalized() * self.radius)
+        verts[1].co = center + ((verts[1].co - center).normalized() * self.radius)
+        bm.verts.index_update()
+        bm.edges.index_update()
+        bmesh.update_edit_mesh(obj.data)
+
+    def create_circle(self, context):
+        obj = context.active_object
+        bpy.ops.object.mode_set(mode="OBJECT")
+        # The last group may be the result of a prior run of this operator.
+        # I tried looping through all groups but Blender group indices seem to behave unpredictably.
+        if len(obj.vertex_groups):
+            last_group = obj.vertex_groups[-1]
+            verts_in_group = [v for v in obj.data.vertices if last_group.index in [vg.group for vg in v.groups]]
+            if "IFCCIRCLE" in last_group.name and len(verts_in_group) != 2:
+                obj.vertex_groups.remove(last_group)
+        group = obj.vertex_groups.new(name="IFCCIRCLE")
         bpy.ops.object.mode_set(mode="EDIT")
 
         bm = bmesh.from_edit_mesh(obj.data)
 
-        center = obj.matrix_world.inverted() @ context.scene.cursor.location
-        radius = 0.5
+        bm.verts.layers.deform.verify()
+        deform_layer = bm.verts.layers.deform.active
 
-        v1 = bm.verts.new((center[0], center[1] + radius, 0.0))
-        v2 = bm.verts.new((center[0], center[1] - radius, 0.0))
+        center = obj.matrix_world.inverted() @ context.scene.cursor.location
+
+        v1 = bm.verts.new((center[0], center[1] + self.radius, 0.0))
+        v2 = bm.verts.new((center[0], center[1] - self.radius, 0.0))
         bm.verts.index_update()
-        indices = [v1.index, v2.index]
         bm.edges.new((v1, v2))
+
+        for vert in [v1, v2]:
+            vert[deform_layer][group.index] = 1
+
+        bm.verts.index_update()
+        bm.edges.index_update()
         bmesh.update_edit_mesh(obj.data)
 
-        bpy.ops.object.mode_set(mode="OBJECT")
-        group = obj.vertex_groups.new(name="IFCCIRCLE")
-        group.add(indices, 1, "REPLACE")
-        bpy.ops.object.mode_set(mode="EDIT")
+
+class AddIfcArcIndexFillet(bpy.types.Operator):
+    bl_idname = "bim.add_ifcarcindex_fillet"
+    bl_label = "Add Arc Index Fillet"
+    bl_options = {"REGISTER", "UNDO"}
+    radius: bpy.props.FloatProperty(name="Radius", default=0.1)
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return obj and obj.type == "MESH" and context.mode == "EDIT_MESH"
+
+    def draw(self, context):
+        layout = self.layout
+        for prop in self.__class__.__annotations__.keys():
+            layout.prop(self, prop)
+
+    def execute(self, context):
+        if self.has_selected_existing_arc(context):
+            self.change_radius(context)
+        else:
+            self.create_arc(context)
         return {"FINISHED"}
+
+    def has_selected_existing_arc(self, context):
+        obj = context.active_object
+        bm = bmesh.from_edit_mesh(obj.data)
+        verts = [v for v in bm.verts if v.select and not v.hide]
+        if len(verts) != 3:
+            return False
+        groups = []
+        for i, group in enumerate(obj.vertex_groups):
+            if "IFCARCINDEX" in group.name:
+                groups.append(i)
+        bm.verts.layers.deform.verify()
+        deform_layer = bm.verts.layers.deform.active
+        for group in groups:
+            try:
+                if group in verts[0][deform_layer] and group in verts[1][deform_layer]:
+                    return True
+            except:
+                pass  # Potentially fail if the vert has been removed in the previous operation
+
+    def change_radius(self, context):
+        obj = context.active_object
+        bm = bmesh.from_edit_mesh(obj.data)
+        edges = [e for e in bm.edges if e.select and not e.hide]
+
+        mid = list(set(edges[0].verts) & set(edges[1].verts))[0]
+        v1 = edges[0].other_vert(mid)
+        v2 = edges[1].other_vert(mid)
+        center = tool.Cad.get_center_of_arc([v1.co, mid.co, v2.co])
+
+        if len(v1.link_edges) != 2 or len(v2.link_edges) != 2:
+            return
+
+        v3 = v1.link_edges[1].other_vert(v1) if mid in v1.link_edges[0].verts else v1.link_edges[0].other_vert(v1)
+        v4 = v2.link_edges[1].other_vert(v2) if mid in v2.link_edges[0].verts else v2.link_edges[0].other_vert(v2)
+        dir1 = (v3.co - v1.co).normalized()
+        dir2 = (v4.co - v2.co).normalized()
+
+        intersect = mathutils.geometry.intersect_line_line(v3.co, v1.co, v4.co, v2.co)[0]
+
+        edge_angle = dir1.angle(dir2)
+        slide_distance = self.radius / math.tan(edge_angle / 2)
+
+        v1.co = intersect + (dir1 * slide_distance)
+        v2.co = intersect + (dir2 * slide_distance)
+
+        normal = mathutils.geometry.normal([v1.co, intersect, v2.co])
+        center = mathutils.geometry.intersect_line_line(
+            v1.co, v1.co + normal.cross(dir1), v2.co, v2.co + normal.cross(dir2)
+        )[0]
+
+        mid.co = center + ((v1.co.lerp(v2.co, 0.5) - center).normalized() * self.radius)
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        bmesh.update_edit_mesh(obj.data)
+
+    def create_arc(self, context):
+        obj = bpy.context.active_object
+
+        bpy.ops.object.mode_set(mode="OBJECT")
+        # The last group may be the result of a prior run of this operator.
+        # I tried looping through all groups but Blender group indices seem to behave unpredictably.
+        if len(obj.vertex_groups):
+            last_group = obj.vertex_groups[-1]
+            verts_in_group = [v for v in obj.data.vertices if last_group.index in [vg.group for vg in v.groups]]
+            if "IFCARCINDEX" in last_group.name and len(verts_in_group) != 3:
+                obj.vertex_groups.remove(last_group)
+        group = obj.vertex_groups.new(name="IFCARCINDEX")
+        bpy.ops.object.mode_set(mode="EDIT")
+
+        bm = bmesh.from_edit_mesh(obj.data)
+
+        bm.verts.layers.deform.verify()
+        deform_layer = bm.verts.layers.deform.active
+
+        selected_edges = [e for e in bm.edges if e.select]
+        if len(selected_edges) != 2:
+            return {"CANCELLED"}
+
+        # Assume the user has selected two edges sharing a vert, but merge verts
+        # just in case the vertex is coincident but not shared.
+        all_verts = list(set(selected_edges[0].verts) | set(selected_edges[1].verts))
+
+        bmesh.ops.remove_doubles(bm, verts=all_verts, dist=1e-4)
+
+        # Calculate the distance to slide each edge to make space for the fillet arc
+        shared_vert = list(set(selected_edges[0].verts) & set(selected_edges[1].verts))[0]
+        v1 = selected_edges[0].other_vert(shared_vert)
+        v2 = selected_edges[1].other_vert(shared_vert)
+        dir1 = (v1.co - shared_vert.co).normalized()
+        dir2 = (v2.co - shared_vert.co).normalized()
+        edge_angle = dir1.angle(dir2)
+        slide_distance = self.radius / math.tan(edge_angle / 2)
+
+        angle = math.pi - edge_angle
+        fillet_v1co = shared_vert.co + (dir1 * slide_distance)
+        fillet_v2co = shared_vert.co + (dir2 * slide_distance)
+
+        normal = mathutils.geometry.normal([v1.co, shared_vert.co, v2.co])
+
+        center = mathutils.geometry.intersect_line_line(
+            fillet_v1co, fillet_v1co + normal.cross(dir1), fillet_v2co, fillet_v2co + normal.cross(dir2)
+        )[0]
+
+        fillet_v1 = bm.verts.new(fillet_v1co)
+        fillet_v2 = bm.verts.new(fillet_v2co)
+
+        midpointco = center + ((fillet_v1co.lerp(fillet_v2.co, 0.5) - center).normalized() * self.radius)
+        midpoint = bm.verts.new(midpointco)
+
+        bm.edges.new((v1, fillet_v1))
+        bm.edges.new((v2, fillet_v2))
+        bm.edges.new((fillet_v1, midpoint))
+        bm.edges.new((fillet_v2, midpoint))
+
+        bmesh.ops.delete(bm, geom=[shared_vert], context="VERTS")
+
+        for vert in [fillet_v1, midpoint, fillet_v2]:
+            vert[deform_layer][group.index] = 1
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        bmesh.update_edit_mesh(obj.data)

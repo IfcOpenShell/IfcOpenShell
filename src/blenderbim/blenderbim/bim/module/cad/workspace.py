@@ -41,6 +41,7 @@ class CadTool(WorkSpaceTool):
         ("bim.cad_hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
         ("bim.cad_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
         ("bim.cad_hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
+        ("bim.cad_hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
     )
 
     def draw_settings(context, layout, tool):
@@ -64,6 +65,16 @@ class CadTool(WorkSpaceTool):
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_F")
+            row.operator("bim.cad_hotkey", text="Fillet").hotkey = "S_F"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_O")
+            row.operator("bim.cad_hotkey", text="Offset").hotkey = "S_O"
+
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_C")
             row.operator("bim.add_ifccircle", text="Circle")
 
@@ -74,8 +85,8 @@ class CadTool(WorkSpaceTool):
 
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_O")
-            row.operator("bim.cad_hotkey", text="Offset").hotkey = "S_O"
+            row.label(text="", icon="EVENT_X")
+            row.operator("bim.reset_vertex", text="Reset Vertex")
         else:
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -112,31 +123,35 @@ class CadHotkey(bpy.types.Operator):
     bl_label = "CAD Hotkey"
     bl_options = {"REGISTER", "UNDO"}
     hotkey: bpy.props.StringProperty()
-    resolution: bpy.props.IntProperty(name="Arc Resolution", min=1, default=1)
-    radius: bpy.props.FloatProperty(name="Radius", default=0.1)
-    distance: bpy.props.FloatProperty(name="Distance", default=0.1)
 
     def execute(self, context):
+        self.props = context.scene.BIMCadProperties
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
 
     def draw(self, context):
-        if self.hotkey == "S_V":
+        props = context.scene.BIMCadProperties
+        if self.hotkey == "S_C":
+            if self.is_profile():
+                row = self.layout.row()
+                row.prop(props, "radius")
+        elif self.hotkey == "S_F":
             if not self.is_profile():
                 row = self.layout.row()
-                row.prop(self, "resolution")
-        elif self.hotkey == "S_F":
+                row.prop(props, "resolution")
             row = self.layout.row()
-            row.prop(self, "resolution")
-            row = self.layout.row()
-            row.prop(self, "radius")
+            row.prop(props, "radius")
         elif self.hotkey == "S_O":
             row = self.layout.row()
-            row.prop(self, "distance")
+            row.prop(props, "distance")
+        elif self.hotkey == "S_V":
+            if not self.is_profile():
+                row = self.layout.row()
+                row.prop(props, "resolution")
 
     def hotkey_S_C(self):
         if self.is_profile():
-            bpy.ops.bim.add_ifccircle()
+            bpy.ops.bim.add_ifccircle(radius=self.props.radius)
         else:
             bpy.ops.bim.cad_arc_from_2_points()
 
@@ -144,10 +159,13 @@ class CadHotkey(bpy.types.Operator):
         bpy.ops.bim.cad_trim_extend()
 
     def hotkey_S_F(self):
-        bpy.ops.bim.cad_fillet(resolution=self.resolution, radius=self.radius)
+        if self.is_profile():
+            bpy.ops.bim.add_ifcarcindex_fillet(radius=self.props.radius)
+        else:
+            bpy.ops.bim.cad_fillet(resolution=self.props.resolution, radius=self.props.radius)
 
     def hotkey_S_O(self):
-        bpy.ops.bim.cad_offset(distance=self.distance)
+        bpy.ops.bim.cad_offset(distance=self.props.distance)
 
     def hotkey_S_Q(self):
         bpy.ops.bim.edit_extrusion_profile()
@@ -160,6 +178,10 @@ class CadHotkey(bpy.types.Operator):
             bpy.ops.bim.set_arc_index()
         else:
             bpy.ops.bim.cad_arc_from_3_points(resolution=self.resolution)
+
+    def hotkey_S_X(self):
+        if self.is_profile():
+            bpy.ops.bim.reset_vertex()
 
     def is_profile(self):
         obj = bpy.context.active_object

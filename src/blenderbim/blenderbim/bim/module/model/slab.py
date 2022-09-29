@@ -184,7 +184,7 @@ class DumbSlabGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
 
-    def generate(self):
+    def generate(self, link_to_scene=True):
         self.file = IfcStore.get_file()
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
         thicknesses = []
@@ -204,13 +204,13 @@ class DumbSlabGenerator:
         self.length = 3
         self.rotation = 0
         self.location = Vector((0, 0, 0))
-        return self.derive_from_cursor()
+        return self.derive_from_cursor(link_to_scene=link_to_scene)
 
-    def derive_from_cursor(self):
+    def derive_from_cursor(self, link_to_scene):
         self.location = bpy.context.scene.cursor.location
-        return self.create_slab()
+        return self.create_slab(link_to_scene)
 
-    def create_slab(self):
+    def create_slab(self, link_to_scene):
         verts = [
             Vector((0, 0, 0)),
             Vector((0, self.width, 0)),
@@ -232,12 +232,13 @@ class DumbSlabGenerator:
         modifier.offset = 1
         modifier.thickness = self.depth
 
-        obj.location = self.location
-        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-            obj.location[2] = self.collection_obj.location[2] - self.depth
-        else:
-            obj.location[2] -= self.depth
-        self.collection.objects.link(obj)
+        if link_to_scene:
+            obj.location = self.location
+            if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
+                obj.location[2] = self.collection_obj.location[2] - self.depth
+            else:
+                obj.location[2] -= self.depth
+            self.collection.objects.link(obj)
         bpy.ops.bim.assign_class(
             obj=obj.name,
             ifc_class=ifc_class,
@@ -724,6 +725,29 @@ class EditExtrusionProfile(bpy.types.Operator):
         return value / self.unit_scale
 
 
+class ResetVertex(bpy.types.Operator):
+    bl_idname = "bim.reset_vertex"
+    bl_label = "Reset Vertex"
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return bool(obj) and obj.type == "MESH"
+
+    def cancel_message(self, msg):
+        self.report({"WARNING"}, msg)
+        return {"CANCELLED"}
+
+    def execute(self, context):
+        obj = context.active_object
+        bpy.ops.object.mode_set(mode="OBJECT")
+        selected_vertices = [v.index for v in obj.data.vertices if v.select]
+        for group in obj.vertex_groups:
+            group.remove(selected_vertices)
+        bpy.ops.object.mode_set(mode="EDIT")
+        return {"FINISHED"}
+
+
 class SetArcIndex(bpy.types.Operator):
     bl_idname = "bim.set_arc_index"
     bl_label = "Set Arc Index"
@@ -744,9 +768,8 @@ class SetArcIndex(bpy.types.Operator):
         in_group = any([bool(obj.data.vertices[v].groups) for v in selected_vertices])
         for group in obj.vertex_groups:
             group.remove(selected_vertices)
-        if in_group is False:
-            group = obj.vertex_groups.new(name="IFCARCINDEX")
-            group.add(selected_vertices, 1, "REPLACE")
+        group = obj.vertex_groups.new(name="IFCARCINDEX")
+        group.add(selected_vertices, 1, "REPLACE")
         bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
 
