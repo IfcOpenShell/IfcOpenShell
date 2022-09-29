@@ -319,7 +319,7 @@ endif
 	# Required by QTOCalculator
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/b5/9a/625d4fc91ef85873801a16700840786117df4c016162a4532c998a7fe6bc/Shapely-1.8.4.tar.gz
-	cd dist/working && tar -xzvf shapely*
+	cd dist/working && tar -xzvf Shapely*
 	cp -r dist/working/Shapely-1.8.4/shapely dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
