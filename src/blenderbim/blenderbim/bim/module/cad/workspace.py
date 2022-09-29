@@ -123,36 +123,35 @@ class CadHotkey(bpy.types.Operator):
     bl_label = "CAD Hotkey"
     bl_options = {"REGISTER", "UNDO"}
     hotkey: bpy.props.StringProperty()
-    resolution: bpy.props.IntProperty(name="Arc Resolution", min=1, default=1)
-    radius: bpy.props.FloatProperty(name="Radius", default=0.1)
-    distance: bpy.props.FloatProperty(name="Distance", default=0.1)
 
     def execute(self, context):
+        self.props = context.scene.BIMCadProperties
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
 
     def draw(self, context):
+        props = context.scene.BIMCadProperties
         if self.hotkey == "S_C":
             if self.is_profile():
                 row = self.layout.row()
-                row.prop(self, "radius")
+                row.prop(props, "radius")
         elif self.hotkey == "S_F":
             if not self.is_profile():
                 row = self.layout.row()
-                row.prop(self, "resolution")
+                row.prop(props, "resolution")
             row = self.layout.row()
-            row.prop(self, "radius")
+            row.prop(props, "radius")
         elif self.hotkey == "S_O":
             row = self.layout.row()
-            row.prop(self, "distance")
+            row.prop(props, "distance")
         elif self.hotkey == "S_V":
             if not self.is_profile():
                 row = self.layout.row()
-                row.prop(self, "resolution")
+                row.prop(props, "resolution")
 
     def hotkey_S_C(self):
         if self.is_profile():
-            bpy.ops.bim.add_ifccircle(radius=self.radius)
+            bpy.ops.bim.add_ifccircle(radius=self.props.radius)
         else:
             bpy.ops.bim.cad_arc_from_2_points()
 
@@ -161,12 +160,12 @@ class CadHotkey(bpy.types.Operator):
 
     def hotkey_S_F(self):
         if self.is_profile():
-            bpy.ops.bim.add_ifcarcindex_fillet(radius=self.radius)
+            bpy.ops.bim.add_ifcarcindex_fillet(radius=self.props.radius)
         else:
-            bpy.ops.bim.cad_fillet(resolution=self.resolution, radius=self.radius)
+            bpy.ops.bim.cad_fillet(resolution=self.props.resolution, radius=self.props.radius)
 
     def hotkey_S_O(self):
-        bpy.ops.bim.cad_offset(distance=self.distance)
+        bpy.ops.bim.cad_offset(distance=self.props.distance)
 
     def hotkey_S_Q(self):
         bpy.ops.bim.edit_extrusion_profile()
