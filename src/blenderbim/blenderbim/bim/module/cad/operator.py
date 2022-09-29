@@ -540,30 +540,36 @@ class AddIfcCircle(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
+
+        bpy.ops.object.mode_set(mode="OBJECT")
+        # The last group may be the result of a prior run of this operator.
+        # I tried looping through all groups but Blender group indices seem to behave unpredictably.
+        if len(obj.vertex_groups):
+            last_group = obj.vertex_groups[-1]
+            verts_in_group = [v for v in obj.data.vertices if last_group.index in [vg.group for vg in v.groups]]
+            if "IFCCIRCLE" in last_group.name and len(verts_in_group) != 2:
+                obj.vertex_groups.remove(last_group)
+        group = obj.vertex_groups.new(name="IFCCIRCLE")
         bpy.ops.object.mode_set(mode="EDIT")
 
         bm = bmesh.from_edit_mesh(obj.data)
+
+        bm.verts.layers.deform.verify()
+        deform_layer = bm.verts.layers.deform.active
 
         center = obj.matrix_world.inverted() @ context.scene.cursor.location
 
         v1 = bm.verts.new((center[0], center[1] + self.radius, 0.0))
         v2 = bm.verts.new((center[0], center[1] - self.radius, 0.0))
         bm.verts.index_update()
-        indices = [v1.index, v2.index]
         bm.edges.new((v1, v2))
-        bmesh.update_edit_mesh(obj.data)
 
-        bpy.ops.object.mode_set(mode="OBJECT")
-        to_delete = set()
-        for i, group in enumerate(obj.vertex_groups):
-            group.remove(indices)
-            if not [v for v in obj.data.vertices if i in [vg.group for vg in v.groups]]:
-                to_delete.add(group)
-        for group in to_delete:
-            obj.vertex_groups.remove(group)
-        group = obj.vertex_groups.new(name="IFCCIRCLE")
-        group.add(indices, 1, "REPLACE")
-        bpy.ops.object.mode_set(mode="EDIT")
+        for vert in [v1, v2]:
+            vert[deform_layer][group.index] = 1
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        bmesh.update_edit_mesh(obj.data)
         return {"FINISHED"}
 
 
@@ -584,11 +590,24 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
             layout.prop(self, prop)
 
     def execute(self, context):
+        obj = bpy.context.active_object
+
         bpy.ops.object.mode_set(mode="OBJECT")
+        # The last group may be the result of a prior run of this operator.
+        # I tried looping through all groups but Blender group indices seem to behave unpredictably.
+        if len(obj.vertex_groups):
+            last_group = obj.vertex_groups[-1]
+            verts_in_group = [v for v in obj.data.vertices if last_group.index in [vg.group for vg in v.groups]]
+            if "IFCARCINDEX" in last_group.name and len(verts_in_group) != 3:
+                obj.vertex_groups.remove(last_group)
+        group = obj.vertex_groups.new(name="IFCARCINDEX")
         bpy.ops.object.mode_set(mode="EDIT")
 
-        obj = bpy.context.active_object
         bm = bmesh.from_edit_mesh(obj.data)
+
+        bm.verts.layers.deform.verify()
+        deform_layer = bm.verts.layers.deform.active
+
         selected_edges = [e for e in bm.edges if e.select]
         if len(selected_edges) != 2:
             return {"CANCELLED"}
@@ -596,6 +615,7 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         # Assume the user has selected two edges sharing a vert, but merge verts
         # just in case the vertex is coincident but not shared.
         all_verts = list(set(selected_edges[0].verts) | set(selected_edges[1].verts))
+
         bmesh.ops.remove_doubles(bm, verts=all_verts, dist=1e-4)
 
         # Calculate the distance to slide each edge to make space for the fillet arc
@@ -630,21 +650,10 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
 
         bmesh.ops.delete(bm, geom=[shared_vert], context="VERTS")
 
-        fillet_verts = [fillet_v1.index, midpoint.index, fillet_v2.index]
+        for vert in [fillet_v1, midpoint, fillet_v2]:
+            vert[deform_layer][group.index] = 1
 
         bm.verts.index_update()
         bm.edges.index_update()
         bmesh.update_edit_mesh(obj.data)
-
-        bpy.ops.object.mode_set(mode="OBJECT")
-        to_delete = set()
-        for i, group in enumerate(obj.vertex_groups):
-            group.remove(fillet_verts)
-            if not [v for v in obj.data.vertices if i in [vg.group for vg in v.groups]]:
-                to_delete.add(group)
-        for group in to_delete:
-            obj.vertex_groups.remove(group)
-        group = obj.vertex_groups.new(name="IFCARCINDEX")
-        group.add(fillet_verts, 1, "REPLACE")
-        bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
