@@ -72,7 +72,7 @@ def mode_callback(obj, data):
             obj.matrix_world.translation = new_origin
 
 
-class JoinWall(bpy.types.Operator):
+class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.join_wall"
     bl_label = "Join Wall"
     bl_options = {"REGISTER", "UNDO"}
@@ -88,11 +88,9 @@ class JoinWall(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.BIMObjectProperties.ifc_definition_id]
         joiner = DumbWallJoiner()
-        #for obj in selected_objs:
-        #    bpy.ops.bim.dynamically_void_product(obj=obj.name)
         if not self.join_type:
             for obj in selected_objs:
                 joiner.unjoin(obj)
@@ -148,7 +146,7 @@ class AlignWall(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class FlipWall(bpy.types.Operator):
+class FlipWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.flip_wall"
     bl_label = "Flip Wall"
     bl_options = {"REGISTER", "UNDO"}
@@ -158,7 +156,7 @@ class FlipWall(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
         joiner = DumbWallJoiner()
         for obj in selected_objs:
@@ -166,7 +164,7 @@ class FlipWall(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SplitWall(bpy.types.Operator):
+class SplitWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.split_wall"
     bl_label = "Split Wall"
     bl_options = {"REGISTER", "UNDO"}
@@ -178,14 +176,14 @@ class SplitWall(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
         for obj in selected_objs:
             DumbWallJoiner().split(obj, context.scene.cursor.location)
         return {"FINISHED"}
 
 
-class MergeWall(bpy.types.Operator):
+class MergeWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.merge_wall"
     bl_label = "Merge Wall"
     bl_options = {"REGISTER", "UNDO"}
@@ -194,14 +192,14 @@ class MergeWall(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
         if len(selected_objs) == 2:
             DumbWallJoiner().merge([o for o in selected_objs if o != context.active_object][0], context.active_object)
         return {"FINISHED"}
 
 
-class RecalculateWall(bpy.types.Operator):
+class RecalculateWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.recalculate_wall"
     bl_label = "Recalculate Wall"
     bl_options = {"REGISTER", "UNDO"}
@@ -210,12 +208,12 @@ class RecalculateWall(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         DumbWallRecalculator().recalculate(context.selected_objects)
         return {"FINISHED"}
 
 
-class ChangeExtrusionDepth(bpy.types.Operator):
+class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_extrusion_depth"
     bl_label = "Change Extrusion Depth"
     bl_options = {"REGISTER", "UNDO"}
@@ -225,7 +223,7 @@ class ChangeExtrusionDepth(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         wall_objs = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -234,7 +232,7 @@ class ChangeExtrusionDepth(bpy.types.Operator):
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
                 return
-            extrusion = self.get_extrusion(representation)
+            extrusion = tool.Model.get_extrusion(representation)
             if not extrusion:
                 return
             extrusion.Depth = self.depth
@@ -244,18 +242,8 @@ class ChangeExtrusionDepth(bpy.types.Operator):
             DumbWallRecalculator().recalculate(wall_objs)
         return {"FINISHED"}
 
-    def get_extrusion(self, representation):
-        item = representation.Items[0]
-        while True:
-            if item.is_a("IfcExtrudedAreaSolid"):
-                return item
-            elif item.is_a("IfcBooleanClippingResult"):
-                item = item.FirstOperand
-            else:
-                break
 
-
-class ChangeLayerLength(bpy.types.Operator):
+class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_layer_length"
     bl_label = "Change Layer Length"
     bl_options = {"REGISTER", "UNDO"}
@@ -265,7 +253,7 @@ class ChangeLayerLength(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         joiner = DumbWallJoiner()
         for obj in context.selected_objects:
             joiner.set_length(obj, self.length)
