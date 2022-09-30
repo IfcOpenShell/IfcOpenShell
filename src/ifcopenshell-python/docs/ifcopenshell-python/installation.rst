@@ -97,6 +97,12 @@ Conda
 
     Installing IfcOpenShell from Conda will also install IfcConvert.
 
+.. warning::
+
+    Conda builds are not yet available for Mac ARM devices (M1 chip). Instead,
+    please follow the instructions for the Pre-built packages or PyPI sections
+    above.
+
 Docker
 ------
 

@@ -751,3 +751,63 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         bm.verts.index_update()
         bm.edges.index_update()
         bmesh.update_edit_mesh(obj.data)
+
+
+class AlignViewToProfile(bpy.types.Operator):
+    bl_idname = "bim.align_view_to_profile"
+    bl_label = "Align View To Profile"
+    #            __ ___
+    #          .'. -- . '.
+    #         /U)  __   (O|
+    #        /.'  ()()   '.\._
+    #      .',/;,_.--._.;;) . '--..__
+    #     /  ,///|.__.|.\\\  \ '.  '.''---..___
+    #    /'._ '' ||  ||  '' _'\  :   \   '   . '.
+    #   /        ||  ||        '.,    )   )   :  \
+    #  :'-.__ _  ||  ||   _ __.' _\_ .'  '   '   ,)
+    #  (          '  |'        ( __= ___..-._ ( (.\\
+    # ('\      .___ ___.      /'.___=          \.\.\
+    #  \\\-..____________..-'///
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return bool(obj) and obj.type == "MESH"
+
+    def execute(self, context):
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.view3d.view_axis(type="TOP", align_active=True)
+        region_3d = bpy.context.area.spaces.active.region_3d
+        region_3d.view_perspective = "ORTHO"
+        bpy.ops.object.mode_set(mode="EDIT")
+        return {"FINISHED"}
+
+
+class AddRectangle(bpy.types.Operator):
+    bl_idname = "bim.add_rectangle"
+    bl_label = "Add Rectangle"
+    x: bpy.props.FloatProperty(name="X", default=0.1)
+    y: bpy.props.FloatProperty(name="Y", default=0.1)
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return bool(obj) and obj.type == "MESH"
+
+    def execute(self, context):
+        obj = context.active_object
+        bm = bmesh.from_edit_mesh(obj.data)
+        cursor = obj.matrix_world.inverted() @ context.scene.cursor.location
+        new_verts = [
+            bm.verts.new((cursor[0], cursor[1], 0.0)),
+            bm.verts.new((cursor[0] + self.x, cursor[1], 0.0)),
+            bm.verts.new((cursor[0] + self.x, cursor[1] + self.y, 0.0)),
+            bm.verts.new((cursor[0], cursor[1] + self.y, 0.0)),
+        ]
+        [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+        bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        bmesh.update_edit_mesh(obj.data)
+        return {"FINISHED"}

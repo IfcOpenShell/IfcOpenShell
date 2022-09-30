@@ -42,6 +42,7 @@ classes = (
     profile.RecalculateProfile,
     profile.Rotate90,
     slab.DisableEditingExtrusionProfile,
+    slab.DisableEditingSketchExtrusionProfile,
     slab.EditExtrusionProfile,
     slab.EditSketchExtrusionProfile,
     slab.EnableEditingExtrusionProfile,

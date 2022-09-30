@@ -234,13 +234,13 @@ class DumbProfileRegenerator:
         DumbProfileRecalculator().recalculate([obj])
 
 
-class ExtendProfile(bpy.types.Operator):
+class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.extend_profile"
     bl_label = "Extend Profile"
     bl_options = {"REGISTER", "UNDO"}
     join_type: bpy.props.StringProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         selected_objs = context.selected_objects
         for obj in selected_objs:
             bpy.ops.bim.dynamically_void_product(obj=obj.name)
@@ -760,7 +760,7 @@ class DumbProfileJoiner:
         ]
 
 
-class RecalculateProfile(bpy.types.Operator):
+class RecalculateProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.recalculate_profile"
     bl_label = "Recalculate Profile"
     bl_options = {"REGISTER", "UNDO"}
@@ -769,7 +769,7 @@ class RecalculateProfile(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         DumbProfileRecalculator().recalculate(context.selected_objects)
         return {"FINISHED"}
 
@@ -790,7 +790,7 @@ class DumbProfileRecalculator:
                 joiner.recreate_profile(element, profile)
 
 
-class ChangeProfileDepth(bpy.types.Operator):
+class ChangeProfileDepth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_profile_depth"
     bl_label = "Change Profile Length"
     bl_options = {"REGISTER", "UNDO"}
@@ -800,14 +800,14 @@ class ChangeProfileDepth(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         joiner = DumbProfileJoiner()
         for obj in context.selected_objects:
             joiner.set_depth(obj, self.depth)
         return {"FINISHED"}
 
 
-class ChangeCardinalPoint(bpy.types.Operator):
+class ChangeCardinalPoint(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_cardinal_point"
     bl_label = "Change Cardinal Point"
     bl_options = {"REGISTER", "UNDO"}
@@ -817,7 +817,7 @@ class ChangeCardinalPoint(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         objs = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -831,7 +831,7 @@ class ChangeCardinalPoint(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class Rotate90(bpy.types.Operator):
+class Rotate90(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.rotate_90"
     bl_label = "Rotate 90"
     bl_options = {"REGISTER", "UNDO"}
@@ -841,7 +841,7 @@ class Rotate90(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         objs = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)

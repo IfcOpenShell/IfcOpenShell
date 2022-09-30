@@ -46,7 +46,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 			if (!convert_shape(element, s)) {
 				continue;
 			}
-		} else if (shape_type(element) == ST_WIRE && include_curves) {
+		} else if ((shape_type(element) == ST_WIRE || shape_type(element) == ST_CURVE) && include_curves) {
 			TopoDS_Wire w;
 			if (!convert_wire(element, w)) {
 				continue;

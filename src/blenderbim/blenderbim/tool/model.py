@@ -35,3 +35,14 @@ class Model(blenderbim.core.tool.Model):
                 return eval(props.occurrence_name_function) or "Instance"
             except:
                 return "Instance"
+
+    @classmethod
+    def get_extrusion(cls, representation):
+        item = representation.Items[0]
+        while True:
+            if item.is_a("IfcExtrudedAreaSolid"):
+                return item
+            elif item.is_a("IfcBooleanClippingResult"):
+                item = item.FirstOperand
+            else:
+                break

@@ -20,8 +20,10 @@ import bpy
 from . import operator, prop, workspace
 
 classes = (
+    operator.AlignViewToProfile,
     operator.AddIfcArcIndexFillet,
     operator.AddIfcCircle,
+    operator.AddRectangle,
     operator.CadArcFrom2Points,
     operator.CadArcFrom3Points,
     operator.CadFillet,

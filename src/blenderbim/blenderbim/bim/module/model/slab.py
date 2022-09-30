@@ -21,8 +21,9 @@ import gpu
 import blf
 import bgl
 import bpy
-import bmesh
 import math
+import json
+import bmesh
 import ifcopenshell
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
@@ -41,66 +42,6 @@ from ifcopenshell.api.material.data import Data as MaterialData
 from blenderbim.bim.module.geometry.helper import Helper
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
-
-
-def generate_footprint(usecase_path, ifc_file, settings):
-    footprint_context = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "FootPrint", "SKETCH_VIEW")
-    if not footprint_context:
-        return
-    obj = settings["blender_object"]
-    product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-    parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer3":
-        return
-    old_footprint = ifcopenshell.util.representation.get_representation(product, "Plan", "FootPrint", "SKETCH_VIEW")
-    if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
-        if old_footprint:
-            blenderbim.core.geometry.remove_representation(
-                tool.Ifc, tool.Geometry, obj=obj, representation=old_footprint
-            )
-
-        helper = Helper(ifc_file)
-        indices = helper.auto_detect_arbitrary_profile_with_voids_extruded_area_solid(settings["geometry"])
-
-        bm = bmesh.new()
-        bm.from_mesh(settings["geometry"])
-        bm.verts.ensure_lookup_table()
-        bm.edges.ensure_lookup_table()
-
-        profile_edges = []
-
-        def append_profile_edges(profile_edges, indices):
-            indices.append(indices[0])  # Close the loop
-            edge_vert_pairs = list(zip(indices, indices[1:]))
-            for p in edge_vert_pairs:
-                profile_edges.append(
-                    [e for e in bm.verts[p[0]].link_edges if e.other_vert(bm.verts[p[0]]).index == p[1]][0]
-                )
-
-        append_profile_edges(profile_edges, indices["profile"])
-        for inner_indices in indices["inner_curves"]:
-            append_profile_edges(profile_edges, inner_indices)
-
-        irrelevant_edges = [e for e in bm.edges if e not in profile_edges]
-        bmesh.ops.delete(bm, geom=irrelevant_edges, context="EDGES")
-        mesh = bpy.data.meshes.new("Temporary Footprint")
-        bm.to_mesh(mesh)
-        bm.free()
-
-        new_settings = settings.copy()
-        new_settings["context"] = footprint_context
-        new_settings["geometry"] = mesh
-        new_footprint = ifcopenshell.api.run(
-            "geometry.add_representation", ifc_file, should_run_listeners=False, **new_settings
-        )
-
-        ifcopenshell.api.run(
-            "geometry.assign_representation",
-            ifc_file,
-            should_run_listeners=False,
-            **{"product": product, "representation": new_footprint}
-        )
-        bpy.data.meshes.remove(mesh)
 
 
 def calculate_quantities(usecase_path, ifc_file, settings):
@@ -197,6 +138,11 @@ class DumbSlabGenerator:
         if not sum(thicknesses):
             return
 
+        self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        self.footprint_context = ifcopenshell.util.representation.get_context(
+            tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW"
+        )
+
         self.collection = bpy.context.view_layer.active_layer_collection.collection
         self.collection_obj = bpy.data.objects.get(self.collection.name)
         self.depth = sum(thicknesses) * unit_scale
@@ -211,26 +157,12 @@ class DumbSlabGenerator:
         return self.create_slab(link_to_scene)
 
     def create_slab(self, link_to_scene):
-        verts = [
-            Vector((0, 0, 0)),
-            Vector((0, self.width, 0)),
-            Vector((self.length, self.width, 0)),
-            Vector((self.length, 0, 0)),
-        ]
-        edges = []
-        faces = [[0, 3, 2, 1]]
-
         ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
         # Standard cases are deprecated, so let's cull them
         ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
 
-        mesh = bpy.data.meshes.new(name="Dumb Slab")
-        mesh.from_pydata(verts, edges, faces)
+        mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
-        modifier = obj.modifiers.new("Slab Depth", "SOLIDIFY")
-        modifier.use_even_offset = True
-        modifier.offset = 1
-        modifier.thickness = self.depth
 
         if link_to_scene:
             obj.location = self.location
@@ -239,26 +171,55 @@ class DumbSlabGenerator:
             else:
                 obj.location[2] -= self.depth
             self.collection.objects.link(obj)
-        bpy.ops.bim.assign_class(
-            obj=obj.name,
+
+        element = blenderbim.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
             ifc_class=ifc_class,
-            ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids",
+            should_add_representation=False,
+            context=self.body_context,
         )
-        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type)
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=self.relating_type)
+
+        representation = ifcopenshell.api.run(
+            "geometry.add_slab_representation", tool.Ifc.get(), context=self.body_context, depth=self.depth
+        )
+        ifcopenshell.api.run(
+            "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
+        )
+
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+
+        if self.footprint_context:
+            extrusion = tool.Model.get_extrusion(representation)
+            if extrusion.SweptArea.is_a("IfcArbitraryClosedProfileDef"):
+                curves = [extrusion.SweptArea.OuterCurve]
+                if extrusion.SweptArea.is_a("IfcArbitraryProfileDefWithVoids"):
+                    curves.extend(extrusion.SweptArea.InnerCurves)
+                representation = ifcopenshell.api.run(
+                    "geometry.add_footprint_representation",
+                    tool.Ifc.get(),
+                    context=self.footprint_context,
+                    curves=curves,
+                )
+                ifcopenshell.api.run(
+                    "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
+                )
+
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer3"})
         MaterialData.load(self.file)
-        try:
-            obj.select_set(True)
-        except RuntimeError:
-
-            def msg(self, context):
-                txt = "The created object could not be assigned to a collection. "
-                txt += "Has any IfcSpatialElement been deleted?"
-                self.layout.label(text=txt)
-
-            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+        obj.select_set(True)
         return obj
 
 
@@ -288,6 +249,9 @@ class DumbSlabPlaner:
                             self.change_thickness(element, thickness)
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
+        obj = tool.Ifc.get_object(settings["related_object"])
+        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+            return
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
         if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
@@ -323,13 +287,29 @@ class DumbSlabPlaner:
         if round(delta_thickness, 2) == 0:
             return
 
-        modifier = ensure_solidify_modifier(obj)
-        modifier.thickness += delta_thickness
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if not representation:
+            return
+        extrusion = tool.Model.get_extrusion(representation)
+        if not extrusion:
+            return
+        extrusion.Depth = thickness
+
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+
         obj.location[2] -= delta_thickness
 
 
-class EnableEditingSketchExtrusionProfile(bpy.types.Operator):
-    bl_idname = "bim.xxx"
+class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_sketch_extrusion_profile"
     bl_label = "Enable Editing Sketch Extrusion Profile"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -337,14 +317,29 @@ class EnableEditingSketchExtrusionProfile(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
 
+        pset = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric", None)
+        if pset and pset["Engine"] == "CADSketcher" and pset["Entities"]:
+            context.scene["sketcher"].update(json.loads(pset["Entities"]))
+            bpy.context.view_layer.update()
+            bpy.ops.wm.tool_set_by_id(name="sketcher.slvs_select")
+            bpy.ops.view3d.slvs_set_all_constraints_visibility(visibility='SHOW')
+            return {"FINISHED"}
+
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        extrusion = self.get_extrusion(body)
+        extrusion = tool.Model.get_extrusion(body)
         profile = extrusion.SweptArea
-        position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+        if extrusion.Position:
+            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+            position[0][3] *= self.unit_scale
+            position[1][3] *= self.unit_scale
+            position[2][3] *= self.unit_scale
+        else:
+            position = Matrix()
 
         z_values = [v[2] for v in obj.bound_box]
 
@@ -362,45 +357,105 @@ class EnableEditingSketchExtrusionProfile(bpy.types.Operator):
         wp = entities.add_workplane(origin, normal)
         sketch = entities.add_sketch(wp)
 
+        self.vertices = []
+        self.edges = []
+        self.arcs = []
+        self.circles = []
+
+        profile = extrusion.SweptArea
+        if profile.is_a("IfcArbitraryClosedProfileDef"):
+            self.process_curve(obj, position, profile.OuterCurve)
+            if profile.is_a("IfcArbitraryProfileDefWithVoids"):
+                for inner_curve in profile.InnerCurves:
+                    self.process_curve(obj, position, inner_curve)
+
         points = []
-        total_points = len(profile.OuterCurve.Points)
-        last_index = len(profile.OuterCurve.Points) - 1
-        for i, point in enumerate(profile.OuterCurve.Points):
-            if i == last_index:
-                continue
-            global_point = (position @ Vector(point.Coordinates).to_3d()).to_2d()
-            p = context.scene.sketcher.entities.add_point_2d(global_point, sketch)
-            if i != 0:
-                context.scene.sketcher.entities.add_line_2d(points[-1], p, sketch)
-            points.append(p)
-        context.scene.sketcher.entities.add_line_2d(points[-1], points[0], sketch)
+
+        for vertex in self.vertices:
+            points.append(context.scene.sketcher.entities.add_point_2d(vertex.to_2d(), sketch))
+        for edge in self.edges:
+            context.scene.sketcher.entities.add_line_2d(points[edge[0]], points[edge[1]], sketch)
 
         bpy.ops.view3d.slvs_set_active_sketch(index=sketch.slvs_index)
         return {"FINISHED"}
 
-    def get_extrusion(self, representation):
-        item = representation.Items[0]
-        while True:
-            if item.is_a("IfcExtrudedAreaSolid"):
-                return item
-            elif item.is_a("IfcBooleanClippingResult"):
-                item = item.FirstOperand
+    def process_curve(self, obj, position, curve):
+        offset = len(self.vertices)
+
+        if curve.is_a("IfcPolyline"):
+            total_points = len(curve.Points)
+            last_index = len(curve.Points) - 1
+            for i, point in enumerate(curve.Points):
+                if i == last_index:
+                    continue
+                global_point = position @ Vector(self.convert_unit_to_si(point.Coordinates)).to_3d()
+                self.vertices.append(global_point)
+            self.edges.extend([(i, i + 1) for i in range(offset, len(self.vertices))])
+            self.edges[-1] = (len(self.vertices) - 1, offset)  # Close the loop
+        elif curve.is_a("IfcIndexedPolyCurve"):
+            is_arc = False
+            if curve.Segments:
+                for segment in curve.Segments:
+                    if len(segment[0]) == 3:  # IfcArcIndex
+                        is_arc = True
+                        local_point = self.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
+                        self.vertices.append(global_point)
+                        local_point = self.convert_unit_to_si(curve.Points.CoordList[segment[0][1] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
+                        self.vertices.append(global_point)
+                        self.arcs.append([len(self.vertices) - 2, len(self.vertices) - 1])
+                    else:
+                        local_point = self.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
+                        global_point = position @ Vector(local_point).to_3d()
+                        self.vertices.append(global_point)
+                        if is_arc:
+                            self.arcs[-1].append(len(self.vertices) - 1)
+                            is_arc = False
             else:
-                break
+                for local_point in curve.Points.CoordList:
+                    global_point = position @ Vector(self.convert_unit_to_si(local_point)).to_3d()
+                    self.vertices.append(global_point)
+                # Curves without segments are self closing
+                del self.vertices[-1]
+
+            self.edges.extend([(i, i + 1) for i in range(offset, len(self.vertices))])
+            self.edges[-1] = (len(self.vertices) - 1, offset)  # Close the loop
+        elif curve.is_a("IfcCircle"):
+            center = self.convert_unit_to_si(
+                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).col[3].to_3d()
+            )
+            radius = self.convert_unit_to_si(curve.Radius)
+            self.vertices.extend(
+                [
+                    position @ Vector((center[0], center[1] - curve.Radius, 0.0)),
+                    position @ Vector((center[0], center[1] + curve.Radius, 0.0)),
+                ]
+            )
+            self.circles.append([offset, offset + 1])
+            self.edges.append((offset, offset + 1))
+
+    def convert_unit_to_si(self, value):
+        if isinstance(value, (tuple, list)):
+            return [v * self.unit_scale for v in value]
+        return value * self.unit_scale
 
 
-class EditSketchExtrusionProfile(bpy.types.Operator):
-    bl_idname = "bim.xxe"
-    bl_label = "Edit Extrusion Profile"
+class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_sketch_extrusion_profile"
+    bl_label = "Edit Sketch Extrusion Profile"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
 
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        extrusion = self.get_extrusion(representation)
-        position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+        extrusion = tool.Model.get_extrusion(representation)
+        if extrusion.Position:
+            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+        else:
+            position = Matrix()
         position_i = position.inverted()
 
         cad_sketcher = __import__("CAD_Sketcher-main")
@@ -424,6 +479,18 @@ class EditSketchExtrusionProfile(bpy.types.Operator):
 
         bpy.foo = converter.paths
 
+        pset = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric", None)
+        if pset:
+            pset = tool.Ifc.get().by_id(pset["id"])
+        else:
+            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Parametric")
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            tool.Ifc.get(),
+            pset=pset,
+            properties={"Engine": "CADSketcher", "Entities": json.dumps(context.scene["sketcher"].to_dict())},
+        )
+
         bpy.ops.view3d.slvs_set_active_sketch(index=-1)
         workplane = sketch.wp
         p1 = workplane.p1
@@ -446,18 +513,32 @@ class EditSketchExtrusionProfile(bpy.types.Operator):
         )
         return {"FINISHED"}
 
-    def get_extrusion(self, representation):
-        item = representation.Items[0]
-        while True:
-            if item.is_a("IfcExtrudedAreaSolid"):
-                return item
-            elif item.is_a("IfcBooleanClippingResult"):
-                item = item.FirstOperand
-            else:
-                break
+
+class DisableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_editing_sketch_extrusion_profile"
+    bl_label = "Disable Editing Sketch Extrusion Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        sketch = context.scene.sketcher.active_sketch
+        bpy.ops.view3d.slvs_set_active_sketch(index=-1)
+        workplane = sketch.wp
+        p1 = workplane.p1
+        p1.origin = False
+        nm = workplane.nm
+        nm.origin = False
+        bpy.ops.view3d.slvs_delete_entity(index=sketch["slvs_index"])
+        bpy.ops.view3d.slvs_delete_entity(index=workplane["slvs_index"])
+        bpy.ops.view3d.slvs_delete_entity(index=p1["slvs_index"])
+        bpy.ops.view3d.slvs_delete_entity(index=nm["slvs_index"])
+        return {"FINISHED"}
 
 
-class DisableEditingExtrusionProfile(bpy.types.Operator):
+class DisableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_extrusion_profile"
     bl_label = "Disable Editing Extrusion Profile"
     bl_options = {"REGISTER", "UNDO"}
@@ -466,7 +547,7 @@ class DisableEditingExtrusionProfile(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         DecorationsHandler.uninstall()
         bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -486,7 +567,7 @@ class DisableEditingExtrusionProfile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingExtrusionProfile(bpy.types.Operator):
+class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_extrusion_profile"
     bl_label = "Enable Editing Extrusion Profile"
     bl_options = {"REGISTER", "UNDO"}
@@ -495,21 +576,21 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        extrusion = self.get_extrusion(body)
-        position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-        position[0][3] *= self.unit_scale
-        position[1][3] *= self.unit_scale
-        position[2][3] *= self.unit_scale
+        extrusion = tool.Model.get_extrusion(body)
 
-        z_values = [v[2] for v in obj.bound_box]
-        origin = obj.matrix_world @ Vector((0, 0, max(z_values)))
-        normal = obj.matrix_world.to_quaternion()
+        if extrusion.Position:
+            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+            position[0][3] *= self.unit_scale
+            position[1][3] *= self.unit_scale
+            position[2][3] *= self.unit_scale
+        else:
+            position = Matrix()
 
         self.vertices = []
         self.edges = []
@@ -541,16 +622,6 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
         bpy.ops.wm.tool_set_by_id(name="bim.cad_tool")
         return {"FINISHED"}
 
-    def get_extrusion(self, representation):
-        item = representation.Items[0]
-        while True:
-            if item.is_a("IfcExtrudedAreaSolid"):
-                return item
-            elif item.is_a("IfcBooleanClippingResult"):
-                item = item.FirstOperand
-            else:
-                break
-
     def process_curve(self, obj, position, curve):
         offset = len(self.vertices)
 
@@ -563,7 +634,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
                 global_point = position @ Vector(self.convert_unit_to_si(point.Coordinates)).to_3d()
                 self.vertices.append(global_point)
             self.edges.extend([(i, i + 1) for i in range(offset, len(self.vertices))])
-            self.edges[-1] = (len(self.vertices) - 1, offset) # Close the loop
+            self.edges[-1] = (len(self.vertices) - 1, offset)  # Close the loop
         elif curve.is_a("IfcIndexedPolyCurve"):
             is_arc = False
             if curve.Segments:
@@ -585,12 +656,14 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
                             self.arcs[-1].append(len(self.vertices) - 1)
                             is_arc = False
             else:
-                for local_point in curve.PointsCoordList:
+                for local_point in curve.Points.CoordList:
                     global_point = position @ Vector(self.convert_unit_to_si(local_point)).to_3d()
                     self.vertices.append(global_point)
+                # Curves without segments are self closing
+                del self.vertices[-1]
 
             self.edges.extend([(i, i + 1) for i in range(offset, len(self.vertices))])
-            self.edges[-1] = (len(self.vertices) - 1, offset) # Close the loop
+            self.edges[-1] = (len(self.vertices) - 1, offset)  # Close the loop
         elif curve.is_a("IfcCircle"):
             center = self.convert_unit_to_si(
                 Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).col[3].to_3d()
@@ -611,12 +684,12 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
         return value * self.unit_scale
 
 
-class EditExtrusionProfile(bpy.types.Operator):
+class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_extrusion_profile"
     bl_label = "Edit Extrusion Profile"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         DecorationsHandler.uninstall()
         bpy.ops.object.mode_set(mode="OBJECT")
@@ -625,20 +698,27 @@ class EditExtrusionProfile(bpy.types.Operator):
         element = tool.Ifc.get_entity(obj)
 
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        extrusion = self.get_extrusion(representation)
-        position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-        position[0][3] *= self.unit_scale
-        position[1][3] *= self.unit_scale
-        position[2][3] *= self.unit_scale
+        extrusion = tool.Model.get_extrusion(representation)
+        if extrusion.Position:
+            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+            position[0][3] *= self.unit_scale
+            position[1][3] *= self.unit_scale
+            position[2][3] *= self.unit_scale
+        else:
+            position = Matrix()
 
         helper = Helper(tool.Ifc.get())
         indices = helper.auto_detect_arbitrary_profile_with_voids(obj, obj.data)
 
         if isinstance(indices, tuple) and indices[0] is False:  # Ugly
-            self.report({"ERROR"}, "INVALID PROFILE: " + indices[1])
+
+            def msg(self, context):
+                self.layout.label(text="INVALID PROFILE: " + indices[1])
+
+            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             DecorationsHandler.install(context)
             bpy.ops.object.mode_set(mode="EDIT")
-            return {"CANCELLED"}
+            return {"FINISHED"}
 
         self.bm = bmesh.new()
         self.bm.from_mesh(obj.data)
@@ -673,6 +753,30 @@ class EditExtrusionProfile(bpy.types.Operator):
             is_global=True,
             should_sync_changes_first=False,
         )
+
+        footprint_context = ifcopenshell.util.representation.get_context(
+            tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW"
+        )
+        if footprint_context:
+            curves = [profile.OuterCurve]
+            if profile.is_a("IfcArbitraryProfileDefWithVoids"):
+                curves.extend(profile.InnerCurves)
+            new_footprint = ifcopenshell.api.run(
+                "geometry.add_footprint_representation", tool.Ifc.get(), context=footprint_context, curves=curves
+            )
+            old_footprint = ifcopenshell.util.representation.get_representation(
+                element, "Plan", "FootPrint", "SKETCH_VIEW"
+            )
+            if old_footprint:
+                for inverse in tool.Ifc.get().get_inverse(old_footprint):
+                    ifcopenshell.util.element.replace_attribute(inverse, old_footprint, new_footprint)
+                blenderbim.core.geometry.remove_representation(
+                    tool.Ifc, tool.Geometry, obj=obj, representation=old_footprint
+                )
+            else:
+                ifcopenshell.api.run(
+                    "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_footprint
+                )
         return {"FINISHED"}
 
     def create_points(self, position, indices):
@@ -708,16 +812,6 @@ class EditExtrusionProfile(bpy.types.Operator):
             elif len(segment) == 3:
                 segments.append(tool.Ifc.get().createIfcArcIndex([i + 1 for i in segment]))
         return tool.Ifc.get().createIfcIndexedPolyCurve(self.points, segments, False)
-
-    def get_extrusion(self, representation):
-        item = representation.Items[0]
-        while True:
-            if item.is_a("IfcExtrudedAreaSolid"):
-                return item
-            elif item.is_a("IfcBooleanClippingResult"):
-                item = item.FirstOperand
-            else:
-                break
 
     def convert_si_to_unit(self, value):
         if isinstance(value, (tuple, list)):
@@ -856,7 +950,11 @@ class DecorationsHandler:
             if vertex.select:
                 selected_vertices.append(co)
             else:
-                if len(vertex.link_edges) != 2:
+                if len(vertex.link_edges) > 1 and is_circle:
+                    error_vertices.append(co)
+                elif is_circle:
+                    special_vertices.append(co)
+                elif len(vertex.link_edges) != 2:
                     error_vertices.append(co)
                 elif is_arc:
                     special_vertices.append(co)
