@@ -197,6 +197,9 @@ class DumbSlabGenerator:
         if not sum(thicknesses):
             return
 
+        self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        self.footprint_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW")
+
         self.collection = bpy.context.view_layer.active_layer_collection.collection
         self.collection_obj = bpy.data.objects.get(self.collection.name)
         self.depth = sum(thicknesses) * unit_scale
@@ -211,26 +214,12 @@ class DumbSlabGenerator:
         return self.create_slab(link_to_scene)
 
     def create_slab(self, link_to_scene):
-        verts = [
-            Vector((0, 0, 0)),
-            Vector((0, self.width, 0)),
-            Vector((self.length, self.width, 0)),
-            Vector((self.length, 0, 0)),
-        ]
-        edges = []
-        faces = [[0, 3, 2, 1]]
-
         ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
         # Standard cases are deprecated, so let's cull them
         ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
 
-        mesh = bpy.data.meshes.new(name="Dumb Slab")
-        mesh.from_pydata(verts, edges, faces)
+        mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
-        modifier = obj.modifiers.new("Slab Depth", "SOLIDIFY")
-        modifier.use_even_offset = True
-        modifier.offset = 1
-        modifier.thickness = self.depth
 
         if link_to_scene:
             obj.location = self.location
@@ -239,26 +228,38 @@ class DumbSlabGenerator:
             else:
                 obj.location[2] -= self.depth
             self.collection.objects.link(obj)
-        bpy.ops.bim.assign_class(
-            obj=obj.name,
+
+        element = blenderbim.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
             ifc_class=ifc_class,
-            ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids",
+            should_add_representation=False,
+            context=self.body_context,
         )
-        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=self.relating_type)
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=self.relating_type)
+
+        representation = ifcopenshell.api.run(
+            "geometry.add_slab_representation", tool.Ifc.get(), context=self.body_context, depth=self.depth
+        )
+        ifcopenshell.api.run(
+            "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
+        )
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer3"})
         MaterialData.load(self.file)
-        try:
-            obj.select_set(True)
-        except RuntimeError:
-
-            def msg(self, context):
-                txt = "The created object could not be assigned to a collection. "
-                txt += "Has any IfcSpatialElement been deleted?"
-                self.layout.label(text=txt)
-
-            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+        obj.select_set(True)
         return obj
 
 
@@ -288,6 +289,9 @@ class DumbSlabPlaner:
                             self.change_thickness(element, thickness)
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
+        obj = tool.Ifc.get_object(settings["related_object"])
+        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+            return
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
         if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
@@ -502,10 +506,14 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         extrusion = self.get_extrusion(body)
-        position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-        position[0][3] *= self.unit_scale
-        position[1][3] *= self.unit_scale
-        position[2][3] *= self.unit_scale
+
+        if extrusion.Position:
+            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+            position[0][3] *= self.unit_scale
+            position[1][3] *= self.unit_scale
+            position[2][3] *= self.unit_scale
+        else:
+            position = Matrix()
 
         z_values = [v[2] for v in obj.bound_box]
         origin = obj.matrix_world @ Vector((0, 0, max(z_values)))
@@ -585,7 +593,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator):
                             self.arcs[-1].append(len(self.vertices) - 1)
                             is_arc = False
             else:
-                for local_point in curve.PointsCoordList:
+                for local_point in curve.Points.CoordList:
                     global_point = position @ Vector(self.convert_unit_to_si(local_point)).to_3d()
                     self.vertices.append(global_point)
 
@@ -626,10 +634,13 @@ class EditExtrusionProfile(bpy.types.Operator):
 
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         extrusion = self.get_extrusion(representation)
-        position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-        position[0][3] *= self.unit_scale
-        position[1][3] *= self.unit_scale
-        position[2][3] *= self.unit_scale
+        if extrusion.Position:
+            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+            position[0][3] *= self.unit_scale
+            position[1][3] *= self.unit_scale
+            position[2][3] *= self.unit_scale
+        else:
+            position = Matrix()
 
         helper = Helper(tool.Ifc.get())
         indices = helper.auto_detect_arbitrary_profile_with_voids(obj, obj.data)
