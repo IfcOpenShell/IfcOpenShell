@@ -41,7 +41,7 @@ def get_relating_type_browser(self, context):
 
 
 def update_icon_id(self, context, browser=False):
-    if context.region is not None and context.region.type != "TOOL_HEADER":
+    if context == "lost_context" or (context.region is not None and context.region.type != "TOOL_HEADER"):
         ifc_class = self.ifc_class_browser if browser else self.ifc_class
         relating_type_id = self.relating_type_id_browser if browser else self.relating_type_id
         # relating_type = AuthoringData.relating_type_name_by_id(ifc_class, relating_type_id)
