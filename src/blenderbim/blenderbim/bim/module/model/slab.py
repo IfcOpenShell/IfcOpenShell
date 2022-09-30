@@ -284,8 +284,24 @@ class DumbSlabPlaner:
         if round(delta_thickness, 2) == 0:
             return
 
-        modifier = ensure_solidify_modifier(obj)
-        modifier.thickness += delta_thickness
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if not representation:
+            return
+        extrusion = tool.Model.get_extrusion(representation)
+        if not extrusion:
+            return
+        extrusion.Depth = thickness
+
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+
         obj.location[2] -= delta_thickness
 
 
