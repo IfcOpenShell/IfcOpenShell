@@ -131,11 +131,14 @@ class AuthoringData:
             if new_obj is not None:
                 to_be_deleted = True
                 obj = new_obj
+                obj.hide_set(True)
         obj.asset_mark()
         obj.asset_generate_preview()
+        blender33_or_above = bpy.app.version >= (3, 3, 0)
+        interval = 1e-4
 
-        def wait_for_asset_previews_generation(check_interval_seconds=0.0001):
-            if bpy.app.is_job_running("RENDER_PREVIEW"):
+        def wait_for_asset_previews_generation(check_interval_seconds=interval):
+            if blender33_or_above and bpy.app.is_job_running("RENDER_PREVIEW"):
                 return check_interval_seconds
             else:
                 if ifc_class not in cls.props.constr_classes:
@@ -157,7 +160,8 @@ class AuthoringData:
                         collection.objects.unlink(obj)
                 return None
 
-        bpy.app.timers.register(wait_for_asset_previews_generation)
+        first_interval = 0 if blender33_or_above else interval
+        bpy.app.timers.register(wait_for_asset_previews_generation, first_interval=first_interval)
 
     @classmethod
     def assetize_relating_type_from_selection(cls, browser=False):

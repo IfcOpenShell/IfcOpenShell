@@ -74,10 +74,10 @@ class BimTool(WorkSpaceTool):
             AuthoringData.data["relating_types_ids"] if "relating_types_ids" in AuthoringData.data else False
         )
 
-        if ifc_classes and relating_types_ids and not props.icon_id:
+        if ifc_classes and relating_types_ids and not props.icon_id and not is_tool_header:
             # hack Dion won't like to show a preview also on the first time the sidebar is shown
-            bpy.app.timers.register(lambda: prop.update_ifc_class_browser(props, context))
-            bpy.app.timers.register(lambda: prop.update_relating_type(props, context))
+            bpy.app.timers.register(lambda: prop.update_ifc_class(props, "lost_context"))
+            bpy.app.timers.register(lambda: prop.update_relating_type(props, "lost_context"))
 
         ifc_class = props.ifc_class
         relating_type_id = props.relating_type_id

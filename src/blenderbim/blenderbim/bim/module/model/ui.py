@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 from bpy.types import Panel, Operator
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
@@ -40,14 +41,19 @@ class DisplayConstrTypesUI(Operator):
     bl_label = "Browse Construction Types"
     bl_options = {"REGISTER"}
     bl_description = "Display all available Construction Types to add new instances"
+    mouse_x: bpy.props.IntProperty(default=0)
+    mouse_y: bpy.props.IntProperty(default=0)
 
     def execute(self, context):
         return {"FINISHED"}
 
     def invoke(self, context, event):
+        if (self.mouse_x, self.mouse_y) == (0, 0):
+            self.mouse_x, self.mouse_y = context.window.x, context.window.y
         return context.window_manager.invoke_popup(self, width=550)
 
     def draw(self, context):
+        bpy.context.window.cursor_set("DEFAULT")
         props = context.scene.BIMModelProperties
         if AuthoringData.data["ifc_classes"]:
             row = self.layout.row()
@@ -68,9 +74,19 @@ class DisplayConstrTypesUI(Operator):
             row = box.row()
             if ifc_class in props.constr_classes:
                 constr_class_info = props.constr_classes[ifc_class]
-                if relating_type_id in constr_class_info.constr_types:
-                    icon_id = constr_class_info.constr_types[relating_type_id].icon_id
+                constr_types_info = constr_class_info.constr_types
+                if relating_type_id in constr_types_info:
+                    icon_id = constr_types_info[relating_type_id].icon_id
                     row.template_icon(icon_value=icon_id, scale=6.0)
+                else:
+                    mouse_x, mouse_y = self.mouse_x, self.mouse_y
+
+                    def run_operator():
+                        bpy.ops.bim.reinvoke_operator(
+                            "INVOKE_DEFAULT", operator="bim.display_constr_types_ui", mouse_x=mouse_x, mouse_y=mouse_y
+                        )
+                    bpy.app.timers.register(run_operator)
+
             row = box.row()
             op = row.operator("bim.add_constr_type_instance", icon="ADD")
             op.from_invoke = True
