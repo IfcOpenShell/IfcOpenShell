@@ -131,6 +131,7 @@ class AuthoringData:
             if new_obj is not None:
                 to_be_deleted = True
                 obj = new_obj
+                obj.hide_set(True)
         obj.asset_mark()
         obj.asset_generate_preview()
         blender33_or_above = bpy.app.version >= (3, 3, 0)
