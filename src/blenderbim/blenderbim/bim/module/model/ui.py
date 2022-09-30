@@ -44,14 +44,15 @@ class DisplayConstrTypesUI(Operator):
     bl_label = "Browse Construction Types"
     bl_options = {"REGISTER"}
     bl_description = "Display all available Construction Types to add new instances"
-    mouse_x = bpy.props.IntProperty()
-    mouse_y = bpy.props.IntProperty()
+    mouse_x: bpy.props.IntProperty(default=0)
+    mouse_y: bpy.props.IntProperty(default=0)
 
     def execute(self, context):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        self.mouse_x, self.mouse_y = event.mouse_x, event.mouse_y
+        if (self.mouse_x, self.mouse_y) == (0, 0):
+            self.mouse_x, self.mouse_y = context.window.x, context.window.y
         return context.window_manager.invoke_popup(self, width=550)
 
     def draw(self, context):
@@ -81,16 +82,14 @@ class DisplayConstrTypesUI(Operator):
                     icon_id = constr_types_info[relating_type_id].icon_id
                     row.template_icon(icon_value=icon_id, scale=6.0)
                 else:
-                    window = context.window
-                    window.cursor_set("WAIT")
-                    window.cursor_warp(10, 10)
                     mouse_x, mouse_y = self.mouse_x, self.mouse_y
 
-                    def reinvoke():
-                        window.cursor_warp(mouse_x, mouse_y)
-                        bpy.ops.bim.display_constr_types_ui("INVOKE_DEFAULT")
+                    def run_operator():
+                        bpy.ops.bim.reinvoke_operator(
+                            "INVOKE_DEFAULT", operator="bim.display_constr_types_ui", mouse_x=mouse_x, mouse_y=mouse_y
+                        )
+                    bpy.app.timers.register(run_operator)
 
-                    bpy.app.timers.register(reinvoke, first_interval=0.01)
             row = box.row()
             op = row.operator("bim.add_constr_type_instance", icon="ADD")
             op.from_invoke = True

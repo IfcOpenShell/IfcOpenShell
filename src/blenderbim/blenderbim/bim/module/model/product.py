@@ -18,6 +18,7 @@
 
 import bpy
 import mathutils
+from functools import reduce
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.system
@@ -209,6 +210,44 @@ class DisplayConstrTypes(bpy.types.Operator):
             AuthoringData.assetize_constr_class(ifc_class)
         bpy.ops.bim.display_constr_types_ui("INVOKE_DEFAULT")
         return {"FINISHED"}
+
+
+class ReinvokeOperator(bpy.types.Operator):
+    bl_idname = "bim.reinvoke_operator"
+    bl_label = "Reinvoke Popup Operator"
+    bl_options = {"REGISTER"}
+    bl_description = "Reinvoke a popup operator"
+    operator: bpy.props.StringProperty()
+    mouse_x: bpy.props.IntProperty()
+    mouse_y: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        event_mouse_x, event_mouse_y = event.mouse_x, event.mouse_y
+        window_mouse_x, window_mouse_y = self.mouse_x, self.mouse_y
+        if (event_mouse_x, event_mouse_y) == (10, 10):
+            return {"FINISHED"}
+        window = context.window
+        window.cursor_set("WAIT")
+        window.cursor_warp(10, 10)
+        run_operator = self.run_operator
+        operator = self.operator
+
+        def reinvoke():
+            window.cursor_warp(event_mouse_x, event_mouse_y)
+            kwargs = {}
+            if (window_mouse_x, window_mouse_y) != (0, 0):
+                kwargs.update({"mouse_x": window_mouse_x, "mouse_y": window_mouse_y})
+            run_operator(operator, "INVOKE_DEFAULT", **kwargs)
+
+        bpy.app.timers.register(reinvoke)
+        return {"FINISHED"}
+
+    @staticmethod
+    def run_operator(operator, *args, **kwargs):
+        reduce(lambda x, arg: getattr(x, arg), operator.split("."), bpy.ops)(*args, **kwargs)
 
 
 class AlignProduct(bpy.types.Operator):
