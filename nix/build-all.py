@@ -23,7 +23,7 @@
 # This script builds IfcOpenShell and its dependencies                        #
 #                                                                             #
 # Prerequisites for this script to function correctly:                        #
-#     * cmake * git * bzip2 * tar * c(++) compilers * yacc * autoconf         #
+#     * cmake * git * bzip2 * tar * c(++) compilers * autoconf                #
 #                                                                             #
 #   if building with USE_OCCT additionally:                                   #
 #     * freetype * glx.h                                                      #
@@ -97,7 +97,6 @@ cc = "cc"
 cplusplus = "c++"
 autoconf = "autoconf"
 automake = "automake"
-yacc = "yacc"
 make = "make"
 date = "date"
 curl = "curl"
@@ -220,7 +219,7 @@ print("Building:", *sorted(targets, key=lambda t: len(list(v(t)))))
 
 # Check that required tools are in PATH
 
-for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make, "patch", "cmake"]:
+for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake"]:
     if which(cmd) is None:
         raise ValueError(f"Required tool '{cmd}' not installed or not added to PATH")
 
