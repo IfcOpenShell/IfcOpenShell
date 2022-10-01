@@ -36,50 +36,6 @@ from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertForma
 from gpu_extras.batch import batch_for_shader
 
 
-def element_listener(element, obj):
-    blenderbim.bim.handler.subscribe_to(obj, "mode", mode_callback)
-
-
-def mode_callback(obj, data):
-    for obj in set(bpy.context.selected_objects + [bpy.context.active_object]):
-        if (
-            obj.mode != "EDIT"
-            or not obj.data
-            or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
-            or not obj.BIMObjectProperties.ifc_definition_id
-            or not bpy.context.scene.BIMProjectProperties.is_authoring
-        ):
-            return
-        product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
-        if not product.is_a("IfcOpeningElement"):
-            return
-        for rel in product.VoidsElements:
-            building_element_obj = IfcStore.get_element(rel.RelatingBuildingElement.id())
-            if not building_element_obj:
-                continue
-            if [m for m in building_element_obj.modifiers if m.type == "BOOLEAN"]:
-                continue
-            representation = ifcopenshell.util.representation.get_representation(
-                rel.RelatingBuildingElement, "Model", "Body", "MODEL_VIEW"
-            )
-            if not representation:
-                continue
-            blenderbim.core.geometry.switch_representation(
-                tool.Geometry,
-                obj=building_element_obj,
-                representation=representation,
-                should_reload=True,
-                enable_dynamic_voids=True,
-                is_global=True,
-                should_sync_changes_first=False,
-            )
-        IfcStore.edited_objs.add(obj)
-        bm = bmesh.from_edit_mesh(obj.data)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-        bmesh.update_edit_mesh(obj.data)
-        bm.free()
-
-
 class AddElementOpening(bpy.types.Operator):
     bl_idname = "bim.add_element_opening"
     bl_label = "Add Element Opening"
@@ -391,6 +347,20 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
         return obj
 
 
+class HideBooleans(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.hide_booleans"
+    bl_label = "Hide Booleans"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMModelProperties
+        for opening in props.openings:
+            obj = opening.obj
+            if obj.data.BIMMeshProperties.ifc_boolean_id:
+                bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+
 class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
     bl_idname = "bim.remove_booleans"
     bl_label = "Remove Booleans"
@@ -424,6 +394,45 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                         should_sync_changes_first=False,
                     )
             bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+
+class ShowOpenings(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.show_openings"
+    bl_label = "Show Openings"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMModelProperties
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            openings = tool.Model.load_openings(element, [r.RelatedOpeningElement for r in element.HasOpenings])
+            for opening in openings:
+                new = props.openings.add()
+                new.obj = opening
+        DecorationsHandler.install(bpy.context)
+        return {"FINISHED"}
+
+
+class HideOpenings(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.hide_openings"
+    bl_label = "Hide Openings"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMModelProperties
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            openings = [r.RelatedOpeningElement for r in element.HasOpenings]
+            for opening in openings:
+                opening_obj = tool.Ifc.get_object(opening)
+                if opening_obj:
+                    tool.Ifc.unlink(element=opening, obj=opening_obj)
+                    bpy.data.objects.remove(opening_obj)
         return {"FINISHED"}
 
 

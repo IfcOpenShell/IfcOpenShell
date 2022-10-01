@@ -188,6 +188,7 @@ class IfcImporter:
         self.added_data = {}
         self.native_elements = set()
         self.native_data = {}
+        self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
 
@@ -205,7 +206,6 @@ class IfcImporter:
 
     def execute(self):
         bpy.context.window_manager.progress_begin(0, 100)
-        self.progress = 0
         self.profile_code("Starting import process")
         self.load_file()
         self.profile_code("Loading file")

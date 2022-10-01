@@ -56,7 +56,6 @@ def load_post(*args):
         product.regenerate_profile_usage,
     )
 
-    IfcStore.add_element_listener(opening.element_listener)
     IfcStore.add_element_listener(wall.element_listener)
     IfcStore.add_element_listener(profile.element_listener)
 
