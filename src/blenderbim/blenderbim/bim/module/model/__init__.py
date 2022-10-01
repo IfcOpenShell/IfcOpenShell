@@ -39,6 +39,8 @@ classes = (
     opening.AddElementOpening,
     opening.AddPotentialHalfSpaceSolid,
     opening.AddPotentialOpening,
+    opening.RemoveBooleans,
+    opening.ShowBooleans,
     profile.ChangeCardinalPoint,
     profile.ChangeProfileDepth,
     profile.ExtendProfile,

@@ -42,7 +42,7 @@ class Model(blenderbim.core.tool.Model):
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):
                 return item
-            elif item.is_a("IfcBooleanClippingResult"):
+            elif item.is_a("IfcBooleanResult"):
                 item = item.FirstOperand
             else:
                 break

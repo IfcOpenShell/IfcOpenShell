@@ -367,6 +367,8 @@ class BIMMaterialProperties(PropertyGroup):
 
 class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    ifc_boolean_id: IntProperty(name="IFC Boolean ID")
+    obj: bpy.props.PointerProperty(type=bpy.types.Object)
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     is_parametric: BoolProperty(name="Is Parametric", default=False)
