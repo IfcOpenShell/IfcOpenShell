@@ -19,6 +19,7 @@
 import bpy
 import blenderbim.core.tool
 import blenderbim.tool as tool
+from blenderbim.bim import import_ifc
 
 
 class Model(blenderbim.core.tool.Model):
@@ -46,3 +47,25 @@ class Model(blenderbim.core.tool.Model):
                 item = item.FirstOperand
             else:
                 break
+
+    @classmethod
+    def load_openings(cls, element, openings):
+        if not openings:
+            return
+        obj = tool.Ifc.get_object(element)
+        ifc_import_settings = import_ifc.IfcImportSettings.factory()
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = tool.Ifc.get()
+        ifc_importer.calculate_unit_scale()
+        ifc_importer.process_context_filter()
+        openings = set(openings)
+        openings -= ifc_importer.create_products(openings)
+        for opening in openings or []:
+            if tool.Ifc.get_object(opening):
+                continue
+            opening_obj = ifc_importer.create_product(opening)
+            if obj:
+                opening_obj.parent = obj
+                opening_obj.matrix_parent_inverse = obj.matrix_world.inverted()
+        ifc_importer.place_objects_in_collections()
+        return ifc_importer.added_data.values()
