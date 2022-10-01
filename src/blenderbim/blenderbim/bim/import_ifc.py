@@ -181,7 +181,6 @@ class IfcImporter:
         self.elements = set()
         self.type_collection = None
         self.type_products = {}
-        self.openings = {}
         self.meshes = {}
         self.mesh_shapes = {}
         self.time = 0
@@ -224,8 +223,6 @@ class IfcImporter:
         self.profile_code("Process context filter")
         self.create_collections()
         self.profile_code("Create collections")
-        self.create_openings_collection()
-        self.profile_code("Create opening collection")
         self.create_materials()
         self.profile_code("Create materials")
         self.create_styles()
@@ -322,8 +319,9 @@ class IfcImporter:
             self.elements = self.file.by_type("IfcElement")
             self.annotations = set(self.file.by_type("IfcAnnotation"))
 
+        self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement")]
         if self.ifc_import_settings.is_coordinating:
-            self.elements = [e for e in self.elements if e.Representation and not e.is_a("IfcFeatureElement")]
+            self.elements = [e for e in self.elements if e.Representation]
 
         self.elements = set(self.elements[offset:offset_limit])
 
@@ -928,10 +926,6 @@ class IfcImporter:
         elif hasattr(element, "ObjectPlacement"):
             self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element)))
 
-        self.add_opening_relation(element, obj)
-
-        if element.is_a("IfcOpeningElement"):
-            obj.display_type = "WIRE"
         return obj
 
     def get_representation_item_material_name(self, item):
@@ -1247,7 +1241,6 @@ class IfcImporter:
             # Occurs when reloading a project
             pass
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        project_collection.children[self.opening_collection.name].hide_viewport = True
         project_collection.children[self.type_collection.name].hide_viewport = True
 
     def clean_mesh(self):
@@ -1269,11 +1262,6 @@ class IfcImporter:
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
         IfcStore.edited_objs.clear()
-
-    def add_opening_relation(self, element, obj):
-        if not element.is_a("IfcOpeningElement"):
-            return
-        self.openings[element.GlobalId] = obj
 
     def load_file(self):
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)
@@ -1404,10 +1392,6 @@ class IfcImporter:
             parent = ifcopenshell.util.element.get_container(aggregate["element"])
             if parent:
                 self.collections[parent.GlobalId].children.link(aggregate["collection"])
-
-    def create_openings_collection(self):
-        self.opening_collection = bpy.data.collections.new("IfcOpeningElements")
-        self.project["blender"].children.link(self.opening_collection)
 
     def create_materials(self):
         for material in self.file.by_type("IfcMaterial"):
@@ -1653,8 +1637,6 @@ class IfcImporter:
             return self.collections[element.GlobalId].objects.link(obj)
         elif element.is_a("IfcTypeObject"):
             return self.type_collection.objects.link(obj)
-        elif element.is_a("IfcOpeningElement"):
-            return self.opening_collection.objects.link(obj)
         elif element.is_a("IfcStructuralMember"):
             return self.structural_member_collection.objects.link(obj)
         elif element.is_a("IfcStructuralConnection"):
