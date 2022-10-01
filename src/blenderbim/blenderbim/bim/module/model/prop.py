@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+from blenderbim.bim.prop import ObjProperty
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
 from bpy.types import PropertyGroup
@@ -178,3 +179,4 @@ class BIMModelProperties(PropertyGroup):
         default="5",
     )
     length: bpy.props.FloatProperty(default=42.0)
+    openings: bpy.props.CollectionProperty(type=ObjProperty)
