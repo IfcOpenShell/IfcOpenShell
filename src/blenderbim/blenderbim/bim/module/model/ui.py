@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from bpy.types import Panel, Operator
+import bpy
+from bpy.types import Panel, Operator, Menu
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
 
@@ -33,9 +34,6 @@ class BIM_PT_authoring(Panel):
         row.operator("bim.align_wall", icon="ANCHOR_TOP", text="Ext.").align_type = "EXTERIOR"
         row.operator("bim.align_wall", icon="ANCHOR_CENTER", text="C/L").align_type = "CENTERLINE"
         row.operator("bim.align_wall", icon="ANCHOR_BOTTOM", text="Int.").align_type = "INTERIOR"
-        row = self.layout.row(align=True)
-        row.operator("bim.flip_wall", icon="ORIENTATION_NORMAL", text="Flip")
-        row.operator("bim.split_wall", icon="MOD_PHYSICS", text="Split")
 
 
 class DisplayConstrTypesUI(Operator):
@@ -43,14 +41,19 @@ class DisplayConstrTypesUI(Operator):
     bl_label = "Browse Construction Types"
     bl_options = {"REGISTER"}
     bl_description = "Display all available Construction Types to add new instances"
+    mouse_x: bpy.props.IntProperty(default=0)
+    mouse_y: bpy.props.IntProperty(default=0)
 
     def execute(self, context):
         return {"FINISHED"}
 
     def invoke(self, context, event):
+        if (self.mouse_x, self.mouse_y) == (0, 0):
+            self.mouse_x, self.mouse_y = context.window.x, context.window.y
         return context.window_manager.invoke_popup(self, width=550)
 
     def draw(self, context):
+        bpy.context.window.cursor_set("DEFAULT")
         props = context.scene.BIMModelProperties
         if AuthoringData.data["ifc_classes"]:
             row = self.layout.row()
@@ -69,12 +72,21 @@ class DisplayConstrTypesUI(Operator):
             row.label(text=name, icon="FILE_3D")
             row.alignment = "CENTER"
             row = box.row()
-            preview_constr_types = AuthoringData.data["preview_constr_types"]
-            if ifc_class in preview_constr_types:
-                preview_ifc_class = preview_constr_types[ifc_class]
-                if relating_type_id in preview_ifc_class:
-                    icon_id = preview_ifc_class[relating_type_id]["icon_id"]
+            if ifc_class in props.constr_classes:
+                constr_class_info = props.constr_classes[ifc_class]
+                constr_types_info = constr_class_info.constr_types
+                if relating_type_id in constr_types_info:
+                    icon_id = constr_types_info[relating_type_id].icon_id
                     row.template_icon(icon_value=icon_id, scale=6.0)
+                else:
+                    mouse_x, mouse_y = self.mouse_x, self.mouse_y
+
+                    def run_operator():
+                        bpy.ops.bim.reinvoke_operator(
+                            "INVOKE_DEFAULT", operator="bim.display_constr_types_ui", mouse_x=mouse_x, mouse_y=mouse_y
+                        )
+                    bpy.app.timers.register(run_operator)
+
             row = box.row()
             op = row.operator("bim.add_constr_type_instance", icon="ADD")
             op.from_invoke = True
@@ -141,3 +153,18 @@ class HelpConstrTypes(Operator):
             "The Construction Type Browser allows to preview and add new instances to the model.",
             "For further support, please click on the Documentation link below.",
         ]
+
+
+class BIM_MT_model(Menu):
+    bl_idname = "BIM_MT_model"
+    bl_label = "IFC Objects"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("bim.add_empty_type", text="Empty Type", icon="EMPTY_AXIS")
+        layout.operator("bim.add_potential_half_space_solid", text="Half Space Proxy", icon="ORIENTATION_NORMAL")
+        layout.operator("bim.add_potential_opening", text="Opening Proxy", icon="CUBE")
+
+
+def add_menu(self, context):
+    self.layout.menu("BIM_MT_model", icon="FILE_3D")

@@ -97,7 +97,7 @@ class DumbProfileGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
 
-    def generate(self):
+    def generate(self, link_to_scene=True):
         self.file = IfcStore.get_file()
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
         material = ifcopenshell.util.element.get_material(self.relating_type)
@@ -114,13 +114,13 @@ class DumbProfileGenerator:
         self.rotation = 0
         self.location = Vector((0, 0, 0))
         self.cardinal_point = int(bpy.context.scene.BIMModelProperties.cardinal_point)
-        return self.derive_from_cursor()
+        return self.derive_from_cursor(link_to_scene=link_to_scene)
 
-    def derive_from_cursor(self):
+    def derive_from_cursor(self, link_to_scene):
         self.location = bpy.context.scene.cursor.location
-        return self.create_profile()
+        return self.create_profile(link_to_scene)
 
-    def create_profile(self):
+    def create_profile(self, link_to_scene):
         ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
         # Standard cases are deprecated, so let's cull them
         ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
@@ -128,10 +128,11 @@ class DumbProfileGenerator:
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
         obj.location = self.location
-        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
+        if link_to_scene and self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2]
         bpy.context.view_layer.update()
-        self.collection.objects.link(obj)
+        if link_to_scene:
+            self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
@@ -186,7 +187,8 @@ class DumbProfileGenerator:
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbProfile"})
         MaterialData.load(self.file)
 
-        obj.select_set(True)
+        if link_to_scene:
+            obj.select_set(True)
 
         return obj
 
@@ -232,13 +234,13 @@ class DumbProfileRegenerator:
         DumbProfileRecalculator().recalculate([obj])
 
 
-class ExtendProfile(bpy.types.Operator):
+class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.extend_profile"
     bl_label = "Extend Profile"
     bl_options = {"REGISTER", "UNDO"}
     join_type: bpy.props.StringProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         selected_objs = context.selected_objects
         for obj in selected_objs:
             bpy.ops.bim.dynamically_void_product(obj=obj.name)
@@ -758,7 +760,7 @@ class DumbProfileJoiner:
         ]
 
 
-class RecalculateProfile(bpy.types.Operator):
+class RecalculateProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.recalculate_profile"
     bl_label = "Recalculate Profile"
     bl_options = {"REGISTER", "UNDO"}
@@ -767,7 +769,7 @@ class RecalculateProfile(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         DumbProfileRecalculator().recalculate(context.selected_objects)
         return {"FINISHED"}
 
@@ -788,7 +790,7 @@ class DumbProfileRecalculator:
                 joiner.recreate_profile(element, profile)
 
 
-class ChangeProfileDepth(bpy.types.Operator):
+class ChangeProfileDepth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_profile_depth"
     bl_label = "Change Profile Length"
     bl_options = {"REGISTER", "UNDO"}
@@ -798,14 +800,14 @@ class ChangeProfileDepth(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         joiner = DumbProfileJoiner()
         for obj in context.selected_objects:
             joiner.set_depth(obj, self.depth)
         return {"FINISHED"}
 
 
-class ChangeCardinalPoint(bpy.types.Operator):
+class ChangeCardinalPoint(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_cardinal_point"
     bl_label = "Change Cardinal Point"
     bl_options = {"REGISTER", "UNDO"}
@@ -815,7 +817,7 @@ class ChangeCardinalPoint(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         objs = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -829,7 +831,7 @@ class ChangeCardinalPoint(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class Rotate90(bpy.types.Operator):
+class Rotate90(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.rotate_90"
     bl_label = "Rotate 90"
     bl_options = {"REGISTER", "UNDO"}
@@ -839,7 +841,7 @@ class Rotate90(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         objs = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)

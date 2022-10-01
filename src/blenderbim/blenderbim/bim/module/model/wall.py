@@ -72,7 +72,7 @@ def mode_callback(obj, data):
             obj.matrix_world.translation = new_origin
 
 
-class JoinWall(bpy.types.Operator):
+class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.join_wall"
     bl_label = "Join Wall"
     bl_options = {"REGISTER", "UNDO"}
@@ -88,11 +88,9 @@ class JoinWall(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.BIMObjectProperties.ifc_definition_id]
         joiner = DumbWallJoiner()
-        #for obj in selected_objs:
-        #    bpy.ops.bim.dynamically_void_product(obj=obj.name)
         if not self.join_type:
             for obj in selected_objs:
                 joiner.unjoin(obj)
@@ -148,7 +146,7 @@ class AlignWall(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class FlipWall(bpy.types.Operator):
+class FlipWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.flip_wall"
     bl_label = "Flip Wall"
     bl_options = {"REGISTER", "UNDO"}
@@ -158,7 +156,7 @@ class FlipWall(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
         joiner = DumbWallJoiner()
         for obj in selected_objs:
@@ -166,7 +164,7 @@ class FlipWall(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SplitWall(bpy.types.Operator):
+class SplitWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.split_wall"
     bl_label = "Split Wall"
     bl_options = {"REGISTER", "UNDO"}
@@ -178,14 +176,14 @@ class SplitWall(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
         for obj in selected_objs:
             DumbWallJoiner().split(obj, context.scene.cursor.location)
         return {"FINISHED"}
 
 
-class MergeWall(bpy.types.Operator):
+class MergeWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.merge_wall"
     bl_label = "Merge Wall"
     bl_options = {"REGISTER", "UNDO"}
@@ -194,14 +192,14 @@ class MergeWall(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
         if len(selected_objs) == 2:
             DumbWallJoiner().merge([o for o in selected_objs if o != context.active_object][0], context.active_object)
         return {"FINISHED"}
 
 
-class RecalculateWall(bpy.types.Operator):
+class RecalculateWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.recalculate_wall"
     bl_label = "Recalculate Wall"
     bl_options = {"REGISTER", "UNDO"}
@@ -210,12 +208,12 @@ class RecalculateWall(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         DumbWallRecalculator().recalculate(context.selected_objects)
         return {"FINISHED"}
 
 
-class ChangeExtrusionDepth(bpy.types.Operator):
+class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_extrusion_depth"
     bl_label = "Change Extrusion Depth"
     bl_options = {"REGISTER", "UNDO"}
@@ -225,7 +223,7 @@ class ChangeExtrusionDepth(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         wall_objs = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -234,7 +232,7 @@ class ChangeExtrusionDepth(bpy.types.Operator):
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
                 return
-            extrusion = self.get_extrusion(representation)
+            extrusion = tool.Model.get_extrusion(representation)
             if not extrusion:
                 return
             extrusion.Depth = self.depth
@@ -244,18 +242,8 @@ class ChangeExtrusionDepth(bpy.types.Operator):
             DumbWallRecalculator().recalculate(wall_objs)
         return {"FINISHED"}
 
-    def get_extrusion(self, representation):
-        item = representation.Items[0]
-        while True:
-            if item.is_a("IfcExtrudedAreaSolid"):
-                return item
-            elif item.is_a("IfcBooleanClippingResult"):
-                item = item.FirstOperand
-            else:
-                break
 
-
-class ChangeLayerLength(bpy.types.Operator):
+class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_layer_length"
     bl_label = "Change Layer Length"
     bl_options = {"REGISTER", "UNDO"}
@@ -265,7 +253,7 @@ class ChangeLayerLength(bpy.types.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def execute(self, context):
+    def _execute(self, context):
         joiner = DumbWallJoiner()
         for obj in context.selected_objects:
             joiner.set_length(obj, self.length)
@@ -413,7 +401,7 @@ class DumbWallGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
 
-    def generate(self):
+    def generate(self, link_to_scene=True):
         self.file = IfcStore.get_file()
         self.layers = get_material_layer_parameters(self.relating_type)
         if not self.layers["thickness"]:
@@ -433,7 +421,7 @@ class DumbWallGenerator:
         if self.has_sketch():
             return  # For now
             return self.derive_from_sketch()
-        return self.derive_from_cursor()
+        return self.derive_from_cursor(link_to_scene)
 
     def has_sketch(self):
         return (
@@ -511,7 +499,7 @@ class DumbWallGenerator:
     def is_near(self, point1, point2):
         return (point1 - point2).length < 0.1
 
-    def derive_from_cursor(self):
+    def derive_from_cursor(self, link_to_scene):
         self.location = bpy.context.scene.cursor.location
         if self.collection:
             for sibling_obj in self.collection.objects:
@@ -537,18 +525,19 @@ class DumbWallGenerator:
                         normal = (sibling_obj.matrix_world.to_quaternion() @ face.normal).normalized()
                         self.rotation = math.atan2(normal[1], normal[0])
                         break
-        return self.create_wall()
+        return self.create_wall(link_to_scene)
 
-    def create_wall(self):
+    def create_wall(self, link_to_scene):
         ifc_class = self.get_relating_type_class(self.relating_type)
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
-        obj.location = self.location
-        obj.rotation_euler[2] = self.rotation
-        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-            obj.location[2] = self.collection_obj.location[2]
-        bpy.context.view_layer.update()
-        self.collection.objects.link(obj)
+        if link_to_scene:
+            obj.location = self.location
+            obj.rotation_euler[2] = self.rotation
+            if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
+                obj.location[2] = self.collection_obj.location[2]
+            bpy.context.view_layer.update()
+            self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
@@ -711,7 +700,7 @@ class DumbWallPlaner:
 class DumbWallJoiner:
     def __init__(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "AXIS", "GRAPH_VIEW")
+        self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
     def unjoin(self, wall1):

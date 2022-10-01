@@ -74,10 +74,10 @@ class BimTool(WorkSpaceTool):
             AuthoringData.data["relating_types_ids"] if "relating_types_ids" in AuthoringData.data else False
         )
 
-        if ifc_classes and relating_types_ids and not props.icon_id:
+        if ifc_classes and relating_types_ids and not props.icon_id and not is_tool_header:
             # hack Dion won't like to show a preview also on the first time the sidebar is shown
-            bpy.app.timers.register(lambda: prop.update_ifc_class_browser(props, context))
-            bpy.app.timers.register(lambda: prop.update_relating_type(props, context))
+            bpy.app.timers.register(lambda: prop.update_ifc_class(props, "lost_context"))
+            bpy.app.timers.register(lambda: prop.update_relating_type(props, "lost_context"))
 
         ifc_class = props.ifc_class
         relating_type_id = props.relating_type_id
@@ -98,10 +98,15 @@ class BimTool(WorkSpaceTool):
             if ifc_classes:
                 row = layout.row()
                 row.operator("bim.display_constr_types", icon="TRIA_DOWN", text="")
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_A")
-            row.label(text=f" Add")
+
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_A")
+                op = row.operator("bim.add_constr_type_instance", text="Add")
+                op.from_invoke = True
+                op.ifc_class = ifc_class
+                if relating_type_id.isnumeric():
+                    op.relating_type_id = int(relating_type_id)
         else:
             row = layout.row(align=True)
             if ifc_classes:
@@ -118,18 +123,16 @@ class BimTool(WorkSpaceTool):
             if is_sidebar and ifc_classes and relating_types_ids:
                 box = layout.box()
                 box.template_icon(icon_value=props.icon_id, scale=8)
-                row = layout.row()
-                op = row.operator("bim.add_constr_type_instance", icon="ADD")
-                op.from_invoke = True
-                op.ifc_class = ifc_class
-                if relating_type_id.isnumeric():
-                    op.relating_type_id = int(relating_type_id)
 
             if ifc_classes:
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_A")
-                row.label(text=f" Add Type Instance")
+                op = row.operator("bim.add_constr_type_instance", text="Add")
+                op.from_invoke = True
+                op.ifc_class = ifc_class
+                if relating_type_id.isnumeric():
+                    op.relating_type_id = int(relating_type_id)
 
         if ifc_classes:
             if ifc_class == "IfcWallType":

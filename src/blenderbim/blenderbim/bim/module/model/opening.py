@@ -17,6 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import gpu
+import bgl
 import bmesh
 import blenderbim.bim.handler
 import ifcopenshell
@@ -27,8 +29,11 @@ from blenderbim.bim.ifc import IfcStore
 from math import pi
 from mathutils import Vector
 from bpy.types import Operator
+from bpy.types import SpaceView3D
 from bpy.props import FloatProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
+from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
+from gpu_extras.batch import batch_for_shader
 
 
 def element_listener(element, obj):
@@ -202,6 +207,7 @@ class AddElementOpening(bpy.types.Operator):
 
 
 def add_object(self, context):
+    props = context.scene.BIMModelProperties
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=self.size)
     bm.verts.ensure_lookup_table()
@@ -212,20 +218,237 @@ def add_object(self, context):
     bm.free()
     obj = object_data_add(context, mesh, operator=self)
     obj.name = "Opening"
-    obj.display_type = "WIRE"
+
+    has_deleted_opening = True
+    while has_deleted_opening:
+        has_deleted_opening = False
+        for i, opening in enumerate(props.openings):
+            if not opening.obj:
+                props.openings.remove(i)
+                has_deleted_opening = True
+
+    new = props.openings.add()
+    new.obj = obj
+
+    DecorationsHandler.install(context)
 
 
-class BIM_OT_add_object(Operator, AddObjectHelper):
-    bl_idname = "mesh.add_opening"
-    bl_label = "Dumb Opening"
+class AddPotentialOpening(Operator, AddObjectHelper):
+    bl_idname = "bim.add_potential_opening"
+    bl_label = "Add Potential Opening"
     bl_options = {"REGISTER", "UNDO"}
-
-    size: FloatProperty(name="Size", default=2)
+    size: FloatProperty(name="Size", default=0.5)
 
     def execute(self, context):
         add_object(self, context)
         return {"FINISHED"}
 
 
-def add_object_button(self, context):
-    self.layout.operator(BIM_OT_add_object.bl_idname, icon="PLUGIN")
+class AddPotentialHalfSpaceSolid(Operator, AddObjectHelper):
+    bl_idname = "bim.add_potential_half_space_solid"
+    bl_label = "Add Potential Half Space Solid"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMModelProperties
+        bm = bmesh.new()
+        bmesh.ops.create_grid(bm, size=0.5)
+        bm.verts.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+        bm.faces.ensure_lookup_table()
+        mesh = bpy.data.meshes.new(name="Dumb Opening")
+        bm.to_mesh(mesh)
+        bm.free()
+        obj = object_data_add(context, mesh, operator=self)
+        obj.name = "HalfSpaceSolid"
+
+        has_deleted_opening = True
+        while has_deleted_opening:
+            has_deleted_opening = False
+            for i, opening in enumerate(props.openings):
+                if not opening.obj:
+                    props.openings.remove(i)
+                    has_deleted_opening = True
+
+        new = props.openings.add()
+        new.obj = obj
+
+        DecorationsHandler.install(context)
+        return {"FINISHED"}
+
+
+class AddBoolean(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_boolean"
+    bl_label = "Add Boolean"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMModelProperties
+        objs = context.selected_objects
+        if len(objs) != 2:
+            return {"FINISHED"}
+        obj1, obj2 = objs
+        element1 = tool.Ifc.get_entity(obj1)
+        element2 = tool.Ifc.get_entity(obj2)
+        if element1 and element2:
+            return {"FINISHED"}
+        if not element1 and not element2:
+            return {"FINISHED"}
+        if element2 and not element1:
+            obj1, obj2 = obj2, obj1
+        if not obj1.data or not hasattr(obj1.data, "BIMMeshProperties"):
+            return {"FINISHED"}
+        representation = tool.Ifc.get().by_id(obj1.data.BIMMeshProperties.ifc_definition_id)
+
+        ifcopenshell.api.run(
+            "geometry.add_boolean",
+            tool.Ifc.get(),
+            representation=representation,
+            operator="DIFFERENCE",
+            matrix=obj1.matrix_world.inverted() @ obj2.matrix_world,
+        )
+
+        has_deleted_opening = True
+        while has_deleted_opening:
+            has_deleted_opening = False
+            for i, opening in enumerate(props.openings):
+                if not opening.obj:
+                    props.openings.remove(i)
+                    has_deleted_opening = True
+
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj1,
+            representation=representation,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+        return {"FINISHED"}
+
+
+class DecorationsHandler:
+    installed = None
+
+    @classmethod
+    def install(cls, context):
+        if cls.installed:
+            cls.uninstall()
+        handler = cls()
+        cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW")
+
+    @classmethod
+    def uninstall(cls):
+        try:
+            SpaceView3D.draw_handler_remove(cls.installed, "WINDOW")
+        except ValueError:
+            pass
+        cls.installed = None
+
+    def __call__(self, context):
+        bgl.glLineWidth(2)
+        bgl.glPointSize(6)
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+
+        for opening in context.scene.BIMModelProperties.openings:
+            obj = opening.obj
+
+            if not obj:
+                continue
+
+            white = (1, 1, 1, 1)
+            white_t = (1, 1, 1, 0.1)
+            green = (0.545, 0.863, 0, 1)
+            red = (1, 0.2, 0.322, 1)
+            red_t = (1, 0.2, 0.322, 0.1)
+            blue = (0.157, 0.565, 1, 1)
+            blue_t = (0.157, 0.565, 1, 0.1)
+            grey = (0.2, 0.2, 0.2, 1)
+
+            self.shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+
+            verts = []
+            selected_edges = []
+            unselected_edges = []
+            selected_vertices = []
+            unselected_vertices = []
+
+            if obj.mode == "EDIT":
+                bm = bmesh.from_edit_mesh(obj.data)
+
+                for vertex in bm.verts:
+                    co = tuple(obj.matrix_world @ vertex.co)
+                    verts.append(co)
+                    if vertex.hide:
+                        continue
+
+                    if vertex.select:
+                        selected_vertices.append(co)
+                    else:
+                        unselected_vertices.append(co)
+
+                for edge in bm.edges:
+                    edge_indices = [v.index for v in edge.verts]
+                    if edge.hide:
+                        continue
+                    if edge.select:
+                        selected_edges.append(edge_indices)
+                    else:
+                        unselected_edges.append(edge_indices)
+
+                batch = batch_for_shader(self.shader, "LINES", {"pos": all_vertices}, indices=unselected_edges)
+                self.shader.bind()
+                self.shader.uniform_float("color", white)
+                batch.draw(self.shader)
+
+                batch = batch_for_shader(self.shader, "LINES", {"pos": all_vertices}, indices=selected_edges)
+                self.shader.uniform_float("color", green)
+                batch.draw(self.shader)
+
+                batch = batch_for_shader(self.shader, "POINTS", {"pos": unselected_vertices})
+                self.shader.uniform_float("color", white)
+                batch.draw(self.shader)
+
+                batch = batch_for_shader(self.shader, "POINTS", {"pos": selected_vertices})
+                self.shader.uniform_float("color", green)
+                batch.draw(self.shader)
+            else:
+                bm = bmesh.new()
+                bm.from_mesh(obj.data)
+
+                verts = [tuple(obj.matrix_world @ v.co) for v in bm.verts]
+                edges = [tuple([v.index for v in e.verts]) for e in bm.edges]
+
+                batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=edges)
+                self.shader.bind()
+                self.shader.uniform_float("color", green if obj in context.selected_objects else blue)
+                batch.draw(self.shader)
+
+            obj.data.calc_loop_triangles()
+            tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
+
+            batch = batch_for_shader(self.shader, "TRIS", {"pos": verts}, indices=tris)
+            self.shader.bind()
+            self.shader.uniform_float("color", blue_t)
+            batch.draw(self.shader)
+
+            if "HalfSpaceSolid" in obj.name:
+                # Arrow shape
+                verts = [
+                    tuple(obj.matrix_world @ Vector((0, 0, 0))),
+                    tuple(obj.matrix_world @ Vector((0, 0, 0.5))),
+                    tuple(obj.matrix_world @ Vector((0.05, 0, 0.45))),
+                    tuple(obj.matrix_world @ Vector((-0.05, 0, 0.45))),
+                    tuple(obj.matrix_world @ Vector((0, 0.05, 0.45))),
+                    tuple(obj.matrix_world @ Vector((0, -0.05, 0.45))),
+                ]
+                edges = [(0, 1), (1, 2), (1, 3), (1, 4), (1, 5)]
+                batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=edges)
+                self.shader.bind()
+                self.shader.uniform_float("color", green if obj in context.selected_objects else blue)
+                batch.draw(self.shader)
+
+            if obj.mode != "EDIT":
+                bm.free()
