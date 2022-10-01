@@ -30,8 +30,8 @@ jobs:
           { name: py310, distver: '3.10'}
         ]
         platform: [
-          { name: Windows, distver: windows-2022, upload: 'true' },
-          { name: Windows, distver: windows-2019, upload: 'false' },
+          { name: Windows, distver: windows-2022, upload: 'false' },
+          { name: Windows, distver: windows-2019, upload: 'true' },
           { name: Linux, distver: ubuntu-20.04,  upload: 'false' },
           { name: Linux, distver: ubuntu-18.04,  upload: 'true' },
           { name: macOS, distver: macos-11, upload: 'true' },
