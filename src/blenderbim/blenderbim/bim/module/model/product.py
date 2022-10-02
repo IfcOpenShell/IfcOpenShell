@@ -31,6 +31,7 @@ import blenderbim.core.geometry
 from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
+from blenderbim.bim.module.model.prop import store_cursor_position
 from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
@@ -218,32 +219,36 @@ class ReinvokeOperator(bpy.types.Operator):
     bl_options = {"REGISTER"}
     bl_description = "Reinvoke a popup operator"
     operator: bpy.props.StringProperty()
-    mouse_x: bpy.props.IntProperty()
-    mouse_y: bpy.props.IntProperty()
 
     def execute(self, context):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        event_mouse_x, event_mouse_y = event.mouse_x, event.mouse_y
-        window_mouse_x, window_mouse_y = self.mouse_x, self.mouse_y
-        if (event_mouse_x, event_mouse_y) == (10, 10):
-            return {"FINISHED"}
+        browser_state = context.scene.BIMModelProperties.constr_browser_state
+        store_cursor_position(context, event, window=False)
+        cursor_x, cursor_y = browser_state.cursor_x, browser_state.cursor_y
+        window_x, window_y = browser_state.window_x, browser_state.window_y
         window = context.window
-        window.cursor_set("WAIT")
-        window.cursor_warp(10, 10)
-        run_operator = self.run_operator
         operator = self.operator
+        self.move_cursor_away(context, window)
+
+        def move_cursor_to_window():
+            window.cursor_warp(window_x, window_y)
+
+        def run_operator(operator, *args, **kwargs):
+            reduce(lambda x, arg: getattr(x, arg), operator.split("."), bpy.ops)(*args, **kwargs)
 
         def reinvoke():
-            window.cursor_warp(event_mouse_x, event_mouse_y)
-            kwargs = {}
-            if (window_mouse_x, window_mouse_y) != (0, 0):
-                kwargs.update({"mouse_x": window_mouse_x, "mouse_y": window_mouse_y})
-            run_operator(operator, "INVOKE_DEFAULT", **kwargs)
+            run_operator(operator, "INVOKE_DEFAULT", reinvoked=True)
+            window.cursor_warp(cursor_x, cursor_y)
 
-        bpy.app.timers.register(reinvoke)
+        bpy.app.timers.register(move_cursor_to_window, first_interval=browser_state.update_delay)
+        bpy.app.timers.register(reinvoke, first_interval=3*browser_state.update_delay)
         return {"FINISHED"}
+
+    def move_cursor_away(self, context, window):  # closes current popup
+        browser_state = context.scene.BIMModelProperties.constr_browser_state
+        window.cursor_warp(browser_state.far_away_x, browser_state.far_away_y)
 
     @staticmethod
     def run_operator(operator, *args, **kwargs):
