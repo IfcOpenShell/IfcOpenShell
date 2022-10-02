@@ -48,9 +48,7 @@ class DisplayConstrTypesUI(Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        browser_state = context.scene.BIMModelProperties.constr_browser_state
-        if (browser_state.cursor_x, browser_state.cursor_y) != (10, 10):
-            store_cursor_position(context, event, window=not self.reinvoked)
+        store_cursor_position(context, event, window=not self.reinvoked)
         return context.window_manager.invoke_popup(self, width=550)
 
     def reinvoke(self, context):
