@@ -25,72 +25,57 @@ from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.void.data import Data
 
 
-class AddOpening(bpy.types.Operator):
+class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_opening"
     bl_label = "Add Opening"
     bl_options = {"REGISTER", "UNDO"}
-    opening: bpy.props.StringProperty()
-    obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        obj = context.scene.objects.get(self.obj, context.active_object)
-        if obj is None:
+        props = context.scene.BIMModelProperties
+        if len(context.selected_objects) != 2:
             return {"FINISHED"}
-        element_id = obj.BIMObjectProperties.ifc_definition_id
-        if not element_id:
+        obj1, obj2 = context.selected_objects
+        element1 = tool.Ifc.get_entity(obj1)
+        element2 = tool.Ifc.get_entity(obj2)
+        if element1 and element2:
             return {"FINISHED"}
-        element = self.file.by_id(element_id)
-        tool.Geometry.clear_cache(element)
-        if element.is_a("IfcOpeningElement"):
-            self.report({"WARNING"}, "An IfcOpeningElement can't be voided")
+        if not element1 and not element2:
             return {"FINISHED"}
-
-        opening = bpy.data.objects.get(self.opening)
-        if opening is None:
+        if element2 and not element1:
+            obj1, obj2 = obj2, obj1
+            element1, element2 = element2, element1
+        if element1.is_a("IfcOpeningElement"):
             return {"FINISHED"}
-        opening.display_type = "WIRE"
-        if not opening.BIMObjectProperties.ifc_definition_id:
-            body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
-            if not body_context:
-                return {"FINISHED"}
-            bpy.ops.bim.assign_class(obj=opening.name, ifc_class="IfcOpeningElement", context_id=body_context.id())
-
-        # If the IfcOpeningElement already voids another object, remove the boolean modifier
-        opening_element = self.file.by_id(opening.BIMObjectProperties.ifc_definition_id)
-        if opening_element.VoidsElements:
-            other_obj = IfcStore.get_element(opening_element.VoidsElements[0].RelatingBuildingElement.id())
-            try:
-                modifier = next(m for m in other_obj.modifiers if m.type == "BOOLEAN" and m.object == opening)
-                other_obj.modifiers.remove(modifier)
-            except StopIteration:
-                pass
-
-        ifcopenshell.api.run(
-            "void.add_opening",
-            self.file,
-            **{
-                "opening": opening_element,
-                "element": element,
-            },
+        if obj2 not in [o.obj for o in props.openings]:
+            return {"FINISHED"}
+        if not obj1.data or not hasattr(obj1.data, "BIMMeshProperties"):
+            return {"FINISHED"}
+        body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
+        element2 = blenderbim.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj2,
+            ifc_class="IfcOpeningElement",
+            should_add_representation=True,
+            context=body_context,
         )
-        Data.load(self.file, element_id)
+        ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=element2, element=element1)
 
-        try:
-            modifier = next(m for m in obj.modifiers if m.type == "BOOLEAN" and m.object == opening)
-        except StopIteration:
-            modifier = obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-            modifier.object = opening
-        finally:
-            modifier.operation = "DIFFERENCE"
-            modifier.solver = "EXACT"
-            modifier.use_self = True
-            modifier.operand_type = "OBJECT"
-
-        context.view_layer.objects.active = obj
+        representation = tool.Ifc.get().by_id(obj1.data.BIMMeshProperties.ifc_definition_id)
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj1,
+            representation=representation,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+        Data.load(tool.Ifc.get(), element1.id())
+        tool.Ifc.unlink(obj=obj2)
+        bpy.data.objects.remove(obj2)
+        context.view_layer.objects.active = obj1
         return {"FINISHED"}
 
 

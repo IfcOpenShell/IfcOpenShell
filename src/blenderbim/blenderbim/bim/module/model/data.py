@@ -40,6 +40,8 @@ class AuthoringData:
         cls.load_ifc_classes()
         cls.load_relating_types()
         cls.load_relating_types_browser()
+        cls.data["is_voidable_element"] = cls.is_voidable_element()
+        cls.data["has_visible_openings"] = cls.has_visible_openings()
 
     @classmethod
     def load_ifc_classes(cls):
@@ -52,6 +54,20 @@ class AuthoringData:
     @classmethod
     def load_relating_types_browser(cls):
         cls.data["relating_types_ids_browser"] = cls.relating_types_browser()
+
+    @classmethod
+    def is_voidable_element(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        return element and element.is_a("IfcElement") and not element.is_a("IfcOpeningElement")
+
+    @classmethod
+    def has_visible_openings(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element and element.is_a("IfcElement") and not element.is_a("IfcOpeningElement"):
+            for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
+                if tool.Ifc.get_object(opening):
+                    return True
+        return False
 
     @classmethod
     def ifc_classes(cls):

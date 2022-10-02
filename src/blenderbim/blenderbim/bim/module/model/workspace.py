@@ -230,7 +230,17 @@ class BimTool(WorkSpaceTool):
 
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="Opening", icon="EVENT_O")
+        row.label(text="", icon="EVENT_O")
+        if len(context.selected_objects) == 2:
+            row.operator("bim.add_opening", text="Void")
+        else:
+            row.operator("bim.add_potential_opening", text="Void")
+        if AuthoringData.data["is_voidable_element"]:
+            if AuthoringData.data["has_visible_openings"]:
+                row.operator("bim.edit_openings", icon="CHECKMARK", text="")
+                row.operator("bim.hide_openings", icon="CANCEL", text="")
+            else:
+                row.operator("bim.show_openings", icon="HIDE_OFF", text="")
 
         row = layout.row(align=True)
         row.label(text="Align")

@@ -240,10 +240,9 @@ class AddBoolean(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
-        objs = context.selected_objects
-        if len(objs) != 2:
+        if len(context.selected_objects) != 2:
             return {"FINISHED"}
-        obj1, obj2 = objs
+        obj1, obj2 = context.selected_objects
         element1 = tool.Ifc.get_entity(obj1)
         element2 = tool.Ifc.get_entity(obj2)
         if element1 and element2:
@@ -439,6 +438,38 @@ class HideOpenings(Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class EditOpenings(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_openings"
+    bl_label = "Edit Openings"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMModelProperties
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            openings = [r.RelatedOpeningElement for r in element.HasOpenings]
+            for opening in openings:
+                opening_obj = tool.Ifc.get_object(opening)
+                if opening_obj:
+                    tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                    tool.Ifc.unlink(element=opening, obj=opening_obj)
+                    bpy.data.objects.remove(opening_obj)
+
+            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            blenderbim.core.geometry.switch_representation(
+                tool.Geometry,
+                obj=obj,
+                representation=body,
+                should_reload=True,
+                enable_dynamic_voids=False,
+                is_global=True,
+                should_sync_changes_first=False,
+            )
+        return {"FINISHED"}
+
+
 class DecorationsHandler:
     installed = None
 
@@ -509,12 +540,12 @@ class DecorationsHandler:
                     else:
                         unselected_edges.append(edge_indices)
 
-                batch = batch_for_shader(self.shader, "LINES", {"pos": all_vertices}, indices=unselected_edges)
+                batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=unselected_edges)
                 self.shader.bind()
                 self.shader.uniform_float("color", white)
                 batch.draw(self.shader)
 
-                batch = batch_for_shader(self.shader, "LINES", {"pos": all_vertices}, indices=selected_edges)
+                batch = batch_for_shader(self.shader, "LINES", {"pos": verts}, indices=selected_edges)
                 self.shader.uniform_float("color", green)
                 batch.draw(self.shader)
 

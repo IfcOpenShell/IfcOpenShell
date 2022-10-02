@@ -39,6 +39,7 @@ classes = (
     opening.AddElementOpening,
     opening.AddPotentialHalfSpaceSolid,
     opening.AddPotentialOpening,
+    opening.EditOpenings,
     opening.HideBooleans,
     opening.HideOpenings,
     opening.RemoveBooleans,
