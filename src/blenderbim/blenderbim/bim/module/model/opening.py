@@ -281,6 +281,9 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             is_global=True,
             should_sync_changes_first=False,
         )
+
+        tool.Ifc.unlink(obj=obj2)
+        bpy.data.objects.remove(obj2)
         return {"FINISHED"}
 
 
@@ -307,7 +310,7 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                     boolean_obj = self.create_half_space_solid()
                     position = boolean.BaseSurface.Position
                     position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
-                    boolean_obj.matrix_world = position
+                    boolean_obj.matrix_world = obj.matrix_world @ position
                     boolean_obj.data.BIMMeshProperties.ifc_boolean_id = boolean.id()
                     boolean_obj.data.BIMMeshProperties.obj = obj
         return {"FINISHED"}

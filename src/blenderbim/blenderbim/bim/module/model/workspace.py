@@ -146,8 +146,6 @@ class BimTool(WorkSpaceTool):
                 op = row.operator("bim.change_layer_length", icon="FILE_REFRESH", text="")
                 op.length = props.length
 
-                row = layout.row()
-                row.label(text="Join")
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_E")
@@ -162,17 +160,8 @@ class BimTool(WorkSpaceTool):
                 row.operator("bim.hotkey", text="Mitre").hotkey = "S_Y"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_G")
-                row.operator("bim.hotkey", text="Regen Connections").hotkey = "S_G"
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_M")
                 row.operator("bim.hotkey", text="Merge").hotkey = "S_M"
-                row = layout.row(align=True)
-                row.operator("bim.join_wall", icon="X", text="Disconnect").join_type = ""
-
-                row = layout.row()
-                row.label(text="Wall Tools")
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_F")
@@ -181,7 +170,11 @@ class BimTool(WorkSpaceTool):
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_S")
                 row.operator("bim.hotkey", text="Split").hotkey = "S_S"
-
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_G")
+                row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
+                row.operator("bim.join_wall", icon="X", text="").join_type = ""
             if ifc_class == "IfcSlabType":
                 if not context.active_object:
                     pass
@@ -203,8 +196,6 @@ class BimTool(WorkSpaceTool):
                 op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
                 op.depth = props.extrusion_depth
 
-                row = layout.row()
-                row.label(text="Join")
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_E")
@@ -224,9 +215,8 @@ class BimTool(WorkSpaceTool):
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_G")
-                row.operator("bim.hotkey", text="Regen Connections").hotkey = "S_G"
-                row = layout.row(align=True)
-                row.operator("bim.extend_profile", icon="X", text="Disconnect").join_type = ""
+                row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
+                row.operator("bim.extend_profile", icon="X", text="").join_type = ""
 
             if props.ifc_class in (
                 "IfcCableCarrierSegmentType",
