@@ -40,6 +40,15 @@ def get_relating_type_browser(self, context):
     return AuthoringData.data["relating_types_ids_browser"]
 
 
+def store_cursor_position(context, event, cursor=True, window=True):
+    browser_state = context.scene.BIMModelProperties.constr_browser_state
+    if cursor:
+        browser_state.cursor_x, browser_state.cursor_y = event.mouse_x, event.mouse_y
+    if window:
+        browser_state.window_x, browser_state.window_y = event.mouse_x, event.mouse_y
+        # browser_state.window_x, browser_state.window_y = context.window.x, context.window.y
+
+
 def update_icon_id(self, context, browser=False):
     if context == "lost_context" or (context.region is not None and context.region.type != "TOOL_HEADER"):
         ifc_class = self.ifc_class_browser if browser else self.ifc_class
@@ -128,6 +137,17 @@ class ConstrClassInfo(PropertyGroup):
     fully_loaded: bpy.props.BoolProperty(default=False)
 
 
+class ConstrBrowserState(PropertyGroup):
+    cursor_x: bpy.props.IntProperty()
+    cursor_y: bpy.props.IntProperty()
+    window_x: bpy.props.IntProperty()
+    window_y: bpy.props.IntProperty()
+    far_away_x: bpy.props.IntProperty(default=10)  # lower left corner to temporarily warp the mouse
+    far_away_y: bpy.props.IntProperty(default=10)  # useful to close popup operators
+    updating: bpy.props.BoolProperty()
+    update_delay: bpy.props.FloatProperty(default=3e-2)
+
+
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)
     ifc_class_browser: bpy.props.EnumProperty(
@@ -150,6 +170,7 @@ class BIMModelProperties(PropertyGroup):
     occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type}
     constr_classes: bpy.props.CollectionProperty(type=ConstrClassInfo)
+    constr_browser_state: bpy.props.PointerProperty(type=ConstrBrowserState)
     extrusion_depth: bpy.props.FloatProperty(default=42.0)
     cardinal_point: bpy.props.EnumProperty(
         items=(

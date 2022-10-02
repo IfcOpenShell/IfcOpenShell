@@ -51,6 +51,7 @@ classes = (
     slab.SetArcIndex,
     prop.ConstrTypeInfo,
     prop.ConstrClassInfo,
+    prop.ConstrBrowserState,
     prop.BIMModelProperties,
     ui.BIM_PT_authoring,
     ui.DisplayConstrTypesUI,
