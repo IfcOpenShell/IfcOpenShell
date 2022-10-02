@@ -475,9 +475,9 @@ class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             curve = tool.Ifc.get().createIfcPolyline(points)
         profile.OuterCurve = curve
 
+        old_profile = extrusion.SweptArea
         extrusion.SweptArea = profile
-
-        bpy.foo = converter.paths
+        ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
         pset = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric", None)
         if pset:
@@ -603,6 +603,8 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             if profile.is_a("IfcArbitraryProfileDefWithVoids"):
                 for inner_curve in profile.InnerCurves:
                     self.process_curve(obj, position, inner_curve)
+        elif profile.is_a() == "IfcRectangleProfileDef":
+            self.process_rectangle(obj, position, profile)
 
         mesh = bpy.data.meshes.new("Profile")
         mesh.from_pydata(self.vertices, self.edges, [])
@@ -678,6 +680,27 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             self.circles.append([offset, offset + 1])
             self.edges.append((offset, offset + 1))
 
+    def process_rectangle(self, obj, position, profile):
+        if profile.Position:
+            p_position = Matrix(ifcopenshell.util.placement.get_axis2placement(profile.Position).tolist())
+            p_position[0][3] *= self.unit_scale
+            p_position[1][3] *= self.unit_scale
+            p_position[2][3] *= self.unit_scale
+        else:
+            p_position = Matrix()
+
+        x = self.convert_unit_to_si(profile.XDim)
+        y = self.convert_unit_to_si(profile.YDim)
+
+        self.vertices.extend([
+            position @ p_position @ Vector((-x/2, -y/2, 0.0)),
+            position @ p_position @ Vector((x/2, -y/2, 0.0)),
+            position @ p_position @ Vector((x/2, y/2, 0.0)),
+            position @ p_position @ Vector((-x/2, y/2, 0.0)),
+        ])
+        self.edges.extend([(i, i + 1) for i in range(0, len(self.vertices))])
+        self.edges[-1] = (len(self.vertices) - 1, 0)  # Close the loop
+
     def convert_unit_to_si(self, value):
         if isinstance(value, (tuple, list)):
             return [v * self.unit_scale for v in value]
@@ -742,7 +765,9 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
 
         self.bm.free()
 
+        old_profile = extrusion.SweptArea
         extrusion.SweptArea = profile
+        ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
         blenderbim.core.geometry.switch_representation(
             tool.Geometry,

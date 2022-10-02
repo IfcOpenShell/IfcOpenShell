@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bpy.types import Panel, Operator
+from bpy.types import Panel, Operator, Menu
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model.prop import store_cursor_position
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
@@ -172,3 +172,18 @@ class HelpConstrTypes(Operator):
             "The Construction Type Browser allows to preview and add new instances to the model.",
             "For further support, please click on the Documentation link below.",
         ]
+
+
+class BIM_MT_model(Menu):
+    bl_idname = "BIM_MT_model"
+    bl_label = "IFC Objects"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("bim.add_empty_type", text="Empty Type", icon="EMPTY_AXIS")
+        layout.operator("bim.add_potential_half_space_solid", text="Half Space Proxy", icon="ORIENTATION_NORMAL")
+        layout.operator("bim.add_potential_opening", text="Opening Proxy", icon="CUBE")
+
+
+def add_menu(self, context):
+    self.layout.menu("BIM_MT_model", icon="FILE_3D")

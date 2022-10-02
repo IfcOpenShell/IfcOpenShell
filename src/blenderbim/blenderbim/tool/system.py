@@ -89,6 +89,7 @@ class System(blenderbim.core.tool.System):
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
         ifc_importer.calculate_unit_scale()
+        ifc_importer.process_context_filter()
         ports = set(ports)
         ports -= ifc_importer.create_products(ports)
         for port in ports or []:

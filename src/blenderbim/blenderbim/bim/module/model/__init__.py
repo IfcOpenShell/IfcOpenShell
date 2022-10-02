@@ -35,7 +35,15 @@ classes = (
     wall.MergeWall,
     wall.RecalculateWall,
     wall.SplitWall,
+    opening.AddBoolean,
     opening.AddElementOpening,
+    opening.AddPotentialHalfSpaceSolid,
+    opening.AddPotentialOpening,
+    opening.HideBooleans,
+    opening.HideOpenings,
+    opening.RemoveBooleans,
+    opening.ShowBooleans,
+    opening.ShowOpenings,
     profile.ChangeCardinalPoint,
     profile.ChangeProfileDepth,
     profile.ExtendProfile,
@@ -56,9 +64,9 @@ classes = (
     ui.BIM_PT_authoring,
     ui.DisplayConstrTypesUI,
     ui.HelpConstrTypes,
+    ui.BIM_MT_model,
     grid.BIM_OT_add_object,
     stair.BIM_OT_add_object,
-    opening.BIM_OT_add_object,
     pie.OpenPieClass,
     pie.PieUpdateContainer,
     pie.PieAddOpening,
@@ -75,8 +83,7 @@ def register():
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.VIEW3D_MT_mesh_add.append(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.append(opening.add_object_button)
-    bpy.types.VIEW3D_MT_add.append(product.add_empty_type_button)
+    bpy.types.VIEW3D_MT_add.append(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
@@ -93,8 +100,7 @@ def unregister():
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.remove(opening.add_object_button)
-    bpy.types.VIEW3D_MT_add.remove(product.add_empty_type_button)
+    bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     if kc:
