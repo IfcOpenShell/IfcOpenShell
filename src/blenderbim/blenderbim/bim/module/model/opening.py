@@ -27,57 +27,13 @@ import blenderbim.tool as tool
 import blenderbim.core.geometry
 from blenderbim.bim.ifc import IfcStore
 from math import pi
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from bpy.types import Operator
 from bpy.types import SpaceView3D
 from bpy.props import FloatProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
-
-
-def element_listener(element, obj):
-    blenderbim.bim.handler.subscribe_to(obj, "mode", mode_callback)
-
-
-def mode_callback(obj, data):
-    for obj in set(bpy.context.selected_objects + [bpy.context.active_object]):
-        if (
-            obj.mode != "EDIT"
-            or not obj.data
-            or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
-            or not obj.BIMObjectProperties.ifc_definition_id
-            or not bpy.context.scene.BIMProjectProperties.is_authoring
-        ):
-            return
-        product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
-        if not product.is_a("IfcOpeningElement"):
-            return
-        for rel in product.VoidsElements:
-            building_element_obj = IfcStore.get_element(rel.RelatingBuildingElement.id())
-            if not building_element_obj:
-                continue
-            if [m for m in building_element_obj.modifiers if m.type == "BOOLEAN"]:
-                continue
-            representation = ifcopenshell.util.representation.get_representation(
-                rel.RelatingBuildingElement, "Model", "Body", "MODEL_VIEW"
-            )
-            if not representation:
-                continue
-            blenderbim.core.geometry.switch_representation(
-                tool.Geometry,
-                obj=building_element_obj,
-                representation=representation,
-                should_reload=True,
-                enable_dynamic_voids=True,
-                is_global=True,
-                should_sync_changes_first=False,
-            )
-        IfcStore.edited_objs.add(obj)
-        bm = bmesh.from_edit_mesh(obj.data)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-        bmesh.update_edit_mesh(obj.data)
-        bm.free()
 
 
 class AddElementOpening(bpy.types.Operator):
@@ -325,6 +281,158 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             is_global=True,
             should_sync_changes_first=False,
         )
+        return {"FINISHED"}
+
+
+class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
+    bl_idname = "bim.show_booleans"
+    bl_label = "Show Booleans"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        if (
+            not obj.data
+            or not hasattr(obj.data, "BIMMeshProperties")
+            or not obj.data.BIMMeshProperties.ifc_definition_id
+        ):
+            return {"FINISHED"}
+        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        booleans = []
+        for item in representation.Items:
+            booleans.extend(self.get_booleans(item))
+        for boolean in booleans:
+            if boolean.is_a() == "IfcHalfSpaceSolid":
+                if boolean.BaseSurface.is_a("IfcPlane"):
+                    boolean_obj = self.create_half_space_solid()
+                    position = boolean.BaseSurface.Position
+                    position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
+                    boolean_obj.matrix_world = position
+                    boolean_obj.data.BIMMeshProperties.ifc_boolean_id = boolean.id()
+                    boolean_obj.data.BIMMeshProperties.obj = obj
+        return {"FINISHED"}
+
+    def get_booleans(self, item):
+        results = []
+        if item.is_a("IfcBooleanResult"):
+            results.extend(self.get_booleans(item.FirstOperand))
+            results.append(item.SecondOperand)
+        return results
+
+    def create_half_space_solid(self):
+        props = bpy.context.scene.BIMModelProperties
+        bm = bmesh.new()
+        bmesh.ops.create_grid(bm, size=0.5)
+        bm.verts.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+        bm.faces.ensure_lookup_table()
+        mesh = bpy.data.meshes.new(name="Dumb Opening")
+        bm.to_mesh(mesh)
+        bm.free()
+        obj = object_data_add(bpy.context, mesh, operator=self)
+        obj.name = "HalfSpaceSolid"
+
+        has_deleted_opening = True
+        while has_deleted_opening:
+            has_deleted_opening = False
+            for i, opening in enumerate(props.openings):
+                if not opening.obj:
+                    props.openings.remove(i)
+                    has_deleted_opening = True
+
+        new = props.openings.add()
+        new.obj = obj
+
+        DecorationsHandler.install(bpy.context)
+        return obj
+
+
+class HideBooleans(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.hide_booleans"
+    bl_label = "Hide Booleans"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMModelProperties
+        for opening in props.openings:
+            obj = opening.obj
+            if obj.data.BIMMeshProperties.ifc_boolean_id:
+                bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+
+class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
+    bl_idname = "bim.remove_booleans"
+    bl_label = "Remove Booleans"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        for obj in context.selected_objects:
+            if (
+                not obj.data
+                or not hasattr(obj.data, "BIMMeshProperties")
+                or not obj.data.BIMMeshProperties.ifc_boolean_id
+            ):
+                continue
+            try:
+                boolean = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_boolean_id)
+            except:
+                continue
+            ifcopenshell.api.run("geometry.remove_boolean", tool.Ifc.get(), item=boolean)
+            if obj.data.BIMMeshProperties.obj:
+                upstream_obj = obj.data.BIMMeshProperties.obj
+                element = tool.Ifc.get_entity(upstream_obj)
+                body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+                if body:
+                    blenderbim.core.geometry.switch_representation(
+                        tool.Geometry,
+                        obj=upstream_obj,
+                        representation=body,
+                        should_reload=True,
+                        enable_dynamic_voids=False,
+                        is_global=True,
+                        should_sync_changes_first=False,
+                    )
+            bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+
+class ShowOpenings(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.show_openings"
+    bl_label = "Show Openings"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMModelProperties
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            openings = tool.Model.load_openings(element, [r.RelatedOpeningElement for r in element.HasOpenings])
+            for opening in openings:
+                new = props.openings.add()
+                new.obj = opening
+        DecorationsHandler.install(bpy.context)
+        return {"FINISHED"}
+
+
+class HideOpenings(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.hide_openings"
+    bl_label = "Hide Openings"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = bpy.context.scene.BIMModelProperties
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            openings = [r.RelatedOpeningElement for r in element.HasOpenings]
+            for opening in openings:
+                opening_obj = tool.Ifc.get_object(opening)
+                if opening_obj:
+                    tool.Ifc.unlink(element=opening, obj=opening_obj)
+                    bpy.data.objects.remove(opening_obj)
         return {"FINISHED"}
 
 
