@@ -47,7 +47,6 @@ def store_cursor_position(context, event, cursor=True, window=True):
         browser_state.cursor_x, browser_state.cursor_y = event.mouse_x, event.mouse_y
     if window:
         browser_state.window_x, browser_state.window_y = event.mouse_x, event.mouse_y
-        # browser_state.window_x, browser_state.window_y = context.window.x, context.window.y
 
 
 def update_icon_id(self, context, browser=False):
