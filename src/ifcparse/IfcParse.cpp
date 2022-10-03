@@ -1110,9 +1110,14 @@ void IfcEntityInstanceData::load() const {
 	// in the other case load() will use a vector internally to grow to the size found in the file
 	size_t n = file->load(id(), type_ ? type_->as_entity() : nullptr, type_ ? tmp_data : attributes_, getArgumentCount());
 	if (n != getArgumentCount()) {
-		Logger::Error("Wrong number of attributes on instance with id #" + boost::lexical_cast<std::string>(id_));
+		Logger::Error("Wrong number of attributes on instance with id #" + std::to_string(id_) + 
+			" at offset " + std::to_string(this->offset_in_file()) + 
+			" expected " + std::to_string(getArgumentCount()) + 
+			" got " + std::to_string(n));
 	}
+
 	file->try_read_semicolon();
+	
 	// @todo does this need to be atomic somehow?
 	if (tmp_data) {
 		attributes_ = tmp_data;
