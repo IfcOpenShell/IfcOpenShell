@@ -44,3 +44,13 @@ class Usecase:
                 "RelatedOpeningElement": self.settings["opening"],
             }
         )
+
+        placement = getattr(self.settings["opening"], "ObjectPlacement", None)
+        if placement and placement.is_a("IfcLocalPlacement"):
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement",
+                self.file,
+                product=self.settings["opening"],
+                matrix=ifcopenshell.util.placement.get_local_placement(self.settings["opening"].ObjectPlacement),
+                is_si=False,
+            )
