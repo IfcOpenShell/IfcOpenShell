@@ -37,9 +37,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
         obj1, obj2 = context.selected_objects
         element1 = tool.Ifc.get_entity(obj1)
         element2 = tool.Ifc.get_entity(obj2)
-        if element1 and element2:
-            return {"FINISHED"}
-        if not element1 and not element2:
+        if type(element1) == type(element2):
             return {"FINISHED"}
         if element2 and not element1:
             obj1, obj2 = obj2, obj1
@@ -50,6 +48,13 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         if not obj1.data or not hasattr(obj1.data, "BIMMeshProperties"):
             return {"FINISHED"}
+
+        has_visible_openings = False
+        for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
+            if tool.Ifc.get_object(opening):
+                has_visible_openings = True
+                break
+
         body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
         element2 = blenderbim.core.root.assign_class(
             tool.Ifc,
@@ -73,8 +78,11 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
             should_sync_changes_first=False,
         )
         Data.load(tool.Ifc.get(), element1.id())
-        tool.Ifc.unlink(obj=obj2)
-        bpy.data.objects.remove(obj2)
+
+        if not has_visible_openings:
+            tool.Ifc.unlink(obj=obj2)
+            bpy.data.objects.remove(obj2)
+
         context.view_layer.objects.active = obj1
         return {"FINISHED"}
 
@@ -174,18 +182,6 @@ class RemoveFilling(bpy.types.Operator):
             return {"FINISHED"}
         ifcopenshell.api.run("void.remove_filling", self.file, **{"element": self.file.by_id(element_id)})
         Data.load(self.file, element_id)
-        return {"FINISHED"}
-
-
-class ToggleOpeningVisibility(bpy.types.Operator):
-    bl_idname = "bim.toggle_opening_visibility"
-    bl_label = "Toggle Opening Visibility"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
-            for collection in [c for c in project.children if "IfcOpeningElements" in c.name]:
-                collection.hide_viewport = not collection.hide_viewport
         return {"FINISHED"}
 
 

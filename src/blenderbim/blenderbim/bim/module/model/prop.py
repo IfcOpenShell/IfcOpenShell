@@ -200,3 +200,6 @@ class BIMModelProperties(PropertyGroup):
     )
     length: bpy.props.FloatProperty(default=42.0)
     openings: bpy.props.CollectionProperty(type=ObjProperty)
+    x: bpy.props.FloatProperty(name="X", default=0.5)
+    y: bpy.props.FloatProperty(name="Y", default=0.5)
+    z: bpy.props.FloatProperty(name="Z", default=0.5)

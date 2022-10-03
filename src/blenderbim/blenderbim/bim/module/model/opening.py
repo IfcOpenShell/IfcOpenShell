@@ -162,41 +162,66 @@ class AddElementOpening(bpy.types.Operator):
         return obj
 
 
-def add_object(self, context):
-    props = context.scene.BIMModelProperties
-    bm = bmesh.new()
-    bmesh.ops.create_cube(bm, size=self.size)
-    bm.verts.ensure_lookup_table()
-    bm.edges.ensure_lookup_table()
-    bm.faces.ensure_lookup_table()
-    mesh = bpy.data.meshes.new(name="Dumb Opening")
-    bm.to_mesh(mesh)
-    bm.free()
-    obj = object_data_add(context, mesh, operator=self)
-    obj.name = "Opening"
-
-    has_deleted_opening = True
-    while has_deleted_opening:
-        has_deleted_opening = False
-        for i, opening in enumerate(props.openings):
-            if not opening.obj:
-                props.openings.remove(i)
-                has_deleted_opening = True
-
-    new = props.openings.add()
-    new.obj = obj
-
-    DecorationsHandler.install(context)
-
-
 class AddPotentialOpening(Operator, AddObjectHelper):
     bl_idname = "bim.add_potential_opening"
     bl_label = "Add Potential Opening"
     bl_options = {"REGISTER", "UNDO"}
-    size: FloatProperty(name="Size", default=0.5)
+    x: FloatProperty(name="X", default=0.5)
+    y: FloatProperty(name="Y", default=0.5)
+    z: FloatProperty(name="Z", default=0.5)
+
+    def draw_settings(context, layout, tool):
+        row = self.layout.row()
+        row.prop(data=self, property="x", label="Size X")
+        row = self.layout.row()
+        row.prop(data=self, property="y")
+        row = self.layout.row()
+        row.prop(data=self, property="z")
 
     def execute(self, context):
-        add_object(self, context)
+        props = context.scene.BIMModelProperties
+
+        new_matrix = None
+        if context.selected_objects and context.active_object:
+            new_matrix = context.active_object.matrix_world.copy()
+            new_matrix.col[3] = context.scene.cursor.location.to_4d().to_4d()
+
+        x = self.x / 2
+        y = self.y / 2
+        z = self.z / 2
+        verts = [
+            Vector((-x, -y, -z)),
+            Vector((-x, -y, z)),
+            Vector((-x, y, -z)),
+            Vector((-x, y, z)),
+            Vector((x, -y, -z)),
+            Vector((x, -y, z)),
+            Vector((x, y, -z)),
+            Vector((x, y, z)),
+        ]
+        edges = []
+        faces = [
+            [0, 1, 3, 2],
+            [2, 3, 7, 6],
+            [6, 7, 5, 4],
+            [4, 5, 1, 0],
+            [2, 6, 4, 0],
+            [7, 3, 1, 5],
+        ]
+        mesh = bpy.data.meshes.new(name="Opening")
+        mesh.from_pydata(verts, edges, faces)
+        obj = object_data_add(context, mesh, operator=self)
+        obj.name = "Opening"
+
+        if new_matrix:
+            obj.matrix_world = new_matrix
+
+        tool.Model.clear_scene_openings()
+
+        new = props.openings.add()
+        new.obj = obj
+
+        DecorationsHandler.install(context)
         return {"FINISHED"}
 
 
@@ -218,13 +243,7 @@ class AddPotentialHalfSpaceSolid(Operator, AddObjectHelper):
         obj = object_data_add(context, mesh, operator=self)
         obj.name = "HalfSpaceSolid"
 
-        has_deleted_opening = True
-        while has_deleted_opening:
-            has_deleted_opening = False
-            for i, opening in enumerate(props.openings):
-                if not opening.obj:
-                    props.openings.remove(i)
-                    has_deleted_opening = True
+        tool.Model.clear_scene_openings()
 
         new = props.openings.add()
         new.obj = obj
@@ -263,13 +282,7 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             matrix=obj1.matrix_world.inverted() @ obj2.matrix_world,
         )
 
-        has_deleted_opening = True
-        while has_deleted_opening:
-            has_deleted_opening = False
-            for i, opening in enumerate(props.openings):
-                if not opening.obj:
-                    props.openings.remove(i)
-                    has_deleted_opening = True
+        tool.Model.clear_scene_openings()
 
         blenderbim.core.geometry.switch_representation(
             tool.Geometry,
@@ -334,13 +347,7 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
         obj = object_data_add(bpy.context, mesh, operator=self)
         obj.name = "HalfSpaceSolid"
 
-        has_deleted_opening = True
-        while has_deleted_opening:
-            has_deleted_opening = False
-            for i, opening in enumerate(props.openings):
-                if not opening.obj:
-                    props.openings.remove(i)
-                    has_deleted_opening = True
+        tool.Model.clear_scene_openings()
 
         new = props.openings.add()
         new.obj = obj
@@ -425,6 +432,7 @@ class HideOpenings(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = bpy.context.scene.BIMModelProperties
+        to_delete = set()
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -433,8 +441,11 @@ class HideOpenings(Operator, tool.Ifc.Operator):
             for opening in openings:
                 opening_obj = tool.Ifc.get_object(opening)
                 if opening_obj:
-                    tool.Ifc.unlink(element=opening, obj=opening_obj)
-                    bpy.data.objects.remove(opening_obj)
+                    to_delete.add(opening_obj)
+        for opening_obj in to_delete:
+            tool.Ifc.unlink(element=opening, obj=opening_obj)
+            bpy.data.objects.remove(opening_obj)
+        tool.Model.clear_scene_openings()
         return {"FINISHED"}
 
 

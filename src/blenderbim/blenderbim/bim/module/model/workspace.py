@@ -18,10 +18,10 @@
 
 import os
 import bpy
+import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model import prop
 
@@ -56,13 +56,13 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
     )
 
-    def draw_settings(context, layout, tool):
+    def draw_settings(context, layout, something):
         props = context.scene.BIMModelProperties
         is_tool_header = context.region.type == "TOOL_HEADER"
         is_sidebar = context.region.type == "UI"
 
         row = layout.row(align=True)
-        if not IfcStore.get_file():
+        if not tool.Ifc.get():
             row.label(text="No IFC Project", icon="ERROR")
             return
 
@@ -232,9 +232,9 @@ class BimTool(WorkSpaceTool):
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_O")
         if len(context.selected_objects) == 2:
-            row.operator("bim.add_opening", text="Void")
+            row.operator("bim.add_opening", text="Apply Void")
         else:
-            row.operator("bim.add_potential_opening", text="Void")
+            row.operator("bim.add_potential_opening", text="Add Void")
         if AuthoringData.data["is_voidable_element"]:
             if AuthoringData.data["has_visible_openings"]:
                 row.operator("bim.edit_openings", icon="CHECKMARK", text="")
@@ -265,7 +265,7 @@ class BimTool(WorkSpaceTool):
         row.label(text="Decomposition", icon="EVENT_D")
 
 
-class Hotkey(bpy.types.Operator):
+class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.hotkey"
     bl_label = "Hotkey"
     bl_options = {"REGISTER", "UNDO"}
@@ -273,10 +273,7 @@ class Hotkey(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+        return tool.Ifc.get()
 
     def _execute(self, context):
         self.props = context.scene.BIMModelProperties
@@ -287,6 +284,16 @@ class Hotkey(bpy.types.Operator):
             pass
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
+
+    def draw(self, context):
+        props = context.scene.BIMModelProperties
+        if self.hotkey == "S_O":
+            row = self.layout.row()
+            row.prop(props, "x")
+            row = self.layout.row()
+            row.prop(props, "y")
+            row = self.layout.row()
+            row.prop(props, "z")
 
     def hotkey_S_A(self):
         bpy.ops.bim.add_constr_type_instance()
@@ -366,10 +373,16 @@ class Hotkey(bpy.types.Operator):
             bpy.ops.bim.extend_profile(join_type="V")
 
     def hotkey_S_O(self):
-        bpy.ops.bim.add_element_opening(voided_building_element="", filling_building_element="")
+        if len(bpy.context.selected_objects) == 2:
+            bpy.ops.bim.add_opening()
+        else:
+            bpy.ops.bim.add_potential_opening(x=self.props.x, y=self.props.y, z=self.props.z)
 
     def hotkey_A_D(self):
         bpy.ops.bim.toggle_decomposition_parenting()
 
     def hotkey_A_O(self):
-        bpy.ops.bim.toggle_opening_visibility()
+        if AuthoringData.data["has_visible_openings"]:
+            bpy.ops.bim.hide_openings()
+        else:
+            bpy.ops.bim.show_openings()
