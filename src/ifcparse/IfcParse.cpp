@@ -1538,7 +1538,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 			try {
 				entity_type = schema_->declaration_by_name(TokenFunc::asStringRef(token_stream[2]));
 			} catch (const IfcException& ex) {
-				Logger::Message(Logger::LOG_ERROR, ex.what());
+				Logger::Message(Logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream[2].startPos));
 				goto advance;
 			}
 				
