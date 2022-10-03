@@ -43,7 +43,7 @@ class QtoCalculator:
         elif "perimeter" in prop_name:
             return self.get_perimeter(obj)
         elif "area" in prop_name and ("footprint" in prop_name or "section" in prop_name or "floor" in prop_name):
-            return self.get_footprint_area(obj)
+            return self.get_net_footprint_area(obj)
         elif "area" in prop_name and "side" in prop_name:
             return self.get_side_area(obj)
         elif "area" in prop_name:
@@ -553,11 +553,11 @@ class QtoCalculator:
         bis_obj = obj.copy()
         bis_obj.data = obj.data.copy()
         bis_obj.name = f"Bisected_{ifc_id}"
-        
+
         collection = bpy.data.collections.get("QtoCalculator", bpy.data.collections.new("QtoCalculator"))
         if not bpy.context.scene.collection.children.get(collection.name):
             bpy.context.scene.collection.children.link(collection)
-        
+
         collection.objects.link(bis_obj)
 
         bpy.ops.object.select_all(action="DESELECT")
@@ -667,12 +667,12 @@ class QtoCalculator:
         center1 = object1.matrix_world @ poly1.center
         normal2 = object2.rotation_euler.to_matrix() @ poly2.normal
         center2 = object2.matrix_world @ poly2.center
-        
+
         angle_between_normals = normal1.rotation_difference(normal2).angle
-        
+
         if math.degrees(angle_between_normals) < 178:
             return 0
-        
+
         # touching polygons should be coplanar:
         plane_intersection = mathutils.geometry.intersect_plane_plane(
                 center1,
@@ -680,7 +680,7 @@ class QtoCalculator:
                 center2,
                 normal2
             )
-        
+
         # sometimes coplanar planes will interesect far off into the distance.  This is a crude way of filtering out those intersections.
         if plane_intersection[0] is None or (plane_intersection[0] - center1).magnitude > 20:
             return 0
