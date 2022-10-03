@@ -695,7 +695,15 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 	std::vector<Argument*>* vector = 0;
 	vector_or_array<Argument*> filler(attributes, num_attributes);
 	if (attributes == 0) {
-		vector = new std::vector<Argument*>();
+		if (num_attributes != 0) {
+			// If num_attributes is zero we know this is a top-level entity instance (or header entity) being parsed.
+			// There can only be parsed one of these at a time, so we can reuse the vector we have defined at the file
+			// scope.
+			vector = &internal_attribute_vector_;
+			vector->clear();
+		} else {
+			vector = new std::vector<Argument*>;
+		}
 		filler = vector_or_array<Argument*>(vector);
 	}
 
@@ -743,7 +751,9 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 		}
 	}
 
-	delete vector;
+		if (vector != &internal_attribute_vector_) {
+			delete vector;
+		}
 
 	return return_value;
 }
@@ -1466,6 +1476,9 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 	// Initialize a "C" locale for locale-independent
 	// number parsing. See comment above on line 41.
 	init_locale();
+
+	// prevent heap allocations during parse
+	internal_attribute_vector_.reserve(64);
 
 	parsing_complete_ = false;
 	MaxId = 0;
