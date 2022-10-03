@@ -1,12 +1,14 @@
-name: Publish-ifcopenshell-multiplatform
+name: ci-ifcopenshell-pypi
 
 on:
-  push:
-    paths:
-      - '.github/workflows/ci-ifcopenshell-pypi.yml'
-      - 'src/ifcopenshell-python/ifcopenshell/**'
-    branches:
-      - v0.7.0
+  schedule:
+    #         ┌───────────── minute (0 - 59)
+    #         │  ┌───────────── hour (0 - 23)
+    #         │  │ ┌───────────── day of the month (1 - 31)
+    #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+    #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+    #         *  * * * *
+    - cron: "51 23 1 * *" # 9min before utc midnight
 
 env:
   major: 0
