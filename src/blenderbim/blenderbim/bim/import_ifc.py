@@ -1947,7 +1947,7 @@ class IfcImporter:
     def set_default_context(self):
         for subcontext in self.file.by_type("IfcGeometricRepresentationSubContext"):
             if subcontext.ContextIdentifier == "Body":
-                bpy.context.scene.BIMProperties.contexts = str(subcontext.id())
+                bpy.context.scene.BIMRootProperties.contexts = str(subcontext.id())
                 break
 
     def link_element(self, element, obj):
