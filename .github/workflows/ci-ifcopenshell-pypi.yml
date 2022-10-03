@@ -60,12 +60,12 @@ jobs:
       - name: Compile
         run: |
           pip install build
-          cp -r src/ifcopenshell-python src/ifcopenshell-python_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
-          cd src/ifcopenshell-python_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          cp -r src/ifcopenshell-python src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          cd src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
       - name: Publish a Python distribution to PyPI
         uses: ortega2247/pypi-upload-action@master
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-          packages_dir: src/ifcopenshell-python_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist
+          packages_dir: src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist
