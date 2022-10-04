@@ -67,7 +67,8 @@ class Model(blenderbim.core.tool.Model):
             if obj:
                 opening_obj.parent = obj
                 opening_obj.matrix_parent_inverse = obj.matrix_world.inverted()
-        ifc_importer.place_objects_in_collections()
+        for obj in ifc_importer.added_data.values():
+            bpy.context.scene.collection.objects.link(obj)
         return ifc_importer.added_data.values()
 
     @classmethod

@@ -270,6 +270,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Hotkey"
     bl_options = {"REGISTER", "UNDO"}
     hotkey: bpy.props.StringProperty()
+    x: bpy.props.FloatProperty(name="X", default=0.5)
+    y: bpy.props.FloatProperty(name="Y", default=0.5)
+    z: bpy.props.FloatProperty(name="Z", default=0.5)
 
     @classmethod
     def poll(cls, context):
@@ -285,15 +288,23 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
 
+    def invoke(self, context, event):
+        # https://blender.stackexchange.com/questions/276035/how-do-i-make-operators-remember-their-property-values-when-called-from-a-hotkey
+        self.props = context.scene.BIMModelProperties
+        self.x = self.props.x
+        self.y = self.props.y
+        self.z = self.props.z
+        return self.execute(context)
+
     def draw(self, context):
         props = context.scene.BIMModelProperties
         if self.hotkey == "S_O":
             row = self.layout.row()
-            row.prop(props, "x")
+            row.prop(self, "x")
             row = self.layout.row()
-            row.prop(props, "y")
+            row.prop(self, "y")
             row = self.layout.row()
-            row.prop(props, "z")
+            row.prop(self, "z")
 
     def hotkey_S_A(self):
         bpy.ops.bim.add_constr_type_instance()
@@ -376,7 +387,10 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if len(bpy.context.selected_objects) == 2:
             bpy.ops.bim.add_opening()
         else:
-            bpy.ops.bim.add_potential_opening(x=self.props.x, y=self.props.y, z=self.props.z)
+            bpy.ops.bim.add_potential_opening(x=self.x, y=self.y, z=self.z)
+            self.props.x = self.x
+            self.props.y = self.y
+            self.props.z = self.z
 
     def hotkey_A_D(self):
         bpy.ops.bim.toggle_decomposition_parenting()

@@ -500,13 +500,11 @@ class Writer:
         #    "ririooooooooooeee",
         # )
 
-    def write_data(self, sheet, data, fieldnames, colours, sort_fields, custom_data={}):
-        self.sheet_data[sheet] = {"headers": fieldnames + list(custom_data.keys()), "colours": colours, "rows": []}
+    def write_data(self, sheet, data, fieldnames, colours, sort_fields):
+        self.sheet_data[sheet] = {"headers": fieldnames, "colours": colours, "rows": []}
         for row in multikeysort(list(data.values()), sort_fields):
             values = []
             for fieldname in fieldnames:
-                values.append(row[fieldname])
-            for fieldname in custom_data.keys():
                 values.append(row[fieldname])
             self.sheet_data[sheet]["rows"].append(values)
 
