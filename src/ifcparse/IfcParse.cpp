@@ -699,7 +699,11 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 			// If num_attributes is zero we know this is a top-level entity instance (or header entity) being parsed.
 			// There can only be parsed one of these at a time, so we can reuse the vector we have defined at the file
 			// scope.
-			vector = &internal_attribute_vector_;
+			if (entity) {
+				vector = &internal_attribute_vector_;
+			} else {
+				vector = &internal_attribute_vector_simple_type_;
+			}
 			vector->clear();
 		} else {
 			vector = new std::vector<Argument*>;
@@ -744,21 +748,24 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 	}
 
 	if (vector) {
-		// @todo figure out whether all this logic is still necessary, since we know the
-		// expected amount of attributes and shouldn't be able to access more than allowed
-		// by the schema.
-		attributes = new Argument*[(std::max)(num_attributes, vector->size())]{ nullptr };
-		
-		// @todo this appears unnecessary, we increment this in the loop already,
-		// which is more accurate as the filler can't go above it's size in case
-		// it uses the pre-allocated c-array.
-		// -> return_value = vector->size();
+		// Obviously don't try and create a 0-length array.
+		if (num_attributes || vector->size()) {
+			// @todo figure out whether all this logic is still necessary, since we know the
+			// expected amount of attributes and shouldn't be able to access more than allowed
+			// by the schema.
+			attributes = new Argument*[(std::max)(num_attributes, vector->size())]{ nullptr };
 
-		for (size_t i = 0; i < vector->size(); ++i) {
-			attributes[i] = vector->at(i);
+			// @todo this appears unnecessary, we increment this in the loop already,
+			// which is more accurate as the filler can't go above it's size in case
+			// it uses the pre-allocated c-array.
+			// -> return_value = vector->size();
+
+			for (size_t i = 0; i < vector->size(); ++i) {
+				attributes[i] = vector->at(i);
+			}
 		}
 
-		if (vector != &internal_attribute_vector_) {
+		if ((vector != &internal_attribute_vector_) && (vector != &internal_attribute_vector_simple_type_)) {
 			delete vector;
 		}
 	}	
@@ -1487,6 +1494,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 
 	// prevent heap allocations during parse
 	internal_attribute_vector_.reserve(64);
+	internal_attribute_vector_simple_type_.reserve(16);
 
 	parsing_complete_ = false;
 	MaxId = 0;

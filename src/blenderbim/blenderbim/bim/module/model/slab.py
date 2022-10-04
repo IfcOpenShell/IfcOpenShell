@@ -327,7 +327,7 @@ class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator)
             context.scene["sketcher"].update(json.loads(pset["Entities"]))
             bpy.context.view_layer.update()
             bpy.ops.wm.tool_set_by_id(name="sketcher.slvs_select")
-            bpy.ops.view3d.slvs_set_all_constraints_visibility(visibility='SHOW')
+            bpy.ops.view3d.slvs_set_all_constraints_visibility(visibility="SHOW")
             return {"FINISHED"}
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
@@ -692,12 +692,14 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         x = self.convert_unit_to_si(profile.XDim)
         y = self.convert_unit_to_si(profile.YDim)
 
-        self.vertices.extend([
-            position @ p_position @ Vector((-x/2, -y/2, 0.0)),
-            position @ p_position @ Vector((x/2, -y/2, 0.0)),
-            position @ p_position @ Vector((x/2, y/2, 0.0)),
-            position @ p_position @ Vector((-x/2, y/2, 0.0)),
-        ])
+        self.vertices.extend(
+            [
+                position @ p_position @ Vector((-x / 2, -y / 2, 0.0)),
+                position @ p_position @ Vector((x / 2, -y / 2, 0.0)),
+                position @ p_position @ Vector((x / 2, y / 2, 0.0)),
+                position @ p_position @ Vector((-x / 2, y / 2, 0.0)),
+            ]
+        )
         self.edges.extend([(i, i + 1) for i in range(0, len(self.vertices))])
         self.edges[-1] = (len(self.vertices) - 1, 0)  # Close the loop
 
@@ -821,7 +823,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             center = self.convert_si_to_unit(list(position_i @ p1.lerp(p2, 0.5)))
             radius = self.convert_si_to_unit((p1 - p2).length / 2)
             return tool.Ifc.get().createIfcCircle(
-                tool.Ifc.get().createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center)), radius
+                tool.Ifc.get().createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center[0:2])), radius
             )
         if tool.Ifc.get().schema == "IFC2X3":
             points = []
