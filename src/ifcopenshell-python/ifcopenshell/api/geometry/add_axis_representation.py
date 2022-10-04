@@ -31,15 +31,19 @@ class Usecase:
 
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        is_2d = len(self.settings["axis"][0]) == 2
         points = [self.convert_si_to_unit(p) for p in self.settings["axis"]]
         if self.file.schema == "IFC2X3":
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
-            curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(points))
+            if is_2d:
+                curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList2D(points), None, False)
+            else:
+                curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(points), None, False)
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
-            "Curve2D" if len(self.settings["axis"][0]) == 2 else "Curve3D",
+            "Curve2D" if is_2d else "Curve3D",
             [curve],
         )
 
