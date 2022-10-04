@@ -24,10 +24,10 @@ classes = (
     operator.RemoveOpening,
     operator.AddFilling,
     operator.RemoveFilling,
-    operator.ToggleOpeningVisibility,
     operator.ToggleDecompositionParenting,
     prop.VoidProperties,
     ui.BIM_PT_voids,
+    ui.BIM_PT_booleans,
 )
 
 

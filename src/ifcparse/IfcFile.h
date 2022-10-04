@@ -130,6 +130,8 @@ private:
 	const IfcParse::schema_definition* schema_;
 	const IfcParse::declaration* ifcroot_type_;
 
+	std::vector<Argument*> internal_attribute_vector_, internal_attribute_vector_simple_type_;
+
 	entity_by_id_t byid;
 	entities_by_type_t bytype;
 	entities_by_type_t bytype_excl;

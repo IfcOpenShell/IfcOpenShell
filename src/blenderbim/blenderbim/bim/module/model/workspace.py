@@ -18,10 +18,10 @@
 
 import os
 import bpy
+import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model import prop
 
@@ -56,13 +56,13 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
     )
 
-    def draw_settings(context, layout, tool):
+    def draw_settings(context, layout, something):
         props = context.scene.BIMModelProperties
         is_tool_header = context.region.type == "TOOL_HEADER"
         is_sidebar = context.region.type == "UI"
 
         row = layout.row(align=True)
-        if not IfcStore.get_file():
+        if not tool.Ifc.get():
             row.label(text="No IFC Project", icon="ERROR")
             return
 
@@ -146,8 +146,6 @@ class BimTool(WorkSpaceTool):
                 op = row.operator("bim.change_layer_length", icon="FILE_REFRESH", text="")
                 op.length = props.length
 
-                row = layout.row()
-                row.label(text="Join")
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_E")
@@ -162,17 +160,8 @@ class BimTool(WorkSpaceTool):
                 row.operator("bim.hotkey", text="Mitre").hotkey = "S_Y"
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_G")
-                row.operator("bim.hotkey", text="Regen Connections").hotkey = "S_G"
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_M")
                 row.operator("bim.hotkey", text="Merge").hotkey = "S_M"
-                row = layout.row(align=True)
-                row.operator("bim.join_wall", icon="X", text="Disconnect").join_type = ""
-
-                row = layout.row()
-                row.label(text="Wall Tools")
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_F")
@@ -181,7 +170,11 @@ class BimTool(WorkSpaceTool):
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_S")
                 row.operator("bim.hotkey", text="Split").hotkey = "S_S"
-
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_G")
+                row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
+                row.operator("bim.join_wall", icon="X", text="").join_type = ""
             if ifc_class == "IfcSlabType":
                 if not context.active_object:
                     pass
@@ -203,8 +196,6 @@ class BimTool(WorkSpaceTool):
                 op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
                 op.depth = props.extrusion_depth
 
-                row = layout.row()
-                row.label(text="Join")
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_E")
@@ -224,9 +215,8 @@ class BimTool(WorkSpaceTool):
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_G")
-                row.operator("bim.hotkey", text="Regen Connections").hotkey = "S_G"
-                row = layout.row(align=True)
-                row.operator("bim.extend_profile", icon="X", text="Disconnect").join_type = ""
+                row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
+                row.operator("bim.extend_profile", icon="X", text="").join_type = ""
 
             if props.ifc_class in (
                 "IfcCableCarrierSegmentType",
@@ -240,7 +230,17 @@ class BimTool(WorkSpaceTool):
 
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="Opening", icon="EVENT_O")
+        row.label(text="", icon="EVENT_O")
+        if len(context.selected_objects) == 2:
+            row.operator("bim.add_opening", text="Apply Void")
+        else:
+            row.operator("bim.add_potential_opening", text="Add Void")
+        if AuthoringData.data["is_voidable_element"]:
+            if AuthoringData.data["has_visible_openings"]:
+                row.operator("bim.edit_openings", icon="CHECKMARK", text="")
+                row.operator("bim.hide_openings", icon="CANCEL", text="")
+            else:
+                row.operator("bim.show_openings", icon="HIDE_OFF", text="")
 
         row = layout.row(align=True)
         row.label(text="Align")
@@ -265,18 +265,18 @@ class BimTool(WorkSpaceTool):
         row.label(text="Decomposition", icon="EVENT_D")
 
 
-class Hotkey(bpy.types.Operator):
+class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.hotkey"
     bl_label = "Hotkey"
     bl_options = {"REGISTER", "UNDO"}
     hotkey: bpy.props.StringProperty()
+    x: bpy.props.FloatProperty(name="X", default=0.5)
+    y: bpy.props.FloatProperty(name="Y", default=0.5)
+    z: bpy.props.FloatProperty(name="Z", default=0.5)
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+        return tool.Ifc.get()
 
     def _execute(self, context):
         self.props = context.scene.BIMModelProperties
@@ -287,6 +287,24 @@ class Hotkey(bpy.types.Operator):
             pass
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
+
+    def invoke(self, context, event):
+        # https://blender.stackexchange.com/questions/276035/how-do-i-make-operators-remember-their-property-values-when-called-from-a-hotkey
+        self.props = context.scene.BIMModelProperties
+        self.x = self.props.x
+        self.y = self.props.y
+        self.z = self.props.z
+        return self.execute(context)
+
+    def draw(self, context):
+        props = context.scene.BIMModelProperties
+        if self.hotkey == "S_O":
+            row = self.layout.row()
+            row.prop(self, "x")
+            row = self.layout.row()
+            row.prop(self, "y")
+            row = self.layout.row()
+            row.prop(self, "z")
 
     def hotkey_S_A(self):
         bpy.ops.bim.add_constr_type_instance()
@@ -366,10 +384,19 @@ class Hotkey(bpy.types.Operator):
             bpy.ops.bim.extend_profile(join_type="V")
 
     def hotkey_S_O(self):
-        bpy.ops.bim.add_element_opening(voided_building_element="", filling_building_element="")
+        if len(bpy.context.selected_objects) == 2:
+            bpy.ops.bim.add_opening()
+        else:
+            bpy.ops.bim.add_potential_opening(x=self.x, y=self.y, z=self.z)
+            self.props.x = self.x
+            self.props.y = self.y
+            self.props.z = self.z
 
     def hotkey_A_D(self):
         bpy.ops.bim.toggle_decomposition_parenting()
 
     def hotkey_A_O(self):
-        bpy.ops.bim.toggle_opening_visibility()
+        if AuthoringData.data["has_visible_openings"]:
+            bpy.ops.bim.hide_openings()
+        else:
+            bpy.ops.bim.show_openings()

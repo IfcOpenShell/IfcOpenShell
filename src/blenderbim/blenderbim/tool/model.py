@@ -51,7 +51,7 @@ class Model(blenderbim.core.tool.Model):
     @classmethod
     def load_openings(cls, element, openings):
         if not openings:
-            return
+            return []
         obj = tool.Ifc.get_object(element)
         ifc_import_settings = import_ifc.IfcImportSettings.factory()
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
@@ -67,5 +67,17 @@ class Model(blenderbim.core.tool.Model):
             if obj:
                 opening_obj.parent = obj
                 opening_obj.matrix_parent_inverse = obj.matrix_world.inverted()
-        ifc_importer.place_objects_in_collections()
+        for obj in ifc_importer.added_data.values():
+            bpy.context.scene.collection.objects.link(obj)
         return ifc_importer.added_data.values()
+
+    @classmethod
+    def clear_scene_openings(cls):
+        props = bpy.context.scene.BIMModelProperties
+        has_deleted_opening = True
+        while has_deleted_opening:
+            has_deleted_opening = False
+            for i, opening in enumerate(props.openings):
+                if not opening.obj:
+                    props.openings.remove(i)
+                    has_deleted_opening = True

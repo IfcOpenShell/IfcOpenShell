@@ -695,7 +695,19 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 	std::vector<Argument*>* vector = 0;
 	vector_or_array<Argument*> filler(attributes, num_attributes);
 	if (attributes == 0) {
-		vector = new std::vector<Argument*>();
+		if (num_attributes != 0) {
+			// If num_attributes is zero we know this is a top-level entity instance (or header entity) being parsed.
+			// There can only be parsed one of these at a time, so we can reuse the vector we have defined at the file
+			// scope.
+			if (entity) {
+				vector = &internal_attribute_vector_;
+			} else {
+				vector = &internal_attribute_vector_simple_type_;
+			}
+			vector->clear();
+		} else {
+			vector = new std::vector<Argument*>;
+		}
 		filler = vector_or_array<Argument*>(vector);
 	}
 
@@ -736,14 +748,27 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 	}
 
 	if (vector) {
-		attributes = new Argument*[vector->size()];
-		return_value = vector->size();
-		for (size_t i = 0; i < vector->size(); ++i) {
-			attributes[i] = vector->at(i);
-		}
-	}
+		// Obviously don't try and create a 0-length array.
+		if (num_attributes || vector->size()) {
+			// @todo figure out whether all this logic is still necessary, since we know the
+			// expected amount of attributes and shouldn't be able to access more than allowed
+			// by the schema.
+			attributes = new Argument*[(std::max)(num_attributes, vector->size())]{ nullptr };
 
-	delete vector;
+			// @todo this appears unnecessary, we increment this in the loop already,
+			// which is more accurate as the filler can't go above it's size in case
+			// it uses the pre-allocated c-array.
+			// -> return_value = vector->size();
+
+			for (size_t i = 0; i < vector->size(); ++i) {
+				attributes[i] = vector->at(i);
+			}
+		}
+
+		if ((vector != &internal_attribute_vector_) && (vector != &internal_attribute_vector_simple_type_)) {
+			delete vector;
+		}
+	}	
 
 	return return_value;
 }
@@ -1110,9 +1135,14 @@ void IfcEntityInstanceData::load() const {
 	// in the other case load() will use a vector internally to grow to the size found in the file
 	size_t n = file->load(id(), type_ ? type_->as_entity() : nullptr, type_ ? tmp_data : attributes_, getArgumentCount());
 	if (n != getArgumentCount()) {
-		Logger::Error("Wrong number of attributes on instance with id #" + boost::lexical_cast<std::string>(id_));
+		Logger::Error("Wrong number of attributes on instance with id #" + std::to_string(id_) + 
+			" at offset " + std::to_string(this->offset_in_file()) + 
+			" expected " + std::to_string(getArgumentCount()) + 
+			" got " + std::to_string(n));
 	}
+
 	file->try_read_semicolon();
+	
 	// @todo does this need to be atomic somehow?
 	if (tmp_data) {
 		attributes_ = tmp_data;
@@ -1462,6 +1492,10 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 	// number parsing. See comment above on line 41.
 	init_locale();
 
+	// prevent heap allocations during parse
+	internal_attribute_vector_.reserve(64);
+	internal_attribute_vector_simple_type_.reserve(16);
+
 	parsing_complete_ = false;
 	MaxId = 0;
 	tokens = 0;
@@ -1533,7 +1567,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 			try {
 				entity_type = schema_->declaration_by_name(TokenFunc::asStringRef(token_stream[2]));
 			} catch (const IfcException& ex) {
-				Logger::Message(Logger::LOG_ERROR, ex.what());
+				Logger::Message(Logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream[2].startPos));
 				goto advance;
 			}
 				
