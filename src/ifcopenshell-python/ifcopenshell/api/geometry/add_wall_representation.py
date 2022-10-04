@@ -47,16 +47,16 @@ class Usecase:
         length = self.convert_si_to_unit(self.settings["length"])
         thickness = self.convert_si_to_unit(self.settings["thickness"])
         points = (
-            (0.0, 0.0, 0.0),
-            (0.0, thickness, 0.0),
-            (length, thickness, 0.0),
-            (length, 0.0, 0.0),
-            (0.0, 0.0, 0.0),
+            (0.0, 0.0),
+            (0.0, thickness),
+            (length, thickness),
+            (length, 0.0),
+            (0.0, 0.0),
         )
         if self.file.schema == "IFC2X3":
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
-            curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(points))
+            curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList2D(points), None, False)
         extrusion = self.file.createIfcExtrudedAreaSolid(
             self.file.createIfcArbitraryClosedProfileDef("AREA", None, curve),
             self.file.createIfcAxis2Placement3D(
