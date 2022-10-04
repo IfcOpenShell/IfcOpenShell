@@ -324,6 +324,21 @@ class IfcStore:
         # TODO We're handling id_map and guid_map, but what about edited_objs? This might cause big problems.
 
     @staticmethod
+    def rollback_unlink_element(data):
+        if "id" not in data or "obj" not in data:
+            return
+        obj = bpy.data.objects.get(data["obj"])
+        IfcStore.id_map[data["id"]] = obj
+        if data["guid"]:
+            IfcStore.guid_map[data["guid"]] = obj
+
+    @staticmethod
+    def commit_unlink_element(data):
+        del IfcStore.id_map[data["id"]]
+        if data["guid"]:
+            del IfcStore.guid_map[data["guid"]]
+
+    @staticmethod
     def unlink_element(element=None, obj=None):
         if element is None:
             try:
@@ -357,6 +372,17 @@ class IfcStore:
             obj.BIMMaterialProperties.ifc_style_id = 0
         elif obj:
             obj.BIMObjectProperties.ifc_definition_id = 0
+
+        if IfcStore.history:
+            data = {}
+            if element:
+                data["id"] = element.id()
+                data["guid"] = getattr(element, "GlobalId", None)
+            if obj:
+                data["obj"] = obj.name
+            IfcStore.history[-1]["operations"].append(
+                {"rollback": IfcStore.rollback_unlink_element, "commit": IfcStore.commit_unlink_element, "data": data}
+            )
 
     @staticmethod
     def execute_ifc_operator(operator, context):
