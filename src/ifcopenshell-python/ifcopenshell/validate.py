@@ -135,13 +135,28 @@ def assert_valid_inverse(attr, val, schema):
         )
     return True
 
+select_members_cache = {}
+def get_select_members(schema, ty):
+    cache_key = schema.name(), ty.name()
+    from_cache = select_members_cache.get(cache_key)
+    if from_cache:
+        return from_cache
+    
+    def inner(ty):
+        if isinstance(ty, select_type):
+            for st in ty.select_list():
+                yield from inner(st)
+        elif isinstance(ty, entity_type):
+            yield ty.name()
+            for st in ty.subtypes():
+                yield from inner(st)
+        elif isinstance(ty, type_declaration):
+            yield ty.name()        
+    
+    v = select_members_cache[cache_key] = set(inner(ty))
+    return v
 
-def assert_valid(attr, val, schema):
-    if isinstance(attr, attribute):
-        attr_type = attr.type_of_attribute()
-    else:
-        attr_type = attr
-
+def assert_valid(attr_type, val, schema, no_throw=False, attr=None):
     type_wrappers = (named_type,)
     if not isinstance(val, ifcopenshell.entity_instance):
         # If val is not an entity instance we need to
@@ -172,9 +187,13 @@ def assert_valid(attr, val, schema):
             else:
                 invalid = True
         if not invalid:
-            invalid = not any(
-                try_valid(x, val_to_use, schema) for x in attr_type.select_list()
-            )
+            # Previously we relied on `is_a(x) for x in attr_type.select_items()`
+            # this was linear in the number of select leafs, which is very large
+            # for e.g IfcValue, which is an often used select. Therefore, we now
+            # calculate (and cache) the select leafs (including entity subtypes)
+            # for the select definition and simply check for membership in this
+            # set.
+            invalid = val_to_use.is_a() not in get_select_members(schema, attr_type)
     elif isinstance(attr_type, enumeration_type):
         invalid = val not in attr_type.enumeration_items()
     elif isinstance(attr_type, aggregation_type):
@@ -188,19 +207,14 @@ def assert_valid(attr, val, schema):
     else:
         raise NotImplementedError("Not impl %s %s" % (type(attr_type), attr_type))
 
-    if invalid:
+    if no_throw:
+        return not invalid  
+    elif invalid:
         raise ValidationError(
-            f"With attribute:\n    {attr}\nValue:\n    {val}\nNot valid\n"
+            f"With attribute:\n    {attr or attr_type}\nValue:\n    {val}\nNot valid\n"
         )
-
-    return True
-
-
-def try_valid(attr, val, schema):
-    try:
-        return assert_valid(attr, val, schema)
-    except ValidationError as e:
-        return False
+    else:
+        return True
 
 
 def log_internal_cpp_errors(filename, logger):
@@ -234,6 +248,21 @@ def log_internal_cpp_errors(filename, logger):
                     logger.error(m)
                 else:
                     logger.error("For instance:\n    %s\n%s", line, m)
+
+entity_attribute_map = {}
+def get_entity_attributes(schema, entity):
+    cache_key = schema.name(), entity
+    from_cache = entity_attribute_map.get(cache_key)
+    if from_cache:
+        return from_cache
+    
+    entity_attrs = (
+        ent := schema.declaration_by_name(entity),
+        ent.all_attributes(),
+    )
+    
+    entity_attribute_map[cache_key] = entity_attrs
+    return entity_attrs
 
 
 def validate(f, logger):
@@ -273,9 +302,8 @@ def validate(f, logger):
         if hasattr(logger, "set_instance"):
             logger.set_instance(inst)
 
-        entity = schema.declaration_by_name(inst.is_a())
-        attrs = entity.all_attributes()
-
+        entity, attrs = get_entity_attributes(schema, inst.is_a())
+        
         if entity.is_abstract():
             e = "Entity %s is abstract" % entity.name()
             if hasattr(logger, "set_instance"):
@@ -284,9 +312,10 @@ def validate(f, logger):
                 logger.error("For instance:\n    %s\n%s", inst, e)
 
         has_invalid_value = False
+        values = [None] * len(attrs)
         for i in range(len(attrs)):
             try:
-                inst[i]
+                values[i] = inst[i]
                 pass
             except:
                 if hasattr(logger, "set_instance"):
@@ -303,7 +332,7 @@ def validate(f, logger):
 
         if not has_invalid_value:
             for i, (attr, val, is_derived) in enumerate(
-                zip(attrs, inst, entity.derived())
+                zip(attrs, values, entity.derived())
             ):
 
                 if val is None and not (is_derived or attr.optional()):
@@ -320,7 +349,7 @@ def validate(f, logger):
                 if val is not None:
                     attr_type = attr.type_of_attribute()
                     try:
-                        assert_valid(attr, val, schema)
+                        assert_valid(attr_type, val, schema, attr=attr)
                     except ValidationError as e:
                         if hasattr(logger, "set_instance"):
                             logger.error(str(e))
