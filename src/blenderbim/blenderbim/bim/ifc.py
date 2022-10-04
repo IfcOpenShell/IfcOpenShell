@@ -277,6 +277,11 @@ class IfcStore:
 
     @staticmethod
     def link_element(element, obj):
+        existing_obj = IfcStore.id_map.get(element.id(), None)
+        if existing_obj == obj:
+            return
+        elif existing_obj:
+            IfcStore.unlink_element(obj=existing_obj)
         IfcStore.id_map[element.id()] = obj
         if hasattr(element, "GlobalId"):
             IfcStore.guid_map[element.GlobalId] = obj
