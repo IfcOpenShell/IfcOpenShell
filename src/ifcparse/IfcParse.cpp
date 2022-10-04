@@ -699,7 +699,11 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 			// If num_attributes is zero we know this is a top-level entity instance (or header entity) being parsed.
 			// There can only be parsed one of these at a time, so we can reuse the vector we have defined at the file
 			// scope.
-			vector = &internal_attribute_vector_;
+			if (entity) {
+				vector = &internal_attribute_vector_;
+			} else {
+				vector = &internal_attribute_vector_simple_type_;
+			}
 			vector->clear();
 		} else {
 			vector = new std::vector<Argument*>;
@@ -758,7 +762,7 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 			attributes[i] = vector->at(i);
 		}
 
-		if (vector != &internal_attribute_vector_) {
+		if ((vector != &internal_attribute_vector_) && (vector != &internal_attribute_vector_simple_type_)) {
 			delete vector;
 		}
 	}	
@@ -1487,6 +1491,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 
 	// prevent heap allocations during parse
 	internal_attribute_vector_.reserve(64);
+	internal_attribute_vector_simple_type_.reserve(16);
 
 	parsing_complete_ = false;
 	MaxId = 0;
