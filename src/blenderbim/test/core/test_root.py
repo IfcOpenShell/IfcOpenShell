@@ -86,7 +86,7 @@ class TestCopyClass:
         root.link_object_data("type_obj", "obj").should_be_called()
         collector.assign("obj").should_be_called()
         root.is_opening_element("element").should_be_called().will_return(True)
-        root.add_dynamic_opening_voids("element", "obj").should_be_called()
+        root.add_tracked_opening("obj").should_be_called()
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
 
 

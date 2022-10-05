@@ -26,19 +26,9 @@ from mathutils import Vector
 
 class Root(blenderbim.core.tool.Root):
     @classmethod
-    def add_dynamic_opening_voids(cls, element, obj):
-        for rel in element.VoidsElements:
-            building_obj = tool.Ifc.get_object(rel.RelatingBuildingElement)
-            try:
-                modifier = next(m for m in obj.modifiers if m.type == "BOOLEAN" and m.object == obj)
-            except StopIteration:
-                modifier = building_obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-                modifier.object = obj
-            finally:
-                modifier.operation = "DIFFERENCE"
-                modifier.solver = "EXACT"
-                modifier.use_self = True
-                modifier.operand_type = "OBJECT"
+    def add_tracked_opening(cls, obj):
+        new = bpy.context.scene.BIMModelProperties.openings.add()
+        new.obj = obj
 
     @classmethod
     def does_type_have_representations(cls, element):

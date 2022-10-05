@@ -29,30 +29,12 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.Root)
 
 
-class TestAddDynamicOpeningVoids(NewFile):
+class TestAddTrackedOpening(NewFile):
     def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
-
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        element = ifc.createIfcOpeningElement()
-        tool.Ifc.link(element, obj)
-
-        wall_obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        wall_element = ifc.createIfcOpeningElement()
-        tool.Ifc.link(wall_element, wall_obj)
-
-        ifcopenshell.api.run("void.add_opening", ifc, opening=element, element=wall_element)
-
-        subject.add_dynamic_opening_voids(element, obj)
-
-        modifier = wall_obj.modifiers[0]
-        assert modifier.type == "BOOLEAN"
-        assert modifier.name == "IfcOpeningElement"
-        assert modifier.operation == "DIFFERENCE"
-        assert modifier.object == obj
-        assert modifier.solver == "EXACT"
-        assert modifier.use_self is True
+        obj = bpy.data.objects.new("Object", None)
+        subject.add_tracked_opening(obj)
+        props = bpy.context.scene.BIMModelProperties
+        assert props.openings[0].obj == obj
 
 
 class TestDoesTypeHaveRepresentations(NewFile):
