@@ -90,47 +90,36 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class RemoveOpening(bpy.types.Operator):
+class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_opening"
     bl_label = "Remove Opening"
     bl_options = {"REGISTER", "UNDO"}
     opening_id: bpy.props.IntProperty()
-    obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
-        is_modifier_removed = False
-        for modifier in obj.modifiers:
-            if modifier.type != "BOOLEAN":
-                continue
-            if modifier.object and modifier.object.BIMObjectProperties.ifc_definition_id == self.opening_id:
-                is_modifier_removed = True
-                obj.modifiers.remove(modifier)
-                break
+        opening = tool.Ifc.get().by_id(self.opening_id)
+        opening_obj = tool.Ifc.get_object(opening)
+        element = opening.VoidsElements[0].RelatingBuildingElement
+        obj = tool.Ifc.get_object(element)
 
-        opening = IfcStore.get_element(self.opening_id)
-        opening.name = "/".join(opening.name.split("/")[1:])
-        IfcStore.unlink_element(obj=opening)
+        if opening_obj:
+            opening_obj.name = "/".join(opening_obj.name.split("/")[1:])
+            IfcStore.unlink_element(obj=opening_obj)
 
-        ifcopenshell.api.run("void.remove_opening", self.file, **{"opening": self.file.by_id(self.opening_id)})
+        ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
 
-        if not is_modifier_removed:
-            blenderbim.core.geometry.switch_representation(
-                tool.Geometry,
-                obj=obj,
-                representation=tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id),
-                should_reload=True,
-                enable_dynamic_voids=False,
-                is_global=True,
-                should_sync_changes_first=False,
-            )
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=obj,
+            representation=tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id),
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
 
-        tool.Geometry.clear_cache(tool.Ifc.get_entity(obj))
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        tool.Geometry.clear_cache(element)
+        Data.load(tool.Ifc.get(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
