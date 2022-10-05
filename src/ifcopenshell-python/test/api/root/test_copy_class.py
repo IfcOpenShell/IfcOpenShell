@@ -105,6 +105,16 @@ class TestCopyClass(test.bootstrap.IFC4):
         new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
         assert new.RepresentationMaps is None
 
+    def test_copying_an_element_with_an_opening(self):
+        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        opening = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
+        ifcopenshell.api.run("void.add_opening", self.file, opening=opening, element=wall)
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=wall)
+        assert wall.HasOpenings[0] != new.HasOpenings[0]
+        assert wall.HasOpenings[0].RelatedOpeningElement == opening
+        assert new.HasOpenings[0].RelatedOpeningElement != opening
+        assert new.HasOpenings[0].RelatedOpeningElement.is_a("IfcOpeningElement")
+
     def test_copying_an_opening_voiding_an_element(self):
         wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         opening = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")

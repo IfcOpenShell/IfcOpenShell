@@ -722,12 +722,12 @@ class IfcImporter:
                 self.incrementally_merge_objects()
             shape = iterator.get()
             if shape:
-                product = self.file.by_id(shape.guid)
+                product = self.file.by_id(shape.id)
                 if self.body_contexts:
                     self.create_product(product, shape)
                     results.add(product)
                 else:
-                    if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.guid):
+                    if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.id):
                         # We only load a single context, and we prioritise the Body context. See #1290.
                         pass
                     else:
@@ -877,7 +877,7 @@ class IfcImporter:
                 checkpoint = time.time()
             shape = iterator.get()
             if shape:
-                product = self.file.by_id(shape.guid)
+                product = self.file.by_id(shape.id)
                 self.create_product(product, shape)
                 results.add(product)
             if not iterator.next():
