@@ -428,9 +428,14 @@ class DumbProfileJoiner:
                 )
 
         new_matrix = copy.deepcopy(obj.matrix_world)
-        new_matrix.col[3] = self.body[0].to_4d()
+        new_matrix.col[3] = self.body[0].to_4d().copy()
         new_matrix.invert()
-        self.clippings = [new_matrix @ c for c in self.clippings]
+
+        for clipping in self.clippings:
+            if clipping["operand_type"] == "IfcHalfSpaceSolid":
+                clipping["matrix"] = new_matrix @ clipping["matrix"]
+
+        self.clippings.extend(tool.Model.get_manual_booleans(element))
 
         depth = (self.body[1] - self.body[0]).length
 
@@ -486,7 +491,7 @@ class DumbProfileJoiner:
                 )
                 is_z_offset_increased = True if percent < 0 else False
 
-                change_in_z = (self.body[0] - previous_origin).length
+                change_in_z = (self.body[0] - previous_origin).length / self.unit_scale
                 coordinates = list(opening.ObjectPlacement.RelativePlacement.Location.Coordinates)
                 if is_z_offset_increased:
                     coordinates[2] += change_in_z
@@ -613,7 +618,13 @@ class DumbProfileJoiner:
                 y_axis = direction2
                 x_axis = (clip2 - clip1).normalized().to_3d()
                 z_axis = x_axis.cross(y_axis)
-                self.clippings.append(self.create_matrix(clip1, x_axis, y_axis, z_axis))
+                self.clippings.append(
+                    {
+                        "type": "IfcBooleanClippingResult",
+                        "operand_type": "IfcHalfSpaceSolid",
+                        "matrix": self.create_matrix(clip1, x_axis, y_axis, z_axis),
+                    }
+                )
             elif connection1 == "ATSTART":
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane)
@@ -657,8 +668,13 @@ class DumbProfileJoiner:
                 y_axis = direction2
                 x_axis = (clip2 - clip1).normalized().to_3d()
                 z_axis = x_axis.cross(y_axis)
-                self.clippings.append(self.create_matrix(clip1, x_axis, y_axis, z_axis))
-
+                self.clippings.append(
+                    {
+                        "type": "IfcBooleanClippingResult",
+                        "operand_type": "IfcHalfSpaceSolid",
+                        "matrix": self.create_matrix(clip1, x_axis, y_axis, z_axis),
+                    }
+                )
         else:
             # This is the standard L and T joints described by IFC
             if connection1 == "ATEND":
@@ -679,7 +695,13 @@ class DumbProfileJoiner:
                     )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[1] = intersect + profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
-                    self.clippings.append(plane)
+                    self.clippings.append(
+                        {
+                            "type": "IfcBooleanClippingResult",
+                            "operand_type": "IfcHalfSpaceSolid",
+                            "matrix": plane,
+                        }
+                    )
             elif connection1 == "ATSTART":
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
@@ -698,7 +720,13 @@ class DumbProfileJoiner:
                     )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[0] = intersect - profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
-                    self.clippings.append(plane)
+                    self.clippings.append(
+                        {
+                            "type": "IfcBooleanClippingResult",
+                            "operand_type": "IfcHalfSpaceSolid",
+                            "matrix": plane,
+                        }
+                    )
 
     def get_max_bound_box_dimension(self, obj):
         x = [v[0] for v in obj.bound_box]
