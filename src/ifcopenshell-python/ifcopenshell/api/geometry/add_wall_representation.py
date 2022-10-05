@@ -29,6 +29,7 @@ class Usecase:
             "offset": 0.0,
             "thickness": 0.2,
             # Planes are defined as a matrix. The XY plane is the clipping boundary and +Z is removed.
+            # [{"type": "IfcBooleanClippingResult", "operand_type": "IfcHalfSpaceSolid", "matrix": [...]}, {...}]
             "clippings": [],  # A list of planes that define clipping half space solids
         }
         for key, value in settings.items():
@@ -74,23 +75,25 @@ class Usecase:
     def apply_clippings(self, first_operand):
         while self.settings["clippings"]:
             clipping = self.settings["clippings"].pop()
-            second_operand = self.file.createIfcHalfSpaceSolid(
-                self.file.createIfcPlane(
-                    self.file.createIfcAxis2Placement3D(
-                        self.file.createIfcCartesianPoint(
-                            (
-                                self.convert_si_to_unit(clipping[0][3]),
-                                self.convert_si_to_unit(clipping[1][3]),
-                                self.convert_si_to_unit(clipping[2][3]),
-                            )
-                        ),
-                        self.file.createIfcDirection((clipping[0][2], clipping[1][2], clipping[2][2])),
-                        self.file.createIfcDirection((clipping[0][0], clipping[1][0], clipping[2][0])),
-                    )
-                ),
-                False,
-            )
-            first_operand = self.file.createIfcBooleanClippingResult("DIFFERENCE", first_operand, second_operand)
+            if clipping["operand_type"] == "IfcHalfSpaceSolid":
+                matrix = clipping["matrix"]
+                second_operand = self.file.createIfcHalfSpaceSolid(
+                    self.file.createIfcPlane(
+                        self.file.createIfcAxis2Placement3D(
+                            self.file.createIfcCartesianPoint(
+                                (
+                                    self.convert_si_to_unit(matrix[0][3]),
+                                    self.convert_si_to_unit(matrix[1][3]),
+                                    self.convert_si_to_unit(matrix[2][3]),
+                                )
+                            ),
+                            self.file.createIfcDirection((matrix[0][2], matrix[1][2], matrix[2][2])),
+                            self.file.createIfcDirection((matrix[0][0], matrix[1][0], matrix[2][0])),
+                        )
+                    ),
+                    False,
+                )
+            first_operand = self.file.create_entity(clipping["type"], "DIFFERENCE", first_operand, second_operand)
         return first_operand
 
     def convert_si_to_unit(self, co):

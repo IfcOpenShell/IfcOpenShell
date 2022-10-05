@@ -961,9 +961,14 @@ class DumbWallJoiner:
                 )
 
         new_matrix = copy.deepcopy(obj.matrix_world)
-        new_matrix.col[3] = self.body[0].to_4d()
+        new_matrix.col[3] = self.body[0].to_4d().copy()
         new_matrix.invert()
-        self.clippings = [new_matrix @ c for c in self.clippings]
+
+        for clipping in self.clippings:
+            if clipping["operand_type"] == "IfcHalfSpaceSolid":
+                clipping["matrix"] = new_matrix @ clipping["matrix"]
+
+        self.get_manual_clippings(element, new_matrix)
 
         length = (self.body[1] - self.body[0]).length
 
@@ -1021,6 +1026,28 @@ class DumbWallJoiner:
             should_sync_changes_first=False,
         )
         tool.Geometry.record_object_materials(obj)
+
+    def get_manual_clippings(self, element, new_matrix):
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if not body:
+            return
+        clippings = []
+        items = list(body.Items)
+        while items:
+            item = items.pop()
+            if item.is_a() == "IfcBooleanResult":
+                clippings.append(item.SecondOperand)
+                items.append(item.FirstOperand)
+            elif item.is_a("IfcBooleanClippingResult"):
+                items.append(item.FirstOperand)
+        for clipping in clippings:
+            if clipping.is_a("IfcHalfSpaceSolid") and clipping.BaseSurface.is_a("IfcPlane"):
+                placement = Matrix(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement).tolist())
+                position = clipping.BaseSurface.Position
+                position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
+                self.clippings.append(
+                    {"type": "IfcBooleanResult", "operand_type": "IfcHalfSpaceSolid", "matrix": position}
+                )
 
     def create_matrix(self, p, x, y, z):
         return Matrix(
@@ -1133,7 +1160,13 @@ class DumbWallJoiner:
                 y_axis = Vector((0, 0, -1))
                 x_axis = (clip1 - clip2).normalized().to_3d()
                 z_axis = x_axis.cross(y_axis)
-                self.clippings.append(self.create_matrix(clip1.to_3d(), x_axis, y_axis, z_axis))
+                self.clippings.append(
+                    {
+                        "type": "IfcBooleanClippingResult",
+                        "operand_type": "IfcHalfSpaceSolid",
+                        "matrix": self.create_matrix(clip1.to_3d(), x_axis, y_axis, z_axis),
+                    }
+                )
             else:
                 base_target = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
                 if tool.Cad.is_x(abs(angle), (90, 270), tolerance=0.001):
@@ -1166,7 +1199,13 @@ class DumbWallJoiner:
                     y_axis = Vector((0, 0, 1))
                 x_axis = (clip1 - clip2).normalized().to_3d()
                 z_axis = x_axis.cross(y_axis)
-                self.clippings.append(self.create_matrix(clip1.to_3d(), x_axis, y_axis, z_axis))
+                self.clippings.append(
+                    {
+                        "type": "IfcBooleanClippingResult",
+                        "operand_type": "IfcHalfSpaceSolid",
+                        "matrix": self.create_matrix(clip1.to_3d(), x_axis, y_axis, z_axis),
+                    }
+                )
         else:
             # This is the standard L and T joints described by IFC
             if connection1 == "ATEND":
@@ -1189,14 +1228,26 @@ class DumbWallJoiner:
                         x_axis = (side_target - base_target).normalized().to_3d()
                         y_axis = Vector((0, 0, 1))
                         z_axis = x_axis.cross(y_axis)
-                        self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
+                        self.clippings.append(
+                            {
+                                "type": "IfcBooleanClippingResult",
+                                "operand_type": "IfcHalfSpaceSolid",
+                                "matrix": self.create_matrix(clip, x_axis, y_axis, z_axis),
+                            }
+                        )
                     else:
                         self.body[1] = tool.Cad.point_on_edge(side_target, axis1["reference"])
                         clip = base_target.to_3d()
                         x_axis = (side_target - base_target).normalized().to_3d()
                         y_axis = Vector((0, 0, 1))
                         z_axis = x_axis.cross(y_axis)
-                        self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
+                        self.clippings.append(
+                            {
+                                "type": "IfcBooleanClippingResult",
+                                "operand_type": "IfcHalfSpaceSolid",
+                                "matrix": self.create_matrix(clip, x_axis, y_axis, z_axis),
+                            }
+                        )
             else:
                 if is_relating:
                     base_target = tool.Cad.furthest_vector(axis1["base"][1], (intersect1, intersect2))
@@ -1217,14 +1268,26 @@ class DumbWallJoiner:
                         x_axis = (side_target - base_target).normalized().to_3d()
                         y_axis = Vector((0, 0, 1))
                         z_axis = y_axis.cross(x_axis)
-                        self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
+                        self.clippings.append(
+                            {
+                                "type": "IfcBooleanClippingResult",
+                                "operand_type": "IfcHalfSpaceSolid",
+                                "matrix": self.create_matrix(clip, x_axis, y_axis, z_axis),
+                            }
+                        )
                     else:
                         self.body[0] = tool.Cad.point_on_edge(side_target, axis1["reference"])
                         clip = base_target.to_3d()
                         x_axis = (side_target - base_target).normalized().to_3d()
                         y_axis = Vector((0, 0, 1))
                         z_axis = y_axis.cross(x_axis)
-                        self.clippings.append(self.create_matrix(clip, x_axis, y_axis, z_axis))
+                        self.clippings.append(
+                            {
+                                "type": "IfcBooleanClippingResult",
+                                "operand_type": "IfcHalfSpaceSolid",
+                                "matrix": self.create_matrix(clip, x_axis, y_axis, z_axis),
+                            }
+                        )
         return True
 
 
