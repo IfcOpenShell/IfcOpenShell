@@ -269,7 +269,9 @@ public:
 
 	unsigned int FreshId() { return ++MaxId; }
 
-	unsigned int getMaxId() { return MaxId; }
+	unsigned int getMaxId() const { return MaxId; }
+
+	const IfcParse::declaration* const ifcroot_type() const { return ifcroot_type_; }
 
 	void recalculate_id_counter();
 
@@ -311,6 +313,8 @@ public:
 	bool& parsing_complete() { return parsing_complete_; }
 
 	void build_inverses();
+
+	entity_by_guid_t& internal_guid_map() { return byguid; };
 };
 
 #ifdef WITH_IFCXML
