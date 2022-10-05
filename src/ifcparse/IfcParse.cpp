@@ -1436,6 +1436,21 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 	if (attributes_[i] != 0) {
 		Argument* current_attribute = attributes_[i];
 		if (this->file) {
+
+			// Deregister old attribute guid in file guid map.
+			if (i == 0 && this->file->ifcroot_type() && this->type()->is(*this->file->ifcroot_type())) {
+				try {
+					auto guid = (std::string) *current_attribute;
+					auto it = this->file->internal_guid_map().find(guid);
+					if (it != this->file->internal_guid_map().end() && &it->second->data() == this) {
+						this->file->internal_guid_map().erase(it);
+					}
+				} catch (IfcParse::IfcException& e) {
+					Logger::Error(e);
+				}
+			}
+
+			// Deregister inverse indices in file
 			unregister_inverse_visitor visitor(*this->file, *this);
 			apply_individual_instance_visitor(current_attribute, i).apply(visitor);
 		}
@@ -1443,11 +1458,28 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 	}
 
 	if (this->file) {
+		// Register inverse indices in file
 		register_inverse_visitor visitor(*this->file, *this);
 		apply_individual_instance_visitor(new_attribute, i).apply(visitor);
 	}
 
 	attributes_[i] = new_attribute;
+
+	// Register new attribute guid in guid map
+	if (this->file) {
+		if (i == 0 && this->file->ifcroot_type() && this->type()->is(*this->file->ifcroot_type())) {
+			try {
+				auto guid = (std::string) *new_attribute;
+				auto it = this->file->internal_guid_map().find(guid);
+				if (it != this->file->internal_guid_map().end()) {
+					Logger::Warning("Duplicate guid " + guid);
+				}
+				this->file->internal_guid_map()[guid] = this->file->instance_by_id(this->id());
+			} catch (IfcParse::IfcException& e) {
+				Logger::Error(e);
+			}
+		}
+	}
 }
 
 //
