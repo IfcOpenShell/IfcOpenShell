@@ -104,7 +104,18 @@ class Cad:
         < returns output of intersect_line_line
         """
         [p1, p2], [p3, p4] = edge1, edge2
-        return mathutils.geometry.intersect_line_line(p1, p2, p3, p4)
+        # https://developer.blender.org/T101591
+        is_2d = len(p1) == 2
+        if is_2d:
+            p1 = p1.to_3d()
+            p2 = p2.to_3d()
+            p3 = p3.to_3d()
+            p4 = p4.to_3d()
+        results = mathutils.geometry.intersect_line_line(p1, p2, p3, p4)
+        if is_2d:
+            r1, r2 = results
+            return r1.to_2d() if r1 else r1, r2.to_2d() if r2 else r2
+        return results
 
     @classmethod
     def get_intersection(cls, edge1, edge2):

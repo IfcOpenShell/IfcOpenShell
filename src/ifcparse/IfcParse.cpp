@@ -699,7 +699,11 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 			// If num_attributes is zero we know this is a top-level entity instance (or header entity) being parsed.
 			// There can only be parsed one of these at a time, so we can reuse the vector we have defined at the file
 			// scope.
-			vector = &internal_attribute_vector_;
+			if (entity) {
+				vector = &internal_attribute_vector_;
+			} else {
+				vector = &internal_attribute_vector_simple_type_;
+			}
 			vector->clear();
 		} else {
 			vector = new std::vector<Argument*>;
@@ -744,21 +748,24 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 	}
 
 	if (vector) {
-		// @todo figure out whether all this logic is still necessary, since we know the
-		// expected amount of attributes and shouldn't be able to access more than allowed
-		// by the schema.
-		attributes = new Argument*[(std::max)(num_attributes, vector->size())]{ nullptr };
-		
-		// @todo this appears unnecessary, we increment this in the loop already,
-		// which is more accurate as the filler can't go above it's size in case
-		// it uses the pre-allocated c-array.
-		// -> return_value = vector->size();
+		// Obviously don't try and create a 0-length array.
+		if (num_attributes || vector->size()) {
+			// @todo figure out whether all this logic is still necessary, since we know the
+			// expected amount of attributes and shouldn't be able to access more than allowed
+			// by the schema.
+			attributes = new Argument*[(std::max)(num_attributes, vector->size())]{ nullptr };
 
-		for (size_t i = 0; i < vector->size(); ++i) {
-			attributes[i] = vector->at(i);
+			// @todo this appears unnecessary, we increment this in the loop already,
+			// which is more accurate as the filler can't go above it's size in case
+			// it uses the pre-allocated c-array.
+			// -> return_value = vector->size();
+
+			for (size_t i = 0; i < vector->size(); ++i) {
+				attributes[i] = vector->at(i);
+			}
 		}
 
-		if (vector != &internal_attribute_vector_) {
+		if ((vector != &internal_attribute_vector_) && (vector != &internal_attribute_vector_simple_type_)) {
 			delete vector;
 		}
 	}	
@@ -1429,6 +1436,21 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 	if (attributes_[i] != 0) {
 		Argument* current_attribute = attributes_[i];
 		if (this->file) {
+
+			// Deregister old attribute guid in file guid map.
+			if (i == 0 && this->file->ifcroot_type() && this->type()->is(*this->file->ifcroot_type())) {
+				try {
+					auto guid = (std::string) *current_attribute;
+					auto it = this->file->internal_guid_map().find(guid);
+					if (it != this->file->internal_guid_map().end() && &it->second->data() == this) {
+						this->file->internal_guid_map().erase(it);
+					}
+				} catch (IfcParse::IfcException& e) {
+					Logger::Error(e);
+				}
+			}
+
+			// Deregister inverse indices in file
 			unregister_inverse_visitor visitor(*this->file, *this);
 			apply_individual_instance_visitor(current_attribute, i).apply(visitor);
 		}
@@ -1436,11 +1458,28 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 	}
 
 	if (this->file) {
+		// Register inverse indices in file
 		register_inverse_visitor visitor(*this->file, *this);
 		apply_individual_instance_visitor(new_attribute, i).apply(visitor);
 	}
 
 	attributes_[i] = new_attribute;
+
+	// Register new attribute guid in guid map
+	if (this->file) {
+		if (i == 0 && this->file->ifcroot_type() && this->type()->is(*this->file->ifcroot_type())) {
+			try {
+				auto guid = (std::string) *new_attribute;
+				auto it = this->file->internal_guid_map().find(guid);
+				if (it != this->file->internal_guid_map().end()) {
+					Logger::Warning("Duplicate guid " + guid);
+				}
+				this->file->internal_guid_map()[guid] = this->file->instance_by_id(this->id());
+			} catch (IfcParse::IfcException& e) {
+				Logger::Error(e);
+			}
+		}
+	}
 }
 
 //
@@ -1487,6 +1526,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 
 	// prevent heap allocations during parse
 	internal_attribute_vector_.reserve(64);
+	internal_attribute_vector_simple_type_.reserve(16);
 
 	parsing_complete_ = false;
 	MaxId = 0;

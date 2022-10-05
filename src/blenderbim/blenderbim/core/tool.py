@@ -401,7 +401,6 @@ class Pset:
 class Qto:
     def get_radius_of_selected_vertices(cls, obj): pass
     def set_qto_result(cls, result): pass
-    def set_active_object(cls, object): pass
     def get_pset_qto_object_ifc_info(cls, object): pass
     def get_pset_qto_properties(cls, object): pass
     def get_pset_qto_name(cls, object): pass
@@ -410,7 +409,6 @@ class Qto:
     def get_pset_qto_id(cls, object): pass
     def get_pset_qto_name(cls, object): pass
     def get_new_quantity(cls, object, quantity_name, alternative_prop_names): pass
-    def get_non_calculated_value(cls): pass
     def get_rounded_value(cls, new_quantity): pass
     def get_calculated_quantities(cls, object, pset_qto_properties): pass
     def assign_pset_qto_to_selected_object(cls, object): pass
@@ -446,7 +444,7 @@ class Resource:
 
 @interface
 class Root:
-    def add_dynamic_opening_voids(cls, element, obj): pass
+    def add_tracked_opening(cls, obj): pass
     def does_type_have_representations(cls, element): pass
     def get_element_type(cls, element): pass
     def get_object_name(cls, obj): pass

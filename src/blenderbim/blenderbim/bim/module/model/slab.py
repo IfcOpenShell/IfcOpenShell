@@ -165,11 +165,14 @@ class DumbSlabGenerator:
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
 
         if link_to_scene:
-            obj.location = self.location
+            matrix_world = Matrix()
+            matrix_world.col[3] = self.location.to_4d()
             if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-                obj.location[2] = self.collection_obj.location[2] - self.depth
+                matrix_world[2][3] = self.collection_obj.location[2] - self.depth
             else:
-                obj.location[2] -= self.depth
+                matrix_world[2][3] -= self.depth
+            obj.matrix_world = matrix_world
+            bpy.context.view_layer.update()
             self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
@@ -183,6 +186,7 @@ class DumbSlabGenerator:
         )
         ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=self.relating_type)
 
+        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         representation = ifcopenshell.api.run(
             "geometry.add_slab_representation", tool.Ifc.get(), context=self.body_context, depth=self.depth
         )
@@ -327,7 +331,7 @@ class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator)
             context.scene["sketcher"].update(json.loads(pset["Entities"]))
             bpy.context.view_layer.update()
             bpy.ops.wm.tool_set_by_id(name="sketcher.slvs_select")
-            bpy.ops.view3d.slvs_set_all_constraints_visibility(visibility='SHOW')
+            bpy.ops.view3d.slvs_set_all_constraints_visibility(visibility="SHOW")
             return {"FINISHED"}
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
@@ -692,12 +696,14 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         x = self.convert_unit_to_si(profile.XDim)
         y = self.convert_unit_to_si(profile.YDim)
 
-        self.vertices.extend([
-            position @ p_position @ Vector((-x/2, -y/2, 0.0)),
-            position @ p_position @ Vector((x/2, -y/2, 0.0)),
-            position @ p_position @ Vector((x/2, y/2, 0.0)),
-            position @ p_position @ Vector((-x/2, y/2, 0.0)),
-        ])
+        self.vertices.extend(
+            [
+                position @ p_position @ Vector((-x / 2, -y / 2, 0.0)),
+                position @ p_position @ Vector((x / 2, -y / 2, 0.0)),
+                position @ p_position @ Vector((x / 2, y / 2, 0.0)),
+                position @ p_position @ Vector((-x / 2, y / 2, 0.0)),
+            ]
+        )
         self.edges.extend([(i, i + 1) for i in range(0, len(self.vertices))])
         self.edges[-1] = (len(self.vertices) - 1, 0)  # Close the loop
 
@@ -821,7 +827,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             center = self.convert_si_to_unit(list(position_i @ p1.lerp(p2, 0.5)))
             radius = self.convert_si_to_unit((p1 - p2).length / 2)
             return tool.Ifc.get().createIfcCircle(
-                tool.Ifc.get().createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center)), radius
+                tool.Ifc.get().createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center[0:2])), radius
             )
         if tool.Ifc.get().schema == "IFC2X3":
             points = []

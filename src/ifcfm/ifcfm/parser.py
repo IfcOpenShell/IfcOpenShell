@@ -213,7 +213,7 @@ class Parser:
                     for space in rel.RelatedObjects:
                         if not space.is_a("IfcSpace"):
                             continue
-                        self.zones[element.Name + space.Name] = {
+                        self.zones[(element.Name or "Unnamed") + (space.Name or "Unnamed")] = {
                             "Name": element.Name,
                             "AuthorOrganizationName": element.OwnerHistory.OwningUser.TheOrganization.Name,
                             "AuthorDate": ifcopenshell.util.date.ifc2datetime(

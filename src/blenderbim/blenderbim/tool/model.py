@@ -17,8 +17,12 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.tool as tool
+from mathutils import Matrix
 from blenderbim.bim import import_ifc
 
 
@@ -67,7 +71,8 @@ class Model(blenderbim.core.tool.Model):
             if obj:
                 opening_obj.parent = obj
                 opening_obj.matrix_parent_inverse = obj.matrix_world.inverted()
-        ifc_importer.place_objects_in_collections()
+        for obj in ifc_importer.added_data.values():
+            bpy.context.scene.collection.objects.link(obj)
         return ifc_importer.added_data.values()
 
     @classmethod
@@ -80,3 +85,28 @@ class Model(blenderbim.core.tool.Model):
                 if not opening.obj:
                     props.openings.remove(i)
                     has_deleted_opening = True
+
+    @classmethod
+    def get_manual_booleans(cls, element):
+        results = []
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if not body:
+            return []
+        clippings = []
+        items = list(body.Items)
+        while items:
+            item = items.pop()
+            if item.is_a() == "IfcBooleanResult":
+                clippings.append(item.SecondOperand)
+                items.append(item.FirstOperand)
+            elif item.is_a("IfcBooleanClippingResult"):
+                items.append(item.FirstOperand)
+        for clipping in clippings:
+            if clipping.is_a("IfcHalfSpaceSolid") and clipping.BaseSurface.is_a("IfcPlane"):
+                placement = Matrix(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement).tolist())
+                position = clipping.BaseSurface.Position
+                position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
+                results.append(
+                    {"type": "IfcBooleanResult", "operand_type": "IfcHalfSpaceSolid", "matrix": position}
+                )
+        return results
