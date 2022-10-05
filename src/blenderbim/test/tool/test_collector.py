@@ -306,3 +306,12 @@ class TestSync(NewFile):
         col.objects.link(obj)
         subject.sync(obj)
         assert ifcopenshell.util.element.get_aggregate(element).is_a("IfcBuilding")
+
+    def test_openings_are_never_contained(self):
+        bpy.ops.bim.create_project()
+        obj = bpy.data.objects.new("Object", None)
+        element = tool.Ifc.get().createIfcOpeningElement()
+        tool.Ifc.link(element, obj)
+        bpy.data.collections.get("IfcSite/My Site").objects.link(obj)
+        subject.sync(obj)
+        assert ifcopenshell.util.element.get_container(element) is None
