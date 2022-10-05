@@ -17,7 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
+import bpy.utils.previews
+from . import ui, prop, operator, data
+
 
 classes = (
     operator.AssignClass,
@@ -26,8 +28,12 @@ classes = (
     operator.EnableReassignClass,
     operator.ReassignClass,
     operator.UnlinkObject,
+    operator.PopulateIfcIconNames,
+    prop.IFCIcons,
     prop.BIMRootProperties,
+    ui.BIM_UL_ifc_classes,
     ui.BIM_PT_class,
+    ui.BIM_UL_ifc_classes_show
 )
 
 
@@ -36,4 +42,5 @@ def register():
 
 
 def unregister():
+    bpy.utils.previews.remove(data.pcoll_icons)
     del bpy.types.Scene.BIMRootProperties

@@ -32,6 +32,8 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+# from bpy.utils.previews import ImagePreviewCollection
+
 
 types_enum = []
 classes_enum = []
@@ -100,12 +102,18 @@ def get_contexts(self, context):
     return IfcClassData.data["contexts"]
 
 
+class IFCIcons(PropertyGroup):
+    name: StringProperty()
+
+
 class BIMRootProperties(PropertyGroup):
     contexts: EnumProperty(items=get_contexts, name="Contexts")
     ifc_product: EnumProperty(items=get_ifc_products, name="Products", update=refresh_classes)
     ifc_class: EnumProperty(items=get_ifc_classes, name="Class", update=refreshPredefinedTypes)
     ifc_predefined_type: EnumProperty(items=getIfcPredefinedTypes, name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
+    ifc_icons: CollectionProperty(name="IFC Class Icons", type=IFCIcons)
+    ifc_icons_index: IntProperty(name="Index for active ifc_icon", default=0)
 
     getter_enum_suggestions = {
         "ifc_class": get_ifc_classes_suggestions,

@@ -18,9 +18,15 @@
 
 from collections import defaultdict
 import bpy
+import bpy.utils.previews
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+from pathlib import Path
+import os
+
+
+global pcoll_icons
 
 
 def refresh():
@@ -30,6 +36,7 @@ def refresh():
 class IfcClassData:
     data = {}
     is_loaded = False
+    icon_names_loaded = False
 
     @classmethod
     def load(cls):
@@ -42,6 +49,11 @@ class IfcClassData:
         cls.data["has_entity"] = cls.has_entity()
         cls.data["name"] = cls.name()
         cls.data["ifc_class"] = cls.ifc_class()
+        cls.data["ifc_icons"] = cls.load_ifc_icons()
+        if not cls.icon_names_loaded:
+            bpy.ops.bim.populate_ifc_icon_names("INVOKE_DEFAULT")
+            cls.icon_names_loaded = True
+
 
     @classmethod
     def ifc_products(cls):
@@ -154,3 +166,18 @@ class IfcClassData:
         element = tool.Ifc.get_entity(bpy.context.active_object)
         if element:
             return element.is_a()
+
+    @classmethod
+    def load_ifc_icons(cls):
+        global pcoll_icons
+
+        if "ifc_icons" not in cls.data or len(cls.data["ifc_icons"]) == 0:
+            icons_path = Path(os.path.realpath(__file__)).parent / "ifc_icons"
+            pcoll_icons = bpy.utils.previews.new()
+
+            for icon in icons_path.glob("*.png"):
+                ifc_class_name = icon.name.replace(".png", "")
+                pcoll_icons.load(ifc_class_name, str(icon), "IMAGE")
+
+            return pcoll_icons
+        return cls.data["ifc_icons"]
