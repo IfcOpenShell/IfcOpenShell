@@ -127,10 +127,13 @@ class DumbProfileGenerator:
 
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
-        obj.location = self.location
+
+        matrix_world = Matrix()
+        if self.relating_type.is_a() in ["IfcBeamType", "IfcMemberType"]:
+            matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
+        matrix_world.col[3] = self.location.to_4d()
         if link_to_scene and self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-            obj.location[2] = self.collection_obj.location[2]
-        bpy.context.view_layer.update()
+            matrix_world[2][3] = self.collection_obj.location[2]
         if link_to_scene:
             self.collection.objects.link(obj)
 
@@ -144,12 +147,13 @@ class DumbProfileGenerator:
             context=self.body_context,
         )
         ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=self.relating_type)
+
         material = ifcopenshell.util.element.get_material(element)
         material.CardinalPoint = self.cardinal_point
 
-        if self.relating_type.is_a() in ["IfcBeamType", "IfcMemberType"]:
-            obj.rotation_euler[0] = math.pi / 2
-            obj.rotation_euler[2] = math.pi / 2
+        obj.matrix_world = matrix_world
+        bpy.context.view_layer.update()
+        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         if self.axis_context:
             representation = ifcopenshell.api.run(
@@ -242,8 +246,6 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         selected_objs = context.selected_objects
-        for obj in selected_objs:
-            bpy.ops.bim.dynamically_void_product(obj=obj.name)
         joiner = DumbProfileJoiner()
         if not self.join_type:
             for obj in selected_objs:
@@ -471,9 +473,26 @@ class DumbProfileJoiner:
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_body
             )
 
+        previous_matrix = obj.matrix_world.copy()
+        previous_origin = obj.location.copy()
         obj.location[0], obj.location[1], obj.location[2] = self.body[0]
         bpy.context.view_layer.update()
         if tool.Ifc.is_moved(obj):
+            # Openings should move with the host overall ...
+            # ... except their position should stay the same along the local Z axis of the wall
+            for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
+                percent = tool.Cad.edge_percent(
+                    self.body[0], (previous_origin, (previous_matrix @ Vector((0, 0, 1))))
+                )
+                is_z_offset_increased = True if percent < 0 else False
+
+                change_in_z = (self.body[0] - previous_origin).length
+                coordinates = list(opening.ObjectPlacement.RelativePlacement.Location.Coordinates)
+                if is_z_offset_increased:
+                    coordinates[2] += change_in_z
+                else:
+                    coordinates[2] -= change_in_z
+                opening.ObjectPlacement.RelativePlacement.Location.Coordinates = coordinates
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         blenderbim.core.geometry.switch_representation(
             tool.Geometry,
@@ -512,7 +531,7 @@ class DumbProfileJoiner:
             axisl = (profile2.matrix_world.inverted() @ axis1[1]) - (profile2.matrix_world.inverted() @ axis1[0])
         elif connection1 == "ATSTART":
             axisl = (profile2.matrix_world.inverted() @ axis1[0]) - (profile2.matrix_world.inverted() @ axis1[1])
-        xy_angle = math.degrees(Vector((1, 0)).angle_signed(axisl.normalized().to_2d()))
+        xy_angle = degrees(Vector((1, 0)).angle_signed(axisl.normalized().to_2d()))
         if xy_angle >= -135 and xy_angle <= -45:
             closest_plane = "bottom"
             furthest_plane = "top"
@@ -536,7 +555,7 @@ class DumbProfileJoiner:
                 axisl = (profile1.matrix_world.inverted() @ axis2[1]) - (profile1.matrix_world.inverted() @ axis2[0])
             elif connection2 == "ATSTART":
                 axisl = (profile1.matrix_world.inverted() @ axis2[0]) - (profile1.matrix_world.inverted() @ axis2[1])
-            xy_angle2 = math.degrees(Vector((1, 0)).angle_signed(axisl.normalized().to_2d()))
+            xy_angle2 = degrees(Vector((1, 0)).angle_signed(axisl.normalized().to_2d()))
             if xy_angle2 >= -135 and xy_angle2 <= -45:
                 closest_plane2 = "bottom"
                 furthest_plane2 = "top"
