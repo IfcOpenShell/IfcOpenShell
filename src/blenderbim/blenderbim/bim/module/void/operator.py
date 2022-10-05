@@ -49,6 +49,9 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
         if not obj1.data or not hasattr(obj1.data, "BIMMeshProperties"):
             return {"FINISHED"}
 
+        if tool.Ifc.is_moved(obj1):
+            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj1)
+
         has_visible_openings = False
         for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
             if tool.Ifc.get_object(opening):

@@ -532,10 +532,11 @@ class DumbWallGenerator:
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
         if link_to_scene:
-            obj.location = self.location
-            obj.rotation_euler[2] = self.rotation
+            matrix_world = Matrix.Rotation(self.rotation, 4, "Z")
+            matrix_world.col[3] = self.location.to_4d()
             if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-                obj.location[2] = self.collection_obj.location[2]
+                matrix_world[2][3] = self.collection_obj.location[2]
+            obj.matrix_world = matrix_world
             bpy.context.view_layer.update()
             self.collection.objects.link(obj)
 
@@ -559,6 +560,7 @@ class DumbWallGenerator:
             ifcopenshell.api.run(
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
             )
+        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         representation = ifcopenshell.api.run(
             "geometry.add_wall_representation",
             tool.Ifc.get(),
