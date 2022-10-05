@@ -1012,9 +1012,26 @@ class DumbWallJoiner:
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_body
             )
 
+        previous_matrix = obj.matrix_world.copy()
+        previous_origin = obj.location.copy()
         obj.location[0], obj.location[1] = self.body[0]
         bpy.context.view_layer.update()
         if tool.Ifc.is_moved(obj):
+            # Openings should move with the host overall ...
+            # ... except their position should stay the same along the local X axis of the wall
+            for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
+                percent = tool.Cad.edge_percent(
+                    self.body[0], (previous_origin.to_2d(), (previous_matrix @ Vector((1, 0, 0))).to_2d())
+                )
+                is_x_offset_increased = True if percent < 0 else False
+
+                change_in_x = (self.body[0] - previous_origin.to_2d()).length
+                coordinates = list(opening.ObjectPlacement.RelativePlacement.Location.Coordinates)
+                if is_x_offset_increased:
+                    coordinates[0] += change_in_x
+                else:
+                    coordinates[0] -= change_in_x
+                opening.ObjectPlacement.RelativePlacement.Location.Coordinates = coordinates
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         blenderbim.core.geometry.switch_representation(
             tool.Geometry,
