@@ -29,7 +29,7 @@ class Collector(blenderbim.core.tool.Collector):
         # This is the reverse of assign. It reads the Blender collection and figures out its IFC hierarchy
         element = tool.Ifc.get_entity(obj)
 
-        if element.is_a("IfcProject") or element.is_a("IfcGridAxis"):
+        if element.is_a("IfcProject") or element.is_a("IfcGridAxis") or element.is_a("IfcOpeningElement"):
             return
 
         if not obj.users_collection:

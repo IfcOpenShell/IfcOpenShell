@@ -71,9 +71,7 @@ class BIM_PT_voids(Panel):
                 else:
                     obj_name = obj.name
             if opening_id and obj_name:
-                op = row.operator("bim.remove_opening", icon="X", text="Remove Opening")
-                op.opening_id = opening_id
-                op.obj = obj_name
+                op = row.operator("bim.remove_opening", icon="X", text="Remove Opening").opening_id = opening_id
         else:
             row.label(text="Select an opening and an element to modify", icon="HELP")
 
@@ -94,8 +92,7 @@ class BIM_PT_voids(Panel):
             else:
                 row = self.layout.row(align=True)
                 row.label(text=opening["Name"], icon="SELECT_SUBTRACT")
-            op = row.operator("bim.remove_opening", icon="X", text="")
-            op.opening_id = opening_id
+            op = row.operator("bim.remove_opening", icon="X", text="").opening_id = opening_id
         if props.ifc_definition_id in Data.openings:
             for filling_id in Data.openings[props.ifc_definition_id]["HasFillings"]:
                 filling = Data.fillings.get(filling_id)

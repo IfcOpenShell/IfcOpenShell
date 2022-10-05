@@ -165,11 +165,14 @@ class DumbSlabGenerator:
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
 
         if link_to_scene:
-            obj.location = self.location
+            matrix_world = Matrix()
+            matrix_world.col[3] = self.location.to_4d()
             if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-                obj.location[2] = self.collection_obj.location[2] - self.depth
+                matrix_world[2][3] = self.collection_obj.location[2] - self.depth
             else:
-                obj.location[2] -= self.depth
+                matrix_world[2][3] -= self.depth
+            obj.matrix_world = matrix_world
+            bpy.context.view_layer.update()
             self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
@@ -183,6 +186,7 @@ class DumbSlabGenerator:
         )
         ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=self.relating_type)
 
+        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         representation = ifcopenshell.api.run(
             "geometry.add_slab_representation", tool.Ifc.get(), context=self.body_context, depth=self.depth
         )

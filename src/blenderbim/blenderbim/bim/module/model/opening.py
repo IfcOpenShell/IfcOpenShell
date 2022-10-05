@@ -365,7 +365,7 @@ class HideBooleans(Operator, tool.Ifc.Operator):
         props = bpy.context.scene.BIMModelProperties
         for opening in props.openings:
             obj = opening.obj
-            if obj.data.BIMMeshProperties.ifc_boolean_id:
+            if obj and obj.data.BIMMeshProperties.ifc_boolean_id:
                 bpy.data.objects.remove(obj)
         return {"FINISHED"}
 
