@@ -869,6 +869,7 @@ class DumbWallJoiner:
         body = copy.deepcopy(axis1["reference"])
         axis[1 if connection == "ATEND" else 0] = intersect
         body[1 if connection == "ATEND" else 0] = intersect
+
         self.recreate_wall(element1, wall1, axis, body)
 
     def set_length(self, wall1, length):
@@ -970,7 +971,7 @@ class DumbWallJoiner:
             if clipping["operand_type"] == "IfcHalfSpaceSolid":
                 clipping["matrix"] = new_matrix @ clipping["matrix"]
 
-        self.get_manual_clippings(element, new_matrix)
+        self.clippings.extend(tool.Model.get_manual_booleans(element))
 
         length = (self.body[1] - self.body[0]).length
 
@@ -1027,7 +1028,7 @@ class DumbWallJoiner:
                 )
                 is_x_offset_increased = True if percent < 0 else False
 
-                change_in_x = (self.body[0] - previous_origin.to_2d()).length
+                change_in_x = (self.body[0] - previous_origin.to_2d()).length / self.unit_scale
                 coordinates = list(opening.ObjectPlacement.RelativePlacement.Location.Coordinates)
                 if is_x_offset_increased:
                     coordinates[0] += change_in_x
@@ -1045,28 +1046,6 @@ class DumbWallJoiner:
             should_sync_changes_first=False,
         )
         tool.Geometry.record_object_materials(obj)
-
-    def get_manual_clippings(self, element, new_matrix):
-        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if not body:
-            return
-        clippings = []
-        items = list(body.Items)
-        while items:
-            item = items.pop()
-            if item.is_a() == "IfcBooleanResult":
-                clippings.append(item.SecondOperand)
-                items.append(item.FirstOperand)
-            elif item.is_a("IfcBooleanClippingResult"):
-                items.append(item.FirstOperand)
-        for clipping in clippings:
-            if clipping.is_a("IfcHalfSpaceSolid") and clipping.BaseSurface.is_a("IfcPlane"):
-                placement = Matrix(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement).tolist())
-                position = clipping.BaseSurface.Position
-                position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
-                self.clippings.append(
-                    {"type": "IfcBooleanResult", "operand_type": "IfcHalfSpaceSolid", "matrix": position}
-                )
 
     def create_matrix(self, p, x, y, z):
         return Matrix(
