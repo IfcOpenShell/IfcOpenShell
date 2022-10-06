@@ -11,6 +11,9 @@ that you have a IFC model loaded into model variable like so:
 
     model = ifcopenshell.open('model.ifc')
 
+This is only a small sample of common tasks. To view the full list of available
+functions, check out the API Reference.
+
 Get all wall types
 ------------------
 

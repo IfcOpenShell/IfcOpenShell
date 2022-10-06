@@ -4,7 +4,58 @@ Hello, world!
 What's inside an IFC?
 ---------------------
 
-TODO
+An IFC model can be considered as a collection of elements with relationships to
+other elements in a graph-like database. Together, these elements and their
+relationships describe the digital built environment.
+
+Each element has a type known as an **IFC Class**. These types define the
+attributes that the element may store. For example, the **IfcWall Class** is
+allowed to store a **Name** and **Description** attribute.
+
+There are many **IFC Classes** available, defined through an **Object Oriented**
+hierarchy. For example, because all **IfcElement** classes can have a
+**GlobalId** attribute, that means that because **IfcWall** is a subtype of
+**IfcElement**, it can also have a **GlobalId** attribute.
+
+This IFC database can be stored in many formats. The most common is the ``.ifc``
+format, which stores data in plain text. If you open a ``.ifc`` file in a text
+editor, you'll see something like this:
+
+::
+
+    #1=IFCPROJECT('3Cbhu4euf1hfgM_SHZbeqM',$,'My Project',$,$,$,$,$,#4);
+    #2=IFCSIUNIT(*,.LENGTHUNIT.,.MILLI.,.METRE.);
+    #3=IFCSIUNIT(*,.AREAUNIT.,$,.SQUARE_METRE.);
+    #4=IFCUNITASSIGNMENT((#2,#3));
+    #5=IFCCARTESIANPOINT((0.,0.,0.));
+
+In this example there are 5 elements in the graph. The element with the ID of
+**#1** has an **IFC Class** of **IfcProject**. This element has 9
+comma-separated attributes.
+
+::
+
+       IFC Class   Quoted string value     Null value               ID reference
+       ↓           ↓                       ↓                        ↓
+    #1=IFCPROJECT('3Cbhu4euf1hfgM_SHZbeqM',$,'My Project',$,$,$,$,$,#4);
+    ↑             ↑ 
+    Element ID    Comma-separated list of attributes
+
+By selecting elements by their **IFC Class**, and reading their attributes, you
+can navigate from one element to another. The relationships between elements are
+called **IFC Concepts** and create meaning in our industry. For example, if a
+**IfcWall** element is related to an **IfcBuildingStorey** element in a
+particular way, it might mean that the wall is located in the ground floor of
+the building.
+
+The official IFC documentation describes hundreds of **IFC Classes**, ranging
+from walls, door, to tasks, cost items, parametric materials, and structural
+analysis constraints. There are also hundreds of **IFC Concepts**, which may
+describe how a wall is in a storey, a construction task might occur one after
+another, or how an surface bounds a space for energy analysis.
+
+IfcOpenShell can help you navigate these IFC elements, read their attributes,
+and traverse relationships. Your journey begins here.
 
 Core functionality crash course
 -------------------------------
@@ -217,3 +268,7 @@ Fed up with an object? Let's delete it:
 .. code-block:: python
 
     model.remove(wall)
+
+This is only a small sample of the basic building blocks of manipulating IFC
+data. IFC comes with a huge utility library and API for performing common tasks.
+See :doc:`Code examples<code_examples>` for more.
