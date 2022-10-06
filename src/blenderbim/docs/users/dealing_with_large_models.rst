@@ -125,8 +125,8 @@ elements starting at item number 30,000 and ending at item number 50,000. This
 allows you to arbitrarily break down large models into submodels. This can be
 combined with other filters.
 
-`Beta versions of Blender 3.3 <https://builder.blender.org/download/patch/>`__
-may be used which will result in a faster load time (~50%).
+Using Blender 3.3 and above will result in a faster load time (~50%) compared to
+older Blender versions.
 
 Coordination only models
 ------------------------
