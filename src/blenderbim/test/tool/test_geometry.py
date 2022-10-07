@@ -74,27 +74,6 @@ class TestClearScale(NewFile):
         assert list(obj.scale) == [1, 1, 1]
 
 
-class TestCreateDynamicVoids(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
-        wall = ifc.createIfcWall()
-        opening = ifc.createIfcOpeningElement()
-        ifcopenshell.api.run("void.add_opening", ifc, opening=opening, element=wall)
-        wall_obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        opening_obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        tool.Ifc.link(wall, wall_obj)
-        tool.Ifc.link(opening, opening_obj)
-        subject.create_dynamic_voids(wall_obj)
-        modifier = wall_obj.modifiers[0]
-        assert modifier.type == "BOOLEAN"
-        assert modifier.name == "IfcOpeningElement"
-        assert modifier.operation == "DIFFERENCE"
-        assert modifier.object == opening_obj
-        assert modifier.solver == "EXACT"
-        assert modifier.use_self is True
-
-
 class TestDeleteData(NewFile):
     def test_run(self):
         data = bpy.data.meshes.new("Mesh")
@@ -263,7 +242,7 @@ class TestImportRepresentation(NewFile):
         element = ifc.by_type("IfcWall")[0]
         tool.Ifc.link(element, obj)
         representation = element.Representation.Representations[0]
-        mesh = subject.import_representation(obj, representation, enable_dynamic_voids=False)
+        mesh = subject.import_representation(obj, representation)
         assert len(mesh.polygons) == 12
         assert mesh.materials[0] == material
 
@@ -274,7 +253,7 @@ class TestImportRepresentation(NewFile):
         element = ifc.by_type("IfcWall")[0]
         tool.Ifc.link(element, obj)
         representation = element.Representation.Representations[0]
-        mesh = subject.import_representation(obj, representation, enable_dynamic_voids=False)
+        mesh = subject.import_representation(obj, representation)
         assert len(mesh.polygons) == 0
         assert len(mesh.edges) == 4
 

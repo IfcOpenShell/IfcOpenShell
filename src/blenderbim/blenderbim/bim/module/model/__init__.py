@@ -42,6 +42,7 @@ classes = (
     opening.EditOpenings,
     opening.HideBooleans,
     opening.HideOpenings,
+    opening.RecalculateFill,
     opening.RemoveBooleans,
     opening.ShowBooleans,
     opening.ShowOpenings,

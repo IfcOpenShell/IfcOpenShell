@@ -381,7 +381,6 @@ class OverrideDeleteTrait:
                     self.remove_port(port)
 
     def delete_opening_element(self, element):
-        obj = IfcStore.get_element(element.VoidsElements[0].RelatingBuildingElement.id())
         bpy.ops.bim.remove_opening(opening_id=element.id())
 
     def remove_filling(self, element):
