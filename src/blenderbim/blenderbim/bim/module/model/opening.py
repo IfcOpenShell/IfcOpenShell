@@ -47,64 +47,69 @@ class AddElementOpening(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        voided_obj = self.get_voided_building_element(context)
-        filling_obj = self.get_filling_building_element(context)
+        voided_obj = bpy.data.objects.get(self.voided_building_element)
+        filling_obj = bpy.data.objects.get(self.filling_building_element)
+        filling = tool.Ifc.get_entity(filling_obj)
 
-        if not voided_obj:
+        if not voided_obj or not filling_obj:
             return {"FINISHED"}
 
-        element = IfcStore.get_file().by_id(voided_obj.BIMObjectProperties.ifc_definition_id)
+        element = tool.Ifc.get_entity(voided_obj)
         local_location = voided_obj.matrix_world.inverted() @ context.scene.cursor.location
         raycast = voided_obj.closest_point_on_mesh(local_location, distance=0.01)
         if not raycast[0]:
             return {"FINISHED"}
 
-        if filling_obj:
-            opening = self.generate_opening_from_filling(filling_obj, voided_obj)
-        else:
-            # The opening shall be based on the smallest bounding dimension of the element
-            dimension = min(voided_obj.dimensions)
-            bpy.ops.mesh.primitive_cube_add(size=dimension * 2)
-            opening = context.selected_objects[0]
+        # In this prototype, we assume openings are only added to axis-based elements
+        axis = [voided_obj.matrix_world @ Vector((0,0,0)), voided_obj.matrix_world @ Vector((1,0,0))]
+        new_matrix = voided_obj.matrix_world.copy()
+        new_matrix.col[3] = tool.Cad.point_on_edge(context.scene.cursor.location, axis).to_4d()
+        if filling.is_a("IfcWindow"):
+            new_matrix[2][3] = context.scene.cursor.location[2]
+        filling_obj.matrix_world = new_matrix
+        bpy.context.view_layer.update()
 
-            # Place the opening in the middle of the element
-            global_location = voided_obj.matrix_world @ raycast[1]
-            normal = raycast[2]
-            normal.negate()
-            global_normal = voided_obj.matrix_world.to_quaternion() @ normal
-            opening.location = global_location + (global_normal * (dimension / 2))
-            opening.rotation_euler = voided_obj.rotation_euler
-            opening.name = "Opening"
+        opening_obj = self.generate_opening_from_filling(filling_obj, voided_obj)
 
-        bpy.ops.bim.add_opening(opening=opening.name, obj=voided_obj.name)
-        if filling_obj:
-            bpy.ops.bim.add_filling(opening=opening.name, obj=filling_obj.name)
+        # Still prototyping, for now duplicating code from bpy.ops.bim.add_opening
+        if tool.Ifc.is_moved(voided_obj):
+            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=voided_obj)
+
+        has_visible_openings = False
+        for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
+            if tool.Ifc.get_object(opening):
+                has_visible_openings = True
+                break
+
+        body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
+        opening = blenderbim.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=opening_obj,
+            ifc_class="IfcOpeningElement",
+            should_add_representation=True,
+            context=body_context,
+        )
+        ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=opening, element=element)
+
+        representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+        blenderbim.core.geometry.switch_representation(
+            tool.Geometry,
+            obj=voided_obj,
+            representation=representation,
+            should_reload=True,
+            enable_dynamic_voids=False,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+
+        bpy.ops.bim.add_filling(opening=opening_obj.name, obj=filling_obj.name)
+
+        if not has_visible_openings:
+            tool.Ifc.unlink(obj=opening_obj)
+            bpy.data.objects.remove(opening_obj)
         return {"FINISHED"}
-
-    def get_voided_building_element(self, context):
-        obj = None
-        if self.voided_building_element:
-            obj = bpy.data.objects.get(self.voided_building_element)
-        else:
-            total_selected = len(context.selected_objects)
-            if total_selected == 1 or total_selected == 2:
-                obj = context.active_object
-        if obj and obj.BIMObjectProperties.ifc_definition_id:
-            return obj
-
-    def get_filling_building_element(self, context):
-        obj = None
-        if self.filling_building_element:
-            obj = bpy.data.objects.get(self.filling_building_element)
-        else:
-            total_selected = len(context.selected_objects)
-            if total_selected == 2:
-                if context.selected_objects[0] == context.active_object:
-                    obj = context.selected_objects[1]
-                else:
-                    obj = context.selected_objects[0]
-        if obj and obj.BIMObjectProperties.ifc_definition_id:
-            return obj
 
     def generate_opening_from_filling(self, filling_obj, voided_obj):
         x, y, z = filling_obj.dimensions
@@ -155,10 +160,6 @@ class AddElementOpening(bpy.types.Operator):
         mesh.from_pydata(verts, edges, faces)
         obj = bpy.data.objects.new("Opening", mesh)
         obj.matrix_world = filling_obj.matrix_world
-
-        filling_obj.rotation_euler = voided_obj.rotation_euler
-        obj.parent = filling_obj
-        obj.matrix_parent_inverse = filling_obj.matrix_world.inverted()
         return obj
 
 
@@ -184,7 +185,7 @@ class AddPotentialOpening(Operator, AddObjectHelper):
         new_matrix = None
         if context.selected_objects and context.active_object:
             new_matrix = context.active_object.matrix_world.copy()
-            new_matrix.col[3] = context.scene.cursor.location.to_4d().to_4d()
+            new_matrix.col[3] = context.scene.cursor.location.to_4d()
 
         x = self.x / 2
         y = self.y / 2
