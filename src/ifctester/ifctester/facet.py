@@ -302,8 +302,8 @@ class Classification(Facet):
 
 
 class PartOf(Facet):
-    def __init__(self, entity=None, relation="IfcRelAggregates", minOccurs=None, maxOccurs=None, instructions=None):
-        self.parameters = ["entity", "@relation", "@minOccurs", "@maxOccurs", "@instructions"]
+    def __init__(self, entity=None, predefinedType=None, relation="IfcRelAggregates", minOccurs=None, maxOccurs=None, instructions=None):
+        self.parameters = ["entity", "predefinedType", "@relation", "@minOccurs", "@maxOccurs", "@instructions"]
         self.applicability_templates = [
             "An element with an {relation} relationship with an {entity}",
             "An element with an {relation} relationship",
@@ -312,7 +312,26 @@ class PartOf(Facet):
             "An element must have an {relation} relationship with an {entity}",
             "An element must have an {relation} relationship",
         ]
-        super().__init__(entity, relation, minOccurs, maxOccurs, instructions)
+        super().__init__(entity, predefinedType, relation, minOccurs, maxOccurs, instructions)
+
+    def asdict(self):
+        results = super().asdict()
+        entity = {}
+        if "entity" in results:
+            entity["name"] = results["entity"]
+            del results["entity"]
+        if "predefinedType" in results:
+            entity["predefinedType"] = results["predefinedType"]
+            del results["predefinedType"]
+        if entity:
+            results["entity"] = entity
+        return results
+
+    def parse(self, xml):
+        if "entity" in xml:
+            super().parse(xml["entity"])
+            del xml["entity"]
+        super().parse(xml)
 
     def __call__(self, inst, logger=None):
         if self.minOccurs == 0 and self.maxOccurs != 0:
@@ -330,7 +349,11 @@ class PartOf(Facet):
                 while aggregate is not None:
                     ancestors.append(aggregate.is_a())
                     if aggregate.is_a().upper() == self.entity:
-                        is_pass = True
+                        if self.predefinedType:
+                            if ifcopenshell.util.element.get_predefined_type(aggregate) == self.predefinedType:
+                                is_pass = True
+                        else:
+                            is_pass = True
                         break
                     aggregate = ifcopenshell.util.element.get_aggregate(aggregate)
                 if not is_pass:
@@ -348,6 +371,11 @@ class PartOf(Facet):
                 if group.is_a().upper() != self.entity:
                     is_pass = False
                     reason = {"type": "ENTITY", "actual": group.is_a().upper()}
+                if self.predefinedType:
+                    predefined_type = ifcopenshell.util.element.get_predefined_type(group)
+                    if predefined_type != self.predefinedType:
+                        is_pass = False
+                        reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
         elif self.relation == "IfcRelContainedInSpatialStructure":
             container = ifcopenshell.util.element.get_container(inst)
             is_pass = container is not None
@@ -357,6 +385,11 @@ class PartOf(Facet):
                 if container.is_a().upper() != self.entity:
                     is_pass = False
                     reason = {"type": "ENTITY", "actual": container.is_a().upper()}
+                if self.predefinedType:
+                    predefined_type = ifcopenshell.util.element.get_predefined_type(container)
+                    if predefined_type != self.predefinedType:
+                        is_pass = False
+                        reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
         elif self.relation == "IfcRelNests":
             nest = self.get_nested_whole(inst)
             is_pass = nest is not None
@@ -368,7 +401,11 @@ class PartOf(Facet):
                 while nest is not None:
                     ancestors.append(nest.is_a())
                     if nest.is_a().upper() == self.entity:
-                        is_pass = True
+                        if self.predefinedType:
+                            if ifcopenshell.util.element.get_predefined_type(nest) == self.predefinedType:
+                                is_pass = True
+                        else:
+                            is_pass = True
                         break
                     nest = self.get_nested_whole(nest)
                 if not is_pass:
