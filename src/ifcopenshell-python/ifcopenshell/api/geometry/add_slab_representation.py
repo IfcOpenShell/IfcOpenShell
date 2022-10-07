@@ -42,13 +42,7 @@ class Usecase:
 
     def create_item(self):
         size = self.convert_si_to_unit(1)
-        points = (
-            (0.0, 0.0, 0.0),
-            (size, 0.0, 0.0),
-            (size, size, 0.0),
-            (0.0, size, 0.0),
-            (0.0, 0.0, 0.0),
-        )
+        points = ((0.0, 0.0), (size, 0.0), (size, size), (0.0, size), (0.0, 0.0))
         if self.file.schema == "IFC2X3":
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
