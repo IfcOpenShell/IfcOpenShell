@@ -44,11 +44,15 @@ related information in ``shape.geometry``:
     # Indices of vertices per triangle face e.g. [f1v1, f1v2, f1v3, f2v1, f2v2, f2v3, ...]
     faces = shape.geometry.faces
 
+    # Indices of vertices per edge e.g. [e1v1, e1v2, e2v1, e2v2, ...]
+    edges = shape.geometry.edges
+
     # X Y Z of vertices in flattened list e.g. [v1x, v1y, v1z, v2x, v2y, v2z, ...]
     verts = shape.geometry.verts
 
-    # Since the lists are flattened, you may prefer to group them per face like so depending on your geometry kernel
+    # Since the lists are flattened, you may prefer to group them like so depending on your geometry kernel
     grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
+    grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
     grouped_faces = [[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)]
 
     # A list of styles that are relevant to this shape
@@ -160,6 +164,7 @@ Here is a simple example in Python:
         while True:
             shape = iterator.get()
             faces = shape.geometry.faces
+            edges = shape.geometry.edges
             verts = shape.geometry.verts
             materials = shape.geometry.materials
             material_ids = shape.geometry.material_ids
