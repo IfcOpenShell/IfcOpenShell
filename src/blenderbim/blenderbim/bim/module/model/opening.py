@@ -36,15 +36,12 @@ from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertForma
 from gpu_extras.batch import batch_for_shader
 
 
-class AddElementOpening(bpy.types.Operator):
+class AddElementOpening(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_element_opening"
     bl_label = "Add Element Opening"
     bl_options = {"REGISTER", "UNDO"}
     voided_building_element: bpy.props.StringProperty()
     filling_building_element: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         voided_obj = bpy.data.objects.get(self.voided_building_element)
@@ -61,7 +58,7 @@ class AddElementOpening(bpy.types.Operator):
             return {"FINISHED"}
 
         # In this prototype, we assume openings are only added to axis-based elements
-        axis = [voided_obj.matrix_world @ Vector((0,0,0)), voided_obj.matrix_world @ Vector((1,0,0))]
+        axis = [voided_obj.matrix_world @ Vector((0, 0, 0)), voided_obj.matrix_world @ Vector((1, 0, 0))]
         new_matrix = voided_obj.matrix_world.copy()
         new_matrix.col[3] = tool.Cad.point_on_edge(context.scene.cursor.location, axis).to_4d()
         if filling.is_a("IfcWindow"):
@@ -161,6 +158,48 @@ class AddElementOpening(bpy.types.Operator):
         obj = bpy.data.objects.new("Opening", mesh)
         obj.matrix_world = filling_obj.matrix_world
         return obj
+
+
+class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.recalculate_fill"
+    bl_label = "Recalculate Fill"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        for obj in context.selected_objects:
+            if tool.Ifc.is_moved(obj):
+                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.FillsVoids:
+                continue
+            openings = [r.RelatingOpeningElement for r in element.FillsVoids or []]
+            building_elements = []
+            for opening in openings:
+                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                ifcopenshell.api.run(
+                    "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=obj.matrix_world
+                )
+                building_elements.extend([r.RelatingBuildingElement for r in opening.VoidsElements or []])
+            for building_element in building_elements:
+                building_obj = tool.Ifc.get_object(building_element)
+                body = ifcopenshell.util.representation.get_representation(
+                    building_element, "Model", "Body", "MODEL_VIEW"
+                )
+                if body:
+                    blenderbim.core.geometry.switch_representation(
+                        tool.Geometry,
+                        obj=building_obj,
+                        representation=body,
+                        should_reload=True,
+                        enable_dynamic_voids=False,
+                        is_global=True,
+                        should_sync_changes_first=False,
+                    )
+        return {"FINISHED"}
 
 
 class AddPotentialOpening(Operator, AddObjectHelper):
