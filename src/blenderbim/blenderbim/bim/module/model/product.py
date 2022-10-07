@@ -150,8 +150,6 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 bpy.ops.bim.add_element_opening(
                     voided_building_element=building_obj.name, filling_building_element=obj.name
                 )
-            if instance_class == "IfcDoor" and self.link_to_scene:
-                obj.location[2] = building_obj.location[2] - min([v[2] for v in obj.bound_box])
         elif self.link_to_scene:
             if collection_obj and collection_obj.BIMObjectProperties.ifc_definition_id:
                 obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])

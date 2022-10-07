@@ -218,6 +218,12 @@ class BimTool(WorkSpaceTool):
                 row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
                 row.operator("bim.extend_profile", icon="X", text="").join_type = ""
 
+            if ifc_class in ("IfcWindowType", "IfcDoorType"):
+                row = layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_G")
+                row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
+
             if props.ifc_class in (
                 "IfcCableCarrierSegmentType",
                 "IfcCableSegmentType",
@@ -337,6 +343,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.recalculate_wall()
         elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
             bpy.ops.bim.recalculate_profile()
+        elif self.props.ifc_class in ["IfcWindowType", "IfcDoorType"]:
+            bpy.ops.bim.recalculate_fill()
 
     def hotkey_S_M(self):
         if self.has_ifc_class and self.props.ifc_class == "IfcWallType":

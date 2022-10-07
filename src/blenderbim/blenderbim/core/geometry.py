@@ -97,7 +97,7 @@ def switch_representation(
     existing_data = geometry.get_representation_data(representation)
 
     if should_reload or not existing_data:
-        data = geometry.import_representation(obj, representation, enable_dynamic_voids=enable_dynamic_voids)
+        data = geometry.import_representation(obj, representation)
         geometry.rename_object(data, geometry.get_representation_name(representation))
         geometry.link(representation, data)
     else:
@@ -109,9 +109,6 @@ def switch_representation(
         geometry.delete_data(existing_data)
 
     geometry.clear_modifiers(obj)
-
-    if enable_dynamic_voids and geometry.is_body_representation(representation):
-        geometry.create_dynamic_voids(obj)
 
 
 def get_representation_ifc_parameters(geometry, obj=None, should_sync_changes_first=False):

@@ -118,7 +118,7 @@ class TestIds:
         wall.Name = "Waldo"
         run("A minimal IDS can check a minimal IFC 2/2", specs, model, True, [wall, waldo], [])
 
-        spec.ifcVersion = []
+        spec.ifcVersion = ["IFC2X3"]
         run(
             "Specification version is purely metadata and does not impact pass or fail result",
             specs,
@@ -127,6 +127,7 @@ class TestIds:
             [wall, waldo],
         )
 
+        spec.ifcVersion = []
         spec.minOccurs = 1
         model = ifcopenshell.file()
         waldo = model.createIfcWall(Name="Waldo")

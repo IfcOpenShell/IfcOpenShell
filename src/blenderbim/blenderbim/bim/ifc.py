@@ -281,7 +281,11 @@ class IfcStore:
         if existing_obj == obj:
             return
         elif existing_obj:
-            IfcStore.unlink_element(obj=existing_obj)
+            try:
+                existing_obj.name
+                IfcStore.unlink_element(obj=existing_obj)
+            except:
+                pass
         IfcStore.id_map[element.id()] = obj
         if hasattr(element, "GlobalId"):
             IfcStore.guid_map[element.GlobalId] = obj

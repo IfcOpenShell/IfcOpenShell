@@ -210,7 +210,6 @@ class Geometry:
     def clear_cache(cls, element): pass
     def clear_modifiers(cls, obj): pass
     def clear_scale(cls, obj): pass
-    def create_dynamic_voids(cls, obj): pass
     def delete_data(cls, data): pass
     def does_representation_id_exist(cls, representation_id): pass
     def duplicate_object_data(cls, obj): pass
@@ -227,7 +226,7 @@ class Geometry:
     def get_styles(cls, obj): pass
     def get_total_representation_items(cls, obj): pass
     def has_data_users(cls, data): pass
-    def import_representation(cls, obj, representation, enable_dynamic_voids=False): pass
+    def import_representation(cls, obj, representation): pass
     def import_representation_parameters(cls, data): pass
     def is_body_representation(cls, representation): pass
     def is_box_representation(cls, representation): pass
@@ -444,7 +443,7 @@ class Resource:
 
 @interface
 class Root:
-    def add_dynamic_opening_voids(cls, element, obj): pass
+    def add_tracked_opening(cls, obj): pass
     def does_type_have_representations(cls, element): pass
     def get_element_type(cls, element): pass
     def get_object_name(cls, obj): pass

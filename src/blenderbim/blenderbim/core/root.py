@@ -38,7 +38,7 @@ def copy_class(ifc, collector, geometry, root, obj=None):
             )
     collector.assign(obj)
     if root.is_opening_element(element):
-        root.add_dynamic_opening_voids(element, obj)
+        root.add_tracked_opening(obj)
 
 
 def assign_class(
