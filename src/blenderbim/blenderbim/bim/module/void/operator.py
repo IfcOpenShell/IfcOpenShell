@@ -168,12 +168,13 @@ class RemoveFilling(bpy.types.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         if not obj:
             return {"FINISHED"}
-        self.file = IfcStore.get_file()
-        element_id = obj.BIMObjectProperties.ifc_definition_id
-        if not element_id:
+        element = tool.Ifc.get_entity(obj)
+        if not element:
             return {"FINISHED"}
-        ifcopenshell.api.run("void.remove_filling", self.file, **{"element": self.file.by_id(element_id)})
-        Data.load(self.file, element_id)
+        for rel in element.FillsVoids:
+            bpy.ops.bim.remove_opening(opening_id=rel.RelatingOpeningElement.id())
+        ifcopenshell.api.run("void.remove_filling", tool.Ifc.get(), element=element)
+        Data.load(tool.Ifc.get(), element.id())
         return {"FINISHED"}
 
 
