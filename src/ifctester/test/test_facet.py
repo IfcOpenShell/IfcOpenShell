@@ -699,15 +699,15 @@ class TestClassification:
         project = ifc.createIfcProject()
         system_a = ifcopenshell.api.run("classification.add_classification", ifc, classification=system_a)
         element0 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        element1 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element1 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
         ifcopenshell.api.run(
             "classification.add_reference", ifc, product=element1, reference=ref1, classification=system_a
         )
-        element11 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element11 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcColumn")
         ifcopenshell.api.run(
             "classification.add_reference", ifc, product=element11, reference=ref11, classification=system_a
         )
-        element22 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element22 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
         ifcopenshell.api.run(
             "classification.add_reference",
             ifc,
@@ -738,9 +738,9 @@ class TestClassification:
         run("A required facet checks all parameters as normal", facet=facet, inst=element1, expected=True)
         facet = Classification(minOccurs=0, maxOccurs=0)
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element1, expected=False)
-        facet = Attribute(name="Name", minOccurs=0)
+        facet = Classification(minOccurs=0)
         run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element0, expected=True)
-        facet = Attribute(name="Rabbit", minOccurs=0)
+        facet = Classification(minOccurs=0)
         run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element1, expected=True)
 
         facet = Classification(value="1")
