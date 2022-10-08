@@ -2056,6 +2056,11 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 
 		// The mapping by entity instance name is updated.
 		byid[new_id] = new_entity;
+	} else if (!new_entity->data().file) {
+		// For non-entity instances, no mappings are updated, but the file
+		// pointer has to be set, so that actual copies are created in subsequent
+		// times.
+		new_entity->data().file = this;
 	}
 
 	if (parsing_complete_ && ty->as_entity()) {
