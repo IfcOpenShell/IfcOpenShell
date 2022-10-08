@@ -323,7 +323,9 @@ def get_container(element, should_get_direct=False):
 
 def get_referenced_structures(element):
     """
-    Retreives a list of referenced structural elements
+    Retreives a list of referenced spatial elements, typically useful for
+    multistorey elements or elements that span multiple spaces or in-between
+    spaces.
 
     :param element: The IFC element
     :type element: ifcopenshell.entity_instance.entity_instance
@@ -340,7 +342,9 @@ def get_referenced_structures(element):
 
 def get_decomposition(element):
     """
-    Retrieves the decomposition of an element.
+    Retrieves all subelements of an element based on the spatial decomposition
+    hierarchy. This includes all subspaces and elements contained in subspaces,
+    parts of an aggreate, all openings, and all fills of any openings.
 
     :param element: The IFC element
     :return: The decomposition of the element
@@ -360,6 +364,12 @@ def get_decomposition(element):
         for rel in getattr(element, "IsDecomposedBy", []):
             queue.extend(rel.RelatedObjects)
             results.extend(rel.RelatedObjects)
+        for rel in getattr(element, "HasOpenings", []):
+            queue.append(rel.RelatedOpeningElement)
+            results.append(rel.RelatedOpeningElement)
+        for rel in getattr(element, "HasFillings", []):
+            queue.append(rel.RelatedBuildingElement)
+            results.append(rel.RelatedBuildingElement)
     return results
 
 

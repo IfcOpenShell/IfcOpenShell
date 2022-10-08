@@ -225,7 +225,11 @@ class IfcStore:
             try:
                 value.name
             except:
-                obj = bpy.data.objects.get(IfcStore.undo_redo_stack_object_names[key])
+                # TODO not so sure about this obj_name check
+                obj_name = IfcStore.undo_redo_stack_object_names.get(key, None)
+                if not obj_name:
+                    continue
+                obj = bpy.data.objects.get(obj_name)
                 if not obj or not obj.BIMObjectProperties.ifc_definition_id:
                     continue
                 element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
