@@ -78,9 +78,10 @@ class Usecase:
                     if to_element.ObjectPlacement:
                         new_opening.ObjectPlacement.PlacementRelTo = to_element.ObjectPlacement
                 # For now, we do copy opening representations
-                new_opening.Representation = ifcopenshell.util.element.copy_deep(
-                    self.file, opening.Representation
-                )
+                if opening.Representation:
+                    new_opening.Representation = ifcopenshell.util.element.copy_deep(
+                        self.file, opening.Representation
+                    )
             elif inverse.is_a("IfcRelFillsElement"):
                 continue
             elif inverse.is_a("IfcRelConnectsPathElements"):
