@@ -38,6 +38,10 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
         element1 = tool.Ifc.get_entity(obj1)
         element2 = tool.Ifc.get_entity(obj2)
         if type(element1) == type(element2):
+            if element1 and element2:
+                if element1.is_a("IfcWindow") or element1.is_a("IfcDoor"):
+                    obj1, obj2 = obj2, obj1
+                bpy.ops.bim.add_element_opening(voided_obj=obj1.name, filling_obj=obj2.name)
             return {"FINISHED"}
         if element2 and not element1:
             obj1, obj2 = obj2, obj1
