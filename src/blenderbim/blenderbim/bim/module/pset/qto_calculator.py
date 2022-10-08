@@ -208,16 +208,18 @@ class QtoCalculator:
                 return False
         return True
 
-    def get_volume(self, o):
+    def get_net_volume(self, o):
         o_mesh = bmesh.new()
         o_mesh.from_mesh(o.data)
         return o_mesh.calc_volume()
 
-<<<<<<< HEAD
-=======
     def get_gross_volume(self, o):
         ifc_model = tool.Ifc.get()
         element = tool.Ifc.get_entity(o)
+        if not element:
+            print(f"Object {o.name} hasn't an IFC instance so gross volume is equal to net volume")
+            return self.get_net_volume
+
         type = element.get_info()['type']
 
         new_element = ifc_model.create_entity(type)
@@ -247,8 +249,7 @@ class QtoCalculator:
 
         return gross_volume
 
->>>>>>> af361a66 (Calculated gross volume now doesn't consider related voids)
-        # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
+    # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
 
     # def get_volume(self, o, vg_index=None):
     # volume = 0
