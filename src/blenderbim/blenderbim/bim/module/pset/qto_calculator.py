@@ -24,6 +24,7 @@ import math
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 import blenderbim.tool as tool
+import ifcopenshell
 
 
 class QtoCalculator:
@@ -48,8 +49,10 @@ class QtoCalculator:
             return self.get_side_area(obj)
         elif "area" in prop_name:
             return self.get_total_surface_area(obj)
-        elif "volume" in prop_name:
-            return self.get_volume(obj)
+        elif "volume" in prop_name and "gross" in prop_name:
+            return self.get_gross_volume(obj)
+        elif "volume" in prop_name :
+            return self.get_net_volume(obj)
 
     def get_units(self, o, vg_index):
         return len([v for v in o.data.vertices if vg_index in [g.group for g in v.groups]])
@@ -210,6 +213,41 @@ class QtoCalculator:
         o_mesh.from_mesh(o.data)
         return o_mesh.calc_volume()
 
+<<<<<<< HEAD
+=======
+    def get_gross_volume(self, o):
+        ifc_model = tool.Ifc.get()
+        element = tool.Ifc.get_entity(o)
+        type = element.get_info()['type']
+
+        new_element = ifc_model.create_entity(type)
+        representation = element.Representation
+        object_placement = element.ObjectPlacement
+        new_element.GlobalId = ifcopenshell.guid.new()
+        new_element.Name = 'MyName'
+        new_element.Representation = representation
+        new_element.ObjectPlacement = object_placement
+
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, new_element)
+        faces = shape.geometry.faces
+        verts = shape.geometry.verts
+        grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
+        grouped_faces = [[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)]
+        edges = []
+
+        mesh = bpy.data.meshes.new("myBeautifulMesh")  # add the new mesh
+        new_obj = bpy.data.objects.new(mesh.name, mesh)
+        mesh.from_pydata(grouped_verts, edges, grouped_faces)
+
+        gross_volume = self.get_net_volume(new_obj)
+
+        ifc_model.remove(new_element)
+        bpy.data.objects.remove(new_obj, do_unlink = True)
+
+        return gross_volume
+
+>>>>>>> af361a66 (Calculated gross volume now doesn't consider related voids)
         # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
 
     # def get_volume(self, o, vg_index=None):
