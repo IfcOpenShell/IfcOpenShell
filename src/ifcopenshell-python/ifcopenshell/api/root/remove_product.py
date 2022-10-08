@@ -53,7 +53,24 @@ class Usecase:
 
         # TODO: remove object placement and other relationships
         for inverse in self.file.get_inverse(self.settings["product"]):
-            if inverse.is_a("IfcRelFillsElement"):
+            if inverse.is_a("IfcRelDefinesByProperties"):
+                ifcopenshell.api.run(
+                    "pset.remove_pset",
+                    self.file,
+                    product=self.settings["product"],
+                    pset=inverse.RelatingPropertyDefinition,
+                )
+            elif inverse.is_a("IfcRelAssociatesMaterial"):
+                ifcopenshell.api.run("material.unassign_material", self.file, product=self.settings["product"])
+            elif inverse.is_a("IfcRelDefinesByType"):
+                if inverse.RelatingType == self.settings["product"]:
+                    for related_object in inverse.RelatedObjects:
+                        ifcopenshell.api.run("type.unassign_type", self.file, related_object=related_object)
+                else:
+                    ifcopenshell.api.run("type.unassign_type", self.file, related_object=self.settings["product"])
+            elif inverse.is_a("IfcRelSpaceBoundary"):
+                self.file.remove(inverse)
+            elif inverse.is_a("IfcRelFillsElement"):
                 self.file.remove(inverse)
             elif inverse.is_a("IfcRelVoidsElement"):
                 self.file.remove(inverse)
