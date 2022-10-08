@@ -265,10 +265,12 @@ class BimTool(WorkSpaceTool):
         row.label(text="Mode")
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
-        row.label(text="Opening", icon="EVENT_O")
+        row.label(text="", icon="EVENT_O")
+        row.operator("bim.hotkey", text="Void").hotkey = "A_O"
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
-        row.label(text="Decomposition", icon="EVENT_D")
+        row.label(text="", icon="EVENT_D")
+        row.operator("bim.hotkey", text="Decomposition").hotkey = "A_D"
 
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
@@ -401,7 +403,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.props.z = self.z
 
     def hotkey_A_D(self):
-        bpy.ops.bim.toggle_decomposition_parenting()
+        bpy.ops.bim.select_decomposition()
 
     def hotkey_A_O(self):
         if AuthoringData.data["has_visible_openings"]:

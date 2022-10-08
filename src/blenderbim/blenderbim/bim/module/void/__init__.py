@@ -20,11 +20,11 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.AddOpening,
-    operator.RemoveOpening,
     operator.AddFilling,
+    operator.AddOpening,
     operator.RemoveFilling,
-    operator.ToggleDecompositionParenting,
+    operator.RemoveOpening,
+    operator.SelectDecomposition,
     prop.VoidProperties,
     ui.BIM_PT_voids,
     ui.BIM_PT_booleans,

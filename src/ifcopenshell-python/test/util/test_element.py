@@ -561,6 +561,16 @@ class TestGetDecompositionIFC4(test.bootstrap.IFC4):
         assert element in results
         assert subelement in results
 
+    def test_getting_openings_and_fills_of_an_element(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
+        subsubelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.run("void.add_opening", self.file, element=element, opening=subelement)
+        ifcopenshell.api.run("void.add_filling", self.file, element=subsubelement, opening=subelement)
+        results = subject.get_decomposition(element)
+        assert subelement in results
+        assert subsubelement in results
+
 
 class TestGetAggregateIFC4(test.bootstrap.IFC4):
     def test_getting_the_containing_aggregate_of_a_subelement(self):
