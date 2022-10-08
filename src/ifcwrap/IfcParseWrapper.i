@@ -250,6 +250,10 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return $self->data().toString();
 	}
 
+	std::string to_string(bool valid_spf) const {
+		return $self->data().toString(valid_spf);
+	}
+
 	// Just something to have a somewhat sensible value to hash
 	size_t file_pointer() const {
 		return reinterpret_cast<size_t>($self->data().file);

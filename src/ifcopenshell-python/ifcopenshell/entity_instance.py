@@ -232,6 +232,17 @@ class entity_instance(object):
 
     def __repr__(self):
         return repr(self.wrapped_data)
+        
+    def to_string(self, valid_spf=True):
+        """Returns a string representation of the current entity instance.
+        Equal to str(self) when valid_spf=False. When valid_spf is True
+        returns a representation of the string that conforms to valid Step
+        Physical File notation. The difference being entity names in upper
+        case and string attribute values with unicode values encoded per
+        the specific control directives.
+        """
+        
+        return self.wrapped_data.to_string(valid_spf)
 
     def is_a(self, *args):
         """Return the IFC class name of an instance, or checks if an instance belongs to a class.
