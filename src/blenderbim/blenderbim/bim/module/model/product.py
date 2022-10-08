@@ -147,9 +147,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
         ):
             if instance_class in ["IfcWindow", "IfcDoor"]:
                 # TODO For now we are hardcoding windows and doors as a prototype
-                bpy.ops.bim.add_element_opening(
-                    voided_building_element=building_obj.name, filling_building_element=obj.name
-                )
+                bpy.ops.bim.add_element_opening(voided_obj=building_obj.name, filling_obj=obj.name)
         elif self.link_to_scene:
             if collection_obj and collection_obj.BIMObjectProperties.ifc_definition_id:
                 obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])

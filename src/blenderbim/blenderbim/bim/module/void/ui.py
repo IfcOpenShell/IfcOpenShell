@@ -49,18 +49,6 @@ class BIM_PT_voids(Panel):
         row = self.layout.row(align=True)
         if len(context.selected_objects) == 2:
             op = row.operator("bim.add_opening", icon="ADD", text="Add Opening")
-            for obj in context.selected_objects:
-                if (
-                    "IfcOpeningElement" in obj.name
-                    or "IfcOpeningStandardCase" in obj.name
-                    or not obj.BIMObjectProperties.ifc_definition_id
-                ):
-                    op.opening = obj.name
-                elif len(obj.children) == 1 and not obj.children[0].BIMObjectProperties.ifc_definition_id:
-                    op.opening = obj.children[0].name
-                else:
-                    op.obj = obj.name
-
             opening_id = None
             obj_name = None
             for obj in context.selected_objects:

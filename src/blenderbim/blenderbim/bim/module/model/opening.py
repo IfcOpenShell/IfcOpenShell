@@ -40,29 +40,33 @@ class AddElementOpening(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_element_opening"
     bl_label = "Add Element Opening"
     bl_options = {"REGISTER", "UNDO"}
-    voided_building_element: bpy.props.StringProperty()
-    filling_building_element: bpy.props.StringProperty()
+    voided_obj: bpy.props.StringProperty()
+    filling_obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        voided_obj = bpy.data.objects.get(self.voided_building_element)
-        filling_obj = bpy.data.objects.get(self.filling_building_element)
+        voided_obj = bpy.data.objects.get(self.voided_obj)
+        filling_obj = bpy.data.objects.get(self.filling_obj)
         filling = tool.Ifc.get_entity(filling_obj)
 
         if not voided_obj or not filling_obj:
             return {"FINISHED"}
 
         element = tool.Ifc.get_entity(voided_obj)
-        local_location = voided_obj.matrix_world.inverted() @ context.scene.cursor.location
-        raycast = voided_obj.closest_point_on_mesh(local_location, distance=0.01)
+        target = context.scene.cursor.location
+        raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
         if not raycast[0]:
-            return {"FINISHED"}
+            target = filling_obj.matrix_world.col[3].to_3d().copy()
+            raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
+            if not raycast[0]:
+                return {"FINISHED"}
+
+        axis = [voided_obj.matrix_world @ Vector((0, 0, 0)), voided_obj.matrix_world @ Vector((1, 0, 0))]
 
         # In this prototype, we assume openings are only added to axis-based elements
-        axis = [voided_obj.matrix_world @ Vector((0, 0, 0)), voided_obj.matrix_world @ Vector((1, 0, 0))]
         new_matrix = voided_obj.matrix_world.copy()
-        new_matrix.col[3] = tool.Cad.point_on_edge(context.scene.cursor.location, axis).to_4d()
+        new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
         if filling.is_a("IfcWindow"):
-            new_matrix[2][3] = context.scene.cursor.location[2]
+            new_matrix[2][3] = target[2]
         filling_obj.matrix_world = new_matrix
         bpy.context.view_layer.update()
 
