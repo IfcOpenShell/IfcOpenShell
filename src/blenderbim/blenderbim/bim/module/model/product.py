@@ -38,6 +38,12 @@ from bpy_extras.object_utils import AddObjectHelper
 from . import prop
 
 
+def select_and_activate_single_object(context, obj):
+    bpy.ops.object.select_all(action="DESELECT")
+    context.view_layer.objects.active = obj
+    obj.select_set(True)
+
+
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
     bl_idname = "bim.add_empty_type"
     bl_label = "Add Empty Type"
@@ -47,9 +53,7 @@ class AddEmptyType(bpy.types.Operator, AddObjectHelper):
         obj = bpy.data.objects.new("TYPEX", None)
         context.scene.collection.objects.link(obj)
         context.scene.BIMRootProperties.ifc_product = "IfcElementType"
-        bpy.ops.object.select_all(action="DESELECT")
-        context.view_layer.objects.active = obj
-        obj.select_set(True)
+        select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
 
@@ -95,6 +99,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 return {"FINISHED"}
         elif material and material.is_a("IfcMaterialLayerSet"):
             if self.generate_layered_element(ifc_class, relating_type, link_to_scene=self.link_to_scene):
+                select_and_activate_single_object(context, context.selected_objects[-1])
                 return {"FINISHED"}
         if relating_type.is_a("IfcFlowSegmentType") and not relating_type.RepresentationMaps:
             if mep.MepGenerator(relating_type).generate(link_to_scene=self.link_to_scene):
@@ -138,7 +143,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
         blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
         if self.link_to_scene:
             # Update required as core.type.assign_type may change obj.data
-            bpy.context.view_layer.update()
+            context.view_layer.update()
 
         if (
             building_obj
@@ -163,9 +168,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
             tool.Ifc.run("system.assign_port", element=element, port=new_port)
             tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
 
-        bpy.ops.object.select_all(action="DESELECT")
-        obj.select_set(True)
-        context.view_layer.objects.active = obj
+            select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
     @staticmethod
@@ -239,7 +242,7 @@ class ReinvokeOperator(bpy.types.Operator):
             window.cursor_warp(cursor_x, cursor_y)
 
         bpy.app.timers.register(move_cursor_to_window, first_interval=browser_state.update_delay)
-        bpy.app.timers.register(reinvoke, first_interval=3*browser_state.update_delay)
+        bpy.app.timers.register(reinvoke, first_interval=3 * browser_state.update_delay)
         return {"FINISHED"}
 
     def move_cursor_away(self, context, window):  # closes current popup
