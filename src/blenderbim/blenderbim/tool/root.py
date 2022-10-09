@@ -51,6 +51,29 @@ class Root(blenderbim.core.tool.Root):
         return bool(element.RepresentationMaps)
 
     @classmethod
+    def get_decomposition_relationships(cls, objs):
+        relationships = {}
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if hasattr(element, "FillsVoids") and element.FillsVoids:
+                building = element.FillsVoids[0].RelatingOpeningElement.VoidsElements[0].RelatingBuildingElement
+                relationships[element] = {"type": "fill", "element": building}
+        return relationships
+
+    @classmethod
+    def get_element_representation(cls, element, context):
+        if context.is_a("IfcGeometricRepresentationSubContext"):
+            return ifcopenshell.util.representation.get_representation(
+                element,
+                context=context.ContextType,
+                subcontext=context.ContextIdentifier,
+                target_view=context.TargetView,
+            )
+        return ifcopenshell.util.representation.get_representation(element, context=context.ContextType)
+
+    @classmethod
     def get_element_type(cls, element):
         return ifcopenshell.util.element.get_type(element)
 
@@ -79,6 +102,18 @@ class Root(blenderbim.core.tool.Root):
     @classmethod
     def link_object_data(cls, source_obj, destination_obj):
         destination_obj.data = source_obj.data
+
+    @classmethod
+    def recreate_decompositions(cls, relationships, old_to_new):
+        for subelement, data in relationships.items():
+            subelement = old_to_new.get(subelement)
+            element = old_to_new.get(data["element"])
+            if not subelement or not element:
+                continue
+            if data["type"] == "fill":
+                obj1 = tool.Ifc.get_object(element)
+                obj2 = tool.Ifc.get_object(subelement)
+                bpy.ops.bim.add_filled_opening(voided_obj=obj1.name, filling_obj=obj2.name)
 
     @classmethod
     def run_geometry_add_representation(

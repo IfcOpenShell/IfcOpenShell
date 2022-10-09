@@ -60,8 +60,6 @@ class BIM_PT_voids(Panel):
                     obj_name = obj.name
             if opening_id and obj_name:
                 op = row.operator("bim.remove_opening", icon="X", text="Remove Opening").opening_id = opening_id
-        else:
-            row.label(text="Select an opening and an element to modify", icon="HELP")
 
         opening_ids = Data.products[props.ifc_definition_id]
         if not opening_ids and not active_object_is_an_opening:

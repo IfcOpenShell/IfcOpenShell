@@ -30,9 +30,15 @@ def copy_class(ifc, collector, geometry, root, obj=None):
         root.link_object_data(ifc.get_object(relating_type), obj)
     elif representation:
         root.copy_representation(element, new)
+        new_representation = root.get_element_representation(new, root.get_representation_context(representation))
+        data = geometry.duplicate_object_data(obj)
+        geometry.change_object_data(obj, data, is_global=True)
+        geometry.rename_object(data, geometry.get_representation_name(new_representation))
+        geometry.link(new_representation, data)
     collector.assign(obj)
     if root.is_opening_element(new):
         root.add_tracked_opening(obj)
+    return new
 
 
 def assign_class(

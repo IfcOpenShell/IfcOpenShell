@@ -64,6 +64,33 @@ class TestDoesTypeHaveRepresentations(NewFile):
         assert subject.does_type_have_representations(element) is True
 
 
+class TestGetDecompositionRelationships(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        element = ifc.createIfcWall()
+        opening = ifc.createIfcOpeningElement()
+        fill = ifc.createIfcWindow()
+        ifcopenshell.api.run("void.add_opening", ifc, opening=opening, element=element)
+        ifcopenshell.api.run("void.add_filling", ifc, opening=opening, element=fill)
+
+        obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(fill, obj)
+
+        assert subject.get_decomposition_relationships([obj]) == {fill: {"type": "fill", "element": element}}
+
+
+class TestGetElementRepresentation(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        context = ifc.createIfcGeometricRepresentationContext(ContextType="Model")
+        representation = ifc.createIfcShapeRepresentation(ContextOfItems=context)
+        wall = ifc.createIfcWall(Representation=ifc.createIfcProductDefinitionShape(Representations=[representation]))
+        assert subject.get_element_representation(wall, context) == representation
+
+
 class TestGetElementType(NewFile):
     def test_run(self):
         bpy.ops.bim.create_project()
