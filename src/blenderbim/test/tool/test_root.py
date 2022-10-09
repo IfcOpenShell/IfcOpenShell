@@ -37,6 +37,24 @@ class TestAddTrackedOpening(NewFile):
         assert props.openings[0].obj == obj
 
 
+class TestCopyRepresentation(NewFile):
+    def test_copying_a_product(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        source = ifc.createIfcWall(Representation=ifc.createIfcProductDefinitionShape())
+        dest = ifc.createIfcWall()
+        subject.copy_representation(source, dest)
+        assert dest.Representation.is_a("IfcProductDefinitionShape")
+
+    def test_copying_a_type_product(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        source = ifc.createIfcWallType(RepresentationMaps=[ifc.createIfcRepresentationMap()])
+        dest = ifc.createIfcWallType()
+        subject.copy_representation(source, dest)
+        assert dest.RepresentationMaps[0].is_a("IfcRepresentationMap")
+
+
 class TestDoesTypeHaveRepresentations(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()

@@ -178,8 +178,7 @@ Create a simple model from scratch
     model = ifcopenshell.file()
 
     # All projects must have one IFC Project element
-    project = run("root.create_entity", model, ifc_class="IfcProject")
-    project.Name = "My Project"
+    project = run("root.create_entity", model, ifc_class="IfcProject", name="My Project")
 
     # Geometry is optional in IFC, but because we want to use geometry in this example, let's define units
     # Assigning without arguments defaults to metric units
@@ -189,23 +188,14 @@ Create a simple model from scratch
     context = run("context.add_context", model, context_type="Model")
     # In particular, in this example we want to store the 3D "body" geometry of objects, i.e. the body shape
     body = run(
-        "context.add_context",
-        model,
-        context_type="Model",
-        context_identifier="Body",
-        target_view="MODEL_VIEW",
-        parent=context,
+        "context.add_context", model,
+        context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=context
     )
 
     # Create a site, building, and storey. Many hierarchies are possible.
-    site = run("root.create_entity", model, ifc_class="IfcSite")
-    building = run("root.create_entity", model, ifc_class="IfcBuilding")
-    storey = run("root.create_entity", model, ifc_class="IfcBuildingStorey")
-
-    # Let's name them to be neat.
-    site.Name = "My Site"
-    building.Name = "Building A"
-    storey.Name = "Ground Floor"
+    site = run("root.create_entity", model, ifc_class="IfcSite", name="My Site")
+    building = run("root.create_entity", model, ifc_class="IfcBuilding", name="Building A")
+    storey = run("root.create_entity", model, ifc_class="IfcBuildingStorey", name="Ground Floor")
 
     # Since the site is our top level location, assign it to the project
     # Then place our building on the site, and our storey in the building

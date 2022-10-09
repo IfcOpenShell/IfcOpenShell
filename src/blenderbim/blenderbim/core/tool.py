@@ -444,6 +444,7 @@ class Resource:
 @interface
 class Root:
     def add_tracked_opening(cls, obj): pass
+    def copy_representation(cls, source, dest): pass
     def does_type_have_representations(cls, element): pass
     def get_element_type(cls, element): pass
     def get_object_name(cls, obj): pass

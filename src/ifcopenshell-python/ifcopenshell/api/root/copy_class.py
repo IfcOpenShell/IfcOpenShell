@@ -80,7 +80,7 @@ class Usecase:
                 # For now, we do copy opening representations
                 if opening.Representation:
                     new_opening.Representation = ifcopenshell.util.element.copy_deep(
-                        self.file, opening.Representation
+                        self.file, opening.Representation, exclude=["IfcGeometricRepresentationContext"]
                     )
             elif inverse.is_a("IfcRelFillsElement"):
                 continue
