@@ -193,7 +193,7 @@ class CadHotkey(bpy.types.Operator):
         if self.is_profile():
             bpy.ops.bim.set_arc_index()
         else:
-            bpy.ops.bim.cad_arc_from_3_points(resolution=self.resolution)
+            bpy.ops.bim.cad_arc_from_3_points(resolution=self.props.resolution)
 
     def hotkey_S_X(self):
         if self.is_profile():
