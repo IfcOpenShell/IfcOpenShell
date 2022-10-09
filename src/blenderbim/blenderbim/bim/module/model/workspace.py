@@ -407,6 +407,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     def hotkey_A_O(self):
         if AuthoringData.data["has_visible_openings"]:
-            bpy.ops.bim.hide_openings()
+            bpy.ops.bim.edit_openings()
         else:
             bpy.ops.bim.show_openings()

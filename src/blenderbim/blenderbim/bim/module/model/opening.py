@@ -36,9 +36,9 @@ from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertForma
 from gpu_extras.batch import batch_for_shader
 
 
-class AddElementOpening(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_element_opening"
-    bl_label = "Add Element Opening"
+class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_filled_opening"
+    bl_label = "Add Filled Opening"
     bl_options = {"REGISTER", "UNDO"}
     voided_obj: bpy.props.StringProperty()
     filling_obj: bpy.props.StringProperty()
@@ -65,7 +65,7 @@ class AddElementOpening(bpy.types.Operator, tool.Ifc.Operator):
         # In this prototype, we assume openings are only added to axis-based elements
         new_matrix = voided_obj.matrix_world.copy()
         new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
-        if filling.is_a("IfcWindow"):
+        if not filling.is_a("IfcDoor"):
             new_matrix[2][3] = target[2]
         filling_obj.matrix_world = new_matrix
         bpy.context.view_layer.update()
@@ -510,7 +510,12 @@ class EditOpenings(Operator, tool.Ifc.Operator):
             for opening in openings:
                 opening_obj = tool.Ifc.get_object(opening)
                 if opening_obj:
-                    tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                    if tool.Ifc.is_edited(opening_obj):
+                        tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                    elif tool.Ifc.is_moved(opening_obj):
+                        blenderbim.core.geometry.edit_object_placement(
+                            tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
+                        )
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
                     bpy.data.objects.remove(opening_obj)
 
