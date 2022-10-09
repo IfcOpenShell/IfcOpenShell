@@ -220,6 +220,9 @@ class BimTool(WorkSpaceTool):
 
             if ifc_class in ("IfcWindowType", "IfcDoorType"):
                 row = layout.row(align=True)
+                row.prop(data=props, property="rl", text="RL")
+
+                row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_G")
                 row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
