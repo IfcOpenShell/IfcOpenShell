@@ -17,6 +17,7 @@
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import uuid
 import ifcopenshell
 import ifcopenshell.api
 from ifctester.facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction
@@ -414,13 +415,15 @@ class TestAttribute:
             expected=False,
         )
 
-        global_id = ifcopenshell.guid.new()
-        facet = Attribute(name="GlobalId", value=global_id)
         ifc = ifcopenshell.file()
+        ns = uuid.UUID("b59aa156-82a4-4b4c-a6e5-3d04a0236af9")
+        element = ifc.createIfcWall()
+        element.GlobalId = ifcopenshell.guid.compress(uuid.uuid5(ns, str(element.id())).hex)
+        facet = Attribute(name="GlobalId", value=element.GlobalId)
         run(
             "GlobalIds are treated as strings and not expanded",
             facet=facet,
-            inst=ifc.createIfcWall(GlobalId=global_id),
+            inst=element,
             expected=True,
         )
 
