@@ -44,6 +44,8 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
     filling_obj: bpy.props.StringProperty()
 
     def _execute(self, context):
+        props = context.scene.BIMModelProperties
+
         voided_obj = bpy.data.objects.get(self.voided_obj)
         filling_obj = bpy.data.objects.get(self.filling_obj)
         filling = tool.Ifc.get_entity(filling_obj)
@@ -66,7 +68,11 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
         new_matrix = voided_obj.matrix_world.copy()
         new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
         if not filling.is_a("IfcDoor"):
-            new_matrix[2][3] = target[2]
+            container = ifcopenshell.util.element.get_container(element)
+            if container:
+                container_obj = tool.Ifc.get_object(container)
+                if container_obj:
+                    new_matrix[2][3] = container_obj.matrix_world[2][3] + props.rl
         filling_obj.matrix_world = new_matrix
         bpy.context.view_layer.update()
 

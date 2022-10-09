@@ -203,3 +203,4 @@ class BIMModelProperties(PropertyGroup):
     x: bpy.props.FloatProperty(name="X", default=0.5)
     y: bpy.props.FloatProperty(name="Y", default=0.5)
     z: bpy.props.FloatProperty(name="Z", default=0.5)
+    rl: bpy.props.FloatProperty(name="RL", default=1)
