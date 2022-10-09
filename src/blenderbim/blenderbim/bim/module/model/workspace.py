@@ -134,105 +134,117 @@ class BimTool(WorkSpaceTool):
                 if relating_type_id.isnumeric():
                     op.relating_type_id = int(relating_type_id)
 
-        if ifc_classes:
-            if ifc_class == "IfcWallType":
-                row = layout.row(align=True)
-                row.prop(data=props, property="extrusion_depth", text="Height")
-                op = row.operator("bim.change_extrusion_depth", icon="FILE_REFRESH", text="")
-                op.depth = props.extrusion_depth
+        if AuthoringData.data["active_class"] in ("IfcWall", "IfcWallStandardCase"):
+            row = layout.row(align=True)
+            row.prop(data=props, property="extrusion_depth", text="Height")
+            op = row.operator("bim.change_extrusion_depth", icon="FILE_REFRESH", text="")
+            op.depth = props.extrusion_depth
 
-                row = layout.row(align=True)
-                row.prop(data=props, property="length", text="Length")
-                op = row.operator("bim.change_layer_length", icon="FILE_REFRESH", text="")
-                op.length = props.length
+            row = layout.row(align=True)
+            row.prop(data=props, property="length", text="Length")
+            op = row.operator("bim.change_layer_length", icon="FILE_REFRESH", text="")
+            op.length = props.length
 
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_E")
+            row.operator("bim.hotkey", text="Extend").hotkey = "S_E"
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_T")
+            row.operator("bim.hotkey", text="Butt").hotkey = "S_T"
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_Y")
+            row.operator("bim.hotkey", text="Mitre").hotkey = "S_Y"
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_M")
+            row.operator("bim.hotkey", text="Merge").hotkey = "S_M"
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_F")
+            row.operator("bim.hotkey", text="Flip").hotkey = "S_F"
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_S")
+            row.operator("bim.hotkey", text="Split").hotkey = "S_S"
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_G")
+            row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
+            row.operator("bim.join_wall", icon="X", text="").join_type = ""
+        elif AuthoringData.data["active_class"] in ("IfcSlab", "IfcSlabStandardCase"):
+            if not context.active_object:
+                pass
+            elif context.active_object.mode == "OBJECT":
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_E")
-                row.operator("bim.hotkey", text="Extend").hotkey = "S_E"
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_T")
-                row.operator("bim.hotkey", text="Butt").hotkey = "S_T"
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_Y")
-                row.operator("bim.hotkey", text="Mitre").hotkey = "S_Y"
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_M")
-                row.operator("bim.hotkey", text="Merge").hotkey = "S_M"
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_F")
-                row.operator("bim.hotkey", text="Flip").hotkey = "S_F"
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_S")
-                row.operator("bim.hotkey", text="Split").hotkey = "S_S"
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_G")
-                row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
-                row.operator("bim.join_wall", icon="X", text="").join_type = ""
-            if ifc_class == "IfcSlabType":
-                if not context.active_object:
-                    pass
-                elif context.active_object.mode == "OBJECT":
-                    row = layout.row(align=True)
-                    row.label(text="", icon="EVENT_SHIFT")
-                    row.label(text="", icon="EVENT_E")
-                    row.operator("bim.hotkey", text="Edit Profile").hotkey = "S_E"
+                row.operator("bim.hotkey", text="Edit Profile").hotkey = "S_E"
+        elif AuthoringData.data["active_class"] in (
+            "IfcColumn",
+            "IfcColumnStandardCase",
+            "IfcBeam",
+            "IfcBeamStandardCase",
+            "IfcMember",
+            "IfcMemberStandardCase",
+        ):
+            row = layout.row(align=True)
+            row.prop(data=props, property="cardinal_point", text="Axis")
+            op = row.operator("bim.change_cardinal_point", icon="FILE_REFRESH", text="")
+            op.cardinal_point = int(props.cardinal_point)
 
-            if ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
-                row = layout.row(align=True)
-                row.prop(data=props, property="cardinal_point", text="Axis")
-                op = row.operator("bim.change_cardinal_point", icon="FILE_REFRESH", text="")
-                op.cardinal_point = int(props.cardinal_point)
+            row = layout.row(align=True)
+            label = "Height" if ifc_class == "IfcColumnType" else "Length"
+            row.prop(data=props, property="extrusion_depth", text=label)
+            op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
+            op.depth = props.extrusion_depth
 
-                row = layout.row(align=True)
-                label = "Height" if ifc_class == "IfcColumnType" else "Length"
-                row.prop(data=props, property="extrusion_depth", text=label)
-                op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
-                op.depth = props.extrusion_depth
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_E")
+            row.operator("bim.hotkey", text="Extend").hotkey = "S_E"
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_T")
+            row.operator("bim.hotkey", text="Butt").hotkey = "S_T"
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_Y")
+            row.operator("bim.hotkey", text="Mitre").hotkey = "S_Y"
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_R")
+            row.operator("bim.hotkey", text="Rotate 90").hotkey = "S_R"
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_G")
+            row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
+            row.operator("bim.extend_profile", icon="X", text="").join_type = ""
+        elif AuthoringData.data["active_class"] in (
+            "IfcWindow",
+            "IfcWindowStandardCase",
+            "IfcDoor",
+            "IfcDoorStandardCase",
+        ):
+            row = layout.row(align=True)
+            row.prop(data=props, property="rl", text="RL")
 
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_E")
-                row.operator("bim.hotkey", text="Extend").hotkey = "S_E"
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_T")
-                row.operator("bim.hotkey", text="Butt").hotkey = "S_T"
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_Y")
-                row.operator("bim.hotkey", text="Mitre").hotkey = "S_Y"
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_R")
-                row.operator("bim.hotkey", text="Rotate 90").hotkey = "S_R"
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_G")
-                row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
-                row.operator("bim.extend_profile", icon="X", text="").join_type = ""
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_G")
+            row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
 
-            if ifc_class in ("IfcWindowType", "IfcDoorType"):
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_G")
-                row.operator("bim.hotkey", text="Regen").hotkey = "S_G"
-
-            if props.ifc_class in (
-                "IfcCableCarrierSegmentType",
-                "IfcCableSegmentType",
-                "IfcDuctSegmentType",
-                "IfcPipeSegmentType",
-            ):
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="Extend", icon="EVENT_E")
+        if props.ifc_class in (
+            "IfcCableCarrierSegmentType",
+            "IfcCableSegmentType",
+            "IfcDuctSegmentType",
+            "IfcPipeSegmentType",
+        ):
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="Extend", icon="EVENT_E")
 
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
@@ -289,6 +301,12 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         self.props = context.scene.BIMModelProperties
         self.has_ifc_class = True
+
+        self.active_class = None
+        element = tool.Ifc.get_entity(context.active_object)
+        if element:
+            self.active_class = element.is_a()
+
         try:
             self.has_ifc_class = bool(self.props.ifc_class)
         except:
@@ -318,79 +336,101 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.add_constr_type_instance()
 
     def hotkey_S_C(self):
-        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.align_wall(align_type="CENTERLINE")
         else:
             bpy.ops.bim.align_product(align_type="CENTERLINE")
 
     def hotkey_S_E(self):
-        if not self.has_ifc_class:
-            return
-        if self.props.ifc_class == "IfcWallType":
+        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.join_wall(join_type="T")
-        elif self.props.ifc_class == "IfcSlabType":
+        elif self.active_class in ("IfcSlab", "IfcSlabStandardCase"):
             if not bpy.context.active_object:
                 pass
             elif bpy.context.active_object.mode == "OBJECT":
                 bpy.ops.bim.enable_editing_extrusion_profile()
-        elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
+        elif self.active_class in (
+            "IfcColumn",
+            "IfcColumnStandardCase",
+            "IfcBeam",
+            "IfcBeamStandardCase",
+            "IfcMember",
+            "IfcMemberStandardCase",
+        ):
             bpy.ops.bim.extend_profile(join_type="T")
 
     def hotkey_S_F(self):
-        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.flip_wall()
 
     def hotkey_S_G(self):
-        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.recalculate_wall()
-        elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
+        elif self.active_class in (
+            "IfcColumn",
+            "IfcColumnStandardCase",
+            "IfcBeam",
+            "IfcBeamStandardCase",
+            "IfcMember",
+            "IfcMemberStandardCase",
+        ):
             bpy.ops.bim.recalculate_profile()
-        elif self.props.ifc_class in ["IfcWindowType", "IfcDoorType"]:
+        elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.recalculate_fill()
 
     def hotkey_S_M(self):
-        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.merge_wall()
 
     def hotkey_S_R(self):
-        if not self.has_ifc_class:
-            return
-        if self.props.ifc_class == "IfcWallType":
+        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.rotate_90(axis="Z")
-        elif self.props.ifc_class == "IfcColumnType":
+        elif self.active_class in ("IfcColumn", "IfcColumnStandardCase"):
             bpy.ops.bim.rotate_90(axis="Z")
-        elif self.props.ifc_class in ["IfcBeamType", "IfcMemberType"]:
+        elif self.active_class in ("IfcBeam", "IfcBeamStandardCase", "IfcMember", "IfcMemberStandardCase"):
             bpy.ops.bim.rotate_90(axis="Y")
 
     def hotkey_S_S(self):
-        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.split_wall()
 
     def hotkey_S_T(self):
-        if not self.has_ifc_class:
-            return
-        if self.props.ifc_class == "IfcWallType":
+        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.join_wall(join_type="L")
-        elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
+        elif self.active_class in (
+            "IfcColumn",
+            "IfcColumnStandardCase",
+            "IfcBeam",
+            "IfcBeamStandardCase",
+            "IfcMember",
+            "IfcMemberStandardCase",
+        ):
             bpy.ops.bim.extend_profile(join_type="L")
 
     def hotkey_S_V(self):
-        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.align_wall(align_type="INTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="POSITIVE")
 
     def hotkey_S_X(self):
-        if self.has_ifc_class and self.props.ifc_class == "IfcWallType":
+        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             if bpy.ops.bim.align_wall.poll():
                 bpy.ops.bim.align_wall(align_type="EXTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="NEGATIVE")
 
     def hotkey_S_Y(self):
-        if self.props.ifc_class == "IfcWallType":
+        if self.active_class in ("IfcWall", "IfcWallStandardCase"):
             bpy.ops.bim.join_wall(join_type="V")
-        elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
+        elif self.active_class in (
+            "IfcColumn",
+            "IfcColumnStandardCase",
+            "IfcBeam",
+            "IfcBeamStandardCase",
+            "IfcMember",
+            "IfcMemberStandardCase",
+        ):
             bpy.ops.bim.extend_profile(join_type="V")
 
     def hotkey_S_O(self):
@@ -407,6 +447,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     def hotkey_A_O(self):
         if AuthoringData.data["has_visible_openings"]:
-            bpy.ops.bim.hide_openings()
+            bpy.ops.bim.edit_openings()
         else:
             bpy.ops.bim.show_openings()

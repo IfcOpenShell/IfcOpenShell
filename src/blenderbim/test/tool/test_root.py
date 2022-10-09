@@ -37,6 +37,24 @@ class TestAddTrackedOpening(NewFile):
         assert props.openings[0].obj == obj
 
 
+class TestCopyRepresentation(NewFile):
+    def test_copying_a_product(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        source = ifc.createIfcWall(Representation=ifc.createIfcProductDefinitionShape())
+        dest = ifc.createIfcWall()
+        subject.copy_representation(source, dest)
+        assert dest.Representation.is_a("IfcProductDefinitionShape")
+
+    def test_copying_a_type_product(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        source = ifc.createIfcWallType(RepresentationMaps=[ifc.createIfcRepresentationMap()])
+        dest = ifc.createIfcWallType()
+        subject.copy_representation(source, dest)
+        assert dest.RepresentationMaps[0].is_a("IfcRepresentationMap")
+
+
 class TestDoesTypeHaveRepresentations(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -44,6 +62,33 @@ class TestDoesTypeHaveRepresentations(NewFile):
         assert subject.does_type_have_representations(element) is False
         element.RepresentationMaps = [ifc.createIfcRepresentationMap()]
         assert subject.does_type_have_representations(element) is True
+
+
+class TestGetDecompositionRelationships(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        element = ifc.createIfcWall()
+        opening = ifc.createIfcOpeningElement()
+        fill = ifc.createIfcWindow()
+        ifcopenshell.api.run("void.add_opening", ifc, opening=opening, element=element)
+        ifcopenshell.api.run("void.add_filling", ifc, opening=opening, element=fill)
+
+        obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(fill, obj)
+
+        assert subject.get_decomposition_relationships([obj]) == {fill: {"type": "fill", "element": element}}
+
+
+class TestGetElementRepresentation(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        context = ifc.createIfcGeometricRepresentationContext(ContextType="Model")
+        representation = ifc.createIfcShapeRepresentation(ContextOfItems=context)
+        wall = ifc.createIfcWall(Representation=ifc.createIfcProductDefinitionShape(Representations=[representation]))
+        assert subject.get_element_representation(wall, context) == representation
 
 
 class TestGetElementType(NewFile):

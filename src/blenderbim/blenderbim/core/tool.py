@@ -444,13 +444,17 @@ class Resource:
 @interface
 class Root:
     def add_tracked_opening(cls, obj): pass
+    def copy_representation(cls, source, dest): pass
     def does_type_have_representations(cls, element): pass
+    def get_decomposition_relationships(cls, objs): pass
+    def get_element_representation(cls, element, context): pass
     def get_element_type(cls, element): pass
     def get_object_name(cls, obj): pass
     def get_object_representation(cls, obj): pass
     def get_representation_context(cls, representation): pass
     def is_opening_element(cls, element): pass
     def link_object_data(cls, source_obj, destination_obj): pass
+    def recreate_decompositions(cls, relationships, old_to_new): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
     def set_element_specific_display_settings(cls, obj, element): pass
     def set_object_name(cls, obj, element): pass

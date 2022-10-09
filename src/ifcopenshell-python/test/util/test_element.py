@@ -668,6 +668,7 @@ class TestCopyDeepIFC4(test.bootstrap.IFC4):
         element = self.file.createIfcWall(GlobalId="id", Name="name", OwnerHistory=owner)
         element2 = subject.copy_deep(self.file, element)
         assert element.OwnerHistory != element2.OwnerHistory
+        assert element.GlobalId != element2.GlobalId
         assert element.OwnerHistory.State == element2.OwnerHistory.State
 
     def test_copying_an_element_recursively_even_if_references_are_aggregated(self):
@@ -677,3 +678,17 @@ class TestCopyDeepIFC4(test.bootstrap.IFC4):
         rel2 = subject.copy_deep(self.file, rel)
         assert rel.RelatedObjects != rel2.RelatedObjects
         assert rel.RelatedObjects[0].Name == rel2.RelatedObjects[0].Name
+
+    def test_copying_an_element_recursively_with_an_exclude_filter(self):
+        owner = self.file.createIfcOwnerHistory()
+        owner.State = "READWRITE"
+        element = self.file.createIfcWall(GlobalId="id", Name="name", OwnerHistory=owner)
+        element2 = subject.copy_deep(self.file, element, exclude=["IfcOwnerHistory"])
+        assert element.OwnerHistory == element2.OwnerHistory
+
+    def test_copying_an_element_recursively_with_aggregates_with_an_exclude_filter(self):
+        element = self.file.createIfcWall(Name="name")
+        rel = self.file.createIfcRelAggregates()
+        rel.RelatedObjects = [element]
+        rel2 = subject.copy_deep(self.file, rel, exclude=["IfcWall"])
+        assert rel.RelatedObjects == rel2.RelatedObjects

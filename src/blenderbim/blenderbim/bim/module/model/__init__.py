@@ -36,7 +36,7 @@ classes = (
     wall.RecalculateWall,
     wall.SplitWall,
     opening.AddBoolean,
-    opening.AddElementOpening,
+    opening.AddFilledOpening,
     opening.AddPotentialHalfSpaceSolid,
     opening.AddPotentialOpening,
     opening.EditOpenings,
