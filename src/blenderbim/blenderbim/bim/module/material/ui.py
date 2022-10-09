@@ -105,8 +105,8 @@ class BIM_PT_object_material(Panel):
     bl_idname = "BIM_PT_object_material"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "object"
-    bl_parent_id = "BIM_PT_object_metadata"
+    bl_context = "material"
+
 
     @classmethod
     def poll(cls, context):
