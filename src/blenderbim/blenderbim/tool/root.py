@@ -31,6 +31,22 @@ class Root(blenderbim.core.tool.Root):
         new.obj = obj
 
     @classmethod
+    def copy_representation(cls, source, dest):
+        if dest.is_a("IfcProduct"):
+            if not source.Representation:
+                return
+            dest.Representation = ifcopenshell.util.element.copy_deep(
+                tool.Ifc.get(), source.Representation, exclude=["IfcGeometricRepresentationContext"]
+            )
+        elif dest.is_a("IfcTypeProduct"):
+            if not source.RepresentationMaps:
+                return
+            dest.RepresentationMaps = [
+                ifcopenshell.util.element.copy_deep(tool.Ifc.get(), m, exclude=["IfcGeometricRepresentationContext"])
+                for m in source.RepresentationMaps
+            ]
+
+    @classmethod
     def does_type_have_representations(cls, element):
         return bool(element.RepresentationMaps)
 
