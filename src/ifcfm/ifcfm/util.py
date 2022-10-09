@@ -38,6 +38,7 @@ def print_element(declaration, should_print_subtypes=True):
                     types.remove("NOTDEFINED")
         print("{}".format(declaration.name()))
         if types:
+            types = sorted(types)
             for line in textwrap.wrap(", ".join(types), width=70):
                 print("\t\t{}".format(line))
     if should_print_subtypes:
