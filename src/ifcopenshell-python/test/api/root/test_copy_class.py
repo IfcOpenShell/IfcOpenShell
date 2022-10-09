@@ -115,6 +115,15 @@ class TestCopyClass(test.bootstrap.IFC4):
         assert new.HasOpenings[0].RelatedOpeningElement != opening
         assert new.HasOpenings[0].RelatedOpeningElement.is_a("IfcOpeningElement")
 
+    def test_copying_an_element_with_a_filled_opening_should_not_copy_the_opening_nor_fill(self):
+        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        opening = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
+        window = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.run("void.add_opening", self.file, opening=opening, element=wall)
+        ifcopenshell.api.run("void.add_filling", self.file, opening=opening, element=window)
+        new = ifcopenshell.api.run("root.copy_class", self.file, product=wall)
+        assert not new.HasOpenings
+
     def test_copying_an_opening_voiding_an_element(self):
         wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         opening = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
