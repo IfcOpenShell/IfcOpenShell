@@ -532,6 +532,9 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
     def _execute(self, context):
         self.new_active_obj = None
+        # Track decompositions so they can be recreated after the operation
+        relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
+        old_to_new = {}
         for obj in context.selected_objects:
             new_obj = obj.copy()
             if obj.data:
@@ -542,8 +545,12 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
-            # This is the only difference
-            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+            # Copy the actual class
+            new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+            if new:
+                old_to_new[tool.Ifc.get_entity(obj)] = new
+        # Recreate decompositions
+        tool.Root.recreate_decompositions(relationships, old_to_new)
         bpy.ops.transform.translate("INVOKE_DEFAULT")
         blenderbim.bim.handler.purge_module_data()
 
@@ -580,6 +587,9 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
 
     def _execute(self, context):
         self.new_active_obj = None
+        # Track decompositions so they can be recreated after the operation
+        relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
+        old_to_new = {}
         for obj in context.selected_objects:
             new_obj = obj.copy()
             if obj == context.active_object:
@@ -588,8 +598,12 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
-            # This is the only difference
-            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+            # Copy the actual class
+            new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+            if new:
+                old_to_new[tool.Ifc.get_entity(obj)] = new
+        # Recreate decompositions
+        tool.Root.recreate_decompositions(relationships, old_to_new)
         bpy.ops.transform.translate("INVOKE_DEFAULT")
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
