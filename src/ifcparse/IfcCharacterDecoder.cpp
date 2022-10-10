@@ -27,13 +27,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#if !defined(__clang__) && defined(__GNUC__) && __GNUC__ < 5
-#include <boost/locale/encoding_utf.hpp>
-using boost::locale::conv::utf_to_utf;
-#define CODECVT_BOOST_FALLBACK
-#else
 #include <codecvt>
-#endif
 
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcException.h"
@@ -318,7 +312,7 @@ IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDeco
 char IfcCharacterDecoder::substitution_character = '_';
 
 IfcCharacterEncoder::IfcCharacterEncoder(const std::string& input)
-	: str(IfcUtil::convert_utf8(input)) {}
+	: str(IfcUtil::convert_utf8_to_utf32(input)) {}
 	
 IfcCharacterEncoder::operator std::string() {
 	std::ostringstream oss;
@@ -401,16 +395,6 @@ std::wstring::value_type IfcUtil::convert_codepage(int codepage, int c) {
 	return r;
 }
 
-#ifdef CODECVT_BOOST_FALLBACK
-std::string IfcUtil::convert_utf8(const std::wstring& s) {
-    return utf_to_utf<char>(s.c_str(), s.c_str() + s.size());
-}
-
-std::wstring IfcUtil::convert_utf8(const std::string& s)
-{
-    return utf_to_utf<wchar_t>(s.c_str(), s.c_str() + s.size());
-}
-#else
 std::string IfcUtil::convert_utf8(const std::wstring& s) {
 	return std::wstring_convert<std::codecvt_utf8<std::wstring::value_type>>().to_bytes(s);
 }
@@ -418,4 +402,20 @@ std::string IfcUtil::convert_utf8(const std::wstring& s) {
 std::wstring IfcUtil::convert_utf8(const std::string& s) {
 	return std::wstring_convert<std::codecvt_utf8<std::wstring::value_type>>().from_bytes(s);
 }
+
+#ifdef _MSC_VER
+
+// bug in msvc 2015 and 2017, unsure if fixed in later versions
+
+std::u32string IfcUtil::convert_utf8_to_utf32(const std::string& s) {
+	auto converted = std::wstring_convert<std::codecvt_utf8<int32_t>, int32_t>().from_bytes(s);
+	return std::u32string(reinterpret_cast<char32_t const *>(converted.data()));
+}
+
+#else
+
+std::u32string IfcUtil::convert_utf8_to_utf32(const std::string& s) {
+	return std::wstring_convert<std::codecvt_utf8<std::u32string::value_type>, std::u32string::value_type>().from_bytes(s);
+}
+
 #endif
