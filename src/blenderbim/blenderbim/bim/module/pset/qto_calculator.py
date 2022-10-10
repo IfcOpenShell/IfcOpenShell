@@ -214,37 +214,39 @@ class QtoCalculator:
         return o_mesh.calc_volume()
 
     def get_gross_volume(self, o):
-        ifc_model = tool.Ifc.get()
         element = tool.Ifc.get_entity(o)
         if not element:
             print(f"Object {o.name} hasn't an IFC instance so gross volume is equal to net volume")
             return self.get_net_volume
 
-        type = element.get_info()['type']
-
-        new_element = ifc_model.create_entity(type)
-        representation = element.Representation
-        object_placement = element.ObjectPlacement
-        new_element.GlobalId = ifcopenshell.guid.new()
-        new_element.Name = 'MyName'
-        new_element.Representation = representation
-        new_element.ObjectPlacement = object_placement
-
         settings = ifcopenshell.geom.settings()
-        shape = ifcopenshell.geom.create_shape(settings, new_element)
+        settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+        shape = ifcopenshell.geom.create_shape(settings, element)
         faces = shape.geometry.faces
         verts = shape.geometry.verts
-        grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
-        grouped_faces = [[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)]
-        edges = []
 
         mesh = bpy.data.meshes.new("myBeautifulMesh")  # add the new mesh
         new_obj = bpy.data.objects.new(mesh.name, mesh)
-        mesh.from_pydata(grouped_verts, edges, grouped_faces)
+        #mesh.from_pydata(grouped_verts, edges, grouped_faces)
+
+        num_vertices = len(verts) // 3
+        total_faces = len(faces)
+        loop_start = range(0, total_faces, 3)
+        num_loops = total_faces // 3
+        loop_total = [3] * num_loops
+        num_vertex_indices = len(faces)
+
+        mesh.vertices.add(num_vertices)
+        mesh.vertices.foreach_set("co", verts)
+        mesh.loops.add(num_vertex_indices)
+        mesh.loops.foreach_set("vertex_index", faces)
+        mesh.polygons.add(num_loops)
+        mesh.polygons.foreach_set("loop_start", loop_start)
+        mesh.polygons.foreach_set("loop_total", loop_total)
+        mesh.update()
 
         gross_volume = self.get_net_volume(new_obj)
 
-        ifc_model.remove(new_element)
         bpy.data.objects.remove(new_obj, do_unlink = True)
 
         return gross_volume
