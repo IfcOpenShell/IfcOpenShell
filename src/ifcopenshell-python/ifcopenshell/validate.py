@@ -399,4 +399,7 @@ if __name__ == "__main__":
         validate(fn, logger)
 
         if "--json" in flags:
-            print("\n".join(json.dumps(x, default=str) for x in logger.statements))
+            conv = str
+            if "--spf" in flags:
+                conv = lambda x: x.to_string() if isinstance(x, ifcopenshell.entity_instance) else str(x)
+            print("\n".join(json.dumps(x, default=conv) for x in logger.statements))
