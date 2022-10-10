@@ -8,7 +8,7 @@ on:
     #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
     #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
     #         *  * * * *
-    - cron: "55 23 * * *" # 5min before utc midnight
+    - cron: "56 23 * * *" # 4min before utc midnight
 
 env:
   major: 0
@@ -52,15 +52,6 @@ jobs:
         run: |
           echo "::set-output name=choco_release::$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --do_choco_release?)"
 
-      - name: Compile
-        if: ${{steps.do_choco.outputs.choco_release}} == 'do_choco_release'
-        run: |
-          target_os=${{ matrix.config.short_name }} &&
-          pyver=$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --pyver?) &&
-          cp -r src/blenderbim src/blenderbim_$target_os_$pyver &&
-          cd src/blenderbim_$target_os_$pyver &&
-          make dist PLATFORM=$target_os PYVERSION=$pyver
-
       - name: Fill chocolatey scripts on win with latest blender python
         if: ${{steps.do_choco.outputs.choco_release}} == 'do_choco_release'
         run: |
@@ -74,7 +65,8 @@ jobs:
           echo   latest_blender_version_maj_min_pat?: $latest_blender_version_maj_min_pat &&
           export blenderbim_build_version="${{ env.major }}.${{ env.minor }}.$today_non_iso" &&
           export url_blenderbim_py310_win_zip="https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-$today_non_iso/blenderbim-$today_non_iso-$pyver-$target_os.zip" &&
-          export sha256sum_blenderbim_py310_win_zip=$( sha256sum src/blenderbim_$target_os_$pyver/dist/blenderbim-$today_non_iso-$pyver-$target_os.zip  --tag | cut -d ' ' -f 4  | tr -d '\n') &&
+          wget $url_blenderbim_py310_win_zip --no-verbose &&
+          export sha256sum_blenderbim_py310_win_zip=$( sha256sum blenderbim-$today_non_iso-$pyver-$target_os.zip  --tag | cut -d ' ' -f 4  | tr -d '\n') &&
           echo   sha256sum_blenderbim_py310_win_zip: $sha256sum_blenderbim_py310_win_zip &&
           python3 choco/blenderbim/fill_dynamic_parameters.py &&
           echo __build choco with mono &&
