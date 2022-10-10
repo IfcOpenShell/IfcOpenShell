@@ -52,7 +52,6 @@ def nodes_index():
                 ("ifc.read_file", "SvIfcReadFile"),
                 ("ifc.write_file", "SvIfcWriteFile"),
                 ("ifc.create_entity", "SvIfcCreateEntity"),
-                ("ifc.create_entity2", "SvIfcCreateEntity2"),
                 ("ifc.create_shape", "SvIfcCreateShape"),
                 ("ifc.read_entity", "SvIfcReadEntity"),
                 ("ifc.by_id", "SvIfcById"),
@@ -70,7 +69,6 @@ def nodes_index():
                 ("ifc.api", "SvIfcApi"),
                 ("ifc.api_WIP", "SvIfcApiWIP"),
                 ("ifc.bmesh_to_ifc", "SvIfcBMeshToIfcGeo"),
-                ("ifc.bmesh_to_ifc2", "SvIfcBMeshToIfcRepr"),
                 ("ifc.create_project", "SvIfcCreateProject"),
                 ("ifc.quick_project_setup", "SvIfcQuickProjectSetup")
 
