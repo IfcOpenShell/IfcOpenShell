@@ -60,6 +60,9 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         result = self.get_existing_element()
         subelements = set(ifcopenshell.util.element.get_decomposition(result))
         elements_set = set(elements)
+        print("RESULT: ", result)
+        print("subelements: ", subelements)
+        print("elements_set: ", elements_set)
         for removed_element in subelements - elements_set:
             # Just realised I don't have a spatial.unassign_container, but if so we'd do it here
             pass
