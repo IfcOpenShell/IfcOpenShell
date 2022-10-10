@@ -74,10 +74,10 @@ class BimTool(WorkSpaceTool):
             AuthoringData.data["relating_types_ids"] if "relating_types_ids" in AuthoringData.data else False
         )
 
-        if ifc_classes and relating_types_ids and not props.icon_id and not is_tool_header:
-            # hack Dion won't like to show a preview also on the first time the sidebar is shown
-            bpy.app.timers.register(lambda: prop.update_ifc_class(props, "lost_context"))
-            bpy.app.timers.register(lambda: prop.update_relating_type(props, "lost_context"))
+        #if ifc_classes and relating_types_ids and not props.icon_id and not is_tool_header:
+        #    # hack Dion won't like to show a preview also on the first time the sidebar is shown
+        #    bpy.app.timers.register(lambda: prop.update_ifc_class(props, "lost_context"))
+        #    bpy.app.timers.register(lambda: prop.update_relating_type(props, "lost_context"))
 
         ifc_class = props.ifc_class
         relating_type_id = props.relating_type_id
@@ -96,8 +96,8 @@ class BimTool(WorkSpaceTool):
             else:
                 row.label(text="No Construction Type", icon="FILE_3D")
             if ifc_classes:
-                row = layout.row()
-                row.operator("bim.display_constr_types", icon="TRIA_DOWN", text="")
+                #row = layout.row()
+                #row.operator("bim.display_constr_types", icon="TRIA_DOWN", text="")
 
                 row = layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
@@ -107,7 +107,7 @@ class BimTool(WorkSpaceTool):
                 op.ifc_class = ifc_class
                 if relating_type_id.isnumeric():
                     op.relating_type_id = int(relating_type_id)
-        else:
+        elif is_sidebar:
             row = layout.row(align=True)
             if ifc_classes:
                 row.label(text="", icon="FILE_VOLUME")
@@ -120,9 +120,14 @@ class BimTool(WorkSpaceTool):
                 prop_with_search(row, props, "relating_type_id", text="")
             else:
                 row.label(text="No Construction Type", icon="FILE_3D")
-            if is_sidebar and ifc_classes and relating_types_ids:
+
+            if AuthoringData.data["type_thumbnail"]:
                 box = layout.box()
-                box.template_icon(icon_value=props.icon_id, scale=8)
+                box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
+            else:
+                box = layout.box()
+                op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
+                op.ifc_class = props.ifc_class
 
             if ifc_classes:
                 row = layout.row(align=True)

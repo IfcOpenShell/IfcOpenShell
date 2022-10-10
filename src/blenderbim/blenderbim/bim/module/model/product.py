@@ -339,6 +339,122 @@ class DynamicallyVoidProduct(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.load_type_thumbnails"
+    bl_label = "Load Type Thumbnails"
+    bl_options = {"REGISTER", "UNDO"}
+    ifc_class: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        from PIL import Image, ImageDraw
+
+        processing = set()
+        # Only process at most one class at a time.
+        # Large projects have hundreds of types which can lead to unnecessary lag.
+        queue = tool.Ifc.get().by_type(self.ifc_class)
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        while queue:
+            # if bpy.app.is_job_running("RENDER_PREVIEW") does not seem to reflect asset preview generation
+            element = queue.pop()
+            obj = tool.Ifc.get_object(element)
+
+            if not obj:
+                continue  # Nothing to process
+            elif AuthoringData.type_thumbnails.get(element.id(), None):
+                continue  # Already processed
+            elif obj.preview and obj.preview.icon_id:
+                AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
+                continue
+
+            if obj.data:
+                obj.asset_generate_preview()
+                while not obj.preview:
+                    pass
+            else:
+                size = 128
+                img = Image.new("RGBA", (size, size))
+                draw = ImageDraw.Draw(img)
+
+                material = ifcopenshell.util.element.get_material(element)
+                if material and material.is_a("IfcMaterialProfileSet"):
+                    profile = material.MaterialProfiles[0].Profile
+                    settings = ifcopenshell.geom.settings()
+                    settings.set(settings.INCLUDE_CURVES, True)
+                    shape = ifcopenshell.geom.create_shape(settings, profile)
+                    verts = shape.verts
+                    edges = shape.edges
+                    grouped_verts = [[verts[i], verts[i + 1]] for i in range(0, len(verts), 3)]
+                    grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
+
+                    max_x = max([v[0] for v in grouped_verts])
+                    min_x = min([v[0] for v in grouped_verts])
+                    max_y = max([v[1] for v in grouped_verts])
+                    min_y = min([v[1] for v in grouped_verts])
+
+                    dim_x = max_x - min_x
+                    dim_y = max_y - min_y
+                    max_dim = max([dim_x, dim_y])
+                    scale = 100 / max_dim
+
+                    for vert in grouped_verts:
+                        vert[0] = round(scale * (vert[0] - min_x)) + ((size / 2) - scale * (dim_x / 2))
+                        vert[1] = round(scale * (vert[1] - min_y)) + ((size / 2) - scale * (dim_y / 2))
+
+                    for e in grouped_edges:
+                        draw.line((tuple(grouped_verts[e[0]]), tuple(grouped_verts[e[1]])), fill="white", width=2)
+                elif material and material.is_a("IfcMaterialLayerSet"):
+                    thicknesses = [l.LayerThickness for l in material.MaterialLayers]
+                    total_thickness = sum(thicknesses)
+                    si_total_thickness = total_thickness * unit_scale
+                    if si_total_thickness < 0.05:
+                        width = 10
+                    elif si_total_thickness < 0.1:
+                        width = 20
+                    elif si_total_thickness < 0.2:
+                        width = 30
+                    elif si_total_thickness < 0.3:
+                        width = 40
+                    else:
+                        width = 50
+
+                    height = 100
+
+                    if element.is_a("IfcSlabType"):
+                        width, height = height, width
+
+                    x_offset = (size / 2) - (width / 2)
+                    y_offset = (size / 2) - (height / 2)
+                    draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=2)
+                    current_thickness = 0
+                    for thickness in thicknesses:
+                        current_thickness += thickness
+                        if element.is_a("IfcSlabType"):
+                            y = (current_thickness / total_thickness) * height
+                            line = [x_offset, y_offset + y, x_offset + width, y_offset + y]
+                        else:
+                            x = (current_thickness / total_thickness) * width
+                            line = [x_offset + x, y_offset, x_offset + x, y_offset + height]
+                        draw.line(line, fill="white", width=2)
+                else:
+                    # For things like parametric duct segments
+                    draw.line([0, 0, size, size], fill="red", width=2)
+                    draw.line([0, size, size, 0], fill="red", width=2)
+
+                pixels = [item for sublist in img.getdata() for item in sublist]
+
+                obj.asset_generate_preview()
+                while not obj.preview:
+                    pass
+
+                obj.preview.image_size = size, size
+                obj.preview.image_pixels_float = pixels
+
+            queue.append(element)
+        return {"FINISHED"}
+
+
 def generate_box(usecase_path, ifc_file, settings):
     box_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Box", "MODEL_VIEW")
     if not box_context:

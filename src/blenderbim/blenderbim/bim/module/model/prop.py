@@ -72,10 +72,8 @@ def update_icon_id(self, context, browser=False):
 
 
 def update_ifc_class(self, context):
-    AuthoringData.load_ifc_classes()
-    AuthoringData.load_relating_types()
-    if not self.updating:
-        update_icon_id(self, context)
+    AuthoringData.data["relating_types_ids"] = AuthoringData.relating_types()
+    AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
 
 
 def update_ifc_class_browser(self, context):
@@ -93,8 +91,7 @@ def update_ifc_class_browser(self, context):
 
 def update_relating_type(self, context):
     AuthoringData.load_relating_types()
-    if not self.updating:
-        update_icon_id(self, context)
+    AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
 
 
 def update_relating_type_browser(self, context):
