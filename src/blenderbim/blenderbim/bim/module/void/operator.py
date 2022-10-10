@@ -22,7 +22,6 @@ import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.core.geometry
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.void.data import Data
 
 
 class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
@@ -89,7 +88,6 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
             is_global=True,
             should_sync_changes_first=False,
         )
-        Data.load(tool.Ifc.get(), element1.id())
 
         if not has_visible_openings:
             tool.Ifc.unlink(obj=obj2)
@@ -128,7 +126,6 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
         )
 
         tool.Geometry.clear_cache(element)
-        Data.load(tool.Ifc.get(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -153,37 +150,23 @@ class AddFilling(bpy.types.Operator):
         if not element_id or not opening_id or element_id == opening_id:
             return {"FINISHED"}
         ifcopenshell.api.run(
-            "void.add_filling",
-            self.file,
-            **{
-                "opening": self.file.by_id(opening_id),
-                "element": self.file.by_id(element_id),
-            },
+            "void.add_filling", self.file, opening=self.file.by_id(opening_id), element=self.file.by_id(element_id)
         )
-        Data.load(self.file, element_id)
         return {"FINISHED"}
 
 
-class RemoveFilling(bpy.types.Operator):
+class RemoveFilling(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_filling"
     bl_label = "Remove Filling"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    filling: bpy.props.IntProperty()
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        if not obj:
-            return {"FINISHED"}
-        element = tool.Ifc.get_entity(obj)
-        if not element:
-            return {"FINISHED"}
-        for rel in element.FillsVoids:
+        filling = tool.Ifc.get().by_id(self.filling)
+        filling_obj = tool.Ifc.get_object(filling)
+        for rel in filling.FillsVoids:
             bpy.ops.bim.remove_opening(opening_id=rel.RelatingOpeningElement.id())
-        ifcopenshell.api.run("void.remove_filling", tool.Ifc.get(), element=element)
-        Data.load(tool.Ifc.get(), element.id())
+        ifcopenshell.api.run("void.remove_filling", tool.Ifc.get(), element=filling)
         return {"FINISHED"}
 
 

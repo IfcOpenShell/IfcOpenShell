@@ -22,6 +22,50 @@ import blenderbim.tool as tool
 
 def refresh():
     BooleansData.is_loaded = False
+    VoidsData.is_loaded = False
+
+
+class VoidsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"active_opening": cls.active_opening(), "openings": cls.openings(), "fillings": cls.fillings()}
+        cls.is_loaded = True
+
+    @classmethod
+    def active_opening(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element and element.is_a("IfcOpeningElement"):
+            return element.id()
+
+    @classmethod
+    def openings(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if not element:
+            return []
+        results = []
+        for rel in getattr(element, "HasOpenings", []) or []:
+            has_fillings = []
+            opening = rel.RelatedOpeningElement
+            for rel2 in getattr(opening, "HasFillings", []) or []:
+                filling = rel2.RelatedBuildingElement
+                has_fillings.append({"id": filling.id(), "Name": filling.Name or "Unnamed"})
+            results.append({"id": opening.id(), "Name": opening.Name or "Unnamed", "HasFillings": has_fillings})
+        return results
+
+    @classmethod
+    def fillings(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if not element:
+            return []
+        results = []
+        for rel in getattr(element, "HasFillings", []) or []:
+            filling = rel.RelatedBuildingElement
+            results.append({"id": filling.id(), "Name": filling.Name or "Unnamed"})
+        return results
+
 
 
 class BooleansData:
