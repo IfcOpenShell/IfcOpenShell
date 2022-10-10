@@ -29,20 +29,31 @@ def refresh():
 
 class AuthoringData:
     data = {}
+    type_thumbnails = {}
     is_loaded = False
 
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        if not hasattr(cls, "data"):
-            cls.data = {}
         cls.props = bpy.context.scene.BIMModelProperties
         cls.load_ifc_classes()
         cls.load_relating_types()
         cls.load_relating_types_browser()
+        cls.data["type_thumbnail"] = cls.type_thumbnail()
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
         cls.data["active_class"] = cls.active_class()
+
+    @classmethod
+    def type_thumbnail(cls):
+        props = bpy.context.scene.BIMModelProperties
+        if not props.relating_type_id:
+            return 0
+        element = tool.Ifc.get().by_id(int(props.relating_type_id))
+        obj = tool.Ifc.get_object(element)
+        if not obj:
+            return 0
+        return cls.type_thumbnails.get(element.id(), None) or 0
 
     @classmethod
     def load_ifc_classes(cls):
