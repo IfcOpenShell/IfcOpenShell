@@ -29,6 +29,12 @@ def get_ifc_class(self, context):
     return AuthoringData.data["ifc_classes"]
 
 
+def get_type_class(self, context):
+    if not AuthoringData.is_loaded:
+        AuthoringData.load()
+    return AuthoringData.data["type_class"]
+
+
 def get_relating_type(self, context):
     if not AuthoringData.is_loaded:
         AuthoringData.load()
@@ -39,6 +45,12 @@ def get_relating_type_browser(self, context):
     if not AuthoringData.is_loaded:
         AuthoringData.load()
     return AuthoringData.data["relating_types_ids_browser"]
+
+
+def get_type_predefined_type(self, context):
+    if not AuthoringData.is_loaded:
+        AuthoringData.load()
+    return AuthoringData.data["type_predefined_type"]
 
 
 def store_cursor_position(context, event, cursor=True, window=True):
@@ -62,8 +74,10 @@ def update_icon_id(self, context, browser=False):
                 return
 
         def set_icon(update_interval_seconds=1e-4):
-            if (ifc_class not in self.constr_classes
-                    or relating_type_id not in self.constr_classes[ifc_class].constr_types):
+            if (
+                ifc_class not in self.constr_classes
+                or relating_type_id not in self.constr_classes[ifc_class].constr_types
+            ):
                 return update_interval_seconds
             else:
                 self.icon_id = self.constr_classes[ifc_class].constr_types[relating_type_id].icon_id
@@ -74,6 +88,15 @@ def update_icon_id(self, context, browser=False):
 def update_ifc_class(self, context):
     AuthoringData.data["relating_types_ids"] = AuthoringData.relating_types()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
+
+
+def update_type_class(self, context):
+    AuthoringData.data["total_types"] = AuthoringData.total_types()
+    AuthoringData.data["total_pages"] = AuthoringData.total_pages()
+    AuthoringData.data["prev_page"] = AuthoringData.prev_page()
+    AuthoringData.data["next_page"] = AuthoringData.next_page()
+    AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
+    AuthoringData.data["type_predefined_type"] = AuthoringData.type_predefined_type()
 
 
 def update_ifc_class_browser(self, context):
@@ -206,3 +229,16 @@ class BIMModelProperties(PropertyGroup):
     z: bpy.props.FloatProperty(name="Z", default=0.5)
     rl: bpy.props.FloatProperty(name="RL", default=1)
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
+    type_template: bpy.props.EnumProperty(
+        items=(
+            ("1", "Custom Mesh", ""),
+            ("2", "Vertical Layers", ""),
+            ("2", "Horizontal Layers", ""),
+            ("3", "Extruded Profile", ""),
+            ("4", "Non-Geometric Type", ""),
+        ),
+        name="Type Template",
+        default="1",
+    )
+    type_class: bpy.props.EnumProperty(items=get_type_class, name="IFC Class", update=update_type_class)
+    type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)

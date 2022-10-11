@@ -35,6 +35,8 @@ class LaunchTypeManager(bpy.types.Operator):
     def invoke(self, context, event):
         props = context.scene.BIMModelProperties
         props.type_page = 1
+        if props.ifc_class:
+            props.type_class = props.ifc_class
         bpy.ops.bim.load_type_thumbnails(ifc_class=props.ifc_class)
         if not AuthoringData.is_loaded:
             AuthoringData.load()
@@ -43,15 +45,24 @@ class LaunchTypeManager(bpy.types.Operator):
     def draw(self, context):
         props = context.scene.BIMModelProperties
 
-        row = self.layout.row(align=True)
+        row = self.layout.row()
+        row.prop(props, "type_class", text="")
+
+        columns = self.layout.column_flow(columns=3)
+        row = columns.row()
+        row.alignment = "LEFT"
+        row.label(text=f"{AuthoringData.data['total_types']} Types", icon="FILE_VOLUME")
+
+        row = columns.row(align=True)
+        row.alignment = "CENTER"
+        row.prop(props, "type_predefined_type", text="")
+        row.prop(props, "type_template", text="")
+        op = row.operator("bim.change_type_page", icon="ADD", text="")
+
+        row = columns.row(align=True)
         row.alignment = "RIGHT"
-        #row.label(text=f"", icon="FILE_VOLUME")
-
-        text = f"{AuthoringData.data['total_types']} types"
         if AuthoringData.data["total_pages"] > 1:
-            text += f" ({props.type_page}/{AuthoringData.data['total_pages']}) "
-        row.label(text=text)
-
+            row.label(text=f"Page {props.type_page}/{AuthoringData.data['total_pages']} ")
         if AuthoringData.data["prev_page"]:
             op = row.operator("bim.change_type_page", icon="TRIA_LEFT", text="")
             op.page = AuthoringData.data["prev_page"]
@@ -74,11 +85,16 @@ class LaunchTypeManager(bpy.types.Operator):
             row.label(text=relating_type["description"])
 
             row = box.row()
-            row.template_icon(icon_value=relating_type["icon_id"], scale=4)
+            if relating_type["icon_id"]:
+                row.template_icon(icon_value=relating_type["icon_id"], scale=4)
+            else:
+                op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
+                op.ifc_class = props.type_class
 
             row = box.row(align=True)
 
-            op = row.operator("bim.add_constr_type_instance", icon="ADD")
+            text = f"Add {relating_type['predefined_type']}" if relating_type["predefined_type"] else "Add"
+            op = row.operator("bim.add_constr_type_instance", icon="ADD", text=text)
             op.from_invoke = True
             op.ifc_class = relating_type["ifc_class"]
             op.relating_type_id = relating_type["id"]
