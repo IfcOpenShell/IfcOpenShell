@@ -99,6 +99,8 @@ class LaunchTypeManager(bpy.types.Operator):
             op.ifc_class = relating_type["ifc_class"]
             op.relating_type_id = relating_type["id"]
 
+            op = row.operator("bim.duplicate_type", icon="COPYDOWN", text="")
+            op.element = relating_type["id"]
             op = row.operator("bim.remove_type", icon="X", text="")
             op.element = relating_type["id"]
 

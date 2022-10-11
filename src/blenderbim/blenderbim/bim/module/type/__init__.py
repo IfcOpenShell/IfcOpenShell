@@ -22,6 +22,7 @@ from . import ui, prop, operator
 classes = (
     operator.AssignType,
     operator.DisableEditingType,
+    operator.DuplicateType,
     operator.EnableEditingType,
     operator.RemoveType,
     operator.SelectSimilarType,
