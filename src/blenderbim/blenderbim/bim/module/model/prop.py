@@ -94,6 +94,10 @@ def update_relating_type(self, context):
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
 
 
+def update_type_page(self, context):
+    AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
+
+
 def update_relating_type_browser(self, context):
     AuthoringData.load_relating_types_browser()
     if not self.updating:
@@ -201,3 +205,4 @@ class BIMModelProperties(PropertyGroup):
     y: bpy.props.FloatProperty(name="Y", default=0.5)
     z: bpy.props.FloatProperty(name="Z", default=0.5)
     rl: bpy.props.FloatProperty(name="RL", default=1)
+    type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
