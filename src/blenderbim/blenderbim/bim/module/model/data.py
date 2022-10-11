@@ -19,6 +19,7 @@
 import bpy
 import math
 import functools
+import ifcopenshell
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
@@ -41,6 +42,8 @@ class AuthoringData:
         cls.load_ifc_classes()
         cls.load_relating_types()
         cls.load_relating_types_browser()
+        cls.data["type_class"] = cls.type_class()
+        cls.data["type_predefined_type"] = cls.type_predefined_type()
         cls.data["total_types"] = cls.total_types()
         cls.data["total_pages"] = cls.total_pages()
         cls.data["next_page"] = cls.next_page()
@@ -50,6 +53,24 @@ class AuthoringData:
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
         cls.data["active_class"] = cls.active_class()
+
+    @classmethod
+    def type_class(cls):
+        declaration = tool.Ifc.schema().declaration_by_name("IfcElementType")
+        declarations = ifcopenshell.util.schema.get_subtypes(declaration)
+        names = [d.name() for d in declarations]
+        names.extend(("IfcDoorStyle", "IfcWindowStyle"))
+        return [(c, c, "") for c in sorted(names)]
+
+    @classmethod
+    def type_predefined_type(cls):
+        results = []
+        declaration = tool.Ifc().schema().declaration_by_name(cls.props.type_class)
+        for attribute in declaration.attributes():
+            if attribute.name() == "PredefinedType":
+                results.extend([(e, e, "") for e in attribute.type_of_attribute().declared_type().enumeration_items()])
+                break
+        return results
 
     @classmethod
     def type_thumbnail(cls):
@@ -72,13 +93,13 @@ class AuthoringData:
 
     @classmethod
     def total_types(cls):
-        ifc_class = cls.props.ifc_class
-        return len(tool.Ifc.get().by_type(ifc_class)) if ifc_class else 0
+        type_class = cls.props.type_class
+        return len(tool.Ifc.get().by_type(type_class)) if type_class else 0
 
     @classmethod
     def total_pages(cls):
-        ifc_class = cls.props.ifc_class
-        total_types = len(tool.Ifc.get().by_type(ifc_class)) if ifc_class else 0
+        type_class = cls.props.type_class
+        total_types = len(tool.Ifc.get().by_type(type_class)) if type_class else 0
         return math.ceil(total_types / cls.types_per_page)
 
     @classmethod
@@ -93,20 +114,26 @@ class AuthoringData:
 
     @classmethod
     def paginated_relating_types(cls):
-        ifc_class = cls.props.ifc_class
-        if not ifc_class:
+        type_class = cls.props.type_class
+        if not type_class:
             return []
         results = []
-        elements = sorted(tool.Ifc.get().by_type(ifc_class), key=lambda e: e.Name or "Unnamed")
-        elements = elements[(cls.props.type_page - 1) * cls.types_per_page:cls.props.type_page * cls.types_per_page]
+        elements = sorted(tool.Ifc.get().by_type(type_class), key=lambda e: e.Name or "Unnamed")
+        elements = elements[(cls.props.type_page - 1) * cls.types_per_page : cls.props.type_page * cls.types_per_page]
         for element in elements:
-            results.append({
-                "id": element.id(),
-                "ifc_class": element.is_a(),
-                "name": element.Name or "Unnamed",
-                "description": element.Description or "No Description",
-                "icon_id": cls.type_thumbnails.get(element.id(), None) or 0,
-            })
+            predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+            if predefined_type == "NOTDEFINED":
+                predefined_type = None
+            results.append(
+                {
+                    "id": element.id(),
+                    "ifc_class": element.is_a(),
+                    "name": element.Name or "Unnamed",
+                    "description": element.Description or "No Description",
+                    "predefined_type": predefined_type,
+                    "icon_id": cls.type_thumbnails.get(element.id(), None) or 0,
+                }
+            )
         return results
 
     @classmethod
