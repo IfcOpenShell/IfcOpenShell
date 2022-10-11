@@ -166,3 +166,19 @@ class SelectTypeObjects(bpy.types.Operator):
             if obj:
                 obj.select_set(True)
         return {"FINISHED"}
+
+
+class RemoveType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_type"
+    bl_label = "Remove Type"
+    bl_options = {"REGISTER"}
+    element: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        element = tool.Ifc.get().by_id(self.element)
+        obj = tool.Ifc.get_object(element)
+        ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+        if obj:
+            tool.Ifc.unlink(obj=obj)
+            bpy.data.objects.remove(obj)
+        return {"FINISHED"}

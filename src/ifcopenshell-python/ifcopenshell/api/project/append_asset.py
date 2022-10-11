@@ -158,7 +158,6 @@ class Usecase:
             return self.added_elements[element.id()]
         new = self.file.add(element)
         self.added_elements[element.id()] = new
-        self.check_inverses(element)
         for subelement in self.settings["library"].traverse(element):
             self.check_inverses(subelement)
         return new

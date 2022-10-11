@@ -21,12 +21,13 @@ from . import ui, prop, operator
 
 classes = (
     operator.AssignType,
-    operator.UnassignType,
-    operator.EnableEditingType,
     operator.DisableEditingType,
+    operator.EnableEditingType,
+    operator.RemoveType,
     operator.SelectSimilarType,
-    operator.SelectTypeObjects,
     operator.SelectType,
+    operator.SelectTypeObjects,
+    operator.UnassignType,
     prop.BIMTypeProperties,
     ui.BIM_PT_type,
 )
