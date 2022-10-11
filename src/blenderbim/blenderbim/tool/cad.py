@@ -112,7 +112,7 @@ class Cad:
             p3 = p3.to_3d()
             p4 = p4.to_3d()
         results = mathutils.geometry.intersect_line_line(p1, p2, p3, p4)
-        if is_2d:
+        if is_2d and results:
             r1, r2 = results
             return r1.to_2d() if r1 else r1, r2.to_2d() if r2 else r2
         return results

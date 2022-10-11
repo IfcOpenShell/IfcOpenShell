@@ -439,6 +439,7 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
                     y_offset = (size / 2) - (height / 2)
                     draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=2)
                     current_thickness = 0
+                    del thicknesses[-1]
                     for thickness in thicknesses:
                         current_thickness += thickness
                         if element.is_a("IfcSlabType"):

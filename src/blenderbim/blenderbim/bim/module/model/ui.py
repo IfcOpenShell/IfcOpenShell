@@ -76,11 +76,15 @@ class LaunchTypeManager(bpy.types.Operator):
             row = box.row()
             row.template_icon(icon_value=relating_type["icon_id"], scale=4)
 
-            row = box.row()
+            row = box.row(align=True)
+
             op = row.operator("bim.add_constr_type_instance", icon="ADD")
             op.from_invoke = True
             op.ifc_class = relating_type["ifc_class"]
             op.relating_type_id = relating_type["id"]
+
+            op = row.operator("bim.remove_type", icon="X", text="")
+            op.element = relating_type["id"]
 
 
 class BIM_PT_authoring(Panel):
