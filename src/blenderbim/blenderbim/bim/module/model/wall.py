@@ -757,7 +757,7 @@ class DumbWallJoiner:
         axis1["reference"][0], axis1["reference"][1] = axis1["reference"][1], axis1["reference"][0]
 
         flip_matrix = Matrix.Rotation(pi, 4, "Z")
-        wall1.rotation_euler.rotate(flip_matrix)
+        wall1.matrix_world = wall1.matrix_world @ flip_matrix
         bpy.context.view_layer.update()
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])

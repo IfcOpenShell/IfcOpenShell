@@ -93,6 +93,7 @@ class BimTool(WorkSpaceTool):
             if relating_types_ids:
                 row.label(text="", icon="FILE_3D")
                 prop_with_search(row, props, "relating_type_id", text="")
+                row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="")
             else:
                 row.label(text="No Construction Type", icon="FILE_3D")
             if ifc_classes:
@@ -121,11 +122,10 @@ class BimTool(WorkSpaceTool):
             else:
                 row.label(text="No Construction Type", icon="FILE_3D")
 
+            box = layout.box()
             if AuthoringData.data["type_thumbnail"]:
-                box = layout.box()
                 box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
             else:
-                box = layout.box()
                 op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
                 op.ifc_class = props.ifc_class
 

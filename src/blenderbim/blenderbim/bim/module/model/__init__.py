@@ -20,12 +20,14 @@ import bpy
 from . import handler, prop, ui, grid, product, wall, slab, stair, opening, pie, workspace, profile
 
 classes = (
-    product.AddEmptyType,
     product.AddConstrTypeInstance,
-    product.DisplayConstrTypes,
-    product.ReinvokeOperator,
+    product.AddEmptyType,
     product.AlignProduct,
+    product.ChangeTypePage,
+    product.DisplayConstrTypes,
     product.DynamicallyVoidProduct,
+    product.LoadTypeThumbnails,
+    product.ReinvokeOperator,
     workspace.Hotkey,
     wall.AlignWall,
     wall.ChangeExtrusionDepth,
@@ -65,6 +67,7 @@ classes = (
     prop.BIMModelProperties,
     ui.BIM_PT_authoring,
     ui.DisplayConstrTypesUI,
+    ui.LaunchTypeManager,
     ui.HelpConstrTypes,
     ui.BIM_MT_model,
     grid.BIM_OT_add_object,

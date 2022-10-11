@@ -194,6 +194,17 @@ class AddConstrTypeInstance(bpy.types.Operator):
             pass  # Dumb block generator? Eh? :)
 
 
+class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.change_type_page"
+    bl_label = "Change Type Page"
+    bl_options = {"REGISTER"}
+    page: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        context.scene.BIMModelProperties.type_page = self.page
+        return {"FINISHED"}
+
+
 class DisplayConstrTypes(bpy.types.Operator):
     bl_idname = "bim.display_constr_types"
     bl_label = "Browse Construction Types"
@@ -408,13 +419,13 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
                     thicknesses = [l.LayerThickness for l in material.MaterialLayers]
                     total_thickness = sum(thicknesses)
                     si_total_thickness = total_thickness * unit_scale
-                    if si_total_thickness < 0.05:
+                    if si_total_thickness <= 0.051:
                         width = 10
-                    elif si_total_thickness < 0.1:
+                    elif si_total_thickness <= 0.11:
                         width = 20
-                    elif si_total_thickness < 0.2:
+                    elif si_total_thickness <= 0.21:
                         width = 30
-                    elif si_total_thickness < 0.3:
+                    elif si_total_thickness <= 0.31:
                         width = 40
                     else:
                         width = 50
