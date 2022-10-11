@@ -1438,7 +1438,7 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 		if (this->file) {
 
 			// Deregister old attribute guid in file guid map.
-			if (i == 0 && this->file->ifcroot_type() && this->type()->is(*this->file->ifcroot_type())) {
+			if (i == 0 && this->type() && this->file->ifcroot_type() && this->type()->is(*this->file->ifcroot_type())) {
 				try {
 					auto guid = (std::string) *current_attribute;
 					auto it = this->file->internal_guid_map().find(guid);
@@ -1467,7 +1467,7 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 
 	// Register new attribute guid in guid map
 	if (this->file) {
-		if (i == 0 && this->file->ifcroot_type() && this->type()->is(*this->file->ifcroot_type())) {
+		if (i == 0 && this->type() && this->file->ifcroot_type() && this->type()->is(*this->file->ifcroot_type())) {
 			try {
 				auto guid = (std::string) *new_attribute;
 				auto it = this->file->internal_guid_map().find(guid);
