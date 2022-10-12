@@ -196,15 +196,23 @@ class Georeference(blenderbim.core.tool.Georeference):
                 float(props.blender_x_axis_ordinate),
                 1.0,
             )
-        # TODO: what if the project CRS units and the project units are different?
         if map_conversion:
+            unit = map_conversion.TargetCRS.MapUnit
+            e = map_conversion.Eastings
+            n = map_conversion.Northings
+            h = map_conversion.OrthogonalHeight
+            if unit:
+                scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                e = ifcopenshell.util.unit.convert(e, getattr(unit, "Prefix", None), unit.Name, None, None) / scale
+                n = ifcopenshell.util.unit.convert(n, getattr(unit, "Prefix", None), unit.Name, None, None) / scale
+                h = ifcopenshell.util.unit.convert(h, getattr(unit, "Prefix", None), unit.Name, None, None) / scale
             coordinates = ifcopenshell.util.geolocation.xyz2enh(
                 coordinates[0],
                 coordinates[1],
                 coordinates[2],
-                map_conversion.Eastings,
-                map_conversion.Northings,
-                map_conversion.OrthogonalHeight,
+                e,
+                n,
+                h,
                 map_conversion.XAxisAbscissa or 1.0,
                 map_conversion.XAxisOrdinate or 0.0,
                 map_conversion.Scale or 1.0,
@@ -215,13 +223,22 @@ class Georeference(blenderbim.core.tool.Georeference):
     def enh2xyz(cls, coordinates, map_conversion):
         props = bpy.context.scene.BIMGeoreferenceProperties
         if map_conversion:
+            unit = map_conversion.TargetCRS.MapUnit
+            e = map_conversion.Eastings
+            n = map_conversion.Northings
+            h = map_conversion.OrthogonalHeight
+            if unit:
+                scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                e = ifcopenshell.util.unit.convert(e, getattr(unit, "Prefix", None), unit.Name, None, None) / scale
+                n = ifcopenshell.util.unit.convert(n, getattr(unit, "Prefix", None), unit.Name, None, None) / scale
+                h = ifcopenshell.util.unit.convert(h, getattr(unit, "Prefix", None), unit.Name, None, None) / scale
             coordinates = ifcopenshell.util.geolocation.enh2xyz(
                 coordinates[0],
                 coordinates[1],
                 coordinates[2],
-                map_conversion.Eastings,
-                map_conversion.Northings,
-                map_conversion.OrthogonalHeight,
+                e,
+                n,
+                h,
                 map_conversion.XAxisAbscissa or 1.0,
                 map_conversion.XAxisOrdinate or 0.0,
                 map_conversion.Scale or 1.0,
