@@ -16,7 +16,7 @@ def request_repo_info(url: str):
 if sys.argv[1] == "--do_choco_release?":
     now = datetime.datetime.now()
     blenderbim_date = (now - datetime.timedelta(days=1)).strftime("%y%m%d")
-    url = "https://github.com/IfcOpenShell/IfcOpenShell/releases/latest"
+    url = "https://github.com/IfcOpenShell/IfcOpenShell/releases"
     resp = request_repo_info(url)
     text = str(resp.read())
     if blenderbim_date in text:
