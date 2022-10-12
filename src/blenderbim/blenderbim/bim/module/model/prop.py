@@ -86,6 +86,7 @@ def update_icon_id(self, context, browser=False):
 
 
 def update_ifc_class(self, context):
+    bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
     AuthoringData.data["relating_types_ids"] = AuthoringData.relating_types()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
 
