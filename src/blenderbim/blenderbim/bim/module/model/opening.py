@@ -181,19 +181,22 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         for obj in context.selected_objects:
-            if tool.Ifc.is_moved(obj):
-                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
             element = tool.Ifc.get_entity(obj)
             if not element or not element.FillsVoids:
                 continue
             openings = [r.RelatingOpeningElement for r in element.FillsVoids or []]
             building_elements = []
             for opening in openings:
+                building_elements.extend([r.RelatingBuildingElement for r in opening.VoidsElements or []])
+            for building_element in building_elements:
+                building_obj = tool.Ifc.get_object(building_element)
+                if tool.Ifc.is_moved(building_obj):
+                    blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=building_obj)
+            for opening in openings:
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
                 ifcopenshell.api.run(
                     "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=obj.matrix_world
                 )
-                building_elements.extend([r.RelatingBuildingElement for r in opening.VoidsElements or []])
             for building_element in building_elements:
                 building_obj = tool.Ifc.get_object(building_element)
                 body = ifcopenshell.util.representation.get_representation(
