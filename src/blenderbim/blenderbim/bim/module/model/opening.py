@@ -20,11 +20,13 @@ import bpy
 import gpu
 import bgl
 import bmesh
+import logging
 import blenderbim.bim.handler
 import ifcopenshell
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.core.geometry
+import blenderbim.bim.import_ifc as import_ifc
 from blenderbim.bim.ifc import IfcStore
 from math import pi
 from mathutils import Vector, Matrix
@@ -327,12 +329,17 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         representation = tool.Ifc.get().by_id(obj1.data.BIMMeshProperties.ifc_definition_id)
 
+        if not obj2.data or len(obj2.data.polygons) <= 4: # It takes 4 faces to create a closed solid
+            mesh_data = {"type": "IfcHalfSpaceSolid", "matrix": obj1.matrix_world.inverted() @ obj2.matrix_world}
+        elif obj2.data:
+            mesh_data = {"type": "Mesh", "blender_obj": obj1, "blender_void": obj2}
+
         ifcopenshell.api.run(
             "geometry.add_boolean",
             tool.Ifc.get(),
             representation=representation,
             operator="DIFFERENCE",
-            matrix=obj1.matrix_world.inverted() @ obj2.matrix_world,
+            **mesh_data
         )
 
         tool.Model.clear_scene_openings()
@@ -369,15 +376,42 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
         booleans = []
         for item in representation.Items:
             booleans.extend(self.get_booleans(item))
+
+        props = bpy.context.scene.BIMModelProperties
+        tool.Model.clear_scene_openings()
+
         for boolean in booleans:
+            boolean_obj = None
+
             if boolean.is_a() == "IfcHalfSpaceSolid":
                 if boolean.BaseSurface.is_a("IfcPlane"):
                     boolean_obj = self.create_half_space_solid()
                     position = boolean.BaseSurface.Position
                     position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
                     boolean_obj.matrix_world = obj.matrix_world @ position
-                    boolean_obj.data.BIMMeshProperties.ifc_boolean_id = boolean.id()
-                    boolean_obj.data.BIMMeshProperties.obj = obj
+            else:
+                settings = ifcopenshell.geom.settings()
+                logger = logging.getLogger("ImportIFC")
+                ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
+                shape = ifcopenshell.geom.create_shape(settings, boolean)
+                if shape:
+                    ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+                    ifc_importer.file = tool.Ifc.get()
+                    mesh = ifc_importer.create_mesh(boolean, shape)
+                else:
+                    mesh = None
+                boolean_obj = object_data_add(bpy.context, mesh, operator=self)
+                boolean_obj.name = "BooleanMesh"
+                boolean_obj.matrix_world = obj.matrix_world
+
+            if boolean_obj:
+                boolean_obj.data.BIMMeshProperties.ifc_boolean_id = boolean.id()
+                boolean_obj.data.BIMMeshProperties.obj = obj
+                new = props.openings.add()
+                new.obj = boolean_obj
+
+        if booleans:
+            DecorationsHandler.install(bpy.context)
         return {"FINISHED"}
 
     def get_booleans(self, item):
@@ -388,7 +422,6 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
         return results
 
     def create_half_space_solid(self):
-        props = bpy.context.scene.BIMModelProperties
         bm = bmesh.new()
         bmesh.ops.create_grid(bm, size=0.5)
         bm.verts.ensure_lookup_table()
@@ -399,13 +432,6 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
         bm.free()
         obj = object_data_add(bpy.context, mesh, operator=self)
         obj.name = "HalfSpaceSolid"
-
-        tool.Model.clear_scene_openings()
-
-        new = props.openings.add()
-        new.obj = obj
-
-        DecorationsHandler.install(bpy.context)
         return obj
 
 

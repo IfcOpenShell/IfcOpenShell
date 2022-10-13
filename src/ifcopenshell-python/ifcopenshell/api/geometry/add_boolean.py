@@ -25,8 +25,14 @@ class Usecase:
         self.settings = {
             "representation": None,
             "operator": "DIFFERENCE",
+            # IfcHalfSpaceSolid, Mesh
+            "type": "IfcHalfSpaceSolid",
             # The XY plane is the clipping boundary and +Z is removed.
-            "matrix": None,  # A matrix to define a clipping half space solid.
+            "matrix": None,  # A matrix to define a clipping Ifchalfspacesolid.
+            "blender_obj": None,  # A Blender OBJ to define the voided OBJ for a "Mesh" type
+            "blender_void": None,  # A Blender OBJ to define the void OBJ for a "Mesh" type
+            "should_force_faceted_brep": False,
+            "should_force_triangulation": False,
         }
         for key, value in settings.items():
             self.settings[key] = value
@@ -34,7 +40,11 @@ class Usecase:
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         self.settings["representation"].RepresentationType = "Clipping"
-        result = self.create_half_space_solid()
+        if self.settings["type"] == "IfcHalfSpaceSolid":
+            result = self.create_half_space_solid()
+        elif self.settings["type"] == "Mesh":
+            if self.settings["blender_obj"]:
+                result = self.create_blender_mesh()
         items = []
         for item in self.settings["representation"].Items:
             items.append(self.file.createIfcBooleanResult(self.settings["operator"], item, result))
@@ -57,6 +67,64 @@ class Usecase:
                 )
             ),
             False,
+        )
+
+    def create_blender_mesh(self):
+        self.ifc_vertices = []
+        if self.file.schema == "IFC2X3" or self.settings["should_force_faceted_brep"]:
+            return self.create_faceted_brep()
+        if self.settings["should_force_triangulation"]:
+            return self.create_triangulated_face_set()
+        return self.create_polygonal_face_set()
+
+    def create_faceted_brep(self):
+        self.create_vertices()
+        faces = []
+        for polygon in self.settings["blender_void"].data.polygons:
+            faces.append(
+                self.file.createIfcFace(
+                    [
+                        self.file.createIfcFaceOuterBound(
+                            self.file.createIfcPolyLoop([self.ifc_vertices[vertice] for vertice in polygon.vertices]),
+                            True,
+                        )
+                    ]
+                )
+            )
+        # TODO: May not actually be a closed shell, but who checks anyway?
+        return self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(faces))
+
+    def create_triangulated_face_set(self):
+        faces = []
+        for polygon in self.settings["blender_void"].data.polygons:
+            faces.append([v + 1 for v in polygon.vertices])
+
+        mat1 = self.settings["blender_void"].matrix_world
+        mat2 = self.settings["blender_obj"].matrix_world.inverted()
+        coordinates = self.file.createIfcCartesianPointList3D(
+            [self.convert_si_to_unit(mat2 @ mat1 @ v.co) for v in self.settings["blender_void"].data.vertices]
+        )
+        return self.file.createIfcTriangulatedFaceSet(coordinates, None, None, faces)
+
+    def create_polygonal_face_set(self):
+        faces = []
+        for polygon in self.settings["blender_void"].data.polygons:
+            faces.append(self.file.createIfcIndexedPolygonalFace([v + 1 for v in polygon.vertices]))
+        mat1 = self.settings["blender_void"].matrix_world
+        mat2 = self.settings["blender_obj"].matrix_world.inverted()
+        coordinates = self.file.createIfcCartesianPointList3D(
+            [self.convert_si_to_unit(mat2 @ mat1 @ v.co) for v in self.settings["blender_void"].data.vertices]
+        )
+        return self.file.createIfcPolygonalFaceSet(coordinates, None, faces)
+
+    def create_vertices(self):
+        mat1 = self.settings["blender_void"].matrix_world
+        mat2 = self.settings["blender_obj"].matrix_world.inverted()
+        self.ifc_vertices.extend(
+            [
+                self.file.createIfcCartesianPoint(self.convert_si_to_unit(mat2 @ mat1 @ v.co))
+                for v in self.settings["blender_void"].data.vertices
+            ]
         )
 
     def convert_si_to_unit(self, co):

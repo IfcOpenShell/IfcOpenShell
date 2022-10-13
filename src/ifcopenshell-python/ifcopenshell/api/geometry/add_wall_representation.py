@@ -31,6 +31,7 @@ class Usecase:
             # Planes are defined as a matrix. The XY plane is the clipping boundary and +Z is removed.
             # [{"type": "IfcBooleanClippingResult", "operand_type": "IfcHalfSpaceSolid", "matrix": [...]}, {...}]
             "clippings": [],  # A list of planes that define clipping half space solids
+            "booleans": [], # Any existing IfcBooleanResults
         }
         for key, value in settings.items():
             self.settings[key] = value
@@ -40,7 +41,7 @@ class Usecase:
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
-            "Clipping" if self.settings["clippings"] else "SweptSolid",
+            "Clipping" if self.settings["clippings"] or self.settings["booleans"] else "SweptSolid",
             [self.create_item()],
         )
 
@@ -68,9 +69,18 @@ class Usecase:
             self.file.createIfcDirection((0.0, 0.0, 1.0)),
             self.convert_si_to_unit(self.settings["height"]),
         )
+        if self.settings["booleans"]:
+            extrusion = self.apply_booleans(extrusion)
         if self.settings["clippings"]:
-            return self.apply_clippings(extrusion)
+            extrusion = self.apply_clippings(extrusion)
         return extrusion
+
+    def apply_booleans(self, first_operand):
+        while self.settings["booleans"]:
+            boolean = self.settings["booleans"].pop()
+            boolean.FirstOperand = first_operand
+            first_operand = boolean
+        return first_operand
 
     def apply_clippings(self, first_operand):
         while self.settings["clippings"]:

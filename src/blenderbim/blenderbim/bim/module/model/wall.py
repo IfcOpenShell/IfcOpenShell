@@ -971,8 +971,6 @@ class DumbWallJoiner:
             if clipping["operand_type"] == "IfcHalfSpaceSolid":
                 clipping["matrix"] = new_matrix @ clipping["matrix"]
 
-        self.clippings.extend(tool.Model.get_manual_booleans(element))
-
         length = (self.body[1] - self.body[0]).length
 
         if self.axis_context:
@@ -1001,6 +999,7 @@ class DumbWallJoiner:
             offset=layers["offset"],
             thickness=layers["thickness"],
             clippings=self.clippings,
+            booleans=tool.Model.get_manual_booleans(element),
         )
 
         old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
