@@ -102,24 +102,38 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 			// The exterior face boundary is processed first
 			if (is_interior == !process_interior) continue;
 
+			TopTools_ListOfShape wires;
 			TopoDS_Wire wire;
 			if (faceset_helper_ && loop->as<IfcSchema::IfcPolyLoop>()) {
-				if (!faceset_helper_->wire(loop->as<IfcSchema::IfcPolyLoop>(), wire)) {
+				if (!faceset_helper_->wires(loop->as<IfcSchema::IfcPolyLoop>(), wires)) {
 					Logger::Message(Logger::LOG_WARNING, "Face boundary loop not included", loop);
 					continue;
 				}
-			} else if (!convert_wire(loop, wire)) {
-				Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop);
-				return false;
+			} else {
+				if (convert_wire(loop, wire)) {
+					wires.Append(wire);
+				} else {
+					Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop);
+					return false;
+				}
 			}
 
-			if (!same_sense) {
-				wire.Reverse();
+			if (wires.Size() > 1) {
+				Logger::Message(Logger::LOG_WARNING, "Face loop definition results in " + std::to_string(wires.Size()) + " loops", loop);
+				if (!is_interior) {
+					fd.all_outer() = true;
+				}
 			}
 
-			wire_senses.Bind(wire.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
+			for (auto& wire : wires) {
+				if (!same_sense) {
+					wire.Reverse();
+				}
 
-			fd.wires().emplace_back(wire);
+				wire_senses.Bind(wire.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
+
+				fd.wires().emplace_back(TopoDS::Wire(wire));
+			}
 		}
 	}
 
