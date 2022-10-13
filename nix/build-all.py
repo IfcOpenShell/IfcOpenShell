@@ -634,7 +634,7 @@ if "cgal" in targets:
     build_dependency(
         name=f"gmp-{GMP_VERSION}",
         mode="autoconf",
-        build_tool_args=["--disable-shared", "--with-pic"],
+        build_tool_args=[ENABLE_FLAG, DISABLE_FLAG, "--with-pic"],
         download_url="https://ftp.gnu.org/gnu/gmp/",
         download_name=f"gmp-{GMP_VERSION}.tar.bz2"
     )
@@ -642,7 +642,7 @@ if "cgal" in targets:
     build_dependency(
         name=f"mpfr-{MPFR_VERSION}",
         mode="autoconf",
-        build_tool_args=["--disable-shared", f"--with-gmp={DEPS_DIR}/install/gmp-{GMP_VERSION}"],
+        build_tool_args=[ENABLE_FLAG, DISABLE_FLAG, f"--with-gmp={DEPS_DIR}/install/gmp-{GMP_VERSION}"],
         download_url=f"http://www.mpfr.org/mpfr-{MPFR_VERSION}/",
         download_name=f"mpfr-{MPFR_VERSION}.tar.bz2"
     )
@@ -651,9 +651,9 @@ if "cgal" in targets:
         name=f"cgal-{CGAL_VERSION}",
         mode="cmake",
         build_tool_args=[
-            f"-DGMP_LIBRARIES={DEPS_DIR}/install/gmp-{GMP_VERSION}/lib/libgmp.a",
+            f"-DGMP_LIBRARIES={DEPS_DIR}/install/gmp-{GMP_VERSION}/lib/libgmp.{LIBRARY_EXT}",
             f"-DGMP_INCLUDE_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
-            f"-DMPFR_LIBRARIES={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib/libmpfr.a" ,
+            f"-DMPFR_LIBRARIES={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib/libmpfr.{LIBRARY_EXT}" ,
             f"-DMPFR_INCLUDE_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
             f"-DBoost_INCLUDE_DIR={DEPS_DIR}/install/boost-{BOOST_VERSION}",
             f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/cgal-{CGAL_VERSION}/",
