@@ -262,27 +262,11 @@ class DumbSlabPlaner:
             return
         new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
         material = ifcopenshell.util.element.get_material(settings["related_object"])
-
-        relating_type = settings["relating_type"]
-        if hasattr(relating_type, "HasPropertySets"):
-            psets = relating_type.HasPropertySets
-            if psets is not None:
-                for pset in psets:
-                    if hasattr(pset, "HasProperties"):
-                        pset_props = pset.HasProperties
-                        if pset_props is not None:
-                            for prop in pset_props:
-                                if prop.Name == "LayerSetDirection":
-                                    if hasattr(prop, "NominalValue"):
-                                        nominal_value = prop.NominalValue
-                                        if hasattr(nominal_value, "wrappedValue"):
-                                            if nominal_value.wrappedValue == "AXIS2":
-                                                return
-
         if material and material.is_a("IfcMaterialLayerSetUsage") and material.LayerSetDirection == "AXIS3":
             self.change_thickness(settings["related_object"], new_thickness)
 
     def change_thickness(self, element, thickness):
+        body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         obj = IfcStore.get_element(element.id())
         if not obj:
             return
@@ -292,12 +276,34 @@ class DumbSlabPlaner:
             return
 
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if not representation:
-            return
-        extrusion = tool.Model.get_extrusion(representation)
-        if not extrusion:
-            return
-        extrusion.Depth = thickness
+        if representation:
+            extrusion = tool.Model.get_extrusion(representation)
+            if extrusion:
+                extrusion.Depth = thickness
+            else:
+                new_rep = ifcopenshell.api.run(
+                    "geometry.add_slab_representation", tool.Ifc.get(), context=body_context, depth=thickness
+                )
+                for inverse in tool.Ifc.get().get_inverse(representation):
+                    ifcopenshell.util.element.replace_attribute(inverse, representation, new_rep)
+                blenderbim.core.geometry.switch_representation(
+                            tool.Geometry,
+                            obj=obj,
+                            representation=new_rep,
+                            should_reload=True,
+                            enable_dynamic_voids=False,
+                            is_global=True,
+                            should_sync_changes_first=False,
+                        )
+                blenderbim.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
+                return
+        else:
+            representation = ifcopenshell.api.run(
+                "geometry.add_slab_representation", tool.Ifc.get(), context=body_context, depth=thickness
+            )
+            ifcopenshell.api.run(
+                "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
+            )
 
         blenderbim.core.geometry.switch_representation(
             tool.Geometry,

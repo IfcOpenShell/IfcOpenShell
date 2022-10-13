@@ -23,27 +23,7 @@ def assign_type(ifc, type_tool, element=None, type=None):
     ifc.run("type.assign_type", related_object=element, relating_type=type)
     obj = ifc.get_object(element)
     if type_tool.has_material_usage(element):
-        representation = type_tool.get_body_representation(element)
-        if representation:
-            body_context = type_tool.get_representation_context(representation)
-            ifc.run("geometry.unassign_representation", product=element, representation=representation)
-            ifc.run("geometry.remove_representation", representation=representation)
-        else:
-            body_context = type_tool.get_body_context()
-        representation = type_tool.run_geometry_add_representation(
-            obj=obj,
-            context=body_context,
-            ifc_representation_class=type_tool.get_ifc_representation_class(element),
-            profile_set_usage=type_tool.get_profile_set_usage(element),
-        )
-        if representation:
-            type_tool.run_geometry_switch_representation(
-                obj=obj,
-                representation=representation,
-                should_reload=True,
-                enable_dynamic_voids=type_tool.has_dynamic_voids(obj),
-                is_global=False,
-            )
+        pass # for now, representation regeneration handled by API listeners
     else:
         type_data = type_tool.get_object_data(ifc.get_object(type))
         if type_data:
