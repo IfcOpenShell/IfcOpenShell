@@ -70,7 +70,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& resu
 	result = w.Wire();
 
 	TopTools_ListOfShape results;
-	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) == 0. && util::wire_intersections(result, results, get_wire_intersection_tolerance(result), getValue(GV_PRECISION))) {
+	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0. && util::wire_intersections(result, results, get_wire_intersection_tolerance(result), getValue(GV_PRECISION))) {
 		Logger::Error("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", l);
 		util::select_largest(results, result);
 	}
