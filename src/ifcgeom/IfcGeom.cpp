@@ -905,7 +905,7 @@ bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& w, TopoDS_Face& fa
 
 	TopTools_ListOfShape results;
 
-	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) == 0. && util::wire_intersections(wire, results, get_wire_intersection_tolerance(wire), getValue(GV_PRECISION))) {
+	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0. && util::wire_intersections(wire, results, get_wire_intersection_tolerance(wire), getValue(GV_PRECISION))) {
 		Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 		util::select_largest(results, wire);
 	}
@@ -962,7 +962,7 @@ bool IfcGeom::Kernel::convert_wire_to_faces(const TopoDS_Wire& w, TopoDS_Compoun
 	}
 
 	TopTools_ListOfShape results;
-	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) == 0. && util::wire_intersections(w, results, get_wire_intersection_tolerance(w), getValue(GV_PRECISION))) {
+	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0. && util::wire_intersections(w, results, get_wire_intersection_tolerance(w), getValue(GV_PRECISION))) {
 		Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 	} else {
 		results.Clear();
