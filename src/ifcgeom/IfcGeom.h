@@ -150,7 +150,8 @@ private:
 		
 		bool edge(int A, int B, TopoDS_Edge& e);
 
-		bool wire(const LP& loop, TopoDS_Wire& wire);		
+		bool wire(const LP& loop, TopoDS_Wire& wire);
+		bool wires(const LP& loop, TopTools_ListOfShape& wires);
 	};
 
 	double deflection_tolerance;
