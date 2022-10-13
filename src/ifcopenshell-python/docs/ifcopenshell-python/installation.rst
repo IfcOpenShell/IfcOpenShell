@@ -81,7 +81,7 @@ PyPI
 
 .. code-block::
 
-    pip install ifcopenshell-python
+    pip install ifcopenshell
 
 Conda
 -----
