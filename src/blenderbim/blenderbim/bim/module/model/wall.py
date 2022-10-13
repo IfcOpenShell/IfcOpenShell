@@ -678,23 +678,6 @@ class DumbWallPlaner:
         if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
             return
         material = ifcopenshell.util.element.get_material(settings["related_object"])
-
-        relating_type = settings["relating_type"]
-        if hasattr(relating_type, "HasPropertySets"):
-            psets = relating_type.HasPropertySets
-            if psets is not None:
-                for pset in psets:
-                    if hasattr(pset, "HasProperties"):
-                        pset_props = pset.HasProperties
-                        if pset_props is not None:
-                            for prop in pset_props:
-                                if prop.Name == "LayerSetDirection":
-                                    if hasattr(prop, "NominalValue"):
-                                        nominal_value = prop.NominalValue
-                                        if hasattr(nominal_value, "wrappedValue"):
-                                            if nominal_value.wrappedValue == "AXIS3":
-                                                return
-
         if material and material.is_a("IfcMaterialLayerSetUsage") and material.LayerSetDirection == "AXIS2":
             DumbWallRecalculator().recalculate([obj])
 
