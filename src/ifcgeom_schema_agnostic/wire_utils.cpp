@@ -7,6 +7,7 @@
 #include <TopExp.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Iterator.hxx>
+#include <ShapeFix_Wire.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepTools_WireExplorer.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
@@ -496,11 +497,15 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfS
 							}
 						}
 
+						ShapeFix_Wire sfw;
+						sfw.Load(mw.Wire());
+						sfw.Perform();
+
 						// Recursively process both cuts
 
 						// @todo this is a change in behaviour with eps precomputed from the kernel
 						// instead of adaptively calculated for the successive iterations.
-						wire_intersections(mw.Wire(), wires, eps, eps_real);
+						wire_intersections(sfw.Wire(), wires, eps, eps_real);
 					}
 
 					return true;
