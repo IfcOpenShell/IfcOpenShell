@@ -23,6 +23,7 @@ import urllib.parse
 from markdown import markdown
 from bs4 import BeautifulSoup
 from pprint import pprint
+import requests
 
 DOCS_LOCATION = 'Ifc2.3.0.1'
 
@@ -36,9 +37,32 @@ class DocExtractor:
                 'For doc extraction please either setup docs as described above \n'
                 'or change DOCS_LOCATION in doc.py accordingly.'
             )
+
+        # need to parse actual domains from the website
+        # since domains from github paths do not match domains from the websites
+        # probably due domains on the website being from 4_0
+        # example (property set / github domain / website domain):
+        # Pset_AirTerminalBoxPHistory IfcControlExtension IfcHvacDomain
+        self.extract_ifc2x3_property_sets_domains()
         self.extract_ifc2x3_entities()
         self.extract_ifc2x3_property_sets()
     
+    def extract_ifc2x3_property_sets_domains(self):
+        property_sets_domains = dict()
+        r = requests.get('https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/psd_index.htm')
+        html = BeautifulSoup(r.content, features='lxml')
+        for a in html.find_all('a'):
+            domain, pset = a['href'].removeprefix('./').removesuffix('.xml').split('/')
+            property_sets_domains[pset] = domain
+
+        # export property sets data
+        with open('schema/ifc2x3_property_sets_domains.json', 'w', encoding='utf-8') as fo:
+            print(f'{len(property_sets_domains)} property sets domains were parsed from the website')
+            json.dump(
+                property_sets_domains, fo,
+                sort_keys=True, indent=4
+            )
+
     def extract_ifc2x3_entities(self):
         entities_dict = dict()
 
@@ -53,6 +77,8 @@ class DocExtractor:
                 # utf-8-sig because of \ufeff occcurs - meaning it's utf bom encoded
                 md_path = entity_path / 'Documentation.md'
                 xml_path = entity_path / 'DocEntity.xml'
+                github_md_url = f'https://github.com/buildingSMART/IFC/blob/{urllib.parse.quote(str(md_path.as_posix()))}'
+
                 with open(md_path, 'r', encoding='utf-8-sig') as fi:
                     # convert markdown to html for easier parsing
                     html = markdown(fi.read())
@@ -74,9 +100,9 @@ class DocExtractor:
                         entities_dict[entity_name]['attributes'] = entity_attrs
 
                 entities_dict[entity_name]['description'] = description
-                # kept url for a quick way to check the original description
-                github_md_url = f'https://github.com/buildingSMART/IFC/blob/{urllib.parse.quote(str(md_path.as_posix()))}'
-                entities_dict[entity_name]['url'] = github_md_url
+                spec_url = 'https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/' \
+                        f'{md_path.parents[2].name.lower()}/lexical/{entity_name.lower()}.htm'
+                entities_dict[entity_name]['spec_url'] = spec_url
 
         # export entities data
         with open('schema/ifc2x3_entities.json', 'w', encoding='utf-8') as fo:
@@ -89,9 +115,15 @@ class DocExtractor:
     def extract_ifc2x3_property_sets(self):
         property_sets_dict = dict()
         property_sets_references = dict()
+        property_sets_spec_urls = dict()
 
         # extract lists of properties and theirs references for each property set
         parsed_paths = [filepath for filepath in glob.iglob(f'{DOCS_LOCATION}/Sections/**/PropertySets', recursive=True)]
+
+        # prepare property sets domains from the website we extracted earlier
+        with open('schema/ifc2x3_property_sets_domains.json', 'r') as fi:
+            property_sets_site_domains = json.load(fi)
+
         for parse_folder_path in parsed_paths:
             for property_set_path in glob.iglob(f'{parse_folder_path}/**/'):
                 property_set_path = Path(property_set_path)
@@ -106,6 +138,9 @@ class DocExtractor:
                         property_references.append(html_attr['href'])
 
                 property_sets_references[property_set_name] = property_references
+                property_set_domain = property_sets_site_domains[property_set_name]
+                spec_url = f'https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/{property_set_domain}/{property_set_name}.xml'
+                property_sets_spec_urls[property_set_name] = spec_url
 
         # setup references look up tables to convert property hrefs to actual data paths
         references_paths_lookup = dict()
@@ -163,18 +198,20 @@ class DocExtractor:
                     description = BeautifulSoup(html, features="lxml").find('p').text
                     description = description.replace('\n', ' ')
                     description = description.replace('\u00a0', ' ')
-
-
             property_dict['description'] = description
             return (property_name, property_dict)
 
             
         # lookup each property reference and save it's name and description
         for property_set_name in property_sets_references:
-            property_sets_dict[property_set_name] = dict()
+            properties_dict = dict()
             for property_reference in property_sets_references[property_set_name]:
                 property_name, property_dict = get_property_info_by_href(property_reference)
-                property_sets_dict[property_set_name][property_name] = property_dict
+                properties_dict[property_name] = property_dict
+            property_sets_dict[property_set_name] = {
+                'properties': properties_dict,
+                'spec_url': property_sets_spec_urls[property_set_name]
+            }
 
 
         # export property sets data
