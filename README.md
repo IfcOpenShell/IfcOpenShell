@@ -13,7 +13,7 @@ For more information, see
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | Anaconda Daily Build                            | [![Anaconda-Server Badge](https://img.shields.io/conda/vn/ifcopenshell/ifcopenshell)](https://anaconda.org/ifcopenshell/ifcopenshell)        |
 | Anaconda v0.7.0 Stable                          | [![Anaconda-Server Badge](https://img.shields.io/conda/vn/conda-forge/ifcopenshell)](https://anaconda.org/conda-forge/ifcopenshell)          |
-| PyPi Daily Build                                | [![PyPi Badge](https://img.shields.io/pypi/v/ifcopenshell-python)](https://pypi.org/project/ifcopenshell-python/)                            |
+| PyPi Daily Build                                | [![PyPi Badge](https://img.shields.io/pypi/v/ifcopenshell)](https://pypi.org/project/ifcopenshell/)                                          |
 | ArchLinux AUR Package                           | [![AUR Badge](https://img.shields.io/aur/version/ifcopenshell-git)](https://aur.archlinux.org/packages/ifcopenshell-git)                     |
 | BlenderBIM Add-on Chocolatey (under moderation) | [![Chocolatey Badge](https://img.shields.io/chocolatey/v/blenderbim-nightly)](https://community.chocolatey.org/packages/blenderbim-nightly/) |
 | Sponsor development on OpenCollective           | [![Financial Contributors](https://opencollective.com/opensourcebim/tiers/badge.svg)](https://opencollective.com/opensourcebim/)             |

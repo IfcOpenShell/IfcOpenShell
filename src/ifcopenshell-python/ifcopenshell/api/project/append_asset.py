@@ -66,14 +66,7 @@ class Usecase:
             for e in self.file.traverse(element.HasRepresentation[0])
             if e.is_a("IfcGeometricRepresentationContext")
         ]
-        for added_context in added_contexts:
-            equivalent_existing_context = self.get_equivalent_existing_context(added_context)
-            if not equivalent_existing_context:
-                equivalent_existing_context = self.create_equivalent_context(added_context)
-            for inverse in self.file.get_inverse(added_context):
-                ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
-        for added_context in added_contexts:
-            ifcopenshell.util.element.remove_deep(self.file, added_context)
+        self.reuse_existing_contexts(added_contexts)
         return element
 
     def append_cost_schedule(self):
@@ -101,14 +94,7 @@ class Usecase:
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
         added_contexts = [e for e in self.file.traverse(element) if e.is_a("IfcGeometricRepresentationContext")]
-        for added_context in added_contexts:
-            equivalent_existing_context = self.get_equivalent_existing_context(added_context)
-            if not equivalent_existing_context:
-                equivalent_existing_context = self.create_equivalent_context(added_context)
-            for inverse in self.file.get_inverse(added_context):
-                ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
-        for added_context in added_contexts:
-            ifcopenshell.util.element.remove_deep(self.file, added_context)
+        self.reuse_existing_contexts(added_contexts)
         return element
 
     def append_product(self):
@@ -125,14 +111,7 @@ class Usecase:
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
         added_contexts = [e for e in self.file.traverse(element) if e.is_a("IfcGeometricRepresentationContext")]
-        for added_context in added_contexts:
-            equivalent_existing_context = self.get_equivalent_existing_context(added_context)
-            if not equivalent_existing_context:
-                equivalent_existing_context = self.create_equivalent_context(added_context)
-            for inverse in self.file.get_inverse(added_context):
-                ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
-        for added_context in added_contexts:
-            ifcopenshell.util.element.remove_deep2(self.file, added_context)
+        self.reuse_existing_contexts(added_contexts)
 
         element_type = ifcopenshell.util.element.get_type(self.settings["element"])
         if element_type:
@@ -158,8 +137,8 @@ class Usecase:
             return self.added_elements[element.id()]
         new = self.file.add(element)
         self.added_elements[element.id()] = new
-        self.check_inverses(element)
         for subelement in self.settings["library"].traverse(element):
+            self.added_elements[subelement.id()] = self.file.add(subelement)
             self.check_inverses(subelement)
         return new
 
@@ -206,6 +185,16 @@ class Usecase:
         elif element.is_a(self.target_class):
             return True
         return False
+
+    def reuse_existing_contexts(self, added_contexts):
+        for added_context in added_contexts:
+            equivalent_existing_context = self.get_equivalent_existing_context(added_context)
+            if not equivalent_existing_context:
+                equivalent_existing_context = self.create_equivalent_context(added_context)
+            for inverse in self.file.get_inverse(added_context):
+                ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
+        for added_context in added_contexts:
+            ifcopenshell.util.element.remove_deep2(self.file, added_context)
 
     def get_equivalent_existing_context(self, added_context):
         for context in self.existing_contexts:

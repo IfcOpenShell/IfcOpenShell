@@ -38,6 +38,12 @@ from bpy_extras.object_utils import AddObjectHelper
 from . import prop
 
 
+def select_and_activate_single_object(context, obj):
+    bpy.ops.object.select_all(action="DESELECT")
+    context.view_layer.objects.active = obj
+    obj.select_set(True)
+
+
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
     bl_idname = "bim.add_empty_type"
     bl_label = "Add Empty Type"
@@ -47,9 +53,7 @@ class AddEmptyType(bpy.types.Operator, AddObjectHelper):
         obj = bpy.data.objects.new("TYPEX", None)
         context.scene.collection.objects.link(obj)
         context.scene.BIMRootProperties.ifc_product = "IfcElementType"
-        bpy.ops.object.select_all(action="DESELECT")
-        context.view_layer.objects.active = obj
-        obj.select_set(True)
+        select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
 
@@ -95,6 +99,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 return {"FINISHED"}
         elif material and material.is_a("IfcMaterialLayerSet"):
             if self.generate_layered_element(ifc_class, relating_type, link_to_scene=self.link_to_scene):
+                select_and_activate_single_object(context, context.selected_objects[-1])
                 return {"FINISHED"}
         if relating_type.is_a("IfcFlowSegmentType") and not relating_type.RepresentationMaps:
             if mep.MepGenerator(relating_type).generate(link_to_scene=self.link_to_scene):
@@ -138,7 +143,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
         blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
         if self.link_to_scene:
             # Update required as core.type.assign_type may change obj.data
-            bpy.context.view_layer.update()
+            context.view_layer.update()
 
         if (
             building_obj
@@ -147,9 +152,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
         ):
             if instance_class in ["IfcWindow", "IfcDoor"]:
                 # TODO For now we are hardcoding windows and doors as a prototype
-                bpy.ops.bim.add_element_opening(
-                    voided_building_element=building_obj.name, filling_building_element=obj.name
-                )
+                bpy.ops.bim.add_filled_opening(voided_obj=building_obj.name, filling_obj=obj.name)
         elif self.link_to_scene:
             if collection_obj and collection_obj.BIMObjectProperties.ifc_definition_id:
                 obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])
@@ -165,9 +168,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
             tool.Ifc.run("system.assign_port", element=element, port=new_port)
             tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
 
-        bpy.ops.object.select_all(action="DESELECT")
-        obj.select_set(True)
-        context.view_layer.objects.active = obj
+        select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
     @staticmethod
@@ -191,6 +192,17 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 return True
         else:
             pass  # Dumb block generator? Eh? :)
+
+
+class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.change_type_page"
+    bl_label = "Change Type Page"
+    bl_options = {"REGISTER"}
+    page: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        context.scene.BIMModelProperties.type_page = self.page
+        return {"FINISHED"}
 
 
 class DisplayConstrTypes(bpy.types.Operator):
@@ -241,7 +253,7 @@ class ReinvokeOperator(bpy.types.Operator):
             window.cursor_warp(cursor_x, cursor_y)
 
         bpy.app.timers.register(move_cursor_to_window, first_interval=browser_state.update_delay)
-        bpy.app.timers.register(reinvoke, first_interval=3*browser_state.update_delay)
+        bpy.app.timers.register(reinvoke, first_interval=3 * browser_state.update_delay)
         return {"FINISHED"}
 
     def move_cursor_away(self, context, window):  # closes current popup
@@ -335,6 +347,123 @@ class DynamicallyVoidProduct(bpy.types.Operator):
         )
         if was_edit_mode:
             bpy.ops.object.mode_set(mode="EDIT")
+        return {"FINISHED"}
+
+
+class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.load_type_thumbnails"
+    bl_label = "Load Type Thumbnails"
+    bl_options = {"REGISTER", "UNDO"}
+    ifc_class: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        from PIL import Image, ImageDraw
+
+        processing = set()
+        # Only process at most one class at a time.
+        # Large projects have hundreds of types which can lead to unnecessary lag.
+        queue = tool.Ifc.get().by_type(self.ifc_class)
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        while queue:
+            # if bpy.app.is_job_running("RENDER_PREVIEW") does not seem to reflect asset preview generation
+            element = queue.pop()
+            obj = tool.Ifc.get_object(element)
+
+            if not obj:
+                continue  # Nothing to process
+            elif AuthoringData.type_thumbnails.get(element.id(), None):
+                continue  # Already processed
+            elif obj.preview and obj.preview.icon_id:
+                AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
+                continue
+
+            if obj.data:
+                obj.asset_generate_preview()
+                while not obj.preview:
+                    pass
+            else:
+                size = 128
+                img = Image.new("RGBA", (size, size))
+                draw = ImageDraw.Draw(img)
+
+                material = ifcopenshell.util.element.get_material(element)
+                if material and material.is_a("IfcMaterialProfileSet"):
+                    profile = material.MaterialProfiles[0].Profile
+                    settings = ifcopenshell.geom.settings()
+                    settings.set(settings.INCLUDE_CURVES, True)
+                    shape = ifcopenshell.geom.create_shape(settings, profile)
+                    verts = shape.verts
+                    edges = shape.edges
+                    grouped_verts = [[verts[i], verts[i + 1]] for i in range(0, len(verts), 3)]
+                    grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
+
+                    max_x = max([v[0] for v in grouped_verts])
+                    min_x = min([v[0] for v in grouped_verts])
+                    max_y = max([v[1] for v in grouped_verts])
+                    min_y = min([v[1] for v in grouped_verts])
+
+                    dim_x = max_x - min_x
+                    dim_y = max_y - min_y
+                    max_dim = max([dim_x, dim_y])
+                    scale = 100 / max_dim
+
+                    for vert in grouped_verts:
+                        vert[0] = round(scale * (vert[0] - min_x)) + ((size / 2) - scale * (dim_x / 2))
+                        vert[1] = round(scale * (vert[1] - min_y)) + ((size / 2) - scale * (dim_y / 2))
+
+                    for e in grouped_edges:
+                        draw.line((tuple(grouped_verts[e[0]]), tuple(grouped_verts[e[1]])), fill="white", width=2)
+                elif material and material.is_a("IfcMaterialLayerSet"):
+                    thicknesses = [l.LayerThickness for l in material.MaterialLayers]
+                    total_thickness = sum(thicknesses)
+                    si_total_thickness = total_thickness * unit_scale
+                    if si_total_thickness <= 0.051:
+                        width = 10
+                    elif si_total_thickness <= 0.11:
+                        width = 20
+                    elif si_total_thickness <= 0.21:
+                        width = 30
+                    elif si_total_thickness <= 0.31:
+                        width = 40
+                    else:
+                        width = 50
+
+                    height = 100
+
+                    if element.is_a("IfcSlabType"):
+                        width, height = height, width
+
+                    x_offset = (size / 2) - (width / 2)
+                    y_offset = (size / 2) - (height / 2)
+                    draw.rectangle([x_offset, y_offset, width + x_offset, height + y_offset], outline="white", width=2)
+                    current_thickness = 0
+                    del thicknesses[-1]
+                    for thickness in thicknesses:
+                        current_thickness += thickness
+                        if element.is_a("IfcSlabType"):
+                            y = (current_thickness / total_thickness) * height
+                            line = [x_offset, y_offset + y, x_offset + width, y_offset + y]
+                        else:
+                            x = (current_thickness / total_thickness) * width
+                            line = [x_offset + x, y_offset, x_offset + x, y_offset + height]
+                        draw.line(line, fill="white", width=2)
+                else:
+                    # For things like parametric duct segments
+                    draw.line([0, 0, size, size], fill="red", width=2)
+                    draw.line([0, size, size, 0], fill="red", width=2)
+
+                pixels = [item for sublist in img.getdata() for item in sublist]
+
+                obj.asset_generate_preview()
+                while not obj.preview:
+                    pass
+
+                obj.preview.image_size = size, size
+                obj.preview.image_pixels_float = pixels
+
+            queue.append(element)
         return {"FINISHED"}
 
 

@@ -24,6 +24,7 @@ import math
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 import blenderbim.tool as tool
+import ifcopenshell
 
 
 class QtoCalculator:
@@ -48,8 +49,10 @@ class QtoCalculator:
             return self.get_side_area(obj)
         elif "area" in prop_name:
             return self.get_total_surface_area(obj)
-        elif "volume" in prop_name:
-            return self.get_volume(obj)
+        elif "volume" in prop_name and "gross" in prop_name:
+            return self.get_gross_volume(obj)
+        elif "volume" in prop_name :
+            return self.get_net_volume(obj)
 
     def get_units(self, o, vg_index):
         return len([v for v in o.data.vertices if vg_index in [g.group for g in v.groups]])
@@ -205,12 +208,55 @@ class QtoCalculator:
                 return False
         return True
 
-    def get_volume(self, o):
+    def get_net_volume(self, o):
         o_mesh = bmesh.new()
         o_mesh.from_mesh(o.data)
         return o_mesh.calc_volume()
 
-        # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
+    def get_gross_volume(self, o):
+        element = tool.Ifc.get_entity(o)
+        if not element:
+            print(f"Object {o.name} hasn't an IFC instance so gross volume is equal to net volume")
+            return self.get_net_volume
+
+        settings = ifcopenshell.geom.settings()
+        settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+        shape = ifcopenshell.geom.create_shape(settings, element)
+        faces = shape.geometry.faces
+        verts = shape.geometry.verts
+
+        mesh = bpy.data.meshes.new("myBeautifulMesh")
+
+        num_vertices = len(verts) // 3
+        total_faces = len(faces)
+        loop_start = range(0, total_faces, 3)
+        num_loops = total_faces // 3
+        loop_total = [3] * num_loops
+        num_vertex_indices = len(faces)
+
+        mesh.vertices.add(num_vertices)
+        mesh.vertices.foreach_set("co", verts)
+        mesh.loops.add(num_vertex_indices)
+        mesh.loops.foreach_set("vertex_index", faces)
+        mesh.polygons.add(num_loops)
+        mesh.polygons.foreach_set("loop_start", loop_start)
+        mesh.polygons.foreach_set("loop_total", loop_total)
+        mesh.update()
+
+        # An alternative to foreach is
+        # mesh.from_pydata(grouped_verts, edges, grouped_faces)
+        # look at import_ifc.py in blenderbim
+
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+
+        gross_volume = bm.calc_volume()
+
+        bm.free()
+
+        return gross_volume
+
+    # The following is @Moult's older code.  Keeping it here just in case the bmesh function is buggy. -vulevukusej
 
     # def get_volume(self, o, vg_index=None):
     # volume = 0

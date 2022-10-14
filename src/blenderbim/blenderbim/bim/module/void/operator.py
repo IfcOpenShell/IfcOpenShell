@@ -22,7 +22,6 @@ import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.core.geometry
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.api.void.data import Data
 
 
 class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
@@ -38,6 +37,15 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
         element1 = tool.Ifc.get_entity(obj1)
         element2 = tool.Ifc.get_entity(obj2)
         if type(element1) == type(element2):
+            if (
+                element1
+                and element2
+                and not element1.is_a("IfcOpeningElement")
+                and not element2.is_a("IfcOpeningElement")
+            ):
+                if element1.is_a("IfcWindow") or element1.is_a("IfcDoor"):
+                    obj1, obj2 = obj2, obj1
+                bpy.ops.bim.add_filled_opening(voided_obj=obj1.name, filling_obj=obj2.name)
             return {"FINISHED"}
         if element2 and not element1:
             obj1, obj2 = obj2, obj1
@@ -80,7 +88,6 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
             is_global=True,
             should_sync_changes_first=False,
         )
-        Data.load(tool.Ifc.get(), element1.id())
 
         if not has_visible_openings:
             tool.Ifc.unlink(obj=obj2)
@@ -119,7 +126,6 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
         )
 
         tool.Geometry.clear_cache(element)
-        Data.load(tool.Ifc.get(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -144,88 +150,38 @@ class AddFilling(bpy.types.Operator):
         if not element_id or not opening_id or element_id == opening_id:
             return {"FINISHED"}
         ifcopenshell.api.run(
-            "void.add_filling",
-            self.file,
-            **{
-                "opening": self.file.by_id(opening_id),
-                "element": self.file.by_id(element_id),
-            },
+            "void.add_filling", self.file, opening=self.file.by_id(opening_id), element=self.file.by_id(element_id)
         )
-        Data.load(self.file, element_id)
         return {"FINISHED"}
 
 
-class RemoveFilling(bpy.types.Operator):
+class RemoveFilling(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_filling"
     bl_label = "Remove Filling"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    filling: bpy.props.IntProperty()
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        if not obj:
-            return {"FINISHED"}
-        self.file = IfcStore.get_file()
-        element_id = obj.BIMObjectProperties.ifc_definition_id
-        if not element_id:
-            return {"FINISHED"}
-        ifcopenshell.api.run("void.remove_filling", self.file, **{"element": self.file.by_id(element_id)})
-        Data.load(self.file, element_id)
+        filling = tool.Ifc.get().by_id(self.filling)
+        filling_obj = tool.Ifc.get_object(filling)
+        for rel in filling.FillsVoids:
+            bpy.ops.bim.remove_opening(opening_id=rel.RelatingOpeningElement.id())
+        ifcopenshell.api.run("void.remove_filling", tool.Ifc.get(), element=filling)
         return {"FINISHED"}
 
 
-class ToggleDecompositionParenting(bpy.types.Operator):
-    bl_idname = "bim.toggle_decomposition_parenting"
-    bl_label = "Toggle Decomposition Parenting"
+class SelectDecomposition(bpy.types.Operator):
+    bl_idname = "bim.select_decomposition"
+    bl_label = "Select Decomposition"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
-        is_parenting = None
-
-        self.decompositions = {}
-        self.load_decompositions(obj)
-
-        for parent, children in self.decompositions.items():
-            bpy.ops.bim.dynamically_void_product(obj=parent.name)
-            for child in children:
-                bpy.ops.bim.dynamically_void_product(obj=child.name)
-                if is_parenting is None:
-                    is_parenting = not bool(child.parent)
-
-                if is_parenting:
-                    child.parent = parent
-                    child.matrix_parent_inverse = parent.matrix_world.inverted()
-                else:
-                    parent_matrix_world = child.matrix_world.copy()
-                    child.parent = None
-                    child.matrix_world = parent_matrix_world
-
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            for subelement in ifcopenshell.util.element.get_decomposition(element):
+                subobj = tool.Ifc.get_object(subelement)
+                if subobj:
+                    subobj.select_set(True)
         return {"FINISHED"}
-
-    def load_decompositions(self, parent_obj):
-        element = self.file.by_id(parent_obj.BIMObjectProperties.ifc_definition_id)
-        for rel in self.file.get_inverse(element):
-            if rel.is_a("IfcRelDecomposes"):
-                if rel[4] != element:
-                    continue
-                if isinstance(rel[5], tuple):
-                    for related_object in rel[5]:
-                        self.add_decomposition(parent_obj, related_object)
-                else:
-                    self.add_decomposition(parent_obj, rel[5])
-            elif rel.is_a("IfcRelFillsElement"):
-                if rel.RelatingOpeningElement != element:
-                    continue
-                self.add_decomposition(parent_obj, rel.RelatedBuildingElement)
-
-    def add_decomposition(self, parent_obj, child_element):
-        child_obj = IfcStore.get_element(child_element.id())
-        if child_obj:
-            self.decompositions.setdefault(parent_obj, []).append(child_obj)
-            self.load_decompositions(child_obj)

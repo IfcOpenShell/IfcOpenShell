@@ -16,8 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import functools
 import bpy
+import math
+import functools
+import ifcopenshell
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.root import ConstrTypeEntityNotFound
@@ -29,19 +31,53 @@ def refresh():
 
 class AuthoringData:
     data = {}
+    type_thumbnails = {}
+    types_per_page = 9
     is_loaded = False
 
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        if not hasattr(cls, "data"):
-            cls.data = {}
         cls.props = bpy.context.scene.BIMModelProperties
         cls.load_ifc_classes()
         cls.load_relating_types()
         cls.load_relating_types_browser()
+        cls.data["type_class"] = cls.type_class()
+        cls.data["type_predefined_type"] = cls.type_predefined_type()
+        cls.data["total_types"] = cls.total_types()
+        cls.data["total_pages"] = cls.total_pages()
+        cls.data["next_page"] = cls.next_page()
+        cls.data["prev_page"] = cls.prev_page()
+        cls.data["paginated_relating_types"] = cls.paginated_relating_types()
+        cls.data["type_thumbnail"] = cls.type_thumbnail()
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
+        cls.data["active_class"] = cls.active_class()
+
+    @classmethod
+    def type_class(cls):
+        declaration = tool.Ifc.schema().declaration_by_name("IfcElementType")
+        declarations = ifcopenshell.util.schema.get_subtypes(declaration)
+        names = [d.name() for d in declarations]
+        names.extend(("IfcDoorStyle", "IfcWindowStyle"))
+        return [(c, c, "") for c in sorted(names)]
+
+    @classmethod
+    def type_predefined_type(cls):
+        results = []
+        declaration = tool.Ifc().schema().declaration_by_name(cls.props.type_class)
+        for attribute in declaration.attributes():
+            if attribute.name() == "PredefinedType":
+                results.extend([(e, e, "") for e in attribute.type_of_attribute().declared_type().enumeration_items()])
+                break
+        return results
+
+    @classmethod
+    def type_thumbnail(cls):
+        if not cls.props.relating_type_id:
+            return 0
+        element = tool.Ifc.get().by_id(int(cls.props.relating_type_id))
+        return cls.type_thumbnails.get(element.id(), None) or 0
 
     @classmethod
     def load_ifc_classes(cls):
@@ -56,6 +92,51 @@ class AuthoringData:
         cls.data["relating_types_ids_browser"] = cls.relating_types_browser()
 
     @classmethod
+    def total_types(cls):
+        type_class = cls.props.type_class
+        return len(tool.Ifc.get().by_type(type_class)) if type_class else 0
+
+    @classmethod
+    def total_pages(cls):
+        type_class = cls.props.type_class
+        total_types = len(tool.Ifc.get().by_type(type_class)) if type_class else 0
+        return math.ceil(total_types / cls.types_per_page)
+
+    @classmethod
+    def next_page(cls):
+        if cls.props.type_page < cls.total_pages():
+            return cls.props.type_page + 1
+
+    @classmethod
+    def prev_page(cls):
+        if cls.props.type_page > 1:
+            return cls.props.type_page - 1
+
+    @classmethod
+    def paginated_relating_types(cls):
+        type_class = cls.props.type_class
+        if not type_class:
+            return []
+        results = []
+        elements = sorted(tool.Ifc.get().by_type(type_class), key=lambda e: e.Name or "Unnamed")
+        elements = elements[(cls.props.type_page - 1) * cls.types_per_page : cls.props.type_page * cls.types_per_page]
+        for element in elements:
+            predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+            if predefined_type == "NOTDEFINED":
+                predefined_type = None
+            results.append(
+                {
+                    "id": element.id(),
+                    "ifc_class": element.is_a(),
+                    "name": element.Name or "Unnamed",
+                    "description": element.Description or "No Description",
+                    "predefined_type": predefined_type,
+                    "icon_id": cls.type_thumbnails.get(element.id(), None) or 0,
+                }
+            )
+        return results
+
+    @classmethod
     def is_voidable_element(cls):
         element = tool.Ifc.get_entity(bpy.context.active_object)
         return element and element.is_a("IfcElement") and not element.is_a("IfcOpeningElement")
@@ -68,6 +149,12 @@ class AuthoringData:
                 if tool.Ifc.get_object(opening):
                     return True
         return False
+
+    @classmethod
+    def active_class(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            return element.is_a()
 
     @classmethod
     def ifc_classes(cls):

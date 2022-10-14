@@ -20,11 +20,13 @@ import bpy
 import gpu
 import bgl
 import bmesh
+import logging
 import blenderbim.bim.handler
 import ifcopenshell
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.core.geometry
+import blenderbim.bim.import_ifc as import_ifc
 from blenderbim.bim.ifc import IfcStore
 from math import pi
 from mathutils import Vector, Matrix
@@ -36,33 +38,43 @@ from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertForma
 from gpu_extras.batch import batch_for_shader
 
 
-class AddElementOpening(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_element_opening"
-    bl_label = "Add Element Opening"
+class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_filled_opening"
+    bl_label = "Add Filled Opening"
     bl_options = {"REGISTER", "UNDO"}
-    voided_building_element: bpy.props.StringProperty()
-    filling_building_element: bpy.props.StringProperty()
+    voided_obj: bpy.props.StringProperty()
+    filling_obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        voided_obj = bpy.data.objects.get(self.voided_building_element)
-        filling_obj = bpy.data.objects.get(self.filling_building_element)
+        props = context.scene.BIMModelProperties
+
+        voided_obj = bpy.data.objects.get(self.voided_obj)
+        filling_obj = bpy.data.objects.get(self.filling_obj)
         filling = tool.Ifc.get_entity(filling_obj)
 
         if not voided_obj or not filling_obj:
             return {"FINISHED"}
 
         element = tool.Ifc.get_entity(voided_obj)
-        local_location = voided_obj.matrix_world.inverted() @ context.scene.cursor.location
-        raycast = voided_obj.closest_point_on_mesh(local_location, distance=0.01)
+        target = context.scene.cursor.location
+        raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
         if not raycast[0]:
-            return {"FINISHED"}
+            target = filling_obj.matrix_world.col[3].to_3d().copy()
+            raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
+            if not raycast[0]:
+                return {"FINISHED"}
+
+        axis = [voided_obj.matrix_world @ Vector((0, 0, 0)), voided_obj.matrix_world @ Vector((1, 0, 0))]
 
         # In this prototype, we assume openings are only added to axis-based elements
-        axis = [voided_obj.matrix_world @ Vector((0, 0, 0)), voided_obj.matrix_world @ Vector((1, 0, 0))]
         new_matrix = voided_obj.matrix_world.copy()
-        new_matrix.col[3] = tool.Cad.point_on_edge(context.scene.cursor.location, axis).to_4d()
-        if filling.is_a("IfcWindow"):
-            new_matrix[2][3] = context.scene.cursor.location[2]
+        new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
+        if not filling.is_a("IfcDoor"):
+            container = ifcopenshell.util.element.get_container(element)
+            if container:
+                container_obj = tool.Ifc.get_object(container)
+                if container_obj:
+                    new_matrix[2][3] = container_obj.matrix_world[2][3] + props.rl
         filling_obj.matrix_world = new_matrix
         bpy.context.view_layer.update()
 
@@ -171,19 +183,22 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         for obj in context.selected_objects:
-            if tool.Ifc.is_moved(obj):
-                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
             element = tool.Ifc.get_entity(obj)
             if not element or not element.FillsVoids:
                 continue
             openings = [r.RelatingOpeningElement for r in element.FillsVoids or []]
             building_elements = []
             for opening in openings:
+                building_elements.extend([r.RelatingBuildingElement for r in opening.VoidsElements or []])
+            for building_element in building_elements:
+                building_obj = tool.Ifc.get_object(building_element)
+                if tool.Ifc.is_moved(building_obj):
+                    blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=building_obj)
+            for opening in openings:
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
                 ifcopenshell.api.run(
                     "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=obj.matrix_world
                 )
-                building_elements.extend([r.RelatingBuildingElement for r in opening.VoidsElements or []])
             for building_element in building_elements:
                 building_obj = tool.Ifc.get_object(building_element)
                 body = ifcopenshell.util.representation.get_representation(
@@ -314,12 +329,17 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         representation = tool.Ifc.get().by_id(obj1.data.BIMMeshProperties.ifc_definition_id)
 
+        if not obj2.data or len(obj2.data.polygons) <= 4: # It takes 4 faces to create a closed solid
+            mesh_data = {"type": "IfcHalfSpaceSolid", "matrix": obj1.matrix_world.inverted() @ obj2.matrix_world}
+        elif obj2.data:
+            mesh_data = {"type": "Mesh", "blender_obj": obj1, "blender_void": obj2}
+
         ifcopenshell.api.run(
             "geometry.add_boolean",
             tool.Ifc.get(),
             representation=representation,
             operator="DIFFERENCE",
-            matrix=obj1.matrix_world.inverted() @ obj2.matrix_world,
+            **mesh_data
         )
 
         tool.Model.clear_scene_openings()
@@ -356,15 +376,42 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
         booleans = []
         for item in representation.Items:
             booleans.extend(self.get_booleans(item))
+
+        props = bpy.context.scene.BIMModelProperties
+        tool.Model.clear_scene_openings()
+
         for boolean in booleans:
+            boolean_obj = None
+
             if boolean.is_a() == "IfcHalfSpaceSolid":
                 if boolean.BaseSurface.is_a("IfcPlane"):
                     boolean_obj = self.create_half_space_solid()
                     position = boolean.BaseSurface.Position
                     position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
                     boolean_obj.matrix_world = obj.matrix_world @ position
-                    boolean_obj.data.BIMMeshProperties.ifc_boolean_id = boolean.id()
-                    boolean_obj.data.BIMMeshProperties.obj = obj
+            else:
+                settings = ifcopenshell.geom.settings()
+                logger = logging.getLogger("ImportIFC")
+                ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
+                shape = ifcopenshell.geom.create_shape(settings, boolean)
+                if shape:
+                    ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+                    ifc_importer.file = tool.Ifc.get()
+                    mesh = ifc_importer.create_mesh(boolean, shape)
+                else:
+                    mesh = None
+                boolean_obj = object_data_add(bpy.context, mesh, operator=self)
+                boolean_obj.name = "BooleanMesh"
+                boolean_obj.matrix_world = obj.matrix_world
+
+            if boolean_obj:
+                boolean_obj.data.BIMMeshProperties.ifc_boolean_id = boolean.id()
+                boolean_obj.data.BIMMeshProperties.obj = obj
+                new = props.openings.add()
+                new.obj = boolean_obj
+
+        if booleans:
+            DecorationsHandler.install(bpy.context)
         return {"FINISHED"}
 
     def get_booleans(self, item):
@@ -375,7 +422,6 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
         return results
 
     def create_half_space_solid(self):
-        props = bpy.context.scene.BIMModelProperties
         bm = bmesh.new()
         bmesh.ops.create_grid(bm, size=0.5)
         bm.verts.ensure_lookup_table()
@@ -386,13 +432,6 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
         bm.free()
         obj = object_data_add(bpy.context, mesh, operator=self)
         obj.name = "HalfSpaceSolid"
-
-        tool.Model.clear_scene_openings()
-
-        new = props.openings.add()
-        new.obj = obj
-
-        DecorationsHandler.install(bpy.context)
         return obj
 
 
@@ -506,7 +545,12 @@ class EditOpenings(Operator, tool.Ifc.Operator):
             for opening in openings:
                 opening_obj = tool.Ifc.get_object(opening)
                 if opening_obj:
-                    tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                    if tool.Ifc.is_edited(opening_obj):
+                        tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                    elif tool.Ifc.is_moved(opening_obj):
+                        blenderbim.core.geometry.edit_object_placement(
+                            tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
+                        )
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
                     bpy.data.objects.remove(opening_obj)
 

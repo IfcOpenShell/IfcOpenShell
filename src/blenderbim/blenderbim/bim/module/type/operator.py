@@ -23,6 +23,7 @@ import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.geometry
 import blenderbim.core.type as core
+import blenderbim.core.root
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.type.data import Data
 from ifcopenshell.api.geometry.data import Data as GeometryData
@@ -165,4 +166,40 @@ class SelectTypeObjects(bpy.types.Operator):
             obj = tool.Ifc.get_object(element)
             if obj:
                 obj.select_set(True)
+        return {"FINISHED"}
+
+
+class RemoveType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_type"
+    bl_label = "Remove Type"
+    bl_options = {"REGISTER"}
+    element: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        element = tool.Ifc.get().by_id(self.element)
+        obj = tool.Ifc.get_object(element)
+        ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+        if obj:
+            tool.Ifc.unlink(obj=obj)
+            bpy.data.objects.remove(obj)
+        return {"FINISHED"}
+
+
+class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.duplicate_type"
+    bl_label = "Duplicate Type"
+    bl_options = {"REGISTER"}
+    element: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        element = tool.Ifc.get().by_id(self.element)
+        obj = tool.Ifc.get_object(element)
+        if not obj:
+            return {"FINISHED"}
+        new_obj = obj.copy()
+        if obj.data:
+            new_obj.data = obj.data.copy()
+        new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+        new.Name += " Copy"
+        bpy.ops.bim.load_type_thumbnails(ifc_class=new.is_a())
         return {"FINISHED"}

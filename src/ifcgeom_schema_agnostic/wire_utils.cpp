@@ -7,6 +7,7 @@
 #include <TopExp.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Iterator.hxx>
+#include <ShapeFix_Wire.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepTools_WireExplorer.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
@@ -73,7 +74,13 @@ bool IfcGeom::util::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_P
 		return false;
 	}
 
-	plane = gp_Pln(center / n, gp_Dir(x, y, z));
+	gp_Vec v(x, y, z);
+	if (v.SquareMagnitude() < eps_ * eps_) {
+		Logger::Warning("Degenerate face boundary in normal estimation");
+		return false;
+	}
+
+	plane = gp_Pln(center / n, v);
 
 	exp.Init(wire);
 	for (; exp.More(); exp.Next()) {
@@ -496,11 +503,15 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfS
 							}
 						}
 
+						ShapeFix_Wire sfw;
+						sfw.Load(mw.Wire());
+						sfw.Perform();
+
 						// Recursively process both cuts
 
 						// @todo this is a change in behaviour with eps precomputed from the kernel
 						// instead of adaptively calculated for the successive iterations.
-						wire_intersections(mw.Wire(), wires, eps, eps_real);
+						wire_intersections(sfw.Wire(), wires, eps, eps_real);
 					}
 
 					return true;

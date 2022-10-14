@@ -23,6 +23,88 @@ from blenderbim.bim.module.model.prop import store_cursor_position
 from blenderbim.bim.helper import prop_with_search, close_operator_panel
 
 
+class LaunchTypeManager(bpy.types.Operator):
+    bl_idname = "bim.launch_type_manager"
+    bl_label = "Launch Type Manager"
+    bl_options = {"REGISTER"}
+    bl_description = "Display all available Construction Types to add new instances"
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        props = context.scene.BIMModelProperties
+        props.type_page = 1
+        if props.ifc_class:
+            props.type_class = props.ifc_class
+        bpy.ops.bim.load_type_thumbnails(ifc_class=props.ifc_class)
+        if not AuthoringData.is_loaded:
+            AuthoringData.load()
+        return context.window_manager.invoke_popup(self, width=550)
+
+    def draw(self, context):
+        props = context.scene.BIMModelProperties
+
+        row = self.layout.row()
+        row.prop(props, "type_class", text="")
+
+        columns = self.layout.column_flow(columns=3)
+        row = columns.row()
+        row.alignment = "LEFT"
+        row.label(text=f"{AuthoringData.data['total_types']} Types", icon="FILE_VOLUME")
+
+        row = columns.row(align=True)
+        row.alignment = "CENTER"
+        row.prop(props, "type_predefined_type", text="")
+        row.prop(props, "type_template", text="")
+        op = row.operator("bim.change_type_page", icon="ADD", text="")
+
+        row = columns.row(align=True)
+        row.alignment = "RIGHT"
+        if AuthoringData.data["total_pages"] > 1:
+            row.label(text=f"Page {props.type_page}/{AuthoringData.data['total_pages']} ")
+        if AuthoringData.data["prev_page"]:
+            op = row.operator("bim.change_type_page", icon="TRIA_LEFT", text="")
+            op.page = AuthoringData.data["prev_page"]
+        if AuthoringData.data["next_page"]:
+            op = row.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
+            op.page = AuthoringData.data["next_page"]
+
+        flow = self.layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
+
+        for relating_type in AuthoringData.data["paginated_relating_types"]:
+            outer_col = flow.column()
+            box = outer_col.box()
+
+            row = box.row()
+            row.alignment = "CENTER"
+            row.label(text=relating_type["name"], icon="FILE_3D")
+
+            row = box.row()
+            row.alignment = "CENTER"
+            row.label(text=relating_type["description"])
+
+            row = box.row()
+            if relating_type["icon_id"]:
+                row.template_icon(icon_value=relating_type["icon_id"], scale=4)
+            else:
+                op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
+                op.ifc_class = props.type_class
+
+            row = box.row(align=True)
+
+            text = f"Add {relating_type['predefined_type']}" if relating_type["predefined_type"] else "Add"
+            op = row.operator("bim.add_constr_type_instance", icon="ADD", text=text)
+            op.from_invoke = True
+            op.ifc_class = relating_type["ifc_class"]
+            op.relating_type_id = relating_type["id"]
+
+            op = row.operator("bim.duplicate_type", icon="COPYDOWN", text="")
+            op.element = relating_type["id"]
+            op = row.operator("bim.remove_type", icon="X", text="")
+            op.element = relating_type["id"]
+
+
 class BIM_PT_authoring(Panel):
     bl_label = "Architectural"
     bl_idname = "BIM_PT_authoring"
@@ -58,9 +140,7 @@ class DisplayConstrTypesUI(Operator):
             browser_state.updating = True
 
         def run_operator():
-            bpy.ops.bim.reinvoke_operator(
-                "INVOKE_DEFAULT", operator="bim.display_constr_types_ui"
-            )
+            bpy.ops.bim.reinvoke_operator("INVOKE_DEFAULT", operator="bim.display_constr_types_ui")
             browser_state.updating = False
 
         if not browser_state.updating:

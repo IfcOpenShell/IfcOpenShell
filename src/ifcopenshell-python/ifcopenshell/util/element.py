@@ -190,13 +190,17 @@ def get_elements_by_material(ifc_file, material):
     """
     Retrieves the elements related to a material.
 
+    This includes elements using the material as part of a material set or set
+    usage.
+
     :param ifc_file: The IFC file
     :param material: The IFC Material entity
-    :return: The elements related to the material
+    :return: A list of elements using the to the material
 
     Example::
-    material = file.by_type("IfcMaterial")[0]
-    elements = ifcopenshell.util.element.get_elements_by_material(file, material)
+
+        material = file.by_type("IfcMaterial")[0]
+        elements = ifcopenshell.util.element.get_elements_by_material(file, material)
     """
     results = set()
     for inverse in ifc_file.get_inverse(material):
@@ -229,9 +233,9 @@ def get_elements_by_style(ifc_file, style):
     :return: The elements related to the style
 
     Example::
-    style = file.by_type("IfcSurfaceStyle")[0]
-    elements = ifcopenshell.util.element.get_elements_by_style(file, style)
 
+        style = file.by_type("IfcSurfaceStyle")[0]
+        elements = ifcopenshell.util.element.get_elements_by_style(file, style)
     """
     results = set()
     inverses = list(ifc_file.get_inverse(style))
@@ -323,7 +327,9 @@ def get_container(element, should_get_direct=False):
 
 def get_referenced_structures(element):
     """
-    Retreives a list of referenced structural elements
+    Retreives a list of referenced spatial elements, typically useful for
+    multistorey elements or elements that span multiple spaces or in-between
+    spaces.
 
     :param element: The IFC element
     :type element: ifcopenshell.entity_instance.entity_instance
@@ -340,7 +346,9 @@ def get_referenced_structures(element):
 
 def get_decomposition(element):
     """
-    Retrieves the decomposition of an element.
+    Retrieves all subelements of an element based on the spatial decomposition
+    hierarchy. This includes all subspaces and elements contained in subspaces,
+    parts of an aggreate, all openings, and all fills of any openings.
 
     :param element: The IFC element
     :return: The decomposition of the element
@@ -360,6 +368,12 @@ def get_decomposition(element):
         for rel in getattr(element, "IsDecomposedBy", []):
             queue.extend(rel.RelatedObjects)
             results.extend(rel.RelatedObjects)
+        for rel in getattr(element, "HasOpenings", []):
+            queue.append(rel.RelatedOpeningElement)
+            results.append(rel.RelatedOpeningElement)
+        for rel in getattr(element, "HasFillings", []):
+            queue.append(rel.RelatedBuildingElement)
+            results.append(rel.RelatedBuildingElement)
     return results
 
 
@@ -472,6 +486,15 @@ def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
 
 
 def copy(ifc_file, element):
+    """
+    Copy a single element. Any referenced elements are not copied.
+
+    GlobalIds are regenerated.
+
+    :param ifc_file: The IFC file object
+    :param element: The IFC element to copy
+    :return: The newly copied element
+    """
     new = ifc_file.create_entity(element.is_a())
     for i, attribute in enumerate(element):
         if attribute is None:
@@ -483,16 +506,33 @@ def copy(ifc_file, element):
     return new
 
 
-def copy_deep(ifc_file, element):
+def copy_deep(ifc_file, element, exclude=None):
+    """
+    Recursively copy an element and all of its directly related subelements.
+
+    GlobalIds are regenerated.
+
+    :param ifc_file: The IFC file object
+    :param element: The IFC element to copy
+    :param exclude: An optional list of strings of IFC class names to not copy.
+        If any of the subelement is this class, it will not be copied and the
+        original instance will be referenced.
+    :return: The newly copied element
+    """
     new = ifc_file.create_entity(element.is_a())
     for i, attribute in enumerate(element):
         if attribute is None:
             continue
         if isinstance(attribute, ifcopenshell.entity_instance):
-            attribute = copy_deep(ifc_file, attribute)
+            if not exclude or (exclude and not any([attribute.is_a(e) for e in exclude])):
+                attribute = copy_deep(ifc_file, attribute, exclude=exclude)
         elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
-            attribute = list(attribute)
-            for j, item in enumerate(attribute):
-                attribute[j] = copy_deep(ifc_file, item)
-        new[i] = attribute
+            if not exclude or (exclude and not any([attribute[0].is_a(e) for e in exclude])):
+                attribute = list(attribute)
+                for j, item in enumerate(attribute):
+                    attribute[j] = copy_deep(ifc_file, item, exclude=exclude)
+        if new.attribute_name(i) == "GlobalId":
+            new[i] = ifcopenshell.guid.new()
+        else:
+            new[i] = attribute
     return new
