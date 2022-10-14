@@ -8,7 +8,7 @@ $appDataUserDir  = [System.Environment]::GetEnvironmentVariable('appdata')
 $unzipTargetDir  = "$appDataUserDir\Blender Foundation\Blender\latest_blender_version_maj_min\scripts\addons"
 
 $chocoBaseDir    = [System.Environment]::GetEnvironmentVariable('ChocolateyInstall')
-$addonEnable     = "$chocoBaseDir\lib\blenderbim\tools\enable_blenderbim_addon.py"
+$addonEnable     = "$chocoBaseDir\lib\blenderbim-nightly\tools\enable_blenderbim_addon.py"
 
 $programFilesDir = [System.Environment]::GetEnvironmentVariable('ProgramFiles')
 $blenderExePath  = "$env:ProgramFiles\Blender Foundation\Blender latest_blender_version_maj_min\blender.exe"
