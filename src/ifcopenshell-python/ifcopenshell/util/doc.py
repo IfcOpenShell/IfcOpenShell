@@ -79,7 +79,7 @@ class DocExtractor:
                 entities_dict[entity_name]['url'] = github_md_url
 
         # export entities data
-        with open('ifc2x3_entities.json', 'w', encoding='utf-8') as fo:
+        with open('schema/ifc2x3_entities.json', 'w', encoding='utf-8') as fo:
             print(f'{len(entities_dict)} entities parsed')
             json.dump(
                 entities_dict, fo,
@@ -178,7 +178,7 @@ class DocExtractor:
 
 
         # export property sets data
-        with open('ifc2x3_properties.json', 'w', encoding='utf-8') as fo:
+        with open('schema/ifc2x3_properties.json', 'w', encoding='utf-8') as fo:
             print(f'{len(property_sets_dict)} property sets parsed')
             json.dump(
                 property_sets_dict, fo,
