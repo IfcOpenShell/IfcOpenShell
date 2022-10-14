@@ -27,11 +27,7 @@ from pprint import pprint
 DOCS_LOCATION = 'Ifc2.3.0.1'
 
 
-# add childs properties
-# reverse parse to check links
-
 class DocExtractor:
-
     def extract_ifc2x3(self):
         parse_data_location = Path(DOCS_LOCATION)
         if not parse_data_location.is_dir():
