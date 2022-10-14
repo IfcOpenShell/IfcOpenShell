@@ -69,7 +69,8 @@ class TestAppendAsset(test.bootstrap.IFC4):
         library.createIfcStyledItem(Item=item)
         mapped_rep = library.createIfcShapeRepresentation(Items=[item])
         element.RepresentationMaps = [library.createIfcRepresentationMap(MappedRepresentation=mapped_rep)]
-        ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
+        new = ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
+        assert len(new.RepresentationMaps[0].MappedRepresentation.Items[0].StyledByItem) == 1
         assert self.file.by_type("IfcStyledItem")[0].Item == self.file.by_type("IfcBoundingBox")[0]
 
     def test_append_a_material(self):
@@ -108,6 +109,27 @@ class TestAppendAsset(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcGeometricRepresentationContext")) == 1
         context = self.file.by_type("IfcMaterial")[0].HasRepresentation[0].Representations[0].ContextOfItems
         assert context == file_context
+        assert context.WorldCoordinateSystem
+
+    def test_append_a_material_with_a_representation_and_reuse_an_existing_subcontext(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        file_context = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
+        file_subcontext = ifcopenshell.api.run("context.add_context", self.file, parent=file_context, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW")
+
+        library = ifcopenshell.api.run("project.create_file")
+        ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject")
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+        style = ifcopenshell.api.run("style.add_style", library)
+        context = ifcopenshell.api.run("context.add_context", library, context_type="Model")
+        subcontext = ifcopenshell.api.run("context.add_context", library, parent=context, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW")
+        ifcopenshell.api.run("style.assign_material_style", library, material=material, style=style, context=subcontext)
+        ifcopenshell.api.run("project.append_asset", self.file, library=library, element=material)
+        assert len(self.file.by_type("IfcMaterial")) == 1
+        assert len(self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)) == 1
+        assert len(self.file.by_type("IfcGeometricRepresentationSubContext", include_subtypes=False)) == 1
+        subcontext = self.file.by_type("IfcMaterial")[0].HasRepresentation[0].Representations[0].ContextOfItems
+        assert subcontext == file_subcontext
+        assert subcontext.ParentContext.WorldCoordinateSystem
 
     def test_append_a_material_with_a_representation_and_reuse_an_existing_context_by_a_new_subcontext(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
