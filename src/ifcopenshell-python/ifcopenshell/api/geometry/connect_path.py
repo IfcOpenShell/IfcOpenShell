@@ -79,4 +79,6 @@ class Usecase:
             RelatedElement=self.settings["related_element"],
             RelatingConnectionType=self.settings["relating_connection"],
             RelatedConnectionType=self.settings["related_connection"],
+            RelatingPriorities=[],
+            RelatedPriorities=[],
         )
