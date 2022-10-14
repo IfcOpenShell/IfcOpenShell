@@ -225,9 +225,7 @@ class QtoCalculator:
         faces = shape.geometry.faces
         verts = shape.geometry.verts
 
-        mesh = bpy.data.meshes.new("myBeautifulMesh")  # add the new mesh
-        new_obj = bpy.data.objects.new(mesh.name, mesh)
-        #mesh.from_pydata(grouped_verts, edges, grouped_faces)
+        mesh = bpy.data.meshes.new("myBeautifulMesh")
 
         num_vertices = len(verts) // 3
         total_faces = len(faces)
@@ -245,9 +243,16 @@ class QtoCalculator:
         mesh.polygons.foreach_set("loop_total", loop_total)
         mesh.update()
 
-        gross_volume = self.get_net_volume(new_obj)
+        # An alternative to foreach is
+        # mesh.from_pydata(grouped_verts, edges, grouped_faces)
+        # look at import_ifc.py in blenderbim
 
-        bpy.data.objects.remove(new_obj, do_unlink = True)
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+
+        gross_volume = bm.calc_volume()
+
+        bm.free()
 
         return gross_volume
 
