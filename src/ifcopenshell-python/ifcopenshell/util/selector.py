@@ -37,7 +37,7 @@ class Selector:
                     filter: "[" filter_key (comparison filter_value)? "]"
                     filter_key: WORD | pset_or_qto
                     filter_value: ESCAPED_STRING | SIGNED_FLOAT | SIGNED_INT | BOOLEAN | NULL
-                    pset_or_qto: /[^\W][^.=<>]*[^\W]/ "." /[^\W][^.=<>]*[^\W]/
+                    pset_or_qto: /[^\\W][^.=<>]*[^\\W]/ "." /[^\\W][^.=<>]*[^\\W]/
                     lfunction: and | or
                     inverse_relationship: types | decomposed_by | bounded_by
                     types: "*"
