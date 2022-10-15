@@ -26,49 +26,53 @@ from markdown import markdown
 from bs4 import BeautifulSoup
 import requests
 
-IFC2x3_DOCS_LOCATION = 'Ifc2.3.0.1'
+IFC4x0_DOCS_LOCATION = 'Ifc4.0.2.1'
+
 
 class DocExtractor:
-    def extract_ifc2x3(self):
-        print('Parsing data for Ifc2.3.0.1')
-        parse_data_location = Path(IFC2x3_DOCS_LOCATION)
+    
+    def extract_ifc4x0(self):
+        print('Parsing data for Ifc4.0.2.1')
+        parse_data_location = Path(IFC4x0_DOCS_LOCATION)
         if not parse_data_location.is_dir():
             raise Exception(
-                f'Docs for IFC 2.3.0.1 expected to be in folder "{parse_data_location.resolve()}\\"\n'
+                f'Docs for Ifc4.0.2.1 expected to be in folder "{parse_data_location.resolve()}\\"\n'
                 'For doc extraction please either setup docs as described above \n'
                 'or change IFC2x3_DOCS_LOCATION in doc.py accordingly.'
             )
 
-        # need to parse actual domains from the website
-        # since domains from github paths do not match domains from the websites
-        # probably due domains on the website being from 4_0
-        # example (property set / github domain / website domain):
-        # Pset_AirTerminalBoxPHistory IfcControlExtension IfcHvacDomain
-        self.extract_ifc2x3_property_sets_site_domains()
-        self.extract_ifc2x3_entities()
-        self.extract_ifc2x3_property_sets()
+        # actually domains in Ifc 4.0 are consistent between website and docs
+        # BUT there are two property sets that site is missing and therefore they won't have spec_url
+        # because of them I left the site parsing too
+        # missed property sets:
+        # Pset_BuildingElementCommon Pset_ElementCommon
+        self.extract_ifc4x0_property_sets_site_domains()
+        self.extract_ifc4x0_entities()
+        self.extract_ifc4x0_property_sets()
     
-    def extract_ifc2x3_property_sets_site_domains(self):
+    def extract_ifc4x0_property_sets_site_domains(self):
         property_sets_domains = dict()
-        r = requests.get('https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/psd_index.htm')
+        r = requests.get('https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/annex/annex-b/alphabeticalorder_psets.htm')
         html = BeautifulSoup(r.content, features='lxml')
-        for a in html.find_all('a'):
-            domain, pset = a['href'].removeprefix('./').removesuffix('.xml').split('/')
+        for a in html.find_all('a', {'class': 'listing-link'}):
+            href_split = a['href'].split('/')
+            domain = href_split[3]
+            pset = href_split[5].removesuffix('.htm')
             property_sets_domains[pset] = domain
 
         # export property sets data
-        with open('schema/ifc2x3_property_sets_site_domains.json', 'w', encoding='utf-8') as fo:
+        with open('schema/ifc4x0_property_sets_site_domains.json', 'w', encoding='utf-8') as fo:
             print(f'{len(property_sets_domains)} property sets domains were parsed from the website')
             json.dump(
                 property_sets_domains, fo,
                 sort_keys=True, indent=4
             )
 
-    def extract_ifc2x3_entities(self):
+    def extract_ifc4x0_entities(self):
         entities_dict = dict()
 
         # search 
-        entities_paths = [filepath for filepath in glob.iglob(f'{IFC2x3_DOCS_LOCATION}/Sections/**/Entities', recursive=True)]
+        entities_paths = [filepath for filepath in glob.iglob(f'{IFC4x0_DOCS_LOCATION}/Sections/**/Entities', recursive=True)]
         for parse_folder_path in entities_paths:
             for entity_path in glob.iglob(f'{parse_folder_path}/**/'):
                 entity_path = Path(entity_path)
@@ -101,29 +105,31 @@ class DocExtractor:
                         entities_dict[entity_name]['attributes'] = entity_attrs
 
                 entities_dict[entity_name]['description'] = entity_description
-                spec_url = 'https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/' \
+                spec_url = 'https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/' \
                         f'{md_path.parents[2].name.lower()}/lexical/{entity_name.lower()}.htm'
                 entities_dict[entity_name]['spec_url'] = spec_url
+                # entities_dict[entity_name]['github_url'] = github_md_url
 
         # export entities data
-        with open('schema/ifc2x3_entities.json', 'w', encoding='utf-8') as fo:
+        with open('schema/ifc4x0_entities.json', 'w', encoding='utf-8') as fo:
             print(f'{len(entities_dict)} entities parsed')
             json.dump(
                 entities_dict, fo,
                 sort_keys=True, indent=4
             )
 
-    def extract_ifc2x3_property_sets(self):
+    def extract_ifc4x0_property_sets(self):
         property_sets_dict = dict()
         property_sets_references = dict()
         property_sets_spec_urls = dict()
 
         # extract lists of properties and theirs references for each property set
-        parsed_paths = [filepath for filepath in glob.iglob(f'{IFC2x3_DOCS_LOCATION}/Sections/**/PropertySets', recursive=True)]
+        parsed_paths = [filepath for filepath in glob.iglob(f'{IFC4x0_DOCS_LOCATION}/Sections/**/PropertySets', recursive=True)]
 
         # prepare property sets domains from the website we extracted earlier
-        with open('schema/ifc2x3_property_sets_site_domains.json', 'r') as fi:
+        with open('schema/ifc4x0_property_sets_site_domains.json', 'r') as fi:
             property_sets_site_domains = json.load(fi)
+
 
         for parse_folder_path in parsed_paths:
             for property_set_path in glob.iglob(f'{parse_folder_path}/**/'):
@@ -139,13 +145,18 @@ class DocExtractor:
                         property_references.append(html_attr['href'])
 
                 property_sets_references[property_set_name] = property_references
-                property_set_domain = property_sets_site_domains[property_set_name]
-                spec_url = f'https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/{property_set_domain}/{property_set_name}.xml'
-                property_sets_spec_urls[property_set_name] = spec_url
+                
+                if property_set_name.lower() not in property_sets_site_domains:
+                    print(f"WARNING. {property_set_name} was not found on the spec website, "
+                        "this property set won't have any spec_url in schema.")
+                else:
+                    property_set_domain = property_sets_site_domains.get(property_set_name.lower(), '')
+                    spec_url = f'https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/{property_set_domain}/pset/{property_set_name.lower()}.htm'
+                    property_sets_spec_urls[property_set_name] = spec_url
 
         # setup references look up tables to convert property hrefs to actual data paths
         references_paths_lookup = dict()
-        glob_query = f'{IFC2x3_DOCS_LOCATION}/Properties/*/*'
+        glob_query = f'{IFC4x0_DOCS_LOCATION}/Properties/*/*'
         for parsed_path in [filepath for filepath in glob.iglob(glob_query, recursive=False)]:
             parsed_path = Path(parsed_path)
             # all references omit "$" character, I've checked
@@ -201,7 +212,6 @@ class DocExtractor:
                     property_dict['description'] = description
             return (property_name, property_dict)
 
-            
         # lookup each property reference and save it's name and description
         for property_set_name in property_sets_references:
             properties_dict = dict()
@@ -209,13 +219,15 @@ class DocExtractor:
                 property_name, property_dict = get_property_info_by_href(property_reference)
                 properties_dict[property_name] = property_dict
             property_sets_dict[property_set_name] = {
-                'properties': properties_dict,
-                'spec_url': property_sets_spec_urls[property_set_name]
+                'properties': properties_dict
             }
+            if property_set_name in property_sets_spec_urls:
+                spec_url = property_sets_spec_urls[property_set_name]
+                property_sets_dict[property_set_name]['spec_url'] = spec_url
 
 
         # export property sets data
-        with open('schema/ifc2x3_properties.json', 'w', encoding='utf-8') as fo:
+        with open('schema/ifc4x0_properties.json', 'w', encoding='utf-8') as fo:
             print(f'{len(property_sets_dict)} property sets parsed')
             json.dump(
                 property_sets_dict, fo,
@@ -225,6 +237,6 @@ class DocExtractor:
 
 if __name__ == '__main__':
     extractor = DocExtractor()
-    extractor.extract_ifc2x3()
+    extractor.extract_ifc4x0()
 
 
