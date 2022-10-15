@@ -64,9 +64,10 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
             if not raycast[0]:
                 return {"FINISHED"}
 
-        axis = [voided_obj.matrix_world @ Vector((0, 0, 0)), voided_obj.matrix_world @ Vector((1, 0, 0))]
-
         # In this prototype, we assume openings are only added to axis-based elements
+        layers = tool.Model.get_material_layer_parameters(element)
+        axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
+
         new_matrix = voided_obj.matrix_world.copy()
         new_matrix.col[3] = tool.Cad.point_on_edge(target, axis).to_4d()
         if not filling.is_a("IfcDoor"):

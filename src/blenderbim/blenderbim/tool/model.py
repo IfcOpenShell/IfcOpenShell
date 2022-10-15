@@ -22,7 +22,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.tool as tool
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 from blenderbim.bim import import_ifc
 
 
@@ -87,6 +87,20 @@ class Model(blenderbim.core.tool.Model):
                     has_deleted_opening = True
 
     @classmethod
+    def get_material_layer_parameters(cls, element):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        offset = 0.0
+        thickness = 0.0
+        material = ifcopenshell.util.element.get_material(element)
+        if material:
+            if material.is_a("IfcMaterialLayerSetUsage"):
+                offset = material.OffsetFromReferenceLine * unit_scale
+                material = material.ForLayerSet
+            if material.is_a("IfcMaterialLayerSet"):
+                thickness = sum([l.LayerThickness for l in material.MaterialLayers]) * unit_scale
+        return {"thickness": thickness, "offset": offset}
+
+    @classmethod
     def get_manual_booleans(cls, element):
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if not body:
@@ -101,3 +115,26 @@ class Model(blenderbim.core.tool.Model):
             elif item.is_a("IfcBooleanClippingResult"):
                 items.append(item.FirstOperand)
         return booleans
+
+    @classmethod
+    def get_wall_axis(cls, obj, layers=None):
+        x_values = [v[0] for v in obj.bound_box]
+        min_x = min(x_values)
+        max_x = max(x_values)
+        axes = {}
+        if layers:
+            axes = {
+                "base": [
+                    (obj.matrix_world @ Vector((min_x, layers["offset"], 0.0))).to_2d(),
+                    (obj.matrix_world @ Vector((max_x, layers["offset"], 0.0))).to_2d(),
+                ],
+                "side": [
+                    (obj.matrix_world @ Vector((min_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
+                    (obj.matrix_world @ Vector((max_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
+                ],
+            }
+        axes["reference"] = [
+            (obj.matrix_world @ Vector((min_x, 0.0, 0.0))).to_2d(),
+            (obj.matrix_world @ Vector((max_x, 0.0, 0.0))).to_2d(),
+        ]
+        return axes
