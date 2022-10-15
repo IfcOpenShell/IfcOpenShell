@@ -96,6 +96,7 @@ def mode_callback(obj, data):
 class DumbProfileGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     def generate(self, link_to_scene=True):
         self.file = IfcStore.get_file()
@@ -108,9 +109,10 @@ class DumbProfileGenerator:
 
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
+        props = bpy.context.scene.BIMModelProperties
         self.collection = bpy.context.view_layer.active_layer_collection.collection
         self.collection_obj = bpy.data.objects.get(self.collection.name)
-        self.depth = 3
+        self.depth = props.extrusion_depth * self.unit_scale
         self.rotation = 0
         self.location = Vector((0, 0, 0))
         self.cardinal_point = int(bpy.context.scene.BIMModelProperties.cardinal_point)

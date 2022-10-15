@@ -86,7 +86,7 @@ class BimToolUI:
         elif context.region.type == "UI":
             cls.draw_sidebar_interface()
 
-        if context.active_object:
+        if context.active_object and context.selected_objects:
             cls.draw_edit_object_interface(context)
         elif not context.selected_objects:
             cls.draw_create_object_interface()

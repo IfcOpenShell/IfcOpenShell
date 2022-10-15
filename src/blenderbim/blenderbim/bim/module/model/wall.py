@@ -400,6 +400,7 @@ class DumbWallRecalculator:
 class DumbWallGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     def generate(self, link_to_scene=True):
         self.file = IfcStore.get_file()
@@ -410,11 +411,12 @@ class DumbWallGenerator:
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
 
+        props = bpy.context.scene.BIMModelProperties
         self.collection = bpy.context.view_layer.active_layer_collection.collection
         self.collection_obj = bpy.data.objects.get(self.collection.name)
         self.width = self.layers["thickness"]
-        self.height = 3.0
-        self.length = 1.0
+        self.height = props.extrusion_depth * self.unit_scale
+        self.length = props.length * self.unit_scale
         self.rotation = 0.0
         self.location = Vector((0, 0, 0))
 
